@@ -570,14 +570,14 @@ let Initialize = async(startover = false) => {
             username = title.textContent.toLowerCase(),
             { filter_rules } = configuration;
 
-        if(!!~filter_rules.split(',').indexOf(`@${ username }`))
-            return /* Already filtering message from this person */;
+        if(filter_rules && !!~filter_rules.split(',').indexOf(`@${ username }`))
+            return /* Already filtering messages from this person */;
 
         let filter = document.createElement('div');
 
         filter.id = 'twitch-tools-filter-user';
         filter.title = `Filter all messages from @${ username }`;
-        filter.setAttribute('style', 'height: 20px; width: 20px; cursor: pointer; fill: var(--color-white)');
+        filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
         filter.setAttribute('username', username);
 
         filter.onclick = event => {
@@ -585,7 +585,7 @@ let Initialize = async(startover = false) => {
                 username = target.getAttribute('username'),
                 { filter_rules } = configuration;
 
-            filter_rules = filter_rules.split(',');
+            filter_rules = (filter_rules || '').split(',');
             filter_rules.push(`@${ username }`);
             filter_rules = filter_rules.join(',');
 
@@ -594,7 +594,11 @@ let Initialize = async(startover = false) => {
             Storage.set({ filter_rules });
         };
 
-        filter.innerHTML = Glyphs.trash;
+        filter.innerHTML = `${ Glyphs.trash } Filter messages from @${ username }`;
+
+        let svg = $('svg', false, filter);
+
+        svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
         title.appendChild(filter);
     };
