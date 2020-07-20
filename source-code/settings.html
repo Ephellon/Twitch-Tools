@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html><!-- /settings.html
+        _____      _   _   _                   _     _             _
+       / ____|    | | | | (_)                 | |   | |           | |
+      | (___   ___| |_| |_ _ _ __   __ _ ___  | |__ | |_ _ __ ___ | |
+       \___ \ / _ \ __| __| | '_ \ / _` / __| | '_ \| __| '_ ` _ \| |
+       ____) |  __/ |_| |_| | | | | (_| \__ \_| | | | |_| | | | | | |
+      |_____/ \___|\__|\__|_|_| |_|\__, |___(_)_| |_|\__|_| |_| |_|_|
+                                    __/ |
+                                   |___/
+    -->
+    <head>
+        <title>Twitch Tools &mdash; Settings</title>
+
+        <style>
+            :root {
+                /* Colors */
+                --background-dark: #0e0e0f;
+                --background-dark-lighter: #18181b;
+                --background-dark-lighter-highlighted: #222;
+                --text-dark: #fff;
+
+                --background-light: #f1f1f0;
+                --background-light-darker: #e8e8e5;
+                --background-light-darker-highlighted: #ddd;
+                --text-light: #000;
+
+                --black: #000;
+                --black-highlighted: #222;
+
+                --grey: #fff3;
+                --grey-highlighted: #fff4;
+
+                --purple: #9147ff;
+                --purple-highlighted: #a970ff;
+
+                --red: #bb1411;
+                --red-highlighted: #391916;
+
+                --white: #fff;
+                --white-highlighted: #eee;
+
+                /* Fonts */
+                --code-font: "System, Monospace, Menlo, Arial", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            }
+
+            *::-webkit-scrollbar {
+        		width: 6px;
+        		background-color: #CCC;
+        	}
+
+        	*::-webkit-scrollbar:horizontal {
+        		height: 6px;
+        	}
+
+        	*::-webkit-scrollbar-track {
+                background-color: var(--background-dark);
+        		border: 1px #0000 solid;
+        		-webkit-box-shadow: 0 0 6px #0000 inset;
+        	}
+
+        	*::-webkit-scrollbar-thumb {
+        		background-color: #1F1F23;
+        		border: 1px solid #EFEFEF20;
+        		border-radius: 7px;
+        	}
+
+        	*::-webkit-scrollbar-thumb:hover {
+        		background-color: #1F1F23;
+        		border: 1px solid #EFEFEF40;
+        	}
+
+        	*::-webkit-scrollbar-thumb:active {
+        		background-color: #1F1F23;
+        		border: 1px solid #EFEFEF40;
+        	}
+
+            * {
+                box-sizing: border-box;
+                outline: none;
+
+                border: 0;
+                margin: 0;
+                padding: 0;
+            }
+
+            html, body {
+                background: var(--background-dark);
+                color: var(--text-dark);
+                font-family: Roobert, Helvetica, Arial, sans-serif;
+                font-size: 14px;
+
+                overflow: hidden auto;
+
+                border: 0;
+                padding: 5px;
+
+                min-height: 400px;
+                min-width: 400px;
+                height: 100%;
+                width: 100%;
+            }
+
+            #save, #save-small {
+                align-items: center;
+                display: inline-flex;
+                justify-content: center;
+
+                background-color: var(--purple);
+                border-radius: 3px;
+                color: var(--text-dark);
+                cursor: pointer;
+                font-weight: bold;
+
+                transition: background-color .1s ease;
+
+                overflow: hidden;
+
+                padding: 10px;
+
+                position: absolute;
+                vertical-align: middle;
+            }
+
+            #save:hover, #save-small:hover {
+                background-color: var(--purple-highlighted);
+            }
+
+            /* Mini-display */
+            @media all and (max-width: 500px) {
+                body {
+                    padding-bottom: 4rem;
+                }
+
+                #save-small {
+                    display: block;
+
+                    border-radius: 100%;
+
+                    padding: 1.5rem;
+
+                    bottom: 1rem;
+                    right: 1rem;
+                }
+
+                #save-small:before {
+                    border-bottom: 3px solid var(--text-dark);
+                    border-left: 3px solid var(--text-dark);
+                    content: '';
+                    display: block;
+
+                    transform: translate3d(-50%, -50%, 0) rotate(-45deg);
+
+                    position: absolute;
+                    left: 1.5rem;
+                    top: 1.4rem;
+
+                    height: .4rem;
+                    width: 1rem;
+                }
+
+                #save {
+                    display: none;
+                }
+            }
+
+            /* Full display */
+            @media all and (min-width: 500px) {
+                #save {
+                    display: block;
+
+                    bottom: 1rem;
+                    left: 1rem;
+                }
+
+                #save-small {
+                    display: none;
+                }
+            }
+
+            h1 {font-size: 200%}
+            h2 {font-size: 150%}
+            h3 {font-size: 100%}
+            h4 {font-size: 75%}
+            h5 {font-size: 50%}
+            h6 {font-size: 25%}
+
+            article {
+                align-items: stretch;
+
+                transition: background-color .1s ease;
+
+                background-color: var(--background-dark-lighter);
+                border: 1px solid var(--background-dark-lighter);
+                border-radius: 3px;
+                box-shadow: 0 2px 5px #000;
+                display: flex;
+                flex-shrink: 0;
+                flex-wrap: nowrap;
+
+                margin-bottom: 1rem;
+
+                line-height: 2.5rem;
+                max-width: 400px;
+                height: 6rem;
+                width: 100%;
+            }
+
+            article:hover, article.focus {
+                background-color: var(--background-dark-lighter-highlighted);
+            }
+
+            article.focus {
+                margin-bottom: 5rem;
+            }
+
+            details, summary {
+                list-style-type: none;
+
+                padding: 5px;
+
+                height: 100%;
+                width: 100%;
+            }
+
+            details {
+                color: var(--grey);
+
+                line-height: 1rem;
+            }
+
+            summary {
+                color: var(--text-dark);
+                cursor: help;
+
+                margin-bottom: 1rem;
+
+                line-height: 2rem;
+            }
+
+            summary::marker {
+                display: none;
+            }
+
+            summary::-webkit-details-marker {
+                display: none;
+            }
+
+            summary:after {
+                content: 'help \25B8';
+
+                display: block;
+                font-family: var(--code-font) !important;
+                /* font-size: 20px; */
+                text-align: right;
+
+                margin-top: -5px;
+
+                line-height: 1;
+                width: 100%;
+            }
+
+            summary[more]:after {
+                content: attr(more) ' \25B8';
+            }
+
+            details[open] > summary:not([more]):after {
+                content: 'help \25BE';
+            }
+
+            details[open] > summary[more]:after {
+                content: attr(more) ' \25BE';
+            }
+
+            code, [code], [type^="code"i] {
+                background: #222;
+                border-radius: 3px;
+                box-shadow: none;
+                box-sizing: border-box;
+                font-family: var(--code-font) !important;
+                font-size: 75% !important;
+                line-height: 1 !important;
+                white-space: pre;
+
+                margin: 0;
+                padding: 0.2em 0.4em;
+            }
+
+            .toggle {
+                display: inline-block;
+                flex-direction: column;
+
+                position: relative;
+                vertical-align: baseline;
+
+                line-height: 2rem;
+            }
+
+            .toggle > input {
+                opacity: 0;
+
+                position: absolute;
+            }
+
+            .toggle > input:checked + label {
+                background-color: var(--purple) !important;
+            }
+
+            .toggle > label {
+                background-color: var(--grey);
+                border-radius: 1rem / 50%;
+                box-shadow:
+                    0 1px 2px #0003,
+                    0 0 2px #0002;
+                content: '';
+                cursor: pointer;
+                display: inline-block;
+
+                transition: background-color .1s ease;
+
+                order: 0;
+                position: relative;
+                vertical-align: bottom;
+
+                height: 2rem;
+                width: 3.5rem;
+            }
+
+            .toggle > label:before {
+                border-bottom: 2px solid var(--text-dark);
+                border-left: 2px solid var(--text-dark);
+                content: '';
+                display: block;
+
+                transform: translate3d(-50%, -50%, 0) rotate(-45deg);
+
+                position: absolute;
+                left: 1rem;
+                top: .9rem;
+
+                height: .3rem;
+                width: .7rem;
+            }
+
+            .toggle > input:checked + label:after {
+                left: calc(100% - 1.8rem);
+                top: .2rem;
+            }
+
+            .toggle > label:after {
+                background-color: var(--white);
+                border-radius: 100%;
+                content: '';
+                display: block;
+
+                transition: left .1s ease;
+
+                position: absolute;
+                bottom: .2rem;
+                left: .2rem;
+                top: .2rem;
+
+                width: 1.6rem;
+            }
+
+            textarea, input[type="text"i] {
+                appearance: none;
+                background-clip: padding-box;
+                background-color: var(--grey);
+                border: 2px solid var(--grey);
+                border-radius: 3px;
+                color: #fff;
+                display: block;
+                font-size: 1.2rem;
+                line-height: 1.5;
+
+                transition:
+                    box-shadow .1s ease-in,
+                    border .1s ease-in,
+                    background-color .1s ease-in;
+
+                overflow-x: hidden;
+                resize: none;
+
+                padding: 1rem 6.5rem 1rem 1rem;
+
+                width: 100%;
+            }
+
+            textarea:focus, input[type="text"i]:focus {
+                background-color: var(--black);
+                border-color: var(--purple);
+
+                outline: none;
+            }
+
+            textarea::placeholder, input[type="text"i]::placeholder, textarea::-webkit-input-placeholder, input[type="text"i]::-webkit-input-placeholder {
+                font-family: var(--code-font);
+                font-size: 100%;
+            }
+        </style>
+    </head>
+    <body>
+
+        <article>
+            <details>
+                <summary>
+                    <h2>Auto-claim Channel Points</h2>
+
+                    <div class="toggle">
+                        <input id="auto_claim" type="checkbox" checked/>
+                        <label for="auto_claim"></label>
+                    </div>
+                </summary>
+
+                When the <b>Bonus Channel Points</b> button appears, it will automatically be clicked, claiming the bonus points.
+                <br/><br/>
+
+                <img src="auto-claim-channel-points.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
+                    <h2>Highlight <code>@<i>mention</i></code></h2>
+
+                    <div class="toggle">
+                        <input id="highlight_messages" type="checkbox" checked/>
+                        <label for="highlight_messages"></label>
+                    </div>
+                </summary>
+
+                When someone mentions you (<code>@<i>username</i></code>), make it stand out by highlighting it.
+                <br/><br/>
+
+                <img src="highlight-mention.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary more="rules">
+                    <h2>Filter Messages</h2>
+
+                    <div class="toggle">
+                        <input id="filter_messages" type="checkbox" checked/>
+                        <label for="filter_messages"></label>
+                    </div>
+                </summary>
+
+                Remove messages across all channels.
+                <br/><br/>
+
+                <input id="filter_rules" type="text" value="" title="Case insensitive" placeholder="@user &#8703; @USER"/>
+                <br/>
+                What words/phrases should remove a message (comma seperated)?<br>
+                Use <code>@<i>username</i></code> to remove messages from specific users.
+                <br/><br/>
+
+                <img src="filter-messages.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
+                    <h2>Keep Watching</h2>
+
+                    <div class="toggle">
+                        <input id="keep_watching" type="checkbox" checked/>
+                        <label for="keep_watching"></label>
+                    </div>
+                </summary>
+
+                When a stream ends, go to the next available live-stream.
+                <br/><br/>
+
+                <img src="keep-watching.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
+                    <h2>Stop Raiding</h2>
+
+                    <div class="toggle">
+                        <input id="stop_raiding" type="checkbox"/>
+                        <label for="stop_raiding"></label>
+                    </div>
+                </summary>
+
+                When a streamer begins raiding, go to the next available live-stream.
+                <br/><br/>
+
+                <img src="stop-raiding.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
+                    <h2>Auto-follow</h2>
+
+                    <div class="toggle">
+                        <input id="auto_follow" type="checkbox" checked/>
+                        <label for="auto_follow"></label>
+                    </div>
+                </summary>
+
+                When a raiding a streamer, automatically follow them.
+                <br/><br/>
+
+                <img src="auto-follow.png"/>
+            </details>
+        </article>
+
+        <button id="save">Save Changes</button>
+        <button id="save-small"></button>
+
+        <script src="settings.js"></script>
+    </body>
+</html>

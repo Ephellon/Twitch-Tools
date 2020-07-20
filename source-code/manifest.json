@@ -1,0 +1,53 @@
+{
+    "manifest_version": 2,
+
+    "name": "Twitch Tools",
+    "description": "A set of useful and customizable tools for Twitch",
+    "version": "1.0",
+
+    "icons": {
+        "16": "16.png",
+        "32": "32.png",
+        "48": "48.png",
+        "96": "96.png",
+        "128": "128.png",
+        "256": "256.png"
+    },
+
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.twitch.tv/*",
+                "http://*.twitch.tv/*"
+            ],
+
+            "all_frames": true,
+            "run_at": "document_end",
+            "js": ["tools.js"]
+        }
+    ],
+
+    "options_page": "settings.html",
+    "options_ui": {
+        "page": "settings.html",
+        "open_in_tab": true
+    },
+
+    "browser_action": {
+        "default_icon": {
+            "16": "16.png",
+            "32": "32.png",
+            "48": "48.png",
+            "96": "96.png"
+        },
+        "default_title": "Twitch Tools",
+        "default_popup": "settings.html"
+    },
+
+    "permissions": [
+        "https://*.twitch.tv/*",
+        "http://*.twitch.tv/*",
+
+        "storage"
+    ]
+}
