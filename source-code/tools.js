@@ -179,8 +179,8 @@ function GetChat(lines = 30, keepEmotes = false) {
 
 let Glyphs = {
     channelpoints: '<svg style="fill:var(--color-accent)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
-    trash: '<svg style="fill:var(--color-accent)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>'
-}
+    trash: '<svg width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>'
+};
 
 // Update common variables
 let streamers,
@@ -219,7 +219,7 @@ function update() {
      */
     streamer = {
         href: top.location.href,
-        name: $(`a[href="${ pathname }"] h1`).textContent,
+        name: ($(`a[href="${ pathname }"] h1`) || {}).textContent,
         like: defined($('[data-a-target="unfollow-button"i]')),
         paid: defined($('[data-a-target="subscribed-button"i]')),
         game: ($('[data-a-target="stream-game-link"i]') || {}).textContent,
@@ -547,6 +547,60 @@ let Initialize = async(startover = false) => {
 
     if(configuration.auto_follow)
         Jobs.auto_follow = setInterval(Handlers.auto_follow, Timers.auto_follow);
+
+    /*** NOT A SETTING; THIS IS A HELPER FOR FILTER-MESSAGES
+     *      ______                  ______ _ _ _
+     *     |  ____|                |  ____(_) | |
+     *     | |__   __ _ ___ _   _  | |__   _| | |_ ___ _ __
+     *     |  __| / _` / __| | | | |  __| | | | __/ _ \ '__|
+     *     | |___| (_| \__ \ |_| | | |    | | | ||  __/ |
+     *     |______\__,_|___/\__, | |_|    |_|_|\__\___|_|
+     *                       __/ |
+     *                      |___/
+     */
+
+    Handlers.easy_filter = () => {
+        let card = $('[data-a-target="viewer-card"]'),
+            existing = $('#twitch-tools-filter-user');
+
+        if(!defined(card) || defined(existing))
+            return;
+
+        let title = $('h4', false, card),
+            username = title.textContent.toLowerCase(),
+            { filter_rules } = configuration;
+
+        if(!!~filter_rules.split(',').indexOf(`@${ username }`))
+            return /* Already filtering message from this person */;
+
+        let filter = document.createElement('div');
+
+        filter.id = 'twitch-tools-filter-user';
+        filter.title = `Filter all messages from @${ username }`;
+        filter.setAttribute('style', 'height: 20px; width: 20px; cursor: pointer; fill: var(--color-white)');
+        filter.setAttribute('username', username);
+
+        filter.onclick = event => {
+            let target = $('#twitch-tools-filter-user'),
+                username = target.getAttribute('username'),
+                { filter_rules } = configuration;
+
+            filter_rules = filter_rules.split(',');
+            filter_rules.push(`@${ username }`);
+            filter_rules = filter_rules.join(',');
+
+            target.remove();
+
+            Storage.set({ filter_rules });
+        };
+
+        filter.innerHTML = Glyphs.trash;
+
+        title.appendChild(filter);
+    };
+    Timers.easy_filter = 500;
+
+    Jobs.easy_filter = setInterval(Handlers.easy_filter, Timers.easy_filter);
 };
 
 let WaitForPageToLoad = setInterval(() => {

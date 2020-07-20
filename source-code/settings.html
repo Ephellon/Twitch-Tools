@@ -101,83 +101,6 @@
                 width: 100%;
             }
 
-            #save, #save-small {
-                align-items: center;
-                display: inline-flex;
-                justify-content: center;
-
-                background-color: var(--purple);
-                border-radius: 3px;
-                color: var(--text-dark);
-                cursor: pointer;
-                font-weight: bold;
-
-                transition: background-color .1s ease;
-
-                overflow: hidden;
-
-                padding: 10px;
-
-                position: absolute;
-                vertical-align: middle;
-            }
-
-            #save:hover, #save-small:hover {
-                background-color: var(--purple-highlighted);
-            }
-
-            /* Mini-display */
-            @media all and (max-width: 500px) {
-                body {
-                    padding-bottom: 4rem;
-                }
-
-                #save-small {
-                    display: block;
-
-                    border-radius: 100%;
-
-                    padding: 1.5rem;
-
-                    bottom: 1rem;
-                    right: 1rem;
-                }
-
-                #save-small:before {
-                    border-bottom: 3px solid var(--text-dark);
-                    border-left: 3px solid var(--text-dark);
-                    content: '';
-                    display: block;
-
-                    transform: translate3d(-50%, -50%, 0) rotate(-45deg);
-
-                    position: absolute;
-                    left: 1.5rem;
-                    top: 1.4rem;
-
-                    height: .4rem;
-                    width: 1rem;
-                }
-
-                #save {
-                    display: none;
-                }
-            }
-
-            /* Full display */
-            @media all and (min-width: 500px) {
-                #save {
-                    display: block;
-
-                    bottom: 1rem;
-                    left: 1rem;
-                }
-
-                #save-small {
-                    display: none;
-                }
-            }
-
             h1 {font-size: 200%}
             h2 {font-size: 150%}
             h3 {font-size: 100%}
@@ -270,6 +193,95 @@
 
             details[open] > summary[more]:after {
                 content: attr(more) ' \25BE';
+            }
+
+            button, input[type="button"] {
+                align-items: center;
+                display: inline-block;
+                justify-content: center;
+
+                background-color: var(--purple);
+                border-radius: 3px;
+                color: var(--text-dark);
+                cursor: pointer;
+                font-weight: bold;
+
+                transition: background-color .1s ease;
+
+                overflow: hidden;
+
+                margin: 5px 10px;
+                padding: 10px;
+
+                vertical-align: middle;
+            }
+
+            button.remove, input[type="button"] {
+                background-color: var(--red);
+            }
+
+            button:hover, input[type="button"]:hover {
+                background-color: var(--purple-highlighted);
+            }
+
+            button.remove:hover, input[type="button"]:hover {
+                background-color: var(--red-highlighted);
+            }
+
+            #save, #save-small {
+                position: absolute;
+            }
+
+            /* Mini-display */
+            @media all and (max-width: 500px) {
+                body {
+                    padding-bottom: 4rem;
+                }
+
+                #save-small {
+                    display: block;
+
+                    border-radius: 100%;
+
+                    padding: 1.5rem;
+
+                    bottom: 1rem;
+                    right: 1rem;
+                }
+
+                #save-small:before {
+                    border-bottom: 3px solid var(--text-dark);
+                    border-left: 3px solid var(--text-dark);
+                    content: '';
+                    display: block;
+
+                    transform: translate3d(-50%, -50%, 0) rotate(-45deg);
+
+                    position: absolute;
+                    left: 1.5rem;
+                    top: 1.4rem;
+
+                    height: .4rem;
+                    width: 1rem;
+                }
+
+                #save {
+                    display: none;
+                }
+            }
+
+            /* Full display */
+            @media all and (min-width: 500px) {
+                #save {
+                    display: block;
+
+                    bottom: 1rem;
+                    left: 1rem;
+                }
+
+                #save-small {
+                    display: none;
+                }
             }
 
             code, [code], [type^="code"i] {
@@ -373,6 +385,7 @@
                 display: block;
                 font-size: 1.2rem;
                 line-height: 1.5;
+                text-overflow: ellipsis;
 
                 transition:
                     box-shadow .1s ease-in,
@@ -423,6 +436,24 @@
         <article>
             <details>
                 <summary>
+                    <h2>Auto-follow</h2>
+
+                    <div class="toggle">
+                        <input id="auto_follow" type="checkbox" checked/>
+                        <label for="auto_follow"></label>
+                    </div>
+                </summary>
+
+                When raiding a streamer, automatically follow them.
+                <br/><br/>
+
+                <img src="auto-follow.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
                     <h2>Highlight <code>@<i>mention</i></code></h2>
 
                     <div class="toggle">
@@ -435,30 +466,6 @@
                 <br/><br/>
 
                 <img src="highlight-mention.png"/>
-            </details>
-        </article>
-
-        <article>
-            <details>
-                <summary more="rules">
-                    <h2>Filter Messages</h2>
-
-                    <div class="toggle">
-                        <input id="filter_messages" type="checkbox" checked/>
-                        <label for="filter_messages"></label>
-                    </div>
-                </summary>
-
-                Remove messages across all channels.
-                <br/><br/>
-
-                <input id="filter_rules" type="text" value="" title="Case insensitive" placeholder="@user &#8703; @USER"/>
-                <br/>
-                What words/phrases should remove a message (comma seperated)?<br>
-                Use <code>@<i>username</i></code> to remove messages from specific users.
-                <br/><br/>
-
-                <img src="filter-messages.png"/>
             </details>
         </article>
 
@@ -500,19 +507,27 @@
 
         <article>
             <details>
-                <summary>
-                    <h2>Auto-follow</h2>
+                <summary more="rules">
+                    <h2>Filter Messages</h2>
 
                     <div class="toggle">
-                        <input id="auto_follow" type="checkbox" checked/>
-                        <label for="auto_follow"></label>
+                        <input id="filter_messages" type="checkbox" checked/>
+                        <label for="filter_messages"></label>
                     </div>
                 </summary>
 
-                When a raiding a streamer, automatically follow them.
+                Remove messages across all channels.
                 <br/><br/>
 
-                <img src="auto-follow.png"/>
+                <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="@user &#8703; @USER"/>
+
+                <div id="filter_rules"></div>
+                <br/>
+                What words/phrases should remove a message (comma seperated)?<br>
+                Use <code>@<i>username</i></code> to remove messages from specific users.
+                <br/><br/>
+
+                <img src="filter-messages.png"/>
             </details>
         </article>
 
