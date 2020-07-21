@@ -28,6 +28,9 @@
                 --black: #000;
                 --black-highlighted: #222;
 
+                --green: #22fa7c;
+                --green-highlighted: #70ffa9;
+
                 --grey: #fff3;
                 --grey-highlighted: #fff4;
 
@@ -233,7 +236,15 @@
             }
 
             #save, #save-small {
+                background-color: var(--green);
+
+                transition: background-color .5s;
+
                 position: absolute;
+            }
+
+            #save:hover, #save-small:hover {
+                background-color: var(--green-highlighted);
             }
 
             /* Mini-display */
@@ -299,7 +310,7 @@
                 white-space: pre;
 
                 margin: 0;
-                padding: 0.2em 0.4em;
+                padding: .2em .4em;
             }
 
             .toggle {
@@ -539,9 +550,52 @@
             </details>
         </article>
 
-        <button id="save">Save Changes</button>
-        <button id="save-small"></button>
+        <button id="save" class="ripple">Save Changes</button>
+        <button id="save-small" class="ripple"></button>
 
         <script src="settings.js"></script>
+        <style>
+        /* CSS needs to be here so that `height:100%` and `width:100%` can render properly */
+        .ripple:after {
+            content: ' ';
+
+            background-color: #fff4;
+            border-radius: inherit;
+            display: none;
+
+            height: 100%;
+            width: 100%;
+
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 9;
+        }
+
+        .ripple:hover:after, .ripple.animate:after {
+            display: block !important;
+
+            -webkit-transform: scale(0);
+               -moz-transform: scale(0);
+                 -o-transform: scale(0);
+                    transform: scale(0);
+
+            -webkit-animation: ripple .5s linear;
+               -moz-animation: ripple .5s linear;
+                 -o-animation: ripple .5s linear;
+                    animation: ripple .5s linear;
+        }
+
+        @keyframes ripple {
+            100% {
+                opacity: 0;
+
+                -webkit-transform: scale(2.5);
+                   -moz-transform: scale(2.5);
+                     -o-transform: scale(2.5);
+                        transform: scale(2.5);
+            }
+        }
+        </style>
     </body>
 </html>

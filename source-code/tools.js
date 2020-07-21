@@ -252,7 +252,7 @@ Storage.onChanged.addListener((changes, namespace) => {
 
 // Parse a URL
 // parseURL(url:string) -> Object
-let parseURL = (url) => {
+function parseURL(url) {
     if(!defined(url))
         return {};
 

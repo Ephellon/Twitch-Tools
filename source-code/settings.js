@@ -49,6 +49,52 @@ let Glyphs = {
     trash: '<svg style="fill:var(--color-accent)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>'
 };
 
+function parseURL(url) {
+    if(!defined(url))
+        return {};
+
+    url = url.toString();
+
+    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
+        i    = 0,
+        e    = "";
+
+    data = data || e;
+
+    return {
+        href:             data[i++] || e,
+        origin:           (data[i++] || e) + (data[i + 4] || e),
+        protocol:         data[i++] || e,
+        scheme:           data[i++] || e,
+        username:         data[i++] || e,
+        password:         data[i++] || e,
+        host:             data[i++] || e,
+        domainPath:       data[i].split('.').reverse(),
+        hostname:         data[i++] || e,
+        port:             data[i++] || e,
+        pathname:         data[i++] || e,
+        search:           data[i]   || e,
+        searchParameters: (function(sd) {
+            parsing:
+            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
+                c = d[i].split('=');
+                n = c[0] || e;
+
+                p = c.slice(1, c.length).join('=');
+
+                s[n] = (s[n] != undefined)?
+                    s[n] instanceof Array?
+                s[n].concat(p):
+                    [s[n], p]:
+                p;
+            }
+
+            return s;
+        })(data[i++] || e),
+        hash:             data[i++] || e
+    };
+};
+
 $('details', true).map(element => {
     element.ontoggle = event => {
         let article = element.parentElement,
@@ -92,7 +138,7 @@ $('details', true).map(element => {
     }
 });
 
-function SaveSettings() {
+async function SaveSettings() {
     let extractValue = element => {
         return element[{
             text: 'value',
@@ -127,11 +173,14 @@ function SaveSettings() {
             }
     }
 
-    Storage.set(settings);
+    return await Storage.set(settings);
 }
 
-function LoadSettings() {
+async function LoadSettings() {
     let assignValue = (element, value) => {
+        if(value === undefined)
+            return;
+
         return element[{
             text: 'value',
             checkbox: 'checked',
@@ -141,7 +190,7 @@ function LoadSettings() {
     let elements = $(usable_settings.map(name => '#' + name).join(', '), true),
         using = elements.map(element => element.id);
 
-    Storage.get(null, settings => {
+    return await Storage.get(null, settings => {
         for(let id of using) {
             let element = $(`#${ id }`);
 
@@ -150,7 +199,12 @@ function LoadSettings() {
             else
                 switch(id) {
                     case 'filter_rules':
-                        let rules = settings[id].split(',');
+                        let rules = settings[id];
+
+                        if(!defined(rules))
+                            break;
+
+                        rules = rules.split(',');
 
                         for(let rule of rules) {
                             let R = document.createElement('input');
@@ -181,7 +235,14 @@ function LoadSettings() {
 }
 
 document.body.onload = LoadSettings;
-$('#save, #save-small', true).map(element => element.onclick = SaveSettings);
+$('#save, #save-small', true).map(element => element.onclick = async event => {
+    let { target } = event;
+
+    target.setAttribute('style', 'background-color:var(--grey)');
+
+    await SaveSettings()
+        .then(() => setTimeout(() => target.removeAttribute('style'), 1000));
+});
 
 // Eveyting else
 $('[icon]', true).map(element => {
@@ -195,3 +256,12 @@ $('[icon]', true).map(element => {
 
     icon.setAttribute('style', 'fill: var(--white); height: 20px; width: 20px; vertical-align: text-bottom');
 });
+
+let url = parseURL(location.href),
+    search = url.searchParameters;
+
+if(search.popup) {
+    $('#save-small').classList.add('animate');
+
+    setTimeout(() => $('#save-small').classList.remove('animate'), 500);
+}

@@ -41,7 +41,7 @@
             "96": "96.png"
         },
         "default_title": "Twitch Tools",
-        "default_popup": "settings.html"
+        "default_popup": "settings.html?popup=1"
     },
 
     "permissions": [
