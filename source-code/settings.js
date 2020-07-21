@@ -182,3 +182,16 @@ function LoadSettings() {
 
 document.body.onload = LoadSettings;
 $('#save, #save-small', true).map(element => element.onclick = SaveSettings);
+
+// Eveyting else
+$('[icon]', true).map(element => {
+    let icon = element.getAttribute('icon');
+
+    icon = Glyphs[icon];
+
+    element.innerHTML = icon;
+
+    icon = $('svg', false, element);
+
+    icon.setAttribute('style', 'fill: var(--white); height: 20px; width: 20px; vertical-align: text-bottom');
+});

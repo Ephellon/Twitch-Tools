@@ -108,6 +108,10 @@
             h5 {font-size: 50%}
             h6 {font-size: 25%}
 
+            h1, h2, h3, h4, h5, h6 {
+                font-weight: normal !important;
+            }
+
             article {
                 align-items: stretch;
 
@@ -276,7 +280,7 @@
                     display: block;
 
                     bottom: 1rem;
-                    left: 1rem;
+                    left: calc(50% - 57px);
                 }
 
                 #save-small {
@@ -426,7 +430,7 @@
                     </div>
                 </summary>
 
-                When the <b>Bonus Channel Points</b> button appears, it will automatically be clicked, claiming the bonus points.
+                <h3>When the <b>Bonus Channel Points</b> button appears, automatically click it (claim the bonus points).</h3>
                 <br/><br/>
 
                 <img src="auto-claim-channel-points.png"/>
@@ -444,7 +448,7 @@
                     </div>
                 </summary>
 
-                When raiding a streamer, automatically follow them.
+                <h3>When participating in a raid, automatically follow the streamer being raided.</h3>
                 <br/><br/>
 
                 <img src="auto-follow.png"/>
@@ -462,7 +466,7 @@
                     </div>
                 </summary>
 
-                When someone mentions you (<code>@<i>username</i></code>), make it stand out by highlighting it.
+                <h3>When someone mentions you (<code>@<i>username</i></code>), make the message stand out by highlighting it.</h3>
                 <br/><br/>
 
                 <img src="highlight-mention.png"/>
@@ -480,7 +484,7 @@
                     </div>
                 </summary>
 
-                When a stream ends, go to the next available live-stream.
+                <h3>When a stream ends, go to the next available live-stream.</h3>
                 <br/><br/>
 
                 <img src="keep-watching.png"/>
@@ -498,7 +502,7 @@
                     </div>
                 </summary>
 
-                When a streamer begins raiding, go to the next available live-stream.
+                <h3>When a streamer begins raiding, go to the next available live-stream.</h3>
                 <br/><br/>
 
                 <img src="stop-raiding.png"/>
@@ -516,18 +520,22 @@
                     </div>
                 </summary>
 
-                Remove messages across all channels.
+                <h3>Remove messages across all channels.</h3>
                 <br/><br/>
 
-                <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="@user &#8703; @USER"/>
+                <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
 
                 <div id="filter_rules"></div>
                 <br/>
-                What words/phrases should remove a message (comma seperated)?<br>
-                Use <code>@<i>username</i></code> to remove messages from specific users.
-                <br/><br/>
 
-                <img src="filter-messages.png"/>
+                &bull; These words/phrases will remove a message (comma seperated list)<br/>
+                &bull; Use <code>@<i>username</i></code> to remove messages from specific users.<br/>
+                <!-- <img src="filter-messages.png"/>
+                <br/><br/> -->
+
+                &bull; You can also filter users by clicking <span icon="trash"></span> from their profile.<br/>
+                <img src="easy-filter.png"/>
+                <br/><br/>
             </details>
         </article>
 

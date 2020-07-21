@@ -124,7 +124,7 @@ function GetConfiguration() {
 // Create an object of the current chat
 // GetChat(lines:integer[, keepEmotes:boolean]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
 function GetChat(lines = 30, keepEmotes = false) {
-    let chat = $('[data-a-target^="chat-"i] .chat-line__message', true).slice(-lines),
+    let chat = $('[data-a-target^="chat-"] .chat-list .chat-line__message', true).slice(-lines),
         emotes = {},
         results = [];
 
@@ -134,7 +134,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a', true, line)
                 .map(element => element.alt && keepEmotes? `[[${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }]]`: element.innerText)
                 .filter(element => element)
-                .join("")
+                .join(" ")
                 .trim(),
             style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join('');
 
@@ -505,17 +505,16 @@ let Initialize = async(startover = false) => {
     Handlers.stop_raiding = () => {
         let online = streamers.filter(streamer => streamer.live),
             next = online[0],
-            raiding = $('[data-test-selector="raid-banner"] button');
+            raiding = $('[data-test-selector="raid-banner"]');
 
-        if(raiding) {
+        if(raiding)
             if(online.length) {
                 console.warn(`${ streamer.name } is raiding. Moving onto next streamer (${ next.name })`, next.href);
 
                 open(next.href, '_self');
-            } else  {
+            } else {
                 console.warn(`${ streamer.name } is raiding. There doesn't seem to be any followed streamers on right now`);
             }
-        }
     };
     Timers.stop_raiding = 5000;
 
@@ -548,7 +547,7 @@ let Initialize = async(startover = false) => {
     if(configuration.auto_follow)
         Jobs.auto_follow = setInterval(Handlers.auto_follow, Timers.auto_follow);
 
-    /*** NOT A SETTING; THIS IS A HELPER FOR FILTER-MESSAGES
+    /*** NOT A SETTING; THIS IS A HELPER FOR: FILTER-MESSAGES
      *      ______                  ______ _ _ _
      *     |  ____|                |  ____(_) | |
      *     | |__   __ _ ___ _   _  | |__   _| | |_ ___ _ __
