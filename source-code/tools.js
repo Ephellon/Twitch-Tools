@@ -124,7 +124,7 @@ function GetConfiguration() {
 // Create an object of the current chat
 // GetChat(lines:integer[, keepEmotes:boolean]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
 function GetChat(lines = 30, keepEmotes = false) {
-    let chat = $('[data-a-target^="chat-"] .chat-list .chat-line__message', true).slice(-lines),
+    let chat = $('[data-a-target^="chat-"i] .chat-list [data-a-target="chat-line-message"i]', true).slice(-lines),
         emotes = {},
         results = [];
 
@@ -445,20 +445,29 @@ let Initialize = async(startover = false) => {
         if(!rules.length)
             return;
 
-        let text = rules.filter(text => !/^@/.test(text)).join('|'),
+        let text = rules.filter(text => !/^@/.test(text)).map(t => /^\w+$/.test(t)? `\\b${ t }\\b`: t).join('|'),
             user = rules.filter(text => /^@/.test(text)).map(user => user.replace(/^@/, '')).join('|');
 
         let Filter = {
-            text: (text.length? RegExp(`\\b(${ text })\\b`, 'i'): /^[\b]$/),
-            user: (user.length? RegExp(`\\b(${ user })\\b`, 'i'): /^[\b]$/),
+            text: (text.length? RegExp(`(${ text })`, 'i'): /^[\b]$/),
+            user: (user.length? RegExp(`(${ user })`, 'i'): /^[\b]$/),
         };
 
-        GetChat().filter(line => {
+        GetChat(10).filter(line => {
             return Filter.text.test(line.message)
                 || Filter.user.test(line.author)
-        }).map(line => line.element.remove());
+        }).map(line => {
+            let { element } = line,
+                hidden = element.getAttribute('hidden') === 'true';
+
+            if(hidden)
+                return;
+
+            element.setAttribute('style', 'display:none');
+            element.setAttribute('hidden', 'true');
+        });
     };
-    Timers.filter_messages = 500;
+    Timers.filter_messages = 100;
 
     if(configuration.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
