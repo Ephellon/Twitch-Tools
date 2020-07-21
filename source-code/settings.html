@@ -106,13 +106,15 @@
 
             h1 {font-size: 200%}
             h2 {font-size: 150%}
-            h3 {font-size: 100%}
+            h3 {font-size: 125%}
             h4 {font-size: 75%}
             h5 {font-size: 50%}
             h6 {font-size: 25%}
 
             h1, h2, h3, h4, h5, h6 {
                 font-weight: normal !important;
+
+                line-height: 1.25 !important;
             }
 
             article {
@@ -441,7 +443,7 @@
                     </div>
                 </summary>
 
-                <h3>When the <b>Bonus Channel Points</b> button appears, automatically click it (claim the bonus points)</h3>
+                <h3>When the <b>Bonus Channel Points</b> button appears, automatically click it</h3>
                 <br/><br/>
 
                 <img src="auto-claim-channel-points.png"/>
@@ -469,6 +471,32 @@
         <article>
             <details>
                 <summary>
+                    <h2>Auto-play</h2>
+
+                    <div class="toggle">
+                        <input id="auto_play" type="checkbox" checked/>
+                        <label for="auto_play"></label>
+                    </div>
+                </summary>
+
+                <h3>When the video fails to play ("freezes"), attempt to recover the video</h3>
+                <br/><br/>
+
+                <h1>
+                    Auto-play Ads
+                    <span class="toggle">
+                        <input id="auto_play_ads" type="checkbox"/>
+                        <label for="auto_play_ads"></label>
+                    </span>
+                </h1>
+
+                <!-- <img src="auto-play.png"/> -->
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
                     <h2>Auto-reload</h2>
 
                     <div class="toggle">
@@ -481,6 +509,39 @@
                 <br/><br/>
 
                 <img src="auto-reload.png"/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary more="rules">
+                    <h2>Filter Messages</h2>
+
+                    <div class="toggle">
+                        <input id="filter_messages" type="checkbox" checked/>
+                        <label for="filter_messages"></label>
+                    </div>
+                </summary>
+
+                <h3>Remove messages across all channels</h3>
+                <br/><br/>
+
+                <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
+
+                <div id="filter_rules"></div>
+                <br/>
+
+                &bull; These words/phrases will hide a message (comma seperated list)<br/>
+                &bull; Use <code>@<i>username</i></code> to hide messages from specific users<br/>
+                &bull; Use <code>:<i>emote</i>:</code> to hide messages with certain emotes<br/>
+                &bull; Use <code>[^\/*+?$]</code> to hide messages based upon patterns<br/>
+                <!-- <img src="filter-messages.png"/>
+                <br/><br/> -->
+
+                &bull; You can also filter users/emotes by clicking <span icon="trash"></span> in their profile
+                <br/><br/>
+                <img src="easy-filter.png"/>
+                <br/><br/>
             </details>
         </article>
 
@@ -531,41 +592,10 @@
                     </div>
                 </summary>
 
-                <h3>When a streamer begins raiding, go to the next available live-stream</h3>
+                <h3>When a streamer begins raiding, go to a different streamer in your Followed Channels</h3>
                 <br/><br/>
 
                 <img src="stop-raiding.png"/>
-            </details>
-        </article>
-
-        <article>
-            <details>
-                <summary more="rules">
-                    <h2>Filter Messages</h2>
-
-                    <div class="toggle">
-                        <input id="filter_messages" type="checkbox" checked/>
-                        <label for="filter_messages"></label>
-                    </div>
-                </summary>
-
-                <h3>Remove messages across all channels</h3>
-                <br/><br/>
-
-                <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
-
-                <div id="filter_rules"></div>
-                <br/>
-
-                &bull; These words/phrases will remove a message (comma seperated list)<br/>
-                &bull; Use <code>@<i>username</i></code> to remove messages from specific users<br/>
-                &bull; Use <code>[^\/*+?$]</code> to remove messages based upon patterns<br/>
-                <!-- <img src="filter-messages.png"/>
-                <br/><br/> -->
-
-                &bull; You can also filter users by clicking <span icon="trash"></span> from their profile<br/>
-                <img src="easy-filter.png"/>
-                <br/><br/>
             </details>
         </article>
 

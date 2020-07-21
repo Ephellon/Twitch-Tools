@@ -42,7 +42,7 @@ switch(BrowserNamespace) {
 }
 
 let // These are option names. Anything else will be removed
-    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow', 'auto_reload'];
+    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow', 'auto_reload', 'auto_play', 'auto_play_ads'];
 
 let Glyphs = {
     channelpoints: '<svg style="fill:var(--color-accent)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
@@ -99,16 +99,17 @@ $('details', true).map(element => {
     element.ontoggle = event => {
         let article = element.parentElement,
             details = element,
-            summary = $('summary', false, details);
+            summary = $('summary', false, details),
+            uuid = 'uuid-' + Math.random().toString(36).replace('.','');
 
         if(details.open) {
             article.classList.add('focus');
 
-            let margin = ['5rem'],
+            let margin = ['2rem'],
                 getHeight = element => {
                     let style = getComputedStyle(element),
-                        heights = ['height', 'borderTop', 'borderBottom', 'marginTop', 'marginBottom', 'paddingTop', 'paddingBottom'],
-                        height = 10;
+                        heights = ['height'],
+                        height = 20;
 
                     for(let attribute of heights)
                         height += parseInt(style[attribute]);
@@ -116,18 +117,21 @@ $('details', true).map(element => {
                     return height;
                 };
 
+            // [more]
             if('more' in summary.attributes)
                 for(let element of $('summary ~ input', true, details))
                     margin.push(getHeight(element) + 'px');
 
-            $('img', true, details)
-                .map(img => {
-                    let { height } = img;
+            // details > *
+            details.id = uuid;
+            $('input, img, div, h1, h2, h3, h4, h5, h6, p'.split(',').map(e=>`#${uuid} > ${e}`).join(','), true)
+                .map(element => {
+                    let height = getHeight(element);
 
                     if(height)
                         margin.push(height + 'px');
                     else
-                        img.setAttribute('style', 'display:none!important');
+                        element.setAttribute('style', 'display:none!important');
                 });
 
             article.setAttribute('style', `margin-bottom:calc(${ margin.join(' + ') })`);

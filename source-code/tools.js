@@ -12,23 +12,20 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let empty = value => (value === undefined || value === null),
     defined = value => !empty(value);
 
-let configuration = {},
-    username,
-    display,
+let settings = {},
+    display = $('[data-a-target="user-menu-toggle"i]'),
     visible = [],
     Jobs = {},
     Timers = {},
     Handlers = {},
-    // These are setting names. Anything else will be removed
-    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow', 'auto_reload'];
-
-display = $('[data-a-target="user-menu-toggle"i]');
+    // These won't change (often)
+    USERNAME;
 
 // Populate the username field by quickly showing the menu
 display.click();
 display.click();
 
-username = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
+USERNAME = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
 
 let browser, Runtime, Container, BrowserNamespace;
 
@@ -98,16 +95,13 @@ class UUID {
     }
 }
 
-// Get the current configuration
-// GetConfiguration() -> Object
-function GetConfiguration() {
+// Get the current settings
+// GetSettings() -> Object
+function GetSettings() {
     return new Promise((resolve, reject) => {
         function ParseSettings(settings) {
             for(let setting in settings)
-                if(!!~usable_settings.indexOf(setting))
-                    settings[setting] = settings[setting] || null;
-                else
-                    delete settings[setting];
+                settings[setting] = settings[setting] || null;
 
             resolve(settings);
         }
@@ -132,7 +126,7 @@ function GetChat(lines = 30, keepEmotes = false) {
         let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()),
             message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a', true, line)
-                .map(element => element.alt && keepEmotes? `[[${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }]]`: element.innerText)
+                .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
                 .filter(element => element)
                 .join(" ")
                 .trim(),
@@ -246,7 +240,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             Jobs[key] = setInterval(Handlers[key], Timers[key]);
         }
 
-        configuration[key] = newValue;
+        settings[key] = newValue;
     }
 });
 
@@ -309,7 +303,7 @@ function parseURL(url) {
 *
 */
 let Initialize = async(startover = false) => {
-    configuration = await GetConfiguration();
+    settings = await GetSettings();
 
     update();
     setInterval(update, 100);
@@ -340,64 +334,67 @@ let Initialize = async(startover = false) => {
         if(Enabled && ChannelPoints)
             ChannelPoints.click();
 
-        $('#auto-community-points [role="tooltip"i]').innerText = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]').innerText;
+        let parent = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
+            tooltip = $('#auto-community-points [role="tooltip"i]');
+
+        if(tooltip && parent)
+            tooltip.innerText = parent.innerText;
     };
     Timers.auto_claim = 5000;
 
-    if(configuration.auto_claim)
-        (() => {
-            let button;
-            let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
+    if(settings.auto_claim) {
+        let button;
+        let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
 
-            if(!defined($('#auto-community-points'))) {
-                let parent = $('[data-test-selector="community-points-summary"i]'),
-                    heading = $('.top-nav__menu > div', true).slice(-1)[0],
-                    element = document.createElement('div');
+        if(!defined($('#auto-community-points'))) {
+            let parent = $('[data-test-selector="community-points-summary"i]'),
+                heading = $('.top-nav__menu > div', true).slice(-1)[0],
+                element = document.createElement('div');
 
-                if(!defined(parent)) {
-                    if(!Initialize.errors)
-                        setTimeout(() => Initialize(true), 15000);
+            if(!defined(parent)) {
+                if(!Initialize.errors)
+                    setTimeout(() => Initialize(true), 15000);
 
-                    if(empty(streamer.name))
-                        throw `Currently not watching any stream. Re-initailizing in 15s`;
-                    else
-                        throw `${ streamer.name } has not enabled Community Channel Points. Re-initailizing in 15s`;
-                }
-
-                element.innerHTML = parent.outerHTML;
-                element.id = 'auto-community-points';
-                element.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
-
-                heading.insertBefore(element, heading.children[1]);
-
-                $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
-
-                button = {
-                    element: element,
-                    icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, element),
-                    text: $('[class$="animated-number"i]', false, element),
-                    enabled: true
-                };
-
-                button.text.innerText = 'ON';
-                button.icon.outerHTML = Glyphs.channelpoints;
-                button.element.setAttribute('enabled', true);
-
-                button.icon = $('svg', false, element);
+                if(empty(streamer.name))
+                    throw `Currently not watching any stream. Re-initailizing in 15s`;
+                else
+                    throw `${ streamer.name } has not enabled Community Channel Points. Re-initailizing in 15s`;
             }
 
-            button.element.onclick = event => {
-                let enabled = button.element.getAttribute('enabled') !== 'true';
+            element.innerHTML = parent.outerHTML;
+            element.id = 'auto-community-points';
+            element.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
 
-                button.element.setAttribute('enabled', enabled);
-                button.text.innerText = ['OFF','ON'][+enabled];
-                button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
+            heading.insertBefore(element, heading.children[1]);
 
-                console.log({ button })
+            $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
+
+            button = {
+                element: element,
+                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, element),
+                text: $('[class$="animated-number"i]', false, element),
+                enabled: true
             };
 
-            Jobs.auto_claim = setInterval(Handlers.auto_claim, Timers.auto_claim);
-        })();
+            button.text.innerText = 'ON';
+            button.icon.outerHTML = Glyphs.channelpoints;
+            button.element.setAttribute('enabled', true);
+
+            button.icon = $('svg', false, element);
+        }
+
+        button.element.onclick = event => {
+            let enabled = button.element.getAttribute('enabled') !== 'true';
+
+            button.element.setAttribute('enabled', enabled);
+            button.text.innerText = ['OFF','ON'][+enabled];
+            button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
+
+            console.log({ button })
+        };
+
+        Jobs.auto_claim = setInterval(Handlers.auto_claim, Timers.auto_claim);
+    }
 
     /***
      *      __  __                                  _    _ _       _     _ _       _     _
@@ -410,7 +407,7 @@ let Initialize = async(startover = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_messages = () => {
-        let chat = GetChat().filter(line => !!~line.mentions.indexOf(username));
+        let chat = GetChat().filter(line => !!~line.mentions.indexOf(USERNAME));
 
         for(let line of chat) {
             if(!~visible.indexOf(line.uuid)) {
@@ -421,7 +418,7 @@ let Initialize = async(startover = false) => {
     };
     Timers.highlight_messages = 500;
 
-    if(configuration.highlight_messages)
+    if(settings.highlight_messages)
         Jobs.highlight_messages = setInterval(Handlers.highlight_messages, Timers.highlight_messages);
 
      /***
@@ -435,7 +432,7 @@ let Initialize = async(startover = false) => {
      *                                 |___/
      */
     Handlers.filter_messages = () => {
-        let rules = configuration.filter_rules;
+        let rules = settings.filter_rules;
 
         if(!rules || !rules.length)
             return;
@@ -453,7 +450,7 @@ let Initialize = async(startover = false) => {
             user: (user.length? RegExp(`(${ user })`, 'i'): /^[\b]$/),
         };
 
-        GetChat(10).filter(line => {
+        GetChat(10, true).filter(line => {
             return Filter.text.test(line.message)
                 || Filter.user.test(line.author)
         }).map(line => {
@@ -469,7 +466,7 @@ let Initialize = async(startover = false) => {
     };
     Timers.filter_messages = 100;
 
-    if(configuration.filter_messages)
+    if(settings.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
 
      /***
@@ -484,9 +481,12 @@ let Initialize = async(startover = false) => {
      */
     Handlers.keep_watching = () => {
         let online = streamers.filter(streamer => streamer.live),
-            next = online[0];
+            next = online[0],
+            { pathname } = window.location;
 
-        if(!streamer.live) {
+        let ValidTwitchPath = RegExp(`/(${ [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', '$'].join('|') })`, 'i');
+
+        if(!streamer.live && !ValidTwitchPath.test(pathname)) {
             if(online.length) {
                 console.warn(`${ streamer.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href);
 
@@ -498,7 +498,7 @@ let Initialize = async(startover = false) => {
     };
     Timers.keep_watching = 5000;
 
-    if(configuration.keep_watching)
+    if(settings.keep_watching)
         Jobs.keep_watching = setInterval(Handlers.keep_watching, Timers.keep_watching);
 
     /***
@@ -513,10 +513,10 @@ let Initialize = async(startover = false) => {
      */
     Handlers.stop_raiding = () => {
         let online = streamers.filter(streamer => streamer.live),
-            next = online[0],
+            next = online[(Math.random() * online.length)|0],
             raiding = $('[data-test-selector="raid-banner"]');
 
-        if(raiding)
+        if(raiding && next)
             if(online.length) {
                 console.warn(`${ streamer.name } is raiding. Moving onto next streamer (${ next.name })`, next.href);
 
@@ -527,7 +527,7 @@ let Initialize = async(startover = false) => {
     };
     Timers.stop_raiding = 5000;
 
-    if(configuration.stop_raiding)
+    if(settings.stop_raiding)
         Jobs.stop_raiding = setInterval(Handlers.stop_raiding, Timers.stop_raiding);
 
     /***
@@ -553,7 +553,7 @@ let Initialize = async(startover = false) => {
     };
     Timers.auto_follow = 1000;
 
-    if(configuration.auto_follow)
+    if(settings.auto_follow)
         Jobs.auto_follow = setInterval(Handlers.auto_follow, Timers.auto_follow);
 
     /*** NOT A SETTING; THIS IS A HELPER FOR: FILTER-MESSAGES
@@ -568,47 +568,84 @@ let Initialize = async(startover = false) => {
      */
 
     Handlers.easy_filter = () => {
-        let card = $('[data-a-target="viewer-card"]'),
-            existing = $('#twitch-tools-filter-user');
+        let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
+            existing = $('#twitch-tools-filter-user, #twitch-tools-filter-emote');
 
         if(!defined(card) || defined(existing))
             return;
 
         let title = $('h4', false, card),
-            username = title.textContent.toLowerCase(),
-            { filter_rules } = configuration;
+            name = title.textContent.toLowerCase(),
+            type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
+            { filter_rules } = settings;
 
-        if(filter_rules && !!~filter_rules.split(',').indexOf(`@${ username }`))
-            return /* Already filtering messages from this person */;
+        if(type == 'user') {
+            /* Filter users */
+            if(filter_rules && !!~filter_rules.split(',').indexOf(`@${ name }`))
+                return /* Already filtering messages from this person */;
 
-        let filter = document.createElement('div');
+            let filter = document.createElement('div');
 
-        filter.id = 'twitch-tools-filter-user';
-        filter.title = `Filter all messages from @${ username }`;
-        filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
-        filter.setAttribute('username', username);
+            filter.id = 'twitch-tools-filter-user';
+            filter.title = `Filter all messages from @${ name }`;
+            filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
+            filter.setAttribute('username', name);
 
-        filter.onclick = event => {
-            let target = $('#twitch-tools-filter-user'),
-                username = target.getAttribute('username'),
-                { filter_rules } = configuration;
+            filter.onclick = event => {
+                let target = $('#twitch-tools-filter-user'),
+                    username = target.getAttribute('username'),
+                    { filter_rules } = settings;
 
-            filter_rules = (filter_rules || '').split(',');
-            filter_rules.push(`@${ username }`);
-            filter_rules = filter_rules.join(',');
+                filter_rules = (filter_rules || '').split(',');
+                filter_rules.push(`@${ username }`);
+                filter_rules = filter_rules.join(',');
 
-            target.remove();
+                target.remove();
 
-            Storage.set({ filter_rules });
-        };
+                Storage.set({ filter_rules });
+            };
 
-        filter.innerHTML = `${ Glyphs.trash } Filter messages from @${ username }`;
+            filter.innerHTML = `${ Glyphs.trash } Filter messages from @${ name }`;
 
-        let svg = $('svg', false, filter);
+            let svg = $('svg', false, filter);
 
-        svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
-        title.appendChild(filter);
+            title.appendChild(filter);
+        } else {
+            /* Filter emotes */
+            if(filter_rules && !!~filter_rules.split(',').indexOf(`:${ name }:`))
+                return /* Already filtering this emote */;
+
+            let filter = document.createElement('div');
+
+            filter.id = 'twitch-tools-filter-emote';
+            filter.title = 'Filter this emote';
+            filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
+            filter.setAttribute('emote', `:${ name }:`);
+
+            filter.onclick = event => {
+                let target = $('#twitch-tools-filter-emote'),
+                    emote = target.getAttribute('emote'),
+                    { filter_rules } = settings;
+
+                filter_rules = (filter_rules || '').split(',');
+                filter_rules.push(emote);
+                filter_rules = filter_rules.join(',');
+
+                target.remove();
+
+                Storage.set({ filter_rules });
+            };
+
+            filter.innerHTML = `${ Glyphs.trash } Filter this emote`;
+
+            let svg = $('svg', false, filter);
+
+            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+
+            title.appendChild(filter);
+        }
     };
     Timers.easy_filter = 500;
 
@@ -647,7 +684,60 @@ let Initialize = async(startover = false) => {
     Timers.auto_reload = 1000;
 
     Jobs.auto_reload = setInterval(Handlers.auto_reload, Timers.auto_reload);
+
+    /***
+     *                    _              _____  _
+     *         /\        | |            |  __ \| |
+     *        /  \  _   _| |_ ___ ______| |__) | | __ _ _   _
+     *       / /\ \| | | | __/ _ \______|  ___/| |/ _` | | | |
+     *      / ____ \ |_| | || (_) |     | |    | | (_| | |_| |
+     *     /_/    \_\__,_|\__\___/      |_|    |_|\__,_|\__, |
+     *                                                   __/ |
+     *                                                  |___/
+     */
+    Handlers.auto_play = () => {
+        let video = $('video'),
+            paused = video.paused,
+            isTrusted = !defined($('[data-a-player-state="paused"]')),
+            isAdvert  = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"])'));
+
+        // Leave the video alone
+            // if the video isn't paused
+            // if the video was paused by the user
+            // if the video is an ad and auto-play ads is disabled
+        if(!paused || isTrusted || (isAdvert && !settings.auto_play_ads))
+            return;
+
+        let playing = video.play();
+
+        if(defined(playing))
+            playing.then(() => {
+                // async play
+                return;
+            })
+            .catch(error => {
+                // something went wrong
+                throw error;
+            });
+    };
+    Timers.auto_play = 5000;
+
+    if(settings.auto_play) {
+        let video = $('video');
+
+        video.onpause = event => {
+            let { target, isTrusted } = event;
+
+            if(isTrusted)
+                return;
+
+            target.play();
+        };
+
+        Jobs.auto_play = setInterval(Handlers.auto_play, Timers.auto_play);
+    }
 };
+// End of Initialize
 
 let WaitForPageToLoad = setInterval(() => {
     let ready = defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`));
