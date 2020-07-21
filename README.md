@@ -10,3 +10,4 @@ An extension that gives you a set of tools to help while watching Twitch streams
 - *Keep Watching* &mdash; Automatically go to another live stream when the current one ends
 - *Stop Raiding* &mdash; Automatically leave raids
 - *Filter Messages* &mdash; Filter (remove) messages using words or usernames
+- *Auto-reload* &mdash; When the video fails (and gives an error message), the page will be automatically reloaded

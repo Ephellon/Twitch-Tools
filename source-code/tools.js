@@ -20,7 +20,7 @@ let configuration = {},
     Timers = {},
     Handlers = {},
     // These are setting names. Anything else will be removed
-    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow'];
+    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow', 'auto_reload'];
 
 display = $('[data-a-target="user-menu-toggle"i]');
 
@@ -604,6 +604,40 @@ let Initialize = async(startover = false) => {
     Timers.easy_filter = 500;
 
     Jobs.easy_filter = setInterval(Handlers.easy_filter, Timers.easy_filter);
+
+    /***
+     *                    _              _____      _                 _
+     *         /\        | |            |  __ \    | |               | |
+     *        /  \  _   _| |_ ___ ______| |__) |___| | ___   __ _  __| |
+     *       / /\ \| | | | __/ _ \______|  _  // _ \ |/ _ \ / _` |/ _` |
+     *      / ____ \ |_| | || (_) |     | | \ \  __/ | (_) | (_| | (_| |
+     *     /_/    \_\__,_|\__\___/      |_|  \_\___|_|\___/ \__,_|\__,_|
+     *
+     *
+     */
+    Handlers.auto_reload = () => {
+        let error_message = $('[data-a-target="player-overlay-content-gate"]'),
+            search = [];
+
+        if(!defined(error_message))
+            return;
+
+        let url = parseURL(location.href),
+            parameters = url.searchParameters;
+
+        if(parameters.fail)
+            parameters.fail = parseInt(parameters.fail) + 1;
+        else
+            search.push('fail=1');
+
+        for(let key in parameters)
+            search.push(`${key}=${parameters[key]}`);
+
+        location.search = '?' + search.join('&');
+    };
+    Timers.auto_reload = 1000;
+
+    Jobs.auto_reload = setInterval(Handlers.auto_reload, Timers.auto_reload);
 };
 
 let WaitForPageToLoad = setInterval(() => {
