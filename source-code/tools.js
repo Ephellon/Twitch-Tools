@@ -213,13 +213,13 @@ function update() {
      */
     streamer = {
         href: top.location.href,
-        name: ($(`a[href="${ pathname }"] h1`) || {}).textContent,
+        name: ($(`a[href="${ pathname }"i] h1`) || {}).textContent,
         like: defined($('[data-a-target="unfollow-button"i]')),
         paid: defined($('[data-a-target="subscribed-button"i]')),
         game: ($('[data-a-target="stream-game-link"i]') || {}).textContent,
         tags: $('.tw-tag', true).map(element => element.textContent.toLowerCase()),
-        live: defined($(`a[href="${ pathname }"] .tw-channel-status-text-indicator`)),
-        ping: defined($('[data-a-target="notifications-toggle"i] [class*="--notificationbellfilled"]')),
+        live: defined($(`a[href="${ pathname }"i] .tw-channel-status-text-indicator`)),
+        ping: defined($('[data-a-target="notifications-toggle"i] [class*="--notificationbellfilled"i]')),
 
         get chat() {
             return GetChat()
@@ -328,7 +328,7 @@ let Initialize = async(startover = false) => {
      *
      */
     Handlers.auto_claim = () => {
-        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"]'),
+        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
             Enabled = $('#auto-community-points').getAttribute('enabled') === 'true';
 
         if(Enabled && ChannelPoints)
@@ -514,7 +514,7 @@ let Initialize = async(startover = false) => {
     Handlers.stop_raiding = () => {
         let online = streamers.filter(streamer => streamer.live),
             next = online[(Math.random() * online.length)|0],
-            raiding = $('[data-test-selector="raid-banner"]');
+            raiding = $('[data-test-selector="raid-banner"i]');
 
         if(raiding && next)
             if(online.length) {
@@ -549,7 +549,7 @@ let Initialize = async(startover = false) => {
             data = url.searchParameters;
 
         if(!streamer.like && data.referrer == 'raid')
-            $('[data-a-target="follow-button"]').click();
+            $('[data-a-target="follow-button"i]').click();
     };
     Timers.auto_follow = 1000;
 
@@ -662,7 +662,7 @@ let Initialize = async(startover = false) => {
      *
      */
     Handlers.auto_reload = () => {
-        let error_message = $('[data-a-target="player-overlay-content-gate"]'),
+        let error_message = $('[data-a-target="player-overlay-content-gate"i]'),
             search = [];
 
         if(!defined(error_message))
@@ -671,10 +671,7 @@ let Initialize = async(startover = false) => {
         let url = parseURL(location.href),
             parameters = url.searchParameters;
 
-        if(parameters.fail)
-            parameters.fail = parseInt(parameters.fail) + 1;
-        else
-            search.push('fail=1');
+        parameters.fail = +(new Date);
 
         for(let key in parameters)
             search.push(`${key}=${parameters[key]}`);
@@ -697,13 +694,13 @@ let Initialize = async(startover = false) => {
      */
     Handlers.auto_play = () => {
         let video = $('video'),
-            paused = video.paused,
-            isTrusted = !defined($('[data-a-player-state="paused"]')),
-            isAdvert  = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"])'));
+            { paused } = video,
+            isTrusted = defined($('[data-a-player-state="paused"i]')),
+            isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])'));
 
         // Leave the video alone
             // if the video isn't paused
-            // if the video was paused by the user
+            // if the video was paused by the user (trusted)
             // if the video is an ad and auto-play ads is disabled
         if(!paused || isTrusted || (isAdvert && !settings.auto_play_ads))
             return;
@@ -712,7 +709,7 @@ let Initialize = async(startover = false) => {
 
         if(defined(playing))
             playing.then(() => {
-                // async play
+                // async playing
                 return;
             })
             .catch(error => {
@@ -726,9 +723,11 @@ let Initialize = async(startover = false) => {
         let video = $('video');
 
         video.onpause = event => {
-            let { target, isTrusted } = event;
+            let { target } = event,
+                isTrusted = defined($('[data-a-player-state="paused"i]')),
+                isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])'));
 
-            if(isTrusted)
+            if(isTrusted || (isAdvert && !settings.auto_play_ads))
                 return;
 
             target.play();
