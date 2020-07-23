@@ -248,7 +248,7 @@ $('#save, #save-small', true).map(element => element.onclick = async event => {
         .then(() => setTimeout(() => {
             target.removeAttribute('style');
 
-            setTimeout(window.close, 500);
+            // setTimeout(window.close, 500);
         }, 1000));
 });
 

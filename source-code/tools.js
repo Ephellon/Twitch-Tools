@@ -339,7 +339,7 @@ function parseURL(url) {
     };
 };
 
-/***
+/*** Initialization
 *      _____       _ _   _       _ _          _   _
 *     |_   _|     (_) | (_)     | (_)        | | (_)
 *       | |  _ __  _| |_ _  __ _| |_ ______ _| |_ _  ___  _ __
@@ -349,6 +349,8 @@ function parseURL(url) {
 *
 *
 */
+// Intializes the extension
+// Initialize(startover:boolean) -> undefined
 let Initialize = async(startover = false) => {
     settings = await GetSettings();
 
@@ -364,7 +366,7 @@ let Initialize = async(startover = false) => {
         Initialize.errors++
     }
 
-    /***
+    /*** Auto-claim Channel Points
      *                    _                  _       _              _____ _                            _   _____      _       _
      *         /\        | |                | |     (_)            / ____| |                          | | |  __ \    (_)     | |
      *        /  \  _   _| |_ ___ ______ ___| | __ _ _ _ __ ___   | |    | |__   __ _ _ __  _ __   ___| | | |__) |__  _ _ __ | |_ ___
@@ -443,7 +445,7 @@ let Initialize = async(startover = false) => {
         Jobs.auto_claim = setInterval(Handlers.auto_claim, Timers.auto_claim);
     }
 
-    /***
+    /*** Message Highlighter
      *      __  __                                  _    _ _       _     _ _       _     _
      *     |  \/  |                                | |  | (_)     | |   | (_)     | |   | |
      *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__| |_  __ _| |__ | |_  __ _| |__ | |_ ___ _ __
@@ -468,7 +470,7 @@ let Initialize = async(startover = false) => {
     if(settings.highlight_messages)
         Jobs.highlight_messages = setInterval(Handlers.highlight_messages, Timers.highlight_messages);
 
-     /***
+     /*** Message Filter
      *      __  __                                  ______ _ _ _
      *     |  \/  |                                |  ____(_) | |
      *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__   _| | |_ ___ _ __
@@ -516,7 +518,7 @@ let Initialize = async(startover = false) => {
     if(settings.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
 
-     /***
+     /*** Next Streamer
      *      _   _           _      _____ _
      *     | \ | |         | |    / ____| |
      *     |  \| | _____  _| |_  | (___ | |_ _ __ ___  __ _ _ __ ___   ___ _ __
@@ -548,7 +550,7 @@ let Initialize = async(startover = false) => {
     if(settings.keep_watching)
         Jobs.keep_watching = setInterval(Handlers.keep_watching, Timers.keep_watching);
 
-    /***
+    /*** Stop Raiding
      *       _____ _                _____       _     _ _
      *      / ____| |              |  __ \     (_)   | (_)
      *     | (___ | |_ ___  _ __   | |__) |__ _ _  __| |_ _ __   __ _
@@ -577,7 +579,7 @@ let Initialize = async(startover = false) => {
     if(settings.stop_raiding)
         Jobs.stop_raiding = setInterval(Handlers.stop_raiding, Timers.stop_raiding);
 
-    /***
+    /*** Auto-Follow
      *                    _              ______    _ _
      *         /\        | |            |  ____|  | | |
      *        /  \  _   _| |_ ___ ______| |__ ___ | | | _____      __
@@ -611,7 +613,7 @@ let Initialize = async(startover = false) => {
     if(settings.auto_follow)
         Jobs.auto_follow = setInterval(Handlers.auto_follow, Timers.auto_follow);
 
-    /*** NOT A SETTING; THIS IS A HELPER FOR: FILTER-MESSAGES
+    /*** Easy Filter - NOT A SETTING. THIS IS A HELPER FOR FILTER-MESSAGES
      *      ______                  ______ _ _ _
      *     |  ____|                |  ____(_) | |
      *     | |__   __ _ ___ _   _  | |__   _| | |_ ___ _ __
@@ -706,7 +708,7 @@ let Initialize = async(startover = false) => {
 
     Jobs.easy_filter = setInterval(Handlers.easy_filter, Timers.easy_filter);
 
-    /***
+    /*** Auto-Reload
      *                    _              _____      _                 _
      *         /\        | |            |  __ \    | |               | |
      *        /  \  _   _| |_ ___ ______| |__) |___| | ___   __ _  __| |
@@ -737,7 +739,7 @@ let Initialize = async(startover = false) => {
 
     Jobs.auto_reload = setInterval(Handlers.auto_reload, Timers.auto_reload);
 
-    /***
+    /*** Auto-Play
      *                    _              _____  _
      *         /\        | |            |  __ \| |
      *        /  \  _   _| |_ ___ ______| |__) | | __ _ _   _
