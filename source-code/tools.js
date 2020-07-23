@@ -56,7 +56,8 @@ switch(BrowserNamespace) {
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
-// new UUID() -> String
+// new UUID() -> Object
+// UUID.from(string:string) -> Object
 class UUID {
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
@@ -92,6 +93,38 @@ class UUID {
 
     toString() {
         return this.value;
+    }
+
+    static from(key = '') {
+        let hash = Uint8Array.from(key.split('').filter((character, index) => index % 2).map(character => character.charCodeAt(0))),
+            l = hash.length,
+            i = 0;
+
+        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[(++i<l?i:(i=0))] & 15 >> x / 4).toString(16));
+
+        this.native = native;
+
+        this[Symbol.toPrimitive] = type => {
+            switch(type) {
+                case 'boolean':
+                    return true;
+
+                case 'default':
+                case 'string':
+                    return native;
+
+                case 'number':
+                    return NaN;
+
+                case 'object':
+                    return native;
+
+                default:
+                    break;
+            }
+        };
+
+        return this;
     }
 }
 
@@ -138,7 +171,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             message,
             mentions,
             element: line,
-            uuid: (new UUID + ''),
+            uuid: (UUID.from([author, mentions.join(','), message].join(':')) + ''),
             highlighted: !!line.classList.value.split(" ").filter(value => /^chat-line--/i.test(value)).length,
         });
     }
@@ -161,7 +194,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             subject,
             message,
             mentions,
-            uuid: new UUID,
+            uuid: (UUID.from([subject, mentions.join(','), message].join(':')) + ''),
             element: bullet,
         });
     }
@@ -201,15 +234,17 @@ function update() {
     ];
 
     /* Streamer Object
-     * href:string  - link to the streamer's channel (the current href)
-     * name:string  - the streamer's username
-     * like:boolean - are you following
-     * paid:boolean - are you subscribed
-     * game:string  - the name of the current game/category
-     * tags:array   - tags of the strem
-     * live:boolean - the the streamer live
-     * ping:boolean - are notifications on
-     * chat:array*  - an array of the current chat; getter
+     * href:string       - link to the streamer's channel (the current href)
+     * name:string       - the streamer's username
+     * like:boolean      - are you following
+     * paid:boolean      - are you subscribed
+     * game:string       - the name of the current game/category
+     * tags:array        - tags of the strem
+     * live:boolean      - the the streamer live
+     * ping:boolean      - are notifications on
+     * follow:function   - follows the current streamer
+     * unfollow:function - unfollows the current streamer
+     * chat:array*       - an array of the current chat; getter
      */
     streamer = {
         href: top.location.href,
@@ -221,12 +256,24 @@ function update() {
         live: defined($(`a[href="${ pathname }"i] .tw-channel-status-text-indicator`)),
         ping: defined($('[data-a-target="notifications-toggle"i] [class*="--notificationbellfilled"i]')),
 
+        follow: () => $('[data-a-target="follow-button"i]').click(),
+        unfollow: () => $('[data-a-target="unfollow-button"i]').click(),
+
         get chat() {
             return GetChat()
+        },
+
+        get coin() {
+            let points = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]');
+
+            if(points)
+                return parseInt(points.textContent.replace(/\D+/g, ''));
+            return 0;
         },
     };
 }
 
+// Settings have been saved
 Storage.onChanged.addListener((changes, namespace) => {
     for(let key in changes) {
         let change = changes[key],
@@ -481,7 +528,7 @@ let Initialize = async(startover = false) => {
      */
     Handlers.keep_watching = () => {
         let online = streamers.filter(streamer => streamer.live),
-            next = online[0],
+            next = online[(Math.random() * online.length)|0],
             { pathname } = window.location;
 
         let ValidTwitchPath = RegExp(`/(${ [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', '$'].join('|') })`, 'i');
@@ -548,8 +595,16 @@ let Initialize = async(startover = false) => {
         let url = parseURL(top.location.href),
             data = url.searchParameters;
 
-        if(!streamer.like && data.referrer == 'raid')
-            $('[data-a-target="follow-button"i]').click();
+        let { like, coin, follow } = streamer,
+            raid = data.referrer == 'raid',
+            f1h = settings.auto_follow_1h;
+
+        if(!like) {
+            if(raid)
+                follow();
+            else if(f1h)
+                setTimeout(follow, 36e5);
+        }
     };
     Timers.auto_follow = 1000;
 
@@ -671,7 +726,7 @@ let Initialize = async(startover = false) => {
         let url = parseURL(location.href),
             parameters = url.searchParameters;
 
-        parameters.fail = +(new Date);
+        parameters.fail = (+new Date).toString(36);
 
         for(let key in parameters)
             search.push(`${key}=${parameters[key]}`);

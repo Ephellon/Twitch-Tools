@@ -163,11 +163,14 @@
 
             summary {
                 color: var(--text-dark);
-                cursor: help;
 
                 margin-bottom: 1rem;
 
                 line-height: 2rem;
+            }
+
+            summary:not([more]) {
+                cursor: help;
             }
 
             summary::marker {
@@ -299,6 +302,22 @@
                 #save-small {
                     display: none;
                 }
+            }
+
+            #version {
+                text-align:right;
+
+                opacity: 0.5;
+
+                position: absolute;
+                bottom: 0;
+                right: 2.5rem;
+
+                width: 100%;
+            }
+
+            #version[version]:after {
+                content: 'v' attr(version);
             }
 
             code, [code], [type^="code"i] {
@@ -452,43 +471,48 @@
 
         <article>
             <details>
-                <summary>
+                <summary more="options">
                     <h2>Auto-follow</h2>
-
-                    <div class="toggle">
-                        <input id="auto_follow" type="checkbox" checked/>
-                        <label for="auto_follow"></label>
-                    </div>
                 </summary>
 
-                <h3>When participating in a raid, automatically follow the streamer being raided</h3>
+                <h2>Auto-follow &mdash; Raids</h2>
+                <div>When participating in a raid, automatically follow the streamer being raided</div>
+                <span class="toggle">
+                    <input id="auto_follow" type="checkbox" checked/>
+                    <label for="auto_follow"></label>
+                </span>
                 <br/><br/>
 
-                <img src="auto-follow.png"/>
+                <h2>Auto-follow &mdash; Time</h2>
+                <div>After watching <b>1 hour</b> of content, automatically follow the streamer</div>
+                <span class="toggle">
+                    <input id="auto_follow_1h" type="checkbox"/>
+                    <label for="auto_follow_1h"></label>
+                </span>
             </details>
         </article>
 
         <article>
             <details>
-                <summary>
+                <summary more="options">
                     <h2>Auto-play</h2>
-
-                    <div class="toggle">
-                        <input id="auto_play" type="checkbox" checked/>
-                        <label for="auto_play"></label>
-                    </div>
                 </summary>
 
-                <h3>When the video fails to play ("freezes"), attempt to recover the video</h3>
+                <h2>Auto-play &mdash; Stream</h2>
+                <div>When the stream fails to play ("freezes"), attempt to recover it</div>
+                <span class="toggle">
+                    <input id="auto_play" type="checkbox"/>
+                    <label for="auto_play"></label>
+                </span>
                 <br/><br/>
 
-                <h1>
-                    Auto-play Ads
-                    <span class="toggle">
-                        <input id="auto_play_ads" type="checkbox"/>
-                        <label for="auto_play_ads"></label>
-                    </span>
-                </h1>
+                <h2>Auto-play &mdash; Ads</h2>
+                <div>When an advertisement fails to play ("freezes"), attempt to recover it</div>
+                <span class="toggle">
+                    <input id="auto_play_ads" type="checkbox"/>
+                    <label for="auto_play_ads"></label>
+                </span>
+                <br/><br/>
 
                 <!-- <img src="auto-play.png"/> -->
             </details>
@@ -505,7 +529,7 @@
                     </div>
                 </summary>
 
-                <h3>When the video fails to load (and shows an error message), reload the page automatically</h3>
+                <h3>When the video fails to load (stops downloading), reload the page</h3>
                 <br/><br/>
 
                 <img src="auto-reload.png"/>
@@ -514,7 +538,7 @@
 
         <article>
             <details>
-                <summary more="rules">
+                <summary more="filters">
                     <h2>Filter Messages</h2>
 
                     <div class="toggle">
@@ -548,7 +572,7 @@
         <article>
             <details>
                 <summary>
-                    <h2>Highlight <code>@<i>mention</i></code></h2>
+                    <h2>Highlight Mentions</h2>
 
                     <div class="toggle">
                         <input id="highlight_messages" type="checkbox" checked/>
@@ -574,7 +598,7 @@
                     </div>
                 </summary>
 
-                <h3>When a stream ends, go to the next available live-stream</h3>
+                <h3>When a stream ends, go to a different streamer in your Followed Channels</h3>
                 <br/><br/>
 
                 <img src="keep-watching.png"/>
@@ -592,7 +616,7 @@
                     </div>
                 </summary>
 
-                <h3>When a streamer begins raiding, go to a different streamer in your Followed Channels</h3>
+                <h3>When a raid starts, go to a different streamer in your Followed Channels</h3>
                 <br/><br/>
 
                 <img src="stop-raiding.png"/>
@@ -601,6 +625,8 @@
 
         <button id="save" class="ripple">Save Changes</button>
         <button id="save-small" class="ripple"></button>
+
+        <span id="version"></span>
 
         <script src="settings.js"></script>
         <style>

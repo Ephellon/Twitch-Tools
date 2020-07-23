@@ -13,9 +13,7 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let empty = value => (value === undefined || value === null),
     defined = value => !empty(value);
 
-let configuration;
-
-let browser, Storage, Runtime, Container, BrowserNamespace;
+let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
 
 if(browser && browser.runtime)
     BrowserNamespace = 'browser';
@@ -28,6 +26,7 @@ switch(BrowserNamespace) {
     case 'browser':
         Runtime = Container.runtime;
         Storage = Container.storage;
+        Manifest = Runtime.getManifest();
 
         Storage = Storage.sync || Storage.local;
         break;
@@ -36,13 +35,14 @@ switch(BrowserNamespace) {
     default:
         Runtime = Container.extension;
         Storage = Container.storage;
+        Manifest = Container.runtime.getManifest();
 
         Storage = Storage.sync || Storage.local;
         break;
 }
 
 let // These are option names. Anything else will be removed
-    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow', 'auto_reload', 'auto_play', 'auto_play_ads'];
+    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow', 'auto_reload', 'auto_play', 'auto_play_ads', 'auto_follow_1h'];
 
 let Glyphs = {
     channelpoints: '<svg style="fill:var(--color-accent)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
@@ -245,8 +245,14 @@ $('#save, #save-small', true).map(element => element.onclick = async event => {
     target.setAttribute('style', 'background-color:var(--grey)');
 
     await SaveSettings()
-        .then(() => setTimeout(() => target.removeAttribute('style'), 1000));
+        .then(() => setTimeout(() => {
+            target.removeAttribute('style');
+
+            setTimeout(window.close, 500);
+        }, 1000));
 });
+
+$('#version').setAttribute('version', Manifest.version);
 
 // Eveyting else
 $('[icon]', true).map(element => {
