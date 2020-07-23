@@ -147,6 +147,73 @@ function GetSettings() {
     });
 }
 
+let StorageSpace = localStorage || sessionStorage;
+// Saves data to the page's storage
+// SaveCache(keys:object[, callback:function]) -> undefined
+async function SaveCache(keys = {}, callback = () => {}) {
+    let set = (key, value) => StorageSpace.setItem(key, value);
+
+    for(let key in keys)
+        set(key, keys[key]);
+
+    callback();
+}
+
+// Loads data from the page's storage
+// LoadCache(keys:string|array|object[, callback:function]) -> undefined
+async function LoadCache(keys = null, callback = () => {}) {
+    let results = {},
+        get = key => StorageSpace.getItem(key);
+
+    if(keys === null) {
+        keys = {};
+
+        for(let key in StorageSpace)
+            keys[key] = null;
+    }
+
+    switch(keys.constructor) {
+        case String:
+            results[keys] = get(keys);
+            break;
+
+        case Array:
+            for(let key of keys)
+                results[key] = get(key);
+            break;
+
+        case Object:
+            for(let key in keys)
+                results[key] = get(key) || keys[key];
+            break;
+
+        default: return;
+    }
+
+    callback(results);
+}
+
+// Removes data from the page's storage
+// RemoveCache(keys:string|array[, callback:function])
+async function RemoveCache(keys, callback = () => {}) {
+    let remove = key => StorageSpace.removeItem(key);
+
+    if(!defined(keys))
+        return;
+
+    switch(keys.constructor) {
+        case String:
+            remove(keys);
+            break;
+
+        case Array:
+            for(let key of keys)
+                remove(key);
+            break;
+    }
+
+    callback();
+}
 
 // Create an object of the current chat
 // GetChat(lines:integer[, keepEmotes:boolean]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
@@ -518,22 +585,31 @@ let Initialize = async(startover = false) => {
     if(settings.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
 
-     /*** Next Streamer
-     *      _   _           _      _____ _
-     *     | \ | |         | |    / ____| |
-     *     |  \| | _____  _| |_  | (___ | |_ _ __ ___  __ _ _ __ ___   ___ _ __
-     *     | . ` |/ _ \ \/ / __|  \___ \| __| '__/ _ \/ _` | '_ ` _ \ / _ \ '__|
-     *     | |\  |  __/>  <| |_   ____) | |_| | |  __/ (_| | | | | | |  __/ |
-     *     |_| \_|\___/_/\_\\__| |_____/ \__|_|  \___|\__,_|_| |_| |_|\___|_|
-     *
-     *
+    /*** Keep Watching
+     *      _  __                __          __   _       _     _
+     *     | |/ /                \ \        / /  | |     | |   (_)
+     *     | ' / ___  ___ _ __    \ \  /\  / /_ _| |_ ___| |__  _ _ __   __ _
+     *     |  < / _ \/ _ \ '_ \    \ \/  \/ / _` | __/ __| '_ \| | '_ \ / _` |
+     *     | . \  __/  __/ |_) |    \  /\  / (_| | || (__| | | | | | | | (_| |
+     *     |_|\_\___|\___| .__/      \/  \/ \__,_|\__\___|_| |_|_|_| |_|\__, |
+     *                   | |                                             __/ |
+     *                   |_|                                            |___/
      */
-    Handlers.keep_watching = () => {
+    Handlers.keep_watching = async() => {
         let online = streamers.filter(streamer => streamer.live),
             next = online[(Math.random() * online.length)|0],
             { pathname } = window.location;
 
-        let ValidTwitchPath = RegExp(`/(${ [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', '$'].join('|') })`, 'i');
+        let Paths = [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', '$'];
+
+        await LoadCache('UserIntent', cache => {
+            let { UserIntent } = cache;
+
+            if(UserIntent)
+                Paths.push(UserIntent);
+        });
+
+        let ValidTwitchPath = RegExp(`/(${ Paths.join('|') })`, 'i');
 
         if(!streamer.live && !ValidTwitchPath.test(pathname)) {
             if(online.length) {
@@ -549,6 +625,21 @@ let Initialize = async(startover = false) => {
 
     if(settings.keep_watching)
         Jobs.keep_watching = setInterval(Handlers.keep_watching, Timers.keep_watching);
+
+    // Wait for the elements to populate
+    // May not always be present
+    setTimeout(() => {
+        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"]', true).map(a => {
+            a.addEventListener('mousedown', async event => {
+                let { currentTarget } = event;
+
+                let url = parseURL(currentTarget.href),
+                    UserIntent = url.pathname.replace('/', '');
+
+                await SaveCache({ UserIntent });
+            });
+        });
+    }, 1e3);
 
     /*** Stop Raiding
      *       _____ _                _____       _     _ _
@@ -780,14 +871,14 @@ let Initialize = async(startover = false) => {
         let video = $('video');
 
         video.onpause = event => {
-            let { target } = event,
+            let { currentTarget } = event,
                 isTrusted = defined($('[data-a-player-state="paused"i]')),
                 isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])'));
 
             if(isTrusted || (isAdvert && !settings.auto_play_ads))
                 return;
 
-            target.play();
+            currentTarget.play();
         };
 
         Jobs.auto_play = setInterval(Handlers.auto_play, Timers.auto_play);

@@ -222,9 +222,9 @@ async function LoadSettings() {
                             R.classList.add('remove');
 
                             R.onclick = event => {
-                                let { target } = event;
+                                let { currentTarget } = event;
 
-                                target.remove();
+                                currentTarget.remove();
                             };
 
                             $('#filter_rules').appendChild(R);
@@ -240,13 +240,13 @@ async function LoadSettings() {
 
 document.body.onload = LoadSettings;
 $('#save, #save-small', true).map(element => element.onclick = async event => {
-    let { target } = event;
+    let { currentTarget } = event;
 
-    target.setAttribute('style', 'background-color:var(--grey)');
+    currentTarget.setAttribute('style', 'background-color:var(--grey)');
 
     await SaveSettings()
         .then(() => setTimeout(() => {
-            target.removeAttribute('style');
+            currentTarget.removeAttribute('style');
 
             // setTimeout(window.close, 500);
         }, 1000));
