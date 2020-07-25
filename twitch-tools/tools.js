@@ -276,7 +276,8 @@ function GetChat(lines = 30, keepEmotes = false) {
 let Glyphs = {
     bonuschannelpoints: '<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
     channelpoints: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
-    trash: '<svg fill="#fff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>'
+    trash: '<svg fill="#fff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
+    lock: '<svg fill="#fff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.001 5.99A3.992 3.992 0 0010.01 2h-.018a3.992 3.992 0 00-3.991 3.99V8H3.999v8c0 1.105.896 2 2 2h8c1.104 0 2-.895 2-2V8h-1.998V5.99zm-2 2.01V5.995A1.996 1.996 0 0010.006 4h-.01a1.996 1.996 0 00-1.995 1.995V8h4z" clip-rule="evenodd"></path></g></svg>'
 };
 
 // Update common variables
@@ -458,7 +459,7 @@ let Initialize = async(startover = false) => {
      */
     Handlers.auto_claim = () => {
         let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = $('#auto-community-points').getAttribute('enabled') === 'true';
+            Enabled = (settings.auto_claim && $('#auto-community-points').getAttribute('enabled') === 'true');
 
         if(Enabled && ChannelPoints)
             ChannelPoints.click();
@@ -735,7 +736,7 @@ let Initialize = async(startover = false) => {
 
     Handlers.easy_filter = () => {
         let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
-            existing = $('#twitch-tools-filter-user, #twitch-tools-filter-emote');
+            existing = $('#twitch-tools-filter-rule-user, #twitch-tools-filter-rule-emote');
 
         if(!defined(card) || defined(existing))
             return;
@@ -752,13 +753,14 @@ let Initialize = async(startover = false) => {
 
             let filter = document.createElement('div');
 
+            filter.id = 'twitch-tools-filter-rule-user';
             filter.title = `Filter all messages from @${ name }`;
             filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
             filter.setAttribute('username', name);
 
             filter.onclick = event => {
                 let { currentTarget } = event,
-                    username = target.getAttribute('username'),
+                    username = currentTarget.getAttribute('username'),
                     { filter_rules } = settings;
 
                 filter_rules = (filter_rules || '').split(',');
@@ -784,13 +786,14 @@ let Initialize = async(startover = false) => {
 
             let filter = document.createElement('div');
 
+            filter.id = 'twitch-tools-filter-rule-emote';
             filter.title = 'Filter this emote';
             filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
             filter.setAttribute('emote', `:${ name }:`);
 
             filter.onclick = event => {
                 let { currentTarget } = event,
-                    emote = target.getAttribute('emote'),
+                    emote = currentTarget.getAttribute('emote'),
                     { filter_rules } = settings;
 
                 filter_rules = (filter_rules || '').split(',');
