@@ -28,6 +28,9 @@
                 --black: #000;
                 --black-highlighted: #222;
 
+                --blue: #00e6cb;
+                --blue-highlighted: #00ad96;
+
                 --green: #22fa7c;
                 --green-highlighted: #70ffa9;
 
@@ -205,6 +208,10 @@
 
             details[open] > summary[more]:after {
                 content: attr(more) ' \25BE';
+            }
+
+            div + span {
+                margin-top: 0.5rem;
             }
 
             button, input[type="button"] {
@@ -447,6 +454,16 @@
                 font-family: var(--code-font);
                 font-size: 100%;
             }
+
+            #auto_follow_time_minutes {
+                display: inline;
+                text-align: center;
+
+                padding: 0.5rem;
+
+                height: 3rem;
+                width: 3rem;
+            }
         </style>
     </head>
     <body>
@@ -462,7 +479,7 @@
                     </div>
                 </summary>
 
-                <h3>When the <b>Bonus Channel Points</b> button appears, automatically click it</h3>
+                <h3>When the <span icon="bonuschannelpoints"></span> button appears, click it</h3>
                 <br/><br/>
 
                 <img src="auto-claim-channel-points.png"/>
@@ -476,18 +493,20 @@
                 </summary>
 
                 <h2>Auto-follow &mdash; Raids</h2>
-                <div>When participating in a raid, automatically follow the streamer being raided</div>
+                <div>When participating in a raid, follow the streamer being raided</div>
                 <span class="toggle">
-                    <input id="auto_follow" type="checkbox" checked/>
-                    <label for="auto_follow"></label>
+                    <input id="auto_follow_raids" type="checkbox" checked/>
+                    <label for="auto_follow_raids"></label>
                 </span>
                 <br/><br/>
 
                 <h2>Auto-follow &mdash; Time</h2>
-                <div>After watching <b>1 hour</b> of content, automatically follow the streamer</div>
+                <div>After watching
+                    <b><span><input id="auto_follow_time_minutes" type="text" value="60"/></span> minutes</b> of content, follow the streamer
+                </div>
                 <span class="toggle">
-                    <input id="auto_follow_1h" type="checkbox"/>
-                    <label for="auto_follow_1h"></label>
+                    <input id="auto_follow_time" type="checkbox"/>
+                    <label for="auto_follow_time"></label>
                 </span>
             </details>
         </article>
@@ -501,8 +520,8 @@
                 <h2>Auto-play &mdash; Stream</h2>
                 <div>When the stream fails to play ("freezes"), attempt to recover it</div>
                 <span class="toggle">
-                    <input id="auto_play" type="checkbox"/>
-                    <label for="auto_play"></label>
+                    <input id="auto_play_stream" type="checkbox"/>
+                    <label for="auto_play_stream"></label>
                 </span>
                 <br/><br/>
 

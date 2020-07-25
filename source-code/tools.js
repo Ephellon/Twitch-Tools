@@ -22,10 +22,12 @@ let settings = {},
     USERNAME;
 
 // Populate the username field by quickly showing the menu
-display.click();
-display.click();
+if(display) {
+    display.click();
+    display.click();
 
-USERNAME = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
+    USERNAME = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
+}
 
 let browser, Runtime, Container, BrowserNamespace;
 
@@ -272,8 +274,9 @@ function GetChat(lines = 30, keepEmotes = false) {
 }
 
 let Glyphs = {
-    channelpoints: '<svg style="fill:var(--color-accent)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
-    trash: '<svg width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>'
+    bonuschannelpoints: '<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
+    channelpoints: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
+    trash: '<svg fill="#fff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>'
 };
 
 // Update common variables
@@ -323,8 +326,18 @@ function update() {
         live: defined($(`a[href="${ pathname }"i] .tw-channel-status-text-indicator`)),
         ping: defined($('[data-a-target="notifications-toggle"i] [class*="--notificationbellfilled"i]')),
 
-        follow: () => $('[data-a-target="follow-button"i]').click(),
-        unfollow: () => $('[data-a-target="unfollow-button"i]').click(),
+        follow: () => {
+            let follow = $('[data-a-target="follow-button"i]');
+
+            if(follow)
+                follow.click();
+        },
+        unfollow: () => {
+            let unfollow = $('[data-a-target="unfollow-button"i]');
+
+            if(unfollow)
+                unfollow.click();
+        },
 
         get chat() {
             return GetChat()
@@ -505,8 +518,6 @@ let Initialize = async(startover = false) => {
             button.element.setAttribute('enabled', enabled);
             button.text.innerText = ['OFF','ON'][+enabled];
             button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
-
-            console.log({ button })
         };
 
         Jobs.auto_claim = setInterval(Handlers.auto_claim, Timers.auto_claim);
@@ -600,7 +611,7 @@ let Initialize = async(startover = false) => {
             next = online[(Math.random() * online.length)|0],
             { pathname } = window.location;
 
-        let Paths = [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', '$'];
+        let Paths = [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', 'search', '$'];
 
         await LoadCache('UserIntent', cache => {
             let { UserIntent } = cache;
@@ -670,7 +681,7 @@ let Initialize = async(startover = false) => {
     if(settings.stop_raiding)
         Jobs.stop_raiding = setInterval(Handlers.stop_raiding, Timers.stop_raiding);
 
-    /*** Auto-Follow
+    /*** Auto-Follow Raids
      *                    _              ______    _ _
      *         /\        | |            |  ____|  | | |
      *        /  \  _   _| |_ ___ ______| |__ ___ | | | _____      __
@@ -680,8 +691,7 @@ let Initialize = async(startover = false) => {
      *
      *
      */
-
-    Handlers.auto_follow = () => {
+    Handlers.auto_follow_raids = () => {
         if(!defined(streamer))
             return;
 
@@ -690,21 +700,25 @@ let Initialize = async(startover = false) => {
 
         let { like, coin, follow } = streamer,
             raid = data.referrer == 'raid',
-            f1h = settings.auto_follow_1h;
+            aft = settings.auto_follow_time,
+            secs = parseInt(settings.auto_follow_time_minutes) | 0;
 
         if(!like) {
             if(raid)
                 follow();
-            else if(f1h)
-                setTimeout(follow, 36e5);
+            else if(aft)
+                if(secs)
+                    setTimeout(follow, secs * 60 * 1000);
+                else
+                    follow();
         }
     };
-    Timers.auto_follow = 1000;
+    Timers.auto_follow_raids = 1000;
 
-    if(settings.auto_follow)
-        Jobs.auto_follow = setInterval(Handlers.auto_follow, Timers.auto_follow);
+    if(settings.auto_follow_raids)
+        Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
 
-    /*** Easy Filter - NOT A SETTING. THIS IS A HELPER FOR FILTER-MESSAGES
+    /*** Easy Filter - NOT A SETTING. THIS IS A HELPER FOR: MESSAGE FILTER
      *      ______                  ______ _ _ _
      *     |  ____|                |  ____(_) | |
      *     | |__   __ _ ___ _   _  | |__   _| | |_ ___ _ __
@@ -734,13 +748,12 @@ let Initialize = async(startover = false) => {
 
             let filter = document.createElement('div');
 
-            filter.id = 'twitch-tools-filter-user';
             filter.title = `Filter all messages from @${ name }`;
             filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
             filter.setAttribute('username', name);
 
             filter.onclick = event => {
-                let target = $('#twitch-tools-filter-user'),
+                let { currentTarget } = event,
                     username = target.getAttribute('username'),
                     { filter_rules } = settings;
 
@@ -748,7 +761,7 @@ let Initialize = async(startover = false) => {
                 filter_rules.push(`@${ username }`);
                 filter_rules = filter_rules.join(',');
 
-                target.remove();
+                currentTarget.remove();
 
                 Storage.set({ filter_rules });
             };
@@ -760,20 +773,19 @@ let Initialize = async(startover = false) => {
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
             title.appendChild(filter);
-        } else {
+        } else if(type == 'emote') {
             /* Filter emotes */
             if(filter_rules && !!~filter_rules.split(',').indexOf(`:${ name }:`))
                 return /* Already filtering this emote */;
 
             let filter = document.createElement('div');
 
-            filter.id = 'twitch-tools-filter-emote';
             filter.title = 'Filter this emote';
             filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
             filter.setAttribute('emote', `:${ name }:`);
 
             filter.onclick = event => {
-                let target = $('#twitch-tools-filter-emote'),
+                let { currentTarget } = event,
                     emote = target.getAttribute('emote'),
                     { filter_rules } = settings;
 
@@ -781,7 +793,7 @@ let Initialize = async(startover = false) => {
                 filter_rules.push(emote);
                 filter_rules = filter_rules.join(',');
 
-                target.remove();
+                currentTarget.remove();
 
                 Storage.set({ filter_rules });
             };
@@ -840,9 +852,13 @@ let Initialize = async(startover = false) => {
      *                                                   __/ |
      *                                                  |___/
      */
-    Handlers.auto_play = () => {
-        let video = $('video'),
-            { paused } = video,
+    Handlers.auto_play_stream = () => {
+        let video = $('video');
+
+        if(!video)
+            return;
+
+        let { paused } = video,
             isTrusted = defined($('[data-a-player-state="paused"i]')),
             isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])'));
 
@@ -865,9 +881,9 @@ let Initialize = async(startover = false) => {
                 throw error;
             });
     };
-    Timers.auto_play = 5000;
+    Timers.auto_play_stream = 5000;
 
-    if(settings.auto_play) {
+    if(settings.auto_play_stream) {
         let video = $('video');
 
         video.onpause = event => {
@@ -881,7 +897,7 @@ let Initialize = async(startover = false) => {
             currentTarget.play();
         };
 
-        Jobs.auto_play = setInterval(Handlers.auto_play, Timers.auto_play);
+        Jobs.auto_play_stream = setInterval(Handlers.auto_play_stream, Timers.auto_play_stream);
     }
 };
 // End of Initialize
