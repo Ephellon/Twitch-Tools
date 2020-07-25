@@ -317,7 +317,7 @@ function update() {
      * chat:array*       - an array of the current chat; getter
      */
     streamer = {
-        href: top.location.href,
+        href: top.location,
         name: ($(`a[href="${ pathname }"i] h1`) || {}).textContent,
         like: defined($('[data-a-target="unfollow-button"i]')),
         paid: defined($('[data-a-target="subscribed-button"i]')),
@@ -630,6 +630,10 @@ let Initialize = async(startover = false) => {
             } else  {
                 console.warn(`${ streamer.name } is no longer live. There doesn't seem to be any followed streamers on right now`);
             }
+        } else if(/\/search/i.test(pathname)) {
+            let { term } = parseURL(location).searchParameters;
+
+            await SaveCache({ UserIntent: term });
         }
     };
     Timers.keep_watching = 5000;
@@ -695,7 +699,7 @@ let Initialize = async(startover = false) => {
         if(!defined(streamer))
             return;
 
-        let url = parseURL(top.location.href),
+        let url = parseURL(top.location),
             data = url.searchParameters;
 
         let { like, coin, follow } = streamer,
@@ -828,7 +832,7 @@ let Initialize = async(startover = false) => {
         if(!defined(error_message))
             return;
 
-        let url = parseURL(location.href),
+        let url = parseURL(location),
             parameters = url.searchParameters;
 
         parameters.fail = (+new Date).toString(36);
