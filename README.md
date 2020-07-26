@@ -1,13 +1,23 @@
 # Twitch-Tools
 
-An extension that gives you a set of tools to help while watching Twitch streams.
+An extension that gives you a set of tools control your Twitch experience.
 
 ### Features/Settings
 
-- *Auto-claim* &mdash; Automatically claim **Bonus Channel Points**
-- *Auto-follow* &mdash; Automatically follow the streamer (during raids)
+- *Auto-claim* &mdash; When the **Bonus Channel Points** appears, click it
+- *Auto-follow* &mdash; Automatically follow the streamer
+    - *Raids* &mdash; When participating in a raid, follow the streamer being raided
+    - *Time* &mdash; After watching `x minutes` of content, follow the streamer
+- *Auto-play* &mdash; Automatically recover the video
+    - *Stream* &mdash; When the stream fails to play ("freezes"), attempt to recover it
+    - *Ads* &mdash; When an advertisement fails to play ("freezes"), attempt recover it
+- *Auto-reload* &mdash; When the video fails to load (stops downloading), reload the page
+- *Filter Messages* &mdash; Remove messages across all channels
+    - `text` &mdash; Removes any message containing `text`
+    - `:emote:` &mdash; Removes any message containing `emote`
+    - `@username` &mdash; Removes any message from `username`
+    - `/channel text` &mdash; Removes any message containing `text` on `channel`
+- *First in Line* &mdash; When someone mentions you (`@username`), make the message stand out by highlighting it
 - *Highlight `@mention`* &mdash; Highlight mentions `@your-username`
-- *Keep Watching* &mdash; Automatically go to another live stream when the current one ends
-- *Stop Raiding* &mdash; Automatically leave raids
-- *Filter Messages* &mdash; Filter (remove) messages using words or usernames
-- *Auto-reload* &mdash; When the video fails (and gives an error message), the page will be automatically reloaded
+- *Keep Watching* &mdash; When a stream ends, go to a different stream in your Followed Channels
+- *Stop Raiding* &mdash; When a raid starts, go to a different stream in your Followed Channels
