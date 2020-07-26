@@ -243,7 +243,7 @@ function GetChat(lines = 30, keepEmotes = false) {
 
     for(let line of chat) {
         let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
-            message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a', true, line)
+            message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a, p', true, line)
                 .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
                 .filter(text => text)
                 .join(' ')
