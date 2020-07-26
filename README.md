@@ -12,6 +12,7 @@ An extension that gives you a set of tools control your Twitch experience.
     - *Stream* &mdash; When the stream fails to play ("freezes"), attempt to recover it
     - *Ads* &mdash; When an advertisement fails to play ("freezes"), attempt recover it
 - *Auto-reload* &mdash; When the video fails to load (stops downloading), reload the page
+- *Bits-to-Cents* &mdash; When presented with Bits, show the true <b>USD</b> amount they cost
 - *Filter Messages* &mdash; Remove messages across all channels
     - `text` &mdash; Removes any message containing `text`
     - `:emote:` &mdash; Removes any message containing `emote`

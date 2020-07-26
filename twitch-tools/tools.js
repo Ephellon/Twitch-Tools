@@ -243,7 +243,7 @@ function GetChat(lines = 30, keepEmotes = false) {
 
     for(let line of chat) {
         let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
-            message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a, p', true, line)
+            message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a, p, div[class*="inline"]:first-child:last-child', true, line)
                 .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
                 .filter(text => text)
                 .join(' ')
@@ -285,7 +285,7 @@ function GetChat(lines = 30, keepEmotes = false) {
                 /\bgift/i.test(subject)?      'gift': // Gifting a subscription
                 /\b(re)?subs/i.test(subject)? 'dues': // New subscription, or continued subscription
                 null                                  // No subject
-            )($('*:first-child', false, bullet).textContent);
+            )(($('*:first-child', false, bullet) || {}).textContent);
 
         results.bullets.push({
             subject,
@@ -1016,7 +1016,50 @@ let Initialize = async(startover = false) => {
     };
     Timers.first_in_line = 3000;
 
-    Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
+    if(settings.first_in_line)
+        Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
+
+    /*** Bits-to-Cents
+     *      ____  _ _              _               _____           _
+     *     |  _ \(_) |            | |             / ____|         | |
+     *     | |_) |_| |_ ___ ______| |_ ___ ______| |     ___ _ __ | |_ ___
+     *     |  _ <| | __/ __|______| __/ _ \______| |    / _ \ '_ \| __/ __|
+     *     | |_) | | |_\__ \      | || (_) |     | |___|  __/ | | | |_\__ \
+     *     |____/|_|\__|___/       \__\___/       \_____\___|_| |_|\__|___/
+     *
+     *
+     */
+    Handlers.bits_to_cents = () => {
+        let dropdown = $('[class*="bits-buy"i]'),
+            bits_counter = $('.bits-count', true);
+
+        if(defined(dropdown))
+            $('h5:not([true-amount])', true, dropdown).map(header => {
+                let bits = parseInt(header.textContent.replace(/\D+/g, '')),
+                    usd;
+
+                usd = (bits * .01).toFixed(2).replace(/(\.\d)$/, '$10');
+
+                header.textContent += ` ($${ usd })`;
+
+                header.setAttribute('true-amount', usd);
+            });
+
+        for(let counter of bits_counter) {
+            counter.innerHTML = counter.innerHTML.replace(/([\d,]+) +bits/i, ($0, $1) => {
+                let bits = parseInt($1.replace(/\D+/g, '')),
+                    usd = bits * .01;
+
+                usd = (bits * .01).toFixed(2).replace(/(\.\d)$/, '$10');
+
+                return `$0 ($${ usd })`;
+            });
+        }
+    };
+    Timers.bits_to_cents = setInterval(Handlers.bits_to_cents, Timers.bits_to_cents);
+
+    if(settings.bits_to_cents)
+        Jobs.bits_to_cents = setInterval(Handlers.bits_to_cents, Timers.bits_to_cents);
 };
 // End of Initialize
 
