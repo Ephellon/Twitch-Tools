@@ -608,7 +608,7 @@ let Initialize = async(startover = false) => {
         let channel = rules.filter(rule => /^\/[\w\-]+/.test(rule)).map((rule, index) => {
                 let name, text;
 
-                rule.replace(/^\/([\w\-]+) +([^]*?)$/, ($0, $1, $2) => {
+                rule.replace(/^\/([\w\-]+) +([^]*?)$/, ($0, $1, $2, $$, $_) => {
                     name = $1;
                     text = $2;
                 });
@@ -1029,7 +1029,7 @@ let Initialize = async(startover = false) => {
      */
     Handlers.bits_to_cents = () => {
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('.bits-count', true);
+            bits_counter = $('.bits-count:not([true-amount])', true);
 
         if(defined(dropdown))
             $('h5:not([true-amount])', true, dropdown).map(header => {
@@ -1044,13 +1044,15 @@ let Initialize = async(startover = false) => {
             });
 
         for(let counter of bits_counter) {
-            counter.innerHTML = counter.innerHTML.replace(/([\d,]+) +bits/i, ($0, $1) => {
+            counter.innerHTML = counter.innerHTML.replace(/([\d,]+) +bits/i, ($0, $1, $$, $_) => {
                 let bits = parseInt($1.replace(/\D+/g, '')),
                     usd = bits * .01;
 
-                usd = (bits * .01).toFixed(2).replace(/(\.\d)$/, '$10');
+                usd = (bits * .01).toFixed(2);
 
-                return `$0 ($${ usd })`;
+                counter.setAttribute('true-amount', usd);
+
+                return `${ $0 } ($${ usd })`;
             });
         }
     };
