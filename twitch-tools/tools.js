@@ -1010,7 +1010,9 @@ let Initialize = async(startover = false) => {
 
                     Storage.set({ filter_rules });
                 },
-            }, `${ Glyphs.trash } Filter messages from @${ name }`);
+
+                innerHTML: `${ Glyphs.trash } Filter messages from @${ name }`,
+            });
 
             let svg = $('svg', false, filter);
 
@@ -1040,7 +1042,9 @@ let Initialize = async(startover = false) => {
 
                     Storage.set({ filter_rules });
                 },
-            }, `${ Glyphs.trash } Filter this emote`);
+
+                innerHTML: `${ Glyphs.trash } Filter this emote`,
+            });
 
             let svg = $('svg', false, filter);
 
