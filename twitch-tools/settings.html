@@ -32,6 +32,7 @@
                 --blue-highlighted: #00ad96;
 
                 --green: #22fa7c;
+                --green-dark: #00c85a;
                 --green-highlighted: #70ffa9;
 
                 --grey: #fff3;
@@ -44,6 +45,7 @@
                 --red-highlighted: #391916;
 
                 --white: #fff;
+                --white-faded: #fff8;
                 --white-highlighted: #eee;
 
                 /* Fonts */
@@ -211,7 +213,7 @@
             }
 
             div + span {
-                margin-top: 0.5rem;
+                margin-top: .5rem;
             }
 
             button, input[type="button"] {
@@ -247,7 +249,7 @@
                 background-color: var(--red-highlighted);
             }
 
-            #save, #save-small {
+            #save {
                 background-color: var(--green);
 
                 transition: background-color .5s;
@@ -255,7 +257,11 @@
                 position: absolute;
             }
 
-            #save:hover, #save-small:hover {
+            #save.spin {
+                background-color: var(--green-dark) !important;
+            }
+
+            #save:hover {
                 background-color: var(--green-highlighted);
             }
 
@@ -265,7 +271,7 @@
                     padding-bottom: 4rem;
                 }
 
-                #save-small {
+                #save {
                     display: block;
 
                     border-radius: 100%;
@@ -276,7 +282,7 @@
                     right: 1rem;
                 }
 
-                #save-small:before {
+                #save:before {
                     border-bottom: 3px solid var(--text-dark);
                     border-left: 3px solid var(--text-dark);
                     content: '';
@@ -291,10 +297,6 @@
                     height: .4rem;
                     width: 1rem;
                 }
-
-                #save {
-                    display: none;
-                }
             }
 
             /* Full display */
@@ -304,17 +306,20 @@
 
                     bottom: 1rem;
                     left: calc(50% - 57px);
+
+                    height: 2.5rem;
+                    width: 6rem;
                 }
 
-                #save-small {
-                    display: none;
+                #save:before {
+                    content: 'Save';
                 }
             }
 
             #version {
                 text-align:right;
 
-                opacity: 0.5;
+                opacity: .5;
 
                 position: absolute;
                 bottom: 0;
@@ -459,7 +464,7 @@
                 display: inline;
                 text-align: center;
 
-                padding: 0.5rem;
+                padding: .5rem;
 
                 height: 3rem;
                 width: 3rem;
@@ -575,16 +580,36 @@
                 <br/>
 
                 &bull; These words/phrases will hide a message (comma seperated list)<br/>
-                &bull; Use <code>@<i>username</i></code> to hide messages from specific users<br/>
-                &bull; Use <code>:<i>emote</i>:</code> to hide messages with certain emotes<br/>
-                &bull; Use <code>[^\/*+?$]</code> to hide messages based upon patterns<br/>
+                &bull; Use <code><i>text</i></code> to hide messages containing <b>text</b><br/>
+                <div>&bull; Use <code>:<i>emote</i>:</code> to hide messages with containing <b>emote</b></div>
+                &bull; Use <code>@<i>username</i></code> to hide messages from <b>username</b><br/>
+                &bull; Use <code>/<i>channel</i> <i>text</i></code> to hide messages containing <b>text</b> on <b>channel</b><br/>
+                <div>&bull; Use <code>[^\/*+?$]</code> to hide messages based upon a pattern</div>
                 <!-- <img src="filter-messages.png"/>
                 <br/><br/> -->
 
-                &bull; You can also filter users/emotes by clicking <span icon="trash"></span> in their profile
+                &bull; You can also filter users/emotes by clicking <span icon="trash"></span> from their profile
                 <br/><br/>
                 <img src="easy-filter.png"/>
                 <br/><br/>
+            </details>
+        </article>
+
+        <article>
+            <details>
+                <summary>
+                    <h2>First in Line</h2>
+
+                    <div class="toggle">
+                        <input id="first_in_line" type="checkbox"/>
+                        <label for="first_in_line"></label>
+                    </div>
+                </summary>
+
+                <h3>When you receive a notification for a stream, go to the stream</h3>
+                <br/><br/>
+
+                <img src="first-in-line.png"/>
             </details>
         </article>
 
@@ -642,8 +667,7 @@
             </details>
         </article>
 
-        <button id="save" class="ripple">Save Changes</button>
-        <button id="save-small" class="ripple"></button>
+        <button id="save" class="ripple"></button>
 
         <span id="version"></span>
 
@@ -688,6 +712,42 @@
                    -moz-transform: scale(2.5);
                      -o-transform: scale(2.5);
                         transform: scale(2.5);
+            }
+        }
+
+        .spin:before {
+            content: ' ' !important;
+
+            background-color: #0000;
+            border: 2px solid var(--white-faded) !important;
+            border-left-color: var(--white) !important;
+            border-radius: 50% !important;
+
+            height: 1.2rem !important;
+            width: 1.2rem !important;
+
+            position: absolute;
+            left: calc(50% - .725rem) !important;
+            top: calc(50% - .725rem) !important;
+            z-index: 9;
+
+            -webkit-animation: spin 1s linear infinite;
+               -moz-animation: spin 1s linear infinite;
+                 -o-animation: spin 1s linear infinite;
+                    animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                -webkit-transform: rotate(0);
+                   -moz-transform: rotate(0);
+                     -o-transform: rotate(0);
+                        transform: rotate(0);
+            } 100% {
+                -webkit-transform: rotate(360deg);
+                   -moz-transform: rotate(360deg);
+                     -o-transform: rotate(360deg);
+                        transform: rotate(360deg);
             }
         }
         </style>

@@ -97,8 +97,25 @@ class UUID {
         return this.value;
     }
 
+    /* BWT Sorting Algorithm */
+    static BWT(string = '') {
+        if(/^[\x32]*$/.test(string))
+            return '';
+
+        let _a = `\u0001${ string }`,
+            _b = `\u0001${ string }\u0001${ string }`,
+            p_ = [];
+
+        for(let i = 0; i < _a.length; i++)
+            p_.push(_b.slice(i, _a.length + i));
+
+        p_ = p_.sort();
+
+        return p_.map(P => P.slice(-1)[0]).join('');
+    }
+
     static from(key = '') {
-        let hash = Uint8Array.from(key.split('').filter((character, index) => index % 2).map(character => character.charCodeAt(0))),
+        let hash = Uint8Array.from(btoa(UUID.BWT(key.replace(/[^\u0000-\u00ff]+/g, '').slice(-1024))).split('').map(character => character.charCodeAt(0))),
             l = hash.length,
             i = 0;
 
@@ -226,38 +243,49 @@ function GetChat(lines = 30, keepEmotes = false) {
 
     for(let line of chat) {
         let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
-            mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()),
             message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a', true, line)
                 .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
-                .filter(element => element)
-                .join(" ")
-                .trim(),
-            style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join('');
+                .filter(text => text)
+                .join(' ')
+                .trim()
+                .replace(/(\s){2,}/g, '$1'),
+            mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()),
+            badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
+            style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';');
 
         results.push({
             style,
             author,
+            badges,
             message,
             mentions,
             element: line,
             uuid: (UUID.from([author, mentions.join(','), message].join(':')) + ''),
-            highlighted: !!line.classList.value.split(" ").filter(value => /^chat-line--/i.test(value)).length,
+            deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+            highlighted: !!line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length,
         });
     }
 
-    let bullets = $('[data-a-target^="chat-"i] .tw-accent-region', true).slice(-lines);
+    let bullets = $('[role="log"i] .tw-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i]', true).slice(-lines);
 
-    if(bullets.length)
-        results.bullets = [];
+    results.bullets = [];
 
     for(let bullet of bullets) {
-        let message = bullet.textContent,
-            mentions = $('.chatter-name', true, bullet).map(element => element.innerText.toLowerCase()),
-            subject = (
-                /\bgift/i.test(message)? 'gift':
-                /\bsubs/i.test(message)? 'subscription':
-                null
-            );
+        let message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a', true, bullet)
+                .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
+                .filter(text => text)
+                .join(' ')
+                .trim()
+                .replace(/(\s){2,}/g, '$1'),
+            mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()),
+            subject = (subject =>
+                /\braid/i.test(subject)?      'raid': // Incoming raid
+                /\bredeem/i.test(subject)?    'cash': // Redeeming (spending) channel points
+                /\bcontinu/i.test(subject)?   'keep': // Continuing a gifted subscription
+                /\bgift/i.test(subject)?      'gift': // Gifting a subscription
+                /\b(re)?subs/i.test(subject)? 'dues': // New subscription, or continued subscription
+                null                                  // No subject
+            )($('*:first-child', false, bullet).textContent);
 
         results.bullets.push({
             subject,
@@ -273,9 +301,58 @@ function GetChat(lines = 30, keepEmotes = false) {
     return results;
 }
 
+// Parse a URL
+// parseURL(url:string) -> Object
+function parseURL(url) {
+    if(!defined(url))
+        return {};
+
+    url = url.toString();
+
+    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
+        i    = 0,
+        e    = "";
+
+    data = data || e;
+
+    return {
+        href:             data[i++] || e,
+        origin:           (data[i++] || e) + (data[i + 4] || e),
+        protocol:         data[i++] || e,
+        scheme:           data[i++] || e,
+        username:         data[i++] || e,
+        password:         data[i++] || e,
+        host:             data[i++] || e,
+        domainPath:       data[i].split('.').reverse(),
+        hostname:         data[i++] || e,
+        port:             data[i++] || e,
+        pathname:         data[i++] || e,
+        search:           data[i]   || e,
+        searchParameters: (function(sd) {
+            parsing:
+            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
+                c = d[i].split('=');
+                n = c[0] || e;
+
+                p = c.slice(1, c.length).join('=');
+
+                s[n] = (s[n] != undefined)?
+                    s[n] instanceof Array?
+                s[n].concat(p):
+                    [s[n], p]:
+                p;
+            }
+
+            return s;
+        })(data[i++] || e),
+        hash:             data[i++] || e
+    };
+};
+
 let Glyphs = {
-    bonuschannelpoints: '<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
+    bonuschannelpoints: '<svg fill="#00e6cb" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
     channelpoints: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
+    checkmark: '<svg fill="#000" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>',
     trash: '<svg fill="#fff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
     lock: '<svg fill="#fff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.001 5.99A3.992 3.992 0 0010.01 2h-.018a3.992 3.992 0 00-3.991 3.99V8H3.999v8c0 1.105.896 2 2 2h8c1.104 0 2-.895 2-2V8h-1.998V5.99zm-2 2.01V5.995A1.996 1.996 0 0010.006 4h-.01a1.996 1.996 0 00-1.995 1.995V8h4z" clip-rule="evenodd"></path></g></svg>'
 };
@@ -361,64 +438,22 @@ Storage.onChanged.addListener((changes, namespace) => {
             { oldValue, newValue } = change;
 
         if(newValue === false) {
+            console.warn(`Turning off the ${ key } setting`);
+
             clearInterval(Jobs[key]);
 
             delete Jobs[key];
         } else if(newValue === true) {
+            console.warn(`Turning on the ${ key } setting`);
+
             Jobs[key] = setInterval(Handlers[key], Timers[key]);
+        } else {
+            console.warn(`Changing the ${ key } setting`, { oldValue, newValue });
         }
 
         settings[key] = newValue;
     }
 });
-
-// Parse a URL
-// parseURL(url:string) -> Object
-function parseURL(url) {
-    if(!defined(url))
-        return {};
-
-    url = url.toString();
-
-    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
-        i    = 0,
-        e    = "";
-
-    data = data || e;
-
-    return {
-        href:             data[i++] || e,
-        origin:           (data[i++] || e) + (data[i + 4] || e),
-        protocol:         data[i++] || e,
-        scheme:           data[i++] || e,
-        username:         data[i++] || e,
-        password:         data[i++] || e,
-        host:             data[i++] || e,
-        domainPath:       data[i].split('.').reverse(),
-        hostname:         data[i++] || e,
-        port:             data[i++] || e,
-        pathname:         data[i++] || e,
-        search:           data[i]   || e,
-        searchParameters: (function(sd) {
-            parsing:
-            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
-                c = d[i].split('=');
-                n = c[0] || e;
-
-                p = c.slice(1, c.length).join('=');
-
-                s[n] = (s[n] != undefined)?
-                    s[n] instanceof Array?
-                s[n].concat(p):
-                    [s[n], p]:
-                p;
-            }
-
-            return s;
-        })(data[i++] || e),
-        hash:             data[i++] || e
-    };
-};
 
 /*** Initialization
 *      _____       _ _   _       _ _          _   _
@@ -565,27 +600,65 @@ let Initialize = async(startover = false) => {
         if(!rules || !rules.length)
             return;
 
-        rules = rules.split(',').filter(value => value.length);
+        rules = rules.split(/,/).filter(value => value.length);
 
         if(!rules.length)
             return;
 
-        let text = rules.filter(text => !/^@/.test(text)).map(t => /^\w+$/.test(t)? `\\b${ t }\\b`: t).join('|'),
-            user = rules.filter(text => /^@/.test(text)).map(user => user.replace(/^@/, '')).join('|');
+        let channel = rules.filter(rule => /^\/[\w\-]+/.test(rule)).map((rule, index) => {
+                let name, text;
+
+                rule.replace(/^\/([\w\-]+) +([^]*?)$/, ($0, $1, $2) => {
+                    name = $1;
+                    text = $2;
+                });
+
+                if(name && text && text.length)
+                    rules.splice(index, 1);
+
+                return { name, text };
+            }),
+
+            user = rules.filter(rule => /^@[\w\-]+/.test(rule)).map((user, index) => {
+                if(user)
+                    rules.splice(index, 1);
+
+                return user.replace(/^@/, '');
+            }).join('|'),
+
+            text = rules.filter(rule => !/^@[\w\-]+/.test(rule)).map((text, index) => {
+                if(text)
+                    rules.splice(index, 1);
+
+                return /^\w+$/.test(text)? `\\b${ text }\\b`: text;
+            }).join('|');
 
         let Filter = {
             text: (text.length? RegExp(`(${ text })`, 'i'): /^[\b]$/),
             user: (user.length? RegExp(`(${ user })`, 'i'): /^[\b]$/),
+            channel
         };
 
         GetChat(10, true).filter(line => {
-            return Filter.text.test(line.message)
+            return false
+                // Filter messges (RegExp) on all channels
+                || Filter.text.test(line.message)
+                // Filter users on all channels
                 || Filter.user.test(line.author)
+                // Filter messages (verbatim) on specific a channel
+                || !!~Filter.channel.map(({ name, text }) => {
+                    if(!defined(streamer))
+                        return;
+
+                    let channel = streamer.name.toLowerCase();
+
+                    return channel == name && !!~line.message.toLowerCase().indexOf(text);
+                }).indexOf(true);
         }).map(line => {
-            let { element } = line,
+            let { element, mentions } = line,
                 hidden = element.getAttribute('hidden') === 'true';
 
-            if(hidden)
+            if(hidden || !!~mentions.indexOf(USERNAME))
                 return;
 
             element.setAttribute('style', 'display:none');
@@ -838,6 +911,8 @@ let Initialize = async(startover = false) => {
         let url = parseURL(location),
             parameters = url.searchParameters;
 
+        console.error('The stream ran into an error:', error_message.textContent);
+
         parameters.fail = (+new Date).toString(36);
 
         for(let key in parameters)
@@ -906,6 +981,42 @@ let Initialize = async(startover = false) => {
 
         Jobs.auto_play_stream = setInterval(Handlers.auto_play_stream, Timers.auto_play_stream);
     }
+
+    /*** First in Line
+     *      ______ _          _     _         _      _
+     *     |  ____(_)        | |   (_)       | |    (_)
+     *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___
+     *     |  __| | | '__/ __| __| | | '_ \  | |    | | '_ \ / _ \
+     *     | |    | | |  \__ \ |_  | | | | | | |____| | | | |  __/
+     *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___|
+     *
+     *
+     */
+    Handlers.first_in_line = () => {
+        let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"]', true);
+
+        if(!notifications.length)
+            return;
+
+        for(let notification of notifications) {
+            let action = $('a[href^="/"]', false, notification);
+
+            if(!action)
+                continue;
+
+            console.warn('Recieved an actionable notification:', action.textContent);
+
+            let { href, textContent } = action;
+
+            if(/\bis +live\b/i.test(textContent)) {
+                open(href, '_self');
+                return;
+            }
+        }
+    };
+    Timers.first_in_line = 3000;
+
+    Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
 };
 // End of Initialize
 

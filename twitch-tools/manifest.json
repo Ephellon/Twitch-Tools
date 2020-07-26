@@ -17,8 +17,8 @@
     "content_scripts": [
         {
             "matches": [
-                "https://*.twitch.tv/*",
-                "http://*.twitch.tv/*"
+                "https://www.twitch.tv/*",
+                "http://www.twitch.tv/*"
             ],
 
             "all_frames": true,
