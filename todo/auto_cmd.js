@@ -17,70 +17,6 @@ let PARSING = [],
 clearInterval(COMMAND_BOT);
 
 COMMAND_BOT = setInterval(() => {
-    function GetChat(lines = 30, keepEmotes = false) {
-        let chat = $('[data-a-target^="chat-"i] .chat-list [data-a-target="chat-line-message"i]', true).slice(-lines),
-            emotes = {},
-            results = [];
-
-        let uuid = (string, seed) => {
-            let seed_val = 0,
-                string_val = 1;
-
-            seed.slice(0,64).split('').map(c => seed_val += c.charCodeAt(0));
-            string.slice(0,64).split('').map(c => string_val += (c.charCodeAt(0) * seed_val));
-
-            return string_val.toString(36);
-        };
-
-        for(let line of chat) {
-            let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
-                mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()),
-                message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a', true, line)
-                    .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
-                    .filter(element => element)
-                    .join(" ")
-                    .trim(),
-                style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join('');
-
-            results.push({
-                style,
-                author,
-                message,
-                mentions,
-                element: line,
-                uuid: uuid(message, [author, ...mentions].join('/')),
-                highlighted: !!line.classList.value.split(" ").filter(value => /^chat-line--/i.test(value)).length,
-            });
-        }
-
-        let bullets = $('[data-a-target^="chat-"i] .tw-accent-region', true).slice(-lines);
-
-        if(bullets.length)
-            results.bullets = [];
-
-        for(let bullet of bullets) {
-            let message = bullet.textContent,
-                mentions = $('.chatter-name', true, bullet).map(element => element.innerText.toLowerCase()),
-                subject = (
-                    /\bgift/i.test(message)? 'gift':
-                    /\bsubs/i.test(message)? 'subscription':
-                    null
-                );
-
-            results.bullets.push({
-                subject,
-                message,
-                mentions,
-                uuid: uuid(message, mentions.join('/')),
-                element: bullet,
-            });
-        }
-
-        results.emotes = emotes;
-
-        return results;
-    }
-
     let container = $('[data-test-selector="chat-input-tray"]');
 
     if(!defined(container))
@@ -93,6 +29,10 @@ COMMAND_BOT = setInterval(() => {
         return;
 
     let readables = {
+        // Commands
+        '/clip': 'Clipping',
+        '/view': 'Changing viewing mode',
+
         // Instructions
         '/rec': 'Recording',
         '/del': 'Deleting',
@@ -117,6 +57,22 @@ COMMAND_BOT = setInterval(() => {
         let JOB;
 
         switch(instr) {
+            case '/clip':
+                let clip = $('[data-a-target="player-clip-button"i]');
+
+                clip.click();
+                break;
+
+            case '/mode':
+                let modes = {
+                        ':theatre': $('[data-a-target="player-theatre-mode-button"i]'),
+                        ':fullscreen': $('[data-a-target="player-fullscreen-button"i]'),
+                    };
+
+                if(subin in modes)
+                    modes[subin].click();
+                break;
+
             case '/rec':
                 if(subin == ':gift')
                     JOB = () => {
@@ -175,7 +131,7 @@ COMMAND_BOT = setInterval(() => {
 
             case '/del':
                 if(subin == ':gift') {
-                    let existing = COMMAND_JOB['/rec' + subin];
+                    let existing = COMMAND_JOB[com];
 
                     if(existing)
                         clearInterval(existing);
@@ -203,7 +159,7 @@ COMMAND_BOT = setInterval(() => {
             default: return;
         }
 
-        header.innerText = `${ (readables[instr] || instr) } ${ (readables[subin] || subin) }`;
+        header.innerText = `${ (readables[instr] || instr) } ${ (readables[subin] || subin || '') }`;
         message.innerText = command;
 
         let existing = COMMAND_JOB[com];

@@ -4,6 +4,7 @@
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
     "version": "1.4",
+    "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {
         "16": "16.png",

@@ -685,7 +685,7 @@ let Initialize = async(startover = false) => {
             next = online[(Math.random() * online.length)|0],
             { pathname } = window.location;
 
-        let Paths = [USERNAME, '[up]/', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', 'search', '$'];
+        let Paths = [USERNAME, '[up]/', 'videos', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', 'search', '$'];
 
         await LoadCache('UserIntent', cache => {
             let { UserIntent } = cache;
@@ -993,7 +993,7 @@ let Initialize = async(startover = false) => {
      *
      */
     Handlers.first_in_line = () => {
-        let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"]', true);
+        let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
 
         if(!notifications.length)
             return;
@@ -1008,10 +1008,8 @@ let Initialize = async(startover = false) => {
 
             let { href, textContent } = action;
 
-            if(/\bis +live\b/i.test(textContent)) {
+            if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent))
                 open(href, '_self');
-                return;
-            }
         }
     };
     Timers.first_in_line = 3000;
