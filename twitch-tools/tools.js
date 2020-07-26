@@ -911,7 +911,7 @@ let Initialize = async(startover = false) => {
     Handlers.stop_raiding = () => {
         let online = streamers.filter(streamer => streamer.live),
             next = online[(Math.random() * online.length)|0],
-            raiding = $('[data-test-selector="raid-banner"i]');
+            raiding = defined($('[data-test-selector="raid-banner"i]'));
 
         if(raiding && next)
             if(online.length) {
@@ -1195,7 +1195,10 @@ let Initialize = async(startover = false) => {
      */
     Handlers.bits_to_cents = () => {
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('.bits-count:not([true-amount])', true);
+            bits_counter = $('.bits-count:not([true-amount])', true),
+            hype_trains = $('[class*="community-highlight-stack"i] p:not([true-amount])', true);
+
+        let bits_regexp = /([\d,]+) +bits/i;
 
         if(defined(dropdown))
             $('h5:not([true-amount])', true, dropdown).map(header => {
@@ -1210,19 +1213,38 @@ let Initialize = async(startover = false) => {
             });
 
         for(let counter of bits_counter) {
-            counter.innerHTML = counter.innerHTML.replace(/([\d,]+) +bits/i, ($0, $1, $$, $_) => {
-                let bits = parseInt($1.replace(/\D+/g, '')),
-                    usd = bits * .01;
+            let { innerHTML } = counter;
 
-                usd = (bits * .01).toFixed(2);
+            if(bits_regexp.test(counter))
+                counter.innerHTML = innerHTML.replace(bits_regexp, ($0, $1, $$, $_) => {
+                    let bits = parseInt($1.replace(/\D+/g, '')),
+                        usd = bits * .01;
 
-                counter.setAttribute('true-amount', usd);
+                    usd = (bits * .01).toFixed(2);
 
-                return `${ $0 } ($${ usd })`;
-            });
+                    counter.setAttribute('true-amount', usd);
+
+                    return `${ $0 } ($${ usd })`;
+                });
+        }
+
+        for(let train of hype_trains) {
+            let { innerHTML } = train;
+
+            if(bits_regexp.test(innerHTML))
+                train.innerHTML = innerHTML.replace(bits_regexp, ($0, $1, $$, $_) => {
+                    let bits = parseInt($1.replace(/\D+/g, '')),
+                        usd = bits * .01;
+
+                    usd = (bits * .01).toFixed(2);
+
+                    train.setAttribute('true-amount', usd);
+
+                    return `${ $0 } ($${ usd })`;
+                });
         }
     };
-    Timers.bits_to_cents = setInterval(Handlers.bits_to_cents, Timers.bits_to_cents);
+    Timers.bits_to_cents = 1000;
 
     if(settings.bits_to_cents)
         Jobs.bits_to_cents = setInterval(Handlers.bits_to_cents, Timers.bits_to_cents);
