@@ -147,6 +147,98 @@ class UUID {
     }
 }
 
+// Displays a popup
+// new Popup(subject:string, message:string[, actions:object]) -> Object
+class Popup {
+    constructor(subject, message, action = {}) {
+        let f = furnish;
+
+        let P = $('.stream-chat-header'),
+            X = $('#twitch-tools-popup', false, P),
+            N = 'Continue',
+            A = event => {
+                let existing = $('#twitch-tools-popup');
+
+                existing.remove();
+            };
+
+        if(defined(X))
+            return X;
+
+        for(let n in action)
+            if(typeof action[n] == 'function') {
+                N = n;
+                A = action[n];
+            }
+
+        let p =
+        f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; top:0' },
+            f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
+                f('div', {},
+                    f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {},
+                        f('div', {},
+                            f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
+                                f('div.tw-flex.tw-flex-nowrap.tw-pd-l-1.tw-pd-y-1', {},
+                                    f('div', {},
+                                        f('div', { style: 'height:4rem; width:4rem' },
+                                            f('img.tw-border-radius-rounded.tw-full-height.tw-full-width.tw-image', {
+                                                src: Runtime.getURL('profile.png'),
+                                                sizeinpixels: 40,
+                                                borderradius: 'tw-border-radius-rounded',
+                                            })
+                                        )
+                                    ),
+                                    f('div.tw-flex.tw-flex-column.tw-flex-nowrap.tw-overflow-hidden.tw-pd-x-1', {},
+                                        f('div.tw-full-height.tw-overflow-hidden', {},
+                                            f('span', {},
+                                                f('div', {},
+                                                    f('p', {}, subject)
+                                                )
+                                            )
+                                        ),
+                                        f('div.tw-flex-shrink-0.tw-mg-t-05', {},
+                                            f('div.tw-c-text-alt-2', {}, message)
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        f('div.tw-align-content-stretch.tw-border-l.tw-flex.tw-flex-column.tw-flex-grow-0.tw-flex-shrink-0', {},
+                            f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
+                                f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
+                                    onclick: A,
+                                },
+                                    f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
+                                        f('p.tw-c-text-link', {}, N)
+                                    )
+                                )
+                            ),
+                            f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
+                                f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
+                                    onclick: event => this.element.remove(),
+                                },
+                                    f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
+                                        f('p.tw-c-text-alt-2', {}, 'Close')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        P.appendChild(p);
+
+        return this.element = p;
+    }
+
+    remove() {
+        if(this.element)
+            this.element.remove();
+    }
+}
+
 // Get the current settings
 // GetSettings() -> Object
 function GetSettings() {
@@ -349,6 +441,66 @@ function parseURL(url) {
     };
 };
 
+// Create elements
+// furnish(tagname:string[, attributes:object[, ...children]])
+function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
+    let u = v => v && v.length,
+        R = RegExp,
+        name = TAGNAME,
+        attributes = ATTRIBUTES,
+        children = CHILDREN;
+
+    if( !u(name) )
+        throw TypeError(`TAGNAME cannot be ${ (name === '')? 'empty': name }`);
+
+    let options = attributes.is === true? { is: true }: null;
+
+    delete attributes.is;
+
+    name = name.split(/([#\.][^#\.\[\]]+)/).filter( u );
+
+    if(name.length <= 1)
+        name = name[0].split(/^([^\[\]]+)(\[.+\])/).filter( u );
+
+    if(name.length > 1)
+        for(let n = name, i = 1, l = n.length, t, v; i < l; i++)
+            if((v = n[i].slice(1, n[i].length)) && (t = n[i][0]) == '#')
+                attributes.id = v;
+            else if(t == '.')
+                attributes.classList = [].slice.call(attributes.classList || []).concat(v);
+            else if(/\[(.+)\]/.test(n[i]))
+                R.$1.split('][').forEach(N => attributes[(N = N.replace(/\s*=\s*(?:("?)([^]*)\1)?/, '=$2').split('=', 2))[0]] = N[1] || '');
+    name = name[0];
+
+    let element = document.createElement(name, options);
+
+    if(attributes.classList instanceof Array)
+        attributes.classList = attributes.classList.join(' ');
+
+    Object.entries(attributes).forEach(
+        ([name, value]) => (/^(on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
+            (/^on/.test(name))?
+                element.addEventListener(name.replace(/^on/, ''), value):
+            element[name] = value:
+        element.setAttribute(name, value)
+    );
+
+    children
+        .filter( child => defined(child) )
+        .forEach(
+            child =>
+                child instanceof Element?
+                    element.append(child):
+                child instanceof Node?
+                    element.appendChild(child):
+                element.appendChild(
+                    document.createTextNode(child)
+                )
+        );
+
+    return element;
+}
+
 let Glyphs = {
     bonuschannelpoints: '<svg fill="#00e6cb" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
     channelpoints: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
@@ -514,7 +666,7 @@ let Initialize = async(startover = false) => {
         if(!defined($('#auto-community-points'))) {
             let parent = $('[data-test-selector="community-points-summary"i]'),
                 heading = $('.top-nav__menu > div', true).slice(-1)[0],
-                element = document.createElement('div');
+                element = furnish('div');
 
             if(!defined(parent)) {
                 if(!Initialize.errors)
@@ -572,12 +724,28 @@ let Initialize = async(startover = false) => {
     Handlers.highlight_messages = () => {
         let chat = GetChat().filter(line => !!~line.mentions.indexOf(USERNAME));
 
-        for(let line of chat) {
+        for(let line of chat)
             if(!~visible.indexOf(line.uuid)) {
                 line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
-                visible.push(line.element.uuid);
+                visible.push(line.uuid);
+
+                let { author, message } = line;
+
+                let existing = $('#twitch-tools-popup');
+
+                if(defined(existing))
+                    continue;
+
+                let popup = new Popup(`${ author } sent you a message`, message, {
+                    Reply: event => {
+                        let chatbox = $('.chat-input__textarea textarea'),
+                            existing = $('#twitch-tools-popup');
+
+                        chatbox.focus();
+                        existing.remove();
+                    }
+                });
             }
-        }
     };
     Timers.highlight_messages = 500;
 
@@ -824,28 +992,25 @@ let Initialize = async(startover = false) => {
             if(filter_rules && !!~filter_rules.split(',').indexOf(`@${ name }`))
                 return /* Already filtering messages from this person */;
 
-            let filter = document.createElement('div');
+            let filter = furnish('div#twitch-tools-filter-rule-user', {
+                title: `Filter all messages from @${ name }`,
+                style: 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal',
+                username: name,
 
-            filter.id = 'twitch-tools-filter-rule-user';
-            filter.title = `Filter all messages from @${ name }`;
-            filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
-            filter.setAttribute('username', name);
+                onclick: event => {
+                    let { currentTarget } = event,
+                        username = currentTarget.getAttribute('username'),
+                        { filter_rules } = settings;
 
-            filter.onclick = event => {
-                let { currentTarget } = event,
-                    username = currentTarget.getAttribute('username'),
-                    { filter_rules } = settings;
+                    filter_rules = (filter_rules || '').split(',');
+                    filter_rules.push(`@${ username }`);
+                    filter_rules = filter_rules.join(',');
 
-                filter_rules = (filter_rules || '').split(',');
-                filter_rules.push(`@${ username }`);
-                filter_rules = filter_rules.join(',');
+                    currentTarget.remove();
 
-                currentTarget.remove();
-
-                Storage.set({ filter_rules });
-            };
-
-            filter.innerHTML = `${ Glyphs.trash } Filter messages from @${ name }`;
+                    Storage.set({ filter_rules });
+                },
+            }, `${ Glyphs.trash } Filter messages from @${ name }`);
 
             let svg = $('svg', false, filter);
 
@@ -857,28 +1022,25 @@ let Initialize = async(startover = false) => {
             if(filter_rules && !!~filter_rules.split(',').indexOf(`:${ name }:`))
                 return /* Already filtering this emote */;
 
-            let filter = document.createElement('div');
+            let filter = furnish('div#twitch-tools-filter-rule-emote', {
+                title: 'Filter this emote',
+                style: 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal',
+                emote: `:${ name }:`,
 
-            filter.id = 'twitch-tools-filter-rule-emote';
-            filter.title = 'Filter this emote';
-            filter.setAttribute('style', 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal');
-            filter.setAttribute('emote', `:${ name }:`);
+                onclick: event => {
+                    let { currentTarget } = event,
+                        emote = currentTarget.getAttribute('emote'),
+                        { filter_rules } = settings;
 
-            filter.onclick = event => {
-                let { currentTarget } = event,
-                    emote = currentTarget.getAttribute('emote'),
-                    { filter_rules } = settings;
+                    filter_rules = (filter_rules || '').split(',');
+                    filter_rules.push(emote);
+                    filter_rules = filter_rules.join(',');
 
-                filter_rules = (filter_rules || '').split(',');
-                filter_rules.push(emote);
-                filter_rules = filter_rules.join(',');
+                    currentTarget.remove();
 
-                currentTarget.remove();
-
-                Storage.set({ filter_rules });
-            };
-
-            filter.innerHTML = `${ Glyphs.trash } Filter this emote`;
+                    Storage.set({ filter_rules });
+                },
+            }, `${ Glyphs.trash } Filter this emote`);
 
             let svg = $('svg', false, filter);
 

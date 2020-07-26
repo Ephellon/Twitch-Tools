@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "1.4",
+    "version": "1.5",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {
@@ -50,5 +50,7 @@
         "http://*.twitch.tv/*",
 
         "storage"
-    ]
+    ],
+
+    "web_accessible_resources": ["*.png"]
 }
