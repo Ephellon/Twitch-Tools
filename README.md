@@ -19,6 +19,6 @@ An extension that gives you a set of tools control your Twitch experience.
     - `@username` &mdash; Removes any message from `username`
     - `/channel text` &mdash; Removes any message containing `text` on `channel`
 - *First in Line* `off` &mdash; When someone mentions you (`@username`), make the message stand out by highlighting it
-- *Highlight `@mention`* `on` &mdash; Highlight mentions `@your-username`
+- *Highlight Mentions* `on` &mdash; Highlight mentions `@your-username`
 - *Keep Watching* `on` &mdash; When a stream ends, go to a different stream in your Followed Channels
 - *Stop Raiding* `off` &mdash; When a raid starts, go to a different stream in your Followed Channels
