@@ -423,7 +423,7 @@
                 width: 1.6rem;
             }
 
-            textarea, input[type="text"i] {
+            textarea, input[type="text"i], input[type="number"i] {
                 appearance: none;
                 background-clip: padding-box;
                 background-color: var(--grey);
@@ -448,30 +448,30 @@
                 width: 100%;
             }
 
-            textarea:focus, input[type="text"i]:focus {
+            textarea:focus, input[type="text"i]:focus, input[type="number"i]:focus {
                 background-color: var(--black);
                 border-color: var(--purple);
 
                 outline: none;
             }
 
-            textarea::placeholder, input[type="text"i]::placeholder, textarea::-webkit-input-placeholder, input[type="text"i]::-webkit-input-placeholder {
+            textarea::placeholder, input::placeholder, textarea::-webkit-input-placeholder, input::-webkit-input-placeholder {
                 font-family: var(--code-font);
                 font-size: 100%;
             }
 
-            [type="icon"i] {
-                vertical-align: middle;
-            }
-
-            #auto_follow_time_minutes {
+            input[type="number"i] {
                 display: inline;
                 text-align: center;
 
                 padding: .5rem;
 
                 height: 3rem;
-                width: 3rem;
+                width: 4rem;
+            }
+
+            [type="icon"i] {
+                vertical-align: middle;
             }
         </style>
     </head>
@@ -511,7 +511,7 @@
 
                 <h2>Auto-follow &mdash; Time</h2>
                 <div>After watching
-                    <b><span><input id="auto_follow_time_minutes" type="text" value="60"/></span> minutes</b> of content, follow the streamer
+                    <b><span><input id="auto_follow_time_minutes" type="number" value="60"/></span> minutes</b> of content, follow the streamer
                 </div>
                 <span class="toggle">
                     <input id="auto_follow_time" type="checkbox"/>
@@ -584,6 +584,30 @@
 
         <article>
             <details>
+                <summary>
+                    <h2>Emotes<sup>+</sup></h2>
+
+                    <div class="toggle">
+                        <input id="emotes_plus" type="checkbox" checked/>
+                        <label for="emotes_plus"></label>
+                    </div>
+                </summary>
+
+                <h3>Convert text into emotes on all channels</h3>
+                <br/><br/>
+
+                <code>Kappa</code> &rarr; <img src="kappa.png" type="icon"/>
+                <br/><br/>
+
+                <h4>
+                    <i>This only works on the channel you are viewing.</i><br/>
+                    <i>This does <b>not</b> save/unlock the emote.</i>
+                </h4>
+            </details>
+        </article>
+
+        <article>
+            <details>
                 <summary more="filters">
                     <h2>Filter Messages</h2>
 
@@ -631,6 +655,12 @@
                 <h3>When you receive a notification for a stream, go to the stream</h3>
                 <br/><br/>
 
+                <h2>Wait Time</h2>
+                <div>Wait for
+                    <b><span><input id="first_in_line_timer" type="number" value="1"/></span> minutes</b> before leaving
+                </div>
+                <br/><br/>
+
                 <img src="first-in-line.png"/>
             </details>
         </article>
@@ -647,6 +677,14 @@
                 </summary>
 
                 <h3>When someone mentions you (<code>@<i>username</i></code>), make the message stand out by highlighting it</h3>
+                <br/><br/>
+
+                <h2>Allow Pop-up</h2>
+                <div>Show a pop-up when mentioned</div>
+                <span class="toggle">
+                    <input id="highlight_messages_popup" type="checkbox" checked/>
+                    <label for="highlight_messages_popup"></label>
+                </span>
                 <br/><br/>
 
                 <img src="highlight-mention.png"/>

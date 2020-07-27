@@ -736,15 +736,16 @@ let Initialize = async(startover = false) => {
                 if(defined(existing))
                     continue;
 
-                let popup = new Popup(`${ author } sent you a message`, message, {
-                    Reply: event => {
-                        let chatbox = $('.chat-input__textarea textarea'),
-                            existing = $('#twitch-tools-popup');
+                if(settings.highlight_messages_popup)
+                    new Popup(`${ author } sent you a message`, message, {
+                        Reply: event => {
+                            let chatbox = $('.chat-input__textarea textarea'),
+                                existing = $('#twitch-tools-popup');
 
-                        chatbox.focus();
-                        existing.remove();
-                    }
-                });
+                            chatbox.focus();
+                            existing.remove();
+                        }
+                    });
             }
     };
     Timers.highlight_messages = 500;
@@ -1158,11 +1159,15 @@ let Initialize = async(startover = false) => {
      *
      *
      */
+    let FiLH;
+
     Handlers.first_in_line = () => {
         let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
 
         if(!notifications.length)
             return;
+
+        let secs = parseInt(settings.first_in_line_timer) | 0;
 
         for(let notification of notifications) {
             let action = $('a[href^="/"]', false, notification);
@@ -1171,11 +1176,17 @@ let Initialize = async(startover = false) => {
                 continue;
 
             console.warn('Recieved an actionable notification:', action.textContent);
+            console.warn(`Waiting ${ secs * 60 * 1000 } minutes before leaving`);
 
             let { href, textContent } = action;
 
+            FiLH = href;
+
             if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent))
-                open(href, '_self');
+                if(secs)
+                    setTimeout(() => open(FiLH, '_self'), secs * 60 * 1000);
+                else
+                    open(FiLH, '_self');
         }
     };
     Timers.first_in_line = 3000;
@@ -1215,7 +1226,7 @@ let Initialize = async(startover = false) => {
         for(let counter of bits_counter) {
             let { innerHTML } = counter;
 
-            if(bits_regexp.test(counter))
+            if(bits_regexp.test(innerHTML))
                 counter.innerHTML = innerHTML.replace(bits_regexp, ($0, $1, $$, $_) => {
                     let bits = parseInt($1.replace(/\D+/g, '')),
                         usd = bits * .01;
@@ -1248,6 +1259,88 @@ let Initialize = async(startover = false) => {
 
     if(settings.bits_to_cents)
         Jobs.bits_to_cents = setInterval(Handlers.bits_to_cents, Timers.bits_to_cents);
+
+    /*** Emotes+ :D
+     *      ______                 _                      _____
+     *     |  ____|               | |             _     _|  __ \
+     *     | |__   _ __ ___   ___ | |_ ___  ___ _| |_  (_) |  | |
+     *     |  __| | '_ ` _ \ / _ \| __/ _ \/ __|_   _|   | |  | |
+     *     | |____| | | | | | (_) | ||  __/\__ \ |_|    _| |__| |
+     *     |______|_| |_| |_|\___/ \__\___||___/       (_)_____/
+     *
+     *
+     */
+    let EMOTES = {},
+        shrt = url => url.replace(/https:\/\/static-cdn.jtvnw.net\/emoticons\/(v\d+)\/(\d+)\/([\d\.]+)/, ($0, $1, $2, $3, $$, $_) => {
+            let type = $1,
+                id = parseInt($2).toString(36),
+                version = $3;
+
+            return [type, id, version].join('-');
+        });
+
+    Handlers.emotes_plus = () => {
+        let chat = GetChat(10, true),
+            regexp;
+
+        for(let emote in chat.emotes)
+            if(!(emote in EMOTES))
+                EMOTES[emote] = shrt(chat.emotes[emote]);
+
+        for(let line of chat)
+            for(let emote in EMOTES)
+                if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'))).test(line.message)) {
+                    let alt = emote,
+                        src = '//static-cdn.jtvnw.net/emoticons/' + EMOTES[emote].split('-').map((v, i) => i == 1? parseInt(v, 36): v).join('/'),
+                        srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
+
+                    let f = furnish;
+                    let img =
+                    f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
+                        f('span', { 'data-a-target': 'emote-name' },
+                            f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
+                                f('img.chat-image.chat-line__message--emote', {
+                                    title: alt,
+                                    srcset, alt, src,
+                                })
+                            )
+                        )
+                    );
+
+                    let { element } = line;
+
+                    $('.text-fragment:not([twitch-tools-emote-plus])', true, element).map(fragment => {
+                        fragment.setAttribute('twitch-tools-emote-plus', alt);
+                        fragment.innerHTML = fragment.innerHTML.replace(regexp, img.innerHTML);
+                    });
+                }
+    };
+    Timers.emotes_plus = 100;
+
+    if(settings.emotes_plus) {
+        // Collect emotes
+        let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
+
+        function CollectEmotes() {
+            chat_emote_button.click();
+
+            setTimeout(() => {
+                $('[class*="emote-picker"i] .emote-button img', true)
+                    .map(img => {
+                        EMOTES[img.alt] = shrt(img.src);
+                    });
+
+                chat_emote_button.click();
+            }, 500);
+        }
+
+        if(defined(chat_emote_button))
+            CollectEmotes();
+        else
+            setTimeout(CollectEmotes, 1000);
+
+        Jobs.emotes_plus = setInterval(Handlers.emotes_plus, Timers.emotes_plus);
+    }
 };
 // End of Initialize
 

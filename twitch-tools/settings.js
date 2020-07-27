@@ -42,7 +42,11 @@ switch(BrowserNamespace) {
 }
 
 let // These are option names. Anything else will be removed
-    usable_settings = ['auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow_raids', 'auto_reload', 'auto_play_stream', 'auto_play_ads', 'auto_follow_time', 'auto_follow_time_minutes', 'first_in_line', 'bits_to_cents'];
+    usable_settings = [
+        'auto_claim', 'highlight_messages', 'filter_messages', 'filter_rules', 'keep_watching', 'stop_raiding', 'auto_follow_raids', 'auto_reload',
+        'auto_play_stream', 'auto_play_ads', 'auto_follow_time', 'auto_follow_time_minutes', 'first_in_line', 'bits_to_cents', 'emotes_plus',
+        'first_in_line_timer', 'highlight_messages_popup',
+    ];
 
 let Glyphs = {
     bonuschannelpoints: '<svg fill="var(--blue)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
@@ -149,13 +153,14 @@ async function SaveSettings() {
     let extractValue = element => {
         return element[{
             text: 'value',
+            number: 'value',
             checkbox: 'checked',
         }[element.type]];
     };
 
     let elements = $(usable_settings.map(name => '#' + name).join(', '), true),
-        using = elements.map(element => element.id);
-    let settings = {};
+        using = elements.map(element => element.id),
+        settings = {};
 
     for(let id of using) {
         if(!~['filter_rules'].indexOf(id))
@@ -190,6 +195,7 @@ async function LoadSettings() {
 
         return element[{
             text: 'value',
+            number: 'value',
             checkbox: 'checked',
         }[element.type]] = value;
     };
