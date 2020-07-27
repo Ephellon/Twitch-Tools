@@ -172,7 +172,7 @@ class Popup {
             }
 
         let p =
-        f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; top:0' },
+        f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; bottom:10rem' },
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {},
@@ -948,14 +948,14 @@ let Initialize = async(startover = false) => {
         let { like, coin, follow } = streamer,
             raid = data.referrer == 'raid',
             aft = settings.auto_follow_time,
-            secs = parseInt(settings.auto_follow_time_minutes) | 0;
+            mins = parseInt(settings.auto_follow_time_minutes) | 0;
 
         if(!like) {
             if(raid)
                 follow();
             else if(aft)
-                if(secs)
-                    setTimeout(follow, secs * 60 * 1000);
+                if(mins)
+                    setTimeout(follow, mins * 60 * 1000);
                 else
                     follow();
         }
@@ -1167,7 +1167,7 @@ let Initialize = async(startover = false) => {
         if(!notifications.length)
             return;
 
-        let secs = parseInt(settings.first_in_line_timer) | 0;
+        let mins = parseInt(settings.first_in_line_timer) | 0;
 
         for(let notification of notifications) {
             let action = $('a[href^="/"]', false, notification);
@@ -1176,15 +1176,15 @@ let Initialize = async(startover = false) => {
                 continue;
 
             console.warn('Recieved an actionable notification:', action.textContent);
-            console.warn(`Waiting ${ secs * 60 * 1000 } minutes before leaving`);
+            console.warn(`Waiting ${ mins } minutes before leaving`);
 
             let { href, textContent } = action;
 
             FiLH = href;
 
             if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent))
-                if(secs)
-                    setTimeout(() => open(FiLH, '_self'), secs * 60 * 1000);
+                if(mins)
+                    setTimeout(() => open(FiLH, '_self'), mins * 60 * 1000);
                 else
                     open(FiLH, '_self');
         }
@@ -1271,16 +1271,15 @@ let Initialize = async(startover = false) => {
      *
      */
     let EMOTES = {},
-        shrt = url => url.replace(/https:\/\/static-cdn.jtvnw.net\/emoticons\/(v\d+)\/(\d+)\/([\d\.]+)/, ($0, $1, $2, $3, $$, $_) => {
-            let type = $1,
-                id = parseInt($2).toString(36),
-                version = $3;
+        shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
+            let id = parseInt($1).toString(36),
+                version = $2;
 
-            return [type, id, version].join('-');
+            return [id, version].join('-');
         });
 
     Handlers.emotes_plus = () => {
-        let chat = GetChat(10, true),
+        let chat = GetChat(5, true),
             regexp;
 
         for(let emote in chat.emotes)
@@ -1291,8 +1290,11 @@ let Initialize = async(startover = false) => {
             for(let emote in EMOTES)
                 if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'))).test(line.message)) {
                     let alt = emote,
-                        src = '//static-cdn.jtvnw.net/emoticons/' + EMOTES[emote].split('-').map((v, i) => i == 1? parseInt(v, 36): v).join('/'),
+                        src = '//static-cdn.jtvnw.net/emoticons/v1/' + EMOTES[emote].split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
                         srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
+
+                    if(/\/https?:\/\//i.test(src))
+                        src = src.replace(/[^]*\/(https?:\/\/[^]*)(?:\/https?:\/\/)?$/i, '$1');
 
                     let f = furnish;
                     let img =
@@ -1329,6 +1331,8 @@ let Initialize = async(startover = false) => {
                     .map(img => {
                         EMOTES[img.alt] = shrt(img.src);
                     });
+
+                top.EMOTES = EMOTES;
 
                 chat_emote_button.click();
             }, 500);
