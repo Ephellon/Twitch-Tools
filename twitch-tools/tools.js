@@ -18,6 +18,7 @@ let settings = {},
     Jobs = {},
     Timers = {},
     Handlers = {},
+    Unhandlers = {},
     // These won't change (often)
     USERNAME;
 
@@ -524,11 +525,11 @@ function update() {
      */
     streamers = [
         // Current streamers
-        ...$(`.side-bar-contents a:not([href="${ pathname }"i])`, true).map(element => {
+        ...$(`a:not([href="${ pathname }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)')).map(element => {
             return {
                 href: element.href,
                 name: $('figure img', false, element).alt,
-                live: empty($('div[class*="--offline"i]', false, element))
+                live: empty($('div[class*="--offline"i]', false, element)),
             };
         }),
     ];
@@ -595,6 +596,11 @@ Storage.onChanged.addListener((changes, namespace) => {
             clearInterval(Jobs[key]);
 
             delete Jobs[key];
+
+            let unhandler = Unhandlers[key];
+
+            if(defined(unhandler))
+                unhandler();
         } else if(newValue === true) {
             console.warn(`Turning on the ${ key } setting`);
 
@@ -646,7 +652,7 @@ let Initialize = async(startover = false) => {
      */
     Handlers.auto_claim = () => {
         let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = (settings.auto_claim && $('#auto-community-points').getAttribute('enabled') === 'true');
+            Enabled = (settings.auto_claim && $('#auto-community-points').getAttribute('twitch-tools-enabled') === 'true');
 
         if(Enabled && ChannelPoints)
             ChannelPoints.click();
@@ -695,15 +701,15 @@ let Initialize = async(startover = false) => {
 
             button.text.innerText = 'ON';
             button.icon.outerHTML = Glyphs.channelpoints;
-            button.element.setAttribute('enabled', true);
+            button.element.setAttribute('twitch-tools-enabled', true);
 
             button.icon = $('svg', false, element);
         }
 
         button.element.onclick = event => {
-            let enabled = button.element.getAttribute('enabled') !== 'true';
+            let enabled = button.element.getAttribute('twitch-tools-enabled') !== 'true';
 
-            button.element.setAttribute('enabled', enabled);
+            button.element.setAttribute('twitch-tools-enabled', enabled);
             button.text.innerText = ['OFF','ON'][+enabled];
             button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
         };
@@ -825,16 +831,25 @@ let Initialize = async(startover = false) => {
                 }).indexOf(true);
         }).map(line => {
             let { element, mentions } = line,
-                hidden = element.getAttribute('hidden') === 'true';
+                hidden = element.getAttribute('twitch-tools-hidden') === 'true';
 
             if(hidden || !!~mentions.indexOf(USERNAME))
                 return;
 
             element.setAttribute('style', 'display:none');
-            element.setAttribute('hidden', 'true');
+            element.setAttribute('twitch-tools-hidden', true);
         });
     };
     Timers.filter_messages = 100;
+
+    Unhandlers.filter_messages = () => {
+        let hidden = $('[twitch-tools-hidden]', true);
+
+        hidden.map(element => {
+            element.removeAttribute('[twitch-tools-hidden]');
+            element.removeAttribute('[style]');
+        });
+    };
 
     if(settings.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
@@ -1220,7 +1235,7 @@ let Initialize = async(startover = false) => {
 
                 header.textContent += ` ($${ usd })`;
 
-                header.setAttribute('true-amount', usd);
+                header.setAttribute('twitch-tools-true-amount', usd);
             });
 
         for(let counter of bits_counter) {
@@ -1233,7 +1248,7 @@ let Initialize = async(startover = false) => {
 
                     usd = (bits * .01).toFixed(2);
 
-                    counter.setAttribute('true-amount', usd);
+                    counter.setAttribute('twitch-tools-true-amount', usd);
 
                     return `${ $0 } ($${ usd })`;
                 });
@@ -1249,7 +1264,7 @@ let Initialize = async(startover = false) => {
 
                     usd = (bits * .01).toFixed(2);
 
-                    train.setAttribute('true-amount', usd);
+                    train.setAttribute('twitch-tools-true-amount', usd);
 
                     return `${ $0 } ($${ usd })`;
                 });
