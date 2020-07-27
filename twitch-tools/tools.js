@@ -172,7 +172,7 @@ class Popup {
             }
 
         let p =
-        f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; bottom:10rem' },
+        f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; bottom:10rem; right:1rem' },
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {},
@@ -1291,10 +1291,12 @@ let Initialize = async(startover = false) => {
                 if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'))).test(line.message)) {
                     let alt = emote,
                         src = '//static-cdn.jtvnw.net/emoticons/v1/' + EMOTES[emote].split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
-                        srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
+                        srcset;
 
                     if(/\/https?:\/\//i.test(src))
                         src = src.replace(/[^]*\/(https?:\/\/[^]*)(?:\/https?:\/\/)?$/i, '$1');
+                    else
+                        srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
 
                     let f = furnish;
                     let img =

@@ -2,6 +2,8 @@
 
 An extension that gives you a set of tools control your Twitch experience.
 
+Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd)
+
 ### Features/Settings
 
 - *Auto-claim* `on` &mdash; When the **Bonus Channel Points** appears, click it
