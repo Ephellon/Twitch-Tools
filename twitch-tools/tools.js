@@ -176,7 +176,9 @@ class Popup {
         f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; bottom:10rem; right:1rem' },
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
-                    f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {},
+                    f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
+                        style: 'background-color:var(--color-twitch-purple-5)!important'
+                    },
                         f('div', {},
                             f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
                                 f('div.tw-flex.tw-flex-nowrap.tw-pd-l-1.tw-pd-y-1', {},
@@ -210,7 +212,7 @@ class Popup {
                                     onclick: A,
                                 },
                                     f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
-                                        f('p.tw-c-text-link', {}, N)
+                                        f('p.tw-c-text-alt', {}, N)
                                     )
                                 )
                             ),
@@ -591,7 +593,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             { oldValue, newValue } = change;
 
         if(newValue === false) {
-            console.warn(`Turning off the ${ key } setting`);
+            console.warn(`Turning off the ${ key } setting`, new Date);
 
             clearInterval(Jobs[key]);
 
@@ -602,11 +604,11 @@ Storage.onChanged.addListener((changes, namespace) => {
             if(defined(unhandler))
                 unhandler();
         } else if(newValue === true) {
-            console.warn(`Turning on the ${ key } setting`);
+            console.warn(`Turning on the ${ key } setting`, new Date);
 
             Jobs[key] = setInterval(Handlers[key], Timers[key]);
         } else {
-            console.warn(`Changing the ${ key } setting`, { oldValue, newValue });
+            console.warn(`Changing the ${ key } setting`, { oldValue, newValue }, new Date);
         }
 
         settings[key] = newValue;
@@ -882,11 +884,11 @@ let Initialize = async(startover = false) => {
 
         if(!streamer.live && !ValidTwitchPath.test(pathname)) {
             if(online.length) {
-                console.warn(`${ streamer.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href);
+                console.warn(`${ streamer.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else  {
-                console.warn(`${ streamer.name } is no longer live. There doesn't seem to be any followed streamers on right now`);
+                console.warn(`${ streamer.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
             }
         } else if(/\/search/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
@@ -931,11 +933,11 @@ let Initialize = async(startover = false) => {
 
         if(raiding && next)
             if(online.length) {
-                console.warn(`${ streamer.name } is raiding. Moving onto next streamer (${ next.name })`, next.href);
+                console.warn(`${ streamer.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                console.warn(`${ streamer.name } is raiding. There doesn't seem to be any followed streamers on right now`);
+                console.warn(`${ streamer.name } is raiding. There doesn't seem to be any followed streamers on right now`, new Date);
             }
     };
     Timers.stop_raiding = 5000;
@@ -1093,7 +1095,7 @@ let Initialize = async(startover = false) => {
         let url = parseURL(location),
             parameters = url.searchParameters;
 
-        console.error('The stream ran into an error:', error_message.textContent);
+        console.error('The stream ran into an error:', error_message.textContent, new Date);
 
         parameters.fail = (+new Date).toString(36);
 
@@ -1187,24 +1189,37 @@ let Initialize = async(startover = false) => {
         for(let notification of notifications) {
             let action = $('a[href^="/"]', false, notification);
 
-            if(!action)
+            if(!defined(action) || defined(FiLH))
                 continue;
 
-            console.warn('Recieved an actionable notification:', action.textContent);
-            console.warn(`Waiting ${ mins } minutes before leaving`);
+            console.warn('Recieved an actionable notification:', action.textContent, new Date);
+            console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
 
-            let { href, textContent } = action;
+            let { href, textContent } = action,
+                url = parseURL(href),
+                { pathname } = url;
 
             FiLH = href;
 
             if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent))
-                if(mins)
+                if(mins) {
+                    setTimeout(() => {
+                        console.warn('Heading to stream in 1 minute', FiLH, new Date);
+                        new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', { Go: () => open(FiLH, '_self') });
+                    }, (mins - 1) * 60 * 1000);
+
                     setTimeout(() => open(FiLH, '_self'), mins * 60 * 1000);
-                else
+                } else {
                     open(FiLH, '_self');
+                }
         }
     };
     Timers.first_in_line = 3000;
+
+    Unhandlers.first_in_line = () => {
+        if(defined(FiLH))
+            FiLH = '?';
+    };
 
     if(settings.first_in_line)
         Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
