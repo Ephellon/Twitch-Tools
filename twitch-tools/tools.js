@@ -151,13 +151,19 @@ class UUID {
 // Displays a popup
 // new Popup(subject:string, message:string[, actions:object]) -> Object
 class Popup {
-    constructor(subject, message, action = {}) {
+    constructor(subject, message, actions = {}) {
         let f = furnish;
 
         let P = $('.stream-chat-header'),
             X = $('#twitch-tools-popup', false, P),
             N = 'Continue',
+            D = 'Close',
             A = event => {
+                let existing = $('#twitch-tools-popup');
+
+                existing.remove();
+            },
+            C = event => {
                 let existing = $('#twitch-tools-popup');
 
                 existing.remove();
@@ -166,11 +172,15 @@ class Popup {
         if(defined(X))
             return X;
 
-        for(let n in action)
-            if(typeof action[n] == 'function') {
-                N = n;
-                A = action[n];
-            }
+        for(let n in actions)
+            if(typeof actions[n] == 'function')
+                if(/\b(abandon|cancel|choke|close|drop|end|halt|kill|nix|plug|postpone|seal|scrap|scrub|stop)\b/i.test(n)) {
+                    D = n;
+                    C = actions[n];
+                } else {
+                    N = n;
+                    A = actions[n];
+                }
 
         let p =
         f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { style: 'z-index:9; bottom:10rem; right:1rem' },
@@ -218,10 +228,10 @@ class Popup {
                             ),
                             f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
                                 f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
-                                    onclick: event => this.element.remove(),
+                                    onclick: C,
                                 },
                                     f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
-                                        f('p.tw-c-text-alt-2', {}, 'Close')
+                                        f('p.tw-c-text-alt-2', {}, D)
                                     )
                                 )
                             )
@@ -1176,7 +1186,7 @@ let Initialize = async(startover = false) => {
      *
      *
      */
-    let FiLH;
+    let FiLH, FiLJ;
 
     Handlers.first_in_line = () => {
         let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
@@ -1199,19 +1209,56 @@ let Initialize = async(startover = false) => {
                 url = parseURL(href),
                 { pathname } = url;
 
-            FiLH = href;
+            if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent)) {
+                FiLH = href;
 
-            if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent))
                 if(mins) {
                     setTimeout(() => {
                         console.warn('Heading to stream in 1 minute', FiLH, new Date);
-                        new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', { Go: () => open(FiLH, '_self') });
+                        new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', {
+                            Goto: () => {
+                                let existing = $('#twitch-tools-popup');
+
+                                existing.remove();
+                                console.warn('Heading to stream now');
+
+                                clearTimeout(FiLJ);
+                                open(FiLH, '_self');
+
+                                FiLH = undefined;
+                            },
+                            Cancel: () => {
+                                let existing = $('#twitch-tools-popup');
+
+                                existing.remove();
+                                console.warn('Canceled First in Line event');
+
+                                clearTimeout(FiLJ);
+                                FiLH = undefined;
+                            },
+                        });
                     }, (mins - 1) * 60 * 1000);
 
-                    setTimeout(() => open(FiLH, '_self'), mins * 60 * 1000);
+                    FiLJ = setTimeout(() => {
+                        let existing = $('#twitch-tools-popup');
+
+                        existing.remove();
+
+                        clearTimeout(FiLJ);
+                        open(FiLH, '_self');
+
+                        FiLH = undefined;
+                    }, mins * 60 * 1000);
                 } else {
+                    let existing = $('#twitch-tools-popup');
+
+                    existing.remove();
+
                     open(FiLH, '_self');
+
+                    FiLH = undefined;
                 }
+            }
         }
     };
     Timers.first_in_line = 3000;
@@ -1236,13 +1283,13 @@ let Initialize = async(startover = false) => {
      */
     Handlers.bits_to_cents = () => {
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('.bits-count:not([true-amount])', true),
-            hype_trains = $('[class*="community-highlight-stack"i] p:not([true-amount])', true);
+            bits_counter = $('.bits-count:not([twitch-tools-true-amount])', true),
+            hype_trains = $('[class*="community-highlight-stack"i] p:not([twitch-tools-true-amount])', true);
 
         let bits_regexp = /([\d,]+) +bits/i;
 
         if(defined(dropdown))
-            $('h5:not([true-amount])', true, dropdown).map(header => {
+            $('h5:not([twitch-tools-true-amount])', true, dropdown).map(header => {
                 let bits = parseInt(header.textContent.replace(/\D+/g, '')),
                     usd;
 
