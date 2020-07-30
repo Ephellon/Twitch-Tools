@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "1.13",
+    "version": "1.14",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {

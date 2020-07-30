@@ -15,7 +15,7 @@ let empty = value => (value === undefined || value === null),
 let settings = {},
     display = $('[data-a-target="user-menu-toggle"i]'),
     Jobs = {},
-    Queue = { bullets: [], messages: [], popups: [] },
+    Queue = { bullets: [], emotes: [], messages: [], popups: [] },
     Timers = {},
     Handlers = {},
     Unhandlers = {},
@@ -1336,17 +1336,18 @@ let Initialize = async(startover = false) => {
      */
     Handlers.bits_to_cents = () => {
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('.bits-count:not([twitch-tools-true-amount])', true),
+            bits_counter = $('[class*="bits-count"i]:not([twitch-tools-true-amount]), [class*="cheer-amount"i]:not([twitch-tools-true-amount])', true),
             hype_trains = $('[class*="community-highlight-stack"i] p:not([twitch-tools-true-amount])', true);
 
-        let bits_regexp = /([\d,]+) +bits/i;
+        let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
+            bits_alp_regexp = /([\d,]+) +bits/i;
 
         if(defined(dropdown))
             $('h5:not([twitch-tools-true-amount])', true, dropdown).map(header => {
                 let bits = parseInt(header.textContent.replace(/\D+/g, '')),
                     usd;
 
-                usd = (bits * .01).toFixed(2).replace(/(\.\d)$/, '$10');
+                usd = (bits * .01).toFixed(2);
 
                 header.textContent += ` ($${ usd })`;
 
@@ -1356,10 +1357,10 @@ let Initialize = async(startover = false) => {
         for(let counter of bits_counter) {
             let { innerHTML } = counter;
 
-            if(bits_regexp.test(innerHTML))
-                counter.innerHTML = innerHTML.replace(bits_regexp, ($0, $1, $$, $_) => {
+            if(bits_num_regexp.test(innerHTML))
+                counter.innerHTML = innerHTML.replace(bits_num_regexp, ($0, $1, $$, $_) => {
                     let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd = bits * .01;
+                        usd;
 
                     usd = (bits * .01).toFixed(2);
 
@@ -1372,10 +1373,10 @@ let Initialize = async(startover = false) => {
         for(let train of hype_trains) {
             let { innerHTML } = train;
 
-            if(bits_regexp.test(innerHTML))
-                train.innerHTML = innerHTML.replace(bits_regexp, ($0, $1, $$, $_) => {
+            if(bits_alp_regexp.test(innerHTML))
+                train.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
                     let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd = bits * .01;
+                        usd;
 
                     usd = (bits * .01).toFixed(2);
 
@@ -1416,7 +1417,13 @@ let Initialize = async(startover = false) => {
             if(!(emote in EMOTES))
                 EMOTES[emote] = shrt(chat.emotes[emote]);
 
-        for(let line of chat)
+        for(let line of chat) {
+            if(!!~Queue.emotes.indexOf(line.uuid))
+                return;
+            if(Queue.emotes.length >= 100)
+                Queue.emotes = Queue.emotes.splice(-5);
+            Queue.emotes.push(line.uuid);
+
             for(let emote in EMOTES)
                 if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'))).test(line.message)) {
                     let alt = emote,
@@ -1448,6 +1455,7 @@ let Initialize = async(startover = false) => {
                         fragment.innerHTML = fragment.innerHTML.replace(regexp, img.innerHTML);
                     });
                 }
+        }
     };
     Timers.emotes_plus = 100;
 
