@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "1.12",
+    "version": "1.13",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {
@@ -28,6 +28,11 @@
         }
     ],
 
+	"background": {
+		"scripts": ["background.js"],
+		"persistent": false
+	},
+
     "options_page": "settings.html",
     "options_ui": {
         "page": "settings.html",
@@ -46,10 +51,10 @@
     },
 
     "permissions": [
-        "https://*.twitch.tv/*",
-        "http://*.twitch.tv/*",
+        "*://*.twitch.tv/*",
 
-        "storage"
+        "storage",
+        "tabs"
     ],
 
     "web_accessible_resources": ["*.png"]

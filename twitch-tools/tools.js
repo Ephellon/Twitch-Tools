@@ -14,8 +14,8 @@ let empty = value => (value === undefined || value === null),
 
 let settings = {},
     display = $('[data-a-target="user-menu-toggle"i]'),
-    visible = [],
     Jobs = {},
+    Queue = { bullets: [], messages: [], popups: [] },
     Timers = {},
     Handlers = {},
     Unhandlers = {},
@@ -30,7 +30,7 @@ if(display) {
     USERNAME = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
 }
 
-let browser, Runtime, Container, BrowserNamespace;
+let browser, Storage, Runtime, Extension, Container, BrowserNamespace;
 
 if(browser && browser.runtime)
     BrowserNamespace = 'browser';
@@ -43,14 +43,16 @@ switch(BrowserNamespace) {
     case 'browser':
         Runtime = Container.runtime;
         Storage = Container.storage;
+        Extension = Container.extension;
 
         Storage = Storage.sync || Storage.local;
         break;
 
     case 'chrome':
     default:
-        Runtime = Container.extension;
+        Runtime = Container.runtime;
         Storage = Container.storage;
+        Extension = Container.extension;
 
         Storage = Storage.sync || Storage.local;
         break;
@@ -169,8 +171,28 @@ class Popup {
                 existing.remove();
             };
 
-        if(defined(X))
-            return X;
+        let uuid = (UUID.from([subject, message].join(':')) + '');
+
+        if(defined(X)) {
+            if(!~Queue.popups.map(popup => popup.uuid).indexOf(uuid)) {
+                let interval = setInterval(() => {
+                    let existing = $('#twitch-tools-popup');
+
+                    if(defined(existing))
+                        return;
+
+                    let { subject, message, actions, uuid, interval } = Queue.popups.pop();
+
+                    new Popup(subject, message, actions);
+
+                    clearInterval(interval);
+                }, 500);
+
+                Queue.popups.splice(0, 0, { subject, message, actions, uuid, interval });
+            }
+
+            return;
+        }
 
         for(let n in actions)
             if(typeof actions[n] == 'function')
@@ -187,15 +209,15 @@ class Popup {
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
-                        style: 'background-color:var(--color-twitch-purple-5)!important'
-                    },
+                            style: 'background-color:var(--color-twitch-purple-5)!important'
+                        },
                         f('div', {},
                             f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
                                 f('div.tw-flex.tw-flex-nowrap.tw-pd-l-1.tw-pd-y-1', {},
                                     f('div', {},
                                         f('div', { style: 'height:4rem; width:4rem' },
                                             f('img.tw-border-radius-rounded.tw-full-height.tw-full-width.tw-image', {
-                                                src: Runtime.getURL('profile.png'),
+                                                src: Extension.getURL('profile.png'),
                                                 sizeinpixels: 40,
                                                 borderradius: 'tw-border-radius-rounded',
                                             })
@@ -216,11 +238,41 @@ class Popup {
                                 )
                             )
                         ),
+                        f('div#twitch-tools-notification-counter.t-absolute.tw-font-size-7.tw-left-0.tw-top-0', { style: 'visibility:hidden' },
+                            f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
+                                    'data-a-target': 'tw-animation-target'
+                                },
+                                f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
+                                    f('div#twitch-tools-notification-counter-output.tw-c-text-overlay.tw-number-badge__badge.tw-relative', {
+                                        'interval-id': setInterval(() => {
+                                            let { length } = Queue.popups,
+                                                counter = $('#twitch-tools-notification-counter'),
+                                                output = $('#twitch-tools-notification-counter-output');
+
+                                            if(!defined(counter) || !defined(output))
+                                                return;
+
+                                            let visibility = counter.getAttribute('style').replace(/[^]+:/, ''),
+                                                interval = output.getAttribute('interval-id');
+
+                                            output.textContent = length;
+
+                                            if(length < 1) {
+                                                counter.setAttribute('style', 'visibility:hidden');
+                                                clearInterval(interval);
+                                            } else {
+                                                counter.setAttribute('style', 'visibility:unset');
+                                            }
+                                        }, 100),
+                                    }, Queue.popups.length)
+                                )
+                            )
+                        ),
                         f('div.tw-align-content-stretch.tw-border-l.tw-flex.tw-flex-column.tw-flex-grow-0.tw-flex-shrink-0', {},
                             f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
                                 f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
-                                    onclick: A,
-                                },
+                                        onclick: A,
+                                    },
                                     f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
                                         f('p.tw-c-text-alt', {}, N)
                                     )
@@ -228,8 +280,8 @@ class Popup {
                             ),
                             f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
                                 f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
-                                    onclick: C,
-                                },
+                                        onclick: C,
+                                    },
                                     f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
                                         f('p.tw-c-text-alt-2', {}, D)
                                     )
@@ -743,9 +795,9 @@ let Initialize = async(startover = false) => {
         let chat = GetChat().filter(line => !!~line.mentions.indexOf(USERNAME));
 
         for(let line of chat)
-            if(!~visible.indexOf(line.uuid)) {
+            if(!~Queue.messages.indexOf(line.uuid)) {
+                Queue.messages.push(line.uuid);
                 line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
-                visible.push(line.uuid);
 
                 let { author, message } = line;
 
@@ -755,7 +807,7 @@ let Initialize = async(startover = false) => {
                     continue;
 
                 if(settings.highlight_messages_popup)
-                    new Popup(`${ author } sent you a message`, message, {
+                    new Popup(`@${ author } sent you a message`, message, {
                         Reply: event => {
                             let chatbox = $('.chat-input__textarea textarea'),
                                 existing = $('#twitch-tools-popup');
@@ -1203,7 +1255,6 @@ let Initialize = async(startover = false) => {
                 continue;
 
             console.warn('Recieved an actionable notification:', action.textContent, new Date);
-            console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
 
             let { href, textContent } = action,
                 url = parseURL(href),
@@ -1213,6 +1264,8 @@ let Initialize = async(startover = false) => {
                 FiLH = href;
 
                 if(mins) {
+                    console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
+
                     setTimeout(() => {
                         console.warn('Heading to stream in 1 minute', FiLH, new Date);
                         new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', {
