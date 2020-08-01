@@ -1025,24 +1025,25 @@ let Initialize = async(startover = false) => {
             data = url.searchParameters;
 
         let { like, coin, follow } = streamer,
-            raid = data.referrer == 'raid',
-            aft = settings.auto_follow_time,
-            mins = parseInt(settings.auto_follow_time_minutes) | 0;
+            raid = data.referrer == 'raid';
 
-        if(!like) {
-            if(raid)
-                follow();
-            else if(aft)
-                if(mins)
-                    setTimeout(follow, mins * 60 * 1000);
-                else
-                    follow();
-        }
+        if(!like && raid)
+            follow();
     };
     Timers.auto_follow_raids = 1000;
 
     if(settings.auto_follow_raids)
         Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
+
+    if(settings.auto_follow_time) {
+        let { like, coin, follow } = streamer,
+            mins = parseInt(settings.auto_follow_time_minutes) | 0;
+
+        if(!like && mins)
+            setTimeout(follow, mins * 60 * 1000);
+        else if(!like)
+            follow();
+    }
 
     /*** Easy Filter - NOT A SETTING. THIS IS A HELPER FOR: MESSAGE FILTER
      *      ______                  ______ _ _ _
@@ -1183,7 +1184,7 @@ let Initialize = async(startover = false) => {
     Handlers.auto_play_stream = () => {
         let video = $('video');
 
-        if(!video)
+        if(!defined(video))
             return;
 
         let { paused } = video,
@@ -1421,7 +1422,7 @@ let Initialize = async(startover = false) => {
             if(!!~Queue.emotes.indexOf(line.uuid))
                 return;
             if(Queue.emotes.length >= 100)
-                Queue.emotes = Queue.emotes.splice(-5);
+                Queue.emotes = [];
             Queue.emotes.push(line.uuid);
 
             for(let emote in EMOTES)
