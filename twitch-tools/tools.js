@@ -710,83 +710,6 @@ let Initialize = async(startover = false) => {
         Initialize.errors++
     }
 
-    /*** Auto-claim Channel Points
-     *                    _                  _       _              _____ _                            _   _____      _       _
-     *         /\        | |                | |     (_)            / ____| |                          | | |  __ \    (_)     | |
-     *        /  \  _   _| |_ ___ ______ ___| | __ _ _ _ __ ___   | |    | |__   __ _ _ __  _ __   ___| | | |__) |__  _ _ __ | |_ ___
-     *       / /\ \| | | | __/ _ \______/ __| |/ _` | | '_ ` _ \  | |    | '_ \ / _` | '_ \| '_ \ / _ \ | |  ___/ _ \| | '_ \| __/ __|
-     *      / ____ \ |_| | || (_) |    | (__| | (_| | | | | | | | | |____| | | | (_| | | | | | | |  __/ | | |  | (_) | | | | | |_\__ \
-     *     /_/    \_\__,_|\__\___/      \___|_|\__,_|_|_| |_| |_|  \_____|_| |_|\__,_|_| |_|_| |_|\___|_| |_|   \___/|_|_| |_|\__|___/
-     *
-     *
-     */
-    Handlers.auto_claim_bonuses = () => {
-        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = (settings.auto_claim_bonuses && $('#auto-community-points').getAttribute('twitch-tools-enabled') === 'true');
-
-        if(Enabled && ChannelPoints)
-            ChannelPoints.click();
-
-        let parent = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
-            tooltip = $('#auto-community-points [role="tooltip"i]');
-
-        if(tooltip && parent)
-            tooltip.innerText = parent.innerText;
-    };
-    Timers.auto_claim_bonuses = 5000;
-
-    if(settings.auto_claim_bonuses) {
-        let button;
-        let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
-
-        if(!defined($('#auto-community-points'))) {
-            let parent = $('[data-test-selector="community-points-summary"i]'),
-                heading = $('.top-nav__menu > div', true).slice(-1)[0],
-                element = furnish('div');
-
-            if(!defined(parent)) {
-                if(!Initialize.errors)
-                    setTimeout(() => Initialize(true), 15000);
-
-                if(empty(streamer.name))
-                    throw `Currently not watching any stream. Re-initailizing in 15s`;
-                else
-                    throw `${ streamer.name } has not enabled Community Channel Points. Re-initailizing in 15s`;
-            }
-
-            element.innerHTML = parent.outerHTML;
-            element.id = 'auto-community-points';
-            element.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
-
-            heading.insertBefore(element, heading.children[1]);
-
-            $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
-
-            button = {
-                element: element,
-                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, element),
-                text: $('[class$="animated-number"i]', false, element),
-                enabled: true
-            };
-
-            button.text.innerText = 'ON';
-            button.icon.outerHTML = Glyphs.channelpoints;
-            button.element.setAttribute('twitch-tools-enabled', true);
-
-            button.icon = $('svg', false, element);
-        }
-
-        button.element.onclick = event => {
-            let enabled = button.element.getAttribute('twitch-tools-enabled') !== 'true';
-
-            button.element.setAttribute('twitch-tools-enabled', enabled);
-            button.text.innerText = ['OFF','ON'][+enabled];
-            button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
-        };
-
-        Jobs.auto_claim_bonuses = setInterval(Handlers.auto_claim_bonuses, Timers.auto_claim_bonuses);
-    }
-
     /*** Message Highlighter
      *      __  __                                  _    _ _       _     _ _       _     _
      *     |  \/  |                                | |  | (_)     | |   | (_)     | |   | |
@@ -1533,6 +1456,93 @@ let Initialize = async(startover = false) => {
 
     if(settings.stay_live)
         Jobs.stay_live = setInterval(Handlers.stay_live, Timers.stay_live);
+
+    /*** Contains throws that are scoped under Initialize
+     *       _____            _        _             _______ _
+     *      / ____|          | |      (_)           |__   __| |
+     *     | |     ___  _ __ | |_ __ _ _ _ __  ___     | |  | |__  _ __ _____      _____
+     *     | |    / _ \| '_ \| __/ _` | | '_ \/ __|    | |  | '_ \| '__/ _ \ \ /\ / / __|
+     *     | |___| (_) | | | | || (_| | | | | \__ \    | |  | | | | | | (_) \ V  V /\__ \
+     *      \_____\___/|_| |_|\__\__,_|_|_| |_|___/    |_|  |_| |_|_|  \___/ \_/\_/ |___/
+     *
+     *
+     */
+    /*** Auto-claim Channel Points
+     *                    _                  _       _              _____ _                            _   _____      _       _
+     *         /\        | |                | |     (_)            / ____| |                          | | |  __ \    (_)     | |
+     *        /  \  _   _| |_ ___ ______ ___| | __ _ _ _ __ ___   | |    | |__   __ _ _ __  _ __   ___| | | |__) |__  _ _ __ | |_ ___
+     *       / /\ \| | | | __/ _ \______/ __| |/ _` | | '_ ` _ \  | |    | '_ \ / _` | '_ \| '_ \ / _ \ | |  ___/ _ \| | '_ \| __/ __|
+     *      / ____ \ |_| | || (_) |    | (__| | (_| | | | | | | | | |____| | | | (_| | | | | | | |  __/ | | |  | (_) | | | | | |_\__ \
+     *     /_/    \_\__,_|\__\___/      \___|_|\__,_|_|_| |_| |_|  \_____|_| |_|\__,_|_| |_|_| |_|\___|_| |_|   \___/|_|_| |_|\__|___/
+     *
+     *
+     */
+    Handlers.auto_claim_bonuses = () => {
+        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
+            Enabled = (settings.auto_claim_bonuses && $('#auto-community-points').getAttribute('twitch-tools-enabled') === 'true');
+
+        if(Enabled && ChannelPoints)
+            ChannelPoints.click();
+
+        let parent = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
+            tooltip = $('#auto-community-points [role="tooltip"i]');
+
+        if(tooltip && parent)
+            tooltip.innerText = parent.innerText;
+    };
+    Timers.auto_claim_bonuses = 5000;
+
+    if(settings.auto_claim_bonuses) {
+        let button;
+        let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
+
+        if(!defined($('#auto-community-points'))) {
+            let parent = $('[data-test-selector="community-points-summary"i]'),
+                heading = $('.top-nav__menu > div', true).slice(-1)[0],
+                element = furnish('div');
+
+            if(!defined(parent)) {
+                if(!Initialize.errors)
+                    setTimeout(() => Initialize(true), 15000);
+
+                if(empty(streamer.name))
+                    throw `Currently not watching any stream. Re-initailizing in 15s`;
+                else
+                    throw `${ streamer.name } has not enabled Community Channel Points. Re-initailizing in 15s`;
+            }
+
+            element.innerHTML = parent.outerHTML;
+            element.id = 'auto-community-points';
+            element.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
+
+            heading.insertBefore(element, heading.children[1]);
+
+            $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
+
+            button = {
+                element: element,
+                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, element),
+                text: $('[class$="animated-number"i]', false, element),
+                enabled: true
+            };
+
+            button.text.innerText = 'ON';
+            button.icon.outerHTML = Glyphs.channelpoints;
+            button.element.setAttribute('twitch-tools-enabled', true);
+
+            button.icon = $('svg', false, element);
+        }
+
+        button.element.onclick = event => {
+            let enabled = button.element.getAttribute('twitch-tools-enabled') !== 'true';
+
+            button.element.setAttribute('twitch-tools-enabled', enabled);
+            button.text.innerText = ['OFF','ON'][+enabled];
+            button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
+        };
+
+        Jobs.auto_claim_bonuses = setInterval(Handlers.auto_claim_bonuses, Timers.auto_claim_bonuses);
+    }
 };
 // End of Initialize
 
