@@ -43,25 +43,52 @@ switch(BrowserNamespace) {
 
 let // These are option names. Anything else will be removed
     usable_settings = [
-        // Automation
+        /* Automation */
+        // Auto-claim Bonuses
         'auto_claim_bonuses',
-        'auto_follow_on', 'auto_follow_raids', 'auto_follow_time', 'auto_follow_time_minutes', 'auto_follow_off',
-        'keep_watching',
-        'first_in_line', 'first_in_line_timer',
+        // Auto-Follow
+        'auto_follow_none',
+        'auto_follow_raids',
+        'auto_follow_time',
+            'auto_follow_time_minutes',
+        'auto_follow_all',
+        // Keep Watching
         'stay_live',
+        // First in Line
+        'first_in_line_none',
+        'first_in_line',
+            'first_in_line_time_minutes',
+        'first_in_line_plus',
+            'first_in_line_plus_time_minutes',
+        // Prevent Raiding
         'prevent_raiding',
+        // Prevent Hosting
+        'prevent_hosting',
+        // Kill Extensions
+        'kill_extensions',
 
-        // Chat & Messaging
+        /* Chat & Messaging */
+        // Highlight Mentions
         'highlight_mentions',
+        // Show Pop-ups
         'highlight_mentions_popup',
-        'filter_messages', 'filter_rules',
+        // Filter Messages
+        'filter_messages',
+            'filter_rules',
+        // Convert Emotes
         'convert_emotes',
 
-        // Currencies
+        /* Currencies */
+        // Convert Bits
         'convert_bits',
 
-        // Error Recovery
-        'recover_video', 'recover_stream', 'recover_ads',
+        /* Error Recovery */
+        // Recover Video
+        'recover_video',
+        // Recover Stream
+        'recover_stream',
+        // Recover Ads
+        'recover_ads',
     ];
 
 let Glyphs = {
@@ -259,6 +286,7 @@ document.body.onload = async() => {
         summary.setAttribute('style', `padding-bottom:calc(${ margin.join(' + ') })`);
     });
 };
+
 $('#save', true).map(element => element.onclick = async event => {
     let { currentTarget } = event;
 

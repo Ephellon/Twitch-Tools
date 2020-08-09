@@ -61,8 +61,10 @@ switch(BrowserNamespace) {
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
-// new UUID() -> Object
-// UUID.from(string:string) -> Object
+    // new UUID() -> Object
+    // UUID.from(string:string) -> Object
+    // UUID.BWT(string:string) -> String
+    // UUID.prototype.toString() -> String
 class UUID {
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
@@ -92,12 +94,8 @@ class UUID {
         return this;
 	}
 
-	toArray() {
-		return this.native;
-	}
-
     toString() {
-        return this.value;
+        return this.native;
     }
 
     /* BWT Sorting Algorithm */
@@ -146,12 +144,15 @@ class UUID {
             }
         };
 
+        this.toString = () => this.native;
+
         return this;
     }
 }
 
 // Displays a popup
-// new Popup(subject:string, message:string[, actions:object]) -> Object
+    // new Popup(subject:string, message:string[, actions:object]) -> Object
+    // Popup.prototype.remove() -> undefined
 class Popup {
     constructor(subject, message, actions = {}) {
         let f = furnish;
@@ -163,15 +164,17 @@ class Popup {
             A = event => {
                 let existing = $('#twitch-tools-popup');
 
-                existing.remove();
+                if(defined(existing))
+                    existing.remove();
             },
             C = event => {
                 let existing = $('#twitch-tools-popup');
 
-                existing.remove();
+                if(defined(existing))
+                    existing.remove();
             };
 
-        let uuid = (UUID.from([subject, message].join(':')) + '');
+        let uuid = UUID.from([subject, message].join(':')).toString();
 
         if(defined(X)) {
             if(!~Queue.popups.map(popup => popup.uuid).indexOf(uuid)) {
@@ -305,7 +308,7 @@ class Popup {
 }
 
 // Get the current settings
-// GetSettings() -> Object
+    // GetSettings() -> Object
 function GetSettings() {
     return new Promise((resolve, reject) => {
         function ParseSettings(settings) {
@@ -325,7 +328,7 @@ function GetSettings() {
 
 let StorageSpace = localStorage || sessionStorage;
 // Saves data to the page's storage
-// SaveCache(keys:object[, callback:function]) -> undefined
+    // SaveCache(keys:object[, callback:function]) -> undefined
 async function SaveCache(keys = {}, callback = () => {}) {
     let set = (key, value) => StorageSpace.setItem(key, value);
 
@@ -336,7 +339,7 @@ async function SaveCache(keys = {}, callback = () => {}) {
 }
 
 // Loads data from the page's storage
-// LoadCache(keys:string|array|object[, callback:function]) -> undefined
+    // LoadCache(keys:string|array|object[, callback:function]) -> undefined
 async function LoadCache(keys = null, callback = () => {}) {
     let results = {},
         get = key => StorageSpace.getItem(key);
@@ -370,7 +373,7 @@ async function LoadCache(keys = null, callback = () => {}) {
 }
 
 // Removes data from the page's storage
-// RemoveCache(keys:string|array[, callback:function])
+    // RemoveCache(keys:string|array[, callback:function])
 async function RemoveCache(keys, callback = () => {}) {
     let remove = key => StorageSpace.removeItem(key);
 
@@ -392,7 +395,7 @@ async function RemoveCache(keys, callback = () => {}) {
 }
 
 // Create an object of the current chat
-// GetChat(lines:integer[, keepEmotes:boolean]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
+    // GetChat(lines:integer[, keepEmotes:boolean]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
 function GetChat(lines = 30, keepEmotes = false) {
     let chat = $('[data-a-target^="chat-"i] .chat-list [data-a-target="chat-line-message"i]', true).slice(-lines),
         emotes = {},
@@ -401,7 +404,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     for(let line of chat) {
         let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
             message = $('.mention-fragment, .chat-line__username ~ .text-fragment, .chat-line__username ~ img, .chat-line__username ~ a, .chat-line__username ~ * .text-fragment, .chat-line__username ~ * img, .chat-line__username ~ * a, p, div[class*="inline"]:first-child:last-child', true, line)
-                .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
+                .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e)).alt }:`: element.innerText)
                 .filter(text => text)
                 .join(' ')
                 .trim()
@@ -417,7 +420,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             message,
             mentions,
             element: line,
-            uuid: (UUID.from([author, mentions.join(','), message].join(':')) + ''),
+            uuid: UUID.from([author, mentions.join(','), message].join(':')).toString(),
             deleted: defined($('[class*="--deleted-notice"i]', false, line)),
             highlighted: !!line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length,
         });
@@ -448,7 +451,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             subject,
             message,
             mentions,
-            uuid: (UUID.from([subject, mentions.join(','), message].join(':')) + ''),
+            uuid: UUID.from([subject, mentions.join(','), message].join(':')).toString(),
             element: bullet,
         });
     }
@@ -459,7 +462,7 @@ function GetChat(lines = 30, keepEmotes = false) {
 }
 
 // Parse a URL
-// parseURL(url:string) -> Object
+    // parseURL(url:string) -> Object
 function parseURL(url) {
     if(!defined(url))
         return {};
@@ -507,7 +510,7 @@ function parseURL(url) {
 };
 
 // Create elements
-// furnish(tagname:string[, attributes:object[, ...children]])
+    // furnish(tagname:string[, attributes:object[, ...children]])
 function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
     let u = v => v && v.length,
         R = RegExp,
@@ -581,21 +584,21 @@ let Glyphs = {
 };
 
 // Update common variables
-let streamers,
-    streamer,
-    { pathname } = top.location;
+let STREAMERS,
+    STREAMER,
+    PATHNAME = top.location.pathname;
 
 function update() {
-    pathname = top.location.pathname;
+    PATHNAME = top.location.pathname;
 
     /* Streamers Object
      * href:string  - link to the streamer's channel
      * name:string  - the streamer's username
      * live:boolean - is the streamer live
      */
-    streamers = [
+    STREAMERS = [
         // Current streamers
-        ...$(`a:not([href="${ pathname }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)')).map(element => {
+        ...$(`a:not([href="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)')).map(element => {
             return {
                 href: element.href,
                 name: $('figure img', false, element).alt,
@@ -605,27 +608,29 @@ function update() {
     ];
 
     /* Streamer Object
-     * href:string       - link to the streamer's channel (the current href)
-     * name:string       - the streamer's username
-     * like:boolean      - are you following
-     * paid:boolean      - are you subscribed
-     * game:string       - the name of the current game/category
-     * tags:array        - tags of the strem
-     * live:boolean      - the the streamer live
-     * ping:boolean      - are notifications on
-     * follow:function   - follows the current streamer
-     * unfollow:function - unfollows the current streamer
      * chat:array*       - an array of the current chat; getter
+     * follow:function   - follows the current streamer
+     * game:string       - the name of the current game/category
+     * href:string       - link to the streamer's channel (the current href)
+     * like:boolean      - are you following
+     * live:boolean      - the the streamer live
+     * name:string       - the streamer's username
+     * paid:boolean      - are you subscribed
+     * ping:boolean      - are notifications on
+     * poll:number       - how many viewers are watching
+     * tags:array        - tags of the strem
+     * unfollow:function - unfollows the current streamer
      */
-    streamer = {
+    STREAMER = {
         href: top.location,
-        name: ($(`a[href="${ pathname }"i] h1`) || {}).textContent,
+        name: ($(`a[href="${ PATHNAME }"i] h1`) || {}).textContent,
         like: defined($('[data-a-target="unfollow-button"i]')),
         paid: defined($('[data-a-target="subscribed-button"i]')),
         game: ($('[data-a-target="stream-game-link"i]') || {}).textContent,
         tags: $('.tw-tag', true).map(element => element.textContent.toLowerCase()),
-        live: defined($(`a[href="${ pathname }"i] .tw-channel-status-text-indicator`)),
+        live: defined($(`a[href="${ PATHNAME }"i] .tw-channel-status-text-indicator`)),
         ping: defined($('[data-a-target="notifications-toggle"i] [class*="--notificationbellfilled"i]')),
+        poll: $('[data-a-target$="viewers-count"i]'),
 
         follow: () => {
             let follow = $('[data-a-target="follow-button"i]');
@@ -645,11 +650,24 @@ function update() {
         },
 
         get coin() {
-            let points = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]');
+            let balance = $('[data-test-selector="balance-string"i]'),
+                points = 0;
 
-            if(points)
-                return parseInt(points.textContent.replace(/\D+/g, ''));
-            return 0;
+            if(defined(balance)) {
+                let { textContent } = balance,
+                    COIN, UNIT;
+
+                textContent = textContent.replace(/([\d\.]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
+                    COIN = $1;
+                    UNIT = $2 || '';
+                });
+
+                for(let index = 0, units = ['', 'K', 'M', 'B', 'T']; index < units.length; index++)
+                    if(units[index] == UNIT)
+                        points = parseInt(COIN) * (1e3 ** index);
+            }
+
+            return points;
         },
     };
 }
@@ -710,47 +728,476 @@ let Initialize = async(startover = false) => {
         Initialize.errors++
     }
 
-    /*** Message Highlighter
-     *      __  __                                  _    _ _       _     _ _       _     _
-     *     |  \/  |                                | |  | (_)     | |   | (_)     | |   | |
-     *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__| |_  __ _| |__ | |_  __ _| |__ | |_ ___ _ __
-     *     | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \ |  __  | |/ _` | '_ \| | |/ _` | '_ \| __/ _ \ '__|
-     *     | |  | |  __/\__ \__ \ (_| | (_| |  __/ | |  | | | (_| | | | | | | (_| | | | | ||  __/ |
-     *     |_|  |_|\___||___/___/\__,_|\__, |\___| |_|  |_|_|\__, |_| |_|_|_|\__, |_| |_|\__\___|_|
-     *                                  __/ |                 __/ |           __/ |
-     *                                 |___/                 |___/           |___/
+    /*** Auto-Follow
+     *                    _              ______    _ _
+     *         /\        | |            |  ____|  | | |
+     *        /  \  _   _| |_ ___ ______| |__ ___ | | | _____      __
+     *       / /\ \| | | | __/ _ \______|  __/ _ \| | |/ _ \ \ /\ / /
+     *      / ____ \ |_| | || (_) |     | | | (_) | | | (_) \ V  V /
+     *     /_/    \_\__,_|\__\___/      |_|  \___/|_|_|\___/ \_/\_/
+     *
+     *
      */
-    Handlers.highlight_mentions = () => {
-        let chat = GetChat().filter(line => !!~line.mentions.indexOf(USERNAME));
+    Handlers.auto_follow_raids = () => {
+        if(!defined(STREAMER))
+            return;
 
-        for(let line of chat)
-            if(!~Queue.messages.indexOf(line.uuid)) {
-                Queue.messages.push(line.uuid);
-                line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
+        let url = parseURL(top.location),
+            data = url.searchParameters;
 
-                let { author, message } = line;
+        let { like, coin, follow } = STREAMER,
+            raid = data.referrer == 'raid';
 
+        if(!like && raid)
+            follow();
+    };
+    Timers.auto_follow_raids = 1000;
+
+    if(settings.auto_follow_raids || settings.auto_follow_all)
+        Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
+
+    if(settings.auto_follow_time || settings.auto_follow_all) {
+        let { like, coin, follow } = STREAMER,
+            mins = parseInt(settings.auto_follow_time_minutes) | 0;
+
+        if(!like)
+            setTimeout(follow, mins * 60 * 1000);
+    }
+
+    /*** First in Line
+     *      ______ _          _     _         _      _
+     *     |  ____(_)        | |   (_)       | |    (_)
+     *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___
+     *     |  __| | | '__/ __| __| | | '_ \  | |    | | '_ \ / _ \
+     *     | |    | | |  \__ \ |_  | | | | | | |____| | | | |  __/
+     *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___|
+     *
+     *
+     */
+    let FiLH, FiLJ;
+
+    Handlers.first_in_line = () => {
+        let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
+
+        if(!notifications.length)
+            return;
+
+        let mins = parseInt(settings.first_in_line_time_minutes) | 0;
+
+        for(let notification of notifications) {
+            let action = $('a[href^="/"]', false, notification);
+
+            if(!defined(action) || defined(FiLH))
+                continue;
+
+            console.warn('Recieved an actionable notification:', action.textContent, new Date);
+
+            let { href, textContent } = action,
+                url = parseURL(href),
+                { pathname } = url;
+
+            if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent)) {
+                FiLH = href;
+
+                if(mins) {
+                    console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
+
+                    setTimeout(() => {
+                        console.warn('Heading to stream in 1 minute', FiLH, new Date);
+                        new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', {
+                            Goto: () => {
+                                let existing = $('#twitch-tools-popup');
+
+                                if(defined(existing))
+                                    existing.remove();
+                                console.warn('Heading to stream now');
+
+                                clearTimeout(FiLJ);
+                                open(FiLH, '_self');
+
+                                FiLH = undefined;
+                            },
+                            Cancel: () => {
+                                let existing = $('#twitch-tools-popup');
+
+                                if(defined(existing))
+                                    existing.remove();
+                                console.warn('Canceled First in Line event');
+
+                                clearTimeout(FiLJ);
+                                FiLH = undefined;
+                            },
+                        });
+                    }, (mins - 1) * 60 * 1000);
+
+                    FiLJ = setTimeout(() => {
+                        let existing = $('#twitch-tools-popup');
+
+                        if(defined(existing))
+                            existing.remove();
+
+                        clearTimeout(FiLJ);
+                        open(FiLH, '_self');
+
+                        FiLH = undefined;
+                    }, mins * 60 * 1000);
+                } else {
+                    let existing = $('#twitch-tools-popup');
+
+                    if(defined(existing))
+                        existing.remove();
+
+                    open(FiLH, '_self');
+
+                    FiLH = undefined;
+                }
+            }
+        }
+    };
+    Timers.first_in_line = 3000;
+
+    Unhandlers.first_in_line = () => {
+        if(defined(FiLJ))
+            clearTimeout(FiLJ);
+        if(defined(FiLH))
+            FiLH = '?';
+    };
+
+    if(settings.first_in_line)
+        Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
+
+    /*** First in Line+
+     *      ______ _          _     _         _      _
+     *     |  ____(_)        | |   (_)       | |    (_)             _
+     *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___ _| |_
+     *     |  __| | | '__/ __| __| | | '_ \  | |    | | '_ \ / _ \_   _|
+     *     | |    | | |  \__ \ |_  | | | | | | |____| | | | |  __/ |_|
+     *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___|
+     *
+     *
+     */
+    let FiL_H, FiL_J,
+        OLD_STREAMERS, NEW_STREAMERS;
+
+    Handlers.first_in_line_plus = () => {
+        let streamers = STREAMERS.filter(streamer => streamer.live).map(streamer => streamer.name).sort();
+
+        NEW_STREAMERS = streamers.map(name => UUID.from(name).toString()).join(',');
+
+        if(!defined(OLD_STREAMERS))
+            OLD_STREAMERS = NEW_STREAMERS;
+
+        if(OLD_STREAMERS == NEW_STREAMERS)
+            return /* No new streamer(s) */;
+
+        let old_uuids = OLD_STREAMERS.split(','),
+            new_uuids = NEW_STREAMERS.split(',');
+
+        new_uuids = new_uuids.filter(uuid => !~old_uuids.indexOf(uuid));
+
+        if(new_uuids.length < 1)
+            return;
+
+        let mins = parseInt(settings.first_in_line_plus_time_minutes) | 0;
+
+        for(let uuid of new_uuids) {
+            let streamer = STREAMERS.filter(streamer => UUID.from(streamer.name).toString() == uuid)[0];
+            let { name, href } = streamer,
+                url = parseURL(href),
+                { pathname } = url;
+
+            if(!defined(streamer) || defined(FiL_H))
+                continue;
+            console.warn('A channel just appeared:', name, new Date);
+
+            FiL_H = href;
+
+            if(mins) {
+                console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
+
+                setTimeout(() => {
+                    console.warn('Heading to stream in 1 minute', FiL_H, new Date);
+                    new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', {
+                        Goto: () => {
+                            let existing = $('#twitch-tools-popup');
+
+                            if(defined(existing))
+                                existing.remove();
+                            console.warn('Heading to stream now');
+
+                            clearTimeout(FiL_J);
+                            open(FiL_H, '_self');
+
+                            FiL_H = undefined;
+                        },
+                        Cancel: () => {
+                            let existing = $('#twitch-tools-popup');
+
+                            if(defined(existing))
+                                existing.remove();
+                            console.warn('Canceled First in Line event');
+
+                            clearTimeout(FiL_J);
+                            FiL_H = undefined;
+                        },
+                    });
+                }, (mins - 1) * 60 * 1000);
+
+                FiL_J = setTimeout(() => {
+                    let existing = $('#twitch-tools-popup');
+
+                    if(defined(existing))
+                        existing.remove();
+
+                    clearTimeout(FiL_J);
+                    open(FiL_H, '_self');
+
+                    FiL_H = undefined;
+                }, mins * 60 * 1000);
+            } else {
                 let existing = $('#twitch-tools-popup');
 
                 if(defined(existing))
-                    continue;
+                    existing.remove();
 
-                if(settings.highlight_mentions_popup)
-                    new Popup(`@${ author } sent you a message`, message, {
-                        Reply: event => {
-                            let chatbox = $('.chat-input__textarea textarea'),
-                                existing = $('#twitch-tools-popup');
+                open(FiL_H, '_self');
 
-                            chatbox.focus();
-                            existing.remove();
-                        }
-                    });
+                FiL_H = undefined;
+            }
+        }
+
+        OLD_STREAMERS = NEW_STREAMERS;
+    };
+    Timers.first_in_line_plus = 1000;
+
+    if(settings.first_in_line_plus)
+        Jobs.first_in_line_plus = setInterval(Handlers.first_in_line_plus, Timers.first_in_line_plus);
+
+    /*** Kill Extensions
+     *      _  ___ _ _   ______      _                 _
+     *     | |/ (_) | | |  ____|    | |               (_)
+     *     | ' / _| | | | |__  __  _| |_ ___ _ __  ___ _  ___  _ __  ___
+     *     |  < | | | | |  __| \ \/ / __/ _ \ '_ \/ __| |/ _ \| '_ \/ __|
+     *     | . \| | | | | |____ >  <| ||  __/ | | \__ \ | (_) | | | \__ \
+     *     |_|\_\_|_|_| |______/_/\_\\__\___|_| |_|___/_|\___/|_| |_|___/
+     *
+     *
+     */
+    Handlers.kill_extensions = () => {
+        let extension_views = $('[class^="extension-view"i]', true);
+
+        for(let view of extension_views)
+            view.setAttribute('style', 'display:none!important');
+    };
+    Timers.kill_extensions = 2500;
+
+    Unhandlers.kill_extensions = () => {
+        let extension_views = $('[class^="extension-view"i]', true);
+
+        for(let view of extension_views)
+            view.removeAttribute('style');
+    };
+
+    if(settings.kill_extensions)
+        Jobs.kill_extensions = setInterval(Handlers.kill_extensions, Timers.kill_extensions);
+
+    /*** Stop Hosting
+     *       _____ _                _    _           _   _
+     *      / ____| |              | |  | |         | | (_)
+     *     | (___ | |_ ___  _ __   | |__| | ___  ___| |_ _ _ __   __ _
+     *      \___ \| __/ _ \| '_ \  |  __  |/ _ \/ __| __| | '_ \ / _` |
+     *      ____) | || (_) | |_) | | |  | | (_) \__ \ |_| | | | | (_| |
+     *     |_____/ \__\___/| .__/  |_|  |_|\___/|___/\__|_|_| |_|\__, |
+     *                     | |                                    __/ |
+     *                     |_|                                   |___/
+     */
+    Handlers.prevent_hosting = () => {
+        let online = STREAMERS.filter(streamer => streamer.live),
+            next = online[(Math.random() * online.length)|0],
+            hosting = defined($('[data-a-target="hosting-indicator"i]'));
+
+        if(hosting && next)
+            if(online.length) {
+                console.warn(`${ streamer.name } is hosting. Moving onto next streamer (${ next.name })`, next.href, new Date);
+
+                open(next.href, '_self');
+            } else {
+                console.warn(`${ streamer.name } is hosting. There doesn't seem to be any followed streamers on right now`, new Date);
             }
     };
-    Timers.highlight_mentions = 500;
+    Timers.prevent_hosting = 5000;
 
-    if(settings.highlight_mentions)
-        Jobs.highlight_mentions = setInterval(Handlers.highlight_mentions, Timers.highlight_mentions);
+    if(settings.prevent_hosting)
+        Jobs.prevent_hosting = setInterval(Handlers.prevent_hosting, Timers.prevent_hosting);
+
+    /*** Stop Raiding
+     *       _____ _                _____       _     _ _
+     *      / ____| |              |  __ \     (_)   | (_)
+     *     | (___ | |_ ___  _ __   | |__) |__ _ _  __| |_ _ __   __ _
+     *      \___ \| __/ _ \| '_ \  |  _  // _` | |/ _` | | '_ \ / _` |
+     *      ____) | || (_) | |_) | | | \ \ (_| | | (_| | | | | | (_| |
+     *     |_____/ \__\___/| .__/  |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
+     *                     | |                                   __/ |
+     *                     |_|                                  |___/
+     */
+    Handlers.prevent_raiding = () => {
+        let online = STREAMERS.filter(streamer => streamer.live),
+            next = online[(Math.random() * online.length)|0],
+            raiding = defined($('[data-test-selector="raid-banner"i]'));
+
+        if(raiding && next)
+            if(online.length) {
+                console.warn(`${ streamer.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
+
+                open(next.href, '_self');
+            } else {
+                console.warn(`${ streamer.name } is raiding. There doesn't seem to be any followed streamers on right now`, new Date);
+            }
+    };
+    Timers.prevent_raiding = 5000;
+
+    if(settings.prevent_raiding)
+        Jobs.prevent_raiding = setInterval(Handlers.prevent_raiding, Timers.prevent_raiding);
+
+    /*** Stay Live
+     *       _____ _                _      _
+     *      / ____| |              | |    (_)
+     *     | (___ | |_ __ _ _   _  | |     ___   _____
+     *      \___ \| __/ _` | | | | | |    | \ \ / / _ \
+     *      ____) | || (_| | |_| | | |____| |\ V /  __/
+     *     |_____/ \__\__,_|\__, | |______|_| \_/ \___|
+     *                       __/ |
+     *                      |___/
+     */
+    Handlers.stay_live = async() => {
+        let online = STREAMERS.filter(streamer => streamer.live),
+            next = online[(Math.random() * online.length)|0],
+            { pathname } = window.location;
+
+        let Paths = [USERNAME, '[up]/', 'videos', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', 'search', '$'];
+
+        await LoadCache('UserIntent', cache => {
+            let { UserIntent } = cache;
+
+            if(UserIntent)
+                Paths.push(UserIntent);
+        });
+
+        let ValidTwitchPath = RegExp(`/(${ Paths.join('|') })`, 'i');
+
+        if(!STREAMER.live && !ValidTwitchPath.test(pathname)) {
+            if(online.length) {
+                console.warn(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
+
+                open(next.href, '_self');
+            } else  {
+                console.warn(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
+            }
+        } else if(/\/search/i.test(pathname)) {
+            let { term } = parseURL(location).searchParameters;
+
+            await SaveCache({ UserIntent: term });
+        }
+    };
+    Timers.stay_live = 5000;
+
+    if(settings.stay_live)
+        Jobs.stay_live = setInterval(Handlers.stay_live, Timers.stay_live);
+
+    /*** Convert Emotes
+     *       _____                          _     ______                 _
+     *      / ____|                        | |   |  ____|               | |
+     *     | |     ___  _ ____   _____ _ __| |_  | |__   _ __ ___   ___ | |_ ___  ___
+     *     | |    / _ \| '_ \ \ / / _ \ '__| __| |  __| | '_ ` _ \ / _ \| __/ _ \/ __|
+     *     | |___| (_) | | | \ V /  __/ |  | |_  | |____| | | | | | (_) | ||  __/\__ \
+     *      \_____\___/|_| |_|\_/ \___|_|   \__| |______|_| |_| |_|\___/ \__\___||___/
+     *
+     *
+     */
+    let EMOTES = {},
+        shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
+            let id = parseInt($1).toString(36),
+                version = $2;
+
+            return [id, version].join('-');
+        });
+
+    Handlers.convert_emotes = () => {
+        let chat = GetChat(5, true),
+            regexp;
+
+        for(let emote in chat.emotes)
+            if(!(emote in EMOTES))
+                EMOTES[emote] = shrt(chat.emotes[emote]);
+
+        for(let line of chat) {
+            if(!!~Queue.emotes.indexOf(line.uuid))
+                return;
+            if(Queue.emotes.length >= 100)
+                Queue.emotes = [];
+            Queue.emotes.push(line.uuid);
+
+            for(let emote in EMOTES)
+                if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'))).test(line.message)) {
+                    let alt = emote,
+                        src = '//static-cdn.jtvnw.net/emoticons/v1/' + EMOTES[emote].split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
+                        srcset;
+
+                    if(/\/https?:\/\//i.test(src))
+                        src = src.replace(/[^]*\/(https?:\/\/[^]*)(?:\/https?:\/\/)?$/i, '$1');
+                    else
+                        srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
+
+                    let f = furnish;
+                    let img =
+                    f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
+                        f('span', { 'data-a-target': 'emote-name' },
+                            f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
+                                f('img.chat-image.chat-line__message--emote', {
+                                    title: alt,
+                                    srcset, alt, src,
+                                })
+                            )
+                        )
+                    );
+
+                    let { element } = line;
+
+                    $('.text-fragment:not([twitch-tools-emote-plus])', true, element).map(fragment => {
+                        fragment.setAttribute('twitch-tools-emote-plus', alt);
+                        fragment.innerHTML = fragment.innerHTML.replace(regexp, img.innerHTML);
+                    });
+                }
+        }
+    };
+    Timers.convert_emotes = 100;
+
+    if(settings.convert_emotes) {
+        // Collect emotes
+        let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
+
+        function CollectEmotes() {
+            chat_emote_button.click();
+
+            setTimeout(() => {
+                $('[class*="emote-picker"i] .emote-button img', true)
+                    .map(img => {
+                        EMOTES[img.alt] = shrt(img.src);
+                    });
+
+                top.EMOTES = EMOTES;
+
+                chat_emote_button.click();
+            }, 500);
+        }
+
+        if(defined(chat_emote_button))
+            CollectEmotes();
+        else
+            setTimeout(CollectEmotes, 1000);
+
+        Jobs.convert_emotes = setInterval(Handlers.convert_emotes, Timers.convert_emotes);
+    }
 
      /*** Message Filter
      *      __  __                                  ______ _ _ _
@@ -815,10 +1262,10 @@ let Initialize = async(startover = false) => {
                 || Filter.user.test(line.author)
                 // Filter messages (verbatim) on specific a channel
                 || !!~Filter.channel.map(({ name, text }) => {
-                    if(!defined(streamer))
+                    if(!defined(STREAMER))
                         return;
 
-                    let channel = streamer.name.toLowerCase();
+                    let channel = STREAMER.name.toLowerCase();
 
                     return channel == name && !!~line.message.toLowerCase().indexOf(text);
                 }).indexOf(true);
@@ -847,51 +1294,6 @@ let Initialize = async(startover = false) => {
     if(settings.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
 
-    /*** Keep Watching
-     *      _  __                __          __   _       _     _
-     *     | |/ /                \ \        / /  | |     | |   (_)
-     *     | ' / ___  ___ _ __    \ \  /\  / /_ _| |_ ___| |__  _ _ __   __ _
-     *     |  < / _ \/ _ \ '_ \    \ \/  \/ / _` | __/ __| '_ \| | '_ \ / _` |
-     *     | . \  __/  __/ |_) |    \  /\  / (_| | || (__| | | | | | | | (_| |
-     *     |_|\_\___|\___| .__/      \/  \/ \__,_|\__\___|_| |_|_|_| |_|\__, |
-     *                   | |                                             __/ |
-     *                   |_|                                            |___/
-     */
-    Handlers.keep_watching = async() => {
-        let online = streamers.filter(streamer => streamer.live),
-            next = online[(Math.random() * online.length)|0],
-            { pathname } = window.location;
-
-        let Paths = [USERNAME, '[up]/', 'videos', 'team', 'directory', 'downloads', 'jobs', 'turbo', 'friends', 'subscriptions', 'inventory', 'wallet', 'settings', 'search', '$'];
-
-        await LoadCache('UserIntent', cache => {
-            let { UserIntent } = cache;
-
-            if(UserIntent)
-                Paths.push(UserIntent);
-        });
-
-        let ValidTwitchPath = RegExp(`/(${ Paths.join('|') })`, 'i');
-
-        if(!streamer.live && !ValidTwitchPath.test(pathname)) {
-            if(online.length) {
-                console.warn(`${ streamer.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
-
-                open(next.href, '_self');
-            } else  {
-                console.warn(`${ streamer.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
-            }
-        } else if(/\/search/i.test(pathname)) {
-            let { term } = parseURL(location).searchParameters;
-
-            await SaveCache({ UserIntent: term });
-        }
-    };
-    Timers.keep_watching = 5000;
-
-    if(settings.keep_watching)
-        Jobs.keep_watching = setInterval(Handlers.keep_watching, Timers.keep_watching);
-
     // Wait for the elements to populate
     // May not always be present
     setTimeout(() => {
@@ -905,74 +1307,7 @@ let Initialize = async(startover = false) => {
                 await SaveCache({ UserIntent });
             });
         });
-    }, 1e3);
-
-    /*** Stop Raiding
-     *       _____ _                _____       _     _ _
-     *      / ____| |              |  __ \     (_)   | (_)
-     *     | (___ | |_ ___  _ __   | |__) |__ _ _  __| |_ _ __   __ _
-     *      \___ \| __/ _ \| '_ \  |  _  // _` | |/ _` | | '_ \ / _` |
-     *      ____) | || (_) | |_) | | | \ \ (_| | | (_| | | | | | (_| |
-     *     |_____/ \__\___/| .__/  |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
-     *                     | |                                   __/ |
-     *                     |_|                                  |___/
-     */
-    Handlers.prevent_raiding = () => {
-        let online = streamers.filter(streamer => streamer.live),
-            next = online[(Math.random() * online.length)|0],
-            raiding = defined($('[data-test-selector="raid-banner"i]'));
-
-        if(raiding && next)
-            if(online.length) {
-                console.warn(`${ streamer.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
-
-                open(next.href, '_self');
-            } else {
-                console.warn(`${ streamer.name } is raiding. There doesn't seem to be any followed streamers on right now`, new Date);
-            }
-    };
-    Timers.prevent_raiding = 5000;
-
-    if(settings.prevent_raiding)
-        Jobs.prevent_raiding = setInterval(Handlers.prevent_raiding, Timers.prevent_raiding);
-
-    /*** Auto-Follow Raids
-     *                    _              ______    _ _
-     *         /\        | |            |  ____|  | | |
-     *        /  \  _   _| |_ ___ ______| |__ ___ | | | _____      __
-     *       / /\ \| | | | __/ _ \______|  __/ _ \| | |/ _ \ \ /\ / /
-     *      / ____ \ |_| | || (_) |     | | | (_) | | | (_) \ V  V /
-     *     /_/    \_\__,_|\__\___/      |_|  \___/|_|_|\___/ \_/\_/
-     *
-     *
-     */
-    Handlers.auto_follow_raids = () => {
-        if(!defined(streamer))
-            return;
-
-        let url = parseURL(top.location),
-            data = url.searchParameters;
-
-        let { like, coin, follow } = streamer,
-            raid = data.referrer == 'raid';
-
-        if(!like && raid)
-            follow();
-    };
-    Timers.auto_follow_raids = 1000;
-
-    if(settings.auto_follow_raids || settings.auto_follow_on)
-        Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
-
-    if(settings.auto_follow_time || settings.auto_follow_on) {
-        let { like, coin, follow } = streamer,
-            mins = parseInt(settings.auto_follow_time_minutes) | 0;
-
-        if(!like && mins)
-            setTimeout(follow, mins * 60 * 1000);
-        else if(!like)
-            follow();
-    }
+    }, 1000);
 
     /*** Easy Filter - NOT A SETTING. THIS IS A HELPER FOR: MESSAGE FILTER
      *      ______                  ______ _ _ _
@@ -1066,6 +1401,117 @@ let Initialize = async(startover = false) => {
 
     Jobs.easy_filter = setInterval(Handlers.easy_filter, Timers.easy_filter);
 
+    /*** Message Highlighter
+     *      __  __                                  _    _ _       _     _ _       _     _
+     *     |  \/  |                                | |  | (_)     | |   | (_)     | |   | |
+     *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__| |_  __ _| |__ | |_  __ _| |__ | |_ ___ _ __
+     *     | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \ |  __  | |/ _` | '_ \| | |/ _` | '_ \| __/ _ \ '__|
+     *     | |  | |  __/\__ \__ \ (_| | (_| |  __/ | |  | | | (_| | | | | | | (_| | | | | ||  __/ |
+     *     |_|  |_|\___||___/___/\__,_|\__, |\___| |_|  |_|_|\__, |_| |_|_|_|\__, |_| |_|\__\___|_|
+     *                                  __/ |                 __/ |           __/ |
+     *                                 |___/                 |___/           |___/
+     */
+    Handlers.highlight_mentions = () => {
+        let chat = GetChat().filter(line => !!~line.mentions.indexOf(USERNAME));
+
+        for(let line of chat)
+            if(!~Queue.messages.indexOf(line.uuid)) {
+                Queue.messages.push(line.uuid);
+                line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
+
+                let { author, message } = line;
+
+                let existing = $('#twitch-tools-popup');
+
+                if(defined(existing))
+                    continue;
+
+                if(settings.highlight_mentions_popup)
+                    new Popup(`@${ author } sent you a message`, message, {
+                        Reply: event => {
+                            let chatbox = $('.chat-input__textarea textarea'),
+                                existing = $('#twitch-tools-popup');
+
+                            if(defined(chatbox))
+                                chatbox.focus();
+                            if(defined(existing))
+                                existing.remove();
+                        }
+                    });
+            }
+    };
+    Timers.highlight_mentions = 500;
+
+    if(settings.highlight_mentions)
+        Jobs.highlight_mentions = setInterval(Handlers.highlight_mentions, Timers.highlight_mentions);
+
+    /*** Convert Bits
+     *       _____                          _     ____  _ _
+     *      / ____|                        | |   |  _ \(_) |
+     *     | |     ___  _ ____   _____ _ __| |_  | |_) |_| |_ ___
+     *     | |    / _ \| '_ \ \ / / _ \ '__| __| |  _ <| | __/ __|
+     *     | |___| (_) | | | \ V /  __/ |  | |_  | |_) | | |_\__ \
+     *      \_____\___/|_| |_|\_/ \___|_|   \__| |____/|_|\__|___/
+     *
+     *
+     */
+    Handlers.convert_bits = () => {
+        let dropdown = $('[class*="bits-buy"i]'),
+            bits_counter = $('[class*="bits-count"i]:not([twitch-tools-true-amount]), [class*="cheer-amount"i]:not([twitch-tools-true-amount])', true),
+            hype_trains = $('[class*="community-highlight-stack"i] p:not([twitch-tools-true-amount])', true);
+
+        let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
+            bits_alp_regexp = /([\d,]+) +bits/i;
+
+        if(defined(dropdown))
+            $('h5:not([twitch-tools-true-amount])', true, dropdown).map(header => {
+                let bits = parseInt(header.textContent.replace(/\D+/g, '')),
+                    usd;
+
+                usd = (bits * .01).toFixed(2);
+
+                header.textContent += ` ($${ usd })`;
+
+                header.setAttribute('twitch-tools-true-amount', usd);
+            });
+
+        for(let counter of bits_counter) {
+            let { innerHTML } = counter;
+
+            if(bits_num_regexp.test(innerHTML))
+                counter.innerHTML = innerHTML.replace(bits_num_regexp, ($0, $1, $$, $_) => {
+                    let bits = parseInt($1.replace(/\D+/g, '')),
+                        usd;
+
+                    usd = (bits * .01).toFixed(2);
+
+                    counter.setAttribute('twitch-tools-true-amount', usd);
+
+                    return `${ $0 } ($${ usd })`;
+                });
+        }
+
+        for(let train of hype_trains) {
+            let { innerHTML } = train;
+
+            if(bits_alp_regexp.test(innerHTML))
+                train.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
+                    let bits = parseInt($1.replace(/\D+/g, '')),
+                        usd;
+
+                    usd = (bits * .01).toFixed(2);
+
+                    train.setAttribute('twitch-tools-true-amount', usd);
+
+                    return `${ $0 } ($${ usd })`;
+                });
+        }
+    };
+    Timers.convert_bits = 1000;
+
+    if(settings.convert_bits)
+        Jobs.convert_bits = setInterval(Handlers.convert_bits, Timers.convert_bits);
+
     /*** Auto-Reload
      *                    _              _____      _                 _
      *         /\        | |            |  __ \    | |               | |
@@ -1157,306 +1603,6 @@ let Initialize = async(startover = false) => {
         Jobs.recover_stream = setInterval(Handlers.recover_stream, Timers.recover_stream);
     }
 
-    /*** First in Line
-     *      ______ _          _     _         _      _
-     *     |  ____(_)        | |   (_)       | |    (_)
-     *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___
-     *     |  __| | | '__/ __| __| | | '_ \  | |    | | '_ \ / _ \
-     *     | |    | | |  \__ \ |_  | | | | | | |____| | | | |  __/
-     *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___|
-     *
-     *
-     */
-    let FiLH, FiLJ;
-
-    Handlers.first_in_line = () => {
-        let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
-
-        if(!notifications.length)
-            return;
-
-        let mins = parseInt(settings.first_in_line_timer) | 0;
-
-        for(let notification of notifications) {
-            let action = $('a[href^="/"]', false, notification);
-
-            if(!defined(action) || defined(FiLH))
-                continue;
-
-            console.warn('Recieved an actionable notification:', action.textContent, new Date);
-
-            let { href, textContent } = action,
-                url = parseURL(href),
-                { pathname } = url;
-
-            if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent)) {
-                FiLH = href;
-
-                if(mins) {
-                    console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
-
-                    setTimeout(() => {
-                        console.warn('Heading to stream in 1 minute', FiLH, new Date);
-                        new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in 1 minute', {
-                            Goto: () => {
-                                let existing = $('#twitch-tools-popup');
-
-                                existing.remove();
-                                console.warn('Heading to stream now');
-
-                                clearTimeout(FiLJ);
-                                open(FiLH, '_self');
-
-                                FiLH = undefined;
-                            },
-                            Cancel: () => {
-                                let existing = $('#twitch-tools-popup');
-
-                                existing.remove();
-                                console.warn('Canceled First in Line event');
-
-                                clearTimeout(FiLJ);
-                                FiLH = undefined;
-                            },
-                        });
-                    }, (mins - 1) * 60 * 1000);
-
-                    FiLJ = setTimeout(() => {
-                        let existing = $('#twitch-tools-popup');
-
-                        existing.remove();
-
-                        clearTimeout(FiLJ);
-                        open(FiLH, '_self');
-
-                        FiLH = undefined;
-                    }, mins * 60 * 1000);
-                } else {
-                    let existing = $('#twitch-tools-popup');
-
-                    existing.remove();
-
-                    open(FiLH, '_self');
-
-                    FiLH = undefined;
-                }
-            }
-        }
-    };
-    Timers.first_in_line = 3000;
-
-    Unhandlers.first_in_line = () => {
-        if(defined(FiLH))
-            FiLH = '?';
-    };
-
-    if(settings.first_in_line)
-        Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
-
-    /*** Bits-to-Cents
-     *      ____  _ _              _               _____           _
-     *     |  _ \(_) |            | |             / ____|         | |
-     *     | |_) |_| |_ ___ ______| |_ ___ ______| |     ___ _ __ | |_ ___
-     *     |  _ <| | __/ __|______| __/ _ \______| |    / _ \ '_ \| __/ __|
-     *     | |_) | | |_\__ \      | || (_) |     | |___|  __/ | | | |_\__ \
-     *     |____/|_|\__|___/       \__\___/       \_____\___|_| |_|\__|___/
-     *
-     *
-     */
-    Handlers.convert_bits = () => {
-        let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('[class*="bits-count"i]:not([twitch-tools-true-amount]), [class*="cheer-amount"i]:not([twitch-tools-true-amount])', true),
-            hype_trains = $('[class*="community-highlight-stack"i] p:not([twitch-tools-true-amount])', true);
-
-        let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
-            bits_alp_regexp = /([\d,]+) +bits/i;
-
-        if(defined(dropdown))
-            $('h5:not([twitch-tools-true-amount])', true, dropdown).map(header => {
-                let bits = parseInt(header.textContent.replace(/\D+/g, '')),
-                    usd;
-
-                usd = (bits * .01).toFixed(2);
-
-                header.textContent += ` ($${ usd })`;
-
-                header.setAttribute('twitch-tools-true-amount', usd);
-            });
-
-        for(let counter of bits_counter) {
-            let { innerHTML } = counter;
-
-            if(bits_num_regexp.test(innerHTML))
-                counter.innerHTML = innerHTML.replace(bits_num_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
-
-                    usd = (bits * .01).toFixed(2);
-
-                    counter.setAttribute('twitch-tools-true-amount', usd);
-
-                    return `${ $0 } ($${ usd })`;
-                });
-        }
-
-        for(let train of hype_trains) {
-            let { innerHTML } = train;
-
-            if(bits_alp_regexp.test(innerHTML))
-                train.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
-
-                    usd = (bits * .01).toFixed(2);
-
-                    train.setAttribute('twitch-tools-true-amount', usd);
-
-                    return `${ $0 } ($${ usd })`;
-                });
-        }
-    };
-    Timers.convert_bits = 1000;
-
-    if(settings.convert_bits)
-        Jobs.convert_bits = setInterval(Handlers.convert_bits, Timers.convert_bits);
-
-    /*** Emotes+ :D
-     *      ______                 _                      _____
-     *     |  ____|               | |             _     _|  __ \
-     *     | |__   _ __ ___   ___ | |_ ___  ___ _| |_  (_) |  | |
-     *     |  __| | '_ ` _ \ / _ \| __/ _ \/ __|_   _|   | |  | |
-     *     | |____| | | | | | (_) | ||  __/\__ \ |_|    _| |__| |
-     *     |______|_| |_| |_|\___/ \__\___||___/       (_)_____/
-     *
-     *
-     */
-    let EMOTES = {},
-        shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
-            let id = parseInt($1).toString(36),
-                version = $2;
-
-            return [id, version].join('-');
-        });
-
-    Handlers.convert_emotes = () => {
-        let chat = GetChat(5, true),
-            regexp;
-
-        for(let emote in chat.emotes)
-            if(!(emote in EMOTES))
-                EMOTES[emote] = shrt(chat.emotes[emote]);
-
-        for(let line of chat) {
-            if(!!~Queue.emotes.indexOf(line.uuid))
-                return;
-            if(Queue.emotes.length >= 100)
-                Queue.emotes = [];
-            Queue.emotes.push(line.uuid);
-
-            for(let emote in EMOTES)
-                if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'))).test(line.message)) {
-                    let alt = emote,
-                        src = '//static-cdn.jtvnw.net/emoticons/v1/' + EMOTES[emote].split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
-                        srcset;
-
-                    if(/\/https?:\/\//i.test(src))
-                        src = src.replace(/[^]*\/(https?:\/\/[^]*)(?:\/https?:\/\/)?$/i, '$1');
-                    else
-                        srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
-
-                    let f = furnish;
-                    let img =
-                    f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                        f('span', { 'data-a-target': 'emote-name' },
-                            f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
-                                f('img.chat-image.chat-line__message--emote', {
-                                    title: alt,
-                                    srcset, alt, src,
-                                })
-                            )
-                        )
-                    );
-
-                    let { element } = line;
-
-                    $('.text-fragment:not([twitch-tools-emote-plus])', true, element).map(fragment => {
-                        fragment.setAttribute('twitch-tools-emote-plus', alt);
-                        fragment.innerHTML = fragment.innerHTML.replace(regexp, img.innerHTML);
-                    });
-                }
-        }
-    };
-    Timers.convert_emotes = 100;
-
-    if(settings.convert_emotes) {
-        // Collect emotes
-        let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
-
-        function CollectEmotes() {
-            chat_emote_button.click();
-
-            setTimeout(() => {
-                $('[class*="emote-picker"i] .emote-button img', true)
-                    .map(img => {
-                        EMOTES[img.alt] = shrt(img.src);
-                    });
-
-                top.EMOTES = EMOTES;
-
-                chat_emote_button.click();
-            }, 500);
-        }
-
-        if(defined(chat_emote_button))
-            CollectEmotes();
-        else
-            setTimeout(CollectEmotes, 1000);
-
-        Jobs.convert_emotes = setInterval(Handlers.convert_emotes, Timers.convert_emotes);
-    }
-
-    /*** Smart-live
-     *       _____                      _          _ _
-     *      / ____|                    | |        | (_)
-     *     | (___  _ __ ___   __ _ _ __| |_ ______| |___   _____
-     *      \___ \| '_ ` _ \ / _` | '__| __|______| | \ \ / / _ \
-     *      ____) | | | | | | (_| | |  | |_       | | |\ V /  __/
-     *     |_____/|_| |_| |_|\__,_|_|   \__|      |_|_| \_/ \___|
-     *
-     *
-     */
-    let OLD_SMART_KEY, NEW_SMART_KEY;
-    Handlers.stay_live = () => {
-        if(!defined(OLD_SMART_KEY))
-            OLD_SMART_KEY = NEW_SMART_KEY = UUID.from(streamers.map(streamer => streamer.name).sort().join(','));
-
-        if(OLD_SMART_KEY == NEW_SMART_KEY)
-            return /* No new streamer(s) */;
-
-        let _old = OLD_SMART_KEY.split(','),
-            _new = NEW_SMART_KEY.split(',');
-
-        _new = _new.filter(key => !~_old.indexOf(key));
-
-        for(let streamer of streamers.filter(streamer => streamer.live)) {
-            let { name, href } = streamer;
-
-            if(!!~_new.indexOf(name)) {
-                let img = $(`[class*="side-nav"] [href="/${ name }"i] img`);
-
-                img.setAttribute('style', 'border:1px solid #e91916');
-
-                setTimeout(() => img.removeAttribute('style'), 7000);
-            }
-        }
-
-        OLD_SMART_KEY = NEW_SMART_KEY;
-    };
-    Timers.stay_live = 1000;
-
-    if(settings.stay_live)
-        Jobs.stay_live = setInterval(Handlers.stay_live, Timers.stay_live);
-
     /*** Contains throws that are scoped under Initialize
      *       _____            _        _             _______ _
      *      / ____|          | |      (_)           |__   __| |
@@ -1505,10 +1651,10 @@ let Initialize = async(startover = false) => {
                 if(!Initialize.errors)
                     setTimeout(() => Initialize(true), 15000);
 
-                if(empty(streamer.name))
+                if(empty(STREAMER.name))
                     throw `Currently not watching any stream. Re-initailizing in 15s`;
                 else
-                    throw `${ streamer.name } has not enabled Community Channel Points. Re-initailizing in 15s`;
+                    throw `${ STREAMER.name } has not enabled Community Channel Points. Re-initailizing in 15s`;
             }
 
             element.innerHTML = parent.outerHTML;
@@ -1519,10 +1665,17 @@ let Initialize = async(startover = false) => {
 
             $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
 
+            let textContainer = $('[class$="animated-number"i]', false, element);
+
+            if(textContainer) {
+                let { parentElement } = textContainer;
+                parentElement.removeAttribute('data-test-selector');
+            }
+
             button = {
                 element: element,
                 icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, element),
-                text: $('[class$="animated-number"i]', false, element),
+                text: textContainer,
                 enabled: true
             };
 

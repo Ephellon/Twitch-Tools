@@ -676,65 +676,72 @@
             </section>
 
             <section>
+                <div class="title"><span small glyph="favorite"></span> First in Line</div>
+                <div class="summary">
+                    <div class="radio">
+                        <input id="first_in_line_none" type="radio" name="first-in-line" checked/>
+                        <label for="first_in_line_none">Do not go to any channels automatically.</label>
+                    </div>
+
+                    <div class="radio">
+                        <input id="first_in_line" type="radio" name="first-in-line"/>
+                        <label for="first_in_line">When you receive a notification for a channel going live, go to its stream after <span><input id="first_in_line_time_minutes" type="number" value="5" min="0" step="5"/></span> <b>minutes</b>.</label>
+                    </div>
+
+                    <div class="radio">
+                        <input id="first_in_line_plus" type="radio" name="first-in-line"/>
+                        <label for="first_in_line_plus">When a channel appears in your Followed Channels, go to its stream after <span><input id="first_in_line_plus_time_minutes" type="number" value="5" min="0" step="5"/></span> <b>minutes</b>.</label>
+                    </div>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="favorite"></span> Follows</div>
                 <div class="summary">
                     <div class="radio">
-                        <input id="auto_follow_off" type="radio" name="auto-follow" checked/>
-                        <label for="auto_follow_off">Do not follow any streamers automatically.</label>
+                        <input id="auto_follow_none" type="radio" name="auto-follow" checked/>
+                        <label for="auto_follow_none">Do not follow any channels automatically.</label>
                     </div>
 
                     <div class="radio">
                         <input id="auto_follow_raids" type="radio" name="auto-follow"/>
-                        <label for="auto_follow_raids">When participating in a raid, follow the streamer being raided.</label>
+                        <label for="auto_follow_raids">When participating in a raid, follow the channel being raided.</label>
                     </div>
 
                     <div class="radio">
                         <input id="auto_follow_time" type="radio" name="auto-follow"/>
-                        <label for="auto_follow_time">After watching <span><input id="auto_follow_time_minutes" type="number" value="60" min="0" step="5"/></span> minutes of content, follow the streamer.</label>
+                        <label for="auto_follow_time">After watching <span><input id="auto_follow_time_minutes" type="number" value="60" min="0" step="5"/></span> minutes of content, follow the channel.</label>
                     </div>
 
                     <div class="radio">
-                        <input id="auto_follow_on" type="radio" name="auto-follow"/>
-                        <label for="auto_follow_on">Follow all streamers automatically.</label>
+                        <input id="auto_follow_all" type="radio" name="auto-follow"/>
+                        <label for="auto_follow_all">Follow all channels automatically.</label>
                     </div>
                 </div>
             </section>
 
             <section>
-                <div class="title"><span small glyph="play"></span> Keep Watching</div>
+                <div class="title"><span small glyph="lock"></span> Kill Extensions</div>
                 <div class="summary">
                     <div class="toggle">
-                        <input id="keep_watching" type="checkbox" checked/>
-                        <label for="keep_watching"></label>
+                        <input id="kill_extensions" type="checkbox"/>
+                        <label for="kill_extensions"></label>
                     </div>
                     <p>
-                        When the current stream ends, go to a different channel under your Followed Channels.
+                        Do not allow Twitch&trade; extensions to run.
                     </p>
                 </div>
             </section>
 
             <section>
-                <div class="title"><span small glyph="favorite"></span> First in Line</div>
+                <div class="title"><span small glyph="lock"></span> Prevent Hosting</div>
                 <div class="summary">
                     <div class="toggle">
-                        <input id="first_in_line" type="checkbox"/>
-                        <label for="first_in_line"></label>
+                        <input id="prevent_hosting" type="checkbox"/>
+                        <label for="prevent_hosting"></label>
                     </div>
                     <p>
-                        When you receive a notification for a stream going live, go to the stream after <span><input id="first_in_line_timer" type="number" value="1"/></span> <b>minutes</b>.
-                    </p>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small glyph="play"></span> Stay Live</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="stay_live" type="checkbox"/>
-                        <label for="stay_live"></label>
-                    </div>
-                    <p>
-                        When a streamer appears on your side panel, show an indicator and activate <b>First in Line</b> (if enabled).
+                        When a channel begins hosting, go to a different channel in your Followed Channels.
                     </p>
                 </div>
             </section>
@@ -751,11 +758,69 @@
                     </p>
                 </div>
             </section>
+
+            <section>
+                <div class="title"><span small glyph="play"></span> Stay Live</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="stay_live" type="checkbox" checked/>
+                        <label for="stay_live"></label>
+                    </div>
+                    <p>
+                        When the current stream ends, go to a different channel under your Followed Channels.
+                    </p>
+                </div>
+            </section>
         </article>
 
         <header>Chat &amp; Messaging</header>
 
         <article>
+            <section>
+                <div class="title"><span small glyph="emotes"></span> Convert emotes</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="convert_emotes" type="checkbox"/>
+                        <label for="convert_emotes"></label>
+                    </div>
+                    <p>
+                        When presented with emote-based-text, convert the text into the corresponding emote (without requiring a subscription).
+                    </p>
+                    <p>
+                        This only works for the current stream you are viewing.
+                    </p>
+                    <p>
+                        This does <b>not</b> save/unlock the emote.
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="mod"></span> Filter messages</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="filter_messages" type="checkbox" checked/>
+                        <label for="filter_messages"></label>
+                    </div>
+                    <p>
+                        Remove the following messages/rules across all channels.
+                    </p>
+                    <p>
+                        <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
+                    </p>
+                    <p><div id="filter_rules"></div></p>
+                    <ul>
+                        <li>These words/phrases will hide a message (comma seperated list)</li>
+                        <li>Use <code blue><i>text</i></code> to hide messages containing <b blue>text</b></li>
+                        <li>Use <code purple>:<i>emote</i>:</code> to hide messages with containing <b purple>emote</b></li>
+                        <li>Use <code purple>@<i>username</i></code> to hide messages from <b purple>username</b></li>
+                        <li>Use <code purple>/<i>channel</i> <i blue>text</i></code> to hide messages containing <b blue>text</b> on <b purple>channel</b></li>
+                        <li>Use <code green>[^\/*+?$]</code> to hide messages based upon a pattern</li>
+                        <li>You can also filter users/emotes by clicking <span small red glyph="trash"></span> from their profile</li>
+                    </ul>
+                </div>
+            </section>
+
             <section>
                 <div class="title"><span small glyph="checkmark"></span> Highlight mentions</div>
                 <div class="summary">
@@ -781,51 +846,6 @@
                     </p>
                 </div>
             </section>
-
-            <section>
-                <div class="title"><span small glyph="mod"></span> Filter messages</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="filter_messages" type="checkbox" checked/>
-                        <label for="filter_messages"></label>
-                    </div>
-                    <p>
-                        Remove the following messages/rules across all channels.
-                    </p>
-                    <p>
-                        <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
-                    </p>
-                    <p><div id="filter_rules"></div></p>
-                    <ul>
-                        <li>These words/phrases will hide a message (comma seperated list)</li>
-                        <li>Use <code purple><i>text</i></code> to hide messages containing <b purple>text</b></li>
-                        <li>Use <code blue>:<i>emote</i>:</code> to hide messages with containing <b blue>emote</b></li>
-                        <li>Use <code blue>@<i>username</i></code> to hide messages from <b blue>username</b></li>
-                        <li>Use <code blue>/<i>channel</i> <i purple>text</i></code> to hide messages containing <b purple>text</b> on <b blue>channel</b></li>
-                        <li>Use <code green>[^\/*+?$]</code> to hide messages based upon a pattern</li>
-                        <li>You can also filter users/emotes by clicking <span small red glyph="trash"></span> from their profile</li>
-                    </ul>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small glyph="emotes"></span> Convert emotes</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="convert_emotes" type="checkbox"/>
-                        <label for="convert_emotes"></label>
-                    </div>
-                    <p>
-                        When presented with emote-based-text, convert the text into the corresponding emote (without requiring a subscription).
-                    </p>
-                    <p>
-                        This only works for the current stream you are viewing.
-                    </p>
-                    <p>
-                        This does <b>not</b> save/unlock the emote.
-                    </p>
-                </div>
-            </section>
         </article>
 
         <header>Currencies</header>
@@ -845,18 +865,18 @@
             </section>
         </article>
 
-        <header>Error Recovery</header>
+        <header>Video Recovery</header>
 
         <article>
             <section>
-                <div class="title"><span small glyph="play"></span> Recover Video</div>
+                <div class="title"><span small glyph="play"></span> Recover Ads</div>
                 <div class="summary">
                     <div class="toggle">
-                        <input id="recover_video" type="checkbox" checked/>
-                        <label for="recover_video"></label>
+                        <input id="recover_ads" type="checkbox"/>
+                        <label for="recover_ads"></label>
                     </div>
                     <p>
-                        When the video fails to download (black screen), reload the webpage.
+                        When an advertisement fails to play ("freezes"), attempt to recover it.
                     </p>
                 </div>
             </section>
@@ -875,14 +895,14 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="play"></span> Recover Ads</div>
+                <div class="title"><span small glyph="play"></span> Recover Video</div>
                 <div class="summary">
                     <div class="toggle">
-                        <input id="recover_ads" type="checkbox"/>
-                        <label for="recover_ads"></label>
+                        <input id="recover_video" type="checkbox" checked/>
+                        <label for="recover_video"></label>
                     </div>
                     <p>
-                        When an advertisement fails to play ("freezes"), attempt to recover it.
+                        When the video fails to download (black screen), reload the webpage.
                     </p>
                 </div>
             </section>
