@@ -3,7 +3,8 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "2.2",
+    "version": "2.3",
+    "minimum_chrome_version": "80",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {

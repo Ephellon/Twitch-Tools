@@ -8,6 +8,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 ### Automation
 
+- *Away Mode* `on` &mdash; Toggle between **low** and **auto** quality
 - *Claim Bonuses* `on` &mdash; When the Bonus Channel Points button appears, click it
 - *First in Line* &mdash; When a channel you follow begins streaming, automatically go to it
     - `default` Do not go to any channels automatically
@@ -18,7 +19,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - When participating in a raid, follow the channel being raided
     - After watching `X` (60) minutes of content, follow the channel
     - Follow all channels automatically
-- *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to run
+- *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions display
 - *Prevent Hosting* `off` &mdash; When a channel begins hosting, go to a different, followed channel
 - *Prevent Raiding* `off` &mdash; When a raid begins, go to a different, followed channel
 - *Stay Live* `on` &mdash; When the current stream ends, got to a different, followed channel
@@ -31,7 +32,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - `:emote` &mdash; will remove all messages containing the emote named *emote*
     - `@username` &mdash; will remove all messages from *username*
     - `/channel text` &mdash; will remove all messages containing *text*, but only on *channel*
-    - `[^\/*+?$]` &mdash; JavaScript-based RegExps can also be used: `swears?` will remove "swear", "swears", "SWEAR", "SWEARS" and all other variations
+    - `[^\/*+?$]` &mdash; [JavaScript-based RegExps](https://javascript.info/regular-expressions) can also be used: `swears?` will remove "swear", "swears", "SWEAR", "SWEARS" and all other variations
 - *Highlight Mentions* `on` &mdash; When someone mentions you (*@username*), highlight the message(s) in chat
 - *Show pop-ups* `on` &mdash; When someone mentions you (*@username*), show a pop-up of the message(s)
 
