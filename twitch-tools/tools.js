@@ -25,9 +25,8 @@ let settings = {},
 // Populate the username field by quickly showing the menu
 if(defined(display)) {
     display.click();
+    USERNAME = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
     display.click();
-
-    USERNAME = $('[data-a-target="user-display-name"i]')?.innerText?.toLowerCase();
 }
 
 let browser, Storage, Runtime, Extension, Container, BrowserNamespace;
@@ -1102,12 +1101,16 @@ async function GetQuality() {
 
     let smol = text => (text?.textContent ?? text?.value ?? text).toLowerCase();
 
-    let current = qualities.find(({ input }) => input.checked),
-        quality = new String(current.label.textContent);
+    let current = qualities.find(({ input }) => input.checked);
 
-    let source = current.uuid == qualities.find(({ label }) => /source/i.test(smol(label)))?.uuid,
-        auto   = current.uuid == qualities.find(({ label }) => /auto/i.test(smol(label)))?.uuid,
-        high   = current.uuid == qualities.find(({ label }) => !/auto|source/i.test(smol(label)))?.uuid,
+    if(!defined(current))
+        return /* Is the streamer live? */;
+
+    let quality = new String(current.label.textContent);
+
+    let source = current.uuid == qualities.find(({ label }) => /source/i.test(label))?.uuid,
+        auto   = current.uuid == qualities.find(({ label }) => /auto/i.test(label))?.uuid,
+        high   = current.uuid == qualities.find(({ label }) => !/auto|source/i.test(label))?.uuid,
         low    = current.uuid == qualities[qualities.length - 1]?.uuid;
 
     Object.defineProperties(quality, {
@@ -1165,9 +1168,9 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
 
     let smol = text => (text?.textContent ?? text?.value ?? text).toLowerCase();
 
-    qualities.source = qualities.find(({ label }) => /source/i.test(smol(label)));
-    qualities.auto   = qualities.find(({ label }) => /auto/i.test(smol(label)));
-    qualities.high   = qualities.find(({ label }) => !/auto|source/i.test(smol(label)));
+    qualities.source = qualities.find(({ label }) => /source/i.test(label));
+    qualities.auto   = qualities.find(({ label }) => /auto/i.test(label));
+    qualities.high   = qualities.find(({ label }) => !/auto|source/i.test(label));
     qualities.low    = qualities[qualities.length - 1];
 
     let current = qualities.find(({ input }) => input.checked),
