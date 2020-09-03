@@ -1259,14 +1259,27 @@ function update() {
     STREAMERS = [
         // Current streamers
         ...$(`a:not([href="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)'))
-            .map(element => ({
-                    href: element.href,
-                    icon: $('figure img', false, element).src,
-                    get live() {
-                        return empty($('div[class*="--offline"i]', false, element))
-                    },
-                    name: $('figure img', false, element).alt,
-                })
+            .map(element => {
+                    let streamer = {
+                        href: element.href,
+                        icon: $('figure img', false, element).src,
+                        get live() {
+                            return empty($('div[class*="--offline"i]', false, element))
+                        },
+                        name: $('figure img', false, element).alt,
+                    };
+
+                    element.setAttribute('draggable', true);
+                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                    element.ondragstart ??= event => {
+                        let { currentTarget } = event;
+
+                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.dropEffect = 'move';
+                    };
+
+                    return streamer;
+                }
             ),
     ];
 }
@@ -1503,7 +1516,7 @@ let Initialize = async(startover = false) => {
             data = url.searchParameters;
 
         let { like, coin, follow } = STREAMER,
-            raid = data.referrer == 'raid';
+            raid = data.referrer === 'raid';
 
         if(!like && raid)
             follow();
@@ -1920,11 +1933,14 @@ let Initialize = async(startover = false) => {
      *                     |_|                                  |___/
      */
     Handlers.prevent_raiding = () => {
-        let online = STREAMERS.filter(streamer => streamer.live),
-            next = online[(Math.random() * online.length)|0],
-            raiding = defined($('[data-test-selector="raid-banner"i]'));
+        let url = parseURL(top.location),
+            data = url.searchParameters,
+            raided = data.referrer === 'raid',
+            raiding = defined($('[data-test-selector="raid-banner"i]')),
+            online = STREAMERS.filter(streamer => streamer.live),
+            next = online[(Math.random() * online.length)|0];
 
-        if(raiding && next)
+        if((raiding || raided) && next)
             if(online.length) {
                 console.warn(`${ STREAMER.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
@@ -2536,7 +2552,7 @@ let Initialize = async(startover = false) => {
      *                | |                      | |
      *                |_|                      |_|
      */
-    /*** Away Quality
+    /*** away mode
      *                                    ____              _ _ _
      *         /\                        / __ \            | (_) |
      *        /  \__      ____ _ _   _  | |  | |_   _  __ _| |_| |_ _   _
@@ -2557,7 +2573,7 @@ let Initialize = async(startover = false) => {
             quality = await GetQuality(),
             enabled = (quality.low && !(quality.auto || quality.high || quality.source));
 
-        if(!defined($('#away-quality'))) {
+        if(!defined($('#away-mode'))) {
             let sibling   = $('[data-test-selector="live-notifications-toggle"]'),
                 parent    = sibling?.parentElement,
                 container = furnish('div');
@@ -2565,26 +2581,26 @@ let Initialize = async(startover = false) => {
             if(!defined(parent) || !defined(sibling))
                 return setTimeout(Initialize, 1000);
 
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-quality$1');
-            container.id = 'away-quality';
+            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-mode$1');
+            container.id = 'away-mode';
 
-            parent.appendChild(container);
+            parent.insertBefore(container, parent.lastElementChild);
 
             button = {
                 enabled,
                 container,
                 icon: $('svg', false, container),
                 get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-quality-toggle"i]', false, container),
+                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
                 tooltip: furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--up', { role: 'tooltip', uuid }, `You're ${ ['','not'][+enabled] } watching ${ STREAMER.name }. Quality set to ${ ['AUTO','LOW'][+enabled] }`),
             };
 
             button.icon.outerHTML = Glyphs.eye;
-            button.container.setAttribute('twitch-tools-away-quality-enabled', false);
+            button.container.setAttribute('twitch-tools-away-mode-enabled', false);
 
             button.icon = $('svg', false, container);
         } else {
-            let container = $('#away-quality');
+            let container = $('#away-mode');
 
             button = {
                 enabled,
@@ -2592,7 +2608,7 @@ let Initialize = async(startover = false) => {
                 icon: $('svg', false, container),
                 tooltip: $(`div[role="tooltip"i][uuid]`),
                 get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-quality-toggle"i]', false, container),
+                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
             };
         }
 
@@ -2602,9 +2618,9 @@ let Initialize = async(startover = false) => {
         button.icon.setAttribute('width', '20px');
 
         button.container.onclick = event => {
-            let enabled = button.container.getAttribute('twitch-tools-away-quality-enabled') !== 'true';
+            let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
 
-            button.container.setAttribute('twitch-tools-away-quality-enabled', enabled);
+            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
             button.background.setAttribute('style', `background:var(--color-accent-primary-${ '31'[+enabled] }) !important;`);
             button.tooltip.innerHTML = `You're ${ ['','not'][+enabled] } watching ${ STREAMER.name }. Quality set to ${ ['AUTO','LOW'][+enabled] }`;
 
