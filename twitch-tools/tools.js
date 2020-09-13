@@ -324,7 +324,7 @@ class Balloon {
         let [P] = $('.top-nav__menu > div', true).slice(-1),
             X = $('#twitch-tools-balloon', false, P),
             I = Extension.getURL('profile.png'),
-            C, H, U;
+            C, H, U, N;
 
         let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).toString(),
             existing = Balloon.#BALLOONS['_' + title];
@@ -358,7 +358,7 @@ class Balloon {
             f('div', {},
                 f('div.tw-relative', {},
                     // Navigation Icon
-                    f('div',
+                    N = f('div',
                         {
                             style: 'display:inherit',
 
@@ -414,7 +414,7 @@ class Balloon {
                                     ),
                                     f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
                                         {
-                                            style: 'height:2rem!important; width:2rem!important',
+                                            style: 'padding:0.5rem!important; height:3rem!important; width:3rem!important',
                                             innerHTML: Glyphs.x,
 
                                             'connected-to': U,
@@ -544,13 +544,14 @@ class Balloon {
 
         P.insertBefore(p, P.children[1]);
 
+        this.body = C;
+        this.icon = N;
         this.uuid = U;
         this.header = H;
-        this.body = C;
         this.parent = P;
         this.container = p;
 
-        this.title = title;
+        this.tooltip = furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
 
         Balloon.#BALLOONS.length |= 0;
         Balloon.#BALLOONS.length++;
@@ -1276,7 +1277,7 @@ function update() {
 
                     element.setAttribute('draggable', true);
                     element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                    element.ondragstart ??= event => {
+                    element.ondragstart ||= event => {
                         let { currentTarget } = event;
 
                         event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -1287,6 +1288,26 @@ function update() {
                 }
             ),
     ];
+
+    $('[class^="onsite-notification-toast"]', true).map(
+        element => {
+            let streamer = {
+                live: true,
+                href: $('a', false, element).href,
+                icon: $('figure img', false, element).src,
+                name: $('figure img', false, element).alt,
+            };
+
+            element.setAttribute('draggable', true);
+            element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+            element.ondragstart ||= event => {
+                let { currentTarget } = event;
+
+                event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                event.dataTransfer.dropEffect = 'move';
+            };
+        }
+    );
 }
 
 // Settings have been saved
@@ -1329,8 +1350,8 @@ Storage.onChanged.addListener((changes, namespace) => {
 *
 */
 // Intializes the extension
-// Initialize(startover:boolean) -> undefined
-let Initialize = async(startover = false) => {
+// Initialize(START_OVER:boolean) -> undefined
+let Initialize = async(START_OVER = false) => {
     settings = await GetSettings();
 
     /* Streamers Object - all followed streamers that appear on the "Followed Channels" list (except the currently viewed one)
@@ -1354,7 +1375,7 @@ let Initialize = async(startover = false) => {
 
                     element.setAttribute('draggable', true);
                     element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                    element.ondragstart = event => {
+                    element.ondragstart ||= event => {
                         let { currentTarget } = event;
 
                         event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -1497,7 +1518,7 @@ let Initialize = async(startover = false) => {
     setInterval(update, 100);
 
     let ERRORS = Initialize.errors |= 0;
-    if(startover) {
+    if(START_OVER) {
         for(let job in Jobs)
             clearInterval(Jobs[job]);
         ERRORS = Initialize.errors++
@@ -1539,6 +1560,74 @@ let Initialize = async(startover = false) => {
             setTimeout(follow, mins * 60 * 1000);
     }
 
+    /*** First in Line Helpers
+     *      ______ _          _     _         _      _              _    _      _
+     *     |  ____(_)        | |   (_)       | |    (_)            | |  | |    | |
+     *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___  | |__| | ___| |_ __   ___ _ __ ___
+     *     |  __| | | '__/ __| __| | | '_ \  | |    | | '_ \ / _ \ |  __  |/ _ \ | '_ \ / _ \ '__/ __|
+     *     | |    | | |  \__ \ |_  | | | | | | |____| | | | |  __/ | |  | |  __/ | |_) |  __/ |  \__ \
+     *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___| |_|  |_|\___|_| .__/ \___|_|  |___/
+     *                                                                           | |
+     *                                                                           |_|
+     */
+    let FIRST_IN_LINE_JOB,
+        FIRST_IN_LINE_JOBS,
+        FIRST_IN_LINE_HREF,
+        FIRST_IN_LINE_BALLOON,
+        FIRST_IN_LINE_INTERVAL;
+
+    if(START_OVER)
+        FIRST_IN_LINE_BALLOON = Balloon.get('Up Next').remove();
+    else
+        FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next' });
+
+    await LoadCache('FIRST_IN_LINE_JOBS', cache => FIRST_IN_LINE_JOBS = cache.FIRST_IN_LINE_JOBS ?? []);
+
+    FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
+
+    FIRST_IN_LINE_BALLOON.body.ondragover = event => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    };
+
+    FIRST_IN_LINE_BALLOON.body.ondrop = async event => {
+        event.preventDefault();
+
+        let streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer')),
+            { href } = streamer;
+
+        console.log('Adding job:', { href, streamer });
+
+        FIRST_IN_LINE_JOBS.push(href);
+
+        await SaveCache({ FIRST_IN_LINE_JOBS });
+    };
+
+    FIRST_IN_LINE_BALLOON.icon.onmouseenter = event => {
+        let { container, tooltip, title } = FIRST_IN_LINE_BALLOON,
+            offset = getOffset(container);
+
+        $('div#root > *').appendChild(
+            furnish('div.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 2000;` },
+                furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
+                    furnish('div', { style: 'width: 30px; height: 30px;' }),
+                    tooltip
+                )
+            )
+        );
+
+        tooltip.setAttribute('style', 'display:block');
+    };
+
+    FIRST_IN_LINE_BALLOON.icon.onmouseleave = event => {
+        $('div#root .tooltip-layer')?.remove();
+
+        FIRST_IN_LINE_BALLOON.tooltip.setAttribute('style', 'display:none');
+    };
+
+    if(settings.first_in_line_none)
+        FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
+
     /*** First in Line
      *      ______ _          _     _         _      _
      *     |  ____(_)        | |   (_)       | |    (_)
@@ -1549,33 +1638,6 @@ let Initialize = async(startover = false) => {
      *
      *
      */
-    if(startover)
-        Balloon.get('Up Next').remove();
-
-    let FiLH, FiLJ, FiLP,
-       FIL_JOBS = [],
-       FIL_BALL = new Balloon({ title: 'Up Next' });
-
-    await LoadCache('FIL_JOBS', cache => FIL_JOBS = cache.FIL_JOBS ?? []);
-
-    FIL_BALL.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
-
-    FIL_BALL.body.ondragover = event => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-    };
-
-    FIL_BALL.body.ondrop = event => {
-        event.preventDefault();
-
-        let streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer')),
-            { href } = streamer;
-
-        FIL_JOBS.push(href);
-
-        SaveCache({ FIL_JOBS });
-    };
-
     Handlers.first_in_line = (ActionableNotification) => {
         let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
 
@@ -1596,14 +1658,16 @@ let Initialize = async(startover = false) => {
 
             console.warn('Recieved an actionable notification:', textContent, new Date);
 
-            if(defined(FiLH)) {
-                if(FiLH !== href && !~FIL_JOBS.indexOf(href))
-                    FIL_JOBS.push(href);
+            if(defined(FIRST_IN_LINE_HREF)) {
+                (async() => {
+                    if(FIRST_IN_LINE_HREF !== href && !~FIRST_IN_LINE_JOBS.indexOf(href))
+                        FIRST_IN_LINE_JOBS.push(href);
 
-                console.warn('Pushing to Jobs:', href);
+                    console.warn('Pushing to Jobs:', href);
 
-                // To wait, or not to wait
-                SaveCache({ FIL_JOBS });
+                    // To wait, or not to wait
+                    await SaveCache({ FIRST_IN_LINE_JOBS });
+                })();
 
                 continue;
             }
@@ -1614,9 +1678,9 @@ let Initialize = async(startover = false) => {
                 if(!defined(streamer))
                     continue;
 
-                FiLH = href;
+                FIRST_IN_LINE_HREF = href;
 
-                FIL_BALL.add({
+                FIRST_IN_LINE_BALLOON.add({
                     href,
                     src: streamer.icon,
                     message: `${ streamer.name } <span style="display:none">is live</span>`,
@@ -1647,7 +1711,7 @@ let Initialize = async(startover = false) => {
                     console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
 
                     setTimeout(() => {
-                        console.warn('Heading to stream in 1 minute', FiLH, new Date);
+                        console.warn('Heading to stream in 1 minute', FIRST_IN_LINE_HREF, new Date);
 
                         let secs = 60 * 1000;
 
@@ -1661,23 +1725,24 @@ let Initialize = async(startover = false) => {
                                     existing.remove();
                                 console.warn('Heading to stream now');
 
-                                clearInterval(FiLP);
-                                clearTimeout(FiLJ);
-                                open(FiLH, '_self');
+                                clearInterval(FIRST_IN_LINE_INTERVAL);
+                                clearTimeout(FIRST_IN_LINE_JOB);
+                                open(FIRST_IN_LINE_HREF, '_self');
 
-                                FiLH = undefined;
+                                FIRST_IN_LINE_HREF = undefined;
                             },
                             Cancel: () => {
-                                let existing = $('#twitch-tools-popup');
+                                let existing = $('#twitch-tools-popup'),
+                                    [deadJob] = FIRST_IN_LINE_JOBS.splice(0, 1);
 
                                 if(defined(existing))
                                     existing.remove();
-                                console.warn('Canceled First in Line event');
+                                console.warn('Canceled First in Line event', deadJob);
 
-                                let balloon_job = $(`[uuid][guid][href="${ FiLH }"]`),
-                                    timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, balloon_job).getAttribute('time'));
+                                let container = $(`[id^="twitch-tools-balloon-container-"i]`),
+                                    timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, container)?.getAttribute('time'));
 
-                                balloon_job.remove();
+                                container.remove();
 
                                 $('[id^="twitch-tools-balloon-job-"]', true).map(
                                     container => {
@@ -1687,13 +1752,13 @@ let Initialize = async(startover = false) => {
                                     }
                                 );
 
-                                clearInterval(FiLP);
-                                clearTimeout(FiLJ);
-                                FiLH = undefined;
+                                clearInterval(FIRST_IN_LINE_INTERVAL);
+                                clearTimeout(FIRST_IN_LINE_JOB);
+                                FIRST_IN_LINE_HREF = undefined;
                             },
                         });
 
-                        FiLP = setInterval(() => {
+                        FIRST_IN_LINE_INTERVAL = setInterval(() => {
                             if(defined(popup?.elements))
                                 popup.elements.message.innerHTML
                                     = popup.elements.message.innerHTML
@@ -1701,21 +1766,21 @@ let Initialize = async(startover = false) => {
 
                             if(secs < 1) {
                                 popup.remove();
-                                clearInterval(FiLP);
+                                clearInterval(FIRST_IN_LINE_INTERVAL);
                             }
                         }, 1000);
                     }, (mins - 1) * 60 * 1000);
 
-                    FiLJ = setTimeout(() => {
+                    FIRST_IN_LINE_JOB = setTimeout(() => {
                         let existing = $('#twitch-tools-popup');
 
                         if(defined(existing))
                             existing.remove();
 
-                        clearTimeout(FiLJ);
-                        open(FiLH, '_self');
+                        clearTimeout(FIRST_IN_LINE_JOB);
+                        open(FIRST_IN_LINE_HREF, '_self');
 
-                        FiLH = undefined;
+                        FIRST_IN_LINE_HREF = undefined;
                     }, mins * 60 * 1000);
                 } else {
                     let existing = $('#twitch-tools-popup');
@@ -1723,15 +1788,15 @@ let Initialize = async(startover = false) => {
                     if(defined(existing))
                         existing.remove();
 
-                    open(FiLH, '_self');
+                    open(FIRST_IN_LINE_HREF, '_self');
 
-                    FiLH = undefined;
+                    FIRST_IN_LINE_HREF = undefined;
                 }
             }
         }
 
-        for(let index = 0, fails = 0; index < FIL_JOBS.length; index++) {
-            let href = FIL_JOBS[index],
+        for(let index = 0, fails = 0; index < FIRST_IN_LINE_JOBS.length; index++) {
+            let href = FIRST_IN_LINE_JOBS[index],
                 streamer = STREAMERS.find(streamer => parseURL(streamer.href).href === href);
 
             // Replaces up to 3 places
@@ -1743,29 +1808,29 @@ let Initialize = async(startover = false) => {
                 .replace(/(\d)$/, '$1th');
 
             if(!defined(href) || !defined(streamer)) {
-                FIL_JOBS.splice(index, 1);
-                SaveCache({ FIL_JOBS });
+                FIRST_IN_LINE_JOBS.splice(index, 1);
+                SaveCache({ FIRST_IN_LINE_JOBS });
 
                 ++fails;
 
                 continue;
             }
 
-            FIL_BALL.add({
+            FIRST_IN_LINE_BALLOON.add({
                 href,
                 src: streamer.icon,
                 message: `${ streamer.name } <span style="display:none">is live</span>`,
                 subheader: `${ nth(index + 1) } in line`,
                 onremove: event => {
-                    let [removed] = FIL_JOBS.splice(
-                            FIL_JOBS.findIndex(href => event.href == href)
+                    let [removed] = FIRST_IN_LINE_JOBS.splice(
+                            FIRST_IN_LINE_JOBS.findIndex(href => event.href == href)
                         , 1);
 
                     console.log('Removed', removed);
 
                     // TODO remove and shift
 
-                    SaveCache({ FIL_JOBS });
+                    SaveCache({ FIRST_IN_LINE_JOBS });
                 },
 
                 attributes: {
@@ -1790,36 +1855,36 @@ let Initialize = async(startover = false) => {
             });
         }
 
-        if(!defined(FiLH)) {
-            let [href] = FIL_JOBS,
+        if(!defined(FIRST_IN_LINE_HREF)) {
+            let [href] = FIRST_IN_LINE_JOBS,
                 streamer = STREAMERS.find(streamer => parseURL(streamer.href).href === href);
 
             if(!defined(href) || !defined(streamer)) {
-                FIL_JOBS.splice(0, 1);
-                SaveCache({ FIL_JOBS });
+                FIRST_IN_LINE_JOBS.splice(0, 1);
+                SaveCache({ FIRST_IN_LINE_JOBS });
             }
 
             if(defined(streamer))
-                Handlers.first_in_line({ href, textContent: `${ streamer.name } is live` });
+                Handlers.first_in_line({ href, textContent: `${ streamer.name } is live [First in Line]` });
         }
     };
     Timers.first_in_line = 3000;
 
     Unhandlers.first_in_line = () => {
-        if(defined(FiLJ))
-            clearTimeout(FiLJ);
-        if(defined(FiLH))
-            FiLH = '?';
+        if(defined(FIRST_IN_LINE_JOB))
+            clearTimeout(FIRST_IN_LINE_JOB);
+        if(defined(FIRST_IN_LINE_HREF))
+            FIRST_IN_LINE_HREF = '?';
 
-        SaveCache({ FIL_JOBS: [] });
+        SaveCache({ FIRST_IN_LINE_JOBS: [] });
     };
 
-    window.onlocationchange = () => FIL_BALL.remove();
+    window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
 
     if(settings.first_in_line)
         Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
 
-    /*** First in Line+
+    /*** First in Line+ (on creation)
      *      ______ _          _     _         _      _
      *     |  ____(_)        | |   (_)       | |    (_)             _
      *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___ _| |_
@@ -1847,22 +1912,27 @@ let Initialize = async(startover = false) => {
 
         new_uuids = new_uuids.filter(uuid => !~old_uuids.indexOf(uuid));
 
-        if(new_uuids.length < 1)
+        if(new_uuids.length < 1) {
+            OLD_STREAMERS = NEW_STREAMERS;
+
             return;
+        }
 
         let mins = parseInt(settings.first_in_line_plus_time_minutes) | 0;
 
         for(let uuid of new_uuids) {
             let streamer = STREAMERS.find(streamer => UUID.from(streamer.name).toString() == uuid);
-            let { name, href } = streamer,
-                url = parseURL(href),
-                { pathname } = url;
+
+            if(!defined(streamer))
+                return;
+
+            let { name, href } = streamer;
 
             if(!defined(streamer))
                 continue;
             console.warn('A channel just appeared:', name, new Date);
 
-            Handlers.first_in_line({ href, textContent: `${ name } is going live` });
+            Handlers.first_in_line({ href, textContent: `${ name } is live [First in Line+]` });
         }
 
         OLD_STREAMERS = NEW_STREAMERS;
@@ -1912,7 +1982,7 @@ let Initialize = async(startover = false) => {
      */
     Handlers.prevent_hosting = () => {
         let online = STREAMERS.filter(streamer => streamer.live),
-            next = online[(Math.random() * online.length)|0],
+            next = (FIRST_IN_LINE_JOBS?.length? FIRST_IN_LINE_JOBS[0]: online[(Math.random() * online.length)|0]),
             hosting = defined($('[data-a-target="hosting-indicator"i]'));
 
         if(hosting && next)
@@ -1945,7 +2015,7 @@ let Initialize = async(startover = false) => {
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = online[(Math.random() * online.length)|0];
+            next = (FIRST_IN_LINE_JOBS?.length? FIRST_IN_LINE_JOBS[0]: online[(Math.random() * online.length)|0]);
 
         if((raiding || raided) && next)
             if(online.length) {
@@ -1973,7 +2043,7 @@ let Initialize = async(startover = false) => {
      */
     Handlers.stay_live = async() => {
         let online = STREAMERS.filter(streamer => streamer.live),
-            next = online[(Math.random() * online.length)|0],
+            next = (FIRST_IN_LINE_JOBS?.length? FIRST_IN_LINE_JOBS[0]: online[(Math.random() * online.length)|0]),
             { pathname } = window.location;
 
         let Paths = [USERNAME, '[up]/', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
@@ -2105,7 +2175,7 @@ let Initialize = async(startover = false) => {
         Jobs.convert_emotes = setInterval(Handlers.convert_emotes, Timers.convert_emotes);
     }
 
-     /*** Message Filter
+    /*** Message Filter
      *      __  __                                  ______ _ _ _
      *     |  \/  |                                |  ____(_) | |
      *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__   _| | |_ ___ _ __
@@ -2559,7 +2629,7 @@ let Initialize = async(startover = false) => {
      *                | |                      | |
      *                |_|                      |_|
      */
-    /*** away mode
+    /*** Away Mode
      *                                    ____              _ _ _
      *         /\                        / __ \            | (_) |
      *        /  \__      ____ _ _   _  | |  | |_   _  __ _| |_| |_ _   _
@@ -2613,7 +2683,7 @@ let Initialize = async(startover = false) => {
                 enabled,
                 container,
                 icon: $('svg', false, container),
-                tooltip: $(`div[role="tooltip"i][uuid]`),
+                tooltip: $(`div[role="tooltip"i]`),
                 get offset() { return getOffset(container) },
                 background: $('button[data-a-target="away-mode-toggle"i]', false, container),
             };
@@ -2636,9 +2706,9 @@ let Initialize = async(startover = false) => {
 
         button.container.onmouseenter = event => {
             $('div#root > *').appendChild(
-                furnish('div.tooltip-layer', { style: `transform: translate(${ button.offset.left + 10 }px, ${ button.offset.top }px); width: 40px; height: 30px;` },
+                furnish('div.tooltip-layer', { style: `transform: translate(${ button.offset.left }px, ${ button.offset.top }px); width: 30px; height: 30px;` },
                     furnish('div', { 'aria-describedby': button.tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
-                        furnish('div', { style: 'width: 40px; height: 30px;' }),
+                        furnish('div', { style: 'width: 30px; height: 30px;' }),
                         button.tooltip
                     )
                 )
@@ -2753,7 +2823,7 @@ let Initialize = async(startover = false) => {
 
         button.container.onmouseenter = event => {
             $('div#root > *').appendChild(
-                furnish('div.tooltip-layer', { style: `transform: translate(${ button.offset.left + 10 }px, ${ button.offset.top - 10 }px); width: ${ button.offset.width }px; height: ${ button.offset.height }px; z-index: 2000;` },
+                furnish('div.tooltip-layer', { style: `transform: translate(${ button.offset.left }px, ${ button.offset.top - 10 }px); width: ${ button.offset.width }px; height: ${ button.offset.height }px; z-index: 2000;` },
                     furnish('div', { 'aria-describedby': button.tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
                         furnish('div', { style: `width: ${ button.offset.width }px; height: ${ button.offset.height }px;` }),
                         button.tooltip
