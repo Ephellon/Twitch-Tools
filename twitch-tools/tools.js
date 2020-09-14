@@ -410,7 +410,7 @@ class Balloon {
                                 // Header
                                 f('div.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-c-text-base.tw-elevation-1.tw-flex.tw-flex-shrink-0.tw-pd-x-1.tw-pd-y-05.tw-popover-header', {},
                                     f('div.tw-align-items-center.tw-flex.tw-flex-column.tw-flex-grow-1.tw-justify-content-center', {},
-                                        (H = f(`h5#twitch-tools-balloon-header-${ U }.tw-align-center.tw-c-text-alt.tw-semibold`, {}, title))
+                                        (H = f(`h5#twitch-tools-balloon-header-${ U }.tw-align-center.tw-c-text-alt.tw-semibold`, { style: 'margin-left:4rem!important' }, title))
                                     ),
                                     f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
                                         {
@@ -462,7 +462,22 @@ class Balloon {
                                                             f('a.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive',
                                                                 {
                                                                     'data-test-selector': 'persistent-notification__click',
+                                                                    'connected-to': `${ U }--${ guid }`,
+
                                                                     href,
+
+                                                                    onclick: event => {
+                                                                        let { currentTarget } = event,
+                                                                            connectedTo = currentTarget.getAttribute('connected-to');
+
+                                                                        let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
+
+                                                                        if(defined(element)) {
+                                                                            onremove({ ...event, uuid, guid, href, canceled: false });
+                                                                            clearInterval(+element.getAttribute('animationID'));
+                                                                            element.remove();
+                                                                        }
+                                                                    },
                                                                 },
                                                                 f('div.presistent-notification__area.tw-flex.tw-flex-nowrap.tw-pd-b-1.tw-pd-l-1.tw-pd-r-3.tw-pd-t-1', {},
                                                                     // Avatar
@@ -506,7 +521,7 @@ class Balloon {
                                                                                 let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
 
                                                                                 if(defined(element)) {
-                                                                                    onremove({ ...event, uuid, guid, href });
+                                                                                    onremove({ ...event, uuid, guid, href, canceled: true });
                                                                                     clearInterval(+element.getAttribute('animationID'));
                                                                                     element.remove();
                                                                                 }
@@ -559,6 +574,31 @@ class Balloon {
         return Balloon.#BALLOONS['_' + title] = this;
     }
 
+    addButton({ icon, onclick }) {
+        let parent = this.header.closest('div[class*="header"]');
+        let uuid = UUID.from(onclick.toString()).toString(),
+            existing = $(`[uuid="${ uuid }"i]`, false, parent);
+
+        if(defined(existing))
+            return existing;
+
+        let button = furnish('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
+            {
+                uuid,
+                onclick,
+
+                style: 'padding:0.5rem!important; height:3rem!important; width:3rem!important',
+                innerHTML: Glyphs[icon],
+
+                'connected-to': this.uuid,
+            },
+        );
+
+        parent.insertBefore(button, parent.lastElementChild);
+
+        return button;
+    }
+
     remove() {
         Balloon.#BALLOONS['_' + this.title] = this.container?.remove();
     }
@@ -598,8 +638,22 @@ class Balloon {
                                     f('a.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive',
                                         {
                                             'data-test-selector': 'persistent-notification__click',
+                                            'connected-to': `${ uuid }--${ guid }`,
 
                                             href,
+
+                                            onclick: event => {
+                                                let { currentTarget } = event,
+                                                    connectedTo = currentTarget.getAttribute('connected-to');
+
+                                                let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
+
+                                                if(defined(element)) {
+                                                    onremove({ ...event, uuid, guid, href, canceled: false });
+                                                    clearInterval(+element.getAttribute('animationID'));
+                                                    element.remove();
+                                                }
+                                            },
                                         },
                                         f('div.presistent-notification__area.tw-flex.tw-flex-nowrap.tw-pd-b-1.tw-pd-l-1.tw-pd-r-3.tw-pd-t-1', {},
                                             // Avatar
@@ -643,7 +697,7 @@ class Balloon {
                                                         let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
 
                                                         if(defined(element)) {
-                                                            onremove({ ...event, uuid, guid, href });
+                                                            onremove({ ...event, uuid, guid, href, canceled: true });
                                                             clearInterval(+element.getAttribute('animationID'));
                                                             element.remove();
                                                         }
@@ -669,11 +723,12 @@ class Balloon {
 
             container.setAttribute('animationID', animate(container));
 
+            this.body.appendChild(container);
+
             return container;
         });
 
-        for(let job of jobs)
-            this.body.appendChild(job);
+        return jobs;
     }
 
     static get(title) {
@@ -716,7 +771,17 @@ async function SaveCache(keys = {}, callback = () => {}) {
     // LoadCache(keys:string|array|object[, callback:function]) -> undefined
 async function LoadCache(keys = null, callback = () => {}) {
     let results = {},
-        get = key => StorageSpace.getItem(key);
+        get = key => {
+            let value = StorageSpace.getItem(key);
+
+            try {
+                value = JSON.parse(value);
+            } catch(error) {
+                value = value;
+            }
+
+            return value;
+        };
 
     if(keys === null) {
         keys = {};
@@ -727,17 +792,17 @@ async function LoadCache(keys = null, callback = () => {}) {
 
     switch(keys.constructor) {
         case String:
-            results[keys] = JSON.parse(get(keys));
+            results[keys] = get(keys);
             break;
 
         case Array:
             for(let key of keys)
-                results[key] = JSON.parse(get(key));
+                results[key] = get(key);
             break;
 
         case Object:
             for(let key in keys)
-                results[key] = JSON.parse(get(key)) || keys[key];
+                results[key] = get(key) ?? keys[key];
             break;
 
         default: return;
@@ -1182,7 +1247,7 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
     else
         desired = qualities.find(({ label }) => !!~smol(label).indexOf(quality.toLowerCase())) ?? null;
 
-    console.log({ quality, qualities, current, desired });
+    LOG({ quality, qualities, current, desired });
 
     if(desired === null)
         /* The desired quality does not exist */
@@ -1202,6 +1267,206 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
     return { OLD: current, NEW: desired }
 }
 
+// Returns if an item is of an object class
+    // isObj([object:*[, ...or:Function#Constructor]]) -> Boolean
+function isObj(object, ...or) {
+    return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
+        .find(constructor => object?.constructor === constructor || object instanceof constructor);
+}
+
+// Logs messages (green)
+    // LOG([...messages]) -> undefined
+function LOG(...messages) {
+    let CSS = `
+        background-color: #00332b;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #065;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [LOG] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+// Logs warnings (yellow)
+    // WARN([...messages]) -> undefined
+function WARN(...messages) {
+    let CSS = `
+        background-color: #332b00;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #650;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u26a0 [WARNING] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u26a0 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+// Logs errors (red)
+    // ERROR([...messages]) -> undefined
+function ERROR(...messages) {
+    let CSS = `
+        background-color: #290000;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #5c0000;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u2298 [ERROR] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u2298 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+/*** Available SVG glyphs
+ * bonuschannelpoints
+ * more_horizontal
+ * more_vertical
+ * channelpoints
+ * checkmark
+ * favorite
+ * emotes
+ * search
+ * trophy
+ * upload
+ * wallet
+ * close
+ * globe
+ * leave
+ * music
+ * pause
+ * trash
+ * bits
+ * chat
+ * gift
+ * lock
+ * loot
+ * moon
+ * play
+ * star
+ * eye
+ * mod
+ * cog
+ * x
+ */
 let Glyphs = {
     bonuschannelpoints: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
 
@@ -1225,7 +1490,7 @@ let Glyphs = {
     leave: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 18h-4a2 2 0 01-2-2v-2h2v2h4V4h-4v2h-2V4a2 2 0 012-2h4a2 2 0 012 2v12a2 2 0 01-2 2z"></path><path d="M7 5l1.5 1.5L6 9h8v2H6l2.5 2.5L7 15l-5-5 5-5z"></path></g></svg>',
     music: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 4.331a2 2 0 00-2.304-1.977l-9 1.385A2 2 0 005 5.716v7.334A2.5 2.5 0 106.95 16H7V9.692l9-1.385v2.743A2.5 2.5 0 1017.95 14H18V4.33zm-2 0L7 5.716v1.953l9-1.385V4.33z" clip-rule="evenodd"></path></g></svg>',
     pause: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 3H4v14h4V3zM16 3h-4v14h4V3z"></path></g></svg>',
-    trash: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
+    trash: '<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
 
     bits: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></svg>',
     chat: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>',
@@ -1243,9 +1508,17 @@ let Glyphs = {
     x: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>',
 };
 
+// Replaces up to 3 places
+let nth = n => (n + '')
+    .replace(/^1[123]$/, '$1th')
+    .replace(/1$/, '1st')
+    .replace(/2$/, '2nd')
+    .replace(/3$/, '3rd')
+    .replace(/(\d)$/, '$1th');
+
 // Update common variables
 let PATHNAME = top.location.pathname,
-    STREAMER, STREAMERS;
+    STREAMER, STREAMERS, CHANNELS;
 
 let __ONLOCATIONCHANGE__ = [];
 
@@ -1262,9 +1535,10 @@ Object.defineProperties(top, {
 });
 
 function update() {
-    STREAMERS = [
-        // Current streamers
-        ...$(`a:not([href="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)'))
+    // All Channels
+    CHANNELS = [
+        // Current (followed) streamers
+        ...$(`.side-bar-contents .side-nav-section a:not([href="${ PATHNAME }"i])`, true)
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -1285,18 +1559,48 @@ function update() {
                     };
 
                     return streamer;
-                }
-            ),
+                }),
     ];
 
+    // Followed Channels
+    STREAMERS = [
+        // Current (followed) streamers
+        ...$(`a:not([href="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section'))
+            .map(element => {
+                    let streamer = {
+                        href: element.href,
+                        icon: $('figure img', false, element).src,
+                        get live() {
+                            return empty($('div[class*="--offline"i]', false, element))
+                        },
+                        name: $('figure img', false, element).alt,
+                    };
+
+                    element.setAttribute('draggable', true);
+                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                    element.ondragstart ||= event => {
+                        let { currentTarget } = event;
+
+                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.dropEffect = 'move';
+                    };
+
+                    return streamer;
+                }),
+    ];
+
+    // Notifications
     $('[class^="onsite-notification-toast"]', true).map(
         element => {
             let streamer = {
                 live: true,
-                href: $('a', false, element).href,
-                icon: $('figure img', false, element).src,
-                name: $('figure img', false, element).alt,
+                href: $('a', false, element)?.href,
+                icon: $('figure img', false, element)?.src,
+                name: $('figure img', false, element)?.alt,
             };
+
+            if(!defined(streamer.name))
+                return;
 
             element.setAttribute('draggable', true);
             element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
@@ -1317,7 +1621,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             { oldValue, newValue } = change;
 
         if(newValue === false) {
-            console.warn(`Turning off the ${ key } setting`, new Date);
+            WARN(`Turning OFF "${ key }"`, new Date);
 
             clearInterval(Jobs[key]);
 
@@ -1328,11 +1632,11 @@ Storage.onChanged.addListener((changes, namespace) => {
             if(defined(unhandler))
                 unhandler();
         } else if(newValue === true) {
-            console.warn(`Turning on the ${ key } setting`, new Date);
+            WARN(`Turning ON "${ key }"`, new Date);
 
             Jobs[key] = setInterval(Handlers[key], Timers[key]);
         } else {
-            console.warn(`Changing the ${ key } setting`, { oldValue, newValue }, new Date);
+            WARN(`Changing "${ key }"`, { oldValue, newValue }, new Date);
         }
 
         settings[key] = newValue;
@@ -1354,11 +1658,43 @@ Storage.onChanged.addListener((changes, namespace) => {
 let Initialize = async(START_OVER = false) => {
     settings = await GetSettings();
 
-    /* Streamers Object - all followed streamers that appear on the "Followed Channels" list (except the currently viewed one)
-     * href:string   - link to the streamer's channel
-     * icon:string   - link to the streamer's image
-     * live:boolean* - GETTER: is the streamer live
-     * name:string   - the streamer's username
+    /* Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
+     * href:string   - link to the channel
+     * icon:string   - link to the channel's image
+     * live:boolean* - GETTER: is the channel live
+     * name:string   - the channel's name
+     */
+    CHANNELS = [
+        // Current (followed) streamers
+        ...$(`.side-bar-contents .side-nav-section a:not([href="${ PATHNAME }"i])`, true)
+            .map(element => {
+                    let streamer = {
+                        href: element.href,
+                        icon: $('figure img', false, element).src,
+                        get live() {
+                            return empty($('div[class*="--offline"i]', false, element))
+                        },
+                        name: $('figure img', false, element).alt,
+                    };
+
+                    element.setAttribute('draggable', true);
+                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                    element.ondragstart ||= event => {
+                        let { currentTarget } = event;
+
+                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.dropEffect = 'move';
+                    };
+
+                    return streamer;
+                }),
+    ];
+
+    /* Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
+     * href:string   - link to the channel
+     * icon:string   - link to the channel's image
+     * live:boolean* - GETTER: is the channel live
+     * name:string   - the channel's name
      */
     STREAMERS = [
         // Current streamers
@@ -1387,23 +1723,23 @@ let Initialize = async(START_OVER = false) => {
             ),
     ];
 
-    /* Streamer Object - the current streamer
-     * coin:number*      - GETTER: how many channel points (floored to the nearest 100) the user has
-     * chat:array*       - GETTER: an array of the current chat
-     * follow:function   - follows the current streamer
+    /* Streamer Array - the current streamer/channel
+     * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
+     * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
+     * follow:function   - follows the current channel
      * game:string*      - GETTER: the name of the current game/category
-     * href:string       - link to the streamer's channel (usually the current href)
-     * icon:string       - link to the streamer's image
-     * like:boolean*     - GETTER: are you following
-     * live:boolean*     - GETTER: the the streamer live
-     * name:string       - the streamer's username
-     * paid:boolean*     - GETTER: are you subscribed
-     * ping:boolean*     - GETTER: are notifications on
-     * poll:number*      - GETTER: how many viewers are watching
-     * tags:array*       - GETTER: tags of the stream
-     * team:string*      - GETTERL the team the streamer is affiliated with, if applicable
+     * href:string       - link to the channel (usually the current href)
+     * icon:string       - link to the channel's icon/image
+     * like:boolean*     - GETTER: is the user following the current channel
+     * live:boolean*     - GETTER: is the channel currently live
+     * name:string       - the channel's username
+     * paid:boolean*     - GETTER: is the user  subscribed
+     * ping:boolean*     - GETTER: does the user have notifications on
+     * poll:number*      - GETTER: how many viewers are watching the channel
+     * tags:array*       - GETTER: tags of the current stream
+     * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
      * time:number*      - GETTER: how long has the channel been live
-     * unfollow:function - unfollows the current streamer
+     * unfollow:function - unfollows the current channel
      */
     STREAMER = {
         get chat() {
@@ -1437,7 +1773,7 @@ let Initialize = async(START_OVER = false) => {
 
         href: parseURL($(`a[href$="${ PATHNAME }"i]`).href).href,
 
-        icon: $('figure img', false, $(`a[href$="${ PATHNAME }"i]`)).src,
+        icon: $('figure img', false, $(`a[href$="${ PATHNAME }"i]`))?.src,
 
         get like() {
             return defined($('[data-a-target="unfollow-button"i]'))
@@ -1498,6 +1834,19 @@ let Initialize = async(START_OVER = false) => {
             if(defined(unfollow))
                 unfollow.click();
         },
+
+        __eventlisteners__: {
+            onhost: [],
+            onraid: [],
+        },
+
+        set onhost(job) {
+            STREAMER.__eventlisteners__.onhost.push(job);
+        },
+
+        set onraid(job) {
+            STREAMER.__eventlisteners__.onraid.push(job);
+        },
     };
 
     if(STREAMER) {
@@ -1557,10 +1906,10 @@ let Initialize = async(START_OVER = false) => {
             mins = parseInt(settings.auto_follow_time_minutes) | 0;
 
         if(!like)
-            setTimeout(follow, mins * 60 * 1000);
+            setTimeout(follow, mins * 60_000);
     }
 
-    /*** First in Line Helpers
+    /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
      *      ______ _          _     _         _      _              _    _      _
      *     |  ____(_)        | |   (_)       | |    (_)            | |  | |    | |
      *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___  | |__| | ___| |_ __   ___ _ __ ___
@@ -1570,18 +1919,34 @@ let Initialize = async(START_OVER = false) => {
      *                                                                           | |
      *                                                                           |_|
      */
-    let FIRST_IN_LINE_JOB,
-        FIRST_IN_LINE_JOBS,
-        FIRST_IN_LINE_HREF,
-        FIRST_IN_LINE_BALLOON,
-        FIRST_IN_LINE_INTERVAL;
+    let FIRST_IN_LINE_JOB,                  // The current job (interval)
+        FIRST_IN_LINE_HREF,                 // The upcoming HREF
+        FIRST_IN_LINE_TIME,                 // The wait time (from settings)
+        FIRST_IN_LINE_PAUSED,               // The pause-state
+        FIRST_IN_LINE_BALLOON,              // The balloon controller
+        ALL_FIRST_IN_LINE_JOBS,             // All First in Line jobs
+        FIRST_IN_LINE_WAIT_TIME,            // The current timer for the job
+        FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
+        FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via popup)
+        FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
-    if(START_OVER)
+    if(START_OVER) {
         FIRST_IN_LINE_BALLOON = Balloon.get('Up Next').remove();
-    else
+    } else {
         FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next' });
+        FIRST_IN_LINE_BALLOON.addButton({
+            icon: 'pause',
+            onclick: event => {
+                let { currentTarget } = event,
+                    paused = currentTarget.getAttribute('paused') == 'true';
 
-    await LoadCache('FIRST_IN_LINE_JOBS', cache => FIRST_IN_LINE_JOBS = cache.FIRST_IN_LINE_JOBS ?? []);
+                paused = !paused;
+
+                currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
+                currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
+            },
+        });
+    }
 
     FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
 
@@ -1596,11 +1961,11 @@ let Initialize = async(START_OVER = false) => {
         let streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer')),
             { href } = streamer;
 
-        console.log('Adding job:', { href, streamer });
+        LOG('Adding job:', { href, streamer });
 
-        FIRST_IN_LINE_JOBS.push(href);
+        ALL_FIRST_IN_LINE_JOBS.push(href);
 
-        await SaveCache({ FIRST_IN_LINE_JOBS });
+        await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
     };
 
     FIRST_IN_LINE_BALLOON.icon.onmouseenter = event => {
@@ -1608,7 +1973,7 @@ let Initialize = async(START_OVER = false) => {
             offset = getOffset(container);
 
         $('div#root > *').appendChild(
-            furnish('div.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 2000;` },
+            furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 2000;` },
                 furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
                     furnish('div', { style: 'width: 30px; height: 30px;' }),
                     tooltip
@@ -1620,13 +1985,114 @@ let Initialize = async(START_OVER = false) => {
     };
 
     FIRST_IN_LINE_BALLOON.icon.onmouseleave = event => {
-        $('div#root .tooltip-layer')?.remove();
+        $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
 
         FIRST_IN_LINE_BALLOON.tooltip.setAttribute('style', 'display:none');
     };
 
+    FIRST_IN_LINE_TIME = parseInt(
+        settings.first_in_line?
+            settings.first_in_line_time_minutes:
+        settings.first_in_line_plus?
+            settings.first_in_line_plus_time_minutes:
+        settings.first_in_line_all?
+            settings.first_in_line_all_time_minutes:
+        0
+    ) | 0;
+
+    await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_WAIT_TIME'], cache => {
+        ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+        FIRST_IN_LINE_WAIT_TIME = cache.FIRST_IN_LINE_WAIT_TIME ?? FIRST_IN_LINE_TIME * 60_000;
+    });
+
     if(settings.first_in_line_none)
         FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
+    else
+        FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
+            for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS.length; index++) {
+                let href = ALL_FIRST_IN_LINE_JOBS[index],
+                    channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
+
+                if(!defined(href) || !defined(channel)) {
+                    ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+
+                    ++fails;
+
+                    continue;
+                }
+
+                let { live, name } = channel;
+
+                let [balloon] = FIRST_IN_LINE_BALLOON.add({
+                    href,
+                    src: channel.icon,
+                    message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
+                    subheader: `Coming up next`,
+                    onremove: event => {
+                        let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(
+                                ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href)
+                            , 1);
+
+                        LOG('Removed', removed, 'Canceled?', event.canceled);
+
+                        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_WAIT_TIME });
+                    },
+
+                    attributes: {
+                        name,
+                        live,
+                        index,
+                        time: (index < 1? FIRST_IN_LINE_WAIT_TIME: FIRST_IN_LINE_TIME * 60_000),
+
+                        style: (live? '': 'opacity: 0.3!important'),
+                    },
+
+                    animate: container => {
+                        let subheader = $('.twitch-tools-balloon-subheader', false, container);
+
+                        return setInterval(() => {
+                            if(FIRST_IN_LINE_PAUSED)
+                                return /* First in Line is paused */;
+
+                            let channel = (CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                                { name, live } = channel;
+
+                            let time = parseInt(container.getAttribute('time')),
+                                intervalID = parseInt(container.getAttribute('animationID')),
+                                index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
+
+                            if(time < 0)
+                                return clearInterval(intervalID);
+
+                            container.setAttribute('time', time - (index > 0? 0: 1000));
+                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
+
+                            if(container.getAttribute('index') != index) {
+                                container.setAttribute('index', index);
+                                container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
+                            }
+
+                            $('a', false, container)
+                                .setAttribute('style', `background-color: var(--color-opac-p-${ index > 8? 1: 9 - index })`);
+
+                            if(container.getAttribute('live') != (live + ''))
+                                container.setAttribute('live', live);
+                        }, 1000);
+                    },
+                });
+
+                balloon.setAttribute('index', index);
+            }
+        }, 1000);
+
+    STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
+        LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+
+        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
+        SaveCache({ FIRST_IN_LINE_WAIT_TIME });
+    };
 
     /*** First in Line
      *      ______ _          _     _         _      _
@@ -1638,10 +2104,11 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
+    let HANDLED_NOTIFICATIONS = [],
+        STARTED_TIMERS = {};
+
     Handlers.first_in_line = (ActionableNotification) => {
         let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
-
-        let mins = parseInt(settings.first_in_line_time_minutes) | 0;
 
         for(let notification of [ActionableNotification, ...notifications].filter(notification => defined(notification))) {
             let action = (
@@ -1655,133 +2122,197 @@ let Initialize = async(START_OVER = false) => {
 
             let { href, pathname } = parseURL(action.href);
             let { textContent } = action;
+            let uuid = UUID.from(textContent).toString();
 
-            console.warn('Recieved an actionable notification:', textContent, new Date);
+            if(!!~HANDLED_NOTIFICATIONS.indexOf(uuid))
+                continue;
+            HANDLED_NOTIFICATIONS.push(uuid);
+
+            WARN('Recieved an actionable notification:', textContent, new Date);
 
             if(defined(FIRST_IN_LINE_HREF)) {
                 (async() => {
-                    if(FIRST_IN_LINE_HREF !== href && !~FIRST_IN_LINE_JOBS.indexOf(href))
-                        FIRST_IN_LINE_JOBS.push(href);
+                    if(FIRST_IN_LINE_HREF !== href && !~ALL_FIRST_IN_LINE_JOBS.indexOf(href))
+                        ALL_FIRST_IN_LINE_JOBS.push(href);
 
-                    console.warn('Pushing to Jobs:', href);
+                    WARN('Pushing to Jobs:', href);
 
                     // To wait, or not to wait
-                    await SaveCache({ FIRST_IN_LINE_JOBS });
+                    await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
                 })();
 
                 continue;
             }
 
             if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent)) {
-                let streamer = STREAMERS.find(streamer => parseURL(streamer.href).href === href);
+                let channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
+                let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href);
 
-                if(!defined(streamer))
+                let { live, name } = channel;
+
+                index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
+
+                if(!defined(channel))
                     continue;
 
                 FIRST_IN_LINE_HREF = href;
 
                 FIRST_IN_LINE_BALLOON.add({
                     href,
-                    src: streamer.icon,
-                    message: `${ streamer.name } <span style="display:none">is live</span>`,
-                    subheader: `Up next`,
+                    src: channel.icon,
+                    message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
+                    subheader: `Coming up next`,
                     onremove: event => {
-                        let removed = event.href;
+                        let index = parseInt(event.currentTarget?.getAttribute('index')),
+                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                        console.log('Removed', removed);
+                        LOG('Removed', removed, 'Canceled?', event.canceled);
+
+                        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_WAIT_TIME });
                     },
 
                     attributes: {
-                        time: mins * 60 * 1000,
+                        name,
+                        live,
+                        index,
+                        time: (index < 1? FIRST_IN_LINE_WAIT_TIME: FIRST_IN_LINE_TIME * 60_000),
+
+                        style: (live? '': 'opacity: 0.3!important'),
                     },
 
                     animate: container => {
                         let subheader = $('.twitch-tools-balloon-subheader', false, container);
 
                         return setInterval(() => {
-                            let time = parseInt(container.getAttribute('time')) - 1000;
+                            if(FIRST_IN_LINE_PAUSED)
+                                return /* First in Line is paused */;
 
-                            container.setAttribute('time', time);
-                            subheader.innerHTML = ConvertTime(time, 'clock');
+                            let channel = (CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                                { name, live } = channel;
+
+                            let time = parseInt(container.getAttribute('time')),
+                                intervalID = parseInt(container.getAttribute('animationID')),
+                                index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
+
+                            if(time < 0)
+                                return clearInterval(intervalID);
+
+                            container.setAttribute('time', time - (index > 0? 0: 1000));
+                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
+
+                            if(container.getAttribute('index') != index) {
+                                container.setAttribute('index', index);
+                                container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
+                            }
+
+                            $('a', false, container)
+                                .setAttribute('style', `background-color: var(--color-opac-p-${ index > 8? 1: 9 - index })`);
+
+                            if(container.getAttribute('live') != (live + ''))
+                                container.setAttribute('live', live);
                         }, 1000);
                     },
                 });
 
-                if(mins) {
-                    console.warn(`Waiting ${ mins } minutes before leaving for stream`, new Date);
+                if(FIRST_IN_LINE_TIME) {
+                    WARN(`Waiting ${ ConvertTime(FIRST_IN_LINE_WAIT_TIME) } before leaving for stream`, new Date);
 
-                    setTimeout(() => {
-                        console.warn('Heading to stream in 1 minute', FIRST_IN_LINE_HREF, new Date);
+                    FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
+                        if(FIRST_IN_LINE_PAUSED)
+                            return /* First in Line is paused */;
+                        // Don't act until 1min is left
+                        if(FIRST_IN_LINE_WAIT_TIME > 60_000)
+                            return;
 
-                        let secs = 60 * 1000;
+                        if(!defined(STARTED_TIMERS.WARNING)) {
+                            STARTED_TIMERS.WARNING = true;
 
-                        let popup = new Popup(`First in line: TTV${ pathname }`, 'Heading to stream in \t1 minute\t', {
-                            Icon: STREAMERS.find(streamer => streamer.href === href)?.icon,
+                            WARN('Heading to stream in', ConvertTime(FIRST_IN_LINE_WAIT_TIME), FIRST_IN_LINE_HREF, new Date);
 
-                            Goto: () => {
-                                let existing = $('#twitch-tools-popup');
+                            let popup = new Popup(`First in line: TTV${ pathname }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_WAIT_TIME) }\t`, {
+                                Icon: CHANNELS.find(channel => channel.href === href)?.icon,
 
-                                if(defined(existing))
-                                    existing.remove();
-                                console.warn('Heading to stream now');
+                                Goto: () => {
+                                    let existing = $('#twitch-tools-popup');
 
-                                clearInterval(FIRST_IN_LINE_INTERVAL);
-                                clearTimeout(FIRST_IN_LINE_JOB);
-                                open(FIRST_IN_LINE_HREF, '_self');
+                                    if(defined(existing))
+                                        existing.remove();
+                                    WARN('Heading to stream now');
 
-                                FIRST_IN_LINE_HREF = undefined;
-                            },
-                            Cancel: () => {
-                                let existing = $('#twitch-tools-popup'),
-                                    [deadJob] = FIRST_IN_LINE_JOBS.splice(0, 1);
+                                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
+                                    clearInterval(FIRST_IN_LINE_JOB);
+                                    open(FIRST_IN_LINE_HREF, '_self');
 
-                                if(defined(existing))
-                                    existing.remove();
-                                console.warn('Canceled First in Line event', deadJob);
+                                    FIRST_IN_LINE_HREF = undefined;
+                                },
+                                Cancel: () => {
+                                    let existing = $('#twitch-tools-popup'),
+                                        [deadJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
 
-                                let container = $(`[id^="twitch-tools-balloon-container-"i]`),
-                                    timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, container)?.getAttribute('time'));
+                                    if(defined(existing))
+                                        existing.remove();
+                                    WARN('Canceled First in Line event', deadJob);
 
-                                container.remove();
+                                    let container = $(`[id^="twitch-tools-balloon-container-"i]`),
+                                        timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, container)?.getAttribute('time'));
 
-                                $('[id^="twitch-tools-balloon-job-"]', true).map(
-                                    container => {
-                                        let subheader = $('.twitch-tools-balloon-subheader', false, container);
+                                    container.remove();
 
-                                        container.setAttribute('time', parseInt(container.getAttribute('time')) - timeleft);
-                                    }
-                                );
+                                    $('[id^="twitch-tools-balloon-job-"]', true).map(
+                                        container => {
+                                            let subheader = $('.twitch-tools-balloon-subheader', false, container);
 
-                                clearInterval(FIRST_IN_LINE_INTERVAL);
-                                clearTimeout(FIRST_IN_LINE_JOB);
-                                FIRST_IN_LINE_HREF = undefined;
-                            },
-                        });
+                                            container.setAttribute('time', parseInt(container.getAttribute('time')) - timeleft);
+                                        }
+                                    );
 
-                        FIRST_IN_LINE_INTERVAL = setInterval(() => {
-                            if(defined(popup?.elements))
-                                popup.elements.message.innerHTML
-                                    = popup.elements.message.innerHTML
-                                        .replace(/\t(.+?)\t/i, ['\t', ConvertTime(secs -= 1000, 'minute:second'), '\t'].join(''));
+                                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
+                                    clearInterval(FIRST_IN_LINE_JOB);
+                                    FIRST_IN_LINE_HREF = undefined;
+                                },
+                            });
 
-                            if(secs < 1) {
-                                popup.remove();
-                                clearInterval(FIRST_IN_LINE_INTERVAL);
-                            }
-                        }, 1000);
-                    }, (mins - 1) * 60 * 1000);
+                            FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
+                                if(FIRST_IN_LINE_PAUSED)
+                                    return /* First in Line is paused */;
 
-                    FIRST_IN_LINE_JOB = setTimeout(() => {
+                                if(defined(popup?.elements))
+                                    popup.elements.message.innerHTML
+                                        = popup.elements.message.innerHTML
+                                            .replace(/\t(.+?)\t/i, ['\t', ConvertTime(FIRST_IN_LINE_WAIT_TIME, 'minute:second'), '\t'].join(''));
+
+                                if(FIRST_IN_LINE_WAIT_TIME < 1) {
+                                    popup.remove();
+                                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
+                                }
+                            }, 1000);
+                        }
+                    }, 1000);
+
+                    FIRST_IN_LINE_JOB = setInterval(() => {
+                        if(FIRST_IN_LINE_PAUSED)
+                            return /* First in Line is paused */;
+                        // Save the current wait time (every 1sec)
+                        if((FIRST_IN_LINE_WAIT_TIME % 1_000) === 0)
+                            SaveCache({ FIRST_IN_LINE_WAIT_TIME });
+                        // Don't act until 1sec is left
+                        if(FIRST_IN_LINE_WAIT_TIME > 1000)
+                            return FIRST_IN_LINE_WAIT_TIME -= 1000;
+
                         let existing = $('#twitch-tools-popup');
 
                         if(defined(existing))
                             existing.remove();
 
-                        clearTimeout(FIRST_IN_LINE_JOB);
+                        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
+                        SaveCache({ FIRST_IN_LINE_WAIT_TIME });
+
+                        clearInterval(FIRST_IN_LINE_JOB);
                         open(FIRST_IN_LINE_HREF, '_self');
 
                         FIRST_IN_LINE_HREF = undefined;
-                    }, mins * 60 * 1000);
+                    }, 1000);
                 } else {
                     let existing = $('#twitch-tools-popup');
 
@@ -1794,95 +2325,39 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
         }
-
-        for(let index = 0, fails = 0; index < FIRST_IN_LINE_JOBS.length; index++) {
-            let href = FIRST_IN_LINE_JOBS[index],
-                streamer = STREAMERS.find(streamer => parseURL(streamer.href).href === href);
-
-            // Replaces up to 3 places
-            let nth = n => (n + '')
-                .replace(/^1[123]$/, '$1th')
-                .replace(/1$/, '1st')
-                .replace(/2$/, '2nd')
-                .replace(/3$/, '3rd')
-                .replace(/(\d)$/, '$1th');
-
-            if(!defined(href) || !defined(streamer)) {
-                FIRST_IN_LINE_JOBS.splice(index, 1);
-                SaveCache({ FIRST_IN_LINE_JOBS });
-
-                ++fails;
-
-                continue;
-            }
-
-            FIRST_IN_LINE_BALLOON.add({
-                href,
-                src: streamer.icon,
-                message: `${ streamer.name } <span style="display:none">is live</span>`,
-                subheader: `${ nth(index + 1) } in line`,
-                onremove: event => {
-                    let [removed] = FIRST_IN_LINE_JOBS.splice(
-                            FIRST_IN_LINE_JOBS.findIndex(href => event.href == href)
-                        , 1);
-
-                    console.log('Removed', removed);
-
-                    // TODO remove and shift
-
-                    SaveCache({ FIRST_IN_LINE_JOBS });
-                },
-
-                attributes: {
-                    index,
-                    time: (index + 1 - fails) * mins * 60 * 1000,
-                },
-
-                animate: container => {
-                    let subheader = $('.twitch-tools-balloon-subheader', false, container),
-                        index = parseInt(subheader.closest('[id^="twitch-tools-balloon-job"]').getAttribute('index'));
-
-                    if(index > 0)
-                        return -1;
-
-                    return setInterval(() => {
-                        let time = parseInt(container.getAttribute('time')) - 1000;
-
-                        container.setAttribute('time', time);
-                        subheader.innerHTML = ConvertTime(time, 'clock');
-                    }, 1000);
-                },
-            });
-        }
-
-        if(!defined(FIRST_IN_LINE_HREF)) {
-            let [href] = FIRST_IN_LINE_JOBS,
-                streamer = STREAMERS.find(streamer => parseURL(streamer.href).href === href);
-
-            if(!defined(href) || !defined(streamer)) {
-                FIRST_IN_LINE_JOBS.splice(0, 1);
-                SaveCache({ FIRST_IN_LINE_JOBS });
-            }
-
-            if(defined(streamer))
-                Handlers.first_in_line({ href, textContent: `${ streamer.name } is live [First in Line]` });
-        }
     };
     Timers.first_in_line = 3000;
 
     Unhandlers.first_in_line = () => {
         if(defined(FIRST_IN_LINE_JOB))
-            clearTimeout(FIRST_IN_LINE_JOB);
+            clearInterval(FIRST_IN_LINE_JOB);
         if(defined(FIRST_IN_LINE_HREF))
             FIRST_IN_LINE_HREF = '?';
 
-        SaveCache({ FIRST_IN_LINE_JOBS: [] });
+        ALL_FIRST_IN_LINE_JOBS = [];
+        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
+
+        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_WAIT_TIME });
     };
 
-    window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
+    // window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
 
-    if(settings.first_in_line)
+    if(settings.first_in_line || settings.first_in_line_all) {
         Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
+
+        if(!defined(FIRST_IN_LINE_HREF)) {
+            let [href] = ALL_FIRST_IN_LINE_JOBS,
+                channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
+
+            if(!defined(href) || !defined(channel)) {
+                ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+            }
+
+            if(defined(channel))
+                Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
+        }
+    }
 
     /*** First in Line+ (on creation)
      *      ______ _          _     _         _      _
@@ -1894,52 +2369,51 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let OLD_STREAMERS, NEW_STREAMERS;
+    let OLD_STREAMERS, NEW_STREAMERS, CURRENT_STREAMER;
+
+    await LoadCache('OLD_STREAMERS', cache => OLD_STREAMERS = cache.OLD_STREAMERS);
+
+    if(STREAMER)
+        CURRENT_STREAMER = STREAMER;
 
     Handlers.first_in_line_plus = () => {
-        let streamers = STREAMERS.filter(streamer => streamer.live).map(streamer => streamer.name).sort();
+        let streamers = [...new Set(STREAMERS.filter(streamer => streamer.live).concat(CURRENT_STREAMER).map(streamer => streamer.name))].sort();
 
-        NEW_STREAMERS = streamers.map(name => UUID.from(name).toString()).join(',');
+        NEW_STREAMERS = streamers.join(',').toLowerCase();
 
         if(!defined(OLD_STREAMERS))
             OLD_STREAMERS = NEW_STREAMERS;
 
         if(OLD_STREAMERS == NEW_STREAMERS)
-            return /* No new streamer(s) */;
+            return SaveCache({ OLD_STREAMERS });
 
-        let old_uuids = OLD_STREAMERS.split(','),
-            new_uuids = NEW_STREAMERS.split(',');
+        let old_names = OLD_STREAMERS.split(','),
+            new_names = NEW_STREAMERS.split(',');
 
-        new_uuids = new_uuids.filter(uuid => !~old_uuids.indexOf(uuid));
+        new_names = new_names.filter(name => !~old_names.indexOf(name));
 
-        if(new_uuids.length < 1) {
-            OLD_STREAMERS = NEW_STREAMERS;
-
-            return;
-        }
-
-        let mins = parseInt(settings.first_in_line_plus_time_minutes) | 0;
-
-        for(let uuid of new_uuids) {
-            let streamer = STREAMERS.find(streamer => UUID.from(streamer.name).toString() == uuid);
-
-            if(!defined(streamer))
-                return;
-
-            let { name, href } = streamer;
+        for(let name of new_names) {
+            let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name));
 
             if(!defined(streamer))
                 continue;
-            console.warn('A channel just appeared:', name, new Date);
+
+            let { href } = streamer;
+
+            WARN('A channel just appeared:', name, new Date);
 
             Handlers.first_in_line({ href, textContent: `${ name } is live [First in Line+]` });
         }
 
         OLD_STREAMERS = NEW_STREAMERS;
+
+        SaveCache({ OLD_STREAMERS });
     };
     Timers.first_in_line_plus = 1000;
 
-    if(settings.first_in_line_plus)
+    Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
+
+    if(settings.first_in_line_plus || settings.first_in_line_all)
         Jobs.first_in_line_plus = setInterval(Handlers.first_in_line_plus, Timers.first_in_line_plus);
 
     /*** Kill Extensions
@@ -1981,18 +2455,22 @@ let Initialize = async(START_OVER = false) => {
      *                     |_|                                   |___/
      */
     Handlers.prevent_hosting = () => {
-        let online = STREAMERS.filter(streamer => streamer.live),
-            next = (FIRST_IN_LINE_JOBS?.length? FIRST_IN_LINE_JOBS[0]: online[(Math.random() * online.length)|0]),
-            hosting = defined($('[data-a-target="hosting-indicator"i]'));
+        let hosting = defined($('[data-a-target="hosting-indicator"i]')),
+            online = STREAMERS.filter(streamer => streamer.live),
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
 
-        if(hosting && next)
+
+        if(hosting && next) {
+            STREAMER.__eventlisteners__.onhost.forEach(job => job({ hosting, next }));
+
             if(online.length) {
-                console.warn(`${ STREAMER.name } is hosting. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ STREAMER.name } is hosting. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                console.warn(`${ STREAMER.name } is hosting. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ STREAMER.name } is hosting. There doesn't seem to be any followed streamers on right now`, new Date);
             }
+        }
     };
     Timers.prevent_hosting = 5000;
 
@@ -2015,16 +2493,20 @@ let Initialize = async(START_OVER = false) => {
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (FIRST_IN_LINE_JOBS?.length? FIRST_IN_LINE_JOBS[0]: online[(Math.random() * online.length)|0]);
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
 
-        if((raiding || raided) && next)
+
+        if((raiding || raided) && next) {
+            STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
+
             if(online.length) {
-                console.warn(`${ STREAMER.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ STREAMER.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                console.warn(`${ STREAMER.name } is raiding. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ STREAMER.name } is raiding. There doesn't seem to be any followed streamers on right now`, new Date);
             }
+        }
     };
     Timers.prevent_raiding = 5000;
 
@@ -2043,7 +2525,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.stay_live = async() => {
         let online = STREAMERS.filter(streamer => streamer.live),
-            next = (FIRST_IN_LINE_JOBS?.length? FIRST_IN_LINE_JOBS[0]: online[(Math.random() * online.length)|0]),
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
             { pathname } = window.location;
 
         let Paths = [USERNAME, '[up]/', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
@@ -2063,11 +2545,11 @@ let Initialize = async(START_OVER = false) => {
 
         if(!STREAMER.live && !ValidTwitchPath.test(pathname)) {
             if(online.length) {
-                console.warn(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else  {
-                console.warn(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
             }
         } else if(/\/search/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
@@ -2278,22 +2760,7 @@ let Initialize = async(START_OVER = false) => {
     if(settings.filter_messages)
         Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
 
-    // Wait for the elements to populate
-    // May not always be present
-    setTimeout(() => {
-        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"]', true).map(a => {
-            a.addEventListener('mousedown', async event => {
-                let { currentTarget } = event;
-
-                let url = parseURL(currentTarget.href),
-                    UserIntent = url.pathname.replace('/', '');
-
-                await SaveCache({ UserIntent });
-            });
-        });
-    }, 1000);
-
-    /*** Easy Filter - NOT A SETTING. THIS IS A HELPER FOR: MESSAGE FILTER
+    /*** Easy Filter - NOT A SETTING. This is a helper for "Message Filter"
      *      ______                  ______ _ _ _
      *     |  ____|                |  ____(_) | |
      *     | |__   __ _ ___ _   _  | |__   _| | |_ ___ _ __
@@ -2322,7 +2789,7 @@ let Initialize = async(START_OVER = false) => {
 
             let filter = furnish('div#twitch-tools-filter-rule-user', {
                 title: `Filter all messages from @${ name }`,
-                style: 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal',
+                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal',
                 username: name,
 
                 onclick: event => {
@@ -2354,7 +2821,7 @@ let Initialize = async(START_OVER = false) => {
 
             let filter = furnish('div#twitch-tools-filter-rule-emote', {
                 title: 'Filter this emote',
-                style: 'cursor:pointer; fill:var(--color-white); font-size:1.1rem; font-weight:normal',
+                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal',
                 emote: `:${ name }:`,
 
                 onclick: event => {
@@ -2411,7 +2878,7 @@ let Initialize = async(START_OVER = false) => {
                     continue;
 
                 if(settings.highlight_mentions_popup)
-                    new Popup(`@${ author } sent you a message`, message, {
+                    new Popup(`@${ author } sent you a message`, (message.length > 30? message.slice(0, 27) + '...': message), {
                         Reply: event => {
                             let chatbox = $('.chat-input__textarea textarea'),
                                 existing = $('#twitch-tools-popup');
@@ -2535,7 +3002,7 @@ let Initialize = async(START_OVER = false) => {
         let url = parseURL(location),
             parameters = url.searchParameters;
 
-        console.error('The stream ran into an error:', error_message.textContent, new Date);
+        ERROR('The stream ran into an error:', error_message.textContent, new Date);
 
         parameters.fail = (+new Date).toString(36);
 
@@ -2591,7 +3058,7 @@ let Initialize = async(START_OVER = false) => {
                     throw error;
                 });
         } catch(error) {
-            console.warn(error);
+            WARN(error);
 
             let control = $('button[data-a-player-state]'),
                 playing = control.getAttribute('data-a-player-state') !== 'paused';
@@ -2618,6 +3085,32 @@ let Initialize = async(START_OVER = false) => {
 
         Jobs.recover_stream = setInterval(Handlers.recover_stream, Timers.recover_stream);
     }
+
+    /*** Useer Intent Listener - NOT A SETTING. Observe the user's intent, and prevent over-riding it
+     *
+     *      _    _                 _       _             _
+     *     | |  | |               (_)     | |           | |
+     *     | |  | |___  ___ _ __   _ _ __ | |_ ___ _ __ | |_
+     *     | |  | / __|/ _ \ '__| | | '_ \| __/ _ \ '_ \| __|
+     *     | |__| \__ \  __/ |    | | | | | ||  __/ | | | |_
+     *      \____/|___/\___|_|    |_|_| |_|\__\___|_| |_|\__|
+     *
+     *
+     * Wait for the elements to populate
+     * May not always be present
+     */
+    setTimeout(() => {
+        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"]', true).map(a => {
+            a.addEventListener('mousedown', async event => {
+                let { currentTarget } = event;
+
+                let url = parseURL(currentTarget.href),
+                    UserIntent = url.pathname.replace('/', '');
+
+                await SaveCache({ UserIntent });
+            });
+        });
+    }, 1000);
 
     /*** Scoped under Initialize
      *      _______             _____
@@ -2669,11 +3162,11 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 get offset() { return getOffset(container) },
                 background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-                tooltip: furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--up', { role: 'tooltip', uuid }, `You're ${ ['','not'][+enabled] } watching ${ STREAMER.name }. Quality set to ${ ['AUTO','LOW'][+enabled] }`),
+                tooltip: furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--up', { role: 'tooltip', uuid }, `Turn away-mode ${ ['on','off'][+enabled] }`),
             };
 
             button.icon.outerHTML = Glyphs.eye;
-            button.container.setAttribute('twitch-tools-away-mode-enabled', false);
+            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
 
             button.icon = $('svg', false, container);
         } else {
@@ -2690,7 +3183,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         button.tooltip.id = uuid;
-        button.background.setAttribute('style', `background:var(--color-accent-primary-${ '31'[+enabled] }) !important;`);
+        button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
         button.icon.setAttribute('height', '20px');
         button.icon.setAttribute('width', '20px');
 
@@ -2698,15 +3191,15 @@ let Initialize = async(START_OVER = false) => {
             let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
 
             button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-            button.background.setAttribute('style', `background:var(--color-accent-primary-${ '31'[+enabled] }) !important;`);
-            button.tooltip.innerHTML = `You're ${ ['','not'][+enabled] } watching ${ STREAMER.name }. Quality set to ${ ['AUTO','LOW'][+enabled] }`;
+            button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
+            button.tooltip.innerHTML = `Turn away-mode ${ ['on','off'][+enabled] }`;
 
             ChangeQuality(['auto','low'][+enabled]);
         };
 
         button.container.onmouseenter = event => {
             $('div#root > *').appendChild(
-                furnish('div.tooltip-layer', { style: `transform: translate(${ button.offset.left }px, ${ button.offset.top }px); width: 30px; height: 30px;` },
+                furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ button.offset.left + 15 }px, ${ button.offset.top }px); width: 30px; height: 30px;` },
                     furnish('div', { 'aria-describedby': button.tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
                         furnish('div', { style: 'width: 30px; height: 30px;' }),
                         button.tooltip
@@ -2719,7 +3212,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         button.container.onmouseleave = event => {
-            $('div#root .tooltip-layer')?.remove();
+            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
 
             button.tooltip.setAttribute('style', 'display:none');
             button.icon.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
@@ -2817,13 +3310,13 @@ let Initialize = async(START_OVER = false) => {
 
             button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
             button.text.innerText = ['OFF','ON'][+enabled];
-            button.icon.setAttribute('style', `fill:var(--color-${ ['red','accent'][+enabled] }) !important;`);
+            button.icon.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
             button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonus Channel Points`;
         };
 
         button.container.onmouseenter = event => {
             $('div#root > *').appendChild(
-                furnish('div.tooltip-layer', { style: `transform: translate(${ button.offset.left }px, ${ button.offset.top - 10 }px); width: ${ button.offset.width }px; height: ${ button.offset.height }px; z-index: 2000;` },
+                furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ button.offset.left }px, ${ button.offset.top - 10 }px); width: ${ button.offset.width }px; height: ${ button.offset.height }px; z-index: 2000;` },
                     furnish('div', { 'aria-describedby': button.tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
                         furnish('div', { style: `width: ${ button.offset.width }px; height: ${ button.offset.height }px;` }),
                         button.tooltip
@@ -2836,7 +3329,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         button.container.onmouseleave = event => {
-            $('div#root .tooltip-layer')?.remove();
+            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
 
             button.tooltip?.setAttribute('style', 'display:none');
             button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');

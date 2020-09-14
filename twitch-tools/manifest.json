@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "2.3.3",
+    "version": "2.4",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -52,7 +52,8 @@
     },
 
     "permissions": [
-        "*://*.twitch.tv/*",
+        "*://www.twitch.tv/*",
+        "*://twitch.tv/*",
 
         "storage",
         "tabs"

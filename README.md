@@ -12,12 +12,13 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Claim Bonuses* `on` &mdash; When the Bonus Channel Points button appears, click it
 - *First in Line* &mdash; When a channel you follow begins streaming, automatically go to it
     - `default` Do not go to any channels automatically
-    - When you receive a notification for a followed channel going live, head to it after `X` minutes
-    - When a followed channel's icon appears, head to it after `X` minutes
+    - When you receive a notification for a followed channel going live, head to it after `15` minutes
+    - When a followed channel's icon appears, head to it after `15` minutes
+    - Go to all streams after `15` minutes automatically
 - *Follows* &mdash; When watching a stream, automatically follow the channel
     - `default` Do not follow any channels automatically
     - When participating in a raid, follow the channel being raided
-    - After watching `X` minutes of content, follow the channel
+    - After watching `15` minutes of content, follow the channel
     - Follow all channels automatically
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Prevent Hosting* `off` &mdash; When a channel begins hosting, go to a different, followed channel
