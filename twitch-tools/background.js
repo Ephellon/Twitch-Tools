@@ -43,7 +43,7 @@ switch(BrowserNamespace) {
 // reason:string - install | update | chrome_update | shared_module_update
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
-        url: "*://*.twitch.tv/*",
+        url: "*://www.twitch.tv/*",
     }, tabs => {
         if(!defined(tabs))
             return;

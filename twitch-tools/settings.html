@@ -181,7 +181,7 @@
                         Remove the following messages/rules across all channels.
                     </p>
                     <p>
-                        <input id="filter_rules-input" type="text" value="" title="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
+                        <input id="filter_rules-input" type="text" value="" left-tooltip="Case insensitive" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
                     </p>
                     <p><div id="filter_rules"></div></p>
                     <ul>
@@ -276,6 +276,49 @@
                     </div>
                     <p>
                         When the video fails to download (black screen), reload the webpage.
+                    </p>
+                </div>
+            </section>
+        </article>
+
+        <header>Developer Mode <span glyph="help" right-tooltip="These are advanced features and should be used carefully"></span></header>
+        <article danger>
+            <section>
+                <div class="title"><span small glyph="stats"></span> Display Console Messages</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="developer_mode" type="checkbox"/>
+                        <label for="developer_mode"></label>
+                    </div>
+                    <p>
+                        Allow the extension to display messages in the console.
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="stats"></span> Experimental Features</div>
+                <div class="summary">
+                    <div class="toggle danger" right-tooltip="May cause data loss">
+                        <input id="experimental_mode" type="checkbox"/>
+                        <label for="experimental_mode"></label>
+                    </div>
+                    <p>
+                        Allow the extension to display &amp; use experimental features.
+                    </p>
+                </div>
+            </section>
+
+            <section hide-on="show-defaults">
+                <div class="title"><span small glyph="help"></span> Show Default Values</div>
+                <div class="summary">
+                    <div>
+                        <a href="?show-defaults=true">
+                            <button>Show</button>
+                        </a>
+                    </div>
+                    <p>
+                        Show the default values.
                     </p>
                 </div>
             </section>

@@ -231,16 +231,17 @@ class Popup {
                                 )
                             )
                         ),
-                        f('div#twitch-tools-notification-counter.t-absolute.tw-font-size-7.tw-left-0.tw-top-0', { style: 'visibility:hidden' },
+                        // Notification counter
+                        f('div#twitch-tools-notification-counter--popup.tw-absolute.tw-font-size-7.tw-right-0.tw-top-0', { style: 'visibility:hidden' },
                             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
                                     'data-a-target': 'tw-animation-target'
                                 },
                                 f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
-                                    f('div#twitch-tools-notification-counter-output.tw-c-text-overlay.tw-number-badge__badge.tw-relative', {
+                                    f('div#twitch-tools-notification-counter-output--popup.tw-c-text-overlay.tw-number-badge__badge.tw-relative', {
                                         'interval-id': setInterval(() => {
                                             let { length } = Queue.popups,
-                                                counter = $('#twitch-tools-notification-counter'),
-                                                output = $('#twitch-tools-notification-counter-output');
+                                                counter = $('#twitch-tools-notification-counter--popup'),
+                                                output = $('#twitch-tools-notification-counter-output--popup');
 
                                             if(!defined(counter) || !defined(output))
                                                 return;
@@ -252,7 +253,6 @@ class Popup {
 
                                             if(length < 1) {
                                                 counter.setAttribute('style', 'visibility:hidden');
-                                                clearInterval(interval);
                                             } else {
                                                 counter.setAttribute('style', 'visibility:unset');
                                             }
@@ -261,7 +261,9 @@ class Popup {
                                 )
                             )
                         ),
+                        // Confirmation/Decline buttons
                         f('div.tw-align-content-stretch.tw-border-l.tw-flex.tw-flex-column.tw-flex-grow-0.tw-flex-shrink-0', {},
+                            // Confirm
                             f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
                                 T = f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
                                         onclick: A,
@@ -271,6 +273,7 @@ class Popup {
                                     )
                                 )
                             ),
+                            // Decline
                             f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
                                 W = f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
                                         onclick: C,
@@ -314,9 +317,10 @@ class Popup {
 // Displays a balloon (popup)
     // new Balloon({ title:string, icon:string? }[, ...jobs:object#{ href:string#URL, message:string?, src:string?, time:string#Date, onremove:function? }]) -> Object
     // Balloon.prototype.add(...jobs:object#{ href:string#URL, message:string?, src:string?, time:string#Date, onremove:function? }) -> Element
+    // Balloon.prototype.addButton({ [left:boolean[, icon:string#Glyphs[, onclick:function[, attributes:object]]]] }) -> Element
     // Balloon.prototype.remove() -> undefined
 class Balloon {
-    static #BALLOONS = {}
+    static #BALLOONS = new Map()
 
     constructor({ title, icon = 'play' }, ...jobs) {
         let f = furnish;
@@ -324,10 +328,10 @@ class Balloon {
         let [P] = $('.top-nav__menu > div', true).slice(-1),
             X = $('#twitch-tools-balloon', false, P),
             I = Extension.getURL('profile.png'),
-            C, H, U, N;
+            F, C, H, U, N;
 
         let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).toString(),
-            existing = Balloon.#BALLOONS['_' + title];
+            existing = Balloon.#BALLOONS.get(title);
 
         if(defined(existing))
             return existing;
@@ -390,7 +394,38 @@ class Balloon {
                                         style: 'height:2rem; width:2rem',
                                         innerHTML: Glyphs[icon],
                                     }
-                                )
+                                ),
+
+                                // Notification counter
+                                F = f(`div#twitch-tools-notification-counter--${ U }.tw-absolute.tw-right-0.tw-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
+                                    f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
+                                            'data-a-target': 'tw-animation-target'
+                                        },
+                                        f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
+                                            f(`div#twitch-tools-notification-counter-output--${ U }.tw-c-text-overlay.tw-number-badge__badge.tw-relative`, {
+                                                'interval-id': setInterval(() => {
+                                                    let counter = $(`#twitch-tools-notification-counter--${ uuid }`),
+                                                        output = $(`#twitch-tools-notification-counter-output--${ uuid }`),
+                                                        length = parseInt(counter?.getAttribute('length'));
+
+                                                    if(!defined(counter) || !defined(output))
+                                                        return;
+
+                                                    let visibility = counter.getAttribute('style').replace(/[^]+:/, ''),
+                                                        interval = parseInt(output.getAttribute('interval-id'));
+
+                                                    output.textContent = length;
+
+                                                    if(length < 1) {
+                                                        counter.setAttribute('style', 'visibility:hidden');
+                                                    } else {
+                                                        counter.setAttribute('style', 'visibility:unset; font-size:75%');
+                                                    }
+                                                }, 5000),
+                                            })
+                                        )
+                                    )
+                                ),
                             )
                         )
                     ),
@@ -564,17 +599,17 @@ class Balloon {
         this.uuid = U;
         this.header = H;
         this.parent = P;
+        this.counter = F;
         this.container = p;
 
         this.tooltip = furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
 
-        Balloon.#BALLOONS.length |= 0;
-        Balloon.#BALLOONS.length++;
+        Balloon.#BALLOONS.set(title, this);
 
-        return Balloon.#BALLOONS['_' + title] = this;
+        return this;
     }
 
-    addButton({ icon, onclick }) {
+    addButton({ left = false, icon = 'play', onclick = ($=>$), attributes = {} }) {
         let parent = this.header.closest('div[class*="header"]');
         let uuid = UUID.from(onclick.toString()).toString(),
             existing = $(`[uuid="${ uuid }"i]`, false, parent);
@@ -584,23 +619,29 @@ class Balloon {
 
         let button = furnish('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
             {
+                ...attributes,
+
                 uuid,
                 onclick,
 
-                style: 'padding:0.5rem!important; height:3rem!important; width:3rem!important',
+                style: 'padding:0.5rem!important; height:3rem!important; width:3rem!important;',
                 innerHTML: Glyphs[icon],
 
                 'connected-to': this.uuid,
             },
         );
 
-        parent.insertBefore(button, parent.lastElementChild);
+        if(left)
+            parent.insertBefore(button, parent.firstElementChild);
+        else
+            parent.insertBefore(button, parent.lastElementChild);
 
         return button;
     }
 
     remove() {
-        Balloon.#BALLOONS['_' + this.title] = this.container?.remove();
+        this.container?.remove();
+        Balloon.#BALLOONS.delete(this.title);
     }
 
     add(...jobs) {
@@ -732,7 +773,88 @@ class Balloon {
     }
 
     static get(title) {
-        return Balloon.#BALLOONS['_' + title]
+        return Balloon.#BALLOONS.get(title);
+    }
+}
+
+// Creates a Twitch-style tooltip
+    // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) -> Element~Tooltip
+        // fineTuning:object = { left:number#pixels, top:number#pixels, direction:string := "up"|"right"|"down"|"left" }
+    // Tooltip.get(parent:Element) -> Element~Tooltip
+class Tooltip {
+    static #TOOLTIPS = new Map()
+
+    constructor(parent, text = '', fineTuning = {}) {
+        let existing = Tooltip.#TOOLTIPS.get(parent);
+
+        fineTuning.top |= 0;
+        fineTuning.left |= 0;
+
+        fineTuning.direction ??= '';
+
+        parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
+
+        if(existing)
+            return existing;
+
+        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+            uuid = UUID.from(text).toString();
+
+        tooltip.id = uuid;
+
+        parent.addEventListener('mouseenter', event => {
+            let { currentTarget } = event,
+                offset = getOffset(currentTarget),
+                screen = getOffset(document.body),
+                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
+
+            let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
+
+            $('div#root > *').appendChild(
+                furnish('div.twitch-tools-tooltip-layer.tooltip-layer',
+                    {
+                        style: (() => {
+                            switch(direction) {
+                                // case 'up':
+                                //     return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+
+                                case 'down':
+                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+
+                                // case 'left':
+                                //     return `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                                //
+                                // case 'right':
+                                //     return `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+
+                                default:
+                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                            }
+                        })()
+                    },
+                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
+                        furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
+                        tooltip
+                    )
+                )
+            );
+
+            tooltip.setAttribute('style', 'display:block');
+        });
+
+        parent.addEventListener('mouseleave', event => {
+            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
+
+            tooltip?.setAttribute('style', 'display:none');
+        });
+
+        Tooltip.#TOOLTIPS.set(parent, tooltip);
+
+        return tooltip;
+    }
+
+    static get(container) {
+        return Tooltip.#TOOLTIPS.get(container);
     }
 }
 
@@ -842,20 +964,22 @@ function GetChat(lines = 30, keepEmotes = false) {
 
     for(let line of chat) {
         let author = $('.chat-line__username', true, line).map(element => element.innerText).toString().toLowerCase(),
-            message = $('.chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line)
-                .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e)).alt }:`: element.innerText)
-                .filter(text => text)
-                .join(' ')
-                .trim()
-                .replace(/(\s){2,}/g, '$1'),
+            message = $('.chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
             style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
             reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
 
+        let [raw] = message.splice(0, 1);
+
+        raw = raw?.innerText;
+
         message = message
-            .replace(RegExp(`^((?:${ author })[\\s:]+)`, 'i'), '')
-            .replace(/([^]{3,}) +\1/, '$1');
+            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e)).alt }:`: element.innerText)
+            .filter(defined)
+            .join(' ')
+            .trim()
+            .replace(/(\s){2,}/g, '$1');
 
         let uuid = UUID.from([author, mentions.join(','), message].join(':')).toString();
 
@@ -863,6 +987,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             continue;
 
         results.push({
+            raw,
             uuid,
             reply,
             style,
@@ -881,12 +1006,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     results.bullets = [];
 
     for(let bullet of bullets) {
-        let message = $('.mention-fragment, .chat-line__username, .chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, [class^="tw-c-text-"i]', true, bullet)
-                .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
-                .filter(text => text)
-                .join(' ')
-                .trim()
-                .replace(/(\s){2,}/g, '$1'),
+        let message = $('.mention-fragment, .chat-line__username, .chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, [class^="tw-c-text-"i]', true, bullet),
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             subject = (subject =>
                 /\braid/i.test(subject)?      'raid': // Incoming raid
@@ -900,9 +1020,16 @@ function GetChat(lines = 30, keepEmotes = false) {
         if(!defined(subject) && message.length < 1)
             continue;
 
+        let [raw] = message.splice(0, 1);
+
+        raw = raw?.innerText;
+
         message = message
-            .replace(RegExp(`( +(?:${ mentions.join('|') }))+$`, 'gi'), '')
-            .replace(/([^]{3,}) +(?:\1)+/, '$1');
+            .map(element => element.alt && keepEmotes? `:${ (e=>{emotes[e.alt]=e.src;return e})(element).alt }:`: element.innerText)
+            .filter(defined)
+            .join(' ')
+            .trim()
+            .replace(/(\s){2,}/g, '$1');
 
         let uuid = UUID.from([subject, mentions.join(','), message].join(':')).toString();
 
@@ -910,6 +1037,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             continue;
 
         results.bullets.push({
+            raw,
             uuid,
             subject,
             message,
@@ -1040,8 +1168,11 @@ function getOffset(element) {
     return {
         height, width,
 
-        left: bounds.left + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        top:  bounds.top  + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+        left:   bounds.left + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
+        top:    bounds.top  + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+
+        right:  bounds.right  + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
+        bottom: bounds.bottom + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
     };
 }
 
@@ -1276,7 +1407,7 @@ function isObj(object, ...or) {
 
 // Logs messages (green)
     // LOG([...messages]) -> undefined
-function LOG(...messages) {
+let LOG = (...messages) => {
     let CSS = `
         background-color: #00332b;
         border-bottom: 1px solid #0000;
@@ -1330,7 +1461,7 @@ function LOG(...messages) {
 
 // Logs warnings (yellow)
     // WARN([...messages]) -> undefined
-function WARN(...messages) {
+let WARN = (...messages) => {
     let CSS = `
         background-color: #332b00;
         border-bottom: 1px solid #0000;
@@ -1384,7 +1515,7 @@ function WARN(...messages) {
 
 // Logs errors (red)
     // ERROR([...messages]) -> undefined
-function ERROR(...messages) {
+let ERROR = (...messages) => {
     let CSS = `
         background-color: #290000;
         border-bottom: 1px solid #0000;
@@ -1481,6 +1612,7 @@ let Glyphs = {
 
     emotes: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
     search: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M13.192 14.606a7 7 0 111.414-1.414l3.101 3.1-1.414 1.415-3.1-3.1zM14 9A5 5 0 114 9a5 5 0 0110 0z" clip-rule="evenodd"></path></g></svg>',
+    stream: '<svg fill="#ffffff" width="20px" height="20px" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>',
     trophy: '<svg fill="#ff9147" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M5 10h.1A5.006 5.006 0 009 13.9V16H7v2h6v-2h-2v-2.1a5.006 5.006 0 003.9-3.9h.1a3 3 0 003-3V4h-3V2H5v2H2v3a3 3 0 003 3zm2-6h6v5a3 3 0 11-6 0V4zm8 2v2a1 1 0 001-1V6h-1zM4 6h1v2a1 1 0 01-1-1V6z"></path></svg>',
     upload: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 01-2 2H4a2 2 0 01-2-2zM15 7l-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"></path></g></svg>',
     wallet: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 11h2v2h-2v-2z"></path><path fill-rule="evenodd" d="M13.45 2.078L2 6v12h14a2 2 0 002-2V8a2 2 0 00-2-2V4.001a2 2 0 00-2.55-1.923zM14 6V4.004L8.172 6H14zM4 8v8h12V8H4z" clip-rule="evenodd"></path></g></svg>',
@@ -1490,11 +1622,13 @@ let Glyphs = {
     leave: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 18h-4a2 2 0 01-2-2v-2h2v2h4V4h-4v2h-2V4a2 2 0 012-2h4a2 2 0 012 2v12a2 2 0 01-2 2z"></path><path d="M7 5l1.5 1.5L6 9h8v2H6l2.5 2.5L7 15l-5-5 5-5z"></path></g></svg>',
     music: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 4.331a2 2 0 00-2.304-1.977l-9 1.385A2 2 0 005 5.716v7.334A2.5 2.5 0 106.95 16H7V9.692l9-1.385v2.743A2.5 2.5 0 1017.95 14H18V4.33zm-2 0L7 5.716v1.953l9-1.385V4.33z" clip-rule="evenodd"></path></g></svg>',
     pause: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 3H4v14h4V3zM16 3h-4v14h4V3z"></path></g></svg>',
+    stats: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
     trash: '<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
 
     bits: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></svg>',
     chat: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>',
     gift: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16 6h2v6h-1v6H3v-6H2V6h2V4.793c0-2.507 3.03-3.762 4.803-1.99.131.131.249.275.352.429L10 4.5l.845-1.268a2.81 2.81 0 01.352-.429C12.969 1.031 16 2.286 16 4.793V6zM6 4.793V6h2.596L7.49 4.341A.814.814 0 006 4.793zm8 0V6h-2.596l1.106-1.659a.814.814 0 011.49.451zM16 8v2h-5V8h5zm-1 8v-4h-4v4h4zM9 8v2H4V8h5zm0 4H5v4h4v-4z" clip-rule="evenodd"></path></g></svg>',
+    help: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8a1 1 0 011-1h.146a.87.87 0 01.854.871c0 .313-.179.6-.447.735A2.81 2.81 0 009 11.118V12h2v-.882a.81.81 0 01.447-.724A2.825 2.825 0 0013 7.871C13 6.307 11.734 5 10.146 5H10a3 3 0 00-3 3h2zM9 14a1 1 0 112 0 1 1 0 01-2 0z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8 6a6 6 0 110-12 6 6 0 010 12z"></path></g></svg>',
     lock: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.001 5.99A3.992 3.992 0 0010.01 2h-.018a3.992 3.992 0 00-3.991 3.99V8H3.999v8c0 1.105.896 2 2 2h8c1.104 0 2-.895 2-2V8h-1.998V5.99zm-2 2.01V5.995A1.996 1.996 0 0010.006 4h-.01a1.996 1.996 0 00-1.995 1.995V8h4z" clip-rule="evenodd"></path></g></svg>',
     loot: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11 2H9v3h2V2z"></path><path fill-rule="evenodd" d="M18 18v-7l-1.447-2.894A2 2 0 0014.763 7H5.237a2 2 0 00-1.789 1.106L2 11v7h16zM5.236 9h9.528l1 2H4.236l1-2zM4 13v3h12v-3h-5v1H9v-1H4z" clip-rule="evenodd"></path><path d="M4 3h2v2H4V3zM14 3h2v2h-2V3z"></path></g></svg>',
     moon: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M8.614 2.134a8.001 8.001 0 001.388 15.879 8.003 8.003 0 007.884-6.635 6.947 6.947 0 01-2.884.62 7.004 7.004 0 01-6.388-9.864zM6.017 5.529a5.989 5.989 0 00-2.015 4.484c0 3.311 2.69 6 6 6a5.99 5.99 0 004.495-2.028 9.006 9.006 0 01-8.48-8.456z" clip-rule="evenodd"></path></g></svg>',
@@ -1518,7 +1652,7 @@ let nth = n => (n + '')
 
 // Update common variables
 let PATHNAME = top.location.pathname,
-    STREAMER, STREAMERS, CHANNELS;
+    STREAMER, STREAMERS, CHANNELS, SEARCH;
 
 let __ONLOCATIONCHANGE__ = [];
 
@@ -1535,6 +1669,33 @@ Object.defineProperties(top, {
 });
 
 function update() {
+    // All Channels under Search
+    SEARCH = [
+        // Current (followed) streamers
+        ...$(`.search-tray a:not([href*="/search?"]):not([href="${ PATHNAME }"i])`, true)
+            .map(element => {
+                    let channel = {
+                        href: element.href,
+                        icon: $('figure img', false, element)?.src,
+                        get live() {
+                            return defined($('div[data-test-selector="live-badge"i]', false, element))
+                        },
+                        name: $('figure img', false, element)?.alt,
+                    };
+
+                    element.setAttribute('draggable', true);
+                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(channel));
+                    element.ondragstart ||= event => {
+                        let { currentTarget } = event;
+
+                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.dropEffect = 'move';
+                    };
+
+                    return channel;
+                }),
+    ];
+
     // All Channels
     CHANNELS = [
         // Current (followed) streamers
@@ -1542,11 +1703,11 @@ function update() {
             .map(element => {
                     let streamer = {
                         href: element.href,
-                        icon: $('figure img', false, element).src,
+                        icon: $('figure img', false, element)?.src,
                         get live() {
                             return empty($('div[class*="--offline"i]', false, element))
                         },
-                        name: $('figure img', false, element).alt,
+                        name: $('figure img', false, element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -1569,11 +1730,11 @@ function update() {
             .map(element => {
                     let streamer = {
                         href: element.href,
-                        icon: $('figure img', false, element).src,
+                        icon: $('figure img', false, element)?.src,
                         get live() {
                             return empty($('div[class*="--offline"i]', false, element))
                         },
-                        name: $('figure img', false, element).alt,
+                        name: $('figure img', false, element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -1658,6 +1819,42 @@ Storage.onChanged.addListener((changes, namespace) => {
 let Initialize = async(START_OVER = false) => {
     settings = await GetSettings();
 
+    // Modify the logging using the settings
+    if(!settings.developer_mode)
+        LOG = WARN = ERROR = ($=>$);
+
+    /* Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
+     * href:string   - link to the channel
+     * icon:string   - link to the channel's image
+     * live:boolean* - GETTER: is the channel live
+     * name:string   - the channel's name
+     */
+    SEARCH = [
+        // Current (followed) streamers
+        ...$(`.search-tray a:not([href*="/search?"]):not([href="${ PATHNAME }"i])`, true)
+            .map(element => {
+                    let channel = {
+                        href: element.href,
+                        icon: $('figure img', false, element)?.src,
+                        get live() {
+                            return defined($('div[data-test-selector="live-badge"i]', false, element))
+                        },
+                        name: $('figure img', false, element)?.alt,
+                    };
+
+                    element.setAttribute('draggable', true);
+                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(channel));
+                    element.ondragstart ||= event => {
+                        let { currentTarget } = event;
+
+                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.dropEffect = 'move';
+                    };
+
+                    return channel;
+                }),
+    ];
+
     /* Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
      * href:string   - link to the channel
      * icon:string   - link to the channel's image
@@ -1670,11 +1867,11 @@ let Initialize = async(START_OVER = false) => {
             .map(element => {
                     let streamer = {
                         href: element.href,
-                        icon: $('figure img', false, element).src,
+                        icon: $('figure img', false, element)?.src,
                         get live() {
                             return empty($('div[class*="--offline"i]', false, element))
                         },
-                        name: $('figure img', false, element).alt,
+                        name: $('figure img', false, element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -1702,11 +1899,11 @@ let Initialize = async(START_OVER = false) => {
             .map(element => {
                     let streamer = {
                         href: element.href,
-                        icon: $('figure img', false, element).src,
+                        icon: $('figure img', false, element)?.src,
                         get live() {
                             return empty($('div[class*="--offline"i]', false, element))
                         },
-                        name: $('figure img', false, element).alt,
+                        name: $('figure img', false, element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -1898,15 +2095,17 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.auto_follow_raids = 1000;
 
-    if(settings.auto_follow_raids || settings.auto_follow_all)
-        Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
+    __AutoFollow__: {
+        if(settings.auto_follow_raids || settings.auto_follow_all)
+            Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
 
-    if(settings.auto_follow_time || settings.auto_follow_all) {
-        let { like, coin, follow } = STREAMER,
-            mins = parseInt(settings.auto_follow_time_minutes) | 0;
+        if(settings.auto_follow_time || settings.auto_follow_all) {
+            let { like, coin, follow } = STREAMER,
+                mins = parseInt(settings.auto_follow_time_minutes) | 0;
 
-        if(!like)
-            setTimeout(follow, mins * 60_000);
+            if(!like)
+                setTimeout(follow, mins * 60_000);
+        }
     }
 
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
@@ -1921,20 +2120,156 @@ let Initialize = async(START_OVER = false) => {
      */
     let FIRST_IN_LINE_JOB,                  // The current job (interval)
         FIRST_IN_LINE_HREF,                 // The upcoming HREF
-        FIRST_IN_LINE_TIME,                 // The wait time (from settings)
+        FIRST_IN_LINE_TIMER,                // The current timer for the job
         FIRST_IN_LINE_PAUSED,               // The pause-state
         FIRST_IN_LINE_BALLOON,              // The balloon controller
         ALL_FIRST_IN_LINE_JOBS,             // All First in Line jobs
-        FIRST_IN_LINE_WAIT_TIME,            // The current timer for the job
+        FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
         FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
         FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via popup)
+        FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
+
+    // Restart the First in line que's timers
+        // REDO_FIRST_IN_LINE_QUEUE([href:string#URL]) -> undefined
+    function REDO_FIRST_IN_LINE_QUEUE(href) {
+        if(!defined(href))
+            return;
+
+        let { pathname } = parseURL(href);
+
+        FIRST_IN_LINE_HREF = href;
+        [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+        WARN(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER) } before leaving for stream`, new Date);
+
+        FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
+            if(FIRST_IN_LINE_PAUSED)
+                return /* First in Line is paused */;
+            // Don't act until 1min is left
+            if(FIRST_IN_LINE_TIMER > 60_000)
+                return;
+
+            let existing = $('#twitch-tools-popup');
+
+            if(defined(existing))
+                existing.remove();
+
+            if(!defined(STARTED_TIMERS.WARNING)) {
+                STARTED_TIMERS.WARNING = true;
+
+                WARN('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER), FIRST_IN_LINE_HREF, new Date);
+
+                let popup = new Popup(`First in line: TTV${ pathname }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
+                    Icon: CHANNELS.find(channel => channel.href === href)?.icon,
+
+                    Goto: () => {
+                        let existing = $('#twitch-tools-popup'),
+                            [thisJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+
+                        if(defined(existing))
+                            existing.remove();
+                        WARN('Heading to stream now', thisJob);
+
+                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                        SaveCache({ FIRST_IN_LINE_TIMER });
+
+                        [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+                        open(FIRST_IN_LINE_HREF, '_self');
+
+                        FIRST_IN_LINE_HREF = undefined;
+                    },
+                    Cancel: () => {
+                        let existing = $('#twitch-tools-popup'),
+                            [thisJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+
+                        if(defined(existing))
+                            existing.remove();
+                        WARN('Canceled First in Line event', thisJob);
+
+                        let container = $(`[id^="twitch-tools-balloon-container-"i]`),
+                            timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, container)?.getAttribute('time'));
+
+                        container.remove();
+
+                        $('[id^="twitch-tools-balloon-job-"]', true).map(
+                            container => {
+                                let subheader = $('.twitch-tools-balloon-subheader', false, container);
+
+                                container.setAttribute('time', parseInt(container.getAttribute('time')) - timeleft);
+                            }
+                        );
+
+                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                        SaveCache({ FIRST_IN_LINE_TIMER });
+
+                        [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+                        FIRST_IN_LINE_HREF = undefined;
+                    },
+                });
+
+                FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
+                    if(FIRST_IN_LINE_PAUSED)
+                        return /* First in Line is paused */;
+
+                    if(defined(popup?.elements))
+                        popup.elements.message.innerHTML
+                            = popup.elements.message.innerHTML
+                                .replace(/\t(.+?)\t/i, ['\t', ConvertTime(FIRST_IN_LINE_TIMER, 'minute:second'), '\t'].join(''));
+
+                    if(FIRST_IN_LINE_TIMER < 1000) {
+                        popup.remove();
+                        clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
+                    }
+                }, 1000);
+            }
+        }, 1000);
+
+        FIRST_IN_LINE_JOB = setInterval(() => {
+            // If the channel disappears (or goes offline), kill the job for it
+            let channel = CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF);
+            if(!defined(channel) || !channel?.live) {
+                LOG('Removing dead channel', FIRST_IN_LINE_HREF);
+
+                let { pathname } = parseURL(FIRST_IN_LINE_HREF),
+                    channelID = UUID.from(pathname).toString();
+
+                ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(defined).filter(href => href != FIRST_IN_LINE_HREF);
+                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+
+                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+                location.reload();
+            }
+            if(FIRST_IN_LINE_PAUSED)
+                return /* First in Line is paused */;
+            // Save the current wait time (every 1sec)
+            if((FIRST_IN_LINE_TIMER % 1000) === 0)
+                SaveCache({ FIRST_IN_LINE_TIMER });
+            // Don't act until 1sec is left
+            if(FIRST_IN_LINE_TIMER > 1000)
+                return FIRST_IN_LINE_TIMER -= 1000;
+
+            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+            SaveCache({ FIRST_IN_LINE_TIMER });
+
+            LOG('Heading to stream now [Job Interval]', FIRST_IN_LINE_HREF);
+
+            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+            open(FIRST_IN_LINE_HREF, '_self');
+
+            FIRST_IN_LINE_HREF = undefined;
+        }, 1000);
+    }
 
     if(START_OVER) {
         FIRST_IN_LINE_BALLOON = Balloon.get('Up Next').remove();
     } else {
-        FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next' });
-        FIRST_IN_LINE_BALLOON.addButton({
+        FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
+
+        let first_in_line_pause_button = FIRST_IN_LINE_BALLOON.addButton({
             icon: 'pause',
             onclick: event => {
                 let { currentTarget } = event,
@@ -1946,26 +2281,49 @@ let Initialize = async(START_OVER = false) => {
                 currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
             },
         });
+
+        new Tooltip(first_in_line_pause_button, 'Pause or continue the timer(s)');
+
+        let first_in_line_help_button = FIRST_IN_LINE_BALLOON.addButton({
+            icon: 'help',
+            left: true,
+        });
+
+        new Tooltip(first_in_line_help_button, 'Drag-n-drop channels here to queue them<br>They can be rearranged by dragging');
     }
 
-    FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
+    // FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
 
     FIRST_IN_LINE_BALLOON.body.ondragover = event => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
+        // event.dataTransfer.dropEffect = 'move';
     };
 
     FIRST_IN_LINE_BALLOON.body.ondrop = async event => {
         event.preventDefault();
 
-        let streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer')),
-            { href } = streamer;
+        let streamer,
+            // Did the event originate from within the ballon?
+            from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
 
-        LOG('Adding job:', { href, streamer });
+        try {
+            streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer'));
+        } catch(error) {
+            /* error suppression for sorting-related drops */;
+            if(!from_container)
+                return ERROR(error);
+        }
 
-        ALL_FIRST_IN_LINE_JOBS.push(href);
+        if(from_container) {
+            // Most likely a sorting event
+        } else {
+            let { href } = streamer;
 
-        await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+            LOG('Adding job:', { href, streamer });
+
+            ALL_FIRST_IN_LINE_JOBS.push(href);
+            await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+        }
     };
 
     FIRST_IN_LINE_BALLOON.icon.onmouseenter = event => {
@@ -1990,7 +2348,46 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_BALLOON.tooltip.setAttribute('style', 'display:none');
     };
 
-    FIRST_IN_LINE_TIME = parseInt(
+    FIRST_IN_LINE_SORTING_HANDLER = new Sortable(FIRST_IN_LINE_BALLOON.body, {
+        animation: 150,
+        draggable: '[name]',
+
+        filter: '.twitch-tools-static',
+
+        onUpdate: ({ oldIndex, newIndex }) => {
+            let old_href = ALL_FIRST_IN_LINE_JOBS[--oldIndex],
+                new_href = ALL_FIRST_IN_LINE_JOBS[--newIndex];
+
+            // LOG('Swapping', { old_href, new_href });
+            // LOG('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
+
+            ALL_FIRST_IN_LINE_JOBS.splice(oldIndex, 1, new_href);
+            ALL_FIRST_IN_LINE_JOBS.splice(newIndex, 1, old_href);
+
+            // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
+
+            let channel = CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
+
+            if(!defined(channel))
+                return WARN('No channel given', { oldIndex, newIndex, old_href, new_href, desiredChannel: ALL_FIRST_IN_LINE_JOBS[0] });
+
+            if(!!~[oldIndex, newIndex].indexOf(0)) {
+                LOG('New First in Line', channel);
+
+                FIRST_IN_LINE_TIMER = parseInt(
+                    $(`[name="${ channel.name }"i]`).getAttribute('time')
+                    ?? FIRST_IN_LINE_WAIT_TIME * 60_000
+                );
+
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+
+                REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+            }
+        },
+    });
+
+    FIRST_IN_LINE_WAIT_TIME = parseInt(
         settings.first_in_line?
             settings.first_in_line_time_minutes:
         settings.first_in_line_plus?
@@ -1999,11 +2396,6 @@ let Initialize = async(START_OVER = false) => {
             settings.first_in_line_all_time_minutes:
         0
     ) | 0;
-
-    await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_WAIT_TIME'], cache => {
-        ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
-        FIRST_IN_LINE_WAIT_TIME = cache.FIRST_IN_LINE_WAIT_TIME ?? FIRST_IN_LINE_TIME * 60_000;
-    });
 
     if(settings.first_in_line_none)
         FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
@@ -2030,21 +2422,29 @@ let Initialize = async(START_OVER = false) => {
                     message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
                     subheader: `Coming up next`,
                     onremove: event => {
-                        let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(
-                                ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href)
-                            , 1);
+                        let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
+                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                         LOG('Removed', removed, 'Canceled?', event.canceled);
 
-                        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_WAIT_TIME });
+                        if(index > 0) {
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                        } else {
+                            WARN('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+
+                            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+                            FIRST_IN_LINE_HREF = undefined;
+                            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                        }
                     },
 
                     attributes: {
                         name,
                         live,
                         index,
-                        time: (index < 1? FIRST_IN_LINE_WAIT_TIME: FIRST_IN_LINE_TIME * 60_000),
+                        time: (index < 1? FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000),
 
                         style: (live? '': 'opacity: 0.3!important'),
                     },
@@ -2064,10 +2464,18 @@ let Initialize = async(START_OVER = false) => {
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
                             if(time < 0)
-                                return clearInterval(intervalID);
+                                setTimeout(() => {
+                                    LOG('Mitigation: Job Listings', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                    // Mitigate 0 time bug?
+
+                                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                                    SaveCache({ FIRST_IN_LINE_TIMER });
+
+                                    open($('a', false, container)?.href ?? '?', '_self');
+                                    return clearInterval(intervalID);
+                                }, 5000);
 
                             container.setAttribute('time', time - (index > 0? 0: 1000));
-                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
 
                             if(container.getAttribute('index') != index) {
                                 container.setAttribute('index', index);
@@ -2079,19 +2487,24 @@ let Initialize = async(START_OVER = false) => {
 
                             if(container.getAttribute('live') != (live + ''))
                                 container.setAttribute('live', live);
+
+                            if(live)
+                                subheader.innerHTML = /*index > 0? `${ nth(index + 1) } in line`:*/ ConvertTime(time, 'clock');
                         }, 1000);
                     },
                 });
 
                 balloon.setAttribute('index', index);
             }
+
+            FIRST_IN_LINE_BALLOON.counter.setAttribute('length', [...new Set([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF])].filter(defined).length);
         }, 1000);
 
     STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
         LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
-        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
-        SaveCache({ FIRST_IN_LINE_WAIT_TIME });
+        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+        SaveCache({ FIRST_IN_LINE_TIMER });
     };
 
     /*** First in Line
@@ -2131,31 +2544,44 @@ let Initialize = async(START_OVER = false) => {
             WARN('Recieved an actionable notification:', textContent, new Date);
 
             if(defined(FIRST_IN_LINE_HREF)) {
-                (async() => {
-                    if(FIRST_IN_LINE_HREF !== href && !~ALL_FIRST_IN_LINE_JOBS.indexOf(href))
-                        ALL_FIRST_IN_LINE_JOBS.push(href);
+                if(!~[...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].indexOf(href)) {
+                    WARN('Pushing to Jobs:', href, new Date);
 
-                    WARN('Pushing to Jobs:', href);
+                    ALL_FIRST_IN_LINE_JOBS.push(href);
+                } else {
+                    WARN('Not pushing to Jobs:', href, new Date);
+                    WARN('Reason?', [...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF],
+                        'Is it the next job?', FIRST_IN_LINE_HREF === href,
+                        'Is it in the queue already?', !~ALL_FIRST_IN_LINE_JOBS.indexOf(href),
+                    );
+                }
 
-                    // To wait, or not to wait
-                    await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
-                })();
+                // To wait, or not to wait
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
                 continue;
+            } else {
+                WARN('Pushing to Jobs (no contest):', href, new Date);
+
+                // Add the new job (while preventing duplicates)
+                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
+
+                // To wait, or not to wait
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+
+                REDO_FIRST_IN_LINE_QUEUE(href);
             }
 
             if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent)) {
                 let channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href);
 
-                let { live, name } = channel;
-
-                index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
-
                 if(!defined(channel))
                     continue;
 
-                FIRST_IN_LINE_HREF = href;
+                let { live, name } = channel;
+
+                index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
 
                 FIRST_IN_LINE_BALLOON.add({
                     href,
@@ -2163,20 +2589,29 @@ let Initialize = async(START_OVER = false) => {
                     message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
                     subheader: `Coming up next`,
                     onremove: event => {
-                        let index = parseInt(event.currentTarget?.getAttribute('index')),
+                        let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                         LOG('Removed', removed, 'Canceled?', event.canceled);
 
-                        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_WAIT_TIME });
+                        if(index > 0) {
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                        } else {
+                            WARN('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+
+                            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+                            FIRST_IN_LINE_HREF = undefined;
+                            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                        }
                     },
 
                     attributes: {
                         name,
                         live,
                         index,
-                        time: (index < 1? FIRST_IN_LINE_WAIT_TIME: FIRST_IN_LINE_TIME * 60_000),
+                        time: (index < 1? FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000),
 
                         style: (live? '': 'opacity: 0.3!important'),
                     },
@@ -2196,10 +2631,18 @@ let Initialize = async(START_OVER = false) => {
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
                             if(time < 0)
-                                return clearInterval(intervalID);
+                                setTimeout(() => {
+                                    LOG('Mitigation: First in Line', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                    // Mitigate 0 time bug?
+
+                                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                                    SaveCache({ FIRST_IN_LINE_TIMER });
+
+                                    open($('a', false, container)?.href ?? '?', '_self');
+                                    return clearInterval(intervalID);
+                                }, 5000);
 
                             container.setAttribute('time', time - (index > 0? 0: 1000));
-                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
 
                             if(container.getAttribute('index') != index) {
                                 container.setAttribute('index', index);
@@ -2211,114 +2654,25 @@ let Initialize = async(START_OVER = false) => {
 
                             if(container.getAttribute('live') != (live + ''))
                                 container.setAttribute('live', live);
+
+                            if(live)
+                                subheader.innerHTML = /*index > 0? `${ nth(index + 1) } in line`:*/ ConvertTime(time, 'clock');
                         }, 1000);
                     },
                 });
 
-                if(FIRST_IN_LINE_TIME) {
-                    WARN(`Waiting ${ ConvertTime(FIRST_IN_LINE_WAIT_TIME) } before leaving for stream`, new Date);
-
-                    FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
-                        if(FIRST_IN_LINE_PAUSED)
-                            return /* First in Line is paused */;
-                        // Don't act until 1min is left
-                        if(FIRST_IN_LINE_WAIT_TIME > 60_000)
-                            return;
-
-                        if(!defined(STARTED_TIMERS.WARNING)) {
-                            STARTED_TIMERS.WARNING = true;
-
-                            WARN('Heading to stream in', ConvertTime(FIRST_IN_LINE_WAIT_TIME), FIRST_IN_LINE_HREF, new Date);
-
-                            let popup = new Popup(`First in line: TTV${ pathname }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_WAIT_TIME) }\t`, {
-                                Icon: CHANNELS.find(channel => channel.href === href)?.icon,
-
-                                Goto: () => {
-                                    let existing = $('#twitch-tools-popup');
-
-                                    if(defined(existing))
-                                        existing.remove();
-                                    WARN('Heading to stream now');
-
-                                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
-                                    clearInterval(FIRST_IN_LINE_JOB);
-                                    open(FIRST_IN_LINE_HREF, '_self');
-
-                                    FIRST_IN_LINE_HREF = undefined;
-                                },
-                                Cancel: () => {
-                                    let existing = $('#twitch-tools-popup'),
-                                        [deadJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
-
-                                    if(defined(existing))
-                                        existing.remove();
-                                    WARN('Canceled First in Line event', deadJob);
-
-                                    let container = $(`[id^="twitch-tools-balloon-container-"i]`),
-                                        timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, container)?.getAttribute('time'));
-
-                                    container.remove();
-
-                                    $('[id^="twitch-tools-balloon-job-"]', true).map(
-                                        container => {
-                                            let subheader = $('.twitch-tools-balloon-subheader', false, container);
-
-                                            container.setAttribute('time', parseInt(container.getAttribute('time')) - timeleft);
-                                        }
-                                    );
-
-                                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
-                                    clearInterval(FIRST_IN_LINE_JOB);
-                                    FIRST_IN_LINE_HREF = undefined;
-                                },
-                            });
-
-                            FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
-                                if(FIRST_IN_LINE_PAUSED)
-                                    return /* First in Line is paused */;
-
-                                if(defined(popup?.elements))
-                                    popup.elements.message.innerHTML
-                                        = popup.elements.message.innerHTML
-                                            .replace(/\t(.+?)\t/i, ['\t', ConvertTime(FIRST_IN_LINE_WAIT_TIME, 'minute:second'), '\t'].join(''));
-
-                                if(FIRST_IN_LINE_WAIT_TIME < 1) {
-                                    popup.remove();
-                                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
-                                }
-                            }, 1000);
-                        }
-                    }, 1000);
-
-                    FIRST_IN_LINE_JOB = setInterval(() => {
-                        if(FIRST_IN_LINE_PAUSED)
-                            return /* First in Line is paused */;
-                        // Save the current wait time (every 1sec)
-                        if((FIRST_IN_LINE_WAIT_TIME % 1_000) === 0)
-                            SaveCache({ FIRST_IN_LINE_WAIT_TIME });
-                        // Don't act until 1sec is left
-                        if(FIRST_IN_LINE_WAIT_TIME > 1000)
-                            return FIRST_IN_LINE_WAIT_TIME -= 1000;
-
-                        let existing = $('#twitch-tools-popup');
-
-                        if(defined(existing))
-                            existing.remove();
-
-                        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
-                        SaveCache({ FIRST_IN_LINE_WAIT_TIME });
-
-                        clearInterval(FIRST_IN_LINE_JOB);
-                        open(FIRST_IN_LINE_HREF, '_self');
-
-                        FIRST_IN_LINE_HREF = undefined;
-                    }, 1000);
-                } else {
+                if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
+                    REDO_FIRST_IN_LINE_QUEUE(href);
+                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                } else if(defined(settings.first_in_line_none)) {
                     let existing = $('#twitch-tools-popup');
 
                     if(defined(existing))
                         existing.remove();
 
+                    LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
+
+                    [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
                     open(FIRST_IN_LINE_HREF, '_self');
 
                     FIRST_IN_LINE_HREF = undefined;
@@ -2326,36 +2680,52 @@ let Initialize = async(START_OVER = false) => {
             }
         }
     };
-    Timers.first_in_line = 3000;
+    Timers.first_in_line = 1000;
 
     Unhandlers.first_in_line = () => {
         if(defined(FIRST_IN_LINE_JOB))
-            clearInterval(FIRST_IN_LINE_JOB);
+            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
         if(defined(FIRST_IN_LINE_HREF))
             FIRST_IN_LINE_HREF = '?';
 
         ALL_FIRST_IN_LINE_JOBS = [];
-        FIRST_IN_LINE_WAIT_TIME = FIRST_IN_LINE_TIME * 60_000;
+        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
 
-        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_WAIT_TIME });
+        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
     };
 
     // window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
 
-    if(settings.first_in_line || settings.first_in_line_all) {
-        Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
+    __FirstInLine__: {
+        if(settings.first_in_line || settings.first_in_line_plus || settings.first_in_line_all) {
+            await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER'], cache => {
+                ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+                FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
+            });
 
-        if(!defined(FIRST_IN_LINE_HREF)) {
-            let [href] = ALL_FIRST_IN_LINE_JOBS,
-                channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
+            Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
 
-            if(!defined(href) || !defined(channel)) {
-                ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+            if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
+                let [href] = ALL_FIRST_IN_LINE_JOBS,
+                    channel = CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+
+                if(!defined(channel)) {
+                    let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
+                        [killed]  = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+
+                    WARN(`The job for [${ href }] no longer exists`, killed);
+
+                    break __FirstInLine__;
+                } else {
+                    Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
+
+                    WARN('Forcing queue update for', href);
+                    REDO_FIRST_IN_LINE_QUEUE(href);
+                }
             }
-
-            if(defined(channel))
-                Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
         }
     }
 
@@ -2413,8 +2783,10 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
-    if(settings.first_in_line_plus || settings.first_in_line_all)
-        Jobs.first_in_line_plus = setInterval(Handlers.first_in_line_plus, Timers.first_in_line_plus);
+    __FirstInLinePlus__: {
+        if(settings.first_in_line_plus || settings.first_in_line_all)
+            Jobs.first_in_line_plus = setInterval(Handlers.first_in_line_plus, Timers.first_in_line_plus);
+    }
 
     /*** Kill Extensions
      *      _  ___ _ _   ______      _                 _
@@ -2441,8 +2813,10 @@ let Initialize = async(START_OVER = false) => {
             view.removeAttribute('style');
     };
 
-    if(settings.kill_extensions)
-        Jobs.kill_extensions = setInterval(Handlers.kill_extensions, Timers.kill_extensions);
+    __KillExtensions__: {
+        if(settings.kill_extensions)
+            Jobs.kill_extensions = setInterval(Handlers.kill_extensions, Timers.kill_extensions);
+    }
 
     /*** Stop Hosting
      *       _____ _                _    _           _   _
@@ -2474,8 +2848,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.prevent_hosting = 5000;
 
-    if(settings.prevent_hosting)
-        Jobs.prevent_hosting = setInterval(Handlers.prevent_hosting, Timers.prevent_hosting);
+    __PreventHosting__: {
+        if(settings.prevent_hosting)
+            Jobs.prevent_hosting = setInterval(Handlers.prevent_hosting, Timers.prevent_hosting);
+    }
 
     /*** Stop Raiding
      *       _____ _                _____       _     _ _
@@ -2510,8 +2886,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.prevent_raiding = 5000;
 
-    if(settings.prevent_raiding)
-        Jobs.prevent_raiding = setInterval(Handlers.prevent_raiding, Timers.prevent_raiding);
+    __PreventRaiding__: {
+        if(settings.prevent_raiding)
+            Jobs.prevent_raiding = setInterval(Handlers.prevent_raiding, Timers.prevent_raiding);
+    }
 
     /*** Stay Live
      *       _____ _                _      _
@@ -2528,7 +2906,7 @@ let Initialize = async(START_OVER = false) => {
             next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
             { pathname } = window.location;
 
-        let Paths = [USERNAME, '[up]/', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
+        let Paths = [USERNAME, '[up]/', 'user', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
 
         try {
             await LoadCache('UserIntent', intent => {
@@ -2559,8 +2937,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.stay_live = 5000;
 
-    if(settings.stay_live)
-        Jobs.stay_live = setInterval(Handlers.stay_live, Timers.stay_live);
+    __StayLive__: {
+        if(settings.stay_live)
+            Jobs.stay_live = setInterval(Handlers.stay_live, Timers.stay_live);
+    }
 
     /*** Convert Emotes
      *       _____                          _     ______                 _
@@ -2630,32 +3010,34 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.convert_emotes = 100;
 
-    if(settings.convert_emotes) {
-        // Collect emotes
-        let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
+    __ConvertEmotes__: {
+        if(settings.convert_emotes) {
+            // Collect emotes
+            let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
 
-        function CollectEmotes() {
-            chat_emote_button.click();
-
-            setTimeout(() => {
-                $('[class*="emote-picker"i] .emote-button img', true)
-                    .map(img => {
-                        EMOTES[img.alt] = shrt(img.src);
-                    });
-
-                top.EMOTES = EMOTES;
-
+            function CollectEmotes() {
                 chat_emote_button.click();
-            }, 500);
+
+                setTimeout(() => {
+                    $('[class*="emote-picker"i] .emote-button img', true)
+                        .map(img => {
+                            EMOTES[img.alt] = shrt(img.src);
+                        });
+
+                    top.EMOTES = EMOTES;
+
+                    chat_emote_button.click();
+                }, 500);
+            }
+
+            if(defined(chat_emote_button))
+                CollectEmotes();
+            else
+                setTimeout(CollectEmotes, 1000);
+
+            Jobs.convert_emotes = setInterval(Handlers.convert_emotes, Timers.convert_emotes);
         }
-
-        if(defined(chat_emote_button))
-            CollectEmotes();
-        else
-            setTimeout(CollectEmotes, 1000);
-
-        Jobs.convert_emotes = setInterval(Handlers.convert_emotes, Timers.convert_emotes);
-    }
+}
 
     /*** Message Filter
      *      __  __                                  ______ _ _ _
@@ -2757,8 +3139,10 @@ let Initialize = async(START_OVER = false) => {
         });
     };
 
-    if(settings.filter_messages)
-        Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
+    __FilterMessages__: {
+        if(settings.filter_messages)
+            Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
+    }
 
     /*** Easy Filter - NOT A SETTING. This is a helper for "Message Filter"
      *      ______                  ______ _ _ _
@@ -2878,7 +3262,7 @@ let Initialize = async(START_OVER = false) => {
                     continue;
 
                 if(settings.highlight_mentions_popup)
-                    new Popup(`@${ author } sent you a message`, (message.length > 30? message.slice(0, 27) + '...': message), {
+                    new Popup(`@${ author } sent you a message`, message, {
                         Reply: event => {
                             let chatbox = $('.chat-input__textarea textarea'),
                                 existing = $('#twitch-tools-popup');
@@ -2895,8 +3279,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.highlight_mentions = 500;
 
-    if(settings.highlight_mentions)
-        Jobs.highlight_mentions = setInterval(Handlers.highlight_mentions, Timers.highlight_mentions);
+    __HighlightMentions__: {
+        if(settings.highlight_mentions)
+            Jobs.highlight_mentions = setInterval(Handlers.highlight_mentions, Timers.highlight_mentions);
+    }
 
     /*** Convert Bits
      *       _____                          _     ____  _ _
@@ -2979,8 +3365,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.convert_bits = 1000;
 
-    if(settings.convert_bits)
-        Jobs.convert_bits = setInterval(Handlers.convert_bits, Timers.convert_bits);
+    __ConvertBits__:{
+        if(settings.convert_bits)
+            Jobs.convert_bits = setInterval(Handlers.convert_bits, Timers.convert_bits);
+    }
 
     /*** Auto-Reload
      *                    _              _____      _                 _
@@ -3013,7 +3401,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.recover_video = 1000;
 
-    Jobs.recover_video = setInterval(Handlers.recover_video, Timers.recover_video);
+    __RecoverVideo__: {
+        if(settings.recover_video)
+            Jobs.recover_video = setInterval(Handlers.recover_video, Timers.recover_video);
+    }
 
     /*** Auto-Play
      *                    _              _____  _
@@ -3042,7 +3433,7 @@ let Initialize = async(START_OVER = false) => {
         if(!paused || isTrusted || (isAdvert && !settings.recover_ads) || VIDEO_PLAYER_TIMEOUT > -1)
             return;
 
-        // Wait .5s before trying to press play again
+        // Wait before trying to press play again
         VIDEO_PLAYER_TIMEOUT = setTimeout(() => VIDEO_PLAYER_TIMEOUT = -1, 1000);
 
         try {
@@ -3073,18 +3464,20 @@ let Initialize = async(START_OVER = false) => {
             }
         }
     };
-    Timers.recover_stream = 5000;
+    Timers.recover_stream = 2500;
 
-    if(settings.recover_stream) {
-        let video = $('video');
+    __RecoverStream__: {
+        if(settings.recover_stream) {
+            let video = $('video');
 
-        if(!defined(video))
-            return;
+            if(!defined(video))
+                return;
 
-        video.onpause = event => Handlers.recover_stream(event.currentTarget);
+            video.onpause = event => Handlers.recover_stream(event.currentTarget);
 
-        Jobs.recover_stream = setInterval(Handlers.recover_stream, Timers.recover_stream);
-    }
+            Jobs.recover_stream = setInterval(Handlers.recover_stream, Timers.recover_stream);
+        }
+}
 
     /*** Useer Intent Listener - NOT A SETTING. Observe the user's intent, and prevent over-riding it
      *
@@ -3137,88 +3530,83 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.away_mode = 1000;
 
-    if(settings.away_mode) {
-        let button,
-            uuid = new UUID().toString().replace(/-/g, ''),
-            quality = await GetQuality(),
-            enabled = (quality.low && !(quality.auto || quality.high || quality.source));
+    __AwayMode__: {
+        if(settings.away_mode) {
+            let button,
+                uuid = new UUID().toString().replace(/-/g, ''),
+                quality = await GetQuality();
 
-        if(!defined($('#away-mode'))) {
-            let sibling   = $('[data-test-selector="live-notifications-toggle"]'),
-                parent    = sibling?.parentElement,
-                container = furnish('div');
+            if(!defined(quality))
+                break __AwayMode__;
 
-            if(!defined(parent) || !defined(sibling))
-                return setTimeout(Initialize, 1000);
+            let enabled = (quality.low && !(quality.auto || quality.high || quality.source));
 
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-mode$1');
-            container.id = 'away-mode';
+            if(!defined($('#away-mode'))) {
+                let sibling   = $('[data-test-selector="live-notifications-toggle"]'),
+                    parent    = sibling?.parentElement,
+                    container = furnish('div');
 
-            parent.insertBefore(container, parent.lastElementChild);
+                if(!defined(parent) || !defined(sibling)) {
+                    // setTimeout(Initialize, 5000);
+                    break __AwayMode__;
+                }
 
-            button = {
-                enabled,
-                container,
-                icon: $('svg', false, container),
-                get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-                tooltip: furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--up', { role: 'tooltip', uuid }, `Turn away-mode ${ ['on','off'][+enabled] }`),
-            };
+                container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-mode$1');
+                container.id = 'away-mode';
 
-            button.icon.outerHTML = Glyphs.eye;
-            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+                parent.insertBefore(container, parent.lastElementChild);
 
-            button.icon = $('svg', false, container);
-        } else {
-            let container = $('#away-mode');
+                button = {
+                    enabled,
+                    container,
+                    icon: $('svg', false, container),
+                    get offset() { return getOffset(container) },
+                    background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+                    tooltip: new Tooltip(container, `Turn away-mode ${ ['on','off'][+enabled] }`, { direction: 'up', left: +5 }),
+                };
 
-            button = {
-                enabled,
-                container,
-                icon: $('svg', false, container),
-                tooltip: $(`div[role="tooltip"i]`),
-                get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-            };
-        }
+                button.icon.outerHTML = Glyphs.eye;
+                button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
 
-        button.tooltip.id = uuid;
-        button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
-        button.icon.setAttribute('height', '20px');
-        button.icon.setAttribute('width', '20px');
+                button.icon = $('svg', false, container);
+            } else {
+                let container = $('#away-mode');
 
-        button.container.onclick = event => {
-            let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
+                button = {
+                    enabled,
+                    container,
+                    icon: $('svg', false, container),
+                    tooltip: Tooltip.get(container),
+                    get offset() { return getOffset(container) },
+                    background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+                };
+            }
 
-            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+            button.tooltip.id = uuid;
             button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
-            button.tooltip.innerHTML = `Turn away-mode ${ ['on','off'][+enabled] }`;
+            button.icon.setAttribute('height', '20px');
+            button.icon.setAttribute('width', '20px');
 
-            ChangeQuality(['auto','low'][+enabled]);
-        };
+            button.container.onclick = event => {
+                let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
 
-        button.container.onmouseenter = event => {
-            $('div#root > *').appendChild(
-                furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ button.offset.left + 15 }px, ${ button.offset.top }px); width: 30px; height: 30px;` },
-                    furnish('div', { 'aria-describedby': button.tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
-                        furnish('div', { style: 'width: 30px; height: 30px;' }),
-                        button.tooltip
-                    )
-                )
-            );
+                button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+                button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
+                button.tooltip.innerHTML = `Turn away-mode ${ ['on','off'][+enabled] }`;
 
-            button.tooltip.setAttribute('style', 'display:block');
-            button.icon.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-        };
+                ChangeQuality(['auto','low'][+enabled]);
+            };
 
-        button.container.onmouseleave = event => {
-            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
+            button.container.onmouseenter = event => {
+                button.icon.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+            };
 
-            button.tooltip.setAttribute('style', 'display:none');
-            button.icon.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-        };
+            button.container.onmouseleave = event => {
+                button.icon.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+            };
 
-        Jobs.away_mode = setInterval(Handlers.away_mode, Timers.away_mode);
+            Jobs.away_mode = setInterval(Handlers.away_mode, Timers.away_mode);
+        }
     }
 
     /*** Auto-claim Channel Points
@@ -3246,99 +3634,92 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.auto_claim_bonuses = 5000;
 
-    if(settings.auto_claim_bonuses) {
-        let button,
-            uuid = new UUID().toString();
+    __AutoClaimBonuses__: {
+        if(settings.auto_claim_bonuses) {
+            let button,
+                uuid = new UUID().toString();
 
-        let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
+            let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
 
-        if(!defined($('#auto-community-points'))) {
-            let parent    = $('[data-test-selector="community-points-summary"i]'),
-                heading   = $('.top-nav__menu > div', true).slice(-1)[0],
-                container = furnish('div');
+            if(!defined($('#auto-community-points'))) {
+                let parent    = $('[data-test-selector="community-points-summary"i]'),
+                    heading   = $('.top-nav__menu > div', true).slice(-1)[0],
+                    container = furnish('div');
 
-            if(!defined(parent) || !defined(heading))
-                return setTimeout(Initialize, 1000);
+                if(!defined(parent) || !defined(heading)) {
+                    // setTimeout(Initialize, 5000);
+                    break __AutoClaimBonuses__;
+                }
 
-            container.innerHTML = parent.outerHTML;
-            container.id = 'auto-community-points';
-            container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
+                container.innerHTML = parent.outerHTML;
+                container.id = 'auto-community-points';
+                container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
 
-            heading.insertBefore(container, heading.children[1]);
+                heading.insertBefore(container, heading.children[1]);
 
-            $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
+                $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
 
-            let textContainer = $('[class$="animated-number"i]', false, container);
+                let textContainer = $('[class$="animated-number"i]', false, container);
 
-            if(textContainer) {
-                let { parentElement } = textContainer;
-                parentElement.removeAttribute('data-test-selector');
+                if(textContainer) {
+                    let { parentElement } = textContainer;
+                    parentElement.removeAttribute('data-test-selector');
+                }
+
+                button = {
+                    container,
+                    enabled: true,
+                    text: textContainer,
+                    get offset() { return getOffset(container) },
+                    icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
+                    tooltip: new Tooltip(container, `Collecting Bonus Channel Points`, { top: -10 }),
+                };
+
+                button.text.innerText = 'ON';
+                button.icon.outerHTML = Glyphs.channelpoints;
+                button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
+
+                button.icon = $('svg', false, container);
+            } else {
+                let container = $('#auto-community-points'),
+                    textContainer = $('[class$="animated-number"i]', false, container);
+
+                button = {
+                    container,
+                    enabled: true,
+                    text: textContainer,
+                    get offset() { return getOffset(container) },
+                    tooltip: Tooltip.get(container),
+                    icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
+                };
             }
 
-            button = {
-                container,
-                enabled: true,
-                text: textContainer,
-                get offset() { return getOffset(container) },
-                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
-                tooltip: furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--down', { role: 'tooltip' }, `Collecting Bonus Channel Points`),
+            button.tooltip.id = uuid;
+
+            button.container.onclick = event => {
+                let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
+
+                button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
+                button.text.innerText = ['OFF','ON'][+enabled];
+                button.icon.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
+                button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonus Channel Points`;
             };
 
-            button.text.innerText = 'ON';
-            button.icon.outerHTML = Glyphs.channelpoints;
-            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
-
-            button.icon = $('svg', false, container);
-        } else {
-            let container = $('#auto-community-points'),
-                textContainer = $('[class$="animated-number"i]', false, container);
-
-            button = {
-                container,
-                enabled: true,
-                text: textContainer,
-                get offset() { return getOffset(container) },
-                tooltip: $('div[role="tooltip"i]'),
-                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
+            button.container.onmouseenter = event => {
+                button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
             };
+
+            button.container.onmouseleave = event => {
+                button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+            };
+
+            Jobs.auto_claim_bonuses = setInterval(Handlers.auto_claim_bonuses, Timers.auto_claim_bonuses);
         }
-
-        button.tooltip.id = uuid;
-
-        button.container.onclick = event => {
-            let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
-
-            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
-            button.text.innerText = ['OFF','ON'][+enabled];
-            button.icon.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
-            button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonus Channel Points`;
-        };
-
-        button.container.onmouseenter = event => {
-            $('div#root > *').appendChild(
-                furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ button.offset.left }px, ${ button.offset.top - 10 }px); width: ${ button.offset.width }px; height: ${ button.offset.height }px; z-index: 2000;` },
-                    furnish('div', { 'aria-describedby': button.tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
-                        furnish('div', { style: `width: ${ button.offset.width }px; height: ${ button.offset.height }px;` }),
-                        button.tooltip
-                    )
-                )
-            );
-
-            button.tooltip?.setAttribute('style', 'display:block');
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-        };
-
-        button.container.onmouseleave = event => {
-            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
-
-            button.tooltip?.setAttribute('style', 'display:none');
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-        };
-
-        Jobs.auto_claim_bonuses = setInterval(Handlers.auto_claim_bonuses, Timers.auto_claim_bonuses);
     }
 };
 // End of Initialize
+
+let CUSTOM_CSS;
 
 let WaitForPageToLoad = setInterval(() => {
     let ready = defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`));
@@ -3348,24 +3729,38 @@ let WaitForPageToLoad = setInterval(() => {
         clearInterval(WaitForPageToLoad);
 
         // Observe location changes
-        (() => {
-            let { body } = document,
-                observer = new MutationObserver(mutations => {
-                    mutations.map(mutation => {
-                        if(PATHNAME !== top.location.pathname) {
-                            let OLD_HREF = PATHNAME;
+        LocationObserver: {
+            (() => {
+                let { body } = document,
+                    observer = new MutationObserver(mutations => {
+                        mutations.map(mutation => {
+                            if(PATHNAME !== top.location.pathname) {
+                                let OLD_HREF = PATHNAME;
 
-                            PATHNAME = top.location.pathname;
+                                PATHNAME = top.location.pathname;
 
-                            for(let listener of __ONLOCATIONCHANGE__)
-                                listener(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
-                        }
+                                for(let listener of __ONLOCATIONCHANGE__)
+                                    listener(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
+                            }
+                        });
                     });
-                });
 
-            observer.observe(body, { childList: true, subtree: true });
-        })();
+                observer.observe(body, { childList: true, subtree: true });
+            })();
+        }
 
-        window.onlocationchange = () => Initialize();
+        window.onlocationchange = async() => await Initialize(true);
+
+        // Add custom styling
+        CustomCSSInitializer: {
+            CUSTOM_CSS = furnish('style#twitch-tools-custom-css', {},
+            `
+                [animationID] a { cursor: grab }
+                [animationID] a:active { cursor: grabbing }
+            `
+            );
+
+            $('body').appendChild(CUSTOM_CSS);
+        }
     }
 }, 500);

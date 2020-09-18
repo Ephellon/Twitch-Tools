@@ -46,3 +46,9 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Recover Ads* `off` &mdash; When an advertisement freezes, attempt to recover it
 - *Recover Stream* `off` &mdash; When the stream freezes, attempt to recover it
 - *Recover Video* `on` &mdash; When the video fails to download, reload the webpage
+
+### Developer Mode
+
+- *Display Console Messages* `off` &mdash; Allows the extension to display messages in the console
+- *Experimental Features* `off` &mdash; Allows the extension to display &amp; use experimental features
+- *Show Default Values* &mdash; Displays the default values

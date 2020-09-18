@@ -26,8 +26,8 @@
     --black: #000;
     --black-highlighted: #222;
 
-    --blue: #00e6cb;
-    --blue-highlighted: #00ad96;
+    --blue: #00ad96;
+    --blue-highlighted: #00e6cb;
 
     --green: #22fa7c;
     --green-dark: #00c85a;
@@ -42,8 +42,11 @@
     --purple-highlighted: #a970ff;
 
     --red: #bb1411;
-    --red-highlighted: #391916;
+    --red-highlighted: #771411;
     --live-red: #e91916;
+
+    --yellow: #e6cb00;
+    --yellow-dark: #ad9600;
 
     --white: #fff;
     --white-faded: #fff8;
@@ -301,7 +304,7 @@ button, input[type="button"] {
     vertical-align: middle;
 }
 
-button.remove, input[type="button"].remove {
+button.remove, input[type="button"].remove{
     background-color: var(--red);
 }
 
@@ -309,8 +312,24 @@ button:hover, input[type="button"]:hover {
     background-color: var(--purple-highlighted);
 }
 
-button.remove:hover, input[type="button"].remove:hover {
+button.remove:hover, input[type="button"].remove:hover  {
     background-color: var(--red-highlighted);
+}
+
+[attention], [alert] {
+    border: 1px solid var(--blue);
+}
+
+[success], [confirm] {
+    border: 1px solid var(--green);
+}
+
+[warning], [prompt] {
+    border: 1px solid var(--yellow);
+}
+
+[error], [danger] {
+    border: 1px solid var(--red);
 }
 
 code, [code], [type^="code"i] {
@@ -347,6 +366,14 @@ code, [code], [type^="code"i] {
 
 .toggle > input:checked + label {
     background-color: var(--purple) !important;
+}
+
+.toggle.special > input:checked + label {
+    background-color: var(--green) !important;
+}
+
+.toggle.danger > input:checked + label {
+    background-color: var(--red) !important;
 }
 
 .toggle > label {
@@ -403,6 +430,26 @@ code, [code], [type^="code"i] {
     top: .2rem;
 
     width: 1.6rem;
+}
+
+/* Default is ON */
+.show-defaults [checked]:not(:checked), .show-defaults [checked]:not(:checked) + label:after {
+    background-color: var(--green)!important;
+}
+.show-defaults [checked]:not(:checked):not([type="checkbox"]) + label:before {
+    border-color: var(--green)!important;
+}
+
+/* Default is OFF */
+.show-defaults :checked:not([checked]), .show-defaults :checked:not([checked]) + label:after {
+    background-color: var(--red)!important;
+}
+.show-defaults :checked:not([checked]):not([type="checkbox"]) + label:before {
+    border-color: var(--red)!important;
+}
+
+.show-defaults [hide-on="show-defaults"] {
+    display: none !important;
 }
 
 textarea, input[type="text"i], input[type="number"i] {
@@ -648,4 +695,153 @@ body.popup {
 
     height: .4rem;
     width: 1rem;
+}
+
+/* From Twitch */
+/* Tooltips */
+.tooltip-layer {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
+.tw-relative {
+    position: relative !important;
+}
+
+.tw-inline-flex {
+    display: inline-flex !important;
+}
+
+.tooltip-layer code {
+    background-color: var(--white)!important;
+    font-size: 100%!important;
+}
+
+.tw-tooltip-wrapper--show .tw-tooltip {
+    display: block;
+}
+
+.tw-tooltip {
+    background-color: var(--white);
+    border-radius: .2rem;
+    color: var(--black);
+    font-size: 75%;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 3px 6px;
+    pointer-events: none;
+    position: absolute;
+    text-align: left;
+    user-select: none;
+    white-space: nowrap;
+    z-index: 2000;
+}
+
+.tw-tooltip:after, .tw-tooltip:before {
+    content: '';
+    position: absolute;
+}
+
+.tw-tooltip:before {
+    height: calc(100% + 12px);
+    left: -6px;
+    top: -6px;
+    width: calc(100% + 12px);
+    z-index: -1;
+}
+
+.tw-tooltip:after {
+    background-color: var(--white);
+    height: 6px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Directional tooltips */
+.tw-tooltip--up.tw-tooltip--align-center, .tw-tooltip--down.tw-tooltip--align-center {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tw-tooltip--up.tw-tooltip--align-center:after, .tw-tooltip--down.tw-tooltip--align-center:after {
+    left: 50%;
+    margin-left: -3px;
+}
+
+.tw-tooltip--left.tw-tooltip--align-center, .tw-tooltip--right.tw-tooltip--align-center {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.tw-tooltip--left.tw-tooltip--align-center:after, .tw-tooltip--right.tw-tooltip--align-center:after {
+    margin-top: -3px;
+    top: 50%;
+}
+
+/* Up (over) tooltip */
+.tw-tooltip--up {
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 6px;
+    top: auto;
+}
+
+.tw-tooltip--up:after {
+    border-radius: 0 0 .2rem;
+    height: 6px;
+    left: 6px;
+    margin-top: -3px;
+    top: 100%;
+    z-index: -1;
+}
+
+/* Down (under) tooltip */
+.tw-tooltip--down {
+    left: 0;
+    margin-top: 6px;
+    top: 100%;
+}
+
+.tw-tooltip--down:after {
+    border-radius: .2rem 0 0;
+    height: 6px;
+    left: 6px;
+    top: -3px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Left tooltip */
+.tw-tooltip--left {
+    left: auto;
+    margin-right: 6px;
+    right: 100%;
+    top: 0;
+}
+
+.tw-tooltip--left:after {
+    border-radius: 0 .2rem 0 0;
+    left: 100%;
+    margin-left: -3px;
+    right: -3px;
+    top: 6px;
+}
+
+/* Right tooltip */
+.tw-tooltip--right {
+    left: 100%;
+    margin-left: 6px;
+    top: 0;
+}
+
+.tw-tooltip--right:after {
+    border-radius: 0 0 0 .2rem;
+    left: 0;
+    margin-left: -3px;
+    top: 6px;
 }

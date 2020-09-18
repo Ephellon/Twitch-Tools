@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "2.4",
+    "version": "2.5",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -25,7 +25,10 @@
 
             "all_frames": true,
             "run_at": "document_end",
-            "js": ["tools.js"]
+            "js": [
+                "tools.js",
+                "ext/sortable.js"
+            ]
         }
     ],
 
