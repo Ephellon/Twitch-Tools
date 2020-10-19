@@ -3807,6 +3807,7 @@ let Initialize = async(START_OVER = false) => {
             for(let label of addedClasses)
                 container.classList.add(label);
 
+            // Tray above chat box
             let tray =
             f('div.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0',
                 { 'data-test-selector': 'chat-input-tray' },
@@ -3932,6 +3933,7 @@ let Initialize = async(START_OVER = false) => {
 
             button.icon ??= $('svg', false, container);
             button.icon.outerHTML = Glyphs.eye;
+            button.icon = $('svg', false, container);
         } else {
             let container = $('#away-mode');
 
@@ -3962,11 +3964,11 @@ let Initialize = async(START_OVER = false) => {
         };
 
         button.container.onmouseenter ??= event => {
-            button.icon.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
         };
 
         button.container.onmouseleave ??= event => {
-            button.icon.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
         };
 
         if(!defined(EVENT_LISTENER.KEYDOWN_ALT_A))
@@ -4039,8 +4041,8 @@ let Initialize = async(START_OVER = false) => {
                 container,
                 enabled: true,
                 text: textContainer,
+                icon: $('svg, img', false, container),
                 get offset() { return getOffset(container) },
-                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
                 tooltip: new Tooltip(container, `Collecting Bonus Channel Points`, { top: -10 }),
             };
 
@@ -4050,6 +4052,7 @@ let Initialize = async(START_OVER = false) => {
 
             button.icon ??= $('svg', false, container);
             button.icon.outerHTML = Glyphs.channelpoints;
+            button.icon = $('svg', false, container);
         } else {
             let container = button,
                 textContainer = $('[class$="animated-number"i]', false, container);
@@ -4058,9 +4061,9 @@ let Initialize = async(START_OVER = false) => {
                 container,
                 enabled: true,
                 text: textContainer,
-                get offset() { return getOffset(container) },
                 tooltip: Tooltip.get(container),
-                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
+                icon: $('svg, img', false, container),
+                get offset() { return getOffset(container) },
             };
         }
 
@@ -4069,8 +4072,9 @@ let Initialize = async(START_OVER = false) => {
 
             button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
             button.text.innerText = ['OFF','ON'][+enabled];
-            button.icon.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
             button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonus Channel Points`;
+
+            button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
         };
 
         button.container.onmouseenter ??= event => {
