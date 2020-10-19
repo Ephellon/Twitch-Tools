@@ -15,7 +15,7 @@ let empty = value => (value === undefined || value === null),
 let settings = {},
     display = $('[data-a-target="user-menu-toggle"i]'),
     Jobs = {},
-    Queue = { balloons: [], bullets: [], emotes: [], messages: [], popups: [] },
+    Queue = { balloons: [], bullets: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Timers = {},
     Handlers = {},
     Unhandlers = {},
@@ -25,7 +25,7 @@ let settings = {},
 // Populate the username field by quickly showing the menu
 if(defined(display)) {
     display.click();
-    USERNAME = $('[data-a-target="user-display-name"i]').innerText.toLowerCase();
+    USERNAME = $('[data-a-target="user-display-name"i]').innerText;
     display.click();
 }
 
@@ -75,18 +75,14 @@ class UUID {
                 case 'boolean':
                     return true;
 
-                case 'default':
-                case 'string':
-                    return native;
-
                 case 'number':
                     return NaN;
 
+                case 'default':
+                case 'string':
                 case 'object':
-                    return native;
-
                 default:
-                    break;
+                    return native;
             }
         };
 
@@ -128,18 +124,14 @@ class UUID {
                 case 'boolean':
                     return true;
 
-                case 'default':
-                case 'string':
-                    return native;
-
                 case 'number':
                     return NaN;
 
+                case 'default':
+                case 'string':
                 case 'object':
-                    return native;
-
                 default:
-                    break;
+                    return native;
             }
         };
 
@@ -153,6 +145,8 @@ class UUID {
     // new Popup(subject:string, message:string[, options:object]) -> Object
     // Popup.prototype.remove() -> undefined
 class Popup {
+    static #POPUPS = new Map()
+
     constructor(subject, message, options = {}) {
         let f = furnish;
 
@@ -165,7 +159,11 @@ class Popup {
             C = event => $('#twitch-tools-popup')?.remove(),
             U, S, M, G, T, W;
 
-        let uuid = U = UUID.from([subject, message].join(':')).toString();
+        let uuid = U = UUID.from(subject).toString(),
+            existing = Popup.#POPUPS.get(subject);
+
+        if(defined(existing))
+            return existing;
 
         if(defined(X)) {
             if(!~Queue.popups.map(popup => popup.uuid).indexOf(uuid)) {
@@ -305,6 +303,8 @@ class Popup {
             container: p,
         };
 
+        Popup.#POPUPS.set(subject, this);
+
         return this;
     }
 
@@ -312,12 +312,16 @@ class Popup {
         if(this.container)
             this.container.remove();
     }
+
+    static get(subject) {
+        return Popup.#POPUPS.get(subject);
+    }
 }
 
 // Displays a balloon (popup)
-    // new Balloon({ title:string, icon:string? }[, ...jobs:object#{ href:string#URL, message:string?, src:string?, time:string#Date, onremove:function? }]) -> Object
-    // Balloon.prototype.add(...jobs:object#{ href:string#URL, message:string?, src:string?, time:string#Date, onremove:function? }) -> Element
-    // Balloon.prototype.addButton({ [left:boolean[, icon:string#Glyphs[, onclick:function[, attributes:object]]]] }) -> Element
+    // new Balloon({ title:string, icon:string? }[, ...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }]) -> Object
+    // Balloon.prototype.add(...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }) -> Element
+    // Balloon.prototype.addButton({ [left:boolean[, icon:string=Glyphs[, onclick:function[, attributes:object]]]] }) -> Element
     // Balloon.prototype.remove() -> undefined
 class Balloon {
     static #BALLOONS = new Map()
@@ -779,7 +783,7 @@ class Balloon {
 
 // Creates a Twitch-style tooltip
     // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) -> Element~Tooltip
-        // fineTuning:object = { left:number#pixels, top:number#pixels, direction:string := "up"|"right"|"down"|"left" }
+        // fineTuning:object = { left:number=pixels, top:number=pixels, direction:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
     // Tooltip.get(parent:Element) -> Element~Tooltip
 class Tooltip {
     static #TOOLTIPS = new Map()
@@ -794,10 +798,10 @@ class Tooltip {
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
-        if(existing)
+        if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
             uuid = UUID.from(text).toString();
 
         tooltip.id = uuid;
@@ -958,7 +962,7 @@ async function RemoveCache(keys, callback = () => {}) {
 // Create an object of the current chat
     // GetChat([lines:number[, keepEmotes:boolean]]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
 function GetChat(lines = 30, keepEmotes = false) {
-    let chat = $('[data-a-target^="chat-"i] .chat-list [data-a-target="chat-line-message"i]', true).slice(-lines),
+    let chat = $('[data-a-target^="chat-"i] [data-a-target="chat-line-message"i]', true).slice(-lines),
         emotes = {},
         results = [];
 
@@ -1144,7 +1148,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
     );
 
     children
-        .filter( child => defined(child) )
+        .filter( defined )
         .forEach(
             child =>
                 child instanceof Element?
@@ -1160,7 +1164,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
 }
 
 // Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) -> Object#{ left:number, top:number }
+    // getOffset(element:Element) -> Object={ left:number, top:number }
 function getOffset(element) {
     let bounds = element.getBoundingClientRect(),
         { height, width } = bounds;
@@ -1257,7 +1261,7 @@ function ParseTime(time = '') {
 }
 
 // Get the video quality
-    // GetQuality() -> String#{ auto:boolean, high:boolean, low:boolean, source:boolean }
+    // GetQuality() -> String={ auto:boolean, high:boolean, low:boolean, source:boolean }
 async function GetQuality() {
     let buttons = {
         get settings() {
@@ -1324,7 +1328,7 @@ async function GetQuality() {
 }
 
 // Change the video quality
-    // ChangeQuality([quality:string[, backup:string]]) -> Object#{ OLD:Object#{ input:Element, label:Element }, NEW:Object#{ input:Element, label:Element } }
+    // ChangeQuality([quality:string[, backup:string]]) -> Object#{ OLD:Object={ input:Element, label:Element }, NEW:Object={ input:Element, label:Element } }
 async function ChangeQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
@@ -1399,7 +1403,7 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
 }
 
 // Returns if an item is of an object class
-    // isObj([object:*[, ...or:Function#Constructor]]) -> Boolean
+    // isObj([object:*[, ...or:Function=Constructor]]) -> Boolean
 function isObj(object, ...or) {
     return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
         .find(constructor => object?.constructor === constructor || object instanceof constructor);
@@ -1576,6 +1580,7 @@ let ERROR = (...messages) => {
  * favorite
  * emotes
  * search
+ * stream
  * trophy
  * upload
  * wallet
@@ -1584,10 +1589,13 @@ let ERROR = (...messages) => {
  * leave
  * music
  * pause
+ * reply
+ * stats
  * trash
  * bits
  * chat
  * gift
+ * help
  * lock
  * loot
  * moon
@@ -1612,8 +1620,8 @@ let Glyphs = {
 
     emotes: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
     search: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M13.192 14.606a7 7 0 111.414-1.414l3.101 3.1-1.414 1.415-3.1-3.1zM14 9A5 5 0 114 9a5 5 0 0110 0z" clip-rule="evenodd"></path></g></svg>',
-    stream: '<svg fill="#ffffff" width="20px" height="20px" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>',
-    trophy: '<svg fill="#ff9147" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M5 10h.1A5.006 5.006 0 009 13.9V16H7v2h6v-2h-2v-2.1a5.006 5.006 0 003.9-3.9h.1a3 3 0 003-3V4h-3V2H5v2H2v3a3 3 0 003 3zm2-6h6v5a3 3 0 11-6 0V4zm8 2v2a1 1 0 001-1V6h-1zM4 6h1v2a1 1 0 01-1-1V6z"></path></svg>',
+    stream: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>',
+    trophy: '<svg fill="#ff9147" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M5 10h.1A5.006 5.006 0 009 13.9V16H7v2h6v-2h-2v-2.1a5.006 5.006 0 003.9-3.9h.1a3 3 0 003-3V4h-3V2H5v2H2v3a3 3 0 003 3zm2-6h6v5a3 3 0 11-6 0V4zm8 2v2a1 1 0 001-1V6h-1zM4 6h1v2a1 1 0 01-1-1V6z"></path></g></svg>',
     upload: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 01-2 2H4a2 2 0 01-2-2zM15 7l-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"></path></g></svg>',
     wallet: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 11h2v2h-2v-2z"></path><path fill-rule="evenodd" d="M13.45 2.078L2 6v12h14a2 2 0 002-2V8a2 2 0 00-2-2V4.001a2 2 0 00-2.55-1.923zM14 6V4.004L8.172 6H14zM4 8v8h12V8H4z" clip-rule="evenodd"></path></g></svg>',
 
@@ -1622,10 +1630,11 @@ let Glyphs = {
     leave: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 18h-4a2 2 0 01-2-2v-2h2v2h4V4h-4v2h-2V4a2 2 0 012-2h4a2 2 0 012 2v12a2 2 0 01-2 2z"></path><path d="M7 5l1.5 1.5L6 9h8v2H6l2.5 2.5L7 15l-5-5 5-5z"></path></g></svg>',
     music: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 4.331a2 2 0 00-2.304-1.977l-9 1.385A2 2 0 005 5.716v7.334A2.5 2.5 0 106.95 16H7V9.692l9-1.385v2.743A2.5 2.5 0 1017.95 14H18V4.33zm-2 0L7 5.716v1.953l9-1.385V4.33z" clip-rule="evenodd"></path></g></svg>',
     pause: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 3H4v14h4V3zM16 3h-4v14h4V3z"></path></g></svg>',
+    reply: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>',
     stats: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
     trash: '<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
 
-    bits: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></svg>',
+    bits: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></g></svg>',
     chat: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>',
     gift: '<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16 6h2v6h-1v6H3v-6H2V6h2V4.793c0-2.507 3.03-3.762 4.803-1.99.131.131.249.275.352.429L10 4.5l.845-1.268a2.81 2.81 0 01.352-.429C12.969 1.031 16 2.286 16 4.793V6zM6 4.793V6h2.596L7.49 4.341A.814.814 0 006 4.793zm8 0V6h-2.596l1.106-1.659a.814.814 0 011.49.451zM16 8v2h-5V8h5zm-1 8v-4h-4v4h4zM9 8v2H4V8h5zm0 4H5v4h4v-4z" clip-rule="evenodd"></path></g></svg>',
     help: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8a1 1 0 011-1h.146a.87.87 0 01.854.871c0 .313-.179.6-.447.735A2.81 2.81 0 009 11.118V12h2v-.882a.81.81 0 01.447-.724A2.825 2.825 0 0013 7.871C13 6.307 11.734 5 10.146 5H10a3 3 0 00-3 3h2zM9 14a1 1 0 112 0 1 1 0 01-2 0z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8 6a6 6 0 110-12 6 6 0 010 12z"></path></g></svg>',
@@ -1642,33 +1651,55 @@ let Glyphs = {
     x: '<svg fill="#ffffff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>',
 };
 
-// Replaces up to 3 places
+// Returns ordinal numbers
+    // nth(n:number) -> string
 let nth = n => (n + '')
-    .replace(/^1[123]$/, '$1th')
+    .replace(/1[123]$/, '$1th')
     .replace(/1$/, '1st')
     .replace(/2$/, '2nd')
     .replace(/3$/, '3rd')
     .replace(/(\d)$/, '$1th');
 
+// Returns a unique list of channels (used with `Array.prototype.filter`)
+    // uniqueChannels(channel:object, index:number, channels:array) -> boolean
+let uniqueChannels = (channel, index, channels) =>
+    channels.findIndex(ch => ch.name == channel.name) == index;
+
 // Update common variables
 let PATHNAME = top.location.pathname,
-    STREAMER, STREAMERS, CHANNELS, SEARCH;
+    // The current streamer
+    STREAMER,
+    // The followed streamers (excluding STREAMER)
+    STREAMERS,
+    // All channels on the side-panel (excluding STREAMER)
+    CHANNELS,
+    // The currently searched-for channels (excluding STREAMER)
+    SEARCH,
+    // Visible, actionable notifications
+    NOTIFICATIONS,
+    // All of the above
+    ALL_CHANNELS;
 
 let __ONLOCATIONCHANGE__ = [];
 
 Object.defineProperties(top, {
     onlocationchange: {
         get() {
-            return __ONLOCATIONCHANGE__[__ONLOCATIONCHANGE__.length - 1] ?? null
+            return __ONLOCATIONCHANGE__[__ONLOCATIONCHANGE__.length - 1] ?? null;
         },
 
         set(listener) {
-            return __ONLOCATIONCHANGE__.push(listener), listener
+            __ONLOCATIONCHANGE__.push(listener);
+
+            return listener;
         }
     }
 });
 
 function update() {
+    // The location
+    PATHNAME = top.location.pathname;
+
     // All Channels under Search
     SEARCH = [
         // Current (followed) streamers
@@ -1751,7 +1782,7 @@ function update() {
     ];
 
     // Notifications
-    $('[class^="onsite-notification-toast"]', true).map(
+    NOTIFICATIONS = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true).map(
         element => {
             let streamer = {
                 live: true,
@@ -1765,39 +1796,68 @@ function update() {
 
             element.setAttribute('draggable', true);
             element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-            element.ondragstart ||= event => {
+            element.ondragstart ??= event => {
                 let { currentTarget } = event;
 
                 event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
                 event.dataTransfer.dropEffect = 'move';
             };
+
+            return streamer;
         }
     );
+
+    // Every channel
+    ALL_CHANNELS = ALL_CHANNELS.concat(SEARCH, CHANNELS, STREAMERS, NOTIFICATIONS).filter(defined).filter(uniqueChannels);
 }
 
 // Settings have been saved
+let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'];
+
+// Registers a job
+    // RegisterJob(JobName:string) -> Number=IntervalID
+function RegisterJob(JobName) {
+    return Jobs[JobName] = setInterval(Handlers[JobName], Timers[JobName]);
+}
+
+// Unregisters a job
+    // UnregisterJob(JobName:string) -> undefined
+function UnregisterJob(JobName) {
+    clearInterval(Jobs[JobName]);
+    delete Jobs[JobName];
+
+    let unhandler = Unhandlers[JobName];
+
+    if(defined(unhandler))
+        unhandler();
+}
+
 Storage.onChanged.addListener((changes, namespace) => {
     for(let key in changes) {
         let change = changes[key],
             { oldValue, newValue } = change;
 
         if(newValue === false) {
-            WARN(`Turning OFF "${ key }"`, new Date);
+            LOG(`Turning OFF "${ key }"`, new Date);
 
-            clearInterval(Jobs[key]);
-
-            delete Jobs[key];
-
-            let unhandler = Unhandlers[key];
-
-            if(defined(unhandler))
-                unhandler();
+            UnregisterJob(key);
         } else if(newValue === true) {
-            WARN(`Turning ON "${ key }"`, new Date);
+            LOG(`Turning ON "${ key }"`, new Date);
 
-            Jobs[key] = setInterval(Handlers[key], Timers[key]);
+            if(!!~EXPERIMENTAL_FEATURES.indexOf(key)) {
+                WARN('Enabling experimental feature:', key);
+
+                return location.reload();
+            }
+
+            RegisterJob(key);
         } else {
-            WARN(`Changing "${ key }"`, { oldValue, newValue }, new Date);
+            LOG(`Changing "${ key }"`, { oldValue, newValue }, new Date);
+
+            // Adjust the timer to compensate for lost time
+            // new-time-left = (old-wait-time - old-time-left) + (new-wait-time - old-wait-time)
+            // if(/(\w+)_time_minutes$/i.test(key))
+            //     FIRST_IN_LINE_TIMER = (FIRST_IN_LINE_WAIT_TIME - FIRST_IN_LINE_TIMER) + ((parseInt(settings[RegExp.$1] === true? newValue: 0) | 0) - FIRST_IN_LINE_WAIT_TIME);
         }
 
         settings[key] = newValue;
@@ -1817,13 +1877,21 @@ Storage.onChanged.addListener((changes, namespace) => {
 // Intializes the extension
 // Initialize(START_OVER:boolean) -> undefined
 let Initialize = async(START_OVER = false) => {
+    let TWITCH_API,
+        EVENT_LISTENER = {};
+
     settings = await GetSettings();
 
     // Modify the logging using the settings
-    if(!settings.developer_mode)
+    if(!settings.display_in_console)
         LOG = WARN = ERROR = ($=>$);
 
-    /* Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
+    // Enable experimental features
+    if(!settings.experimental_mode)
+        for(let feature of EXPERIMENTAL_FEATURES)
+            settings[feature] = false;
+
+    /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
      * href:string   - link to the channel
      * icon:string   - link to the channel's image
      * live:boolean* - GETTER: is the channel live
@@ -1855,7 +1923,7 @@ let Initialize = async(START_OVER = false) => {
                 }),
     ];
 
-    /* Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
+    /** Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
      * href:string   - link to the channel
      * icon:string   - link to the channel's image
      * live:boolean* - GETTER: is the channel live
@@ -1887,7 +1955,7 @@ let Initialize = async(START_OVER = false) => {
                 }),
     ];
 
-    /* Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
+    /** Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
      * href:string   - link to the channel
      * icon:string   - link to the channel's image
      * live:boolean* - GETTER: is the channel live
@@ -1920,7 +1988,7 @@ let Initialize = async(START_OVER = false) => {
             ),
     ];
 
-    /* Streamer Array - the current streamer/channel
+    /** Streamer Array - the current streamer/channel
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
      * follow:function   - follows the current channel
@@ -1937,6 +2005,12 @@ let Initialize = async(START_OVER = false) => {
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
      * time:number*      - GETTER: how long has the channel been live
      * unfollow:function - unfollows the current channel
+
+     * Only available with Fine Details enabled
+     * ally:boolean      - is the channel partnered?
+     * fast:boolean      - is the channel using turbo?
+     * nsfw:boolean      - is the channel deemed NSFW (mature)?
+     * sole:number       - the channel's channel ID
      */
     STREAMER = {
         get chat() {
@@ -2046,6 +2120,23 @@ let Initialize = async(START_OVER = false) => {
         },
     };
 
+    /** Notification Array - the visible, actionable notifications
+     *
+     */
+    // Notifications
+    NOTIFICATIONS = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true).map(
+        element =>
+        ({
+            live: true,
+            href: $('a', false, element)?.href,
+            icon: $('figure img', false, element)?.src,
+            name: $('figure img', false, element)?.alt,
+        })
+    );
+
+    // Every channel
+    ALL_CHANNELS = [...SEARCH, ...CHANNELS, ...STREAMERS, ...NOTIFICATIONS, STREAMER].filter(defined).filter(uniqueChannels);
+
     if(STREAMER) {
         let element = $(`a[href$="${ PATHNAME }"i]`),
             { href, icon, live, name } = STREAMER;
@@ -2058,7 +2149,59 @@ let Initialize = async(START_OVER = false) => {
             event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
             event.dataTransfer.dropEffect = 'move';
         };
-    }
+
+        /* Attempt to use the Twitch API */
+        __FineDetails__: {
+            if(settings.fine_details) {
+                // Get the cookie values
+                let cookies = {};
+
+                document.cookie.split(/(?:\s*;\s*)+/).map(cookie => {
+                    let [name, value = null] = cookie.split('=')
+
+                    cookies[name] = value;
+                });
+
+                USERNAME = cookies.name ?? USERNAME;
+
+                // Get the channel/vod information
+                let channelName,
+                    videoID;
+
+                let { pathname } = location;
+
+                if(pathname.startsWith('/videos/'))
+                    videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
+                else
+                    channelName = pathname.replace(/\//g, '');
+
+                // Fetch an API request
+                let type = (defined(videoID)? 'vod': 'channel'),
+                    value = (defined(videoID)? videoID: channelName),
+                    token = cookies['auth-token'];
+
+                LOG('Getting fine details...', { [type]: value, cookies });
+
+                await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
+                    .then(response => response.json())
+                    .then(json => TWITCH_API = JSON.parse(json.token))
+                    .then(LOG)
+                    .catch(ERROR);
+
+                let conversion = {
+                    paid: 'subscriber',
+
+                    ally: 'partner',
+                    fast: 'turbo',
+                    nsfw: 'mature',
+                    sole: 'channel_id',
+                };
+
+                for(let key in conversion)
+                    STREAMER[key] = TWITCH_API[conversion[key]];
+            }
+        }
+    };
 
     update();
     setInterval(update, 100);
@@ -2066,7 +2209,7 @@ let Initialize = async(START_OVER = false) => {
     let ERRORS = Initialize.errors |= 0;
     if(START_OVER) {
         for(let job in Jobs)
-            clearInterval(Jobs[job]);
+            UnregisterJob(job);
         ERRORS = Initialize.errors++
     }
 
@@ -2097,7 +2240,7 @@ let Initialize = async(START_OVER = false) => {
 
     __AutoFollow__: {
         if(settings.auto_follow_raids || settings.auto_follow_all)
-            Jobs.auto_follow_raids = setInterval(Handlers.auto_follow_raids, Timers.auto_follow_raids);
+            RegisterJob('auto_follow_raids');
 
         if(settings.auto_follow_time || settings.auto_follow_all) {
             let { like, coin, follow } = STREAMER,
@@ -2120,7 +2263,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let FIRST_IN_LINE_JOB,                  // The current job (interval)
         FIRST_IN_LINE_HREF,                 // The upcoming HREF
-        FIRST_IN_LINE_TIMER,                // The current timer for the job
+        FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
         FIRST_IN_LINE_PAUSED,               // The pause-state
         FIRST_IN_LINE_BALLOON,              // The balloon controller
         ALL_FIRST_IN_LINE_JOBS,             // All First in Line jobs
@@ -2131,17 +2274,24 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
     // Restart the First in line que's timers
-        // REDO_FIRST_IN_LINE_QUEUE([href:string#URL]) -> undefined
+        // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
     function REDO_FIRST_IN_LINE_QUEUE(href) {
         if(!defined(href))
             return;
 
-        let { pathname } = parseURL(href);
+        href = parseURL(href).href;
+
+        let channel = ALL_CHANNELS.find(channel => channel.href == href);
+
+        if(!defined(channel))
+            return ERROR(`Unable to create job for < ${ href } >`);
+
+        let { name } = channel;
 
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        WARN(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER) } before leaving for stream`, new Date);
+        LOG(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER) } before leaving for "${ name }" stream < ${ href } >`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
@@ -2150,18 +2300,15 @@ let Initialize = async(START_OVER = false) => {
             if(FIRST_IN_LINE_TIMER > 60_000)
                 return;
 
-            let existing = $('#twitch-tools-popup');
-
-            if(defined(existing))
-                existing.remove();
+            let existing = Popup.get(`First in line: ${ name }`);
 
             if(!defined(STARTED_TIMERS.WARNING)) {
                 STARTED_TIMERS.WARNING = true;
 
-                WARN('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER), FIRST_IN_LINE_HREF, new Date);
+                LOG('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER), FIRST_IN_LINE_HREF, new Date);
 
-                let popup = new Popup(`First in line: TTV${ pathname }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
-                    Icon: CHANNELS.find(channel => channel.href === href)?.icon,
+                let popup = existing ?? new Popup(`First in line: ${ name }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
+                    Icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
 
                     Goto: () => {
                         let existing = $('#twitch-tools-popup'),
@@ -2169,7 +2316,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(defined(existing))
                             existing.remove();
-                        WARN('Heading to stream now', thisJob);
+                        LOG('Heading to stream now', thisJob);
 
                         FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
                         SaveCache({ FIRST_IN_LINE_TIMER });
@@ -2182,31 +2329,14 @@ let Initialize = async(START_OVER = false) => {
                     },
                     Cancel: () => {
                         let existing = $('#twitch-tools-popup'),
+                            removal = $('button[connected-to][data-test-selector$="delete"i]'),
                             [thisJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
 
                         if(defined(existing))
                             existing.remove();
-                        WARN('Canceled First in Line event', thisJob);
+                        LOG('Canceled First in Line event', thisJob);
 
-                        let container = $(`[id^="twitch-tools-balloon-container-"i]`),
-                            timeleft = parseInt($('[id^="twitch-tools-balloon-job-"]', false, container)?.getAttribute('time'));
-
-                        container.remove();
-
-                        $('[id^="twitch-tools-balloon-job-"]', true).map(
-                            container => {
-                                let subheader = $('.twitch-tools-balloon-subheader', false, container);
-
-                                container.setAttribute('time', parseInt(container.getAttribute('time')) - timeleft);
-                            }
-                        );
-
-                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                        SaveCache({ FIRST_IN_LINE_TIMER });
-
-                        [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-
-                        FIRST_IN_LINE_HREF = undefined;
+                        removal.click();
                     },
                 });
 
@@ -2229,20 +2359,24 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
-            let channel = CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF);
+            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF);
+
             if(!defined(channel) || !channel?.live) {
                 LOG('Removing dead channel', FIRST_IN_LINE_HREF);
+
+                update();
 
                 let { pathname } = parseURL(FIRST_IN_LINE_HREF),
                     channelID = UUID.from(pathname).toString();
 
-                ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(defined).filter(href => href != FIRST_IN_LINE_HREF);
+                ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined);
                 FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
 
-                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                location.reload();
+                return REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
             }
+
             if(FIRST_IN_LINE_PAUSED)
                 return /* First in Line is paused */;
             // Save the current wait time (every 1sec)
@@ -2265,7 +2399,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     if(START_OVER) {
-        FIRST_IN_LINE_BALLOON = Balloon.get('Up Next').remove();
+        FIRST_IN_LINE_BALLOON = Balloon.get('Up Next');
     } else {
         FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
 
@@ -2279,10 +2413,12 @@ let Initialize = async(START_OVER = false) => {
 
                 currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
                 currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
+
+                currentTarget.tooltip.innerHTML = `${ ['Pause','Continue'][+paused] } the timer`;
             },
         });
 
-        new Tooltip(first_in_line_pause_button, 'Pause or continue the timer(s)');
+        first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
 
         let first_in_line_help_button = FIRST_IN_LINE_BALLOON.addButton({
             icon: 'help',
@@ -2321,7 +2457,7 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('Adding job:', { href, streamer });
 
-            ALL_FIRST_IN_LINE_JOBS.push(href);
+            ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
             await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
         }
     };
@@ -2355,21 +2491,18 @@ let Initialize = async(START_OVER = false) => {
         filter: '.twitch-tools-static',
 
         onUpdate: ({ oldIndex, newIndex }) => {
-            let old_href = ALL_FIRST_IN_LINE_JOBS[--oldIndex],
-                new_href = ALL_FIRST_IN_LINE_JOBS[--newIndex];
-
-            // LOG('Swapping', { old_href, new_href });
             // LOG('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
 
-            ALL_FIRST_IN_LINE_JOBS.splice(oldIndex, 1, new_href);
-            ALL_FIRST_IN_LINE_JOBS.splice(newIndex, 1, old_href);
+            let [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
+            ALL_FIRST_IN_LINE_JOBS.splice(--newIndex, 0, moved);
 
             // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
+            // LOG('Moved', { oldIndex, newIndex, moved });
 
-            let channel = CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
+            let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
 
             if(!defined(channel))
-                return WARN('No channel given', { oldIndex, newIndex, old_href, new_href, desiredChannel: ALL_FIRST_IN_LINE_JOBS[0] });
+                return WARN('No channel given', { oldIndex, newIndex, desiredChannel: channel });
 
             if(!!~[oldIndex, newIndex].indexOf(0)) {
                 LOG('New First in Line', channel);
@@ -2379,11 +2512,11 @@ let Initialize = async(START_OVER = false) => {
                     ?? FIRST_IN_LINE_WAIT_TIME * 60_000
                 );
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
-
                 REDO_FIRST_IN_LINE_QUEUE(channel.href);
                 LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
             }
+
+            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
         },
     });
 
@@ -2403,7 +2536,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
             for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS.length; index++) {
                 let href = ALL_FIRST_IN_LINE_JOBS[index],
-                    channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
+                    channel = ALL_CHANNELS.find(channel => parseURL(channel.href).href === href);
 
                 if(!defined(href) || !defined(channel)) {
                     ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
@@ -2430,7 +2563,7 @@ let Initialize = async(START_OVER = false) => {
                         if(index > 0) {
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
                         } else {
-                            WARN('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+                            LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
 
                             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -2456,12 +2589,20 @@ let Initialize = async(START_OVER = false) => {
                             if(FIRST_IN_LINE_PAUSED)
                                 return /* First in Line is paused */;
 
-                            let channel = (CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                            let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                 { name, live } = channel;
 
                             let time = parseInt(container.getAttribute('time')),
                                 intervalID = parseInt(container.getAttribute('animationID')),
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
+
+                            if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                                FIRST_IN_LINE_TIMER = time;
+
+                                WARN('Creating job [avoiding job listing mitigation]', channel);
+
+                                return REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                            }
 
                             if(time < 0)
                                 setTimeout(() => {
@@ -2534,25 +2675,25 @@ let Initialize = async(START_OVER = false) => {
                 continue;
 
             let { href, pathname } = parseURL(action.href);
-            let { textContent } = action;
-            let uuid = UUID.from(textContent).toString();
+            let { innerText } = action;
+            let uuid = UUID.from(innerText).toString();
 
             if(!!~HANDLED_NOTIFICATIONS.indexOf(uuid))
                 continue;
             HANDLED_NOTIFICATIONS.push(uuid);
 
-            WARN('Recieved an actionable notification:', textContent, new Date);
+            LOG('Recieved an actionable notification:', innerText, new Date);
 
             if(defined(FIRST_IN_LINE_HREF)) {
                 if(!~[...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].indexOf(href)) {
-                    WARN('Pushing to Jobs:', href, new Date);
+                    LOG('Pushing to Jobs:', href, new Date);
 
-                    ALL_FIRST_IN_LINE_JOBS.push(href);
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
                 } else {
                     WARN('Not pushing to Jobs:', href, new Date);
-                    WARN('Reason?', [...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF],
+                    LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
                         'Is it the next job?', FIRST_IN_LINE_HREF === href,
-                        'Is it in the queue already?', !~ALL_FIRST_IN_LINE_JOBS.indexOf(href),
+                        'Is it in the queue already?', !!~ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     );
                 }
 
@@ -2561,7 +2702,7 @@ let Initialize = async(START_OVER = false) => {
 
                 continue;
             } else {
-                WARN('Pushing to Jobs (no contest):', href, new Date);
+                LOG('Pushing to Jobs (no contest):', href, new Date);
 
                 // Add the new job (while preventing duplicates)
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
@@ -2569,11 +2710,11 @@ let Initialize = async(START_OVER = false) => {
                 // To wait, or not to wait
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
-                REDO_FIRST_IN_LINE_QUEUE(href);
+                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
             }
 
-            if(/\b(go(?:ing)?|is|went) +live\b/i.test(textContent)) {
-                let channel = CHANNELS.find(channel => parseURL(channel.href).href === href);
+            if(/\b(go(?:ing)?|is|went) +live\b/i.test(innerText)) {
+                let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).href === href);
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href);
 
                 if(!defined(channel))
@@ -2597,7 +2738,7 @@ let Initialize = async(START_OVER = false) => {
                         if(index > 0) {
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
                         } else {
-                            WARN('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+                            LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
 
                             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -2623,12 +2764,20 @@ let Initialize = async(START_OVER = false) => {
                             if(FIRST_IN_LINE_PAUSED)
                                 return /* First in Line is paused */;
 
-                            let channel = (CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                            let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                 { name, live } = channel;
 
                             let time = parseInt(container.getAttribute('time')),
                                 intervalID = parseInt(container.getAttribute('animationID')),
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
+
+                            if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                                FIRST_IN_LINE_TIMER = time;
+
+                                WARN('Creating job [avoiding first in line mitigation]', channel);
+
+                                return REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                            }
 
                             if(time < 0)
                                 setTimeout(() => {
@@ -2704,8 +2853,9 @@ let Initialize = async(START_OVER = false) => {
                 FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
             });
 
-            Jobs.first_in_line = setInterval(Handlers.first_in_line, Timers.first_in_line);
+            RegisterJob('first_in_line');
 
+            // Controls what's listed under the Up Next balloon
             if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
                 let [href] = ALL_FIRST_IN_LINE_JOBS,
                     channel = CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
@@ -2716,11 +2866,11 @@ let Initialize = async(START_OVER = false) => {
 
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
-                    WARN(`The job for [${ href }] no longer exists`, killed);
+                    WARN(`The job for < ${ href } > no longer exists`, killed);
 
                     break __FirstInLine__;
                 } else {
-                    Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
+                    Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
 
                     WARN('Forcing queue update for', href);
                     REDO_FIRST_IN_LINE_QUEUE(href);
@@ -2770,9 +2920,9 @@ let Initialize = async(START_OVER = false) => {
 
             let { href } = streamer;
 
-            WARN('A channel just appeared:', name, new Date);
+            LOG('A channel just appeared:', name, new Date);
 
-            Handlers.first_in_line({ href, textContent: `${ name } is live [First in Line+]` });
+            Handlers.first_in_line({ href, innerText: `${ name } is live [First in Line+]` });
         }
 
         OLD_STREAMERS = NEW_STREAMERS;
@@ -2785,7 +2935,7 @@ let Initialize = async(START_OVER = false) => {
 
     __FirstInLinePlus__: {
         if(settings.first_in_line_plus || settings.first_in_line_all)
-            Jobs.first_in_line_plus = setInterval(Handlers.first_in_line_plus, Timers.first_in_line_plus);
+            RegisterJob('first_in_line_plus');
     }
 
     /*** Kill Extensions
@@ -2815,7 +2965,7 @@ let Initialize = async(START_OVER = false) => {
 
     __KillExtensions__: {
         if(settings.kill_extensions)
-            Jobs.kill_extensions = setInterval(Handlers.kill_extensions, Timers.kill_extensions);
+            RegisterJob('kill_extensions');
     }
 
     /*** Stop Hosting
@@ -2831,7 +2981,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.prevent_hosting = () => {
         let hosting = defined($('[data-a-target="hosting-indicator"i]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
 
 
         if(hosting && next) {
@@ -2850,7 +3000,7 @@ let Initialize = async(START_OVER = false) => {
 
     __PreventHosting__: {
         if(settings.prevent_hosting)
-            Jobs.prevent_hosting = setInterval(Handlers.prevent_hosting, Timers.prevent_hosting);
+            RegisterJob('prevent_hosting');
     }
 
     /*** Stop Raiding
@@ -2869,7 +3019,7 @@ let Initialize = async(START_OVER = false) => {
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
 
 
         if((raiding || raided) && next) {
@@ -2888,7 +3038,7 @@ let Initialize = async(START_OVER = false) => {
 
     __PreventRaiding__: {
         if(settings.prevent_raiding)
-            Jobs.prevent_raiding = setInterval(Handlers.prevent_raiding, Timers.prevent_raiding);
+            RegisterJob('prevent_raiding');
     }
 
     /*** Stay Live
@@ -2903,7 +3053,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.stay_live = async() => {
         let online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
             { pathname } = window.location;
 
         let Paths = [USERNAME, '[up]/', 'user', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
@@ -2929,7 +3079,7 @@ let Initialize = async(START_OVER = false) => {
             } else  {
                 WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
             }
-        } else if(/\/search/i.test(pathname)) {
+        } else if(/\/search\b/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
 
             await SaveCache({ UserIntent: term });
@@ -2939,7 +3089,7 @@ let Initialize = async(START_OVER = false) => {
 
     __StayLive__: {
         if(settings.stay_live)
-            Jobs.stay_live = setInterval(Handlers.stay_live, Timers.stay_live);
+            RegisterJob('stay_live');
     }
 
     /*** Convert Emotes
@@ -3035,7 +3185,7 @@ let Initialize = async(START_OVER = false) => {
             else
                 setTimeout(CollectEmotes, 1000);
 
-            Jobs.convert_emotes = setInterval(Handlers.convert_emotes, Timers.convert_emotes);
+            RegisterJob('convert_emotes');
         }
 }
 
@@ -3141,7 +3291,7 @@ let Initialize = async(START_OVER = false) => {
 
     __FilterMessages__: {
         if(settings.filter_messages)
-            Jobs.filter_messages = setInterval(Handlers.filter_messages, Timers.filter_messages);
+            RegisterJob('filter_messages');
     }
 
     /*** Easy Filter - NOT A SETTING. This is a helper for "Message Filter"
@@ -3234,7 +3384,10 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.easy_filter = 500;
 
-    Jobs.easy_filter = setInterval(Handlers.easy_filter, Timers.easy_filter);
+    __EasyFilter__: {
+        if(settings.filter_messages)
+            RegisterJob('easy_filter');
+    }
 
     /*** Message Highlighter
      *      __  __                                  _    _ _       _     _ _       _     _
@@ -3247,12 +3400,42 @@ let Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_mentions = () => {
-        let chat = GetChat().filter(line => !!~line.mentions.indexOf(USERNAME));
+        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
 
         for(let line of chat)
             if(!~Queue.messages.indexOf(line.uuid)) {
                 Queue.messages.push(line.uuid);
+
+                let { author, message, reply } = line;
+
+                LOG('Highlighting message:', { author, message });
+
                 line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
+            }
+    };
+    Timers.highlight_mentions = 500;
+
+    __HighlightMentions__: {
+        if(settings.highlight_mentions)
+            RegisterJob('highlight_mentions');
+    }
+
+    /*** Message Highlighter - Popup
+     *      __  __                                  _    _ _       _     _ _       _     _                       _____
+     *     |  \/  |                                | |  | (_)     | |   | (_)     | |   | |                     |  __ \
+     *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__| |_  __ _| |__ | |_  __ _| |__ | |_ ___ _ __   ______  | |__) |__  _ __  _   _ _ __
+     *     | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \ |  __  | |/ _` | '_ \| | |/ _` | '_ \| __/ _ \ '__| |______| |  ___/ _ \| '_ \| | | | '_ \
+     *     | |  | |  __/\__ \__ \ (_| | (_| |  __/ | |  | | | (_| | | | | | | (_| | | | | ||  __/ |             | |  | (_) | |_) | |_| | |_) |
+     *     |_|  |_|\___||___/___/\__,_|\__, |\___| |_|  |_|_|\__, |_| |_|_|_|\__, |_| |_|\__\___|_|             |_|   \___/| .__/ \__,_| .__/
+     *                                  __/ |                 __/ |           __/ |                                        | |         | |
+     *                                 |___/                 |___/           |___/                                         |_|         |_|
+     */
+    Handlers.highlight_mentions_popup = () => {
+        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
+
+        for(let line of chat)
+            if(!~Queue.message_popups.indexOf(line.uuid)) {
+                Queue.message_popups.push(line.uuid);
 
                 let { author, message, reply } = line;
 
@@ -3261,27 +3444,28 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(existing))
                     continue;
 
-                if(settings.highlight_mentions_popup)
-                    new Popup(`@${ author } sent you a message`, message, {
-                        Reply: event => {
-                            let chatbox = $('.chat-input__textarea textarea'),
-                                existing = $('#twitch-tools-popup');
+                LOG('Generating popup:', { author, message });
 
-                            if(defined(chatbox))
-                                chatbox.focus();
-                            if(defined(existing))
-                                existing.remove();
+                new Popup(`@${ author } sent you a message`, message, {
+                    Reply: event => {
+                        let chatbox = $('.chat-input__textarea textarea'),
+                            existing = $('#twitch-tools-popup');
 
-                            reply?.click();
-                        }
-                    });
+                        if(defined(chatbox))
+                            chatbox.focus();
+                        if(defined(existing))
+                            existing.remove();
+
+                        reply?.click();
+                    }
+                });
             }
     };
-    Timers.highlight_mentions = 500;
+    Timers.highlight_mentions_popup = 500;
 
-    __HighlightMentions__: {
-        if(settings.highlight_mentions)
-            Jobs.highlight_mentions = setInterval(Handlers.highlight_mentions, Timers.highlight_mentions);
+    __HighlightMentionsPopup__: {
+        if(settings.highlight_mentions_popup)
+            RegisterJob('highlight_mentions_popup');
     }
 
     /*** Convert Bits
@@ -3367,54 +3551,59 @@ let Initialize = async(START_OVER = false) => {
 
     __ConvertBits__:{
         if(settings.convert_bits)
-            Jobs.convert_bits = setInterval(Handlers.convert_bits, Timers.convert_bits);
+            RegisterJob('convert_bits');
     }
 
-    /*** Auto-Reload
-     *                    _              _____      _                 _
-     *         /\        | |            |  __ \    | |               | |
-     *        /  \  _   _| |_ ___ ______| |__) |___| | ___   __ _  __| |
-     *       / /\ \| | | | __/ _ \______|  _  // _ \ |/ _ \ / _` |/ _` |
-     *      / ____ \ |_| | || (_) |     | | \ \  __/ | (_) | (_| | (_| |
-     *     /_/    \_\__,_|\__\___/      |_|  \_\___|_|\___/ \__,_|\__,_|
+    /*** Recover Video
+     *      _____                               __      ___     _
+     *     |  __ \                              \ \    / (_)   | |
+     *     | |__) |___  ___ _____   _____ _ __   \ \  / / _  __| | ___  ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|   \ \/ / | |/ _` |/ _ \/ _ \
+     *     | | \ \  __/ (_| (_) \ V /  __/ |       \  /  | | (_| |  __/ (_) |
+     *     |_|  \_\___|\___\___/ \_/ \___|_|        \/   |_|\__,_|\___|\___/
      *
      *
      */
+    let RECOVERING_VIDEO = false;
+
     Handlers.recover_video = () => {
-        let error_message = $('[data-a-target="player-overlay-content-gate"i]'),
+        let errorMessage = $('[data-a-target="player-overlay-content-gate"i]'),
             search = [];
 
-        if(!defined(error_message))
+        if(!defined(errorMessage))
             return;
 
-        let url = parseURL(location),
-            parameters = url.searchParameters;
+        if(RECOVERING_VIDEO)
+            return;
 
-        ERROR('The stream ran into an error:', error_message.textContent, new Date);
+        let { searchParameters } = parseURL(location);
 
-        parameters.fail = (+new Date).toString(36);
+        ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
 
-        for(let key in parameters)
-            search.push(`${key}=${parameters[key]}`);
+        searchParameters.fail = (+new Date).toString(36);
 
+        for(let key in searchParameters)
+            search.push(`${key}=${searchParameters[key]}`);
+
+        RECOVERING_VIDEO = true;
         location.search = '?' + search.join('&');
     };
     Timers.recover_video = 1000;
 
     __RecoverVideo__: {
         if(settings.recover_video)
-            Jobs.recover_video = setInterval(Handlers.recover_video, Timers.recover_video);
+            RegisterJob('recover_video');
     }
 
-    /*** Auto-Play
-     *                    _              _____  _
-     *         /\        | |            |  __ \| |
-     *        /  \  _   _| |_ ___ ______| |__) | | __ _ _   _
-     *       / /\ \| | | | __/ _ \______|  ___/| |/ _` | | | |
-     *      / ____ \ |_| | || (_) |     | |    | | (_| | |_| |
-     *     /_/    \_\__,_|\__\___/      |_|    |_|\__,_|\__, |
-     *                                                   __/ |
-     *                                                  |___/
+    /*** Recover Stream
+     *      _____                                 _____ _
+     *     |  __ \                               / ____| |
+     *     | |__) |___  ___ _____   _____ _ __  | (___ | |_ _ __ ___  __ _ _ __ ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|  \___ \| __| '__/ _ \/ _` | '_ ` _ \
+     *     | | \ \  __/ (_| (_) \ V /  __/ |     ____) | |_| | |  __/ (_| | | | | | |
+     *     |_|  \_\___|\___\___/ \_/ \___|_|    |_____/ \__|_|  \___|\__,_|_| |_| |_|
+     *
+     *
      */
     let VIDEO_PLAYER_TIMEOUT = -1;
 
@@ -3449,7 +3638,7 @@ let Initialize = async(START_OVER = false) => {
                     throw error;
                 });
         } catch(error) {
-            WARN(error);
+            ERROR(error);
 
             let control = $('button[data-a-player-state]'),
                 playing = control.getAttribute('data-a-player-state') !== 'paused';
@@ -3473,11 +3662,91 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(video))
                 return;
 
-            video.onpause = event => Handlers.recover_stream(event.currentTarget);
+            video.addEventListener('pause', event => Handlers.recover_stream(event.currentTarget));
 
-            Jobs.recover_stream = setInterval(Handlers.recover_stream, Timers.recover_stream);
+            RegisterJob('recover_stream');
         }
-}
+    }
+
+    /*** Recover Frames
+     *      _____                                ______
+     *     |  __ \                              |  ____|
+     *     | |__) |___  ___ _____   _____ _ __  | |__ _ __ __ _ _ __ ___   ___  ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__| |  __| '__/ _` | '_ ` _ \ / _ \/ __|
+     *     | | \ \  __/ (_| (_) \ V /  __/ |    | |  | | | (_| | | | | | |  __/\__ \
+     *     |_|  \_\___|\___\___/ \_/ \___|_|    |_|  |_|  \__,_|_| |_| |_|\___||___/
+     *
+     *
+     */
+    let SECONDS_PAUSED_UNSAFELY = 0,
+        CREATION_TIME,
+        TOTAL_VIDEO_FRAMES,
+        PAGE_HAS_FOCUS = document.visibilityState === "visible";
+
+    document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
+
+    Handlers.recover_frames = () => {
+        let video = $('video');
+
+        if(!defined(video))
+            return;
+
+        let { paused } = video,
+            isTrusted = defined($('button[data-a-player-state="paused"i]')),
+            isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])')),
+            { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
+
+        // Time that's passed since creation. Should constantly increase
+        CREATION_TIME ??= creationTime;
+        // The total number of frames created. Should constantly increase
+        TOTAL_VIDEO_FRAMES ??= totalVideoFrames;
+
+        // if the page isn't in focus, ignore this setting
+        if(PAGE_HAS_FOCUS === false)
+            return;
+
+        // The video is paused (or stalling)
+        if(paused || (CREATION_TIME != creationTime && TOTAL_VIDEO_FRAMES == totalVideoFrames)) {
+            // The user paused the video
+            if(paused && isTrusted) {
+                // Start over
+                CREATION_TIME = creationTime;
+                TOTAL_VIDEO_FRAMES = totalVideoFrames;
+
+                // Don't count trusted pauses as stalling
+                return;
+            }
+            // The video is stalling
+            else {
+                // Try constantly overwriting to see if the video plays
+                // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
+                TOTAL_VIDEO_FRAMES = totalVideoFrames;
+
+                if(!(SECONDS_PAUSED_UNSAFELY % 5))
+                    WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY });
+
+                ++SECONDS_PAUSED_UNSAFELY;
+            }
+        }
+        // The video is playing
+        else {
+            // Start over
+            CREATION_TIME = creationTime;
+            TOTAL_VIDEO_FRAMES = totalVideoFrames;
+
+            // Reset the timer whenever the video is recovered
+            return SECONDS_PAUSED_UNSAFELY = 0;
+        }
+
+        if(SECONDS_PAUSED_UNSAFELY > 15)
+            location.reload();
+    };
+    Timers.recover_frames = 1000;
+
+    __RecoverFrames__: {
+        if(settings.recover_frames)
+            RegisterJob('recover_frames');
+    }
 
     /*** Useer Intent Listener - NOT A SETTING. Observe the user's intent, and prevent over-riding it
      *
@@ -3505,6 +3774,87 @@ let Initialize = async(START_OVER = false) => {
         });
     }, 1000);
 
+    /*** Native Twitch Reply
+     *      _   _       _   _             _______       _ _       _       _____            _
+     *     | \ | |     | | (_)           |__   __|     (_) |     | |     |  __ \          | |
+     *     |  \| | __ _| |_ ___   _____     | |_      ___| |_ ___| |__   | |__) |___ _ __ | |_   _
+     *     | . ` |/ _` | __| \ \ / / _ \    | \ \ /\ / / | __/ __| '_ \  |  _  // _ \ '_ \| | | | |
+     *     | |\  | (_| | |_| |\ V /  __/    | |\ V  V /| | || (__| | | | | | \ \  __/ |_) | | |_| |
+     *     |_| \_|\__,_|\__|_| \_/ \___|    |_| \_/\_/ |_|\__\___|_| |_| |_|  \_\___| .__/|_|\__, |
+     *                                                                              | |       __/ |
+     *                                                                              |_|      |___/
+     */
+    let NativeReply = ($=>$);
+
+    Handlers.native_twitch_reply = () => {
+        if(defined($('.chat-line__reply-icon')))
+            return;
+
+        NativeReply = ({ title = '', message = '', icon = 'reply' }) => {
+            let parent = $('[data-a-target="chat-input"i]').closest('div[class=""]');
+
+            if(!defined(parent))
+                return;
+
+            let container = $('div:first-child', false, parent),
+                f = furnish;
+
+            let removedClasses = ['tw-pd-0'],
+                addedClasses = ['chat-input-tray__open', 'tw-border-b', 'tw-border-l', 'tw-border-r', 'tw-border-t', 'tw-c-background-base', 'tw-elevation-1', 'tw-pd-05'];
+
+            for(let label of removedClasses)
+                container.classList.remove(label);
+            for(let label of addedClasses)
+                container.classList.add(label);
+
+            let tray =
+            f('div.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0',
+                { 'data-test-selector': 'chat-input-tray' },
+
+                // Left title button
+                f('div.tw-align-center.tw-mg-05', {},
+                    f('div.tw-align-items-center.tw-flex', {},
+                        Glyphs[icon]
+                    )
+                ),
+
+                // Title (Header)
+                f('div.tw-flex-grow-1.tw-pd-l-05.tw-pd-y-05', {},
+                    f('span.tw-c-text-alt.tw-font-size-5.tw-strong.tw-word-break-word', {},
+                        title
+                    )
+                ),
+
+                // Right title button (close)
+                f('div.tw-right-0.tw-top-0', {},
+                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative', {},
+                        f('span.tw-button-icon__icon', {},
+                            f('div', { style: 'width: 2rem; height: 2rem;' },
+                                f('div.tw-icon', {},
+                                    f('div.tw-aspect', {},
+                                        f('div'),
+                                        Glyphs.x
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+
+                // Content (Body)
+                f('div.tw-mg-b-05.tw-mg-t-05.tw-pd-x-1', {
+                    innerHTML: message
+                })
+            );
+        };
+    };
+    Timers.native_twitch_reply = 1000;
+
+    __NativeTwitchReply__: {
+        if(settings.native_twitch_reply)
+            RegisterJob('native_twitch_reply');
+    }
+
     /*** Scoped under Initialize
      *      _______             _____
      *     |__   __|           / ____|
@@ -3516,97 +3866,120 @@ let Initialize = async(START_OVER = false) => {
      *                |_|                      |_|
      */
     /*** Away Mode
-     *                                    ____              _ _ _
-     *         /\                        / __ \            | (_) |
-     *        /  \__      ____ _ _   _  | |  | |_   _  __ _| |_| |_ _   _
-     *       / /\ \ \ /\ / / _` | | | | | |  | | | | |/ _` | | | __| | | |
-     *      / ____ \ V  V / (_| | |_| | | |__| | |_| | (_| | | | |_| |_| |
-     *     /_/    \_\_/\_/ \__,_|\__, |  \___\_\\__,_|\__,_|_|_|\__|\__, |
-     *                            __/ |                              __/ |
-     *                           |___/                              |___/
+     *                                   __  __           _
+     *         /\                       |  \/  |         | |
+     *        /  \__      ____ _ _   _  | \  / | ___   __| | ___
+     *       / /\ \ \ /\ / / _` | | | | | |\/| |/ _ \ / _` |/ _ \
+     *      / ____ \ V  V / (_| | |_| | | |  | | (_) | (_| |  __/
+     *     /_/    \_\_/\_/ \__,_|\__, | |_|  |_|\___/ \__,_|\___|
+     *                            __/ |
+     *                           |___/
      */
-    Handlers.away_mode = () => {
-        // No interval code yet
+    Handlers.away_mode = async() => {
+        let button = $('#away-mode'),
+            quality = (Handlers.away_mode.quality ??= await GetQuality());
+
+        if(!defined(quality) || /\/search\b/i.test(PATHNAME))
+            return;
+
+        let enabled = (quality.low && !(quality.auto || quality.high || quality.source));
+
+        if(!defined(button)) {
+            let sibling, parent, before,
+                container = furnish('div'),
+                placement;
+
+            switch(placement = (settings.away_mode_placement ??= "under")) {
+                // opt 1 "over" - video overlay, play button area
+                case 'over':
+                    parent = $('[data-a-target="player-controls"i] > div:last-child > div');
+                    before = 'first';
+                    break;
+
+                // opt 2 "under" - quick actions, follow/notify/subscribe area
+                case 'under':
+                    sibling = $('[data-test-selector="live-notifications-toggle"]');
+                    parent = sibling?.parentElement;
+                    before = 'last';
+                    break;
+            }
+
+            if(!defined(parent) || !defined(sibling)) {
+                // setTimeout(Initialize, 5000);
+                return;
+            }
+
+            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-mode$1');
+            container.id = 'away-mode';
+
+            parent.insertBefore(container, parent[before + 'ElementChild']);
+
+            if(!!~['over'].indexOf(placement)) {
+                container.firstElementChild.classList.remove('tw-mg-l-1');
+            }
+
+            button = {
+                enabled,
+                container,
+                icon: $('svg', false, container),
+                get offset() { return getOffset(container) },
+                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { direction: 'up', left: +5 }),
+            };
+
+            button.tooltip.id = new UUID().toString().replace(/-/g, '');
+            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+
+            button.icon ??= $('svg', false, container);
+            button.icon.outerHTML = Glyphs.eye;
+        } else {
+            let container = $('#away-mode');
+
+            button = {
+                enabled,
+                container,
+                icon: $('svg', false, container),
+                tooltip: Tooltip.get(container),
+                get offset() { return getOffset(container) },
+                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+            };
+        }
+
+        // if(init === true) ->
+        // Don't use above, event listeners won't work
+        button.background.setAttribute('style', `background:var(--color-twitch-purple-${ '48'[+(button.container.getAttribute('twitch-tools-away-mode-enabled') === "true")] }) !important;`);
+        button.icon.setAttribute('height', '20px');
+        button.icon.setAttribute('width', '20px');
+
+        button.container.onclick ??= event => {
+            let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
+
+            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+            button.background.setAttribute('style', `background:var(--color-twitch-purple-${ '48'[+enabled] }) !important;`);
+            button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
+
+            ChangeQuality(['auto','low'][+enabled]);
+        };
+
+        button.container.onmouseenter ??= event => {
+            button.icon.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+        };
+
+        button.container.onmouseleave ??= event => {
+            button.icon.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+        };
+
+        if(!defined(EVENT_LISTENER.KEYDOWN_ALT_A))
+            document.addEventListener('keydown', EVENT_LISTENER.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+                if(altKey && key == 'a')
+                    $('#away-mode').click();
+            });
     };
     Timers.away_mode = 1000;
 
     __AwayMode__: {
-        if(settings.away_mode) {
-            let button,
-                uuid = new UUID().toString().replace(/-/g, ''),
-                quality = await GetQuality();
-
-            if(!defined(quality))
-                break __AwayMode__;
-
-            let enabled = (quality.low && !(quality.auto || quality.high || quality.source));
-
-            if(!defined($('#away-mode'))) {
-                let sibling   = $('[data-test-selector="live-notifications-toggle"]'),
-                    parent    = sibling?.parentElement,
-                    container = furnish('div');
-
-                if(!defined(parent) || !defined(sibling)) {
-                    // setTimeout(Initialize, 5000);
-                    break __AwayMode__;
-                }
-
-                container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-mode$1');
-                container.id = 'away-mode';
-
-                parent.insertBefore(container, parent.lastElementChild);
-
-                button = {
-                    enabled,
-                    container,
-                    icon: $('svg', false, container),
-                    get offset() { return getOffset(container) },
-                    background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-                    tooltip: new Tooltip(container, `Turn away-mode ${ ['on','off'][+enabled] }`, { direction: 'up', left: +5 }),
-                };
-
-                button.icon.outerHTML = Glyphs.eye;
-                button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-
-                button.icon = $('svg', false, container);
-            } else {
-                let container = $('#away-mode');
-
-                button = {
-                    enabled,
-                    container,
-                    icon: $('svg', false, container),
-                    tooltip: Tooltip.get(container),
-                    get offset() { return getOffset(container) },
-                    background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-                };
-            }
-
-            button.tooltip.id = uuid;
-            button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
-            button.icon.setAttribute('height', '20px');
-            button.icon.setAttribute('width', '20px');
-
-            button.container.onclick = event => {
-                let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
-
-                button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-                button.background.setAttribute('style', `background:var(--color-accent-primary-${ '13'[+enabled] }) !important;`);
-                button.tooltip.innerHTML = `Turn away-mode ${ ['on','off'][+enabled] }`;
-
-                ChangeQuality(['auto','low'][+enabled]);
-            };
-
-            button.container.onmouseenter = event => {
-                button.icon.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-            };
-
-            button.container.onmouseleave = event => {
-                button.icon.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-            };
-
-            Jobs.away_mode = setInterval(Handlers.away_mode, Timers.away_mode);
-        }
+        if(settings.away_mode)
+            RegisterJob('away_mode');
     }
 
     /*** Auto-claim Channel Points
@@ -3621,100 +3994,98 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.auto_claim_bonuses = () => {
         let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = (settings.auto_claim_bonuses && $('#auto-community-points').getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
+            Enabled = (settings.auto_claim_bonuses && $('#twitch-tools-auto-claim-bonuses')?.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
 
         if(Enabled && ChannelPoints)
             ChannelPoints.click();
 
-        let parent = $('div:not(#auto-community-points) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
-            tooltip = $('#auto-community-points [role="tooltip"i]');
+        let parent = $('div:not(#twitch-tools-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
+            tooltip = $('#twitch-tools-auto-claim-bonuses [role="tooltip"i]');
 
         if(tooltip && parent)
             tooltip.innerText = parent.innerText;
+
+        // Actual jobbing
+        let button = $('#twitch-tools-auto-claim-bonuses');
+
+        let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
+
+        if(!defined(button)) {
+            let parent    = $('[data-test-selector="community-points-summary"i]'),
+                heading   = $('.top-nav__menu > div', true).slice(-1)[0],
+                container = furnish('div');
+
+            if(!defined(parent) || !defined(heading)) {
+                // setTimeout(Initialize, 5000);
+                return;
+            }
+
+            container.innerHTML = parent.outerHTML;
+            container.id = 'twitch-tools-auto-claim-bonuses';
+            container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
+
+            heading.insertBefore(container, heading.children[1]);
+
+            $('#twitch-tools-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
+
+            let textContainer = $('[class$="animated-number"i]', false, container);
+
+            if(textContainer) {
+                let { parentElement } = textContainer;
+                parentElement.removeAttribute('data-test-selector');
+            }
+
+            button = {
+                container,
+                enabled: true,
+                text: textContainer,
+                get offset() { return getOffset(container) },
+                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
+                tooltip: new Tooltip(container, `Collecting Bonus Channel Points`, { top: -10 }),
+            };
+
+            button.tooltip.id = new UUID().toString();
+            button.text.innerText = 'ON';
+            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
+
+            button.icon ??= $('svg', false, container);
+            button.icon.outerHTML = Glyphs.channelpoints;
+        } else {
+            let container = button,
+                textContainer = $('[class$="animated-number"i]', false, container);
+
+            button = {
+                container,
+                enabled: true,
+                text: textContainer,
+                get offset() { return getOffset(container) },
+                tooltip: Tooltip.get(container),
+                icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
+            };
+        }
+
+        button.container.onclick ??= event => {
+            let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
+
+            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
+            button.text.innerText = ['OFF','ON'][+enabled];
+            button.icon.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
+            button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonus Channel Points`;
+        };
+
+        button.container.onmouseenter ??= event => {
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+        };
+
+        button.container.onmouseleave ??= event => {
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+        };
     };
     Timers.auto_claim_bonuses = 5000;
 
     __AutoClaimBonuses__: {
-        if(settings.auto_claim_bonuses) {
-            let button,
-                uuid = new UUID().toString();
-
-            let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
-
-            if(!defined($('#auto-community-points'))) {
-                let parent    = $('[data-test-selector="community-points-summary"i]'),
-                    heading   = $('.top-nav__menu > div', true).slice(-1)[0],
-                    container = furnish('div');
-
-                if(!defined(parent) || !defined(heading)) {
-                    // setTimeout(Initialize, 5000);
-                    break __AutoClaimBonuses__;
-                }
-
-                container.innerHTML = parent.outerHTML;
-                container.id = 'auto-community-points';
-                container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
-
-                heading.insertBefore(container, heading.children[1]);
-
-                $('#auto-community-points [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
-
-                let textContainer = $('[class$="animated-number"i]', false, container);
-
-                if(textContainer) {
-                    let { parentElement } = textContainer;
-                    parentElement.removeAttribute('data-test-selector');
-                }
-
-                button = {
-                    container,
-                    enabled: true,
-                    text: textContainer,
-                    get offset() { return getOffset(container) },
-                    icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
-                    tooltip: new Tooltip(container, `Collecting Bonus Channel Points`, { top: -10 }),
-                };
-
-                button.text.innerText = 'ON';
-                button.icon.outerHTML = Glyphs.channelpoints;
-                button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
-
-                button.icon = $('svg', false, container);
-            } else {
-                let container = $('#auto-community-points'),
-                    textContainer = $('[class$="animated-number"i]', false, container);
-
-                button = {
-                    container,
-                    enabled: true,
-                    text: textContainer,
-                    get offset() { return getOffset(container) },
-                    tooltip: Tooltip.get(container),
-                    icon: $('svg[class*="channel"i][class*="points"i], img[class*="channel"i][class*="points"i]', false, container),
-                };
-            }
-
-            button.tooltip.id = uuid;
-
-            button.container.onclick = event => {
-                let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
-
-                button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
-                button.text.innerText = ['OFF','ON'][+enabled];
-                button.icon.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
-                button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonus Channel Points`;
-            };
-
-            button.container.onmouseenter = event => {
-                button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-            };
-
-            button.container.onmouseleave = event => {
-                button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-            };
-
-            Jobs.auto_claim_bonuses = setInterval(Handlers.auto_claim_bonuses, Timers.auto_claim_bonuses);
-        }
+        if(settings.auto_claim_bonuses)
+            RegisterJob('auto_claim_bonuses');
     }
 };
 // End of Initialize
@@ -3749,7 +4120,7 @@ let WaitForPageToLoad = setInterval(() => {
             })();
         }
 
-        window.onlocationchange = async() => await Initialize(true);
+        window.onlocationchange = Initialize;
 
         // Add custom styling
         CustomCSSInitializer: {

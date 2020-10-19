@@ -270,6 +270,13 @@ section:not(:last-child) {
     background-color: var(--purple);
 }
 
+a {
+    color: var(--purple-highlighted);
+    text-decoration: none;
+}
+
+b {font-weight: 900}
+
 h1 {font-size: 200%}
 h2 {font-size: 150%}
 h3 {font-size: 125%}
@@ -281,6 +288,37 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: normal !important;
 
     line-height: 1.25 !important;
+}
+
+select {
+    align-items: center;
+    cursor: pointer;
+    display: inline-block;
+    justify-content: center;
+
+    background-color: var(--purple);
+    border-radius: 3px;
+    color: var(--text-dark);
+    cursor: pointer;
+    font-weight: bold;
+    user-select: none;
+
+    transition: background-color .1s ease;
+
+    overflow: hidden;
+
+    margin: 5px 10px;
+    padding: 5px 10px;
+
+    vertical-align: middle;
+}
+
+option:checked {
+    display: none;
+}
+
+option:not(:checked) {
+    background-color: var(--background-dark-lighter);
 }
 
 button, input[type="button"] {
@@ -299,12 +337,12 @@ button, input[type="button"] {
     overflow: hidden;
 
     margin: 5px 10px;
-    padding: 10px;
+    padding: 5px 10px;
 
     vertical-align: middle;
 }
 
-button.remove, input[type="button"].remove{
+button.remove, input[type="button"].remove {
     background-color: var(--red);
 }
 
@@ -324,7 +362,7 @@ button.remove:hover, input[type="button"].remove:hover  {
     border: 1px solid var(--green);
 }
 
-[warning], [prompt] {
+[warning], [caution], [prompt] {
     border: 1px solid var(--yellow);
 }
 
@@ -332,8 +370,24 @@ button.remove:hover, input[type="button"].remove:hover  {
     border: 1px solid var(--red);
 }
 
+[attention-text], [alert-text] {
+    color: var(--blue);
+}
+
+[success-text], [confirm-text] {
+    color: var(--green);
+}
+
+[warning-text], [caution-text], [prompt-text] {
+    color: var(--yellow);
+}
+
+[error-text], [danger-text] {
+    color: var(--red);
+}
+
 code, [code], [type^="code"i] {
-    background: #222;
+    background: var(--black);
     border-radius: 3px;
     box-shadow: none;
     box-sizing: border-box;
@@ -368,11 +422,23 @@ code, [code], [type^="code"i] {
     background-color: var(--purple) !important;
 }
 
-.toggle.special > input:checked + label {
+.toggle.attention > input:checked + label, .toggle.alert > input:checked + label,
+[attention] .toggle > input:checked + label, [alert] .toggle > input:checked + label {
+    background-color: var(--blue) !important;
+}
+
+.toggle.special > input:checked + label, .toggle.success > input:checked + label, .toggle.confirm > input:checked + label,
+[special] .toggle > input:checked + label, [success] .toggle > input:checked + label, [confirm] .toggle > input:checked + label {
     background-color: var(--green) !important;
 }
 
-.toggle.danger > input:checked + label {
+.toggle.warning > input:checked + label, .toggle.caution > input:checked + label, .toggle.prompt > input:checked + label,
+[warning] .toggle > input:checked + label, [caution] .toggle > input:checked + label, [prompt] .toggle > input:checked + label {
+    background-color: var(--yellow) !important;
+}
+
+.toggle.error > input:checked + label, .toggle.danger > input:checked + label,
+[error] .toggle > input:checked + label, [danger] .toggle > input:checked + label {
     background-color: var(--red) !important;
 }
 
@@ -433,20 +499,20 @@ code, [code], [type^="code"i] {
 }
 
 /* Default is ON */
-.show-defaults [checked]:not(:checked), .show-defaults [checked]:not(:checked) + label:after {
+/* .show-defaults [checked]:not(:checked), .show-defaults [checked]:not(:checked) + label:after {
     background-color: var(--green)!important;
-}
-.show-defaults [checked]:not(:checked):not([type="checkbox"]) + label:before {
+} */
+/* .show-defaults [checked]:not(:checked):not([type="checkbox"]) + label:before {
     border-color: var(--green)!important;
-}
+} */
 
 /* Default is OFF */
-.show-defaults :checked:not([checked]), .show-defaults :checked:not([checked]) + label:after {
-    background-color: var(--red)!important;
-}
-.show-defaults :checked:not([checked]):not([type="checkbox"]) + label:before {
-    border-color: var(--red)!important;
-}
+/* .show-defaults :checked:not([checked]), .show-defaults :checked:not([checked]) + label:after {
+    background-color: var(--yellow)!important;
+} */
+/* .show-defaults :checked:not([checked]):not([type="checkbox"]) + label:before {
+    border-color: var(--yellow)!important;
+} */
 
 .show-defaults [hide-on="show-defaults"] {
     display: none !important;
@@ -761,7 +827,8 @@ body.popup {
     z-index: -1;
 }
 
-/* Directional tooltips */
+/* Directionally aligned tooltips */
+/* Center */
 .tw-tooltip--up.tw-tooltip--align-center, .tw-tooltip--down.tw-tooltip--align-center {
     left: 50%;
     transform: translateX(-50%);
@@ -780,6 +847,21 @@ body.popup {
 .tw-tooltip--left.tw-tooltip--align-center:after, .tw-tooltip--right.tw-tooltip--align-center:after {
     margin-top: -3px;
     top: 50%;
+}
+
+/* Left */
+/* ??? */
+
+/* Right */
+.tw-tooltip--up.tw-tooltip--align-right, .tw-tooltip--down.tw-tooltip--align-right {
+    left: auto;
+    right: 0;
+}
+
+.tw-tooltip--up.tw-tooltip--align-right:after, .tw-tooltip--down.tw-tooltip--align-right:after {
+    left: 100%;
+    margin-left: -12px;
+    top: 100%;
 }
 
 /* Up (over) tooltip */

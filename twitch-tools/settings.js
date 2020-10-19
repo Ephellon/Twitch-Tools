@@ -81,10 +81,19 @@ let // These are option names. Anything else will be removed
             'filter_rules',
         // Convert Emotes
         'convert_emotes',
+        // Native Twitch Replies
+        'native_twitch_reply',
 
         /* Currencies */
         // Convert Bits
         'convert_bits',
+
+        /* Customization */
+        // Button Placement
+        'away_mode_placement',
+
+        /* Data-Collection Features */
+        'fine_details',
 
         /* Error Recovery */
         // Recover Video
@@ -93,10 +102,14 @@ let // These are option names. Anything else will be removed
         'recover_stream',
         // Recover Ads
         'recover_ads',
+        // Recover Frames
+        'recover_frames',
 
         /* Developer Options */
         // Log messages
-        'developer_mode',
+        'display_in_console',
+        // Enable emperimental features
+        'experimental_mode',
     ];
 
 // https://stackoverflow.com/a/2117523/4211612
@@ -193,7 +206,7 @@ class UUID {
 
 // Creates a Twitch-style tooltip
     // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) -> Element~Tooltip
-        // fineTuning:object = { left:number#pixels, top:number#pixels, direction:string := "up"|"right"|"down"|"left" }
+        // fineTuning:object = { left:number=pixels, top:number=pixels, direction:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
     // Tooltip.get(parent:Element) -> Element~Tooltip
 class Tooltip {
     static #TOOLTIPS = new Map()
@@ -208,10 +221,10 @@ class Tooltip {
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
-        if(existing)
+        if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
             uuid = UUID.from(text).toString();
 
         tooltip.id = uuid;
@@ -231,9 +244,9 @@ class Tooltip {
                             switch(direction) {
                                 // case 'up':
                                 //     return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
-                                //
-                                // case 'down':
-                                //     return `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+
+                                case 'down':
+                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
 
                                 // case 'left':
                                 //     return `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
@@ -257,7 +270,7 @@ class Tooltip {
         });
 
         parent.addEventListener('mouseleave', event => {
-            $('.twitch-tools-tooltip-layer.tooltip-layer')?.remove();
+            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
 
             tooltip?.setAttribute('style', 'display:none');
         });
@@ -278,7 +291,8 @@ let Glyphs = {
     checkmark: '<svg fill="var(--green)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>',
     favorite: '<svg fill="var(--red)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>',
     emotes: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
-    latest: '<svg fill="var(--yellow)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px" class="ScIconSVG-sc-1bgeryd-1 cMQeyU"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
+    latest: '<svg fill="var(--yellow)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
+    reply: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>',
     stats: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
     trash: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
     bits: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></svg>',
@@ -334,7 +348,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
     );
 
     children
-        .filter( child => defined(child) )
+        .filter( defined )
         .forEach(
             child =>
                 child instanceof Element?
@@ -417,10 +431,11 @@ function parseURL(url) {
 async function SaveSettings() {
     let extractValue = element => {
         return element[{
-            text: 'value',
-            number: 'value',
-            radio: 'checked',
-            checkbox: 'checked',
+            'text': 'value',
+            'radio': 'checked',
+            'number': 'value',
+            'checkbox': 'checked',
+            'select-one': 'value',
         }[element.type]];
     };
 
@@ -457,10 +472,11 @@ async function LoadSettings() {
             return;
 
         return element[{
-            text: 'value',
-            number: 'value',
-            radio: 'checked',
-            checkbox: 'checked',
+            'text': 'value',
+            'radio': 'checked',
+            'number': 'value',
+            'checkbox': 'checked',
+            'select-one': 'value',
         }[element.type]] = value;
     };
 
@@ -510,7 +526,14 @@ async function LoadSettings() {
 }
 
 document.body.onload = async() => {
-    await LoadSettings();
+    let url = parseURL(location.href),
+        search = url.searchParameters;
+
+    for(let attribute in search)
+        $('body').classList.add(attribute);
+
+    if((search['show-defaults'] + '') != 'true')
+        await LoadSettings();
 
     $('.summary', true).map(element => {
         let article = element.parentElement,
@@ -550,7 +573,7 @@ document.body.onload = async() => {
     });
 
     setTimeout(() => {
-        $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), 'tooltip'].join(','), true).map(element => {
+        $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
             let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
                 direction = tooltip.replace(/-?tooltip$/, '');
 
@@ -592,8 +615,22 @@ $('[glyph]', true).map(element => {
         glyph.setAttribute('style', 'height: inherit; width: inherit; vertical-align: text-bottom');
 });
 
-let url = parseURL(location.href),
-    search = url.searchParameters;
+// All anchors without a target
+$('a:not([target])', true).map(a => a.target = '_blank');
 
-for(let attribute in search)
-    $('body').classList.add(attribute);
+// All anchors with the [continue-search] attribute
+$('a[continue-search]', true).map(a => {
+    let parameters = [];
+
+    for(let target of [top.location, a]) {
+        let { searchParameters } = parseURL(target.href);
+
+        for(let parameter in searchParameters)
+            parameters.push(`${ parameter }=${searchParameters[parameter]}`);
+    }
+
+    if(parameters.length < 1)
+        return;
+
+    a.href = a.href.replace(/\?[^$]*$/, '?' + parameters.join('&'));
+});
