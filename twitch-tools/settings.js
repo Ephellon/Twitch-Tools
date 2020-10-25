@@ -68,8 +68,10 @@ let // These are option names. Anything else will be removed
         'prevent_raiding',
         // Prevent Hosting
         'prevent_hosting',
-        // Kill Extensions
+        // Kill Extensions*
         'kill_extensions',
+        // Auto Accept Mature Content
+        'auto_accept_mature',
 
         /* Chat & Messaging */
         // Highlight Mentions
@@ -79,9 +81,9 @@ let // These are option names. Anything else will be removed
         // Filter Messages
         'filter_messages',
             'filter_rules',
-        // Convert Emotes
+        // Convert Emotes*
         'convert_emotes',
-        // Native Twitch Replies
+        // Native Twitch Replies*
         'native_twitch_reply',
 
         /* Currencies */
@@ -89,10 +91,13 @@ let // These are option names. Anything else will be removed
         'convert_bits',
 
         /* Customization */
-        // Button Placement
+        // Away Mode Button Placement
         'away_mode_placement',
+        // Watch Time Text Placement
+        'watch_time_placement',
 
         /* Data-Collection Features */
+        // Fine Details*
         'fine_details',
 
         /* Error Recovery */
@@ -269,11 +274,14 @@ class Tooltip {
             tooltip.setAttribute('style', 'display:block');
         });
 
-        parent.addEventListener('mouseleave', event => {
+        let hideTooltip = event => {
             $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
 
             tooltip?.setAttribute('style', 'display:none');
-        });
+        };
+
+        parent.addEventListener('mouseleave', hideTooltip);
+        parent.addEventListener('mousedown', hideTooltip);
 
         Tooltip.#TOOLTIPS.set(parent, tooltip);
 
@@ -288,10 +296,12 @@ class Tooltip {
 let Glyphs = {
     bonuschannelpoints: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
     channelpoints: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
+    extensions: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M4 16h11a1 1 0 001-1V7h-5V5.5a1.5 1.5 0 00-3 0V7H4v1.035a3.5 3.5 0 010 6.93V16zM2 5v5h1.5a1.5 1.5 0 010 3H2v5h13c1.5 0 3-1.5 3-3V5h-5a3 3 0 00-3-3H9a3 3 0 00-3 3H2z" clip-rule="evenodd"></path></g></svg>',
     checkmark: '<svg fill="var(--green)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>',
     favorite: '<svg fill="var(--red)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>',
     emotes: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
     latest: '<svg fill="var(--yellow)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
+    stream: '<svg fill="var(--live-red)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11.414 8.586c.362.362.586.862.586 1.414 0 .552-.224 1.052-.586 1.414l1.414 1.415A3.987 3.987 0 0014 10a3.987 3.987 0 00-1.172-2.828l-1.414 1.414zM5.757 5.757L4.343 4.343A7.975 7.975 0 002 10c0 2.21.895 4.21 2.343 5.657l1.414-1.414A5.981 5.981 0 014 10c0-1.657.672-3.157 1.757-4.243zM7.172 12.829l1.414-1.415A1.994 1.994 0 018 10c0-.552.224-1.052.586-1.414L7.172 7.172A3.987 3.987 0 006 10c0 1.105.448 2.105 1.172 2.829zM14.243 14.243l1.414 1.414A7.975 7.975 0 0018 10c0-2.209-.895-4.209-2.343-5.657l-1.414 1.414A5.981 5.981 0 0116 10a5.981 5.981 0 01-1.757 4.243z"></path></g></svg>',
     reply: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>',
     stats: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
     trash: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',

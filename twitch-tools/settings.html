@@ -113,6 +113,19 @@
             </section> -->
 
             <section>
+                <div class="title"><span small glyph="mod"></span> Mature Content</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="auto_accept_mature" type="checkbox"/>
+                        <label for="auto_accept_mature"></label>
+                    </div>
+                    <p>
+                        When presented with a warning that the stream is intended for mature audiences, proceed automatically.
+                    </p>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Hosting</div>
                 <div class="summary">
                     <div class="toggle">
@@ -139,7 +152,7 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="play"></span> Stay Live</div>
+                <div class="title"><span small glyph="stream"></span> Stay Live</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="stay_live" type="checkbox" checked/>
@@ -248,12 +261,27 @@
                 <div class="title"><span small glyph="latest"></span> Button Placement</div>
                 <div class="summary">
                     <p>
-                        Where should the <b>Away Mode</b> button be placed?
+                        Where should the <b>Away Mode</b> button be displayed?
                     </p>
 
                     <select id="away_mode_placement">
+                        <option value="null">Do not display</option>
                         <option value="under">Under the video</option>
                         <option value="over">Over the video</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="play"></span> Timer Placement</div>
+                <div class="summary">
+                    <p>
+                        Where should the <b>Watch Time</b> be displayed?
+                    </p>
+
+                    <select id="watch_time_placement">
+                        <option value="null">Do not display</option>
+                        <option value="under">Under the video</option>
                     </select>
                 </div>
             </section>
@@ -337,7 +365,7 @@
                         <label for="experimental_mode"></label>
                     </div>
                     <p>
-                        Allow the extension to display &amp; use experimental features.
+                        Allow the extension to display, and use experimental features.
                     </p>
                     <p warning-text>
                         May cause data loss.
@@ -398,7 +426,7 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="lock"></span> Kill Extensions</div>
+                <div class="title"><span small glyph="extensions"></span> Kill Extensions</div>
                 <div class="summary">
                     <div class="toggle" right-tooltip="Experimental feature">
                         <input id="kill_extensions" type="checkbox"/>
@@ -418,7 +446,7 @@
                         <label for="native_twitch_reply"></label>
                     </div>
                     <p>
-                        Attempt to display native Twitch&trade; replies.
+                        Attempt to display native Twitch&trade; replies on all channels.
                     </p>
                 </div>
             </section>
