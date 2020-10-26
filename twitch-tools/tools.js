@@ -204,7 +204,7 @@ class Popup {
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
-                            style: 'background-color:var(--color-twitch-purple-5)!important'
+                            style: 'background-color:var(--color-twitch-purple-4)!important'
                         },
                         f('div', {},
                             f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
@@ -4122,16 +4122,30 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('native_twitch_reply');
     }
 
+    /*** Watch Time Placement
+     *     __          __   _       _       _______ _                  _____  _                                     _
+     *     \ \        / /  | |     | |     |__   __(_)                |  __ \| |                                   | |
+     *      \ \  /\  / /_ _| |_ ___| |__      | |   _ _ __ ___   ___  | |__) | | __ _  ___ ___ _ __ ___   ___ _ __ | |_
+     *       \ \/  \/ / _` | __/ __| '_ \     | |  | | '_ ` _ \ / _ \ |  ___/| |/ _` |/ __/ _ \ '_ ` _ \ / _ \ '_ \| __|
+     *        \  /\  / (_| | || (__| | | |    | |  | | | | | | |  __/ | |    | | (_| | (_|  __/ | | | | |  __/ | | | |_
+     *         \/  \/ \__,_|\__\___|_| |_|    |_|  |_|_| |_| |_|\___| |_|    |_|\__,_|\___\___|_| |_| |_|\___|_| |_|\__|
+     *
+     *
+     */
     Handlers.watch_time_placement = async() => {
         let placement;
 
         if((placement = settings.watch_time_placement ??= "null") == "null")
             return;
 
+        let live_time = $('.live-time');
+
+        if(!defined(live_time))
+            return;
+
         let classes = element => [...element.classList].map(label => '.' + label).join('');
 
-        let live_time = $('.live-time'),
-            container = live_time.closest(`*:not(${ classes(live_time) })`),
+        let container = live_time.closest(`*:not(${ classes(live_time) })`),
             parent = container.closest(`*:not(${ classes(container) })`);
 
         let f = furnish;
@@ -4161,6 +4175,12 @@ let Initialize = async(START_OVER = false) => {
         SaveCache({ Watching: PATHNAME });
     };
     Timers.watch_time_placement = -1000;
+
+    window.onlocationchange = event => {
+        $('#twitch-tools-watch-time').setAttribute('time', 0);
+
+        SaveCache({ Watching: null, WatchTime: 0 });
+    };
 
     if(settings.watch_time_placement) __WatchTimePlacement__: {
         RegisterJob('watch_time_placement');
@@ -4203,7 +4223,8 @@ let Initialize = async(START_OVER = false) => {
             switch(placement = (settings.away_mode_placement ??= "under")) {
                 // Option 1 "over" - video overlay, play button area
                 case 'over':
-                    parent = $('[data-a-target="player-controls"i] > div:last-child > div');
+                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"][class*="right-control-group"i] > :last-child', false, parent);
+                    parent = sibling?.parentElement;
                     before = 'first';
                     break;
 
@@ -4215,19 +4236,18 @@ let Initialize = async(START_OVER = false) => {
                     break;
             }
 
-            if(!defined(parent) || !defined(sibling)) {
-                // setTimeout(Initialize, 5000);
+            if(!defined(parent) || !defined(sibling))
                 return;
-            }
 
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)notifications?([\w\-]*)/ig, 'away-mode$1');
+            LOG({ parent, sibling, before, container });
+
+            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
-            if(!!~['over'].indexOf(placement)) {
+            if(!!~['over'].indexOf(placement))
                 container.firstElementChild.classList.remove('tw-mg-l-1');
-            }
 
             button = {
                 enabled,
@@ -4259,7 +4279,7 @@ let Initialize = async(START_OVER = false) => {
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
-        button.background.setAttribute('style', `background:var(--color-twitch-purple-${ '48'[+(button.container.getAttribute('twitch-tools-away-mode-enabled') === "true")] }) !important;`);
+        button.background?.setAttribute('style', `background:var(--color-twitch-purple-${ '49'[+(button.container.getAttribute('twitch-tools-away-mode-enabled') === "true")] }) !important;`);
         button.icon.setAttribute('height', '20px');
         button.icon.setAttribute('width', '20px');
 
@@ -4267,7 +4287,7 @@ let Initialize = async(START_OVER = false) => {
             let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
 
             button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-            button.background.setAttribute('style', `background:var(--color-twitch-purple-${ '48'[+enabled] }) !important;`);
+            button.background?.setAttribute('style', `background:var(--color-twitch-purple-${ '49'[+enabled] }) !important;`);
             button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
             ChangeQuality(['auto','low'][+enabled]);

@@ -45,7 +45,7 @@ COMMAND_BOT = setInterval(() => {
     };
 
     let commands = /(\/[\w\-\:]+)/,
-        command = message.textContent.split(commands).filter(text => commands.test(text))[0];
+        [command] = message.textContent.split(commands).filter(text => commands.test(text));
 
     if(command && !~PARSING.indexOf(command)) {
         let [instr, subin, ...params] = command.split(/([\/:,][\w\-]+)/).filter(v => v).map(v => v.toLowerCase());
@@ -77,7 +77,7 @@ COMMAND_BOT = setInterval(() => {
                 if(subin == ':gift')
                     JOB = () => {
                         let chat = GetChat(10, true),
-                            records = (RECORDINGS[subin] = RECORDINGS[subin] || []);
+                            records = (RECORDINGS[subin] = RECORDINGS[subin] ?? []);
 
                         let { bullets } = chat;
 
@@ -90,7 +90,7 @@ COMMAND_BOT = setInterval(() => {
                 else if(subin == ':subs')
                     JOB = () => {
                         let chat = GetChat(10, true),
-                            records = (RECORDINGS[subin] = RECORDINGS[subin] || []);
+                            records = (RECORDINGS[subin] = RECORDINGS[subin] ?? []);
 
                         let { bullets } = chat;
 
@@ -103,7 +103,7 @@ COMMAND_BOT = setInterval(() => {
                 else if(subin == ':user')
                     JOB = () => {
                         let chat = GetChat(10, true),
-                            records = (RECORDINGS[subin] = RECORDINGS[subin] || []);
+                            records = (RECORDINGS[subin] = RECORDINGS[subin] ?? []);
 
                         if(!params.length) return;
 
@@ -116,7 +116,7 @@ COMMAND_BOT = setInterval(() => {
                 else if(subin == ':word')
                     JOB = () => {
                         let chat = GetChat(10, true),
-                            records = (RECORDINGS[subin] = RECORDINGS[subin] || []);
+                            records = (RECORDINGS[subin] = RECORDINGS[subin] ?? []);
 
                         if(!params.length) return;
 
@@ -159,7 +159,7 @@ COMMAND_BOT = setInterval(() => {
             default: return;
         }
 
-        header.innerText = `${ (readables[instr] || instr) } ${ (readables[subin] || subin || '') }`;
+        header.innerText = `${ (readables[instr] ?? instr) } ${ (readables[subin] ?? subin ?? '') }`;
         message.innerText = command;
 
         let existing = COMMAND_JOB[com];
