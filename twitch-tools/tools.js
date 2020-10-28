@@ -904,9 +904,10 @@ async function LoadCache(keys = null, callback = () => {}) {
         get = key => {
             let value =
                 // New save name
-                StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`) ??
+                StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
                 // Old save name
-                StorageSpace.getItem(key);
+                // if (value === undefined)
+                //     value = StorageSpace.getItem(key);
 
             try {
                 value = JSON.parse(value);
@@ -1855,9 +1856,6 @@ async function update() {
     ALL_CHANNELS = ALL_CHANNELS.concat(SEARCH, CHANNELS, STREAMERS, NOTIFICATIONS).filter(defined).filter(uniqueChannels);
 }
 
-// Settings have been saved
-let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'];
-
 // Registers a job
     // RegisterJob(JobName:string) -> Number=IntervalID
 function RegisterJob(JobName) {
@@ -1877,6 +1875,10 @@ function UnregisterJob(JobName) {
     if(defined(unhandler))
         unhandler();
 }
+
+// Settings have been saved
+let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'],
+    SENSITIVE_FEATURES = ['away_mode', 'away_mode_placement', 'auto_accept_mature', 'watch_time_placement'];
 
 Storage.onChanged.addListener((changes, namespace) => {
     let reload = false;
@@ -1916,7 +1918,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             //     FIRST_IN_LINE_TIMER = (FIRST_IN_LINE_WAIT_TIME - FIRST_IN_LINE_TIMER) + ((parseInt(settings[RegExp.$1] === true? newValue: 0) | 0) - FIRST_IN_LINE_WAIT_TIME);
         }
 
-        reload ||= !!~EXPERIMENTAL_FEATURES.indexOf(key);
+        reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].indexOf(key);
 
         settings[key] = newValue;
     }
@@ -4238,8 +4240,6 @@ let Initialize = async(START_OVER = false) => {
 
             if(!defined(parent) || !defined(sibling))
                 return;
-
-            LOG({ parent, sibling, before, container });
 
             container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
