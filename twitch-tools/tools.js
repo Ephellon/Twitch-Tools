@@ -1066,16 +1066,32 @@ function GetChat(lines = 30, keepEmotes = false) {
     return results;
 }
 
+// Pushes parameters to the URL's search
+    // PushToSearch(object:object[, reload:boolean]) -> String#URL.Search
+function PushToSearch(newParameters, reload = true) {
+    let { searchParameters } = parseURL(location),
+        parameters = { ...searchParameters, ...newParameters };
+
+    let search = [];
+    for(let parameter in parameters)
+        search.push(`${parameter}=${parameters[parameter]}`);
+    search = '?' + search.join('&');
+
+    return reload?
+        location.search = search:
+    search;
+}
+
 // Listener for new messages
 Object.defineProperties(GetChat, {
     onnewmessage: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString());
-
-            LOG('Adding [on new message] event listener', { [name]: callback });
+            let name = callback.name || UUID.from(callback.toString()).toString();
 
             if(GetChat.__onnewmessage__.has(name))
                 return GetChat.__onnewmessage__.get(name);
+
+            LOG('Adding [on new message] event listener', { [name]: callback });
 
             return GetChat.__onnewmessage__.set(name, callback);
         },
@@ -2397,7 +2413,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                   |_|
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"]')?.click();
+        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target="watchparty-overlay-main"i] button')?.click();
     };
     Timers.auto_accept_mature = 1000;
 
@@ -3050,15 +3066,12 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let OLD_STREAMERS, NEW_STREAMERS, CURRENT_STREAMER;
+    let OLD_STREAMERS, NEW_STREAMERS;
 
     await LoadCache('OLD_STREAMERS', cache => OLD_STREAMERS = cache.OLD_STREAMERS);
 
-    if(STREAMER)
-        CURRENT_STREAMER = STREAMER;
-
     Handlers.first_in_line_plus = () => {
-        let streamers = [...new Set(STREAMERS.filter(streamer => streamer.live).concat(CURRENT_STREAMER).map(streamer => streamer.name))].sort();
+        let streamers = [...new Set([...STREAMERS, STREAMER].filter(channel => channel.live).map(streamer => streamer.name))].sort();
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
 
@@ -3074,7 +3087,7 @@ let Initialize = async(START_OVER = false) => {
         new_names = new_names.filter(name => !~old_names.indexOf(name));
 
         for(let name of new_names) {
-            let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name));
+            let streamer = streamers.find(streamer => RegExp(name, 'i').test(streamer.name));
 
             if(!defined(streamer))
                 continue;
@@ -3179,9 +3192,21 @@ let Initialize = async(START_OVER = false) => {
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
+            [from, to] = $('[data-test-selector="raid-banner"i] strong') ?? [];
 
-        if((raiding || raided) && next) {
+        from = from?.innerText;
+        to = to?.innerText;
+
+        raid_stopper:
+        if((raiding || raided) && defined(next)) {
+            // The channel being raided is already in "followed." No need to leave
+            if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name))))
+                break raid_stopper;
+            // The channel that was raided is already "followed." No need to leave
+            else if(raided && STREAMER.like)
+                break raid_stopper;
+
             STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
 
             if(online.length) {
@@ -3296,6 +3321,8 @@ let Initialize = async(START_OVER = false) => {
         else
             setTimeout(CollectEmotes, 1000);
 
+        LOG('Adding emote event listener...');
+
         GetChat.onnewmessage = chat => {
             let regexp;
 
@@ -3403,7 +3430,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.filter_messages = () => {
         let Filter = UPDATED_FILTER();
 
-        GetChat(30, true).filter(line => {
+        GetChat(15, true).filter(line => {
             return false
                 // Filter messges (RegExp) on all channels
                 || Filter.text.test(line.message)
@@ -3432,6 +3459,8 @@ let Initialize = async(START_OVER = false) => {
             element.setAttribute('style', 'display:none');
             element.setAttribute('twitch-tools-hidden', true);
         });
+
+        LOG('Adding message filter event listener...');
 
         GetChat.onnewmessage = chat => {
             let Filter = UPDATED_FILTER();
@@ -3473,7 +3502,7 @@ let Initialize = async(START_OVER = false) => {
             }
         };
     };
-    Timers.filter_messages = -5000;
+    Timers.filter_messages = -2500;
 
     Unhandlers.filter_messages = () => {
         let hidden = $('[twitch-tools-hidden]', true);
@@ -3765,18 +3794,11 @@ let Initialize = async(START_OVER = false) => {
 
         if(RECOVERING_VIDEO)
             return;
-
-        let { searchParameters } = parseURL(location);
+        RECOVERING_VIDEO = true;
 
         ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
 
-        searchParameters.fail = (+new Date).toString(36);
-
-        for(let key in searchParameters)
-            search.push(`${key}=${searchParameters[key]}`);
-
-        RECOVERING_VIDEO = true;
-        location.search = '?' + search.join('&');
+        PushToSearch({ 'twitch-tools-failed-to-play-video-at': (+new Date).toString(36) });
     };
     Timers.recover_video = 1000;
 
@@ -3961,162 +3983,165 @@ let Initialize = async(START_OVER = false) => {
      *                                                                              | |       __/ |
      *                                                                              |_|      |___/
      */
-    let NATIVE_REPLY_POLYFILL = false;
+    let NATIVE_REPLY_POLYFILL;
 
     Handlers.native_twitch_reply = () => {
-        if(NATIVE_REPLY_POLYFILL || defined($('.chat-line__reply-icon')))
+        if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
             return;
-        NATIVE_REPLY_POLYFILL = true;
 
-        // Button above chat elements
-        let NewReplyButton = ({ uuid, style, handle, message, mentions, }) => {
-            let f = furnish;
+        NATIVE_REPLY_POLYFILL ??= {
+            // Button above chat elements
+            NewReplyButton: ({ uuid, style, handle, message, mentions, }) => {
+                let f = furnish;
 
-            let addedClasses = {
-                bubbleContainer: ['chat-input-tray__open','tw-block','tw-border-b','tw-border-l','tw-border-r','tw-border-radius-large','tw-border-t','tw-c-background-base','tw-elevation-1','tw-left-0','tw-pd-05','tw-right-0','tw-z-below'],
-                chatContainer: ['chat-input-container__open','tw-block','tw-border-bottom-left-radius-large','tw-border-bottom-right-radius-large','tw-c-background-base','tw-pd-05'],
-                chatContainerChild: ['chat-input-container__input-wrapper'],
-            },
-            removedClasses = {
-                bubbleContainer: ['tw-block','tw-border-radius-large','tw-elevation-0','tw-left-0','tw-pd-0','tw-right-0','tw-z-below'],
-                chatContainer: ['tw-block','tw-border-radius-large','tw-pd-0'],
-            };
+                let addedClasses = {
+                    bubbleContainer: ['chat-input-tray__open','tw-block','tw-border-b','tw-border-l','tw-border-r','tw-border-radius-large','tw-border-t','tw-c-background-base','tw-elevation-1','tw-left-0','tw-pd-05','tw-right-0','tw-z-below'],
+                    chatContainer: ['chat-input-container__open','tw-block','tw-border-bottom-left-radius-large','tw-border-bottom-right-radius-large','tw-c-background-base','tw-pd-05'],
+                    chatContainerChild: ['chat-input-container__input-wrapper'],
+                },
+                removedClasses = {
+                    bubbleContainer: ['tw-block','tw-border-radius-large','tw-elevation-0','tw-left-0','tw-pd-0','tw-right-0','tw-z-below'],
+                    chatContainer: ['tw-block','tw-border-radius-large','tw-pd-0'],
+                };
 
-            return f('div.chat-line__reply-icon.tw-absolute.tw-border-radius-medium.tw-c-background-base.tw-elevation-1', {},
-                f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
-                    {
-                        'data-test-selector': 'chat-reply-button',
+                return f('div.chat-line__reply-icon.tw-absolute.tw-border-radius-medium.tw-c-background-base.tw-elevation-1', {},
+                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                        {
+                            'data-test-selector': 'chat-reply-button',
 
-                        onclick: event => {
-                            let { currentTarget } = event,
-                                messageElement = currentTarget.closest('div').previousElementSibling,
-                                chatInput = $('[data-a-target="chat-input"i]'),
-                                bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                chatContainer = bubbleContainer.nextElementSibling,
-                                chatContainerChild = $('div', false, chatContainer);
+                            onclick: event => {
+                                let { currentTarget } = event,
+                                    messageElement = currentTarget.closest('div').previousElementSibling,
+                                    chatInput = $('[data-a-target="chat-input"i]'),
+                                    bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
+                                    chatContainer = bubbleContainer.nextElementSibling,
+                                    chatContainerChild = $('div', false, chatContainer);
 
-                            let f = furnish;
+                                let f = furnish;
 
-                            AddNativeReplyBubble: {
-                                let modifyAttributes = (glyph, attributes) => {
-                                    for(let attribute in attributes) {
-                                        let value = attributes[attribute];
+                                AddNativeReplyBubble: {
+                                    let modifyAttributes = (glyph, attributes) => {
+                                        for(let attribute in attributes) {
+                                            let value = attributes[attribute];
 
-                                        glyph = glyph.replace(
-                                            RegExp(`(${ attribute })=(["'])[^\\2]*?\\2`, 'ig'),
-                                            `$1=$2${value}$2`
-                                        );
-                                    }
+                                            glyph = glyph.replace(
+                                                RegExp(`(${ attribute })=(["'])[^\\2]*?\\2`, 'ig'),
+                                                `$1=$2${value}$2`
+                                            );
+                                        }
 
-                                    return glyph;
-                                };
+                                        return glyph;
+                                    };
 
-                                chatContainerChild.classList.add(...addedClasses.chatContainerChild);
-                                bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
-                                bubbleContainer.classList.add(...addedClasses.bubbleContainer);
-                                chatContainer.classList.remove(...removedClasses.chatContainer);
-                                chatContainer.classList.add(...addedClasses.chatContainer);
+                                    chatContainerChild.classList.add(...addedClasses.chatContainerChild);
+                                    bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
+                                    bubbleContainer.classList.add(...addedClasses.bubbleContainer);
+                                    chatContainer.classList.remove(...removedClasses.chatContainer);
+                                    chatContainer.classList.add(...addedClasses.chatContainer);
 
-                                bubbleContainer.appendChild(
-                                    f(`div#twitch-tools-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
-                                        {
-                                            'data-test-selector': 'chat-input-tray',
-                                        },
+                                    bubbleContainer.appendChild(
+                                        f(`div#twitch-tools-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
+                                            {
+                                                'data-test-selector': 'chat-input-tray',
+                                            },
 
-                                        f('div.tw-align-center.tw-mg-05', {},
-                                            f('div.tw-align-items-center.tw-flex', { innerHTML: modifyAttributes(Glyphs.reply, { height: 24, width: 24 }) })
-                                        ),
-                                        f('div.tw-flex-grow-1.tw-pd-l-05.tw-pd-y-05', {},
-                                            f('span.tw-c-text-alt.tw-font-size-5.tw-strong.tw-word-break-word', {
-                                                'connected-to': uuid,
+                                            f('div.tw-align-center.tw-mg-05', {},
+                                                f('div.tw-align-items-center.tw-flex', { innerHTML: modifyAttributes(Glyphs.reply, { height: 24, width: 24 }) })
+                                            ),
+                                            f('div.tw-flex-grow-1.tw-pd-l-05.tw-pd-y-05', {},
+                                                f('span.tw-c-text-alt.tw-font-size-5.tw-strong.tw-word-break-word', {
+                                                    'connected-to': uuid,
 
-                                                handle, message, mentions,
+                                                    handle, message, mentions,
 
-                                                innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
-                                            })
-                                        ),
-                                        f('div.tw-right-0.tw-top-0', {},
-                                            f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
-                                                {
-                                                    onclick: event => {
-                                                        let chatInput = $('[data-a-target="chat-input"i]'),
-                                                            bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                                            chatContainer = bubbleContainer.nextElementSibling,
-                                                            chatContainerChild = $('div', false, chatContainer);
+                                                    innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
+                                                })
+                                            ),
+                                            f('div.tw-right-0.tw-top-0', {},
+                                                f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                                                    {
+                                                        onclick: event => {
+                                                            let chatInput = $('[data-a-target="chat-input"i]'),
+                                                                bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
+                                                                chatContainer = bubbleContainer.nextElementSibling,
+                                                                chatContainerChild = $('div', false, chatContainer);
 
-                                                        RemoveNativeReplyBubble: {
-                                                            bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
-                                                            bubbleContainer.classList.add(...removedClasses.bubbleContainer);
-                                                            chatContainer.classList.remove(...addedClasses.chatContainer);
-                                                            chatContainer.classList.add(...removedClasses.chatContainer);
-                                                            chatContainerChild.classList.remove(...addedClasses.chatContainerChild);
+                                                            RemoveNativeReplyBubble: {
+                                                                bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
+                                                                bubbleContainer.classList.add(...removedClasses.bubbleContainer);
+                                                                chatContainer.classList.remove(...addedClasses.chatContainer);
+                                                                chatContainer.classList.add(...removedClasses.chatContainer);
+                                                                chatContainerChild.classList.remove(...addedClasses.chatContainerChild);
 
-                                                            [...bubbleContainer.children].forEach(child => child.remove());
+                                                                [...bubbleContainer.children].forEach(child => child.remove());
 
-                                                            chatInput.setAttribute('placeholder', 'Send a message');
-                                                        }
+                                                                chatInput.setAttribute('placeholder', 'Send a message');
+                                                            }
+                                                        },
+
+                                                        innerHTML: modifyAttributes(Glyphs.x, { height: 24, width: 24 }),
                                                     },
-
-                                                    innerHTML: modifyAttributes(Glyphs.x, { height: 24, width: 24 }),
-                                                },
+                                                )
                                             )
                                         )
-                                    )
-                                );
+                                    );
 
-                                bubbleContainer.appendChild(
-                                    f('div.font-scale--default.tw-pd-x-1.tw-pd-y-05.chat-line__message',
-                                        {
-                                            'data-a-target': 'chat-line-message',
-                                            'data-test-selector': 'chat-line-message',
-                                        },
-                                        f('div.tw-relative', { innerHTML: messageElement.outerHTML })
-                                    )
-                                );
+                                    bubbleContainer.appendChild(
+                                        f('div.font-scale--default.tw-pd-x-1.tw-pd-y-05.chat-line__message',
+                                            {
+                                                'data-a-target': 'chat-line-message',
+                                                'data-test-selector': 'chat-line-message',
+                                            },
+                                            f('div.tw-relative', { innerHTML: messageElement.outerHTML })
+                                        )
+                                    );
 
-                                chatInput.setAttribute('placeholder', 'Send a reply');
-                            }
+                                    chatInput.setAttribute('placeholder', 'Send a reply');
+                                }
 
-                            chatInput.focus();
+                                chatInput.focus();
+                            },
                         },
-                    },
-                    f('span.tw-button-icon__icon', {},
-                        f('div',
-                            { style: 'width: 2rem; height: 2rem;' },
-                            f('div.tw-icon', {},
-                                f('div.tw-aspect', { innerHTML: Glyphs.reply })
+                        f('span.tw-button-icon__icon', {},
+                            f('div',
+                                { style: 'width: 2rem; height: 2rem;' },
+                                f('div.tw-icon', {},
+                                    f('div.tw-aspect', { innerHTML: Glyphs.reply })
+                                )
                             )
                         )
                     )
-                )
-            );
+                );
+            },
+
+            // Highlighter for chat elements
+            AddNativeReplyButton: ({ uuid, style, handle, message, mentions, element }) => {
+                if(!defined(element))
+                    return;
+
+                if(defined($('.chat-line__message-container', false, element)))
+                    return;
+
+                let parent = $('div', false, element);
+                if(!defined(parent)) return;
+
+                let target = $('div', false, parent);
+                if(!defined(target)) return;
+
+                let highlighter = furnish('div.chat-line__message-highlight.tw-absolute.tw-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
+
+                target.classList.add('chat-line__message-container');
+
+                parent.insertBefore(highlighter, parent.firstElementChild);
+                parent.appendChild(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
+            },
         };
 
-        // Highlighter for chat elements
-        let AddNativeReplyButton = ({ uuid, style, handle, message, mentions, element }) => {
-            if(!defined(element))
-                return;
+        LOG('Adding native reply buttons...');
 
-            if(defined($('.chat-line__message-container', false, element)))
-                return;
+        GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
-            let parent = $('div', false, element);
-            if(!defined(parent)) return;
-
-            let target = $('div', false, parent);
-            if(!defined(target)) return;
-
-            let highlighter = furnish('div.chat-line__message-highlight.tw-absolute.tw-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
-
-            target.classList.add('chat-line__message-container');
-
-            parent.insertBefore(highlighter, parent.firstElementChild);
-            parent.appendChild(NewReplyButton({ uuid, style, handle, message, mentions, }));
-        };
-
-        GetChat().forEach(AddNativeReplyButton);
-
-        GetChat.onnewmessage = chat => chat.forEach(AddNativeReplyButton);
+        GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
     };
     Timers.native_twitch_reply = 1000;
 
@@ -4179,7 +4204,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.watch_time_placement = -1000;
 
     window.onlocationchange = event => {
-        $('#twitch-tools-watch-time').setAttribute('time', 0);
+        $('#twitch-tools-watch-time')?.setAttribute('time', 0);
 
         SaveCache({ Watching: null, WatchTime: 0 });
     };
@@ -4520,7 +4545,8 @@ let WaitForPageToLoad = setInterval(() => {
         window.onlocationchange = () => {
             WARN('Re-initializing...');
 
-            Initialize();
+            // Initialize();
+            location.reload();
         };
 
         // Add custom styling
