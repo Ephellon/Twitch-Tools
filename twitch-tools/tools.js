@@ -3071,7 +3071,7 @@ let Initialize = async(START_OVER = false) => {
     await LoadCache('OLD_STREAMERS', cache => OLD_STREAMERS = cache.OLD_STREAMERS);
 
     Handlers.first_in_line_plus = () => {
-        let streamers = [...new Set([...STREAMERS, STREAMER].filter(channel => channel.live).map(streamer => streamer.name))].sort();
+        let streamers = [...new Set([...STREAMERS, STREAMER].map(streamer => streamer.name))].sort();
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
 
@@ -3087,7 +3087,7 @@ let Initialize = async(START_OVER = false) => {
         new_names = new_names.filter(name => !~old_names.indexOf(name));
 
         for(let name of new_names) {
-            let streamer = streamers.find(streamer => RegExp(name, 'i').test(streamer.name));
+            let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name));
 
             if(!defined(streamer))
                 continue;
