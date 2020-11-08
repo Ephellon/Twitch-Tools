@@ -4384,8 +4384,8 @@ let Initialize = async(START_OVER = false) => {
         if(++pointWatcherCounter % 600) {
             pointWatcherCounter = 0;
 
-            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
-                ChannelPoints[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? 'Not available';
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
+                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? 'Not available';
                 SaveCache({ ChannelPoints });
             });
         }
@@ -4407,11 +4407,11 @@ let Initialize = async(START_OVER = false) => {
 
         // Update the display
         if(defined(pointDisplay))
-            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => pointDisplay.innerHTML = ChannelPoints[name] ?? 0);
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => pointDisplay.innerHTML = (ChannelPoints ??= {})[name] ?? 0);
         else
-            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
                     let text = furnish('span.twitch-tools-point-display', {
-                            innerHTML: ChannelPoints[name] ?? 0,
+                            innerHTML: (ChannelPoints ??= {})[name] ?? 0,
                         }),
                         icon = furnish('span', {
                             innerHTML: ` | ${ Glyphs.channelpoints.replace(/(height|width)="100%"/g, '$1="20px"') } `,
