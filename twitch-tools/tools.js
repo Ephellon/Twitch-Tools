@@ -4407,9 +4407,9 @@ let Initialize = async(START_OVER = false) => {
 
         // Update the display
         if(defined(pointDisplay))
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => pointDisplay.innerHTML = ChannelPoints[name] ?? 0);
+            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => pointDisplay.innerHTML = ChannelPoints[name] ?? 0);
         else
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
+            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
                     let text = furnish('span.twitch-tools-point-display', {
                             innerHTML: ChannelPoints[name] ?? 0,
                         }),
