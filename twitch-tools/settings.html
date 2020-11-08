@@ -21,6 +21,22 @@
         <header>Automation</header>
         <article>
             <section>
+                <div class="title"><span small glyph="mod"></span> Auto-Join</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="auto_accept_mature" type="checkbox"/>
+                        <label for="auto_accept_mature"></label>
+                    </div>
+                    <p>
+                        When presented with a warning that the stream is intended for <b warning-text>mature audiences</b>, proceed automatically.
+                    </p>
+                    <p>
+                        This will also join <a href="https://help.twitch.tv/s/article/watch-parties">Watch Parties</a> automatically.
+                    </p>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="eye"></span>Away Mode</div>
                 <div class="summary">
                     <div class="toggle">
@@ -113,41 +129,24 @@
             </section> -->
 
             <section>
-                <div class="title"><span small glyph="mod"></span> Mature Content</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="auto_accept_mature" type="checkbox"/>
-                        <label for="auto_accept_mature"></label>
-                    </div>
-                    <p>
-                        When presented with a warning that the stream is intended for mature audiences, proceed automatically.
-                    </p>
-                </div>
-            </section>
-
-            <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Hosting</div>
                 <div class="summary">
-                    <div class="toggle">
-                        <input id="prevent_hosting" type="checkbox"/>
-                        <label for="prevent_hosting"></label>
-                    </div>
-                    <p>
-                        When a channel begins hosting, go to a different channel in your Followed Channels.
-                    </p>
+                    <select id="prevent_hosting">
+                        <option value="all">Allow all channels to host</option>
+                        <option value="none">Prevent all channels from hosting</option>
+                        <option value="unfollowed">Prevent all unfollowed channels from hosting</option>
+                    </select>
                 </div>
             </section>
 
             <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Raiding</div>
                 <div class="summary">
-                    <div class="toggle">
-                        <input id="prevent_raiding" type="checkbox"/>
-                        <label for="prevent_raiding"></label>
-                    </div>
-                    <p>
-                        When a channel begins raiding, go to a different channel in your Followed Channels.
-                    </p>
+                    <select id="prevent_raiding">
+                        <option value="all">Allow all channels to raid</option>
+                        <option value="none">Prevent all channels from raiding</option>
+                        <option value="unfollowed">Prevent all unfollowed channels from raiding</option>
+                    </select>
                 </div>
             </section>
 
@@ -258,7 +257,7 @@
         <header>Customization</header>
         <article>
             <section>
-                <div class="title"><span small glyph="latest"></span> Button Placement</div>
+                <div class="title"><span small glyph="latest"></span> Away Mode</div>
                 <div class="summary">
                     <p>
                         Where should the <b>Away Mode</b> button be displayed?
@@ -273,7 +272,21 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="play"></span> Timer Placement</div>
+                <div class="title"><span small glyph="latest"></span> Point Watcher</div>
+                <div class="summary">
+                    <p>
+                        Where should the <b>Point Watcher</b> text be displayed?
+                    </p>
+
+                    <select id="point_watcher_placecment">
+                        <option value="null">Do not display</option>
+                        <option value="on">On the tooltip</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="latest"></span> Watch Time</div>
                 <div class="summary">
                     <p>
                         Where should the <b>Watch Time</b> be displayed?
@@ -450,6 +463,53 @@
                     </p>
                 </div>
             </section>
+
+            <section>
+                <div class="title"><span small glyph="extensions"></span> Recover Pages</div>
+                <div class="summary">
+                    <div disabled class="toggle" right-tooltip="Experimental feature">
+                        <input id="recover_pages" type="checkbox" checked/>
+                        <label for="recover_pages"></label>
+                    </div>
+                    <p>
+                        If the webpage fails to display, attempt to recover it.
+                    </p>
+                </div>
+            </section>
+        </article>
+
+        <header>About Twitch Tools</header>
+        <article>
+            <section>
+                <div class="title"><span small glyph="extensions"></span> Version</div>
+                <div class="summary">
+                    <a type="button" set="tooltip:version.installed"><span small glyph="extensions"></span> Installed</a>
+                    <a type="button" set="tooltip:version.github" href="https://github.com/ephellon/twitch-tools"><span small glyph="github"></span> GitHub </a>
+                    <a type="button" set="tooltip:version.chrome" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd"><span small glyph="chrome"></span> Chrome Web Store </a>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="help"></span> Support</div>
+                <div class="summary">
+                    <a type="button" href="https://github.com/ephellon/twitch-tools" top-tooltip="Fastest communication method">
+                        <span small glyph="github"></span>
+                        GitHub
+                    </a>
+                    <a type="button" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd" top-tooltip="Reasonable communication method">
+                        <span small glyph="chrome"></span>
+                        Chrome Web Store
+                    </a>
+                    <a type="button" href="mailto:minkcbos@gmail.com?subject=Twitch%20Tools" top-tooltip="Slowest communication method">
+                        <span small glyph="chat"></span>
+                        e-mail
+                    </a>
+                </div>
+            </section>
+
+            <footer>
+                This extension is in no way affiliated with, nor endorsed by Amazon&trade;, Twitch&trade;, its partners, affiliates, or subsidaries.
+            </footer>
         </article>
 
         <button id="save" class="ripple"></button>

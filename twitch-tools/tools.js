@@ -44,7 +44,7 @@ switch(BrowserNamespace) {
         Storage = Container.storage;
         Extension = Container.extension;
 
-        Storage = Storage.sync || Storage.local;
+        Storage = Storage.sync ?? Storage.local;
         break;
 
     case 'chrome':
@@ -53,7 +53,7 @@ switch(BrowserNamespace) {
         Storage = Container.storage;
         Extension = Container.extension;
 
-        Storage = Storage.sync || Storage.local;
+        Storage = Storage.sync ?? Storage.local;
         break;
 }
 
@@ -77,12 +77,14 @@ class UUID {
                 case 'boolean':
                     return true;
 
+                case 'bigint':
                 case 'number':
                     return NaN;
 
                 case 'default':
                 case 'string':
                 case 'object':
+                case 'symbol':
                 default:
                     return native;
             }
@@ -113,7 +115,7 @@ class UUID {
     }
 
     static from(key = '') {
-        let hash = Uint8Array.from(btoa([`private-key=${ UUID.#BWT_SEED }`, `content="${ key.replace(/[^\u0000-\u00ff]+/g, '').slice(-128) }"`,`public-key=${ USERNAME }`].map(UUID.BWT).join('<%-- PUBLIC BWT KEY --%>')).split('').map(character => character.charCodeAt(0))),
+        let hash = Uint8Array.from(btoa([`private-key=${ UUID.#BWT_SEED }`, `content="${ key.replace(/[^\u0000-\u00ff]+/g, '').slice(-255) }"`,`public-key=${ USERNAME }`].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
             l = hash.length,
             i = 0;
 
@@ -128,12 +130,14 @@ class UUID {
                 case 'boolean':
                     return true;
 
+                case 'bigint':
                 case 'number':
                     return NaN;
 
                 case 'default':
                 case 'string':
                 case 'object':
+                case 'symbol':
                 default:
                     return native;
             }
@@ -866,6 +870,63 @@ class Tooltip {
     }
 }
 
+// Creates a Twitch-style chat footer
+    // new ChatFooter(title:string[, options:object]) -> Element~ChatFooter
+class ChatFooter {
+    static #FOOTERS = new Map()
+
+    constructor(title, options = {}) {
+        let f = furnish;
+
+        let uuid = UUID.from(title).toString(),
+            existing = ChatFooter.#FOOTERS.get(title);
+
+        if(defined(existing))
+            return existing;
+
+        let parent = $('[data-a-target="chat-scroller"]'),
+            footer =
+            f('div#twitch-tools-chat-footer.tw-absolute.tw-border-radius-medium.tw-bottom-0.tw-c-text-overlay.tw-mg-b-1',
+                {
+                    uuid,
+
+                    style:
+                    `
+                    background-color: var(--color-twitch-purple);
+                    margin-bottom: 5rem!important;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    `
+                },
+
+                f('button.tw-align-items-center tw-align-middle tw-border-bottom-left-radius-medium tw-border-bottom-right-radius-medium tw-border-top-left-radius-medium tw-border-top-right-radius-medium tw-core-button tw-core-button--overlay tw-core-button--text tw-inline-flex tw-interactive tw-justify-content-center tw-overflow-hidden tw-relativ', { ...options },
+                    f('div.tw-align-items-center.tw-core-button-label.tw-flex.tw-flex-grow-0', {},
+                        f('div.tw-flex-grow-0', {
+                            innerHTML: title
+                        })
+                    )
+                )
+            );
+
+        parent.appendChild(footer);
+
+        this.uuid = uuid;
+        this.parent = parent;
+        this.container = footer;
+
+        return this;
+    }
+
+    remove() {
+        if(this.container)
+            this.container.remove();
+    }
+
+    static get(title) {
+        return ChatFooter.#FOOTERS.get(title);
+    }
+}
+
 // Get the current settings
     // GetSettings() -> Object
 function GetSettings() {
@@ -894,7 +955,8 @@ async function SaveCache(keys = {}, callback = () => {}) {
     for(let key in keys)
         set(key, JSON.stringify(keys[key]));
 
-    callback();
+    if(typeof callback == 'function')
+        callback();
 }
 
 // Loads data from the page's storage
@@ -1066,23 +1128,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     return results;
 }
 
-// Pushes parameters to the URL's search
-    // PushToSearch(object:object[, reload:boolean]) -> String#URL.Search
-function PushToSearch(newParameters, reload = true) {
-    let { searchParameters } = parseURL(location),
-        parameters = { ...searchParameters, ...newParameters };
-
-    let search = [];
-    for(let parameter in parameters)
-        search.push(`${parameter}=${parameters[parameter]}`);
-    search = '?' + search.join('&');
-
-    return reload?
-        location.search = search:
-    search;
-}
-
-// Listener for new messages
+// Listener for new chat messages
 Object.defineProperties(GetChat, {
     onnewmessage: {
         set(callback) {
@@ -1103,6 +1149,22 @@ Object.defineProperties(GetChat, {
     __onnewmessage__: { value: new Map() },
 });
 
+// Pushes parameters to the URL's search
+    // PushToSearch(object:object[, reload:boolean]) -> String#URL.Search
+function PushToSearch(newParameters, reload = true) {
+    let { searchParameters } = parseURL(location),
+        parameters = { ...searchParameters, ...newParameters };
+
+    let search = [];
+    for(let parameter in parameters)
+        search.push(`${parameter}=${parameters[parameter]}`);
+    search = '?' + search.join('&');
+
+    return reload?
+        location.search = search:
+    search;
+}
+
 // Parse a URL
     // parseURL(url:string) -> Object
 function parseURL(url) {
@@ -1118,19 +1180,19 @@ function parseURL(url) {
     data = data || e;
 
     return {
-        href:             data[i++] ?? e,
+        href:            (data[i++] ?? e),
         origin:          (data[i++] ?? e) + (data[i + 4] ?? e),
-        protocol:         data[i++] ?? e,
-        scheme:           data[i++] ?? e,
-        username:         data[i++] ?? e,
-        password:         data[i++] ?? e,
-        host:             data[i++] ?? e,
-        domainPath:       (data[i]  ?? e).split('.').reverse(),
-        hostname:         data[i++] ?? e,
-        port:             data[i++] ?? e,
-        pathname:         data[i++] ?? e,
-        search:           data[i]   ?? e,
-        searchParameters: (function(sd) {
+        protocol:        (data[i++] ?? e),
+        scheme:          (data[i++] ?? e),
+        username:        (data[i++] ?? e),
+        password:        (data[i++] ?? e),
+        host:            (data[i++] ?? e),
+        domainPath:      (data[i]   ?? e).split('.').reverse(),
+        hostname:        (data[i++] ?? e),
+        port:            (data[i++] ?? e),
+        pathname:        (data[i++] ?? e),
+        search:          (data[i]   ?? e),
+        searchParameters: (sd => {
             parsing:
             for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
                 c = d[i].split('=');
@@ -1147,7 +1209,7 @@ function parseURL(url) {
 
             return s;
         })(data[i++] || e),
-        hash:             data[i++] || e
+        hash:            (data[i++] || e)
     };
 };
 
@@ -1229,7 +1291,7 @@ function getOffset(element) {
 }
 
 // Convert milliseconds into a human-readable string
-    // ConvertTime([date:number[, format:string]]) -> String
+    // ConvertTime([milliseconds:number[, format:string]]) -> String
 function ConvertTime(milliseconds = 0, format = 'natural') {
     let second = 1000,
         minute = 60 * second,
@@ -1280,7 +1342,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
 
             times.push(['millisecond', milliseconds]);
 
-            time = format.split(/(year|day|hour|minute|(?:milli)?second)s?/g)
+            time = format.split(/\b(year|day|hour|minute|(?:milli)?second)s?\b/g)
                 .map($1 => {
                     for(let [name, value] of times)
                         if($1 == 'millisecond')
@@ -1346,7 +1408,7 @@ async function GetQuality() {
     });
 
     let qualities = $('[data-a-target$="-quality-option"i] input[type="radio"i]', true)
-            .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
+        .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
 
     let smol = text => (text?.textContent ?? text?.value ?? text).toLowerCase();
 
@@ -1749,7 +1811,7 @@ async function update() {
     PATHNAME = top.location.pathname;
 
     // All Channels under Search
-    await LoadCache('SEARCH', search => SEARCH = search);
+    await LoadCache('SEARCH', terms => SEARCH = terms);
     SEARCH = [
         // Current (followed) streamers
         ...$(`.search-tray a:not([href*="/search?"]):not([href="${ PATHNAME }"i])`, true)
@@ -1894,7 +1956,7 @@ function UnregisterJob(JobName) {
 
 // Settings have been saved
 let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'],
-    SENSITIVE_FEATURES = ['away_mode', 'away_mode_placement', 'auto_accept_mature', 'watch_time_placement'];
+    SENSITIVE_FEATURES = ['away_mode', 'away_mode_placement', 'auto_accept_mature', 'prevent_hosting', 'prevent_raiding', 'watch_time_placement'];
 
 Storage.onChanged.addListener((changes, namespace) => {
     let reload = false;
@@ -3071,7 +3133,7 @@ let Initialize = async(START_OVER = false) => {
     await LoadCache('OLD_STREAMERS', cache => OLD_STREAMERS = cache.OLD_STREAMERS);
 
     Handlers.first_in_line_plus = () => {
-        let streamers = [...new Set([...STREAMERS, STREAMER].map(streamer => streamer.name))].sort();
+        let streamers = [...new Set([...STREAMERS, STREAMER].filter(channel => channel.live).map(streamer => streamer.name))].sort();
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
 
@@ -3086,16 +3148,62 @@ let Initialize = async(START_OVER = false) => {
 
         new_names = new_names.filter(name => !~old_names.indexOf(name));
 
+        // Try to detect if the extension was just re-installed?
+        installation_viewer:
+        switch(settings.onInstalledReason) {
+            case 'chrome_update':
+            case 'shared_module_update':
+                // Not used. Ignore
+                break;
+
+            case 'install':
+                // Ignore all current streamers; otherwise this will register them all
+                new_names = [];
+                break;
+
+            case 'update':
+            default:
+                // Should function normally
+                break;
+        }
+
+        if(new_names.length >= STREAMERS.length) {
+            WARN('New streamers are being added incorrectly...',
+                'New names:',
+                [...new_names],
+
+                'Old names:',
+                [...old_names],
+
+                'New streamers:',
+                [...NEW_STREAMERS],
+
+                'Old streamers',
+                [...OLD_STREAMERS],
+
+                'Followed channels (side-panel):',
+                [...STREAMERS],
+
+                'All channels (side-panel):',
+                [...ALL_CHANNELS],
+
+                new Date,
+            );
+
+            SaveCache(`ERROR-LOG/${ +new Date }`, { new_names, old_names, NEW_STREAMERS, OLD_STREAMERS, STREAMERS, ALL_CHANNELS });
+        }
+
+        creating_new_events:
         for(let name of new_names) {
             let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name));
 
             if(!defined(streamer))
-                continue;
+                continue creating_new_events;
 
             let { href } = streamer;
 
             if(!defined(streamer?.name?.length))
-                continue;
+                continue creating_new_events;
 
             LOG('A channel just appeared:', name, new Date);
 
@@ -3154,11 +3262,29 @@ let Initialize = async(START_OVER = false) => {
      *                     |_|                                   |___/
      */
     Handlers.prevent_hosting = () => {
-        let hosting = defined($('[data-a-target="hosting-indicator"i]')),
+        let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]);
+            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
+            [guest, host] = $('[href^="/"] h1, [href^="/"] > p', true);
 
-        if(hosting && next) {
+        guest = guest?.innerText ?? $('[data-a-target="hosting-indicator"i]')?.innerText;
+        host = host?.innerText ?? STREAMER.name;
+
+        host_stopper:
+        if(hosting && defined(next)) {
+            // Ignore followed channels
+            if(settings.prevent_hosting == "unfollowed") {
+                let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
+
+                // The channel being hosted (guest) is already in "followed." No need to leave
+                if(hosting && defined(streamer)) {
+                    LOG(`[HOSTING] ${ guest } is already followed. Just head to the stream`);
+
+                    open(streamer.href, '_self');
+                    break host_stopper;
+                }
+            }
+
             STREAMER.__eventlisteners__.onhost.forEach(job => job({ hosting, next }));
 
             if(online.length) {
@@ -3172,7 +3298,7 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.prevent_hosting = 5000;
 
-    if(settings.prevent_hosting) __PreventHosting__: {
+    if(settings.prevent_hosting != "none") __PreventHosting__: {
         RegisterJob('prevent_hosting');
     }
 
@@ -3200,12 +3326,18 @@ let Initialize = async(START_OVER = false) => {
 
         raid_stopper:
         if((raiding || raided) && defined(next)) {
-            // The channel being raided is already in "followed." No need to leave
-            if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name))))
-                break raid_stopper;
-            // The channel that was raided is already "followed." No need to leave
-            else if(raided && STREAMER.like)
-                break raid_stopper;
+            // Ignore followed channels
+            if(settings.prevent_raiding == "unfollowed") {
+                // The channel being raided (to) is already in "followed." No need to leave
+                if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
+                    LOG(`[RAIDING] ${ to } is already followed. No need to leave the raid`);
+                    break raid_stopper;
+                } // The channel that was raided (to) is already in "followed." No need to leave
+                else if(raided && STREAMER.like) {
+                    LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
+                    break raid_stopper;
+                }
+            }
 
             STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
 
@@ -3220,7 +3352,7 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.prevent_raiding = 5000;
 
-    if(settings.prevent_raiding) __PreventRaiding__: {
+    if(settings.prevent_raiding != "none") __PreventRaiding__: {
         RegisterJob('prevent_raiding');
     }
 
@@ -3234,6 +3366,8 @@ let Initialize = async(START_OVER = false) => {
      *                       __/ |
      *                      |___/
      */
+    let ClearIntent;
+
     Handlers.stay_live = async() => {
         let online = STREAMERS.filter(streamer => streamer.live),
             next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
@@ -3242,9 +3376,7 @@ let Initialize = async(START_OVER = false) => {
         let Paths = [USERNAME, '[up]/', 'user', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
 
         try {
-            await LoadCache('UserIntent', intent => {
-                let { UserIntent } = intent;
-
+            await LoadCache('UserIntent', ({ UserIntent }) => {
                 if(UserIntent)
                     Paths.push(UserIntent);
             });
@@ -3254,14 +3386,19 @@ let Initialize = async(START_OVER = false) => {
 
         let ValidTwitchPath = RegExp(`/(${ Paths.join('|') })`, 'i');
 
-        if(!STREAMER.live && !ValidTwitchPath.test(pathname)) {
-            if(online.length) {
-                WARN(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
+        if(!STREAMER.live) {
+            if(!ValidTwitchPath.test(pathname)) {
+                if(online.length) {
+                    WARN(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
-                open(next.href, '_self');
-            } else  {
-                WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
+                    open(next.href, '_self');
+                } else  {
+                    WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
+                }
             }
+
+            // After 5 minutes, remove the intent
+            ClearIntent ??= setTimeout(() => RemoveCache('UserIntent'), 300_000);
         } else if(/\/search\b/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
 
@@ -3416,7 +3553,7 @@ let Initialize = async(START_OVER = false) => {
                 } else if(rule) {
                     let $_ = rule;
 
-                    text.push(/^\w+$/.test($_)? `\\b${ $_ }\\b`: $_);
+                    text.push(/^[\w\s]+$/.test($_)? `\\b${ $_.trim() }\\b`: $_);
                 }
         }
 
@@ -3667,10 +3804,10 @@ let Initialize = async(START_OVER = false) => {
 
                 LOG('Generating popup:', { author, message });
 
-                new Popup(`@${ author } sent you a message`, message, {
-                    Reply: event => {
+                new ChatFooter(`@${ author } mentioned you.`, {
+                    onclick: event => {
                         let chatbox = $('.chat-input__textarea textarea'),
-                            existing = $('#twitch-tools-popup');
+                            existing = $('#twitch-tools-chat-footer');
 
                         if(defined(chatbox))
                             chatbox.focus();
@@ -3678,8 +3815,22 @@ let Initialize = async(START_OVER = false) => {
                             existing.remove();
 
                         reply?.click();
-                    }
+                    },
                 });
+
+                // new Popup(`@${ author } sent you a message`, message, {
+                //     Reply: event => {
+                //         let chatbox = $('.chat-input__textarea textarea'),
+                //             existing = $('#twitch-tools-popup');
+                //
+                //         if(defined(chatbox))
+                //             chatbox.focus();
+                //         if(defined(existing))
+                //             existing.remove();
+                //
+                //         reply?.click();
+                //     }
+                // });
             }
     };
     Timers.highlight_mentions_popup = 500;
@@ -4176,7 +4327,8 @@ let Initialize = async(START_OVER = false) => {
             parent = container.closest(`*:not(${ classes(container) })`);
 
         let f = furnish;
-        let watch_time = f(`${ container.tagName }${ classes(container) }`, {},
+        let watch_time = f(`${ container.tagName }${ classes(container) }`,
+            { style: 'color: var(--color-green)' },
             f(`${ live_time.tagName }#twitch-tools-watch-time${ classes(live_time).replace(/live-time/i, 'watch-time') }`, { time: 0 })
         );
 
@@ -4213,6 +4365,73 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('watch_time_placement');
     }
 
+    /*** Point Watcher
+     *      _____      _       _    __          __   _       _
+     *     |  __ \    (_)     | |   \ \        / /  | |     | |
+     *     | |__) |__  _ _ __ | |_   \ \  /\  / /_ _| |_ ___| |__   ___ _ __
+     *     |  ___/ _ \| | '_ \| __|   \ \/  \/ / _` | __/ __| '_ \ / _ \ '__|
+     *     | |  | (_) | | | | | |_     \  /\  / (_| | || (__| | | |  __/ |
+     *     |_|   \___/|_|_| |_|\__|     \/  \/ \__,_|\__\___|_| |_|\___|_|
+     *
+     *
+     */
+    let pointWatcherCounter = 0;
+
+    Handlers.point_watcher_placecment = () => {
+        let rich_tooltip = $('.rich-content-tooltip');
+
+        // Update the points (every minute)
+        if(++pointWatcherCounter % 600) {
+            pointWatcherCounter = 0;
+
+            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+                ChannelPoints[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? 'Not available';
+                SaveCache({ ChannelPoints });
+            });
+        }
+
+        if(!defined(rich_tooltip))
+            return;
+
+        let pointDisplay = $('.twitch-tools-point-display');
+        let [title, subtitle, footer] = $('.rich-content-tooltip [class*="online-side-nav-channel-tooltip"i] > *', true),
+            target = footer?.lastElementChild;
+
+        if(!defined(target))
+            return;
+
+        let [name, game] = title.innerText.split(/[^\w\s]/);
+
+        name = name?.trim();
+        game = game?.trim();
+
+        // Update the display
+        if(defined(pointDisplay))
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => pointDisplay.innerHTML = ChannelPoints[name] ?? 0);
+        else
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
+                    let text = furnish('span.twitch-tools-point-display', {
+                            innerHTML: ChannelPoints[name] ?? 0,
+                        }),
+                        icon = furnish('span', {
+                            innerHTML: ` | ${ Glyphs.channelpoints.replace(/(height|width)="100%"/g, '$1="20px"') } `,
+                        });
+
+                    target.appendChild(icon);
+                    target.appendChild(text);
+
+                    let svg = $('svg', false, icon);
+
+                    svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+                }
+            );
+    };
+    Timers.point_watcher_placecment = 100;
+
+    if(settings.point_watcher_placecment != "null") __PointWatcherPlacement__: {
+        RegisterJob('point_watcher_placecment');
+    }
+
     /*** Scoped under Initialize
      *      _______             _____
      *     |__   __|           / ____|
@@ -4233,6 +4452,8 @@ let Initialize = async(START_OVER = false) => {
      *                            __/ |
      *                           |___/
      */
+    let AwayModeEnabled = false;
+
     Handlers.away_mode = async() => {
         let button = $('#away-mode'),
             quality = (Handlers.away_mode.quality ??= await GetQuality());
@@ -4240,14 +4461,16 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(quality) || /\/search\b/i.test(PATHNAME))
             return;
 
-        let enabled = (quality.low && !(quality.auto || quality.high || quality.source));
+        await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
+
+        let enabled = AwayModeEnabled || (quality.low && !(quality.auto || quality.high || quality.source));
 
         if(!defined(button)) {
             let sibling, parent, before,
                 container = furnish('div'),
-                placement;
+                placement = (settings.away_mode_placement ??= "under");
 
-            switch(placement = (settings.away_mode_placement ??= "under")) {
+            switch(placement) {
                 // Option 1 "over" - video overlay, play button area
                 case 'over':
                     sibling = $('[data-a-target="player-controls"i] [class*="player-controls"][class*="right-control-group"i] > :last-child', false, parent);
@@ -4316,6 +4539,7 @@ let Initialize = async(START_OVER = false) => {
             button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
             ChangeQuality(['auto','low'][+enabled]);
+            SaveCache({ AwayModeEnabled: enabled });
         };
 
         button.container.onmouseenter ??= event => {

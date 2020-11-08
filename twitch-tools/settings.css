@@ -141,7 +141,7 @@ article {
     margin: 2rem 0 4rem;
 }
 
-section {
+section, footer {
     font-size: .8rem;
 
     display: flex;
@@ -154,6 +154,11 @@ section {
 
 section:not(:last-child) {
     border-bottom: 1px solid var(--border-dark);
+}
+
+footer {
+    justify-content: center;
+    text-align: center;
 }
 
 .title {
@@ -185,6 +190,10 @@ section:not(:last-child) {
     margin-top: .25rem;
 }
 
+.summary li {
+    padding: 0.1rem;
+}
+
 .radio {
     display: block;
     flex-direction: column;
@@ -193,6 +202,8 @@ section:not(:last-child) {
     vertical-align: baseline;
 
     line-height: 2rem;
+
+    padding: 0.5rem 0;
 
     transform: scale(.95);
 }
@@ -270,6 +281,10 @@ section:not(:last-child) {
     background-color: var(--purple);
 }
 
+[disabled] {
+    opacity: 0.3 !important;
+}
+
 a {
     color: var(--purple-highlighted);
     text-decoration: none;
@@ -321,7 +336,7 @@ option:not(:checked) {
     background-color: var(--background-dark-lighter);
 }
 
-button, input[type="button"] {
+button, [type="button"] {
     align-items: center;
     display: inline-block;
     justify-content: center;

@@ -43,10 +43,12 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 ### Customization
 
-- *Button Placement* &mdash; Choose where buttons are placed
+- *Away Mode* &mdash; Choose where the **Away Mode** button is placed
     - *Where should the __Away Mode__ button be placed?* `Do not display`
-- *Timer Placement* &mdash; Choose where timers are placed
-    - *Where should the __Watch Time__ be placed?* `Do not display`
+- *Point Watcher* &mdash; Choose where the **Point Watcher** is placed
+    - *Where should the __Point Watcher__ text be placed?* `Do not display`
+- *Watch Time* &mdash; Choose where the **Watch Time** is placed
+    - *Where should the __Watch Time__ text be placed?* `Do not display`
 
 ### Video Recovery
 

@@ -27,7 +27,7 @@ switch(BrowserNamespace) {
         Storage = Container.storage;
         Extension = Container.extension;
 
-        Storage = Storage.sync || Storage.local;
+        Storage = Storage.sync ?? Storage.local;
         break;
 
     case 'chrome':
@@ -36,10 +36,11 @@ switch(BrowserNamespace) {
         Storage = Container.storage;
         Extension = Container.extension;
 
-        Storage = Storage.sync || Storage.local;
+        Storage = Storage.sync ?? Storage.local;
         break;
 }
 
+// Update the tab(s) when a new version is installed
 // reason:string - install | update | chrome_update | shared_module_update
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
@@ -48,7 +49,29 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
         if(!defined(tabs))
             return;
 
+        Storage.set({ onInstalledReason: reason });
+
         for(let tab of tabs)
             Container.tabs.reload(tab.id);
     });
 });
+
+// Update the tab(s) when they unload
+// `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
+let UnloadedTabs = new Set();
+
+let TabWatcherInterval = setInterval(() => {
+    Container.tabs.query({
+        url: "*://www.twitch.tv/*",
+        status: "unloaded",
+    }, tabs => {
+        if(!defined(tabs))
+            return;
+
+        for(let tab of tabs)
+            if(UnloadedTabs.has(tab.id))
+                Container.tabs.reload(tab.id);
+            else
+                UnloadedTabs.add(tab.id);
+    });
+}, 1000);
