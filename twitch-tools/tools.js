@@ -2294,11 +2294,15 @@ let Initialize = async(START_OVER = false) => {
         let element;
 
         // Is the nav open?
-        let open = defined($('[data-a-target="side-nav-search-input"]'));
+        let open = defined($('[data-a-target="side-nav-search-input"]')),
+            sidenav = $('[data-a-target="side-nav-arrow"i]');
+
+        if(!defined(sidenav))
+            return;
 
         // Open the Side Nav
         if(!open) // Only open it if it isn't already
-            $('[data-a-target="side-nav-arrow"i]').click();
+            sidenav.click();
 
         // Click "show more" as many times as possible
         while(defined(element = $('[data-a-target="side-nav-show-more-button"]')))
@@ -2347,7 +2351,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Close the Side Nav
         if(!open) // Only close it if it wasn't open in the first place
-            $('[data-a-target="side-nav-arrow"i]').click();
+            sidenav.click();
     }
 
     // Every channel
