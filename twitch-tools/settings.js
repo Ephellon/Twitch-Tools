@@ -65,13 +65,9 @@ let // These are option names. Anything else will be removed
         'first_in_line_all',
             'first_in_line_all_time_minutes',
         // Prevent Raiding
-        'prevent_raiding_none',
         'prevent_raiding',
-        'prevent_raiding_unfollowed',
         // Prevent Hosting
-        'prevent_hosting_none',
         'prevent_hosting',
-        'prevent_hosting_unfollowed',
         // Kill Extensions*
         'kill_extensions',
         // Auto Accept Mature Content

@@ -1352,7 +1352,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
 
                     return $1;
                 })
-                break;
+            break;
     }
 
     return time.join(joining_symbol);
@@ -4385,7 +4385,7 @@ let Initialize = async(START_OVER = false) => {
             pointWatcherCounter = 0;
 
             LoadCache('ChannelPoints', ({ ChannelPoints }) => {
-                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? 'Not available';
+                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? ChannelPoints[STREAMER.name] ?? 'Not available';
                 SaveCache({ ChannelPoints });
             });
         }
@@ -4524,6 +4524,9 @@ let Initialize = async(START_OVER = false) => {
                 background: $('button[data-a-target="away-mode-toggle"i]', false, container),
             };
         }
+
+        // Change the quality when loaded
+        ChangeQuality(['auto','low'][+enabled]);
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
