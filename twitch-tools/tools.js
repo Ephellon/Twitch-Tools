@@ -433,7 +433,7 @@ class Balloon {
                                                     } else {
                                                         counter.setAttribute('style', 'visibility:unset; font-size:75%');
                                                     }
-                                                }, 5000),
+                                                }, 1000),
                                             })
                                         )
                                     )
