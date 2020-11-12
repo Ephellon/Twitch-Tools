@@ -1005,7 +1005,8 @@ async function LoadCache(keys = null, callback = () => {}) {
         default: return;
     }
 
-    callback(results);
+    if(typeof callback == 'function')
+        callback(results);
 }
 
 // Removes data from the page's storage
@@ -1027,7 +1028,8 @@ async function RemoveCache(keys, callback = () => {}) {
             break;
     }
 
-    callback();
+    if(typeof callback == 'function')
+        callback();
 }
 
 // Create an object of the current chat
@@ -1359,8 +1361,8 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
 }
 
 // Convert a time-formatted string into its corresponding millisecond value
-    // ParseTime([time:string]) -> Number
-function ParseTime(time = '') {
+    // parseTime([time:string]) -> Number
+function parseTime(time = '') {
     let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
         ms = 0;
 
@@ -1368,6 +1370,24 @@ function ParseTime(time = '') {
         ms += parseInt(unit) * units.splice(0,1)[0];
 
     return ms;
+}
+
+// Convert an SI number into a number
+    // parseCoin(amount:string) -> Number
+function parseCoin(amount) {
+    let points = 0,
+        COIN, UNIT;
+
+    amount = amount.replace(/([\d\.]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
+        COIN = $1;
+        UNIT = ($2 ?? '').toUpperCase();
+    });
+
+    for(let index = 0, units = ['', 'K', 'M', 'B', 'T']; index < units.length; index++)
+        if(units[index] == UNIT)
+            points = parseFloat(COIN) * (1e3 ** index);
+
+    return points;
 }
 
 // Get the video quality
@@ -1438,7 +1458,7 @@ async function GetQuality() {
 }
 
 // Change the video quality
-    // ChangeQuality([quality:string[, backup:string]]) -> Object#{ OLD:Object={ input:Element, label:Element }, NEW:Object={ input:Element, label:Element } }
+    // ChangeQuality([quality:string[, backup:string]]) -> Object#{ __old__:Object={ input:Element, label:Element }, __new__:Object={ input:Element, label:Element } }
 async function ChangeQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
@@ -1492,8 +1512,6 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
     else
         desired = qualities.find(({ label }) => !!~smol(label).indexOf(quality.toLowerCase())) ?? null;
 
-    LOG({ quality, qualities, current, desired });
-
     if(desired === null)
         /* The desired quality does not exist */
         desired = qualities.auto;
@@ -1509,7 +1527,7 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
     if(buttons.options)
         buttons.settings.click();
 
-    return { OLD: current, NEW: desired }
+    return { __old__: current, __new__: desired }
 }
 
 // Returns if an item is of an object class
@@ -1764,7 +1782,7 @@ let Glyphs = {
 // Returns ordinal numbers
     // nth(n:number) -> string
 let nth = n => (n + '')
-    .replace(/1[123]$/, '$1th')
+    .replace(/(1[123])$/, '$1th')
     .replace(/1$/, '1st')
     .replace(/2$/, '2nd')
     .replace(/3$/, '3rd')
@@ -1814,7 +1832,7 @@ async function update() {
     await LoadCache('SEARCH', terms => SEARCH = terms);
     SEARCH = [
         // Current (followed) streamers
-        ...$(`.search-tray a:not([href*="/search?"]):not([href="${ PATHNAME }"i])`, true)
+        ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                     let channel = {
                         href: element.href,
@@ -1845,7 +1863,7 @@ async function update() {
     // All Channels
     CHANNELS = [
         // Current (followed) streamers
-        ...$(`.side-bar-contents .side-nav-section a:not([href="${ PATHNAME }"i])`, true)
+        ...$(`.side-bar-contents .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -1876,7 +1894,7 @@ async function update() {
     // Followed Channels
     STREAMERS = [
         // Current (followed) streamers
-        ...$(`a:not([href="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section'))
+        ...$(`a:not([href$="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section'))
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -1937,7 +1955,7 @@ async function update() {
 // Registers a job
     // RegisterJob(JobName:string) -> Number=IntervalID
 function RegisterJob(JobName) {
-    return Jobs[JobName] ??= Timers[JobName] >= 0?
+    return Jobs[JobName] ??= Timers[JobName] > 0?
         setInterval(Handlers[JobName], Timers[JobName]):
     setTimeout(Handlers[JobName], -Timers[JobName]);
 }
@@ -2016,14 +2034,14 @@ Storage.onChanged.addListener((changes, namespace) => {
 *
 */
 // Intializes the extension
-// Initialize(START_OVER:boolean) -> undefined
+    // Initialize(START_OVER:boolean) -> undefined
 let Initialize = async(START_OVER = false) => {
     let TWITCH_API = {},
         EVENT_LISTENER = {};
 
     settings = await GetSettings();
 
-    // Modify the logging using the settings
+    // Modify the logging feature via the settings
     if(!settings.display_in_console)
         LOG = WARN = ERROR = ($=>$);
 
@@ -2031,6 +2049,52 @@ let Initialize = async(START_OVER = false) => {
     if(!settings.experimental_mode)
         for(let feature of EXPERIMENTAL_FEATURES)
             settings[feature] = false;
+
+    // Gets the next available channel (streamer)
+        // GetNextStreamer() -> Object#Channel
+    async function GetNextStreamer() {
+        let online = STREAMERS.filter(streamer => streamer.live),
+            mostWatched = null,
+            mostPoints = 0,
+            leastWatched = null,
+            leastPoints = 1_000_000_000;
+
+        await LoadCache('ChannelPoints', cache => {
+            let counter = cache.ChannelPoints;
+
+            for(let channel in counter) {
+                let points = parseCoin(counter[channel]);
+
+                if(points > mostPoints) {
+                    mostWatched = channel;
+                    mostPoints = points;
+                } else if(points < leastPoints) {
+                    leastWatched = channel;
+                    leastPoints = points;
+                }
+            }
+        });
+
+        return (
+            // Next channel in "Up Next"
+            ALL_FIRST_IN_LINE_JOBS?.length?
+                ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]):
+            // The most popular channel (most amoutn of current viewers)
+            settings.next_channel_preference === 'popular'?
+                online[0]:
+            // The least popular channel (least amount of current viewers)
+            settings.next_channel_preference === 'unpopular'?
+                online[online.length - 1]:
+            // Most watched channel (most channel points)
+            settings.next_channel_preference === 'rich'?
+                STREAMERS.find(channel => channel.name === mostWatched):
+            // Least watched channel (least channel points)
+            settings.next_channel_preference === 'poor'?
+                STREAMERS.find(channel => channel.name === leastWatched):
+            // A random channel
+            online[(Math.random() * online.length)|0]
+        );
+    }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
      * href:string   - link to the channel
@@ -2040,7 +2104,7 @@ let Initialize = async(START_OVER = false) => {
      */
     SEARCH = [
         // Current (followed) streamers
-        ...$(`.search-tray a:not([href*="/search?"]):not([href="${ PATHNAME }"i])`, true)
+        ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                     let channel = {
                         href: element.href,
@@ -2076,7 +2140,7 @@ let Initialize = async(START_OVER = false) => {
      */
     CHANNELS = [
         // Current (followed) streamers
-        ...$(`.side-bar-contents .side-nav-section a:not([href="${ PATHNAME }"i])`, true)
+        ...$(`.side-bar-contents .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -2112,7 +2176,7 @@ let Initialize = async(START_OVER = false) => {
      */
     STREAMERS = [
         // Current streamers
-        ...$(`a:not([href="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)'))
+        ...$(`a:not([href$="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)'))
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -2172,21 +2236,7 @@ let Initialize = async(START_OVER = false) => {
 
         get coin() {
             let balance = $('[data-test-selector="balance-string"i]'),
-                points = 0;
-
-            if(defined(balance)) {
-                let { textContent } = balance,
-                    COIN, UNIT;
-
-                textContent = textContent.replace(/([\d\.]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
-                    COIN = $1;
-                    UNIT = $2 ?? '';
-                });
-
-                for(let index = 0, units = ['', 'K', 'M', 'B', 'T']; index < units.length; index++)
-                    if(units[index] == UNIT)
-                        points = parseFloat(COIN) * (1e3 ** index);
-            }
+                points = parseCoin(balance?.textContent);
 
             return points;
         },
@@ -2242,7 +2292,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get time() {
-            return ParseTime($('.live-time')?.textContent)
+            return parseTime($('.live-time')?.textContent)
         },
 
         follow() {
@@ -2291,7 +2341,7 @@ let Initialize = async(START_OVER = false) => {
     );
 
     __GetAllChannels__: {; // <- Atom connects brace with first semicolon
-        let element;
+        ;let element;
 
         // Is the nav open?
         let open = defined($('[data-a-target="side-nav-search-input"]')),
@@ -2399,12 +2449,10 @@ let Initialize = async(START_OVER = false) => {
                 value = (defined(videoID)? videoID: channelName),
                 token = cookies['auth-token'];
 
-            LOG('Getting fine details...', { [type]: value, cookies });
-
             await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
                 .then(response => response.json())
                 .then(json => TWITCH_API = JSON.parse(json.token))
-                .then(LOG)
+                .then(json => LOG('Getting fine details...', { [type]: value, cookies }, json))
                 .catch(ERROR);
 
             let conversion = {
@@ -2456,16 +2504,16 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.auto_follow_raids = 1000;
 
-    if(settings.auto_follow_raids || settings.auto_follow_all) __AutoFollow__: {
+    if(settings.auto_follow_raids || settings.auto_follow_all) __AutoFollowRaid__: {
         RegisterJob('auto_follow_raids');
+    }
 
-        if(settings.auto_follow_time || settings.auto_follow_all) {
-            let { like, coin, follow } = STREAMER,
-                mins = parseInt(settings.auto_follow_time_minutes) | 0;
+    if(settings.auto_follow_time || settings.auto_follow_all) __AutoFollowTime__: {
+        let { like, follow } = STREAMER,
+            mins = parseInt(settings.auto_follow_time_minutes) | 0;
 
-            if(!like)
-                setTimeout(follow, mins * 60_000);
-        }
+        if(!like)
+            setTimeout(follow, mins * 60_000);
     }
 
     /*** Auto Accept Mature Content
@@ -2912,9 +2960,9 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(action))
                 continue;
 
-            let { href, pathname } = parseURL(action.href);
-            let { innerText } = action;
-            let uuid = UUID.from(innerText).toString();
+            let { href, pathname } = parseURL(action.href),
+                { innerText } = action,
+                uuid = UUID.from(innerText).toString();
 
             if(!!~HANDLED_NOTIFICATIONS.indexOf(uuid))
                 continue;
@@ -3171,6 +3219,9 @@ let Initialize = async(START_OVER = false) => {
                 break;
         }
 
+        if(defined(settings.onInstalledReason))
+            delete settings.onInstalledReason;
+
         if(new_names.length >= STREAMERS.length) {
             WARN('New streamers are being added incorrectly...',
                 'New names:',
@@ -3194,7 +3245,7 @@ let Initialize = async(START_OVER = false) => {
                 new Date,
             );
 
-            SaveCache(`ERROR-LOG/${ +new Date }`, { new_names, old_names, NEW_STREAMERS, OLD_STREAMERS, STREAMERS, ALL_CHANNELS });
+            SaveCache(`ERROR-LOG/${ new Date }`, { new_names, old_names, NEW_STREAMERS, OLD_STREAMERS, STREAMERS, ALL_CHANNELS });
         }
 
         creating_new_events:
@@ -3265,10 +3316,10 @@ let Initialize = async(START_OVER = false) => {
      *                     | |                                    __/ |
      *                     |_|                                   |___/
      */
-    Handlers.prevent_hosting = () => {
+    Handlers.prevent_hosting = async() => {
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
+            next = await GetNextStreamer(),
             [guest, host] = $('[href^="/"] h1, [href^="/"] > p', true);
 
         guest = guest?.innerText ?? $('[data-a-target="hosting-indicator"i]')?.innerText;
@@ -3292,11 +3343,11 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.__eventlisteners__.onhost.forEach(job => job({ hosting, next }));
 
             if(online.length) {
-                WARN(`${ STREAMER.name } is hosting. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ host } is hosting ${ guest ?? "" }. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                WARN(`${ STREAMER.name } is hosting. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ host } is hosting ${ guest ?? "" }. There doesn't seem to be any followed streamers on right now`, new Date);
             }
         }
     };
@@ -3316,13 +3367,13 @@ let Initialize = async(START_OVER = false) => {
      *                     | |                                   __/ |
      *                     |_|                                  |___/
      */
-    Handlers.prevent_raiding = () => {
+    Handlers.prevent_raiding = async() => {
         let url = parseURL(top.location),
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
+            next = await GetNextStreamer(),
             [from, to] = $('[data-test-selector="raid-banner"i] strong') ?? [];
 
         from = from?.innerText;
@@ -3374,7 +3425,7 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.stay_live = async() => {
         let online = STREAMERS.filter(streamer => streamer.live),
-            next = (ALL_FIRST_IN_LINE_JOBS?.length? ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]): online[(Math.random() * online.length)|0]),
+            next = await GetNextStreamer(),
             { pathname } = window.location;
 
         let Paths = [USERNAME, '[up]/', 'user', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
@@ -3401,8 +3452,8 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
 
-            // After 5 minutes, remove the intent
-            ClearIntent ??= setTimeout(() => RemoveCache('UserIntent'), 300_000);
+            // After 30 seconds, remove the intent
+            ClearIntent ??= setTimeout(() => RemoveCache('UserIntent'), 30_000);
         } else if(/\/search\b/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
 
@@ -3955,7 +4006,7 @@ let Initialize = async(START_OVER = false) => {
 
         PushToSearch({ 'twitch-tools-failed-to-play-video-at': (+new Date).toString(36) });
     };
-    Timers.recover_video = 1000;
+    Timers.recover_video = 15_0000;
 
     if(settings.recover_video) __RecoverVideo__: {
         RegisterJob('recover_video');
@@ -4277,6 +4328,9 @@ let Initialize = async(START_OVER = false) => {
                 if(defined($('.chat-line__message-container', false, element)))
                     return;
 
+                if(handle == USERNAME)
+                    return;
+
                 let parent = $('div', false, element);
                 if(!defined(parent)) return;
 
@@ -4345,7 +4399,7 @@ let Initialize = async(START_OVER = false) => {
 
             setInterval(() => {
                 let watch_time = $('#twitch-tools-watch-time'),
-                    time = parseInt(watch_time.getAttribute('time')) | 0;
+                    time = parseInt(watch_time?.getAttribute('time')) | 0;
 
                 watch_time.setAttribute('time', ++time);
 
@@ -4456,7 +4510,8 @@ let Initialize = async(START_OVER = false) => {
      *                            __/ |
      *                           |___/
      */
-    let AwayModeEnabled = false;
+    let AwayModeEnabled = false,
+        SetupQuality = false;
 
     Handlers.away_mode = async() => {
         let button = $('#away-mode'),
@@ -4530,7 +4585,8 @@ let Initialize = async(START_OVER = false) => {
         }
 
         // Change the quality when loaded
-        ChangeQuality(['auto','low'][+enabled]);
+        if(!SetupQuality)
+            SetupQuality = ChangeQuality(['auto','low'][+enabled]) && true;
 
         // if(init === true) ->
         // Don't use above, event listeners won't work

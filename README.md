@@ -8,6 +8,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 ### Automation
 
+- *Auto-Join* `off` &mdash; Automatically proceed to watch parties and mature streams
 - *Away Mode* `on` &mdash; Toggle between **low** and **auto** quality
 - *Claim Bonuses* `on` &mdash; When the Bonus Channel Points button appears, click it
 - *First in Line* &mdash; When a channel you follow begins streaming, automatically go to it
@@ -20,10 +21,15 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - When participating in a raid, follow the channel being raided
     - After watching `15` minutes of content, follow the channel
     - Follow all channels automatically
+- *Next Channel* &mdash; Decide how the next channel is chosen
+    - `default` Go to a random channel
+    - Go with the least viewers
+    - Go with the most viewers
+    - Go with the most channel points
 - *Kill Extensions* `off` &mdash; *Currently under __Experimental Features__*
-- *Prevent Hosting* `off` &mdash; When a channel begins hosting, go to a different, followed channel
-- *Prevent Raiding* `off` &mdash; When a raid begins, go to a different, followed channel
-- *Stay Live* `on` &mdash; When the current stream ends, got to a different, followed channel
+- *Prevent Hosting* `off` &mdash; When a channel begins hosting, go to the __Next Channel__
+- *Prevent Raiding* `off` &mdash; When a raid begins, go to the __Next Channel__
+- *Stay Live* `on` &mdash; When the current stream ends, got to the __Next Channel__
 
 ### Chat & Messaging
 
@@ -69,3 +75,4 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emote (without requiring a subscription)
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
+- *Recover Pages* `on` &mdash; When the webpage fails to display, reload it

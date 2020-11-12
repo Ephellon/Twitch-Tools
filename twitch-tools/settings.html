@@ -60,7 +60,7 @@
                         <label for="auto_claim_bonuses"></label>
                     </div>
                     <p>
-                        When the <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Bonus Channel Points"><button style="background-color:var(--blue)!important"><span small black glyph="bonuschannelpoints"></span></button></a> appears click it automatically.
+                        When the <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Bonus Channel Points"><button style="background-color:var(--blue)!important"><span small black glyph="bonuschannelpoints"></span></button></a> button appears, click it automatically.
                     </p>
                 </div>
             </section>
@@ -129,12 +129,31 @@
             </section> -->
 
             <section>
+                <div class="title"><span small glyph="favorite"></span> Next Channel</div>
+                <div class="summary">
+                    <p>
+                        How should the next channel be decided?
+                    </p>
+                    <select id="next_channel_preference">
+                        <option value="random">Go to a random channel</option>
+                        <option value="unpopular">Go with the least viewers</option>
+                        <option value="popular">Go with the most viewers</option>
+                        <option value="rich">Go with the most channel points</option>
+                        <option value="poor">Go with the least channel points</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Hosting</div>
                 <div class="summary">
+                    <p>
+                        Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
+                    </p>
                     <select id="prevent_hosting">
                         <option value="all">Allow all channels to host</option>
                         <option value="none">Prevent all channels from hosting</option>
-                        <option value="unfollowed">Prevent all unfollowed channels from hosting</option>
+                        <option value="unfollowed">Prevent hosting unfollowed channels</option>
                     </select>
                 </div>
             </section>
@@ -142,10 +161,13 @@
             <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Raiding</div>
                 <div class="summary">
+                    <p>
+                        Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
+                    </p>
                     <select id="prevent_raiding">
                         <option value="all">Allow all channels to raid</option>
                         <option value="none">Prevent all channels from raiding</option>
-                        <option value="unfollowed">Prevent all unfollowed channels from raiding</option>
+                        <option value="unfollowed">Prevent raiding unfollowed channels</option>
                     </select>
                 </div>
             </section>
@@ -158,7 +180,7 @@
                         <label for="stay_live"></label>
                     </div>
                     <p>
-                        When the current stream ends, go to a different channel in your Followed Channels.
+                        When the current stream ends, go to the <b>Next Channel</b>.
                     </p>
                 </div>
             </section>

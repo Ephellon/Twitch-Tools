@@ -56,6 +56,8 @@ let // These are option names. Anything else will be removed
         'auto_follow_all',
         // Keep Watching
         'stay_live',
+            // Up Next Preference
+            'next_channel_preference',
         // First in Line
         'first_in_line_none',
         'first_in_line',
