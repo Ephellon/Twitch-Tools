@@ -1152,7 +1152,7 @@ Object.defineProperties(GetChat, {
 });
 
 // Pushes parameters to the URL's search
-    // PushToSearch(object:object[, reload:boolean]) -> String#URL.Search
+    // PushToSearch(newParameters:object[, reload:boolean]) -> String#URL.Search
 function PushToSearch(newParameters, reload = true) {
     let { searchParameters } = parseURL(location),
         parameters = { ...searchParameters, ...newParameters };
@@ -1160,6 +1160,23 @@ function PushToSearch(newParameters, reload = true) {
     let search = [];
     for(let parameter in parameters)
         search.push(`${parameter}=${parameters[parameter]}`);
+    search = '?' + search.join('&');
+
+    return reload?
+        location.search = search:
+    search;
+}
+
+// Removevs parameters from the URL's search
+    // RemoveFromSearch(keys:array[, reload:boolean]) -> String#URL.Search
+function RemoveFromSearch(keys, reload = true) {
+    let { searchParameters } = parseURL(location),
+        parameters = { ...searchParameters };
+
+    let search = [];
+    for(let parameter in parameters)
+        if(!~keys.indexOf(parameter))
+            search.push(`${parameter}=${parameters[parameter]}`);
     search = '?' + search.join('&');
 
     return reload?
@@ -1788,10 +1805,56 @@ let nth = n => (n + '')
     .replace(/3$/, '3rd')
     .replace(/(\d)$/, '$1th');
 
-// Returns a unique list of channels (used with `Array.prototype.filter`)
-    // uniqueChannels(channel:object, index:number, channels:array) -> boolean
+// Returns a unique list of channels (used with `Array..filter`)
+    // uniqueChannels(channel:object#Channel, index:number, channels:array) -> boolean
 let uniqueChannels = (channel, index, channels) =>
-    channels.findIndex(ch => ch.name == channel.name) == index;
+    channels.findIndex(ch => ch.name === channel.name) == index;
+
+// Returns whether or not a channel is live (used with `Array..filter`)
+    // isLive(channel:object#Channel) -> boolean
+let isLive = channel => channel?.live;
+
+// Opens the side panel to expose all channels. Returns whether the panel was already open
+    // OpenPanel([close:boolean]) -> boolean
+async function OpenPanel(close = false) {
+    // Open the side panel
+    let element;
+
+    // Is the nav open?
+    let open = defined($('[data-a-target="side-nav-search-input"]')),
+        sidenav = $('[data-a-target="side-nav-arrow"i]');
+
+    // Open the Side Nav
+    if(!open) // Only open it if it isn't already
+        sidenav?.click();
+
+    // Click "show more" as many times as possible
+    while(defined(element = $('[data-a-target="side-nav-show-more-button"]')))
+        element.click();
+
+    if(close)
+        await ClosePanel(open);
+
+    return open;
+}
+
+// Closes the side panel
+    // ClosePanel([open:boolean]) -> undefined
+async function ClosePanel(open = false) {
+    // Close the side panel
+    let element;
+
+    // Is the nav open?
+    let sidenav = $('[data-a-target="side-nav-arrow"i]');
+
+    // Click "show less" as many times as possible
+    while(defined(element = $('[data-a-target="side-nav-show-less-button"]')))
+        element.click();
+
+    // Close the Side Nav
+    if(!open) // Only close it if it wasn't open in the first place
+        sidenav?.click();
+}
 
 // Update common variables
 let PATHNAME = top.location.pathname,
@@ -1829,8 +1892,8 @@ async function update() {
     PATHNAME = top.location.pathname;
 
     // All Channels under Search
-    await LoadCache('SEARCH', terms => SEARCH = terms);
     SEARCH = [
+        ...SEARCH,
         // Current (followed) streamers
         ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
@@ -1842,7 +1905,14 @@ async function update() {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            return defined($(`[href$="${ pathname }"] [data-test-selector="live-badge"i]`))
+                            let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`),
+                                live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
+
+                            // if(LIVE_CACHE.has(pathname))
+                            //     return LIVE_CACHE.get(pathname);
+                            // LIVE_CACHE.set(pathname, live);
+
+                            return live;
                         },
                         name: $('img', false, element)?.alt,
                     };
@@ -1858,12 +1928,13 @@ async function update() {
 
                     return channel;
                 }),
-    ];
+    ].filter(uniqueChannels);
 
-    // All Channels
+    // All visible Channels
     CHANNELS = [
+        ...CHANNELS,
         // Current (followed) streamers
-        ...$(`.side-bar-contents .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`#sideNav .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -1873,7 +1944,14 @@ async function update() {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            return empty($(`[href$="${ pathname }"] [class*="--offline"i]`))
+                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`),
+                                live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+
+                            // if(!defined(parent) && LIVE_CACHE.has(pathname))
+                            //     return LIVE_CACHE.get(pathname);
+                            // LIVE_CACHE.set(pathname, live);
+
+                            return live;
                         },
                         name: $('img', false, element)?.alt,
                     };
@@ -1889,12 +1967,13 @@ async function update() {
 
                     return streamer;
                 }),
-    ];
+    ].filter(uniqueChannels);
 
-    // Followed Channels
+    // All followed Channels
     STREAMERS = [
+        ...STREAMERS,
         // Current (followed) streamers
-        ...$(`a:not([href$="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section'))
+        ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                     let streamer = {
                         href: element.href,
@@ -1904,7 +1983,14 @@ async function update() {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            return empty($(`[href$="${ pathname }"] [class*="--offline"i]`))
+                            let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`),
+                                live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+
+                            // if(!defined(parent) && LIVE_CACHE.has(pathname))
+                            //     return LIVE_CACHE.get(pathname);
+                            // LIVE_CACHE.set(pathname, live);
+
+                            return live;
                         },
                         name: $('img', false, element)?.alt,
                     };
@@ -1920,36 +2006,41 @@ async function update() {
 
                     return streamer;
                 }),
-    ];
+    ].filter(uniqueChannels);
 
-    // Notifications
-    NOTIFICATIONS = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true).map(
-        element => {
-            let streamer = {
-                live: true,
-                href: $('a', false, element)?.href,
-                icon: $('img', false, element)?.src,
-                name: $('[class$="text"]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
-            };
+    // All Notifications
+    NOTIFICATIONS = [
+        ...NOTIFICATIONS,
+        // Notification elements
+        $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true).map(
+            element => {
+                let streamer = {
+                    live: true,
+                    href: $('a', false, element)?.href,
+                    icon: $('img', false, element)?.src,
+                    name: $('[class$="text"]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                };
 
-            if(!defined(streamer.name))
-                return;
+                if(!defined(streamer.name))
+                    return;
 
-            element.setAttribute('draggable', true);
-            element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-            element.ondragstart ??= event => {
-                let { currentTarget } = event;
+                element.setAttribute('draggable', true);
+                element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                element.ondragstart ??= event => {
+                    let { currentTarget } = event;
 
-                event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
-                event.dataTransfer.dropEffect = 'move';
-            };
+                    event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                    event.dataTransfer.dropEffect = 'move';
+                };
 
-            return streamer;
-        }
-    );
+                return streamer;
+            }
+        )
+    ].filter(uniqueChannels);
 
     // Every channel
-    ALL_CHANNELS = ALL_CHANNELS.concat(SEARCH, CHANNELS, STREAMERS, NOTIFICATIONS).filter(defined).filter(uniqueChannels);
+        // Putting the channels in this order guarantees channels already defined aren't overridden
+    ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 }
 
 // Registers a job
@@ -2035,6 +2126,8 @@ Storage.onChanged.addListener((changes, namespace) => {
 */
 // Intializes the extension
     // Initialize(START_OVER:boolean) -> undefined
+
+let LIVE_CACHE = new Map();
 let Initialize = async(START_OVER = false) => {
     let TWITCH_API = {},
         EVENT_LISTENER = {};
@@ -2053,7 +2146,7 @@ let Initialize = async(START_OVER = false) => {
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
     async function GetNextStreamer() {
-        let online = STREAMERS.filter(streamer => streamer.live),
+        let online = STREAMERS.filter(isLive),
             mostWatched = null,
             mostPoints = 0,
             leastWatched = null,
@@ -2114,7 +2207,14 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            return defined($(`[href$="${ pathname }"] [data-test-selector="live-badge"i]`))
+                            let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`),
+                                live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
+
+                            // if(LIVE_CACHE.has(pathname))
+                            //     return LIVE_CACHE.get(pathname);
+                            // LIVE_CACHE.set(pathname, live);
+
+                            return live;
                         },
                         name: $('img', false, element)?.alt,
                     };
@@ -2130,79 +2230,6 @@ let Initialize = async(START_OVER = false) => {
 
                     return channel;
                 }),
-    ];
-
-    /** Channels Array - all channels/friends that appear on the side panel (except the currently viewed one and the hidden ones)
-     * href:string   - link to the channel
-     * icon:string   - link to the channel's image
-     * live:boolean* - GETTER: is the channel live
-     * name:string   - the channel's name
-     */
-    CHANNELS = [
-        // Current (followed) streamers
-        ...$(`.side-bar-contents .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
-            .map(element => {
-                    let streamer = {
-                        href: element.href,
-                        icon: $('img', false, element)?.src,
-                        get live() {
-                            let { href } = element,
-                                url = parseURL(href),
-                                { pathname } = url;
-
-                            return empty($(`[href$="${ pathname }"] [class*="--offline"i]`))
-                        },
-                        name: $('img', false, element)?.alt,
-                    };
-
-                    element.setAttribute('draggable', true);
-                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                    element.ondragstart ||= event => {
-                        let { currentTarget } = event;
-
-                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
-                        event.dataTransfer.dropEffect = 'move';
-                    };
-
-                    return streamer;
-                }),
-    ];
-
-    /** Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
-     * href:string   - link to the channel
-     * icon:string   - link to the channel's image
-     * live:boolean* - GETTER: is the channel live
-     * name:string   - the channel's name
-     */
-    STREAMERS = [
-        // Current streamers
-        ...$(`a:not([href$="${ PATHNAME }"i])`, true, $('.side-bar-contents .side-nav-section:not(.recommended-channels)'))
-            .map(element => {
-                    let streamer = {
-                        href: element.href,
-                        icon: $('img', false, element)?.src,
-                        get live() {
-                            let { href } = element,
-                                url = parseURL(href),
-                                { pathname } = url;
-
-                            return empty($(`[href$="${ pathname }"] [class*="--offline"i]`))
-                        },
-                        name: $('img', false, element)?.alt,
-                    };
-
-                    element.setAttribute('draggable', true);
-                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                    element.ondragstart ||= event => {
-                        let { currentTarget } = event;
-
-                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
-                        event.dataTransfer.dropEffect = 'move';
-                    };
-
-                    return streamer;
-                }
-            ),
     ];
 
     /** Streamer Array - the current streamer/channel
@@ -2330,36 +2357,35 @@ let Initialize = async(START_OVER = false) => {
      * name:string   - the channel's name
      */
     // Notifications
-    NOTIFICATIONS = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true).map(
-        element =>
-        ({
-            live: true,
-            href: $('a', false, element)?.href,
-            icon: $('img', false, element)?.src,
-            name: $('[class$="text"]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
-        })
-    );
+    NOTIFICATIONS = [
+        ...$('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true)
+            .map(element =>
+                ({
+                    live: true,
+                    href: $('a', false, element)?.href,
+                    icon: $('img', false, element)?.src,
+                    name: $('[class$="text"]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                })
+            )
+    ];
 
-    __GetAllChannels__: {; // <- Atom connects brace with first semicolon
-        ;let element;
+    __GetAllChannels__: {
+        let element;
 
         // Is the nav open?
         let open = defined($('[data-a-target="side-nav-search-input"]')),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
-        if(!defined(sidenav))
-            return;
-
         // Open the Side Nav
         if(!open) // Only open it if it isn't already
-            sidenav.click();
+            sidenav?.click();
 
         // Click "show more" as many times as possible
         while(defined(element = $('[data-a-target="side-nav-show-more-button"]')))
             element.click();
 
         // Collect all channels
-        /** Hidden Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
+        /** Hidden Channels Array - all channels/friends that appear on the side panel
          * href:string   - link to the channel
          * icon:string   - link to the channel's image
          * live:boolean* - GETTER: is the channel live
@@ -2367,7 +2393,7 @@ let Initialize = async(START_OVER = false) => {
          */
         ALL_CHANNELS = [
             // Current (followed) streamers
-            ...$(`.side-bar-contents .side-nav-section a:not([href="${ PATHNAME }"i])`, true)
+            ...$(`#sideNav .side-nav-section a`, true)
                 .map(element => {
                         let streamer = {
                             href: element.href,
@@ -2377,7 +2403,60 @@ let Initialize = async(START_OVER = false) => {
                                     url = parseURL(href),
                                     { pathname } = url;
 
-                                return empty($(`[href$="${ pathname }"] [class*="--offline"i]`))
+                                let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`),
+                                    live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+
+                                // if(!defined(parent) && LIVE_CACHE.has(pathname))
+                                //     return LIVE_CACHE.get(pathname);
+                                // LIVE_CACHE.set(pathname, live);
+
+                                return live;
+                            },
+                            name: $('img', false, element)?.alt,
+                        };
+
+                        element.setAttribute('draggable', true);
+                        element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                        element.ondragstart ||= event => {
+                            let { currentTarget } = event;
+
+                            event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                            event.dataTransfer.dropEffect = 'move';
+                        };
+
+                        // Activate (and set) the live status for the streamer
+                        let { live } = streamer;
+
+                        return streamer;
+                    }),
+        ];
+
+        /** Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
+         * href:string   - link to the channel
+         * icon:string   - link to the channel's image
+         * live:boolean* - GETTER: is the channel live
+         * name:string   - the channel's name
+         */
+        CHANNELS = [
+            // Current (followed) streamers
+            ...$(`#sideNav .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
+                .map(element => {
+                        let streamer = {
+                            href: element.href,
+                            icon: $('img', false, element)?.src,
+                            get live() {
+                                let { href } = element,
+                                    url = parseURL(href),
+                                    { pathname } = url;
+
+                                let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`),
+                                    live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+
+                                // if(!defined(parent) && LIVE_CACHE.has(pathname))
+                                //     return LIVE_CACHE.get(pathname);
+                                // LIVE_CACHE.set(pathname, live);
+
+                                return live;
                             },
                             name: $('img', false, element)?.alt,
                         };
@@ -2395,17 +2474,61 @@ let Initialize = async(START_OVER = false) => {
                     }),
         ];
 
+        /** Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
+         * href:string   - link to the channel
+         * icon:string   - link to the channel's image
+         * live:boolean* - GETTER: is the channel live
+         * name:string   - the channel's name
+         */
+        STREAMERS = [
+            // Current streamers
+            ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
+                .map(element => {
+                        let streamer = {
+                            href: element.href,
+                            icon: $('img', false, element)?.src,
+                            get live() {
+                                let { href } = element,
+                                    url = parseURL(href),
+                                    { pathname } = url;
+
+                                let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`),
+                                    live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+
+                                // if(!defined(parent) && LIVE_CACHE.has(pathname))
+                                //     return LIVE_CACHE.get(pathname);
+                                // LIVE_CACHE.set(pathname, live);
+
+                                return live;
+                            },
+                            name: $('img', false, element)?.alt,
+                        };
+
+                        element.setAttribute('draggable', true);
+                        element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                        element.ondragstart ||= event => {
+                            let { currentTarget } = event;
+
+                            event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                            event.dataTransfer.dropEffect = 'move';
+                        };
+
+                        return streamer;
+                    }
+                ),
+        ];
+
         // Click "show less" as many times as possible
         while(defined(element = $('[data-a-target="side-nav-show-less-button"]')))
-            $('[data-a-target="side-nav-show-less-button"]').click();
+            element.click();
 
         // Close the Side Nav
         if(!open) // Only close it if it wasn't open in the first place
-            sidenav.click();
+            sidenav?.click();
     }
 
     // Every channel
-    ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...CHANNELS, ...STREAMERS, ...NOTIFICATIONS, STREAMER].filter(defined).filter(uniqueChannels);
+    ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 
     if(STREAMER) {
         let element = $(`a[href$="${ PATHNAME }"i]`),
@@ -3150,7 +3273,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                channel = CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+                channel = STREAMERS.filter(isLive).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
             if(!defined(channel)) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -3185,7 +3308,7 @@ let Initialize = async(START_OVER = false) => {
     await LoadCache('OLD_STREAMERS', cache => OLD_STREAMERS = cache.OLD_STREAMERS);
 
     Handlers.first_in_line_plus = () => {
-        let streamers = [...new Set([...STREAMERS, STREAMER].filter(channel => channel.live).map(streamer => streamer.name))].sort();
+        let streamers = [...new Set([...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name))].sort();
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
 
@@ -3231,10 +3354,10 @@ let Initialize = async(START_OVER = false) => {
                 [...old_names],
 
                 'New streamers:',
-                [...NEW_STREAMERS],
+                [NEW_STREAMERS],
 
                 'Old streamers',
-                [...OLD_STREAMERS],
+                [OLD_STREAMERS],
 
                 'Followed channels (side-panel):',
                 [...STREAMERS],
@@ -3318,7 +3441,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.prevent_hosting = async() => {
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"]')),
-            online = STREAMERS.filter(streamer => streamer.live),
+            online = STREAMERS.filter(isLive),
             next = await GetNextStreamer(),
             [guest, host] = $('[href^="/"] h1, [href^="/"] > p', true);
 
@@ -3372,9 +3495,9 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
-            online = STREAMERS.filter(streamer => streamer.live),
+            online = STREAMERS.filter(isLive),
             next = await GetNextStreamer(),
-            [from, to] = $('[data-test-selector="raid-banner"i] strong') ?? [];
+            [from, to] = ($('[data-test-selector="raid-banner"i] strong', true) ?? [,STREAMER.name]);
 
         from = from?.innerText;
         to = to?.innerText;
@@ -3390,6 +3513,8 @@ let Initialize = async(START_OVER = false) => {
                 } // The channel that was raided (to) is already in "followed." No need to leave
                 else if(raided && STREAMER.like) {
                     LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
+
+                    RemoveFromSearch(['referrer']);
                     break raid_stopper;
                 }
             }
@@ -3424,7 +3549,7 @@ let Initialize = async(START_OVER = false) => {
     let ClearIntent;
 
     Handlers.stay_live = async() => {
-        let online = STREAMERS.filter(streamer => streamer.live),
+        let online = STREAMERS.filter(isLive),
             next = await GetNextStreamer(),
             { pathname } = window.location;
 
@@ -4400,6 +4525,9 @@ let Initialize = async(START_OVER = false) => {
             setInterval(() => {
                 let watch_time = $('#twitch-tools-watch-time'),
                     time = parseInt(watch_time?.getAttribute('time')) | 0;
+
+                if(!defined(watch_time))
+                    return;
 
                 watch_time.setAttribute('time', ++time);
 

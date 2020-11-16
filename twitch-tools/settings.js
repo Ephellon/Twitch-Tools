@@ -540,6 +540,11 @@ async function LoadSettings() {
                     break;
 
                 default:
+                    let selected = $('[selected]', false, element);
+
+                    if(defined(selected))
+                        selected.removeAttribute('selected');
+
                     assignValue(element, settings[id]);
                     break;
             }

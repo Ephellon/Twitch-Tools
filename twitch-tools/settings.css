@@ -38,7 +38,11 @@
     --gray: var(--grey);
     --gray-highlighted: var(--grey-highlighted);
 
+    --baby-blue: #387aff;
+    --hot-pink: #f5009b;
+
     --purple: #9147ff;
+    --purple-dark: #4700b3;
     --purple-highlighted: #a970ff;
 
     --red: #bb1411;
@@ -47,6 +51,7 @@
 
     --yellow: #e6cb00;
     --yellow-dark: #ad9600;
+    --yellow-highlighted: #ffff00;
 
     --white: #fff;
     --white-faded: #fff8;
@@ -692,8 +697,9 @@ input[type="number"]::-webkit-inner-spin-button {
     display: block;
 
     position: absolute;
-    right: 1rem;
-    top: 1rem;
+    bottom: 1rem;
+    left: calc(50% - 1rem);
+    transform: translateX(-50%);
 
     height: 2.5rem;
     width: 6rem;

@@ -135,11 +135,11 @@
                         How should the next channel be decided?
                     </p>
                     <select id="next_channel_preference">
-                        <option value="random">Go to a random channel</option>
+                        <option value="random" selected>Go to a random channel</option>
                         <option value="unpopular">Go with the least viewers</option>
                         <option value="popular">Go with the most viewers</option>
-                        <option value="rich">Go with the most channel points</option>
                         <option value="poor">Go with the least channel points</option>
+                        <option value="rich">Go with the most channel points</option>
                     </select>
                 </div>
             </section>
@@ -151,7 +151,7 @@
                         Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
                     </p>
                     <select id="prevent_hosting">
-                        <option value="all">Allow all channels to host</option>
+                        <option value="all" selected>Allow all channels to host</option>
                         <option value="none">Prevent all channels from hosting</option>
                         <option value="unfollowed">Prevent hosting unfollowed channels</option>
                     </select>
@@ -165,7 +165,7 @@
                         Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
                     </p>
                     <select id="prevent_raiding">
-                        <option value="all">Allow all channels to raid</option>
+                        <option value="all" selected>Allow all channels to raid</option>
                         <option value="none">Prevent all channels from raiding</option>
                         <option value="unfollowed">Prevent raiding unfollowed channels</option>
                     </select>
@@ -286,7 +286,7 @@
                     </p>
 
                     <select id="away_mode_placement">
-                        <option value="null">Do not display</option>
+                        <option value="null" selected>Do not display</option>
                         <option value="under">Under the video</option>
                         <option value="over">Over the video</option>
                     </select>
@@ -301,7 +301,7 @@
                     </p>
 
                     <select id="point_watcher_placecment">
-                        <option value="null">Do not display</option>
+                        <option value="null" selected>Do not display</option>
                         <option value="on">On the tooltip</option>
                     </select>
                 </div>
@@ -315,7 +315,7 @@
                     </p>
 
                     <select id="watch_time_placement">
-                        <option value="null">Do not display</option>
+                        <option value="null" selected>Do not display</option>
                         <option value="under">Under the video</option>
                     </select>
                 </div>
@@ -505,9 +505,9 @@
             <section>
                 <div class="title"><span small glyph="extensions"></span> Version</div>
                 <div class="summary">
-                    <a type="button" set="tooltip:version.installed"><span small glyph="extensions"></span> Installed</a>
-                    <a type="button" set="tooltip:version.github" href="https://github.com/ephellon/twitch-tools"><span small glyph="github"></span> GitHub </a>
-                    <a type="button" set="tooltip:version.chrome" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd"><span small glyph="chrome"></span> Chrome Web Store </a>
+                    <a type="button" set="top-tooltip:version.installed"><span small glyph="extensions"></span> Installed</a>
+                    <a type="button" set="top-tooltip:version.github" href="https://github.com/ephellon/twitch-tools"><span small glyph="github"></span> GitHub </a>
+                    <a type="button" set="top-tooltip:version.chrome" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd"><span small glyph="chrome"></span> Chrome Web Store </a>
                 </div>
             </section>
 
@@ -539,11 +539,11 @@
         <script src="settings.js"></script>
         <style>
         /* CSS needs to be here so that `height:100%` and `width:100%` can render properly */
-        .ripple:after {
+        .popup .ripple:after {
             content: ' ';
 
             background-color: #fff4;
-            border-radius: inherit;
+            border-radius: 10rem;
             display: none;
 
             height: 100%;
@@ -555,7 +555,7 @@
             z-index: 9;
         }
 
-        .ripple:hover:after, .ripple.animate:after {
+        .popup .ripple:hover:after, .ripple.animate:after {
             display: block !important;
 
             -webkit-transform: scale(0);

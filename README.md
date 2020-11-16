@@ -27,8 +27,14 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - Go with the most viewers
     - Go with the most channel points
 - *Kill Extensions* `off` &mdash; *Currently under __Experimental Features__*
-- *Prevent Hosting* `off` &mdash; When a channel begins hosting, go to the __Next Channel__
-- *Prevent Raiding* `off` &mdash; When a raid begins, go to the __Next Channel__
+- *Prevent Hosting* &mdash; When a channel begins hosting, go to the __Next Channel__
+    - `default` Allow all channels to host
+    - Prevent all channels from hosting
+    - Prevent hosting unfollowed channels
+- *Prevent Raiding* &mdash; When a raid begins, go to the __Next Channel__
+    - `default` Allow all channels to raid
+    - Prevent all channels from raiding
+    - Prevent raiding unfollowed channels
 - *Stay Live* `on` &mdash; When the current stream ends, got to the __Next Channel__
 
 ### Chat & Messaging
