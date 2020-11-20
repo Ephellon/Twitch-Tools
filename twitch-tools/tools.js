@@ -13,7 +13,7 @@ let empty = value => (value === undefined || value === null),
     defined = value => !empty(value);
 
 let settings = {},
-    display = $('[data-a-target="user-menu-toggle"i]'),
+    UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
     Jobs = {},
     Queue = { balloons: [], bullets: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Timers = {},
@@ -23,10 +23,10 @@ let settings = {},
     USERNAME;
 
 // Populate the username field by quickly showing the menu
-if(defined(display)) {
-    display.click();
+if(defined(UserMenuToggleButton)) {
+    UserMenuToggleButton.click();
     USERNAME = $('[data-a-target="user-display-name"i]').innerText;
-    display.click();
+    UserMenuToggleButton.click();
 }
 
 let browser, Storage, Runtime, Extension, Container, BrowserNamespace;
@@ -1815,8 +1815,8 @@ let uniqueChannels = (channel, index, channels) =>
 let isLive = channel => channel?.live;
 
 // Opens the side panel to expose all channels. Returns whether the panel was already open
-    // OpenPanel([close:boolean]) -> boolean
-async function OpenPanel(close = false) {
+    // OpenPanel(interjection:function[, close:boolean]) -> boolean
+async function OpenPanel(interjection, close = false) {
     // Open the side panel
     let element;
 
@@ -1827,6 +1827,9 @@ async function OpenPanel(close = false) {
     // Open the Side Nav
     if(!open) // Only open it if it isn't already
         sidenav?.click();
+
+    // Execute the interjected function
+    interjection();
 
     // Click "show more" as many times as possible
     while(defined(element = $('[data-a-target="side-nav-show-more-button"]')))
@@ -2128,6 +2131,7 @@ Storage.onChanged.addListener((changes, namespace) => {
     // Initialize(START_OVER:boolean) -> undefined
 
 let LIVE_CACHE = new Map();
+
 let Initialize = async(START_OVER = false) => {
     let TWITCH_API = {},
         EVENT_LISTENER = {};
@@ -2376,12 +2380,19 @@ let Initialize = async(START_OVER = false) => {
         let open = defined($('[data-a-target="side-nav-search-input"]')),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
+        let SIDE_PANEL_CHILDREN = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true),
+            GET_PANEL_SIZE = (last = false) =>
+                (SIDE_PANEL_CHILDREN = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true))
+                    [`find${last?'Last':''}Index`](e => $('[class*="--offline"i]', false, e)),
+            SIDE_PANEL_SIZE = SIDE_PANEL_CHILDREN.length;
+
         // Open the Side Nav
         if(!open) // Only open it if it isn't already
             sidenav?.click();
 
         // Click "show more" as many times as possible
-        while(defined(element = $('[data-a-target="side-nav-show-more-button"]')))
+        show_more:
+        while(defined(element = $('#sideNav [data-a-target$="show-more-button"]')))
             element.click();
 
         // Collect all channels
@@ -2519,7 +2530,15 @@ let Initialize = async(START_OVER = false) => {
         ];
 
         // Click "show less" as many times as possible
-        while(defined(element = $('[data-a-target="side-nav-show-less-button"]')))
+        show_less:
+        while(
+            defined(element = $('[data-a-target="side-nav-show-less-button"]'))
+            // Only close sections if they don't contain any live channels
+            // floor(last-dead-channel-index / panel-size) > floor(first-dead-channel-index / panel-size)
+                // [live] ... [dead] ... [dead]
+                // ^ keep     ^ stop?    ^ kill
+            && ((GET_PANEL_SIZE(true) - GET_PANEL_SIZE()) / SIDE_PANEL_SIZE) | 0
+        )
             element.click();
 
         // Close the Side Nav
@@ -3116,7 +3135,7 @@ let Initialize = async(START_OVER = false) => {
             } else {
                 LOG('Pushing to Jobs (no contest):', href, new Date);
 
-                // Add the new job (while preventing duplicates)
+                // Add the new job (and prevent duplicates)
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
 
                 // To wait, or not to wait
@@ -4131,7 +4150,7 @@ let Initialize = async(START_OVER = false) => {
 
         PushToSearch({ 'twitch-tools-failed-to-play-video-at': (+new Date).toString(36) });
     };
-    Timers.recover_video = 15_0000;
+    Timers.recover_video = 15_000;
 
     if(settings.recover_video) __RecoverVideo__: {
         RegisterJob('recover_video');
