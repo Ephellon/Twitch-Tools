@@ -21,10 +21,11 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - When participating in a raid, follow the channel being raided
     - After watching `15` minutes of content, follow the channel
     - Follow all channels automatically
-- *Next Channel* &mdash; Decide how the next channel is chosen
+- *Next Channel* &mdash; Decide how the next channel is chosen (after __Up Next__ is empty)
     - `default` Go to a random channel
     - Go with the least viewers
     - Go with the most viewers
+    - Go with the least channel points
     - Go with the most channel points
 - *Kill Extensions* `off` &mdash; *Currently under __Experimental Features__*
 - *Prevent Hosting* &mdash; When a channel begins hosting, go to the __Next Channel__

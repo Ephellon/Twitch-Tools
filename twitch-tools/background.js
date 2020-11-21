@@ -51,8 +51,11 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
         Storage.set({ onInstalledReason: reason });
 
-        for(let tab of tabs)
-            Container.tabs.reload(tab.id);
+        if(reason == 'install')
+            Container.tabs.create({ url: 'settings.html' });
+        else
+            for(let tab of tabs)
+                Container.tabs.reload(tab.id);
     });
 });
 
