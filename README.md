@@ -82,4 +82,4 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emote (without requiring a subscription)
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
-- *Recover Pages* `on` &mdash; When the webpage fails to display, reload it
+- *Recover Pages* `off` &mdash; When the webpage fails to display, reload it

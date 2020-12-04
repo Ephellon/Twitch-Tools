@@ -113,6 +113,8 @@ let // These are option names. Anything else will be removed
         'recover_ads',
         // Recover Frames
         'recover_frames',
+        // Recover Page
+        'recover_pages',
 
         /* Developer Options */
         // Log messages
