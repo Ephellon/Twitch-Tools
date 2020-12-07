@@ -213,7 +213,7 @@ class Popup {
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
-                            style: 'background-color:var(--color-twitch-purple-4)!important'
+                            style: 'background-color:#387aff!important;'
                         },
                         f('div', {},
                             f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
@@ -902,7 +902,7 @@ class ChatFooter {
 
                     style:
                     `
-                    background-color: var(--color-twitch-purple);
+                    background-color: #387aff;
                     margin-bottom: 5rem!important;
                     left: 50%;
                     transform: translateX(-50%);
@@ -1766,8 +1766,20 @@ let DefaultFill = ({
  * cog
  * x
  */
+
 let Glyphs = {
     bonuschannelpoints: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>`,
+    /*  let fill="currentcolor", width="100%", height="100%", version="1.1", viewBox="0 0 20 20", x="0px", y="0px";
+        f('svg', { fill, width, height, version, viewBox, x, y },
+            f('g', {},
+                f('path', {
+                    'clip-rule': 'evenodd',
+                    'fill-rule': 'evenodd',
+                    d: 'M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z',
+                })
+            )
+        )
+    */
 
     more_horizontal: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 10a2 2 0 114 0 2 2 0 01-4 0zM8 10a2 2 0 114 0 2 2 0 01-4 0zM16 8a2 2 0 100 4 2 2 0 000-4z"></path></g></svg>`,
 
@@ -1779,6 +1791,7 @@ let Glyphs = {
     favorite: `<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>`,
 
     emotes: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
+    latest: '<svg fill="#e6cb00" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
     search: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M13.192 14.606a7 7 0 111.414-1.414l3.101 3.1-1.414 1.415-3.1-3.1zM14 9A5 5 0 114 9a5 5 0 0110 0z" clip-rule="evenodd"></path></g></svg>`,
     stream: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>`,
     trophy: `<svg fill="#ff9147" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M5 10h.1A5.006 5.006 0 009 13.9V16H7v2h6v-2h-2v-2.1a5.006 5.006 0 003.9-3.9h.1a3 3 0 003-3V4h-3V2H5v2H2v3a3 3 0 003 3zm2-6h6v5a3 3 0 11-6 0V4zm8 2v2a1 1 0 001-1V6h-1zM4 6h1v2a1 1 0 01-1-1V6z"></path></g></svg>`,
@@ -1908,6 +1921,9 @@ Object.defineProperties(top, {
 async function update() {
     // The location
     PATHNAME = top.location.pathname;
+
+    // The theme
+    THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
 
     // All Channels under Search
     SEARCH = [
@@ -2332,7 +2348,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get live() {
-            return SPECIAL_MODE || defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] .tw-channel-status-text-indicator`))
+            return SPECIAL_MODE || (defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] .tw-channel-status-text-indicator`)) && !defined($(`[class*="offline-recommendations"i]`)))
         },
 
         name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent,
@@ -2736,6 +2752,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let FIRST_IN_LINE_JOB,                  // The current job (interval)
         FIRST_IN_LINE_HREF,                 // The upcoming HREF
+        FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
         FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
         FIRST_IN_LINE_PAUSED,               // The pause-state
         FIRST_IN_LINE_BALLOON,              // The balloon controller
@@ -2745,6 +2762,17 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via popup)
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
+
+    // First in Line wait time
+    FIRST_IN_LINE_WAIT_TIME = parseInt(
+        settings.first_in_line?
+            settings.first_in_line_time_minutes:
+        settings.first_in_line_plus?
+            settings.first_in_line_plus_time_minutes:
+        settings.first_in_line_all?
+            settings.first_in_line_all_time_minutes:
+        0
+    ) | 0;
 
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
@@ -2859,6 +2887,8 @@ let Initialize = async(START_OVER = false) => {
             if(FIRST_IN_LINE_TIMER > 1000)
                 return FIRST_IN_LINE_TIMER -= 1000;
 
+            /* After above is `false` */
+
             FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
             SaveCache({ FIRST_IN_LINE_TIMER });
 
@@ -2876,6 +2906,52 @@ let Initialize = async(START_OVER = false) => {
     } else if(NORMAL_MODE) {
         FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
 
+        // Up Next Boost Button
+        let first_in_line_boost_button = FIRST_IN_LINE_BALLOON.addButton({
+            icon: 'latest',
+            onclick: event => {
+                let { currentTarget } = event,
+                    speeding = currentTarget.getAttribute('speeding') == 'true';
+
+                speeding = !speeding;
+
+                currentTarget.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+speeding] }`);
+                currentTarget.setAttribute('speeding', FIRST_IN_LINE_BOOST = speeding);
+
+                currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
+
+                let oneMin = 60_000,
+                    fiveMin = 5 * oneMin,
+                    tenMin = 10 * oneMin;
+
+                FIRST_IN_LINE_TIMER =
+                    // If the streamer hasn't been on for longer than 10mins, wait until then
+                    STREAMER.time < tenMin?
+                        fiveMin + (tenMin - STREAMER.time):
+                    // Streamer s has been live longer than 10mins
+                    (
+                        // Boost is enabled
+                        FIRST_IN_LINE_BOOST?
+                            (
+                                // Boost is enabled and the time left on "Up Next" is less than 5mins
+                                (FIRST_IN_LINE_TIMER ?? fiveMin) < fiveMin?
+                                    FIRST_IN_LINE_TIMER:
+                                // ... greater than 5mins
+                                fiveMin
+                            ):
+                        // Boost is disabled
+                        FIRST_IN_LINE_WAIT_TIME * oneMin
+                    );
+
+                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+
+                $('[up-next--body] [time]', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
+
+                SaveCache({ FIRST_IN_LINE_BOOST });
+            },
+        });
+
+        // Pause Button
         let first_in_line_pause_button = FIRST_IN_LINE_BALLOON.addButton({
             icon: 'pause',
             onclick: event => {
@@ -2891,14 +2967,40 @@ let Initialize = async(START_OVER = false) => {
             },
         });
 
-        first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
-
+        // Help Button
         let first_in_line_help_button = FIRST_IN_LINE_BALLOON.addButton({
             icon: 'help',
             left: true,
         });
+        first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel in the blue area to queue it');
 
-        new Tooltip(first_in_line_help_button, 'The channel on top is next');
+        // Load cache
+        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
+            // Load cache results
+            ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS;
+            FIRST_IN_LINE_BOOST = (cache.FIRST_IN_LINE_BOOST ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
+            FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
+
+            LOG(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
+
+            if(FIRST_IN_LINE_BOOST) {
+                let fiveMin = 300_000;
+
+                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_TIMER < fiveMin? FIRST_IN_LINE_TIMER: fiveMin;
+
+                setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', fiveMin)), 5_000);
+
+                SaveCache({ FIRST_IN_LINE_TIMER });
+            }
+
+            // Up Next Boost
+            first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
+            first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+FIRST_IN_LINE_BOOST | 0] }`);
+            first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][+FIRST_IN_LINE_BOOST | 0] } Boost`);
+
+            // Pause
+            first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
+        });
     }
 
     if(defined(FIRST_IN_LINE_BALLOON)) {
@@ -2931,8 +3033,13 @@ let Initialize = async(START_OVER = false) => {
 
                 LOG('Adding job:', { href, streamer });
 
+                // Jobs are empty. Restart timer
+                if(ALL_FIRST_IN_LINE_JOBS.length < 1)
+                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
-                await SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+
+                await SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
             }
         };
 
@@ -2993,16 +3100,6 @@ let Initialize = async(START_OVER = false) => {
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
             },
         });
-
-        FIRST_IN_LINE_WAIT_TIME = parseInt(
-            settings.first_in_line?
-                settings.first_in_line_time_minutes:
-            settings.first_in_line_plus?
-                settings.first_in_line_plus_time_minutes:
-            settings.first_in_line_all?
-                settings.first_in_line_all_time_minutes:
-            0
-        ) | 0;
 
         if(settings.first_in_line_none)
             FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
@@ -3095,8 +3192,10 @@ let Initialize = async(START_OVER = false) => {
                                 if(container.getAttribute('index') != index)
                                     container.setAttribute('index', index);
 
+                                let theme = { light: 'w', dark: 'b' }[THEME];
+
                                 $('a', false, container)
-                                    .setAttribute('style', `background-color: var(--color-opac-p-${ index > 8? 1: 9 - index })`);
+                                    .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
                                 if(container.getAttribute('live') != (live + '')) {
                                     $('.twitch-tools-balloon-message', false, container).innerHTML =
@@ -3106,7 +3205,7 @@ let Initialize = async(START_OVER = false) => {
                                 }
 
                                 if(live)
-                                    subheader.innerHTML = /*index > 0? `${ nth(index + 1) } in line`:*/ ConvertTime(time, 'clock');
+                                    subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
                             }, 1000);
                         },
                     });
@@ -3276,8 +3375,10 @@ let Initialize = async(START_OVER = false) => {
                             if(container.getAttribute('index') != index)
                                 container.setAttribute('index', index);
 
+                            let theme = { light: 'w', dark: 'b' }[THEME];
+
                             $('a', false, container)
-                                .setAttribute('style', `background-color: var(--color-opac-p-${ index > 8? 1: 9 - index })`);
+                                .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
                             if(container.getAttribute('live') != (live + '')) {
                                 $('.twitch-tools-balloon-message', false, container).innerHTML =
@@ -3287,7 +3388,7 @@ let Initialize = async(START_OVER = false) => {
                             }
 
                             if(live)
-                                subheader.innerHTML = /*index > 0? `${ nth(index + 1) } in line`:*/ ConvertTime(time, 'clock');
+                                subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
                         }, 1000);
                     },
                 });
@@ -3310,6 +3411,8 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
         }
+
+        FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS.length > 0;
     };
     Timers.first_in_line = 1000;
 
@@ -3329,9 +3432,10 @@ let Initialize = async(START_OVER = false) => {
     // window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
 
     if(settings.first_in_line || settings.first_in_line_plus || settings.first_in_line_all) __FirstInLine__: {
-        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER'], cache => {
+        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
+            FIRST_IN_LINE_BOOST = cache.FIRST_IN_LINE_BOOST ?? false;
         });
 
         RegisterJob('first_in_line');
@@ -4201,7 +4305,8 @@ let Initialize = async(START_OVER = false) => {
 
         ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
 
-        PushToSearch({ 'twitch-tools-failed-to-play-video-at': (+new Date).toString(36) });
+        // Failed to play video at...
+        PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
     };
     Timers.recover_video = 15_000;
 
@@ -5072,6 +5177,10 @@ let WaitForPageToLoad = setInterval(() => {
             `
                 [animationID] a { cursor: grab }
                 [animationID] a:active { cursor: grabbing }
+                [up-next--body] {
+                    background-color: #387aff;
+                    border-radius: 0.5rem;
+                }
                 [up-next--body] > div[class]:first-child:only-child::after {
                     content: 'Drag-and-drop channels here to queue them\\A They can be rearranged by dragging them';
                     text-align: center;
