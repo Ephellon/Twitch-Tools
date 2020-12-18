@@ -234,7 +234,7 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="checkmark"></span> Highlight mentions</div>
+                <div class="title"><span glyph="thread"></span> Highlight mentions</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="highlight_mentions" type="checkbox" checked/>
@@ -246,8 +246,21 @@
                 </div>
             </section>
 
+            <!-- <section>
+                <div class="title"><span small glyph="mod"></span> Prevent spam</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="prevent_spam" type="checkbox" checked/>
+                        <label for="prevent_spam"></label>
+                    </div>
+                    <p>
+                        Hide repetitive messages in chat.
+                    </p>
+                </div>
+            </section> -->
+
             <section>
-                <div class="title"><span small glyph="checkmark"></span> Show pop-ups</div>
+                <div class="title"><span glyph="thread"></span> Show pop-ups</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="highlight_mentions_popup" type="checkbox" checked/>
@@ -325,9 +338,22 @@
         <header>Video Recovery</header>
         <article>
             <section>
+                <div class="title"><span small glyph="play"></span> Keep Pop-out</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="keep_popout" type="checkbox"/>
+                        <label for="keep_popout"></label>
+                    </div>
+                    <p>
+                        When moving to a new page, prevent the extension from destroying the small video (pop-out) of the stream.
+                    </p>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="play"></span> Recover Ads</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Requires &quot;Recover Stream&quot;">
+                    <div class="toggle" right-tooltip="Requires &quot;Recover Stream&quot;" requires="#recover_stream">
                         <input id="recover_ads" type="checkbox"/>
                         <label for="recover_ads"></label>
                     </div>
@@ -377,7 +403,7 @@
             </section>
         </article>
 
-        <header>Developer Mode <span glyph="help" right-tooltip="These are advanced features and should be used carefully"></span></header>
+        <header>Developer Features <span glyph="help" right-tooltip="These are advanced features that should be used for testing"></span></header>
         <article danger>
             <section>
                 <div class="title"><span small glyph="stats"></span> Display Console Messages</div>
@@ -423,7 +449,7 @@
             </section>
         </article>
 
-        <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features and should be used carefully"></span></header>
+        <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features that may produce errors"></span></header>
         <article caution>
             <section>
                 <div class="title"><span small glyph="stats"></span> Use Fine Details</div>

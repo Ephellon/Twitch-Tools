@@ -19,12 +19,14 @@ let settings = {},
     Timers = {},
     Handlers = {},
     Unhandlers = {},
+    Messages = new Map(),
     // These won't change (often)
     USERNAME,
     THEME,
     SPECIAL_MODE,
     NORMAL_MODE,
-    NORMALIZED_PATHNAME;;
+    NORMALIZED_PATHNAME,
+    NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM = 15;
 
 // Populate the username field by quickly showing the menu
 if(defined(UserMenuToggleButton)) {
@@ -385,7 +387,7 @@ class Balloon {
 
                             'data-test-selector': 'toggle-balloon-wrapper__mouse-enter-detector',
                         },
-                        f('div.tw-inline-flex.tw-relative.tw-tooltip-wrapper', {},
+                        f('div.tw-inline-flex.tw-relative', {},
                             f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
                                 {
                                     'connected-to': U,
@@ -447,7 +449,7 @@ class Balloon {
                         )
                     ),
                     // Balloon
-                    f(`div#twitch-tools-balloon-${ U }.tw-absolute.tw-balloon.tw-balloon--down.tw-balloon--right.tw-balloon-lg.tw-block`,
+                    f(`div#twitch-tools-balloon-${ U }.tw-absolute.tw-balloon.tw-right-0.tw-balloon--down.tw-balloon--right.tw-balloon-lg.tw-block`,
                         {
                             style: 'display:none!important',
                             display: 'none',
@@ -854,7 +856,7 @@ class Tooltip {
                             }
                         })()
                     },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
+                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper--show' },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
@@ -1068,6 +1070,9 @@ function GetChat(lines = 30, keepEmotes = false) {
             .join(' ')
             .trim()
             .replace(/(\s){2,}/g, '$1');
+
+        style = style
+            .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
         let uuid = UUID.from([author, mentions.join(','), message].join(':')).toString();
 
@@ -1401,7 +1406,7 @@ function parseTime(time = '') {
 
 // Convert an SI number into a number
     // parseCoin(amount:string) -> Number
-function parseCoin(amount) {
+function parseCoin(amount = '') {
     let points = 0,
         COIN, UNIT;
 
@@ -1415,6 +1420,29 @@ function parseCoin(amount) {
             points = parseFloat(COIN) * (1e3 ** index);
 
     return points;
+}
+
+// Convert boolean values
+    // parseBool(*:value) -> Boolean
+function parseBool(value = null) {
+    switch(value) {
+        case undefined:
+        case "false":
+        case "null":
+        case false:
+        case null:
+        case "[]":
+        case "{}":
+        case "0":
+        case "":
+        case []:
+        case {}:
+        case 0:
+            return false;
+
+        default:
+            return true;
+    }
 }
 
 // Get the video quality
@@ -1539,7 +1567,7 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
     else
         desired = qualities.find(({ label }) => !!~smol(label).indexOf(quality.toLowerCase())) ?? null;
 
-    if(desired === null)
+    if(!defined(desired))
         /* The desired quality does not exist */
         desired = qualities.auto;
     else if(current?.uuid === desired?.uuid)
@@ -1549,7 +1577,7 @@ async function ChangeQuality(quality = 'auto', backup = 'source') {
         /* The desired quality is available */
         current.input.checked = !(desired.input.checked = !0);
 
-    desired.input.click();
+    desired?.input.click();
 
     if(buttons.options)
         buttons.settings.click();
@@ -1784,38 +1812,39 @@ let Glyphs = {
     more_horizontal: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 10a2 2 0 114 0 2 2 0 01-4 0zM8 10a2 2 0 114 0 2 2 0 01-4 0zM16 8a2 2 0 100 4 2 2 0 000-4z"></path></g></svg>`,
 
     more_vertical: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 18a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM8 4a2 2 0 104 0 2 2 0 00-4 0z"></path></g></svg>`,
-    channelpoints: `<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
+    channelpoints: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
 
     checkmark: `<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>`,
 
     favorite: `<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>`,
 
     emotes: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
-    latest: '<svg fill="#e6cb00" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
+    latest: `<svg fill="#e6cb00"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>`,
     search: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M13.192 14.606a7 7 0 111.414-1.414l3.101 3.1-1.414 1.415-3.1-3.1zM14 9A5 5 0 114 9a5 5 0 0110 0z" clip-rule="evenodd"></path></g></svg>`,
     stream: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>`,
-    trophy: `<svg fill="#ff9147" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M5 10h.1A5.006 5.006 0 009 13.9V16H7v2h6v-2h-2v-2.1a5.006 5.006 0 003.9-3.9h.1a3 3 0 003-3V4h-3V2H5v2H2v3a3 3 0 003 3zm2-6h6v5a3 3 0 11-6 0V4zm8 2v2a1 1 0 001-1V6h-1zM4 6h1v2a1 1 0 01-1-1V6z"></path></g></svg>`,
+    thread: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 6H7V8H5V6Z"></path><path d="M9 6H11V8H9V6Z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M8 14L10 12H13C13.5523 12 14 11.5523 14 11V3C14 2.44772 13.5523 2 13 2H3C2.44772 2 2 2.44772 2 3V11C2 11.5523 2.44772 12 3 12H6L8 14ZM6.82843 10H4V4H12V10H9.17157L8 11.1716L6.82843 10Z"></path></g></svg>`,
+    trophy: `<svg fill="#ff9147"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M5 10h.1A5.006 5.006 0 009 13.9V16H7v2h6v-2h-2v-2.1a5.006 5.006 0 003.9-3.9h.1a3 3 0 003-3V4h-3V2H5v2H2v3a3 3 0 003 3zm2-6h6v5a3 3 0 11-6 0V4zm8 2v2a1 1 0 001-1V6h-1zM4 6h1v2a1 1 0 01-1-1V6z"></path></g></svg>`,
     upload: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 01-2 2H4a2 2 0 01-2-2zM15 7l-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"></path></g></svg>`,
     wallet: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 11h2v2h-2v-2z"></path><path fill-rule="evenodd" d="M13.45 2.078L2 6v12h14a2 2 0 002-2V8a2 2 0 00-2-2V4.001a2 2 0 00-2.55-1.923zM14 6V4.004L8.172 6H14zM4 8v8h12V8H4z" clip-rule="evenodd"></path></g></svg>`,
 
     close: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 16V4H2v12h2zM13 15l-1.5-1.5L14 11H6V9h8l-2.5-2.5L13 5l5 5-5 5z"></path></g></svg>`,
     globe: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M10 2c4.415 0 8 3.585 8 8s-3.585 8-8 8-8-3.585-8-8 3.585-8 8-8zm5.917 9a6.015 6.015 0 01-3.584 4.529A10 10 0 0013.95 11h1.967zm0-2a6.015 6.015 0 00-3.584-4.529A10 10 0 0113.95 9h1.967zm-3.98 0A8.002 8.002 0 0010 4.708 8.002 8.002 0 008.063 9h3.874zm-3.874 2A8.002 8.002 0 0010 15.292 8.002 8.002 0 0011.937 11H8.063zM6.05 11a10 10 0 001.617 4.529A6.014 6.014 0 014.083 11H6.05zm0-2a10 10 0 011.617-4.529A6.014 6.014 0 004.083 9H6.05z" clip-rule="evenodd"></path></g></svg>`,
     leave: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 18h-4a2 2 0 01-2-2v-2h2v2h4V4h-4v2h-2V4a2 2 0 012-2h4a2 2 0 012 2v12a2 2 0 01-2 2z"></path><path d="M7 5l1.5 1.5L6 9h8v2H6l2.5 2.5L7 15l-5-5 5-5z"></path></g></svg>`,
-    music: `<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 4.331a2 2 0 00-2.304-1.977l-9 1.385A2 2 0 005 5.716v7.334A2.5 2.5 0 106.95 16H7V9.692l9-1.385v2.743A2.5 2.5 0 1017.95 14H18V4.33zm-2 0L7 5.716v1.953l9-1.385V4.33z" clip-rule="evenodd"></path></g></svg>`,
+    music: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 4.331a2 2 0 00-2.304-1.977l-9 1.385A2 2 0 005 5.716v7.334A2.5 2.5 0 106.95 16H7V9.692l9-1.385v2.743A2.5 2.5 0 1017.95 14H18V4.33zm-2 0L7 5.716v1.953l9-1.385V4.33z" clip-rule="evenodd"></path></g></svg>`,
     pause: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 3H4v14h4V3zM16 3h-4v14h4V3z"></path></g></svg>`,
     reply: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>`,
     stats: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>`,
-    trash: `<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>`,
+    trash: `<svg fill="#bb1411"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>`,
 
-    bits: `<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></g></svg>`,
+    bits: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></g></svg>`,
     chat: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>`,
-    gift: `<svg fill="#9147ff" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16 6h2v6h-1v6H3v-6H2V6h2V4.793c0-2.507 3.03-3.762 4.803-1.99.131.131.249.275.352.429L10 4.5l.845-1.268a2.81 2.81 0 01.352-.429C12.969 1.031 16 2.286 16 4.793V6zM6 4.793V6h2.596L7.49 4.341A.814.814 0 006 4.793zm8 0V6h-2.596l1.106-1.659a.814.814 0 011.49.451zM16 8v2h-5V8h5zm-1 8v-4h-4v4h4zM9 8v2H4V8h5zm0 4H5v4h4v-4z" clip-rule="evenodd"></path></g></svg>`,
+    gift: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16 6h2v6h-1v6H3v-6H2V6h2V4.793c0-2.507 3.03-3.762 4.803-1.99.131.131.249.275.352.429L10 4.5l.845-1.268a2.81 2.81 0 01.352-.429C12.969 1.031 16 2.286 16 4.793V6zM6 4.793V6h2.596L7.49 4.341A.814.814 0 006 4.793zm8 0V6h-2.596l1.106-1.659a.814.814 0 011.49.451zM16 8v2h-5V8h5zm-1 8v-4h-4v4h4zM9 8v2H4V8h5zm0 4H5v4h4v-4z" clip-rule="evenodd"></path></g></svg>`,
     help: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8a1 1 0 011-1h.146a.87.87 0 01.854.871c0 .313-.179.6-.447.735A2.81 2.81 0 009 11.118V12h2v-.882a.81.81 0 01.447-.724A2.825 2.825 0 0013 7.871C13 6.307 11.734 5 10.146 5H10a3 3 0 00-3 3h2zM9 14a1 1 0 112 0 1 1 0 01-2 0z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8 6a6 6 0 110-12 6 6 0 010 12z"></path></g></svg>`,
     lock: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.001 5.99A3.992 3.992 0 0010.01 2h-.018a3.992 3.992 0 00-3.991 3.99V8H3.999v8c0 1.105.896 2 2 2h8c1.104 0 2-.895 2-2V8h-1.998V5.99zm-2 2.01V5.995A1.996 1.996 0 0010.006 4h-.01a1.996 1.996 0 00-1.995 1.995V8h4z" clip-rule="evenodd"></path></g></svg>`,
     loot: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11 2H9v3h2V2z"></path><path fill-rule="evenodd" d="M18 18v-7l-1.447-2.894A2 2 0 0014.763 7H5.237a2 2 0 00-1.789 1.106L2 11v7h16zM5.236 9h9.528l1 2H4.236l1-2zM4 13v3h12v-3h-5v1H9v-1H4z" clip-rule="evenodd"></path><path d="M4 3h2v2H4V3zM14 3h2v2h-2V3z"></path></g></svg>`,
     moon: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M8.614 2.134a8.001 8.001 0 001.388 15.879 8.003 8.003 0 007.884-6.635 6.947 6.947 0 01-2.884.62 7.004 7.004 0 01-6.388-9.864zM6.017 5.529a5.989 5.989 0 00-2.015 4.484c0 3.311 2.69 6 6 6a5.99 5.99 0 004.495-2.028 9.006 9.006 0 01-8.48-8.456z" clip-rule="evenodd"></path></g></svg>`,
     play: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 17.066V2.934a.5.5 0 01.777-.416L17 10 5.777 17.482A.5.5 0 015 17.066z"></path></g></svg>`,
-    star: `<svg fill="#ff9147" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M11.456 8.255L10 5.125l-1.456 3.13-3.49.485 2.552 2.516-.616 3.485L10 13.064l3.01 1.677-.616-3.485 2.553-2.516-3.491-.485zM7.19 6.424l-4.2.583c-.932.13-1.318 1.209-.664 1.853l3.128 3.083-.755 4.272c-.163.92.876 1.603 1.722 1.132L10 15.354l3.579 1.993c.846.47 1.885-.212 1.722-1.132l-.755-4.272 3.128-3.083c.654-.644.268-1.723-.664-1.853l-4.2-.583-1.754-3.77c-.406-.872-1.706-.872-2.112 0L7.19 6.424z" clip-rule="evenodd"></path></g></svg>`,
+    star: `<svg fill="#ff9147"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M11.456 8.255L10 5.125l-1.456 3.13-3.49.485 2.552 2.516-.616 3.485L10 13.064l3.01 1.677-.616-3.485 2.553-2.516-3.491-.485zM7.19 6.424l-4.2.583c-.932.13-1.318 1.209-.664 1.853l3.128 3.083-.755 4.272c-.163.92.876 1.603 1.722 1.132L10 15.354l3.579 1.993c.846.47 1.885-.212 1.722-1.132l-.755-4.272 3.128-3.083c.654-.644.268-1.723-.664-1.853l-4.2-.583-1.754-3.77c-.406-.872-1.706-.872-2.112 0L7.19 6.424z" clip-rule="evenodd"></path></g></svg>`,
 
     eye: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11.998 10a2 2 0 11-4 0 2 2 0 014 0z"></path><path fill-rule="evenodd" d="M16.175 7.567L18 10l-1.825 2.433a9.992 9.992 0 01-2.855 2.575l-.232.14a6 6 0 01-6.175 0 35.993 35.993 0 00-.233-.14 9.992 9.992 0 01-2.855-2.575L2 10l1.825-2.433A9.992 9.992 0 016.68 4.992l.233-.14a6 6 0 016.175 0l.232.14a9.992 9.992 0 012.855 2.575zm-1.6 3.666a7.99 7.99 0 01-2.28 2.058l-.24.144a4 4 0 01-4.11 0 38.552 38.552 0 00-.239-.144 7.994 7.994 0 01-2.28-2.058L4.5 10l.925-1.233a7.992 7.992 0 012.28-2.058 37.9 37.9 0 00.24-.144 4 4 0 014.11 0l.239.144a7.996 7.996 0 012.28 2.058L15.5 10l-.925 1.233z" clip-rule="evenodd"></path></g></svg>`,
     mod: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M5.003 3.947A10 10 0 009.519 2.32L10 2l.48.32A10 10 0 0016.029 4H17l-.494 5.641a9 9 0 01-4.044 6.751L10 18l-2.462-1.608a9 9 0 01-4.044-6.75L3 4h.972c.346 0 .69-.018 1.031-.053zm.174 1.992l.309 3.528a7 7 0 003.146 5.25l1.368.894 1.368-.893a7 7 0 003.146-5.25l.309-3.529A12 12 0 0110 4.376 12 12 0 015.177 5.94z" clip-rule="evenodd"></path></g></svg>`,
@@ -2098,9 +2127,11 @@ function UnregisterJob(JobName) {
 }
 
 // Settings have been saved
-let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'],
-    SENSITIVE_FEATURES = ['away_mode', 'away_mode_placement', 'auto_accept_mature', 'prevent_hosting', 'prevent_raiding', 'watch_time_placement'],
-    NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_*', 'kill_*'].map(feature => RegExp(`^${ feature.replace('*', '(\\w*)?') }$`, 'i'));
+let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?') }$`, 'i');
+
+let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'first_in_line*', 'prevent_hosting', 'prevent_raiding', 'watch_time_placement'].map(AsteriskFn),
+    NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_*', 'kill_*'].map(AsteriskFn);
 
 Storage.onChanged.addListener((changes, namespace) => {
     let reload = false;
@@ -2116,7 +2147,7 @@ Storage.onChanged.addListener((changes, namespace) => {
 
         if(newValue === false) {
 
-            if(!!~EXPERIMENTAL_FEATURES.indexOf(key))
+            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                 WARN(`Disabling experimental setting: ${ name }`, new Date);
             else
                 LOG(`Disabling setting: ${ name }`, new Date);
@@ -2124,7 +2155,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             UnregisterJob(key);
         } else if(newValue === true) {
 
-            if(!!~EXPERIMENTAL_FEATURES.indexOf(key))
+            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                 WARN(`Enabling experimental setting: ${ name }`, new Date);
             else
                 LOG(`Enabling setting: ${ name }`, new Date);
@@ -2132,7 +2163,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             RegisterJob(key);
         } else {
 
-            if(!!~EXPERIMENTAL_FEATURES.indexOf(key))
+            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                 WARN(`Modifying experimental setting: ${ name }`, { oldValue, newValue }, new Date);
             else
                 LOG(`Modifying setting: ${ name }`, { oldValue, newValue }, new Date);
@@ -2143,7 +2174,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             //     FIRST_IN_LINE_TIMER = (FIRST_IN_LINE_WAIT_TIME - FIRST_IN_LINE_TIMER) + ((parseInt(settings[RegExp.$1] === true? newValue: 0) | 0) - FIRST_IN_LINE_WAIT_TIME);
         }
 
-        reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].indexOf(key);
+        reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].findIndex(feature => feature.test(key));
 
         settings[key] = newValue;
     }
@@ -2183,6 +2214,13 @@ let Initialize = async(START_OVER = false) => {
         WARN(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled`, NORMALIZED_FEATURES);
     }
 
+    let ERRORS = Initialize.errors |= 0;
+    if(START_OVER) {
+        for(let job in Jobs)
+            UnregisterJob(job);
+        ERRORS = Initialize.errors++
+    }
+
     settings = await GetSettings();
 
     // Modify the logging feature via the settings
@@ -2220,7 +2258,7 @@ let Initialize = async(START_OVER = false) => {
         });
 
         // Next channel in "Up Next"
-        if(ALL_FIRST_IN_LINE_JOBS?.length)
+        if(!parseBool(settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
             return ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]);
 
         let next;
@@ -2336,12 +2374,12 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get game() {
-            return $('[data-a-target="stream-game-link"i]')?.textContent
+            return $('[data-a-target$="game-link"i], [data-a-target$="game-name"i]')?.textContent
         },
 
-        href: parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`).href).href,
+        href: parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href,
 
-        icon: $('img', false, $(`a[href$="${ NORMALIZED_PATHNAME }"i]`))?.src,
+        icon: $('img', false, $(`a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]`))?.src,
 
         get like() {
             return defined($('[data-a-target="unfollow-button"i]'))
@@ -2362,7 +2400,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get poll() {
-            return parseInt($('[data-a-target$="viewers-count"i]')?.textContent?.replace(/\D+/g, ''))
+            return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, ''))
         },
 
         get tags() {
@@ -2386,7 +2424,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get time() {
-            return parseTime($('.live-time')?.textContent)
+            return parseTime($('.live-time')?.textContent ?? '0')
         },
 
         follow() {
@@ -2588,8 +2626,7 @@ let Initialize = async(START_OVER = false) => {
                         };
 
                         return streamer;
-                    }
-                ),
+                    }),
         ];
 
         // Click "show less" as many times as possible
@@ -2626,7 +2663,8 @@ let Initialize = async(START_OVER = false) => {
         };
 
         /* Attempt to use the Twitch API */
-        if(settings.fine_details) __FineDetails__: {
+        __FineDetails__:
+        if(settings.fine_details) {
             // Get the cookie values
             let cookies = {};
 
@@ -2674,15 +2712,18 @@ let Initialize = async(START_OVER = false) => {
         }
     };
 
+    // TODO
+        // Add an "un-delete" feature
+    // Keep a copy of all messages
+    // LOG("Keeping a log of all original messages");
+    // Messages.set(STREAMER.name, new Set);
+    //
+    // GetChat(250).forEach(line => Messages.get(STREAMER.name).add(line));
+    // GetChat.onnewmessage = chat =>
+    //     chat.forEach(line => line.deleted? null: Messages.get(STREAMER.name).add(line));
+
     update();
     setInterval(update, 100);
-
-    let ERRORS = Initialize.errors |= 0;
-    if(START_OVER) {
-        for(let job in Jobs)
-            UnregisterJob(job);
-        ERRORS = Initialize.errors++
-    }
 
     /*** Auto-Follow
      *                    _              ______    _ _
@@ -2709,11 +2750,13 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.auto_follow_raids = 1000;
 
-    if(settings.auto_follow_raids || settings.auto_follow_all) __AutoFollowRaid__: {
+    __AutoFollowRaid__:
+    if(settings.auto_follow_raids || settings.auto_follow_all) {
         RegisterJob('auto_follow_raids');
     }
 
-    if(settings.auto_follow_time || settings.auto_follow_all) __AutoFollowTime__: {
+    __AutoFollowTime__:
+    if(settings.auto_follow_time || settings.auto_follow_all) {
         let { like, follow } = STREAMER,
             mins = parseInt(settings.auto_follow_time_minutes) | 0;
 
@@ -2736,7 +2779,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.auto_accept_mature = 1000;
 
-    if(settings.auto_accept_mature) __AutoMatureAccept__: {
+    __AutoMatureAccept__:
+    if(settings.auto_accept_mature) {
         RegisterJob('auto_accept_mature');
     }
 
@@ -2785,14 +2829,14 @@ let Initialize = async(START_OVER = false) => {
         let channel = ALL_CHANNELS.find(channel => channel.href == href);
 
         if(!defined(channel))
-            return ERROR(`Unable to create job for < ${ href } >`);
+            return ERROR(`Unable to create job for "${ href }"`);
 
         let { name } = channel;
 
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        LOG(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER) } before leaving for "${ name }" stream < ${ href } >`, new Date);
+        LOG(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER) } before leaving for "${ name }" stream "${ href }"`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
@@ -2907,7 +2951,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
 
         // Up Next Boost Button
-        let first_in_line_boost_button = FIRST_IN_LINE_BALLOON.addButton({
+        let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
             icon: 'latest',
             onclick: event => {
                 let { currentTarget } = event,
@@ -2928,7 +2972,7 @@ let Initialize = async(START_OVER = false) => {
                     // If the streamer hasn't been on for longer than 10mins, wait until then
                     STREAMER.time < tenMin?
                         fiveMin + (tenMin - STREAMER.time):
-                    // Streamer s has been live longer than 10mins
+                    // Streamer has been live longer than 10mins
                     (
                         // Boost is enabled
                         FIRST_IN_LINE_BOOST?
@@ -2952,7 +2996,7 @@ let Initialize = async(START_OVER = false) => {
         });
 
         // Pause Button
-        let first_in_line_pause_button = FIRST_IN_LINE_BALLOON.addButton({
+        let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
             icon: 'pause',
             onclick: event => {
                 let { currentTarget } = event,
@@ -2968,7 +3012,7 @@ let Initialize = async(START_OVER = false) => {
         });
 
         // Help Button
-        let first_in_line_help_button = FIRST_IN_LINE_BALLOON.addButton({
+        let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
             icon: 'help',
             left: true,
         });
@@ -2976,9 +3020,8 @@ let Initialize = async(START_OVER = false) => {
 
         // Load cache
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
-            // Load cache results
-            ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS;
-            FIRST_IN_LINE_BOOST = (cache.FIRST_IN_LINE_BOOST ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
+            ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+            FIRST_IN_LINE_BOOST = (parseBool(cache.FIRST_IN_LINE_BOOST) ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
 
             LOG(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
@@ -3040,6 +3083,8 @@ let Initialize = async(START_OVER = false) => {
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
 
                 await SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+
+                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
             }
         };
 
@@ -3049,7 +3094,7 @@ let Initialize = async(START_OVER = false) => {
 
             $('div#root > *').appendChild(
                 furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 2000;` },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
+                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper--show' },
                         furnish('div', { style: 'width: 30px; height: 30px;' }),
                         tooltip
                     )
@@ -3120,7 +3165,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let { live, name } = channel;
 
-                    let [balloon] = FIRST_IN_LINE_BALLOON.add({
+                    let [balloon] = FIRST_IN_LINE_BALLOON?.add({
                         href,
                         src: channel.icon,
                         message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
@@ -3208,7 +3253,8 @@ let Initialize = async(START_OVER = false) => {
                                     subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
                             }, 1000);
                         },
-                    });
+                    })
+                        ?? [];
                 }
 
                 FIRST_IN_LINE_BALLOON.counter.setAttribute('length', [...new Set([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF])].filter(defined).length);
@@ -3303,7 +3349,7 @@ let Initialize = async(START_OVER = false) => {
 
                 index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
 
-                let [balloon] = FIRST_IN_LINE_BALLOON.add({
+                let [balloon] = FIRST_IN_LINE_BALLOON?.add({
                     href,
                     src: channel.icon,
                     message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
@@ -3391,7 +3437,8 @@ let Initialize = async(START_OVER = false) => {
                                 subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
                         }, 1000);
                     },
-                });
+                })
+                    ?? [];
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(href);
@@ -3431,11 +3478,12 @@ let Initialize = async(START_OVER = false) => {
 
     // window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
 
-    if(settings.first_in_line || settings.first_in_line_plus || settings.first_in_line_all) __FirstInLine__: {
+    __FirstInLine__:
+    if(settings.first_in_line || settings.first_in_line_plus || settings.first_in_line_all) {
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+            FIRST_IN_LINE_BOOST = (parseBool(cache.FIRST_IN_LINE_BOOST) ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
-            FIRST_IN_LINE_BOOST = cache.FIRST_IN_LINE_BOOST ?? false;
         });
 
         RegisterJob('first_in_line');
@@ -3451,7 +3499,7 @@ let Initialize = async(START_OVER = false) => {
 
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
-                WARN(`The job for < ${ href } > no longer exists`, killed);
+                WARN(`The job for "${ href }" no longer exists`, killed);
 
                 break __FirstInLine__;
             } else {
@@ -3543,6 +3591,7 @@ let Initialize = async(START_OVER = false) => {
 
         creating_new_events:
         for(let name of new_names) {
+            // TODID? `STREAMERS` -> `ALL_CHANNELS`
             let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name));
 
             if(!defined(streamer))
@@ -3566,7 +3615,8 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
-    if(settings.first_in_line_plus || settings.first_in_line_all) __FirstInLinePlus__: {
+    __FirstInLinePlus__:
+    if(settings.first_in_line_plus || settings.first_in_line_all) {
         RegisterJob('first_in_line_plus');
     }
 
@@ -3595,7 +3645,8 @@ let Initialize = async(START_OVER = false) => {
             view.removeAttribute('style');
     };
 
-    if(settings.kill_extensions) __KillExtensions__: {
+    __KillExtensions__:
+    if(settings.kill_extensions) {
         RegisterJob('kill_extensions');
     }
 
@@ -3621,7 +3672,7 @@ let Initialize = async(START_OVER = false) => {
         host_stopper:
         if(hosting && defined(next)) {
             // Ignore followed channels
-            if(settings.prevent_hosting == "unfollowed") {
+            if(!!~["unfollowed", "none"].indexOf(settings.prevent_hosting)) {
                 let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
@@ -3646,7 +3697,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.prevent_hosting = 5000;
 
-    if(settings.prevent_hosting != "none") __PreventHosting__: {
+    __PreventHosting__:
+    if(settings.prevent_hosting != "none") {
         RegisterJob('prevent_hosting');
     }
 
@@ -3680,7 +3732,7 @@ let Initialize = async(START_OVER = false) => {
         raid_stopper:
         if((raiding || raided) && defined(next)) {
             // Ignore followed channels
-            if(settings.prevent_raiding == "unfollowed") {
+            if(!!~["unfollowed", "none"].indexOf(settings.prevent_raiding)) {
                 // The channel being raided (to) is already in "followed." No need to leave
                 if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
                     CONTINUE_RAIDING = true;
@@ -3698,17 +3750,18 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
 
             if(online.length) {
-                WARN(`${ STREAMER.name } is raiding. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ STREAMER.name } is raiding or was raided. Moving onto next streamer (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                WARN(`${ STREAMER.name } is raiding. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ STREAMER.name } is raiding or was raided. There doesn't seem to be any followed streamers on right now`, new Date);
             }
         }
     };
     Timers.prevent_raiding = 5000;
 
-    if(settings.prevent_raiding != "none") __PreventRaiding__: {
+    __PreventRaiding__:
+    if(settings.prevent_raiding != "none") {
         RegisterJob('prevent_raiding');
     }
 
@@ -3742,7 +3795,13 @@ let Initialize = async(START_OVER = false) => {
 
         let ValidTwitchPath = RegExp(`/(${ Paths.join('|') })`, 'i');
 
+        IsLive:
         if(!STREAMER.live) {
+            if(!RegExp(STREAMER.name, 'i').test(PATHNAME))
+                break IsLive;
+
+            LOG({ STREAMER, NORMALIZED_PATHNAME, PATHNAME, ValidTwitchPath });
+
             if(!ValidTwitchPath.test(pathname)) {
                 if(online.length) {
                     WARN(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
@@ -3763,7 +3822,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.stay_live = 5000;
 
-    if(settings.stay_live) __StayLive__: {
+    __StayLive__:
+    if(settings.stay_live) {
         RegisterJob('stay_live');
     }
 
@@ -3790,7 +3850,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.convert_emotes = -1000;
 
-    if(settings.convert_emotes) __ConvertEmotes__: {
+    __ConvertEmotes__:
+    if(settings.convert_emotes) {
         // Collect emotes
         let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
 
@@ -4006,7 +4067,8 @@ let Initialize = async(START_OVER = false) => {
         });
     };
 
-    if(settings.filter_messages) __FilterMessages__: {
+    __FilterMessages__:
+    if(settings.filter_messages) {
         RegisterJob('filter_messages');
     }
 
@@ -4100,7 +4162,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.easy_filter = 500;
 
-    if(settings.filter_messages) __EasyFilter__: {
+    __EasyFilter__:
+    if(settings.filter_messages) {
         RegisterJob('easy_filter');
     }
 
@@ -4130,7 +4193,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.highlight_mentions = 500;
 
-    if(settings.highlight_mentions) __HighlightMentions__: {
+    __HighlightMentions__:
+    if(settings.highlight_mentions) {
         RegisterJob('highlight_mentions');
     }
 
@@ -4191,7 +4255,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.highlight_mentions_popup = 500;
 
-    if(settings.highlight_mentions_popup) __HighlightMentionsPopup__: {
+    __HighlightMentionsPopup__:
+    if(settings.highlight_mentions_popup) {
         RegisterJob('highlight_mentions_popup');
     }
 
@@ -4276,7 +4341,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.convert_bits = 1000;
 
-    if(settings.convert_bits) __ConvertBits__: {
+    __ConvertBits__:
+    if(settings.convert_bits) {
         RegisterJob('convert_bits');
     }
 
@@ -4293,8 +4359,7 @@ let Initialize = async(START_OVER = false) => {
     let RECOVERING_VIDEO = false;
 
     Handlers.recover_video = () => {
-        let errorMessage = $('[data-a-target="player-overlay-content-gate"i]'),
-            search = [];
+        let errorMessage = $('[data-a-target="player-overlay-content-gate"i]');
 
         if(!defined(errorMessage))
             return;
@@ -4308,9 +4373,10 @@ let Initialize = async(START_OVER = false) => {
         // Failed to play video at...
         PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
     };
-    Timers.recover_video = 15_000;
+    Timers.recover_video = 5_000;
 
-    if(settings.recover_video) __RecoverVideo__: {
+    __RecoverVideo__:
+    if(settings.recover_video) {
         RegisterJob('recover_video');
     }
 
@@ -4375,7 +4441,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.recover_stream = 2500;
 
-    if(settings.recover_stream) __RecoverStream__: {
+    __RecoverStream__:
+    if(settings.recover_stream) {
         let video = $('video');
 
         if(!defined(video))
@@ -4415,6 +4482,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Time that's passed since creation. Should constantly increase
         CREATION_TIME ??= creationTime;
+
         // The total number of frames created. Should constantly increase
         TOTAL_VIDEO_FRAMES ??= totalVideoFrames;
 
@@ -4423,8 +4491,8 @@ let Initialize = async(START_OVER = false) => {
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
             return;
 
-        // The video is paused (or stalling)
-        if(paused || (CREATION_TIME != creationTime && TOTAL_VIDEO_FRAMES == totalVideoFrames)) {
+        // The video is stalling
+        if(CREATION_TIME != creationTime && TOTAL_VIDEO_FRAMES == totalVideoFrames) {
             // Try constantly overwriting to see if the video plays
             // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
@@ -4449,7 +4517,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.recover_frames = 1000;
 
-    if(settings.recover_frames) __RecoverFrames__: {
+    __RecoverFrames__:
+    if(settings.recover_frames) {
         document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
 
         RegisterJob('recover_frames');
@@ -4656,7 +4725,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.native_twitch_reply = 1000;
 
-    if(settings.native_twitch_reply) __NativeTwitchReply__: {
+    __NativeTwitchReply__:
+    if(settings.native_twitch_reply) {
         RegisterJob('native_twitch_reply');
     }
 
@@ -4689,7 +4759,7 @@ let Initialize = async(START_OVER = false) => {
         let f = furnish;
         let watch_time = f(`${ container.tagName }${ classes(container) }`,
             { style: 'color: var(--color-green)' },
-            f(`${ live_time.tagName }#twitch-tools-watch-time${ classes(live_time).replace(/live-time/i, 'watch-time') }`, { time: 0 })
+            f(`${ live_time.tagName }#twitch-tools-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
 
         parent.appendChild(watch_time);
@@ -4724,7 +4794,8 @@ let Initialize = async(START_OVER = false) => {
         SaveCache({ Watching: null, WatchTime: 0 });
     };
 
-    if(settings.watch_time_placement) __WatchTimePlacement__: {
+    __WatchTimePlacement__:
+    if(settings.watch_time_placement) {
         RegisterJob('watch_time_placement');
     }
 
@@ -4791,7 +4862,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.point_watcher_placecment = 100;
 
-    if(settings.point_watcher_placecment != "null") __PointWatcherPlacement__: {
+    __PointWatcherPlacement__:
+    if(settings.point_watcher_placecment != "null") {
         RegisterJob('point_watcher_placecment');
     }
 
@@ -4819,7 +4891,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.recover_pages = 5000;
 
-    if(settings.recover_page) __RecoverPages__: {
+    __RecoverPages__:
+    if(settings.recover_page) {
         RegisterJob('recover_pages');
     }
 
@@ -4954,7 +5027,8 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.away_mode = 1000;
 
-    if(settings.away_mode) __AwayMode__: {
+    __AwayMode__:
+    if(settings.away_mode) {
         RegisterJob('away_mode');
     }
 
@@ -5064,20 +5138,84 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.auto_claim_bonuses = 5000;
 
-    if(settings.auto_claim_bonuses) __AutoClaimBonuses__: {
+    __AutoClaimBonuses__:
+    if(settings.auto_claim_bonuses) {
         RegisterJob('auto_claim_bonuses');
+    }
+
+    /*** Prevent spam
+     *      _____                          _      _____
+     *     |  __ \                        | |    / ____|
+     *     | |__) | __ _____   _____ _ __ | |_  | (___  _ __   __ _ _ __ ___
+     *     |  ___/ '__/ _ \ \ / / _ \ '_ \| __|  \___ \| '_ \ / _` | '_ ` _ \
+     *     | |   | | |  __/\ V /  __/ | | | |_   ____) | |_) | (_| | | | | | |
+     *     |_|   |_|  \___| \_/ \___|_| |_|\__| |_____/| .__/ \__,_|_| |_| |_|
+     *                                                 | |
+     *                                                 |_|
+     */
+    let SPAM = new Set;
+
+    Handlers.prevent_spam = () => {};
+    Timers.prevent_spam = -1000;
+
+    __PreventSpam__:
+    if(settings.prevent_spam) {
+        RegisterJob('prevent_spam');
+
+        LOG("Adding spam killer");
+        GetChat.onnewmessage = chat =>
+            chat.forEach(line => {
+                let { uuid, handle, element, message } = line;
+
+                // The same message is already posted (within X lines)
+                if( defined([...SPAM].slice(-NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM).find(item => !!~[uuid, message].indexOf(item))) ) {
+                    message = message.trim();
+
+                    if(message.length < 1)
+                        return;
+
+                    element.setAttribute('twitch-tools-spam', '\u22ee');
+                    element.setAttribute('plagiarism', true);
+
+                    new Tooltip(element, message, { direction: 'up' });
+
+                    return;
+                }
+
+                // The message contains repetitive (3 or more instances) words/phrases
+                else if(/(.{5,})\1{2,}/i.test(message)) {
+                    message = message.trim();
+
+                    if(message.length < 1)
+                        return;
+
+                    element.setAttribute('twitch-tools-spam', `@${handle}`);
+                    element.setAttribute('repetitive', true);
+                }
+
+                SPAM = new Set([...SPAM, uuid, message]);
+            });
     }
 };
 // End of Initialize
 
-let CUSTOM_CSS;
+let CUSTOM_CSS,
+    PAGE_CHECKER,
+    WAIT_FOR_PAGE;
 
-let WaitForPageToLoad = setInterval(() => {
-    let ready = defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)) && defined($('[data-test-selector$="message-container"i]'));
+PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
+    let ready =
+        // The follow button exists
+        defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+        // There is a message container
+        && defined($('[data-test-selector$="message-container"i]'))
+        // The page is a channel viewing page
+        // && /^(ChannelWatch|SquadStream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+    ;
 
     if(ready) {
         setTimeout(Initialize, 1000);
-        clearInterval(WaitForPageToLoad);
+        clearInterval(PAGE_CHECKER);
 
         // Observe location changes
         LocationObserver: {
@@ -5112,7 +5250,7 @@ let WaitForPageToLoad = setInterval(() => {
 
                         NodeToObject:
                         for(let line of addedNodes) {
-                            let keepEmotes = settings.convert_emotes;
+                            let keepEmotes = true;
 
                             let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
                                 author = handle.toLowerCase(),
@@ -5132,6 +5270,9 @@ let WaitForPageToLoad = setInterval(() => {
                                 .join(' ')
                                 .trim()
                                 .replace(/(\s){2,}/g, '$1');
+
+                            style = style
+                                .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
                             let uuid = UUID.from([author, mentions.join(','), message].join(':')).toString();
 
@@ -5155,8 +5296,8 @@ let WaitForPageToLoad = setInterval(() => {
                         }
                     }
 
-                    for(let [name, func] of GetChat.__onnewmessage__)
-                        func(results);
+                    for(let [name, callback] of GetChat.__onnewmessage__)
+                        callback(results);
                 });
 
             observer.observe(chat, { childList: true });
@@ -5165,16 +5306,23 @@ let WaitForPageToLoad = setInterval(() => {
         window.onlocationchange = () => {
             WARN('Re-initializing...');
 
-            // Initialize();
+            Reinitialize:
+            if(NORMAL_MODE) {
+                if(settings.keep_popout) {
+                    PAGE_CHECKER = setInterval(WAIT_FOR_PAGE, 500);
 
-            if(NORMAL_MODE)
+                    break Reinitialize;
+                }
+
                 location.reload();
+            }
         };
 
         // Add custom styling
         CustomCSSInitializer: {
             CUSTOM_CSS = furnish('style#twitch-tools-custom-css', {},
             `
+                #twitch-tools-auto-claim-bonuses .tw-z-above { display: none }
                 [animationID] a { cursor: grab }
                 [animationID] a:active { cursor: grabbing }
                 [up-next--body] {
@@ -5192,6 +5340,35 @@ let WaitForPageToLoad = setInterval(() => {
                     transform: translateX(-50%);
 
                     width: 100%;
+                }
+                [twitch-tools-spam]::before {
+                    content: attr(twitch-tools-spam);
+                    display: block;
+                    font-style: italic;
+                    text-align: center;
+                    visibility: initial !important;
+                }
+                [twitch-tools-spam]:not(:hover) {
+                    visibility: hidden !important;
+                }
+                [twitch-tools-spam]:not(:hover) > * {
+                    height: 0;
+                }
+                [twitch-tools-spam][repetitive]:not(:hover)::after {
+                    content: '\u22ef';
+                    display: block;
+                    text-align: center;
+                    visibility: initial !important;
+                }
+                /* [twitch-tools-spam] ... [twitch-tools-spam] */
+                ${ (n => {
+                    let i, s;
+
+                    for(i = 0, s = []; i < n; ++i)
+                        s.push(`[twitch-tools-spam]${ ' + *'.repeat(i) } + [twitch-tools-spam]`);
+                    return s;
+                })(NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM).join(',\n' + ' '.repeat(16)) } {
+                    display: none;
                 }
             `
             );

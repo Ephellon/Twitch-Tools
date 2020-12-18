@@ -65,6 +65,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 ### Video Recovery
 
+- *Keep Pop-out* `off` &mdash; Prevent the extension from destroying the pop-out of the stream
 - *Recover Ads* `off` &mdash; When an advertisement freezes, attempt to recover it
 - *Recover Frames* `on` &mdash; When the video fails to play for more than 15 seconds, reload the webpage
 - *Recover Stream* `off` &mdash; When the stream freezes, attempt to recover it

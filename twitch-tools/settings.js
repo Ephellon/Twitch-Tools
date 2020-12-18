@@ -87,6 +87,8 @@ let // These are option names. Anything else will be removed
         'convert_emotes',
         // Native Twitch Replies*
         'native_twitch_reply',
+        // Prevent spam
+        'prevent_spam',
 
         /* Currencies */
         // Convert Bits
@@ -115,6 +117,8 @@ let // These are option names. Anything else will be removed
         'recover_frames',
         // Recover Page
         'recover_pages',
+        // Keep Pop-out
+        'keep_popout',
 
         /* Developer Options */
         // Log messages
@@ -309,6 +313,7 @@ let Glyphs = {
     emotes: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
     latest: '<svg fill="var(--yellow)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
     stream: '<svg fill="var(--live-red)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11.414 8.586c.362.362.586.862.586 1.414 0 .552-.224 1.052-.586 1.414l1.414 1.415A3.987 3.987 0 0014 10a3.987 3.987 0 00-1.172-2.828l-1.414 1.414zM5.757 5.757L4.343 4.343A7.975 7.975 0 002 10c0 2.21.895 4.21 2.343 5.657l1.414-1.414A5.981 5.981 0 014 10c0-1.657.672-3.157 1.757-4.243zM7.172 12.829l1.414-1.415A1.994 1.994 0 018 10c0-.552.224-1.052.586-1.414L7.172 7.172A3.987 3.987 0 006 10c0 1.105.448 2.105 1.172 2.829zM14.243 14.243l1.414 1.414A7.975 7.975 0 0018 10c0-2.209-.895-4.209-2.343-5.657l-1.414 1.414A5.981 5.981 0 0116 10a5.981 5.981 0 01-1.757 4.243z"></path></g></svg>',
+    thread: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 6H7V8H5V6Z"></path><path d="M9 6H11V8H9V6Z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M8 14L10 12H13C13.5523 12 14 11.5523 14 11V3C14 2.44772 13.5523 2 13 2H3C2.44772 2 2 2.44772 2 3V11C2 11.5523 2.44772 12 3 12H6L8 14ZM6.82843 10H4V4H12V10H9.17157L8 11.1716L6.82843 10Z"></path></g></svg>',
     reply: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>',
     stats: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
     trash: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
@@ -419,19 +424,19 @@ function parseURL(url) {
     data = data || e;
 
     return {
-        href:             data[i++] || e,
-        origin:           (data[i++] || e) + (data[i + 4] || e),
-        protocol:         data[i++] || e,
-        scheme:           data[i++] || e,
-        username:         data[i++] || e,
-        password:         data[i++] || e,
-        host:             data[i++] || e,
-        domainPath:       data[i].split('.').reverse(),
-        hostname:         data[i++] || e,
-        port:             data[i++] || e,
-        pathname:         data[i++] || e,
-        search:           data[i]   || e,
-        searchParameters: (function(sd) {
+        href:            (data[i++] ?? e),
+        origin:          (data[i++] ?? e) + (data[i + 4] ?? e),
+        protocol:        (data[i++] ?? e),
+        scheme:          (data[i++] ?? e),
+        username:        (data[i++] ?? e),
+        password:        (data[i++] ?? e),
+        host:            (data[i++] ?? e),
+        domainPath:      (data[i]   ?? e).split('.').reverse(),
+        hostname:        (data[i++] ?? e),
+        port:            (data[i++] ?? e),
+        pathname:        (data[i++] ?? e),
+        search:          (data[i]   ?? e),
+        searchParameters: (sd => {
             parsing:
             for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
                 c = d[i].split('=');
@@ -448,9 +453,11 @@ function parseURL(url) {
 
             return s;
         })(data[i++] || e),
-        hash:             data[i++] || e
+        hash:            (data[i++] || e)
     };
 };
+
+let SETTINGS;
 
 async function SaveSettings() {
     let extractValue = element => {
@@ -508,6 +515,8 @@ async function LoadSettings() {
         using = elements.map(element => element.id);
 
     return await Storage.get(null, settings => {
+        SETTINGS ??= settings;
+
         for(let id of using) {
             let element = $(`#${ id }`);
 
@@ -610,6 +619,24 @@ document.body.onload = async() => {
 
             new Tooltip(element, element.getAttribute(tooltip), { direction });
         });
+
+        // All "required" parents
+        $('[requires]', true).map(dependent => {
+            let providers = $(dependent.getAttribute('requires'), true).map(element => element.closest('div'));
+
+            Observing:
+            for(let provider of providers) {
+                let observer = new MutationObserver(mutations => {
+                    // TODO
+                    // Apply the false status to `dependent` when the `provider` is set to false
+                        // when(provider.checked === false) -> dependent.checked = false
+                    // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
+                        // when(dependent.checked === true) -> provider.checked = true
+                });
+
+                observer.observe(provider, { attributes: true, childList: true, subtree: true });
+            }
+        });
     }, 1000);
 };
 
@@ -630,7 +657,8 @@ $('#save', true).map(element => element.onclick = async event => {
 
 // $('#version').setAttribute('version', Manifest.version);
 
-// Eveyting else
+/* Eveyting else... */
+// Glyphs
 $('[glyph]', true).map(element => {
     let glyph = element.getAttribute('glyph');
 
