@@ -46,9 +46,11 @@
     --purple-highlighted: #a970ff;
 
     --red: #bb1411;
+    --red-dark: #991411;
     --red-highlighted: #771411;
     --live-red: #e91916;
 
+    --gold: #fcc21b;
     --yellow: #e6cb00;
     --yellow-dark: #ad9600;
     --yellow-highlighted: #ffff00;
@@ -60,6 +62,26 @@
     /* Fonts */
     --code-font: "System, Monospace, Menlo, Arial", Consolas, "Liberation Mono", Menlo, Courier, monospace;
     --live-font: Roobert, Helvetica Neue, Helvetica, Arial, sans-serif;
+
+    /* Shadows */
+    --normal-shadow: 0 1px 2px var(--black);
+
+    /* Shadow/Borders */
+    --default-shadow-border: 0 1px 2px;
+
+    --black-border: var(--default-shadow-border) var(--black);
+    --blue-border: var(--default-shadow-border) var(--blue);
+    --green-border: var(--default-shadow-border) var(--green);
+    --grey-border: var(--default-shadow-border) var(--grey);
+    --gray-border: var(--grey-border);
+
+    --baby-blue-border: var(--default-shadow-border) var(--baby-blue);
+    --baby-pink-border: var(--default-shadow-border) var(--baby-pink);
+    --purple-border: var(--default-shadow-border) var(--purple);
+    --red-border: var(--default-shadow-border) var(--red);
+    --gold-border: var(--default-shadow-border) var(--gold);
+    --yellow-border: var(--default-shadow-border) var(--yellow);
+    --white-border: var(--default-shadow-border) var(--white);
 }
 
 *::-webkit-scrollbar {
@@ -96,6 +118,8 @@
 * {
     box-sizing: border-box;
     outline: none;
+
+    position: relative;
 
     border: 0;
     margin: 0;
@@ -290,6 +314,10 @@ footer {
     opacity: 0.3 !important;
 }
 
+[hidden] {
+    display: none;
+}
+
 a {
     color: var(--purple-highlighted);
     text-decoration: none;
@@ -308,6 +336,92 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: normal !important;
 
     line-height: 1.25 !important;
+}
+
+details {
+    background-color: var(--black);
+    border: 1px solid var(--purple);
+    border-radius: 3px;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+
+    align-items: flex-start;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+
+    margin: .25rem 0 0 .5rem;
+
+    z-index: 99;
+}
+
+summary::before {
+    background: url(chevron.png) no-repeat;
+    background-size: contain;
+    background-position: center;
+    content: "";
+    display: inline-block;
+    float: right;
+
+    margin: 0 1rem;
+
+    vertical-align: middle;
+
+    height: 2rem;
+    width: 1rem;
+
+    transform: rotate(180deg);
+    transition: .1s;
+}
+
+summary:not([subtitle])::before {
+    height: 1rem;
+}
+
+details[open] summary::before {
+    transform: rotate(0);
+}
+
+summary {
+    background-color: var(--background-dark-lighter);
+    box-shadow: var(--purple-border);
+    font-size: 1rem;
+    font-weight: bold;
+    list-style-image: none;
+
+    cursor: pointer;
+
+    padding: 1rem .5rem 1rem 1rem;
+}
+
+summary:hover {
+    background-color: var(--background-dark-lighter-highlighted);
+}
+
+summary::after {
+    content: attr(subtitle);
+    display: block;
+    font-weight: normal;
+    font-size: .8rem;
+}
+
+summary + *:last-child {
+    padding: 1rem;
+}
+
+details[open] {
+    padding-bottom: .5rem;
+
+    z-index: 999;
+}
+
+details[open] summary + * {
+    padding-top: .5rem;
+}
+
+*:not([details-marker])::-webkit-details-marker {
+    display: none;
 }
 
 select {
@@ -372,6 +486,11 @@ button:hover, input[type="button"]:hover {
 
 button.remove:hover, input[type="button"].remove:hover  {
     background-color: var(--red-highlighted);
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--grey);
 }
 
 [attention], [alert] {
@@ -680,6 +799,11 @@ input[type="number"]::-webkit-inner-spin-button {
     fill: var(--red)!important;
 }
 
+[gold], [gold] svg {
+    color: var(--gold)!important;
+    fill: var(--gold)!important;
+}
+
 [white], [white] svg {
     color: var(--white)!important;
     fill: var(--white)!important;
@@ -687,36 +811,120 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Et Al */
 #filter_rules {
-    height: 3rem;
+    /* height: 3rem; */
     overflow: auto;
 }
 
+#filter_rules h2:only-child, #filter_rules [filter-type]:not([not-empty]) {
+    display: none;
+}
+
+[filter-type]:not(:last-child) {
+    padding-bottom: .5rem;
+}
+
+[github] {
+    background-color: var(--black);
+    color: var(--gold);
+    fill: var(--gold);
+}
+
+.cc-container {
+    align-items: center;
+    border: 1px solid var(--grey);
+    border-radius: .25rem;
+    display: flex;
+    line-height: 1rem;
+
+    width: fit-content;
+}
+
+.cc-svg {
+    padding: .75rem 0 .75rem 1rem;
+}
+
+.cc-text {
+    padding: .75rem 1rem .75rem 0;
+}
+
 /* Save button(s) */
-#save {
-    background-color: var(--green);
+section[save] {
+    background-color: var(--background-dark-lighter-highlighted);
+}
+
+.save {
+    background-color: var(--purple);
     display: block;
 
-    position: absolute;
-    bottom: 1rem;
-    left: calc(50% - 1rem);
-    transform: translateX(-50%);
+    /* position: absolute; */
+    /* bottom: 1rem; */
+    /* left: calc(50% - 1rem); */
+    /* transform: translateX(-50%); */
 
-    height: 2.5rem;
-    width: 6rem;
+    height: 2rem;
+    width: 5rem;
 
     transition: background-color .5s;
 }
 
-#save:before {
-    content: 'Save';
+.save:before {
+    content: 'Save All';
 }
 
-#save:hover {
+.save:hover {
+    background-color: var(--purple-highlighted);
+}
+
+.save.spin {
+    background-color: var(--purple-dark) !important;
+}
+
+[attention] .save, [alert] .save {
+    background-color: var(--blue);
+}
+
+[success] .save, [confirm] .save {
+    background-color: var(--green);
+}
+
+[warning] .save, [caution] .save, [prompt] .save {
+    background-color: var(--yellow);
+}
+
+[error] .save, [danger] .save {
+    background-color: var(--red);
+}
+
+[attention] .save:hover, [alert] .save:hover {
+    background-color: var(--blue-highlighted);
+}
+
+[success] .save:hover, [confirm] .save:hover {
     background-color: var(--green-highlighted);
 }
 
-#save.spin {
+[warning] .save:hover, [caution] .save:hover, [prompt] .save:hover {
+    background-color: var(--yellow-highlighted);
+}
+
+[error] .save:hover, [danger] .save:hover {
+    background-color: var(--red-highlighted);
+}
+
+[attention] .save.spin, [alert] .save.spin {
+    background-color: var(--blue-dark) !important;
+}
+
+[success] .save.spin, [confirm] .save.spin {
     background-color: var(--green-dark) !important;
+}
+
+[warning] .save.spin, [caution] .save.spin, [prompt] .save.spin {
+    background-color: var(--yellow-dark) !important;
+}
+
+[error] .save.spin, [danger] .save.spin {
+    background-color: var(--red-dark) !important;
 }
 
 /* Version button */
@@ -751,7 +959,11 @@ body.popup {
 }
 
 .popup #filter_rules {
-    height: 9rem;
+    /* height: 9rem; */
+}
+
+.popup section[save], body:not(.popup) #save {
+    display: none;
 }
 
 .popup #save {
@@ -759,6 +971,7 @@ body.popup {
 
     padding: 1.5rem;
 
+    position: fixed;
     bottom: 1rem;
     left: unset;
     right: 1rem;
@@ -766,6 +979,8 @@ body.popup {
 
     height: 2.5rem;
     width: 2.5rem;
+
+    z-index: 999;
 }
 
 .popup #save:before {
@@ -791,7 +1006,7 @@ body.popup {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 10;
+    z-index: 999;
 }
 
 .tw-relative {
@@ -824,7 +1039,7 @@ body.popup {
     text-align: left;
     user-select: none;
     white-space: nowrap;
-    z-index: 2000;
+    z-index: 9999;
 }
 
 .tw-tooltip:after, .tw-tooltip:before {

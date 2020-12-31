@@ -1,6 +1,6 @@
 # Twitch-Tools
 
-An extension that gives you a set of tools to control your Twitch experience.
+An extension that gives you a set of tools to control your Twitch&trade; experience.
 
 Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd)
 
@@ -49,6 +49,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - `[^\/*+?$]` &mdash; [JavaScript-based RegExps](https://javascript.info/regular-expressions) can also be used: `swears?` will remove "swear", "swears", "SWEAR", "SWEARS" and all other variations
 - *Highlight Mentions* `on` &mdash; When someone mentions you (*@username*), highlight the message(s) in chat
 - *Show pop-ups* `on` &mdash; When someone mentions you (*@username*), show a pop-up of the message(s)
+- *Whisper Audio* `off` &mdash; When someone sends you a whisper, play a notification sound
 
 ### Currencies
 
@@ -79,8 +80,9 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 ### Experimental Features
 
-- *Use Fine Details* `off` &mdash; Allow the extension to use (not collect) Twitch&trade; API data
 - *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emote (without requiring a subscription)
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
+- *Prevent spam* `off` &mdash; Hide repetitive messages in chat
 - *Recover Pages* `off` &mdash; When the webpage fails to display, reload it
+- *Use Fine Details* `off` &mdash; Allow the extension to use (not collect) Twitch&trade; API data

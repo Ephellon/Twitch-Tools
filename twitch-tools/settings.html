@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
     <!-- /settings.html
-        _____      _   _   _                   _     _             _
-       / ____|    | | | | (_)                 | |   | |           | |
-      | (___   ___| |_| |_ _ _ __   __ _ ___  | |__ | |_ _ __ ___ | |
-       \___ \ / _ \ __| __| | '_ \ / _` / __| | '_ \| __| '_ ` _ \| |
-       ____) |  __/ |_| |_| | | | | (_| \__ \_| | | | |_| | | | | | |
-      |_____/ \___|\__|\__|_|_| |_|\__, |___(_)_| |_|\__|_| |_| |_|_|
-                                    __/ |
-                                   |___/
+    #     _____      _   _   _                   _     _             _
+    #    / ____|    | | | | (_)                 | |   | |           | |
+    #   | (___   ___| |_| |_ _ _ __   __ _ ___  | |__ | |_ _ __ ___ | |
+    #    \___ \ / _ \ __| __| | '_ \ / _` / __| | '_ \| __| '_ ` _ \| |
+    #    ____) |  __/ |_| |_| | | | | (_| \__ \_| | | | |_| | | | | | |
+    #   |_____/ \___|\__|\__|_|_| |_|\__, |___(_)_| |_|\__|_| |_| |_|_|
+    #                                 __/ |
+    #                                |___/
     -->
     <head>
         <title>Twitch Tools &mdash; Settings</title>
@@ -18,6 +18,16 @@
     </head>
     <body>
 
+        <!-- Automation
+        #                  _                        _   _
+        #       /\        | |                      | | (_)
+        #      /  \  _   _| |_ ___  _ __ ___   __ _| |_ _  ___  _ __
+        #     / /\ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \
+        #    / ____ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |
+        #   /_/    \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|
+        #
+        #
+        -->
         <header>Automation</header>
         <article>
             <section>
@@ -36,6 +46,8 @@
                 </div>
             </section>
 
+            <!-- [[Auto-Pause]] -->
+
             <section>
                 <div class="title"><span small glyph="eye"></span>Away Mode</div>
                 <div class="summary">
@@ -44,10 +56,10 @@
                         <label for="away_mode"></label>
                     </div>
                     <p>
-                        Toggle between low and auto video quality.
+                        Adds a button to toggle between low and auto video quality.
                     </p>
                     <p>
-                        Use <code>Alt + A</code> as a shortcut.
+                        <code>Alt + A</code> can be used as well.
                     </p>
                 </div>
             </section>
@@ -68,71 +80,80 @@
             <section>
                 <div class="title"><span small glyph="favorite"></span> First in Line</div>
                 <div class="summary">
-                    <div class="radio">
-                        <input id="first_in_line_none" type="radio" name="first-in-line" checked/>
-                        <label for="first_in_line_none">Do not go to any channels automatically.</label>
-                    </div>
+                    <p>
+                        When a channel goes live, head to its stream automatically.
+                    </p>
 
-                    <div class="radio">
-                        <input id="first_in_line" type="radio" name="first-in-line"/>
-                        <label for="first_in_line">When you receive a notification for a channel going live, go to its stream after <span><input id="first_in_line_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
-                    </div>
+                    <details>
+                        <summary subtitle="Adjust settings for First in Line">Options</summary>
+                        <div>
+                            <div class="radio">
+                                <input id="first_in_line_none" type="radio" name="first-in-line" checked/>
+                                <label for="first_in_line_none">Do not ues this feature.</label>
+                            </div>
 
-                    <div class="radio">
-                        <input id="first_in_line_plus" type="radio" name="first-in-line"/>
-                        <label for="first_in_line_plus">When a channel appears in your Followed Channels, go to its stream after <span><input id="first_in_line_plus_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
-                    </div>
+                            <div class="radio">
+                                <input id="first_in_line" type="radio" name="first-in-line"/>
+                                <label for="first_in_line">When you receive a notification for a channel going live, go to its stream after <span><input id="first_in_line_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
+                            </div>
 
-                    <div class="radio">
-                        <input id="first_in_line_all" type="radio" name="first-in-line"/>
-                        <label for="first_in_line_all">Go to all streams automatically after <span><input id="first_in_line_all_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
-                    </div>
+                            <div class="radio">
+                                <input id="first_in_line_plus" type="radio" name="first-in-line"/>
+                                <label for="first_in_line_plus">When a channel appears in your Followed Channels, go to its stream after <span><input id="first_in_line_plus_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
+                            </div>
+
+                            <div class="radio">
+                                <input id="first_in_line_all" type="radio" name="first-in-line"/>
+                                <label for="first_in_line_all">Go to all streams automatically after <span><input id="first_in_line_all_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
             <section>
                 <div class="title"><span small glyph="favorite"></span> Follows</div>
                 <div class="summary">
-                    <div class="radio">
-                        <input id="auto_follow_none" type="radio" name="auto-follow" checked/>
-                        <label for="auto_follow_none">Do not follow any channels automatically.</label>
-                    </div>
+                    <p>
+                        While watching a channel that isn't followed, follow it automatically.
+                    </p>
+                    <details>
+                        <summary subtitle="Adjust settings for Auto-Follow">Options</summary>
+                        <div>
+                            <div class="radio">
+                                <input id="auto_follow_none" type="radio" name="auto-follow" checked/>
+                                <label for="auto_follow_none">Do not use this feature.</label>
+                            </div>
 
-                    <div class="radio">
-                        <input id="auto_follow_raids" type="radio" name="auto-follow"/>
-                        <label for="auto_follow_raids">When participating in a raid, follow the channel being raided.</label>
-                    </div>
+                            <div class="radio">
+                                <input id="auto_follow_raids" type="radio" name="auto-follow"/>
+                                <label for="auto_follow_raids">When participating in a raid, follow the channel being raided.</label>
+                            </div>
 
-                    <div class="radio">
-                        <input id="auto_follow_time" type="radio" name="auto-follow"/>
-                        <label for="auto_follow_time">After watching <span><input id="auto_follow_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b> of content, follow the channel.</label>
-                    </div>
+                            <div class="radio">
+                                <input id="auto_follow_time" type="radio" name="auto-follow"/>
+                                <label for="auto_follow_time">After watching <span><input id="auto_follow_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b> of content, follow the channel.</label>
+                            </div>
 
-                    <div class="radio">
-                        <input id="auto_follow_all" type="radio" name="auto-follow"/>
-                        <label for="auto_follow_all">Follow all channels automatically.</label>
-                    </div>
+                            <div class="radio">
+                                <input id="auto_follow_all" type="radio" name="auto-follow"/>
+                                <label for="auto_follow_all">Follow all channels automatically.</label>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
-            <!-- <section>
-                <div class="title"><span small glyph="lock"></span> Kill Extensions</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="kill_extensions" type="checkbox"/>
-                        <label for="kill_extensions"></label>
-                    </div>
-                    <p>
-                        Do not allow Twitch&trade; extensions to display.
-                    </p>
-                </div>
-            </section> -->
+            <!-- [[Kill Extensions]] -->
 
             <section>
                 <div class="title"><span small glyph="favorite"></span> Next Channel</div>
                 <div class="summary">
                     <p>
                         How should the next channel be decided when <b>Up Next</b> is empty?
+                    </p>
+                    <p>
+                        This only activates when the current stream goes offline.
                     </p>
                     <select id="next_channel_preference">
                         <option value="random" selected>Go to a random channel</option>
@@ -153,7 +174,7 @@
                     <select id="prevent_hosting">
                         <option value="all" selected>Allow all channels to host</option>
                         <option value="none">Prevent all channels from hosting</option>
-                        <option value="unfollowed">Prevent hosting unfollowed channels</option>
+                        <option value="unfollowed">Prevent unfollowed channels from being hosted</option>
                     </select>
                 </div>
             </section>
@@ -167,45 +188,46 @@
                     <select id="prevent_raiding">
                         <option value="all" selected>Allow all channels to raid</option>
                         <option value="none">Prevent all channels from raiding</option>
-                        <option value="unfollowed">Prevent raiding unfollowed channels</option>
+                        <option value="unfollowed">Prevent unfollowed channels from being raided</option>
                     </select>
                 </div>
             </section>
 
             <section>
-                <div class="title"><span small glyph="stream"></span> Stay Live</div>
+                <div class="title"><span small glyph="stream"></span> Stay Live / Up Next</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="stay_live" type="checkbox" checked/>
                         <label for="stay_live"></label>
                     </div>
                     <p>
-                        When the current stream ends, go to the <b>Next Channel</b>.
+                        <b>Stay Live</b> goes to the <b>Next Channel</b> after the current stream ends.
+                    </p>
+                    <p>
+                        <b>Up Next</b> adds a queueing service to Twitch&trade;.
                     </p>
                 </div>
             </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
 
+        <!-- Chat & Messaging
+        #     _____ _           _              __  __                           _
+        #    / ____| |         | |     ___    |  \/  |                         (_)
+        #   | |    | |__   __ _| |_   ( _ )   | \  / | ___  ___ ___  __ _  __ _ _ _ __   __ _
+        #   | |    | '_ \ / _` | __|  / _ \/\ | |\/| |/ _ \/ __/ __|/ _` |/ _` | | '_ \ / _` |
+        #   | |____| | | | (_| | |_  | (_>  < | |  | |  __/\__ \__ \ (_| | (_| | | | | | (_| |
+        #    \_____|_| |_|\__,_|\__|  \___/\/ |_|  |_|\___||___/___/\__,_|\__, |_|_| |_|\__, |
+        #                                                                  __/ |         __/ |
+        #                                                                 |___/         |___/
+        -->
         <header>Chat &amp; Messaging</header>
         <article>
-            <!-- <section>
-                <div class="title"><span small glyph="emotes"></span> Convert emotes</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="convert_emotes" type="checkbox"/>
-                        <label for="convert_emotes"></label>
-                    </div>
-                    <p>
-                        When presented with emote-based-text, convert the text into the corresponding emote (without requiring a subscription).
-                    </p>
-                    <p>
-                        This only works for the current stream you are viewing.
-                    </p>
-                    <p>
-                        This does <b>not</b> save/unlock the emote.
-                    </p>
-                </div>
-            </section> -->
+            <!-- [[Convert Emotes]] -->
 
             <section>
                 <div class="title"><span small glyph="mod"></span> Filter messages</div>
@@ -215,21 +237,32 @@
                         <label for="filter_messages"></label>
                     </div>
                     <p>
-                        Remove the following messages/rules across all channels.
+                        Remove messages/rules across all channels.
+                    </p>
+                    <p>
+                        Please see
+                        <a href="https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages">Twitch Tools Wiki &mdash; Filter Messages</a>
+                        for assistance.
                     </p>
                     <p>
                         <input id="filter_rules-input" type="text" value="" left-tooltip="Case insensitive &bull; Comma separated" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
                     </p>
-                    <p><div id="filter_rules"></div></p>
-                    <ul>
-                        <li>These words/phrases will hide a message (comma separated list)</li>
-                        <li>Use <code blue><i>text</i></code> to hide messages containing <i blue>text</i></li>
-                        <li>Use <code purple>:<i>emote</i>:</code> to hide messages containing <i purple>emote</i></li>
-                        <li>Use <code purple>@<i>username</i></code> to hide messages from <i purple>username</i></li>
-                        <li>Use <code purple>/<i>channel</i> <i blue>text</i></code> to hide messages containing <i blue>text</i> on <i purple>channel</i></li>
-                        <li>Use <code green>[^\/*+?$]</code> to hide messages based upon a pattern (see <a href="https://javascript.info/regular-expressions">Regular Expressions</a>)</li>
-                        <li>You can also filter users/emotes by clicking <span small red glyph="trash"></span> from their profile</li>
-                    </ul>
+                    <details>
+                        <summary subtitle="View, or remove rules">Filter Rules</summary>
+                        <div id="filter_rules">
+                            <div filter-type="channel"><h2>Channel Rules</h2></div>
+
+                            <div filter-type="badge"><h2>Badges</h2></div>
+
+                            <div filter-type="user"><h2>Users</h2></div>
+
+                            <div filter-type="emote"><h2>Emotes</h2></div>
+
+                            <div filter-type="text"><h2>Text</h2></div>
+
+                            <div filter-type="regexp"><h2>RegExp</h2></div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -246,18 +279,9 @@
                 </div>
             </section>
 
-            <!-- <section>
-                <div class="title"><span small glyph="mod"></span> Prevent spam</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="prevent_spam" type="checkbox" checked/>
-                        <label for="prevent_spam"></label>
-                    </div>
-                    <p>
-                        Hide repetitive messages in chat.
-                    </p>
-                </div>
-            </section> -->
+            <!-- [[Native Replies]] -->
+
+            <!-- [[Prevent Spam]] -->
 
             <section>
                 <div class="title"><span glyph="thread"></span> Show pop-ups</div>
@@ -271,8 +295,46 @@
                     </p>
                 </div>
             </section>
+
+            <section>
+                <div class="title"><span small gold glyph="stream"></span> Whisper Audio</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="whisper_audio" type="checkbox"/>
+                        <label for="whisper_audio"></label>
+                    </div>
+                    <p>
+                        When someone sends you a whisper, play a notification sound.
+                    </p>
+                    <br>
+                    <p>
+                        <div class="cc-container">
+                            <div class="cc-svg"><span black glyph="cc"></span></div>
+                            <p class="cc-text">
+                                <a href="https://notificationsounds.com/notification-sounds/goes-without-saying-608" rel="nofollow">This sound</a> is licensed under the Creative Commons Attribution license.
+                                <a href="https://creativecommons.org/licenses/by/4.0/legalcode" rel="nofollow">Find out more</a>
+                            </p>
+                        </div>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
 
+        <!-- Currencies
+        #     _____                               _
+        #    / ____|                             (_)
+        #   | |    _   _ _ __ _ __ ___ _ __   ___ _  ___  ___
+        #   | |   | | | | '__| '__/ _ \ '_ \ / __| |/ _ \/ __|
+        #   | |___| |_| | |  | | |  __/ | | | (__| |  __/\__ \
+        #    \_____\__,_|_|  |_|  \___|_| |_|\___|_|\___||___/
+        #
+        #
+        -->
         <header>Currencies</header>
         <article>
             <section>
@@ -287,8 +349,23 @@
                     </p>
                 </div>
             </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
 
+        <!-- Customization
+        #     _____          _                  _          _   _
+        #    / ____|        | |                (_)        | | (_)
+        #   | |    _   _ ___| |_ ___  _ __ ___  _ ______ _| |_ _  ___  _ __
+        #   | |   | | | / __| __/ _ \| '_ ` _ \| |_  / _` | __| |/ _ \| '_ \
+        #   | |___| |_| \__ \ || (_) | | | | | | |/ / (_| | |_| | (_) | | | |
+        #    \_____\__,_|___/\__\___/|_| |_| |_|_/___\__,_|\__|_|\___/|_| |_|
+        #
+        #
+        -->
         <header>Customization</header>
         <article>
             <section>
@@ -333,8 +410,23 @@
                     </select>
                 </div>
             </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
 
+        <!-- Video Recovery
+        #   __      ___     _              _____
+        #   \ \    / (_)   | |            |  __ \
+        #    \ \  / / _  __| | ___  ___   | |__) |___  ___ _____   _____ _ __ _   _
+        #     \ \/ / | |/ _` |/ _ \/ _ \  |  _  // _ \/ __/ _ \ \ / / _ \ '__| | | |
+        #      \  /  | | (_| |  __/ (_) | | | \ \  __/ (_| (_) \ V /  __/ |  | |_| |
+        #       \/   |_|\__,_|\___|\___/  |_|  \_\___|\___\___/ \_/ \___|_|   \__, |
+        #                                                                      __/ |
+        #                                                                     |___/
+        -->
         <header>Video Recovery</header>
         <article>
             <section>
@@ -401,7 +493,23 @@
                     </p>
                 </div>
             </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
+
+        <!-- Developer Features
+        #    _____                 _                         ______         _
+        #   |  __ \               | |                       |  ____|       | |
+        #   | |  | | _____   _____| | ___  _ __   ___ _ __  | |__ ___  __ _| |_ _   _ _ __ ___  ___
+        #   | |  | |/ _ \ \ / / _ \ |/ _ \| '_ \ / _ \ '__| |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
+        #   | |__| |  __/\ V /  __/ | (_) | |_) |  __/ |    | | |  __/ (_| | |_| |_| | | |  __/\__ \
+        #   |_____/ \___| \_/ \___|_|\___/| .__/ \___|_|    |_|  \___|\__,_|\__|\__,_|_|  \___||___/
+        #                                 | |
+        #                                 |_|
+        -->
 
         <header>Developer Features <span glyph="help" right-tooltip="These are advanced features that should be used for testing"></span></header>
         <article danger>
@@ -414,6 +522,19 @@
                     </div>
                     <p>
                         Allow the extension to display messages in the console.
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="stats"></span> Display Statistics</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="display_of_video" type="checkbox"/>
+                        <label for="display_of_video"></label>
+                    </div>
+                    <p>
+                        Allow the extension to display statistics of the video.
                     </p>
                 </div>
             </section>
@@ -447,23 +568,79 @@
                     </p>
                 </div>
             </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
+
+        <!-- Experimental Features
+        #    ______                      _                      _        _   ______         _
+        #   |  ____|                    (_)                    | |      | | |  ____|       | |
+        #   | |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ __ _| | | |__ ___  __ _| |_ _   _ _ __ ___  ___
+        #   |  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ _` | | |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
+        #   | |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | || (_| | | | | |  __/ (_| | |_| |_| | | |  __/\__ \
+        #   |______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__\__,_|_| |_|  \___|\__,_|\__|\__,_|_|  \___||___/
+        #               | |
+        #               |_|
+        -->
 
         <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features that may produce errors"></span></header>
         <article caution>
             <section>
-                <div class="title"><span small glyph="stats"></span> Use Fine Details</div>
+                <div class="title"><span small white glyph="stream"></span> Auto-Focus</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="fine_details" type="checkbox"/>
-                        <label for="fine_details"></label>
+                    <div class="toggle">
+                        <input id="auto_focus" type="checkbox"/>
+                        <label for="auto_focus"></label>
                     </div>
                     <p>
-                        Allow the extension to use Twitch&trade; API data to enhance your experience.
+                        When there is a steady increase in stream activity pause the <b>Up Next</b> feature, and turn <b>Away Mode</b> off.
                     </p>
-                    <p>
-                        This will not collect any data. It will use the data Twitch&trade; has collected.
+                    <p warning-text>
+                        This will <b>not</b> stop the one minute timer.
                     </p>
+                    <details>
+                        <summary subtitle="Adjust options for Auto-Focus">Options</summary>
+                        <div>
+                            <p>
+                                How much activity should activate <b>Auto-Focus</b>?
+                            </p>
+
+                            <select id="auto_focus_detection_threshold">
+                                <option value="30">High activity (First Person Shooter / Rhythm)</option>
+                                <option value="20" selected>Modest activity (Action / Platformer)</option>
+                                <option value="10">Seasonal activity (Trivia / Puzzle)</option>
+                                <option value="5">Low activity (Just Chatting / Simulation)</option>
+                            </select>
+                        </div>
+                        <hr>
+                        <div>
+                            <p>
+                                How often should the stream be <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polled</b>?
+                            </p>
+
+                            <select id="auto_focus_poll_interval">
+                                <option value="1">Every second (CPU intensive, great detection)</option>
+                                <option value="3" selected>Every 3 seconds (CPU friendly, good detection)</option>
+                                <option value="5">Every 5 seconds (CPU friendly, fair detection)</option>
+                                <option value="10">Every 10 seconds (CPU friendly, poor detection)</option>
+                            </select>
+                        </div>
+                        <hr>
+                        <div>
+                            <p>
+                                What image type should be used for <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polling</b>?
+                            </p>
+
+                            <select id="auto_focus_poll_image_type">
+                                <option value="webp" selected>WebP (CPU friendly, great detection)</option>
+                                <option value="png">PNG (CPU intensive, great detection)</option>
+                                <option value="jpeg">JPG (CPU friendly, good detection)</option>
+                            </select>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -513,6 +690,19 @@
             </section>
 
             <section>
+                <div class="title"><span small glyph="mod"></span> Prevent spam</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="prevent_spam" type="checkbox" checked/>
+                        <label for="prevent_spam"></label>
+                    </div>
+                    <p>
+                        Hide repetitive messages in chat.
+                    </p>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="extensions"></span> Recover Pages</div>
                 <div class="summary">
                     <div class="toggle" right-tooltip="Experimental feature">
@@ -524,15 +714,46 @@
                     </p>
                 </div>
             </section>
+
+            <section>
+                <div class="title"><span small glyph="stats"></span> Use Fine Details</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="fine_details" type="checkbox"/>
+                        <label for="fine_details"></label>
+                    </div>
+                    <p>
+                        Allow the extension to use Twitch&trade; API data to enhance your experience.
+                    </p>
+                    <p>
+                        This will not collect any data. It will use the data Twitch&trade; has collected.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Save Footer -->
+            <section save>
+                <button class="ripple save"></button>
+            </section>
         </article>
 
+        <!-- About
+        #             _                 _
+        #       /\   | |               | |
+        #      /  \  | |__   ___  _   _| |_
+        #     / /\ \ | '_ \ / _ \| | | | __|
+        #    / ____ \| |_) | (_) | |_| | |_
+        #   /_/    \_\_.__/ \___/ \__,_|\__|
+        #
+        #
+        -->
         <header>About Twitch Tools</header>
         <article>
             <section>
                 <div class="title"><span small glyph="extensions"></span> Version</div>
                 <div class="summary">
                     <a type="button" set="top-tooltip:version.installed"><span small glyph="extensions"></span> Installed</a>
-                    <a type="button" set="top-tooltip:version.github" href="https://github.com/ephellon/twitch-tools"><span small glyph="github"></span> GitHub </a>
+                    <a type="button" set="top-tooltip:version.github" href="https://github.com/ephellon/twitch-tools" github><span small glyph="github"></span> GitHub </a>
                     <a type="button" set="top-tooltip:version.chrome" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd"><span small glyph="chrome"></span> Chrome Web Store </a>
                 </div>
             </section>
@@ -540,7 +761,7 @@
             <section>
                 <div class="title"><span small glyph="help"></span> Support</div>
                 <div class="summary">
-                    <a type="button" href="https://github.com/ephellon/twitch-tools" top-tooltip="Fastest communication method">
+                    <a type="button" href="https://github.com/ephellon/twitch-tools" top-tooltip="Fastest communication method" github>
                         <span small glyph="github"></span>
                         GitHub
                     </a>
@@ -556,13 +777,14 @@
             </section>
 
             <footer>
-                This extension is in no way affiliated with, nor endorsed by Amazon&trade;, Twitch&trade;, its partners, affiliates, or subsidaries.
+                This extension is in no way affiliated with, nor endorsed by Amazon&trade;, Twitch&trade;, its partners, affiliates, or subsidiaries.
             </footer>
         </article>
 
         <button id="save" class="ripple"></button>
 
         <script src="settings.js"></script>
+
         <style>
         /* CSS needs to be here so that `height:100%` and `width:100%` can render properly */
         .popup .ripple:after {

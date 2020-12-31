@@ -12,7 +12,7 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let empty = value => (value === undefined || value === null),
     defined = value => !empty(value);
 
-let settings = {},
+let Settings = {},
     UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
     Jobs = {},
     Queue = { balloons: [], bullets: [], emotes: [], messages: [], message_popups: [], popups: [] },
@@ -926,6 +926,8 @@ class ChatFooter {
         this.parent = parent;
         this.container = footer;
 
+        setTimeout(() => this?.container?.remove(), 15_000);
+
         return this;
     }
 
@@ -945,7 +947,7 @@ function GetSettings() {
     return new Promise((resolve, reject) => {
         function ParseSettings(settings) {
             for(let setting in settings)
-                settings[setting] = settings[setting] || null;
+                settings[setting] ??= null;
 
             resolve(settings);
         }
@@ -1054,7 +1056,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     for(let line of chat) {
         let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
             author = handle.toLowerCase(),
-            message = $('.chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
+            message = $('.chat-line__message .text-fragment, .chat-line__message img:not(.chat-badge), .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
             style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
@@ -1062,10 +1064,10 @@ function GetChat(lines = 30, keepEmotes = false) {
 
         let [raw] = message.splice(0, 1);
 
-        raw = raw?.innerText;
+        raw = raw?.innerText?.trim();
 
         message = message
-            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e)).alt }:`: element.innerText)
+            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e.alt))(element) }:`: element.innerText)
             .filter(defined)
             .join(' ')
             .trim()
@@ -1100,7 +1102,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     results.bullets = [];
 
     for(let bullet of bullets) {
-        let message = $('.mention-fragment, .chat-line__username, .chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, [class^="tw-c-text-"i]', true, bullet),
+        let message = $('.mention-fragment, .chat-line__username, .chat-line__message .text-fragment, .chat-line__message img:not(.chat-badge), .chat-line__message a, p, [class^="tw-c-text-"i]', true, bullet),
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             subject = (subject =>
                 /\braid/i.test(subject)?                'raid': // Incoming raid
@@ -1116,10 +1118,10 @@ function GetChat(lines = 30, keepEmotes = false) {
 
         let [raw] = message.splice(0, 1);
 
-        raw = raw?.innerText;
+        raw = raw?.innerText?.trim();
 
         message = message
-            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e)).alt }:`: element.innerText)
+            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e.alt))(element) }:`: element.innerText)
             .filter(defined)
             .join(' ')
             .trim()
@@ -1154,9 +1156,11 @@ Object.defineProperties(GetChat, {
             if(GetChat.__onnewmessage__.has(name))
                 return GetChat.__onnewmessage__.get(name);
 
-            LOG('Adding [on new message] event listener', { [name]: callback });
+            // LOG('Adding [on new message] event listener', { [name]: callback });
 
-            return GetChat.__onnewmessage__.set(name, callback);
+            GetChat.__onnewmessage__.set(name, callback);
+
+            return callback;
         },
 
         get() {
@@ -1164,6 +1168,24 @@ Object.defineProperties(GetChat, {
         },
     },
     __onnewmessage__: { value: new Map() },
+
+    onwhisper: {
+        set(callback) {
+            let name = callback.name || UUID.from(callback.toString()).toString();
+
+            if(GetChat.__onwhisper__.has(name))
+                return GetChat.__onwhisper__.get(name);
+
+            // LOG('Adding [on new whisper] event listener', { [name]: callback });
+
+            return GetChat.__onwhisper__.set(name, callback);
+        },
+
+        get() {
+            return GetChat.__onwhisper__.size;
+        },
+    },
+    __onwhisper__: { value: new Map() },
 });
 
 // Pushes parameters to the URL's search
@@ -1513,8 +1535,8 @@ async function GetQuality() {
 }
 
 // Change the video quality
-    // ChangeQuality([quality:string[, backup:string]]) -> Object#{ __old__:Object={ input:Element, label:Element }, __new__:Object={ input:Element, label:Element } }
-async function ChangeQuality(quality = 'auto', backup = 'source') {
+    // SetQuality([quality:string[, backup:string]]) -> Object#{ __old__:Object={ input:Element, label:Element }, __new__:Object={ input:Element, label:Element } }
+async function SetQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
             return $('[data-a-target="player-settings-button"i]');
@@ -1871,51 +1893,6 @@ let uniqueChannels = (channel, index, channels) =>
     // isLive(channel:object#Channel) -> boolean
 let isLive = channel => channel?.live;
 
-// Opens the side panel to expose all channels. Returns whether the panel was already open
-    // OpenPanel(interjection:function[, close:boolean]) -> boolean
-async function OpenPanel(interjection, close = false) {
-    // Open the side panel
-    let element;
-
-    // Is the nav open?
-    let open = defined($('[data-a-target="side-nav-search-input"]')),
-        sidenav = $('[data-a-target="side-nav-arrow"i]');
-
-    // Open the Side Nav
-    if(!open) // Only open it if it isn't already
-        sidenav?.click();
-
-    // Execute the interjected function
-    interjection();
-
-    // Click "show more" as many times as possible
-    while(defined(element = $('[data-a-target="side-nav-show-more-button"]')))
-        element.click();
-
-    if(close)
-        await ClosePanel(open);
-
-    return open;
-}
-
-// Closes the side panel
-    // ClosePanel([open:boolean]) -> undefined
-async function ClosePanel(open = false) {
-    // Close the side panel
-    let element;
-
-    // Is the nav open?
-    let sidenav = $('[data-a-target="side-nav-arrow"i]');
-
-    // Click "show less" as many times as possible
-    while(defined(element = $('[data-a-target="side-nav-show-less-button"]')))
-        element.click();
-
-    // Close the Side Nav
-    if(!open) // Only close it if it wasn't open in the first place
-        sidenav?.click();
-}
-
 // Update common variables
 let PATHNAME = top.location.pathname,
     // The current streamer
@@ -1931,16 +1908,21 @@ let PATHNAME = top.location.pathname,
     // All of the above
     ALL_CHANNELS;
 
-let __ONLOCATIONCHANGE__ = [];
+let __ONLOCATIONCHANGE__ = new Map;
 
 Object.defineProperties(top, {
     onlocationchange: {
         get() {
-            return __ONLOCATIONCHANGE__[__ONLOCATIONCHANGE__.length - 1] ?? null;
+            let last;
+
+            for(let key of __ONLOCATIONCHANGE__)
+                last = key;
+
+            return __ONLOCATIONCHANGE__.get(last);
         },
 
         set(listener) {
-            __ONLOCATIONCHANGE__.push(listener);
+            __ONLOCATIONCHANGE__.set(UUID.from(listener.toString()).toString(), listener);
 
             return listener;
         }
@@ -1968,8 +1950,12 @@ async function update() {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`),
-                                live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
+                            let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`);
+
+                            if(!defined(parent))
+                                return false;
+
+                            let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
 
                             // if(LIVE_CACHE.has(pathname))
                             //     return LIVE_CACHE.get(pathname);
@@ -2007,8 +1993,12 @@ async function update() {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`),
-                                live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
+
+                            if(!defined(parent))
+                                return false;
+
+                            let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
 
                             // if(!defined(parent) && LIVE_CACHE.has(pathname))
                             //     return LIVE_CACHE.get(pathname);
@@ -2046,8 +2036,12 @@ async function update() {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`),
-                                live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                            let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`);
+
+                            if(!defined(parent))
+                                return false;
+
+                            let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
 
                             // if(!defined(parent) && LIVE_CACHE.has(pathname))
                             //     return LIVE_CACHE.get(pathname);
@@ -2075,7 +2069,7 @@ async function update() {
     NOTIFICATIONS = [
         ...NOTIFICATIONS,
         // Notification elements
-        $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true).map(
+        ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true).map(
             element => {
                 let streamer = {
                     live: true,
@@ -2118,23 +2112,44 @@ function RegisterJob(JobName) {
     // UnregisterJob(JobName:string) -> undefined
 function UnregisterJob(JobName) {
     clearInterval(Jobs[JobName]);
-    delete Jobs[JobName];
 
     let unhandler = Unhandlers[JobName];
 
     if(defined(unhandler))
         unhandler();
+
+    // Both accomplish the same thing
+    Jobs[JobName] = undefined;
+    delete Jobs[JobName];
+}
+
+// Restarts (unregisters, then registers) a job
+    // RestartJob(JobName:string) -> undefined
+function RestartJob(JobName) {
+    new Promise((resolve, reject) => {
+        try {
+            UnregisterJob(JobName);
+
+            resolve();
+        } catch(error) {
+            reject(error);
+        }
+    }).then(() => {
+        RegisterJob(JobName);
+    });
 }
 
 // Settings have been saved
 let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?') }$`, 'i');
 
-let EXPERIMENTAL_FEATURES = ['convert_emotes', 'kill_extensions', 'fine_details', 'native_twitch_reply'].map(AsteriskFn),
-    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'first_in_line*', 'prevent_hosting', 'prevent_raiding', 'watch_time_placement'].map(AsteriskFn),
-    NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_*', 'kill_*'].map(AsteriskFn);
+let EXPERIMENTAL_FEATURES = ['convert_emotes', 'fine_details', 'native_twitch_reply', 'prevent_spam'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'first_in_line*', 'prevent*', 'watch_time_placement'].map(AsteriskFn),
+    NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent*', 'kill*'].map(AsteriskFn),
+    REFRESHABLE_FEATURES = ['auto_focus*', 'filter_messages'].map(AsteriskFn);
 
 Storage.onChanged.addListener((changes, namespace) => {
-    let reload = false;
+    let reload = false,
+        refresh = [];
 
     for(let key in changes) {
         if(SPECIAL_MODE && !!~NORMALIZED_FEATURES.findIndex(feature => feature.test(key)))
@@ -2148,25 +2163,33 @@ Storage.onChanged.addListener((changes, namespace) => {
         if(newValue === false) {
 
             if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                WARN(`Disabling experimental setting: ${ name }`, new Date);
+                WARN(`Disabling experimental feature: ${ name }`, new Date);
             else
-                LOG(`Disabling setting: ${ name }`, new Date);
+                LOG(`Disabling feature: ${ name }`, new Date);
 
             UnregisterJob(key);
         } else if(newValue === true) {
 
             if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                WARN(`Enabling experimental setting: ${ name }`, new Date);
+                WARN(`Enabling experimental feature: ${ name }`, new Date);
             else
-                LOG(`Enabling setting: ${ name }`, new Date);
+                LOG(`Enabling feature: ${ name }`, new Date);
 
             RegisterJob(key);
         } else {
 
             if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                WARN(`Modifying experimental setting: ${ name }`, { oldValue, newValue }, new Date);
+                WARN(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
             else
-                LOG(`Modifying setting: ${ name }`, { oldValue, newValue }, new Date);
+                LOG(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
+
+            switch(key) {
+                case 'filter_rules':
+                    RestartJob('filter_messages');
+                    break;
+
+                default: break;
+            }
 
             // Adjust the timer to compensate for lost time
             // new-time-left = (old-wait-time - old-time-left) + (new-wait-time - old-wait-time)
@@ -2175,12 +2198,17 @@ Storage.onChanged.addListener((changes, namespace) => {
         }
 
         reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].findIndex(feature => feature.test(key));
+        if(!!~[...REFRESHABLE_FEATURES].findIndex(feature => feature.test(key)))
+            refresh.push(key);
 
-        settings[key] = newValue;
+        Settings[key] = newValue;
     }
 
     if(reload)
-        location.reload();
+        return location.reload();
+
+    for(let job of refresh)
+        RestartJob(job);
 });
 
 /*** Initialization
@@ -2211,7 +2239,7 @@ let Initialize = async(START_OVER = false) => {
     if(SPECIAL_MODE) {
         let { $1, $2 } = RegExp;
 
-        WARN(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled`, NORMALIZED_FEATURES);
+        WARN(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled:`, NORMALIZED_FEATURES);
     }
 
     let ERRORS = Initialize.errors |= 0;
@@ -2221,16 +2249,16 @@ let Initialize = async(START_OVER = false) => {
         ERRORS = Initialize.errors++
     }
 
-    settings = await GetSettings();
+    Settings = await GetSettings();
 
     // Modify the logging feature via the settings
-    if(!settings.display_in_console)
+    if(!Settings.display_in_console)
         LOG = WARN = ERROR = ($=>$);
 
-    // Enable experimental features
-    if(!settings.experimental_mode)
+    // Disable experimental features
+    if(!Settings.experimental_mode)
         for(let feature of EXPERIMENTAL_FEATURES)
-            settings[feature] = false;
+            Settings[feature] = false;
 
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
@@ -2258,13 +2286,13 @@ let Initialize = async(START_OVER = false) => {
         });
 
         // Next channel in "Up Next"
-        if(!parseBool(settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
+        if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
             return ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]);
 
         let next;
 
         next_channel:
-        switch(settings.next_channel_preference) {
+        switch(Settings.next_channel_preference) {
             // The most popular channel (most amoutn of current viewers)
             case 'popular':
                 next = online[0];
@@ -2302,7 +2330,7 @@ let Initialize = async(START_OVER = false) => {
      */
     SEARCH = [
         // Current (followed) streamers
-        ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+        ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])`, true)
             .map(element => {
                     let channel = {
                         href: element.href,
@@ -2312,8 +2340,12 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`),
-                                live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
+                                let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`);
+
+                                if(!defined(parent))
+                                    return false;
+
+                                let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
 
                             // if(LIVE_CACHE.has(pathname))
                             //     return LIVE_CACHE.get(pathname);
@@ -2515,8 +2547,12 @@ let Initialize = async(START_OVER = false) => {
                                     url = parseURL(href),
                                     { pathname } = url;
 
-                                let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`),
-                                    live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                                let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
+
+                                if(!defined(parent))
+                                    return false;
+
+                                let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
 
                                 // if(!defined(parent) && LIVE_CACHE.has(pathname))
                                 //     return LIVE_CACHE.get(pathname);
@@ -2561,8 +2597,12 @@ let Initialize = async(START_OVER = false) => {
                                     url = parseURL(href),
                                     { pathname } = url;
 
-                                let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`),
-                                    live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                                let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
+
+                                if(!defined(parent))
+                                    return false;
+
+                                let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
 
                                 // if(!defined(parent) && LIVE_CACHE.has(pathname))
                                 //     return LIVE_CACHE.get(pathname);
@@ -2604,8 +2644,12 @@ let Initialize = async(START_OVER = false) => {
                                     url = parseURL(href),
                                     { pathname } = url;
 
-                                let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`),
-                                    live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                                let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`);
+
+                                if(!defined(parent))
+                                    return false;
+
+                                let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
 
                                 // if(!defined(parent) && LIVE_CACHE.has(pathname))
                                 //     return LIVE_CACHE.get(pathname);
@@ -2664,7 +2708,7 @@ let Initialize = async(START_OVER = false) => {
 
         /* Attempt to use the Twitch API */
         __FineDetails__:
-        if(settings.fine_details) {
+        if(Settings.fine_details) {
             // Get the cookie values
             let cookies = {};
 
@@ -2694,26 +2738,30 @@ let Initialize = async(START_OVER = false) => {
 
             await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
                 .then(response => response.json())
-                .then(json => TWITCH_API = JSON.parse(json.token))
-                .then(json => LOG('Getting fine details...', { [type]: value, cookies }, json))
+                .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
+                .then(json => {
+                    if(!defined(json))
+                        return;
+
+                    LOG('Getting fine details...', { [type]: value, cookies }, json);
+
+                    let conversion = {
+                        paid: 'subscriber',
+
+                        ally: 'partner',
+                        fast: 'turbo',
+                        nsfw: 'mature',
+                        sole: 'channel_id',
+                    };
+
+                    for(let key in conversion)
+                        STREAMER[key] = TWITCH_API[conversion[key]];
+                })
                 .catch(ERROR);
-
-            let conversion = {
-                paid: 'subscriber',
-
-                ally: 'partner',
-                fast: 'turbo',
-                nsfw: 'mature',
-                sole: 'channel_id',
-            };
-
-            for(let key in conversion)
-                STREAMER[key] = TWITCH_API[conversion[key]];
         }
     };
 
-    // TODO
-        // Add an "un-delete" feature
+    // TODO - Add an "un-delete" feature
     // Keep a copy of all messages
     // LOG("Keeping a log of all original messages");
     // Messages.set(STREAMER.name, new Set);
@@ -2742,7 +2790,7 @@ let Initialize = async(START_OVER = false) => {
         let url = parseURL(top.location),
             data = url.searchParameters;
 
-        let { like, coin, follow } = STREAMER,
+        let { like, follow } = STREAMER,
             raid = data.referrer === 'raid';
 
         if(!like && raid)
@@ -2751,36 +2799,36 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_follow_raids = 1000;
 
     __AutoFollowRaid__:
-    if(settings.auto_follow_raids || settings.auto_follow_all) {
+    if(Settings.auto_follow_raids || Settings.auto_follow_all) {
         RegisterJob('auto_follow_raids');
     }
 
     __AutoFollowTime__:
-    if(settings.auto_follow_time || settings.auto_follow_all) {
+    if(Settings.auto_follow_time || Settings.auto_follow_all) {
         let { like, follow } = STREAMER,
-            mins = parseInt(settings.auto_follow_time_minutes) | 0;
+            mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
         if(!like)
             setTimeout(follow, mins * 60_000);
     }
 
-    /*** Auto Accept Mature Content
-     *                    _                                     _     __  __       _                     _____            _             _
-     *         /\        | |            /\                     | |   |  \/  |     | |                   / ____|          | |           | |
-     *        /  \  _   _| |_ ___      /  \   ___ ___ ___ _ __ | |_  | \  / | __ _| |_ _   _ _ __ ___  | |     ___  _ __ | |_ ___ _ __ | |_
-     *       / /\ \| | | | __/ _ \    / /\ \ / __/ __/ _ \ '_ \| __| | |\/| |/ _` | __| | | | '__/ _ \ | |    / _ \| '_ \| __/ _ \ '_ \| __|
-     *      / ____ \ |_| | || (_) |  / ____ \ (_| (_|  __/ |_) | |_  | |  | | (_| | |_| |_| | | |  __/ | |___| (_) | | | | ||  __/ | | | |_
-     *     /_/    \_\__,_|\__\___/  /_/    \_\___\___\___| .__/ \__| |_|  |_|\__,_|\__|\__,_|_|  \___|  \_____\___/|_| |_|\__\___|_| |_|\__|
-     *                                                   | |
-     *                                                   |_|
+    /*** Auto-Join
+     *                    _                  _       _
+     *         /\        | |                | |     (_)
+     *        /  \  _   _| |_ ___ ______    | | ___  _ _ __
+     *       / /\ \| | | | __/ _ \______|   | |/ _ \| | '_ \
+     *      / ____ \ |_| | || (_) |    | |__| | (_) | | | | |
+     *     /_/    \_\__,_|\__\___/      \____/ \___/|_|_| |_|
+     *
+     *
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target="watchparty-overlay-main"i] button')?.click();
+        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target="watchparty-overlay-main"i] button, .home [data-a-target^="home"]')?.click();
     };
-    Timers.auto_accept_mature = 1000;
+    Timers.auto_accept_mature = -1000;
 
     __AutoMatureAccept__:
-    if(settings.auto_accept_mature) {
+    if(Settings.auto_accept_mature) {
         RegisterJob('auto_accept_mature');
     }
 
@@ -2807,21 +2855,23 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
+    let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
+
     // First in Line wait time
     FIRST_IN_LINE_WAIT_TIME = parseInt(
-        settings.first_in_line?
-            settings.first_in_line_time_minutes:
-        settings.first_in_line_plus?
-            settings.first_in_line_plus_time_minutes:
-        settings.first_in_line_all?
-            settings.first_in_line_all_time_minutes:
+        Settings.first_in_line?
+            Settings.first_in_line_time_minutes:
+        Settings.first_in_line_plus?
+            Settings.first_in_line_plus_time_minutes:
+        Settings.first_in_line_all?
+            Settings.first_in_line_all_time_minutes:
         0
     ) | 0;
 
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
     function REDO_FIRST_IN_LINE_QUEUE(href) {
-        if(!defined(href))
+        if(!defined(href) || FIRST_IN_LINE_HREF === href)
             return;
 
         href = parseURL(href).href;
@@ -2836,7 +2886,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        LOG(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER) } before leaving for "${ name }" stream "${ href }"`, new Date);
+        LOG(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
@@ -2850,7 +2900,7 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(STARTED_TIMERS.WARNING)) {
                 STARTED_TIMERS.WARNING = true;
 
-                LOG('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER), FIRST_IN_LINE_HREF, new Date);
+                LOG('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER | 0), FIRST_IN_LINE_HREF, new Date);
 
                 let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
                     Icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
@@ -2875,13 +2925,15 @@ let Initialize = async(START_OVER = false) => {
                     Cancel: () => {
                         let existing = $('#twitch-tools-popup'),
                             removal = $('button[connected-to][data-test-selector$="delete"i]'),
-                            [thisJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+                            [thisJob] = ALL_FIRST_IN_LINE_JOBS;
 
                         if(defined(existing))
                             existing.remove();
                         LOG('Canceled First in Line event', thisJob);
 
                         removal.click();
+
+                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                     },
                 });
 
@@ -2892,7 +2944,7 @@ let Initialize = async(START_OVER = false) => {
                     if(defined(popup?.elements))
                         popup.elements.message.innerHTML
                             = popup.elements.message.innerHTML
-                                .replace(/\t(.+?)\t/i, ['\t', ConvertTime(FIRST_IN_LINE_TIMER, '!minute:!second'), '\t'].join(''));
+                                .replace(/\t([^\t]+?)\t/i, ['\t', ConvertTime(FIRST_IN_LINE_TIMER, '!minute:!second'), '\t'].join(''));
 
                     if(FIRST_IN_LINE_TIMER < 1000) {
                         popup.remove();
@@ -2945,13 +2997,15 @@ let Initialize = async(START_OVER = false) => {
         }, 1000);
     }
 
-    if(START_OVER) {
-        FIRST_IN_LINE_BALLOON = Balloon.get('Up Next');
-    } else if(NORMAL_MODE) {
+    if(NORMAL_MODE) {
         FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
 
         // Up Next Boost Button
         let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
+            attributes:{
+                id: 'up-next-boost'
+            },
+
             icon: 'latest',
             onclick: event => {
                 let { currentTarget } = event,
@@ -2997,6 +3051,10 @@ let Initialize = async(START_OVER = false) => {
 
         // Pause Button
         let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
+            attributes: {
+                id: 'up-next-control'
+            },
+
             icon: 'pause',
             onclick: event => {
                 let { currentTarget } = event,
@@ -3013,6 +3071,10 @@ let Initialize = async(START_OVER = false) => {
 
         // Help Button
         let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
+            attributes: {
+                id: 'up-next-help'
+            },
+
             icon: 'help',
             left: true,
         });
@@ -3074,7 +3136,7 @@ let Initialize = async(START_OVER = false) => {
             } else {
                 let { href } = streamer;
 
-                LOG('Adding job:', { href, streamer });
+                LOG('Adding to Up Next:', { href, streamer });
 
                 // Jobs are empty. Restart timer
                 if(ALL_FIRST_IN_LINE_JOBS.length < 1)
@@ -3128,10 +3190,10 @@ let Initialize = async(START_OVER = false) => {
                 let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
 
                 if(!defined(channel))
-                    return WARN('No channel given', { oldIndex, newIndex, desiredChannel: channel });
+                    return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
 
                 if(!!~[oldIndex, newIndex].indexOf(0)) {
-                    LOG('New First in Line', channel);
+                    LOG('New First in Line event:', channel);
 
                     FIRST_IN_LINE_TIMER = parseInt(
                         $(`[name="${ channel.name }"i]`).getAttribute('time')
@@ -3146,7 +3208,7 @@ let Initialize = async(START_OVER = false) => {
             },
         });
 
-        if(settings.first_in_line_none)
+        if(Settings.first_in_line_none)
             FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
         else
             FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
@@ -3174,7 +3236,10 @@ let Initialize = async(START_OVER = false) => {
                             let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                                 [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                            LOG('Removed', removed, 'Canceled?', event.canceled);
+                            LOG('Removed First in Line event:', removed, 'Was it canceled?', event.canceled);
+
+                            if(event.canceled)
+                                DO_NOT_AUTO_ADD.push(removed);
 
                             if(index > 0) {
                                 SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
@@ -3215,14 +3280,14 @@ let Initialize = async(START_OVER = false) => {
                                 if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
                                     FIRST_IN_LINE_TIMER = time;
 
-                                    WARN('Creating job [avoiding job listing mitigation]', channel);
+                                    WARN('Creating job to avoid [Job Listing] mitigation event', channel);
 
                                     return REDO_FIRST_IN_LINE_QUEUE(channel.href);
                                 }
 
                                 if(time < 0)
                                     setTimeout(() => {
-                                        LOG('Mitigation: Job Listings', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                        LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
                                         // Mitigate 0 time bug?
 
                                         FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
@@ -3249,8 +3314,7 @@ let Initialize = async(START_OVER = false) => {
                                     container.setAttribute('live', live);
                                 }
 
-                                if(live)
-                                    subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
+                                subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
                             }, 1000);
                         },
                     })
@@ -3302,6 +3366,9 @@ let Initialize = async(START_OVER = false) => {
                 continue;
             HANDLED_NOTIFICATIONS.push(uuid);
 
+            if(!!~DO_NOT_AUTO_ADD.indexOf(href))
+                continue;
+
             if(!/([^]+? +)(go(?:ing)?|is|went) +live\b/i.test(innerText))
                 continue;
 
@@ -3309,14 +3376,14 @@ let Initialize = async(START_OVER = false) => {
 
             if(defined(FIRST_IN_LINE_HREF)) {
                 if(!~[...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].indexOf(href)) {
-                    LOG('Pushing to Jobs:', href, new Date);
+                    LOG('Pushing to First in Line:', href, new Date);
 
                     ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
                 } else {
-                    WARN('Not pushing to Jobs:', href, new Date);
+                    WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
-                        'Is it the next job?', FIRST_IN_LINE_HREF === href,
-                        'Is it in the queue already?', !!~ALL_FIRST_IN_LINE_JOBS.indexOf(href),
+                        'It is the next job:', FIRST_IN_LINE_HREF === href,
+                        'It is in the queue already:', !!~ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     );
                 }
 
@@ -3325,7 +3392,7 @@ let Initialize = async(START_OVER = false) => {
 
                 continue;
             } else {
-                LOG('Pushing to Jobs (no contest):', href, new Date);
+                LOG('Pushing to First in Line (no contest):', href, new Date);
 
                 // Add the new job (and prevent duplicates)
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
@@ -3358,7 +3425,10 @@ let Initialize = async(START_OVER = false) => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                        LOG('Removed', removed, 'Canceled?', event.canceled);
+                        LOG('Removed from First in Line:', removed, 'Was it canceled?', event.canceled);
+
+                        if(event.canceled)
+                            DO_NOT_AUTO_ADD.push(removed);
 
                         if(index > 0) {
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
@@ -3399,14 +3469,14 @@ let Initialize = async(START_OVER = false) => {
                             if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
                                 FIRST_IN_LINE_TIMER = time;
 
-                                WARN('Creating job [avoiding first in line mitigation]', channel);
+                                WARN('Creating job to avoid [First in Line] mitigation event', channel);
 
                                 return REDO_FIRST_IN_LINE_QUEUE(channel.href);
                             }
 
                             if(time < 0)
                                 setTimeout(() => {
-                                    LOG('Mitigation: First in Line', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                    LOG('Mitigation event fro [First in Line]', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
@@ -3433,8 +3503,7 @@ let Initialize = async(START_OVER = false) => {
                                 container.setAttribute('live', live);
                             }
 
-                            if(live)
-                                subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
+                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
                         }, 1000);
                     },
                 })
@@ -3443,7 +3512,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(href);
                     LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
-                } else if(defined(settings.first_in_line_none)) {
+                } else if(Settings.first_in_line_none) {
                     let existing = $('#twitch-tools-popup');
 
                     if(defined(existing))
@@ -3476,10 +3545,8 @@ let Initialize = async(START_OVER = false) => {
         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
     };
 
-    // window.onlocationchange = () => FIRST_IN_LINE_BALLOON.remove();
-
     __FirstInLine__:
-    if(settings.first_in_line || settings.first_in_line_plus || settings.first_in_line_all) {
+    if(Settings.first_in_line || Settings.first_in_line_plus || Settings.first_in_line_all) {
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
             FIRST_IN_LINE_BOOST = (parseBool(cache.FIRST_IN_LINE_BOOST) ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
@@ -3499,7 +3566,7 @@ let Initialize = async(START_OVER = false) => {
 
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
-                WARN(`The job for "${ href }" no longer exists`, killed);
+                WARN(`The First in Line job for "${ href }" no longer exists`, killed);
 
                 break __FirstInLine__;
             } else {
@@ -3521,9 +3588,12 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let OLD_STREAMERS, NEW_STREAMERS;
+    let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS;
 
-    await LoadCache('OLD_STREAMERS', cache => OLD_STREAMERS = cache.OLD_STREAMERS);
+    await LoadCache(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
+        OLD_STREAMERS = cache.OLD_STREAMERS;
+        BAD_STREAMERS = cache.BAD_STREAMERS;
+    });
 
     Handlers.first_in_line_plus = () => {
         let streamers = [...new Set([...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name))].sort();
@@ -3533,17 +3603,39 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(OLD_STREAMERS))
             OLD_STREAMERS = NEW_STREAMERS;
 
+        let old_names = OLD_STREAMERS.split(',').filter(defined),
+            new_names = NEW_STREAMERS.split(',').filter(defined),
+            bad_names = BAD_STREAMERS?.split(',')?.filter(defined)?.filter(parseBool);
+
+        // Detect if the channels got removed incorrectly?
+        if(bad_names?.length) {
+            WARN('Twitch failed to add these channels correctly:', bad_names);
+
+            BAD_STREAMERS = "";
+
+            SaveCache({ BAD_STREAMERS });
+        } else if(!defined($('[role="group"i][aria-label*="followed"i] a[class*="side-nav-card"]'))) {
+            WARN('"Followed Channels" is missing. Reloading...');
+
+            SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
+
+            // Failed to get channel at...
+            PushToSearch({ 'twitch-tools-ftgca': (+new Date).toString(36) });
+        }
+
         if(OLD_STREAMERS == NEW_STREAMERS)
             return SaveCache({ OLD_STREAMERS });
 
-        let old_names = OLD_STREAMERS.split(','),
-            new_names = NEW_STREAMERS.split(',');
+        new_names = new_names
+            .filter(name => !~old_names.indexOf(name))
+            .filter(name => !~bad_names.indexOf(name));
 
-        new_names = new_names.filter(name => !~old_names.indexOf(name));
+        if(new_names.length < 1)
+            return SaveCache({ OLD_STREAMERS });
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
-        switch(settings.onInstalledReason) {
+        switch(Settings.onInstalledReason) {
             case 'chrome_update':
             case 'shared_module_update':
                 // Not used. Ignore
@@ -3560,41 +3652,16 @@ let Initialize = async(START_OVER = false) => {
                 break;
         }
 
-        if(defined(settings.onInstalledReason))
-            delete settings.onInstalledReason;
-
-        if(new_names.length >= STREAMERS.length) {
-            WARN('New streamers are being added incorrectly...',
-                'New names:',
-                [...new_names],
-
-                'Old names:',
-                [...old_names],
-
-                'New streamers:',
-                [NEW_STREAMERS],
-
-                'Old streamers',
-                [OLD_STREAMERS],
-
-                'Followed channels (side-panel):',
-                [...STREAMERS],
-
-                'All channels (side-panel):',
-                [...ALL_CHANNELS],
-
-                new Date,
-            );
-
-            SaveCache({ [`ERROR-LOG/${ new Date }`]: { new_names, old_names, NEW_STREAMERS, OLD_STREAMERS, STREAMERS, ALL_CHANNELS } });
-        }
+        if(defined(Settings.onInstalledReason))
+            Storage.set({ onInstalledReason: null });
 
         creating_new_events:
         for(let name of new_names) {
             // TODID? `STREAMERS` -> `ALL_CHANNELS`
-            let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name));
+            let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name)),
+                { searchParameters } = parseURL(location.href);
 
-            if(!defined(streamer))
+            if(!defined(streamer) || searchParameters.obit == streamer.name)
                 continue creating_new_events;
 
             let { href } = streamer;
@@ -3616,7 +3683,7 @@ let Initialize = async(START_OVER = false) => {
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
     __FirstInLinePlus__:
-    if(settings.first_in_line_plus || settings.first_in_line_all) {
+    if(Settings.first_in_line_plus || Settings.first_in_line_all) {
         RegisterJob('first_in_line_plus');
     }
 
@@ -3646,7 +3713,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __KillExtensions__:
-    if(settings.kill_extensions) {
+    if(Settings.kill_extensions) {
         RegisterJob('kill_extensions');
     }
 
@@ -3666,18 +3733,18 @@ let Initialize = async(START_OVER = false) => {
             next = await GetNextStreamer(),
             [guest, host] = $('[href^="/"] h1, [href^="/"] > p', true);
 
-        guest = guest?.innerText ?? $('[data-a-target="hosting-indicator"i]')?.innerText;
+        guest = guest?.innerText ?? $('[data-a-target="hosting-indicator"i]')?.innerText ?? "anonymous";
         host = host?.innerText ?? STREAMER.name;
 
         host_stopper:
         if(hosting && defined(next)) {
             // Ignore followed channels
-            if(!!~["unfollowed", "none"].indexOf(settings.prevent_hosting)) {
+            if(!!~["unfollowed", "none"].indexOf(Settings.prevent_hosting)) {
                 let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
                 if(hosting && defined(streamer)) {
-                    LOG(`[HOSTING] ${ guest } is already followed. Just head to the stream`);
+                    LOG(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
                     open(streamer.href, '_self');
                     break host_stopper;
@@ -3687,18 +3754,18 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.__eventlisteners__.onhost.forEach(job => job({ hosting, next }));
 
             if(online.length) {
-                WARN(`${ host } is hosting ${ guest ?? "" }. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                WARN(`${ host } is hosting ${ guest ?? "" }. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
             }
         }
     };
     Timers.prevent_hosting = 5000;
 
     __PreventHosting__:
-    if(settings.prevent_hosting != "none") {
+    if(Settings.prevent_hosting != "none") {
         RegisterJob('prevent_hosting');
     }
 
@@ -3732,7 +3799,7 @@ let Initialize = async(START_OVER = false) => {
         raid_stopper:
         if((raiding || raided) && defined(next)) {
             // Ignore followed channels
-            if(!!~["unfollowed", "none"].indexOf(settings.prevent_raiding)) {
+            if(!!~["unfollowed", "none"].indexOf(Settings.prevent_raiding)) {
                 // The channel being raided (to) is already in "followed." No need to leave
                 if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
                     CONTINUE_RAIDING = true;
@@ -3750,18 +3817,18 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
 
             if(online.length) {
-                WARN(`${ STREAMER.name } is raiding or was raided. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                WARN(`${ STREAMER.name } is raiding or was raided. There doesn't seem to be any followed streamers on right now`, new Date);
+                WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
             }
         }
     };
     Timers.prevent_raiding = 5000;
 
     __PreventRaiding__:
-    if(settings.prevent_raiding != "none") {
+    if(Settings.prevent_raiding != "none") {
         RegisterJob('prevent_raiding');
     }
 
@@ -3786,7 +3853,7 @@ let Initialize = async(START_OVER = false) => {
 
         try {
             await LoadCache('UserIntent', ({ UserIntent }) => {
-                if(UserIntent)
+                if(parseBool(UserIntent))
                     Paths.push(UserIntent);
             });
         } catch(error) {
@@ -3800,15 +3867,13 @@ let Initialize = async(START_OVER = false) => {
             if(!RegExp(STREAMER.name, 'i').test(PATHNAME))
                 break IsLive;
 
-            LOG({ STREAMER, NORMALIZED_PATHNAME, PATHNAME, ValidTwitchPath });
-
             if(!ValidTwitchPath.test(pathname)) {
                 if(online.length) {
-                    WARN(`${ STREAMER.name } is no longer live. Moving onto next streamer (${ next.name })`, next.href, new Date);
+                    WARN(`${ STREAMER.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                    open(next.href, '_self');
+                    open(`${ next.href }?obit=${ STREAMER.name }`, '_self');
                 } else  {
-                    WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed streamers on right now`, new Date);
+                    WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
                 }
             }
 
@@ -3823,7 +3888,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.stay_live = 5000;
 
     __StayLive__:
-    if(settings.stay_live) {
+    if(Settings.stay_live) {
         RegisterJob('stay_live');
     }
 
@@ -3843,15 +3908,71 @@ let Initialize = async(START_OVER = false) => {
                 version = $2;
 
             return [id, version].join('-');
-        });
+        }),
+        CONVERT_TO_CAPTURED_EMOTE;
 
     Handlers.convert_emotes = () => {
-        GetChat(30, true);
+        CONVERT_TO_CAPTURED_EMOTE = (emote) => {
+            let { name, src } = emote;
+
+            let emoteContainer =
+            furnish('div.tw-pd-x-05.tw-relative', {},
+                furnish('div.emote-button', {},
+                    furnish('div.tw-inline-flex', {},
+                        furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
+                            {
+                                'data-test-selector': 'emote-button-clickable',
+                                'aria-label': name,
+                                name,
+                                'data-a-target': name,
+
+                                onclick: event => {},
+                            },
+
+                            furnish('figure', {},
+                                furnish('img.emote-picker__image', { src, alt: name })
+                            )
+                        )
+                    )
+                )
+            );
+
+            let emoteTooltip =
+            new Tooltip(emoteContainer, name);
+
+            return emoteContainer;
+        };
+
+        let { emotes } = GetChat(30, true),
+            allEmotes = [];
+
+        // Put all collected emotes into the emote-picker list
+        for(let emote in emotes)
+            allEmotes.push({ name: emote, src: emotes[emote] });
+
+        let parent = $('.emote-picker__scroll-container > *');
+
+        let emoteSection =
+        furnish('div#twitch-tools-captured-emotes.emote-picker__content-block', {},
+            furnish('div.tw-pd-b-1.tw-pd-t-05.tw-pd-x-1.tw-relative', {},
+                // Emote Section Header
+                furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
+                    furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {},
+                        "Captured Emotes"
+                    )
+                ),
+
+                // Emote Section Container
+                furnish('div#twitch-tools-captured-emotes-container.tw-flex.tw-flex-wrap', {}, ...allEmotes.map(CONVERT_TO_CAPTURED_EMOTE))
+            )
+        );
+
+        parent.insertBefore(emoteSection, parent.firstChild);
     };
     Timers.convert_emotes = -1000;
 
     __ConvertEmotes__:
-    if(settings.convert_emotes) {
+    if(Settings.convert_emotes) {
         // Collect emotes
         let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
 
@@ -3881,8 +4002,13 @@ let Initialize = async(START_OVER = false) => {
             let regexp;
 
             for(let emote in chat.emotes)
-                if(!EMOTES.has(emote))
+                if(!EMOTES.has(emote)) {
                     EMOTES.set(emote, shrt(chat.emotes[emote]));
+
+                    let capturedEmote = CONVERT_TO_CAPTURED_EMOTE(emote);
+
+                    $('#twitch-tools-captured-emotes-container')?.appendChild?.(capturedEmote);
+                }
 
             for(let line of chat) {
                 // Replace emotes for the last 25 chat messages
@@ -3918,9 +4044,13 @@ let Initialize = async(START_OVER = false) => {
 
                         let { element } = line;
 
-                        $('.text-fragment:not([twitch-tools-emote-plus])', true, element).map(fragment => {
-                            fragment.setAttribute('twitch-tools-emote-plus', alt);
-                            fragment.innerHTML = fragment.innerHTML.replace(regexp, img.innerHTML);
+                        $('.text-fragment:not([twitch-tools-converted-emote])', true, element).map(fragment => {
+                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', innerHTML: img.innerHTML });
+
+                            new Tooltip(container, alt);
+
+                            fragment.setAttribute('twitch-tools-converted-emote', alt);
+                            fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
                         });
                     }
             }
@@ -3940,34 +4070,47 @@ let Initialize = async(START_OVER = false) => {
      *                                 |___/
      */
     let UPDATED_FILTER = () => {
-        let rules = settings.filter_rules;
+        let rules = Settings.filter_rules;
 
-        let channel = [], user = [], text = [];
+        let channel = [], user = [], badge = [], text = [];
 
         if(defined(rules?.length)) {
-            rules = rules.split(/\s*,\s*/).filter(rule => rule.length);
+            rules = rules.split(/\s*,\s*/).map(rule => rule.trim()).filter(rule => rule.length);
 
             for(let rule of rules)
+                // /channel text
                 if(/^\/[\w\-]+/.test(rule)) {
                     let { $_ } = RegExp;
 
-                    let name, text, user;
+                    let name, text, user, badge;
 
-                    $_.replace(/^\/([\w\-]+) +((@)?[^]*?)$/, ($0, $1, $2, $3, $$, $_) => {
+                    $_.replace(/^\/([\w\-]+) +(<([^>]+?)>|(@)?[^]*?)$/, ($0, $1, $2, $3, $4, $$, $_) => {
                         name = $1;
 
                         if($3 ?? false)
+                            badge = $3;
+                        else if($4 ?? false)
                             user = $2;
                         else
                             text = $2;
                     });
 
-                    channel.push({ name, text, user });
-                } else if(/^@[\w\-]+/.test(rule)) {
+                    channel.push({ name, text, user, badge });
+                }
+                // @username
+                else if(/^@[\w\-]+$/.test(rule)) {
                     let { $_ } = RegExp;
 
                     user.push($_.replace(/^@/, ''));
-                } else if(rule) {
+                }
+                // <badge>
+                else if(/^<[\w\- ]+>$/.test(rule)) {
+                    let { $_ } = RegExp;
+
+                    badge.push($_.replace(/^<|>$/g, ''));
+                }
+                // text
+                else if(rule) {
                     let $_ = rule;
 
                     text.push(/^[\w\s]+$/.test($_)? `\\b${ $_.trim() }\\b`: $_);
@@ -3977,81 +4120,61 @@ let Initialize = async(START_OVER = false) => {
         return {
             text: (text.length? RegExp(`(${ text.join('|') })`, 'i'): /^[\b]$/),
             user: (user.length? RegExp(`(${ user.join('|') })`, 'i'): /^[\b]$/),
+            badge: (badge.length? RegExp(`(${ badge.join('|') })`, 'i'): /^[\b]$/),
             channel
         }
     };
 
+    let MESSAGE_FILTER;
+
     Handlers.filter_messages = () => {
-        let Filter = UPDATED_FILTER();
-
-        GetChat(15, true).filter(line => {
-            return false
-                // Filter messges (RegExp) on all channels
-                || Filter.text.test(line.message)
-                // Filter users on all channels
-                || Filter.user.test(line.author)
-                // Filter messages/users on specific a channel
-                || !!~Filter.channel.map(({ name, text, user }) => {
-                    if(!defined(STREAMER))
-                        return;
-
-                    let channel = STREAMER.name.toLowerCase();
-
-                    return channel == name
-                        && (
-                            ('@' + line.author) == user
-                            || !!~line.message.toLowerCase().indexOf(text)
-                        )
-                }).indexOf(true);
-        }).map(line => {
-            let { element, mentions } = line,
-                hidden = element.getAttribute('twitch-tools-hidden') === 'true';
-
-            if(hidden || !!~mentions.indexOf(USERNAME))
-                return;
-
-            element.setAttribute('style', 'display:none');
-            element.setAttribute('twitch-tools-hidden', true);
-        });
-
         LOG('Adding message filter event listener...');
 
-        GetChat.onnewmessage = chat => {
+        if(defined(MESSAGE_FILTER))
+            MESSAGE_FILTER(GetChat(250, true));
+
+        MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
             let Filter = UPDATED_FILTER();
 
+            censoring:
             for(let line of chat) {
-                let { message, mentions, author, element } = line;
+                let { message, mentions, author, badges, element } = line,
+                    reason;
 
-                let censor = false
-                    // Filter messges (RegExp) on all channels
-                    || Filter.text.test(message)
+                let censor = parseBool(false
                     // Filter users on all channels
-                    || Filter.user.test(author)
+                    || (Filter.user.test(author)? reason = 'user': false)
+                    // Filter badges on all channels
+                    || (Filter.badge.test(badges)? reason = 'badge': false)
+                    // Filter messges (RegExp) on all channels
+                    || (Filter.text.test(message)? reason = 'text': false)
                     // Filter messages/users on specific a channel
-                    || !!~Filter.channel.map(({ name, text, user }) => {
+                    || !!~Filter.channel.map(({ name, text, user, badge }) => {
                         if(!defined(STREAMER))
                             return;
 
-                        let channel = STREAMER.name.toLowerCase();
+                        let channel = STREAMER.name?.toLowerCase();
 
-                        return channel == name
-                            && (
-                                ('@' + author) == user
-                                || !!~message.toLowerCase().indexOf(text)
-                            )
-                    }).indexOf(true);
+                        return parseBool(false
+                            || channel == name.toLowerCase()
+                        ) && parseBool(false
+                            || (('@' + author) == user? reason = 'channel user': false)
+                            || (!!~badges.indexOf(badge)? reason = 'channel badge': false)
+                            || (RegExp(text || '(?:^$)', 'i').test(message)? reason = 'channel text': false)
+                        )
+                    }).indexOf(true)
+                );
 
                 if(!censor)
-                    return;
+                    continue censoring;
 
-                LOG('Censoring message', line);
+                LOG(`Censoring message because the ${ reason } matches`, line);
 
                 let hidden = element.getAttribute('twitch-tools-hidden') === 'true';
 
                 if(hidden || !!~mentions.indexOf(USERNAME))
                     return;
 
-                element.setAttribute('style', 'display:none');
                 element.setAttribute('twitch-tools-hidden', true);
             }
         };
@@ -4061,14 +4184,11 @@ let Initialize = async(START_OVER = false) => {
     Unhandlers.filter_messages = () => {
         let hidden = $('[twitch-tools-hidden]', true);
 
-        hidden.map(element => {
-            element.removeAttribute('[twitch-tools-hidden]');
-            element.removeAttribute('[style]');
-        });
+        hidden.map(element => element.removeAttribute('twitch-tools-hidden'));
     };
 
     __FilterMessages__:
-    if(settings.filter_messages) {
+    if(Settings.filter_messages) {
         RegisterJob('filter_messages');
     }
 
@@ -4092,7 +4212,7 @@ let Initialize = async(START_OVER = false) => {
         let title = $('h4', false, card),
             name = title.textContent.toLowerCase(),
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
-            { filter_rules } = settings;
+            { filter_rules } = Settings;
 
         if(type == 'user') {
             /* Filter users */
@@ -4107,7 +4227,7 @@ let Initialize = async(START_OVER = false) => {
                 onclick: event => {
                     let { currentTarget } = event,
                         username = currentTarget.getAttribute('username'),
-                        { filter_rules } = settings;
+                        { filter_rules } = Settings;
 
                     filter_rules = (filter_rules || '').split(',');
                     filter_rules.push(`@${ username }`);
@@ -4139,7 +4259,7 @@ let Initialize = async(START_OVER = false) => {
                 onclick: event => {
                     let { currentTarget } = event,
                         emote = currentTarget.getAttribute('emote'),
-                        { filter_rules } = settings;
+                        { filter_rules } = Settings;
 
                     filter_rules = (filter_rules || '').split(',');
                     filter_rules.push(emote);
@@ -4163,7 +4283,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.easy_filter = 500;
 
     __EasyFilter__:
-    if(settings.filter_messages) {
+    if(Settings.filter_messages) {
         RegisterJob('easy_filter');
     }
 
@@ -4186,7 +4306,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let { author, message, reply } = line;
 
-                LOG('Highlighting message:', { author, message });
+                // LOG('Highlighting message:', { author, message });
 
                 line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
             }
@@ -4194,7 +4314,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.highlight_mentions = 500;
 
     __HighlightMentions__:
-    if(settings.highlight_mentions) {
+    if(Settings.highlight_mentions) {
         RegisterJob('highlight_mentions');
     }
 
@@ -4217,12 +4337,12 @@ let Initialize = async(START_OVER = false) => {
 
                 let { author, message, reply } = line;
 
-                let existing = $('#twitch-tools-popup');
+                let existing = $('#twitch-tools-chat-footer');
 
                 if(defined(existing))
                     continue;
 
-                LOG('Generating popup:', { author, message });
+                // LOG('Generating footer:', { author, message });
 
                 new ChatFooter(`@${ author } mentioned you.`, {
                     onclick: event => {
@@ -4256,7 +4376,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.highlight_mentions_popup = 500;
 
     __HighlightMentionsPopup__:
-    if(settings.highlight_mentions_popup) {
+    if(Settings.highlight_mentions_popup) {
         RegisterJob('highlight_mentions_popup');
     }
 
@@ -4342,7 +4462,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.convert_bits = 1000;
 
     __ConvertBits__:
-    if(settings.convert_bits) {
+    if(Settings.convert_bits) {
         RegisterJob('convert_bits');
     }
 
@@ -4368,15 +4488,25 @@ let Initialize = async(START_OVER = false) => {
             return;
         RECOVERING_VIDEO = true;
 
-        ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
+        errorMessage = errorMessage.textContent;
 
-        // Failed to play video at...
-        PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
+        ERROR('The stream ran into an error:', errorMessage, new Date);
+
+        if(/subscribe/i.test(errorMessage)) {
+            let next = GetNextStreamer();
+
+            // Subscriber only, etc.
+            if(defined(next))
+                open(next.href, '_self');
+        } else {
+            // Failed to play video at...
+            PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
+        }
     };
     Timers.recover_video = 5_000;
 
     __RecoverVideo__:
-    if(settings.recover_video) {
+    if(Settings.recover_video) {
         RegisterJob('recover_video');
     }
 
@@ -4398,14 +4528,14 @@ let Initialize = async(START_OVER = false) => {
 
         let { paused } = video,
             isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])'));
+            isAdvert = $('video', true).length > 1;
 
         // Leave the video alone
             // if the video isn't paused
             // if the video was paused by the user (trusted)
             // if the video is an ad AND auto-play ads is disabled
             // if the player event-timeout has been set
-        if(!paused || isTrusted || (isAdvert && !settings.recover_ads) || VIDEO_PLAYER_TIMEOUT > -1)
+        if(!paused || isTrusted || (isAdvert && !Settings.recover_ads) || VIDEO_PLAYER_TIMEOUT > -1)
             return;
 
         // Wait before trying to press play again
@@ -4442,7 +4572,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.recover_stream = 2500;
 
     __RecoverStream__:
-    if(settings.recover_stream) {
+    if(Settings.recover_stream) {
         let video = $('video');
 
         if(!defined(video))
@@ -4477,7 +4607,7 @@ let Initialize = async(START_OVER = false) => {
 
         let { paused } = video,
             isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = defined($('video + div [class*="text-overlay"i]:not([class*="channel-status"i])')),
+            isAdvert = $('video', true).length > 1,
             { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
 
         // Time that's passed since creation. Should constantly increase
@@ -4491,22 +4621,26 @@ let Initialize = async(START_OVER = false) => {
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
             return;
 
-        // The video is stalling
-        if(CREATION_TIME != creationTime && TOTAL_VIDEO_FRAMES == totalVideoFrames) {
+        // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
+        if(CREATION_TIME != creationTime && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
+            if(SECONDS_PAUSED_UNSAFELY> 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
+                WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
+
             // Try constantly overwriting to see if the video plays
             // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
 
-            if(!(SECONDS_PAUSED_UNSAFELY % 5))
-                WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY });
-
             ++SECONDS_PAUSED_UNSAFELY;
+
+            video.stalling = true;
         }
         // The video is playing
         else {
             // Start over
             CREATION_TIME = creationTime;
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
+
+            video.stalling = false;
 
             // Reset the timer whenever the video is recovered
             return SECONDS_PAUSED_UNSAFELY = 0;
@@ -4518,7 +4652,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.recover_frames = 1000;
 
     __RecoverFrames__:
-    if(settings.recover_frames) {
+    if(Settings.recover_frames) {
         document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
 
         RegisterJob('recover_frames');
@@ -4538,7 +4672,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"]', true).map(a => {
+        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mousedown', async event => {
                 let { currentTarget } = event;
 
@@ -4726,7 +4860,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.native_twitch_reply = 1000;
 
     __NativeTwitchReply__:
-    if(settings.native_twitch_reply) {
+    if(Settings.native_twitch_reply) {
         RegisterJob('native_twitch_reply');
     }
 
@@ -4743,7 +4877,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.watch_time_placement = async() => {
         let placement;
 
-        if((placement = settings.watch_time_placement ??= "null") == "null")
+        if((placement = Settings.watch_time_placement ??= "null") == "null")
             return;
 
         let live_time = $('.live-time');
@@ -4795,7 +4929,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __WatchTimePlacement__:
-    if(settings.watch_time_placement) {
+    if(Settings.watch_time_placement) {
         RegisterJob('watch_time_placement');
     }
 
@@ -4863,7 +4997,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.point_watcher_placecment = 100;
 
     __PointWatcherPlacement__:
-    if(settings.point_watcher_placecment != "null") {
+    if(Settings.point_watcher_placecment != "null") {
         RegisterJob('point_watcher_placecment');
     }
 
@@ -4892,8 +5026,65 @@ let Initialize = async(START_OVER = false) => {
     Timers.recover_pages = 5000;
 
     __RecoverPages__:
-    if(settings.recover_page) {
+    if(Settings.recover_page) {
         RegisterJob('recover_pages');
+    }
+
+    /*** Whisper Audio
+     *     __          ___     _                                         _ _
+     *     \ \        / / |   (_)                         /\            | (_)
+     *      \ \  /\  / /| |__  _ ___ _ __   ___ _ __     /  \  _   _  __| |_  ___
+     *       \ \/  \/ / | '_ \| / __| '_ \ / _ \ '__|   / /\ \| | | |/ _` | |/ _ \
+     *        \  /\  /  | | | | \__ \ |_) |  __/ |     / ____ \ |_| | (_| | | (_) |
+     *         \/  \/   |_| |_|_|___/ .__/ \___|_|    /_/    \_\__,_|\__,_|_|\___/
+     *                              | |
+     *                              |_|
+     */
+    let NOTIFIED = 0,
+        NOTIFICATION_SOUND =
+            furnish('audio#twich-tools-notification-sound',
+                {
+                    style: 'display:none',
+
+                    innerHTML: ['mp3', 'ogg']
+                        .map(type => {
+                            let types = { mp3: 'mpeg' },
+                                src = Extension.getURL(`aud/goes-without-saying-608.${ type }`);
+                            type = `audio/${ types[type] ?? type }`;
+
+                            return furnish('source', { src, type }).outerHTML;
+                        }).join('')
+                }),
+        NOTIFICATION_EVENT;
+
+    Handlers.whisper_audio = () => {
+        // Play sound on new message
+        NOTIFICATION_EVENT ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
+            LOG('Got a new whisper', { unread, highlighted, message });
+
+            if(!unread && !highlighted && !message)
+                return;
+
+            LOG('Playing notification sound...', NOTIFICATION_SOUND, { unread, highlighted, message });
+
+            NOTIFICATION_SOUND?.play();
+        };
+
+        // Play message on pill-change
+        let pill = $('.whispers__pill'),
+            unread = parseInt(pill?.innerText) | 0;
+
+        if(!defined(pill) || (NOTIFIED >= unread))
+            return;
+        NOTIFIED = unread;
+
+        NOTIFICATION_SOUND?.play();
+    };
+    Timers.whisper_audio = 1000;
+
+    __NotificationSounds__:
+    if(Settings.whisper_audio) {
+        RegisterJob('whisper_audio');
     }
 
     /*** Scoped under Initialize
@@ -4933,7 +5124,7 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(button)) {
             let sibling, parent, before,
                 container = furnish('div'),
-                placement = (settings.away_mode_placement ??= "under");
+                placement = (Settings.away_mode_placement ??= "under");
 
             switch(placement) {
                 // Option 1 "over" - video overlay, play button area
@@ -4992,7 +5183,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Change the quality when loaded
         if(!SetupQuality)
-            SetupQuality = ChangeQuality(['auto','low'][+enabled]) && true;
+            SetupQuality = SetQuality(['auto','low'][+enabled]) && true;
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
@@ -5001,13 +5192,13 @@ let Initialize = async(START_OVER = false) => {
         button.icon.setAttribute('width', '20px');
 
         button.container.onclick ??= event => {
-            let enabled = button.container.getAttribute('twitch-tools-away-mode-enabled') !== 'true';
+            let enabled = !parseBool(button.container.getAttribute('twitch-tools-away-mode-enabled'));
 
             button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
             button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
             button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
-            ChangeQuality(['auto','low'][+enabled]);
+            SetQuality(['auto','low'][+enabled]);
             SaveCache({ AwayModeEnabled: enabled });
         };
 
@@ -5028,7 +5219,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.away_mode = 1000;
 
     __AwayMode__:
-    if(settings.away_mode) {
+    if(Settings.away_mode) {
         RegisterJob('away_mode');
     }
 
@@ -5044,7 +5235,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.auto_claim_bonuses = () => {
         let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = (settings.auto_claim_bonuses && $('#twitch-tools-auto-claim-bonuses')?.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
+            Enabled = (Settings.auto_claim_bonuses && $('#twitch-tools-auto-claim-bonuses')?.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
 
         if(Enabled && ChannelPoints)
             ChannelPoints.click();
@@ -5135,11 +5326,15 @@ let Initialize = async(START_OVER = false) => {
         button.container.onmouseleave ??= event => {
             button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
         };
+
+        // Make sure the button is all the way to the left
+        for(let max = 10; max > 0 && defined(button.container.previousElementSibling); --max)
+            button.container.parentElement.insertBefore(button.container, button.container.previousElementSibling);
     };
     Timers.auto_claim_bonuses = 5000;
 
     __AutoClaimBonuses__:
-    if(settings.auto_claim_bonuses) {
+    if(Settings.auto_claim_bonuses) {
         RegisterJob('auto_claim_bonuses');
     }
 
@@ -5159,10 +5354,10 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_spam = -1000;
 
     __PreventSpam__:
-    if(settings.prevent_spam) {
+    if(Settings.prevent_spam) {
         RegisterJob('prevent_spam');
 
-        LOG("Adding spam killer");
+        LOG("Adding spam event listener...");
         GetChat.onnewmessage = chat =>
             chat.forEach(line => {
                 let { uuid, handle, element, message } = line;
@@ -5183,7 +5378,7 @@ let Initialize = async(START_OVER = false) => {
                 }
 
                 // The message contains repetitive (3 or more instances) words/phrases
-                else if(/(.{5,})\1{2,}/i.test(message)) {
+                else if(/(\w{5,})((?:.+)?\b\1)((?:.+)?\b\1)/i.test(message)) {
                     message = message.trim();
 
                     if(message.length < 1)
@@ -5196,6 +5391,217 @@ let Initialize = async(START_OVER = false) => {
                 SPAM = new Set([...SPAM, uuid, message]);
             });
     }
+
+    /*** Auto-Focus
+     *                    _              ______
+     *         /\        | |            |  ____|
+     *        /  \  _   _| |_ ___ ______| |__ ___   ___ _   _ ___
+     *       / /\ \| | | | __/ _ \______|  __/ _ \ / __| | | / __|
+     *      / ____ \ |_| | || (_) |     | | | (_) | (__| |_| \__ \
+     *     /_/    \_\__,_|\__\___/      |_|  \___/ \___|\__,_|___/
+     *
+     *
+     */
+    let CAPTURE_HISTORY = new Set,
+        CAPTURE_INTERVAL,
+        POLL_INTERVAL,
+        STALLED_FRAMES,
+        POSITIVE_TREND;
+
+    Handlers.auto_focus = () => {
+        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold),
+            pollInterval = parseInt(Settings.auto_focus_poll_interval),
+            imageType = Settings.auto_focus_poll_image_type,
+            detectedTrend = '\u2022';
+
+        POLL_INTERVAL ??= pollInterval * 1000;
+        STALLED_FRAMES = 0;
+
+        if(CAPTURE_HISTORY.size > 60) {
+            CAPTURE_HISTORY = [...CAPTURE_HISTORY];
+
+            CAPTURE_HISTORY.shift();
+
+            CAPTURE_HISTORY = new Set(CAPTURE_HISTORY);
+        }
+
+        CAPTURE_INTERVAL = setInterval(() => {
+            let isAdvert = $('video', true).length > 1,
+                video = $('video', true)[+isAdvert];
+
+            if(!defined(video))
+                return;
+
+            let frame = video.captureFrame(`image/${ imageType }`),
+                start = +new Date;
+
+            setTimeout(() => {
+                resemble(frame)
+                    .compareTo(video.captureFrame(`image/${ imageType }`))
+                    .ignoreColors()
+                    .scaleToSameSize()
+                    .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 255, green: 255, blue: 0 } })
+                    .onComplete(async data => {
+                        let { analysisTime, misMatchPercentage } = data,
+                            threshold = detectionThreshold,
+                            totalTime = 0,
+                            bias = [];
+
+                        analysisTime = parseInt(analysisTime);
+                        misMatchPercentage = parseFloat(misMatchPercentage);
+
+                        for(let [misMatchPercentage, analysisTime, trend] of CAPTURE_HISTORY) {
+                            threshold += parseFloat(misMatchPercentage);
+                            totalTime += analysisTime;
+                            bias.push(trend);
+                        }
+                        threshold /= CAPTURE_HISTORY.size || 1;
+
+                        let trend = misMatchPercentage > detectionThreshold? 'up': 'down';
+
+                        CAPTURE_HISTORY.add([misMatchPercentage, analysisTime, trend]);
+
+                        /* Display capture stats */
+                        let diffImg = $('img#twitch-tools-auto-focus-differences'),
+                            diffDat = $('span#twitch-tools-auto-focus-stats'),
+                            stop = +new Date;
+
+                        DisplayingAutoFocusDetails:
+                        if(Settings.display_of_video) {
+                            let parent = $('.chat-list--default');
+                            // #twilight-sticky-header-root
+
+                            if(!defined(parent))
+                                break DisplayingAutoFocusDetails;
+
+                            let { height, width } = getOffset(video);
+
+                            height = parseInt(height * .25);
+                            width = parseInt(width * .25);
+
+                            if(!defined(diffImg)) {
+                                diffImg = furnish('img#twitch-tools-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
+                                diffDat = furnish('span#twitch-tools-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden;` });
+
+                                parent.appendChild(diffImg);
+                                parent.appendChild(diffDat);
+                            }
+
+                            diffImg.src = data.getImageDataUrl?.();
+
+                            let size = diffImg.src.length,
+                                { totalVideoFrames } = video.getVideoPlaybackQuality();
+
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% ${ ({ up: '&uArr;', down: '&dArr;' })[trend] } / ${ ((stop - start) / 1000).prefix('s') } / ${ size.prefix('B', 2) }`;
+                        } else {
+                            diffImg?.remove();
+                            diffDat?.remove();
+                        }
+
+                        /* Alter other settings according to the trend */
+                        let changes = [];
+
+                        if(bias.length > 30 && FIRST_IN_LINE_TIMER > 60_000) {
+                            // Positive activity trend; disable Away Mode, pause Up Next
+                            if(!POSITIVE_TREND && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < 5) {
+                                POSITIVE_TREND = true;
+
+                                // Pause Up Next
+                                __AutoFocus_Pause_UpNext__: {
+                                    let button = $('#up-next-control'),
+                                        paused = parseBool(button?.getAttribute('paused'));
+
+                                    if(paused)
+                                        break __AutoFocus_Pause_UpNext__;
+
+                                    button?.click();
+
+                                    changes.push('pausing up next');
+                                }
+
+                                // Disable Away Mode
+                                __AutoFocus_Disable_AwayMode__: {
+                                    let button = $('#away-mode button'),
+                                        quality = await GetQuality();
+
+                                    if(quality.auto)
+                                        break __AutoFocus_Disable_AwayMode__;
+
+                                    button?.click();
+
+                                    changes.push('disabling away mode');
+                                }
+
+                                detectedTrend = '+';
+                                LOG('Positive trend detected: ' + changes.join(', '));
+                            }
+                            // Negative activity trend; enable Away Mode, resume Up Next
+                            else if(POSITIVE_TREND && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < 5) {
+                                POSITIVE_TREND = false;
+
+                                // Resume Up Next
+                                __AutoFocus_Resume_UpNext__: {
+                                    let button = $('#up-next-control'),
+                                        paused = parseBool(button?.getAttribute('paused'));
+
+                                    if(!paused)
+                                        break __AutoFocus_Resume_UpNext__;
+
+                                    button?.click();
+
+                                    changes.push('resuming up next');
+                                }
+
+                                // Enable Away Mode
+                                __AutoFocus_Enable_AwayMode__: {
+                                    let button = $('#away-mode button'),
+                                        quality = await GetQuality();
+
+                                    if(quality.low)
+                                        break __AutoFocus_Enable_AwayMode__;
+
+                                    button?.click();
+
+                                    changes.push('enabling away mode');
+                                }
+
+                                detectedTrend = '-';
+                                LOG('Negative trend detected: ' + changes.join(', '));
+                            }
+                        }
+
+                        // Auto-increase the polling time if the job isn't fast enough
+                        if(video.stalling)
+                            ++STALLED_FRAMES;
+                        else if(STALLED_FRAMES > 0)
+                            --STALLED_FRAMES;
+
+                        if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL / 2)) {
+                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's -> ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
+
+                            POLL_INTERVAL *= 1.1;
+                            STALLED_FRAMES = 0;
+
+                            RestartJob('auto_focus');
+                        }
+                    })
+            }, 100);
+        }, POLL_INTERVAL);
+    };
+    Timers.auto_focus = -1_000;
+
+    Unhandlers.auto_focus = () => {
+        $('#twitch-tools-auto-focus-differences, #twitch-tools-auto-focus-stats', true)
+            .forEach(element => element.remove());
+        clearInterval(CAPTURE_INTERVAL);
+    };
+
+    __AutoFocus__:
+    if(Settings.auto_focus) {
+        RegisterJob('auto_focus');
+
+        WARN("Auto-Focus is monitoring the stream...");
+    }
 };
 // End of Initialize
 
@@ -5204,14 +5610,21 @@ let CUSTOM_CSS,
     WAIT_FOR_PAGE;
 
 PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
-    let ready =
+    let ready = (true
         // The follow button exists
-        defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
-        // There is a message container
-        && defined($('[data-test-selector$="message-container"i]'))
-        // The page is a channel viewing page
-        // && /^(ChannelWatch|SquadStream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
-    ;
+        && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+        && (false
+            // There is a message container
+            || defined($('[data-test-selector$="message-container"i]'))
+            // There is an ongoing search
+            || (true
+                && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"]', true))
+                && defined($('[data-a-target^="threads-box-"i]'))
+            )
+            // The page is a channel viewing page
+            // || /^(ChannelWatch|SquadStream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+        )
+    );
 
     if(ready) {
         setTimeout(Initialize, 1000);
@@ -5227,8 +5640,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
                             PATHNAME = top.location.pathname;
 
-                            for(let listener of __ONLOCATIONCHANGE__)
-                                listener(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
+                            for(let [name, func] of __ONLOCATIONCHANGE__)
+                                func(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
                         }
                     });
                 });
@@ -5240,7 +5653,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
         ChatObserver: {
             let chat = $('[data-test-selector$="message-container"i]'),
                 observer = new MutationObserver(mutations => {
-                    let results = [];
+                    let emotes = {},
+                        results = [];
 
                     mutations = mutations.filter(({ type }) => type == 'childList');
 
@@ -5254,7 +5668,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
                             let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
                                 author = handle.toLowerCase(),
-                                message = $('.chat-line__message .text-fragment, .chat-line__message img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
+                                message = $('.chat-line__message .text-fragment, .chat-line__message img:not(.chat-badge), .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
                                 mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                 badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
                                 style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
@@ -5262,10 +5676,10 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
                             let [raw] = message.splice(0, 1);
 
-                            raw = raw?.innerText;
+                            raw = raw?.innerText?.trim();
 
                             message = message
-                                .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e)).alt }:`: element.innerText)
+                                .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e.alt))(element) }:`: element.innerText)
                                 .filter(defined)
                                 .join(' ')
                                 .trim()
@@ -5274,7 +5688,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                             style = style
                                 .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
-                            let uuid = UUID.from([author, mentions.join(','), message].join(':')).toString();
+                            let uuid = UUID.from([author, mentions.join(','), new Date, message].join(':')).toString();
 
                             if(defined(results.find(message => message.uuid == uuid)))
                                 continue;
@@ -5300,15 +5714,110 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                         callback(results);
                 });
 
+            if(!defined(chat))
+                break ChatObserver;
+
             observer.observe(chat, { childList: true });
+        }
+
+        // Observe whisper changes
+        WhisperObserver: {
+            let chat = $('main'),
+                chat_observer = new MutationObserver(mutations => {
+                    mutations = mutations.filter(({ type }) => type == 'childList');
+
+                    MutationToNode:
+                    for(let mutation of mutations) {
+                        let { addedNodes } = mutation;
+
+                        NodeToObject:
+                        for(let node of addedNodes) {
+                            let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
+                                newmessage = !!~["whisper-message"].indexOf(node.dataset.aTarget);
+
+                            if(false
+                                || !highlighted
+                                || !newmessage
+                            )
+                                continue;
+
+                            for(let [name, callback] of GetChat.__onwhisper__)
+                                if(highlighted) {
+                                    callback({ highlighted });
+                                } else if(newmessage) {
+                                    let keepEmotes = true;
+
+                                    let handle = $('[data-a-target="whisper-message-name"i]', false, node).innerText,
+                                        author = handle.toLowerCase(),
+                                        message = $('.text-fragment', true, node),
+                                        style = node.getAttribute('style');
+
+                                    let raw = node.innerText;
+
+                                    message = message
+                                        .map(element => element.alt && keepEmotes? `:${ element.alt }:`: element.innerText)
+                                        .filter(defined)
+                                        .join(' ')
+                                        .trim()
+                                        .replace(/(\s){2,}/g, '$1');
+
+                                    style = style
+                                        .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+
+                                    let uuid = UUID.from([author, new Date, message].join(':')).toString();
+
+                                    callback({
+                                        raw,
+                                        uuid,
+                                        style,
+                                        author,
+                                        handle,
+                                        message,
+                                        element: node,
+                                    });
+                                }
+                        }
+                    }
+                }),
+
+                pill = $('[data-a-target^="threads-box-"i]').previousElementSibling,
+                pill_observer = new MutationObserver(mutations => {
+                    mutations = mutations.filter(({ type }) => type == 'childList');
+
+                    // LOG('The Whisper Pill has mutated...', mutations);
+
+                    MutationToNode:
+                    for(let mutation of mutations) {
+                        let { addedNodes } = mutation;
+
+                        NodeToObject:
+                        for(let node of addedNodes) {
+                            if(!node.classList.contains('whispers__pill'))
+                                continue;
+
+                            let unread = parseInt(node.innerText) | 0;
+
+                            for(let [name, callback] of GetChat.__onwhisper__)
+                                callback({ unread });
+                        }
+                    }
+                });
+
+            if(defined(chat))
+                chat_observer.observe(chat, { childList: true });
+
+            if(defined(pill))
+                pill_observer.observe(pill, { childList: true });
         }
 
         window.onlocationchange = () => {
             WARN('Re-initializing...');
 
+            Balloon.get('Up Next')?.remove();
+
             Reinitialize:
             if(NORMAL_MODE) {
-                if(settings.keep_popout) {
+                if(Settings.keep_popout) {
                     PAGE_CHECKER = setInterval(WAIT_FOR_PAGE, 500);
 
                     break Reinitialize;
@@ -5321,56 +5830,57 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
         // Add custom styling
         CustomCSSInitializer: {
             CUSTOM_CSS = furnish('style#twitch-tools-custom-css', {},
-            `
-                #twitch-tools-auto-claim-bonuses .tw-z-above { display: none }
-                [animationID] a { cursor: grab }
-                [animationID] a:active { cursor: grabbing }
-                [up-next--body] {
-                    background-color: #387aff;
-                    border-radius: 0.5rem;
-                }
-                [up-next--body] > div[class]:first-child:only-child::after {
-                    content: 'Drag-and-drop channels here to queue them\\A They can be rearranged by dragging them';
-                    text-align: center;
-                    white-space: break-spaces;
+`
+#twitch-tools-auto-claim-bonuses .tw-z-above { display: none }
+[animationID] a { cursor: grab }
+[animationID] a:active { cursor: grabbing }
+[twitch-tools-hidden] { display: none }
+[up-next--body] {
+    background-color: #387aff;
+    border-radius: 0.5rem;
+}
+[up-next--body] > div[class]:first-child:only-child::after {
+    content: 'Drag-and-drop channels here to queue them\\A They can be rearranged by dragging them';
+    text-align: center;
+    white-space: break-spaces;
 
-                    position: absolute;
-                    left: 50%;
-                    top: 50%;
-                    transform: translateX(-50%);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%);
 
-                    width: 100%;
-                }
-                [twitch-tools-spam]::before {
-                    content: attr(twitch-tools-spam);
-                    display: block;
-                    font-style: italic;
-                    text-align: center;
-                    visibility: initial !important;
-                }
-                [twitch-tools-spam]:not(:hover) {
-                    visibility: hidden !important;
-                }
-                [twitch-tools-spam]:not(:hover) > * {
-                    height: 0;
-                }
-                [twitch-tools-spam][repetitive]:not(:hover)::after {
-                    content: '\u22ef';
-                    display: block;
-                    text-align: center;
-                    visibility: initial !important;
-                }
-                /* [twitch-tools-spam] ... [twitch-tools-spam] */
-                ${ (n => {
-                    let i, s;
+    width: 100%;
+}
+[twitch-tools-spam]::before {
+    content: attr(twitch-tools-spam);
+    display: block;
+    --font-style: italic;
+    text-align: center;
+    visibility: initial !important;
+}
+[twitch-tools-spam]:not(:hover) {
+    visibility: hidden !important;
+}
+[twitch-tools-spam]:not(:hover) > * {
+    height: 0;
+}
+[twitch-tools-spam][repetitive]:not(:hover)::after {
+    content: '\u22ef';
+    display: block;
+    text-align: center;
+    visibility: initial !important;
+}
+/* [twitch-tools-spam] ... [twitch-tools-spam] */
+${ (n => {
+    let i, s;
 
-                    for(i = 0, s = []; i < n; ++i)
-                        s.push(`[twitch-tools-spam]${ ' + *'.repeat(i) } + [twitch-tools-spam]`);
-                    return s;
-                })(NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM).join(',\n' + ' '.repeat(16)) } {
-                    display: none;
-                }
-            `
+    for(i = 0, s = []; i < n; ++i)
+        s.push(`[twitch-tools-spam]${ ' + *'.repeat(i) } + [twitch-tools-spam]`);
+    return s;
+})(NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM).join(',\n' + ' '.repeat(16)) } {
+    display: none;
+}
+`
             );
 
             $('body').appendChild(CUSTOM_CSS);
