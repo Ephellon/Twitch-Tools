@@ -46,7 +46,7 @@
                 </div>
             </section>
 
-            <!-- [[Auto-Pause]] -->
+            <!-- [[Auto-Focus]] -->
 
             <section>
                 <div class="title"><span small glyph="eye"></span>Away Mode</div>
@@ -72,16 +72,19 @@
                         <label for="auto_claim_bonuses"></label>
                     </div>
                     <p>
-                        When the <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Bonus Channel Points"><button style="background-color:var(--blue)!important"><span small black glyph="bonuschannelpoints"></span></button></a> button appears, click it automatically.
+                        When the <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Bonus Channel Points"><button style="background-color:var(--blue)!important"><span small black glyph="bonuschannelpoints"></span></button>(Bonus Channel Points)</a> button appears, click it automatically.
                     </p>
                 </div>
             </section>
 
             <section>
-                <div class="title"><span small glyph="favorite"></span> First in Line</div>
+                <div class="title"><span small glyph="favorite"></span> First in Line / Up Next</div>
                 <div class="summary">
                     <p>
                         When a channel goes live, head to its stream automatically.
+                    </p>
+                    <p>
+                        <b>Up Next</b> adds a queueing service to Twitch&trade;.
                     </p>
 
                     <details>
@@ -194,17 +197,14 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="stream"></span> Stay Live / Up Next</div>
+                <div class="title"><span small glyph="stream"></span> Stay Live</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="stay_live" type="checkbox" checked/>
                         <label for="stay_live"></label>
                     </div>
                     <p>
-                        <b>Stay Live</b> goes to the <b>Next Channel</b> after the current stream ends.
-                    </p>
-                    <p>
-                        <b>Up Next</b> adds a queueing service to Twitch&trade;.
+                        After the current stream ends, go to the <b>Next Channel</b>.
                     </p>
                 </div>
             </section>
@@ -345,7 +345,20 @@
                         <label for="convert_bits"></label>
                     </div>
                     <p>
-                        When presented with <a href="https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits" top-tooltip="Bits"><img src="bits.gif" alt="Bits" height="20" width="20" type="glyph"/></a> show the true <b>USD</b> amount they represent.
+                        When presented with <a href="https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits" top-tooltip="Bits"><img src="bits.gif" alt="Bits" height="20" width="20" type="glyph"/>(Bits)</a> show the true <b>USD</b> amount they represent.
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="channelpoints"></span> Rewards Calculator</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="rewards_calculator" type="checkbox"/>
+                        <label for="rewards_calculator"></label>
+                    </div>
+                    <p>
+                        Calculates how long a stream needs to be watched non-stop to redeem <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Channel Points"><span small purple glyph="channelpoints"></span>(Channel Points)</a> rewards.
                     </p>
                 </div>
             </section>
@@ -377,8 +390,22 @@
 
                     <select id="away_mode_placement">
                         <option value="null" selected>Do not display</option>
-                        <option value="under">Under the video</option>
                         <option value="over">Over the video</option>
+                        <option value="under">Under the video</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
+                <div class="title"><span small glyph="latest"></span> Points Receipt</div>
+                <div class="summary">
+                    <p>
+                        Where should the <b>Points Receipt</b> text be displayed?
+                    </p>
+
+                    <select id="points_receipt_placecment">
+                        <option value="null" selected>Do not display</option>
+                        <option value="under">Under the video</option>
                     </select>
                 </div>
             </section>
@@ -609,10 +636,10 @@
                             </p>
 
                             <select id="auto_focus_detection_threshold">
-                                <option value="30">High activity (First Person Shooter / Rhythm)</option>
-                                <option value="20" selected>Modest activity (Action / Platformer)</option>
-                                <option value="10">Seasonal activity (Trivia / Puzzle)</option>
-                                <option value="5">Low activity (Just Chatting / Simulation)</option>
+                                <option value="30">High activity (FPS / IRL / Rhythm)</option>
+                                <option value="20" selected>Modest activity (Action / Adventure / Platformer)</option>
+                                <option value="10">Seasonal activity (Horror / Puzzle / Trivia)</option>
+                                <option value="5">Low activity (Just Chatting / Simulation / Strategy)</option>
                             </select>
                         </div>
                         <hr>

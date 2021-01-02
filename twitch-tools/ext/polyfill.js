@@ -45,30 +45,52 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     return data;
 };
 
-// Returns a number formatted using SI unit prefixes
-    // Number..prefix([unit:string[, decimalPlaces:number]]) -> string
-Number.prototype.prefix = function prefix(unit = '', decimalPlaces) {
+// Returns a number formatted using unit prefixes
+    // Number..prefix([unit:string[, decimalPlaces:number[, format:string]]]) -> string
+        // format = "metric" | "imperial" | "readable"
+Number.prototype.prefix = function prefix(unit = '', decimalPlaces, format = "metric") {
     let number = parseFloat(this),
         sign = number < 0? '-': '',
         prefix = '';
 
     number = Math.abs(number);
 
+    let system = {};
+
+    switch(format.toLowerCase()) {
+        case 'imperial':
+            system.large = 'thousand million billion trillion quadrillion qunitillion sextillion septillion octillion nonillion'
+                .split(' ')
+                .map(prefix => ' ' + prefix);
+            system.small = system.large.map(prefix => prefix + 'ths');
+            break;
+
+        // Common US shorthands (used on Twitch)
+        case 'readable':
+            system.large = 'KMBTQ';
+            system.small = '';
+            break;
+
+        case 'metric':
+        default:
+            system.large = 'kMGTPEZY';
+            system.small = 'mμnpfazy';
+            break;
+    }
+
     if(number > 1) {
-        for(let index = 0, units = 'kMGTPEZY'; index < units.length; ++index)
+        for(let index = 0, units = system.large; index < units.length; ++index)
             if(number >= 1000) {
                 number /= 1000;
                 prefix = units[index];
             }
-    } else if(number < 1) {
-        for(let index = 0, units = 'mμnpfazy'; index < units.length; ++index) {
+    } else if(number < 1 && number > 0) {
+        for(let index = 0, units = system.small; index < units.length; ++index) {
             if(number < 1) {
                 number *= 1000;
                 prefix = units[index];
             }
         }
-    } else {
-        prefix = '';
     }
 
     return sign + (decimalPlaces? number.toFixed(decimalPlaces): number) + prefix + unit;

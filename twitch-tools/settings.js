@@ -101,12 +101,16 @@ let // These are option names. Anything else will be removed
         /* Currencies */
         // Convert Bits
         'convert_bits',
+        // Rewards Calculator
+        'rewards_calculator',
 
         /* Customization */
         // Away Mode Button Placement
         'away_mode_placement',
         // Watch Time Text Placement
         'watch_time_placement',
+        // Points Collected Text Placement
+        'points_receipt_placecment',
         // Point Watcher Text Placecment
         'point_watcher_placecment',
 

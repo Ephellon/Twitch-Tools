@@ -54,6 +54,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 ### Currencies
 
 - *Convert Bits* `on` &mdash; When presented with Bits, show the true USD amount they represent
+- *Rewards Calculator* `off` &mdash; Calculates how long a stream needs to be watched non-stop to redeem Channel Point rewards.
 
 ### Customization
 

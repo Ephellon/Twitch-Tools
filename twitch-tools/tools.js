@@ -1362,7 +1362,8 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
             ['hour'  ,   hour],
             ['minute', minute],
             ['second', second],
-        ];
+        ],
+        result;
 
     let joining_symbol = ' ';
 
@@ -1379,6 +1380,8 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
 
             if(time.length > 1)
                 time.splice(-1, 0, 'and');
+
+            result = time;
             break;
 
         case 'clock':
@@ -1391,19 +1394,19 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
                 if(milliseconds >= value) {
                     let amount = (milliseconds / value) | 0;
 
-                    time.push(time[name] = ('00' + amount).slice(-2));
+                    time.push(time[name] = (amount + '').padStart(2, '00'));
 
                     milliseconds -= amount * value;
                 }
 
             times.push(['millisecond', milliseconds]);
 
-            time = format.split(/!(year|day|hour|minute|(?:milli)?second)s?\b/g)
+            result = format.split(/!(year|day|hour|minute|(?:milli)?second)s?\b/g)
                 .map($1 => {
                     for(let [name, value] of times)
                         if($1 == 'millisecond')
                             return milliseconds;
-                        else if(name == $1)
+                        else if($1 == name)
                             return time[name] ?? '00';
 
                     return $1;
@@ -1411,7 +1414,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
             break;
     }
 
-    return time.join(joining_symbol);
+    return result.join(joining_symbol);
 }
 
 // Convert a time-formatted string into its corresponding millisecond value
@@ -1613,6 +1616,21 @@ function isObj(object, ...or) {
     return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
         .find(constructor => object?.constructor === constructor || object instanceof constructor);
 }
+
+// Returns a number formatted with commas
+function comify(number) {
+    number = parseFloat(number);
+
+    return (number + '')
+        .split('')
+        .reverse()
+        .join('')
+        .replace(/(\d{3})/g, '$1,')
+        .split('')
+        .reverse()
+        .join('')
+        .replace(/^,+|,+$/g, '')
+};
 
 // Logs messages (green)
     // LOG([...messages]) -> undefined
@@ -1873,6 +1891,19 @@ let Glyphs = {
     cog: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 8a2 2 0 100 4 2 2 0 000-4z"></path><path fill-rule="evenodd" d="M9 2h2a2.01 2.01 0 001.235 1.855l.53.22a2.01 2.01 0 002.185-.439l1.414 1.414a2.01 2.01 0 00-.439 2.185l.22.53A2.01 2.01 0 0018 9v2a2.01 2.01 0 00-1.855 1.235l-.22.53a2.01 2.01 0 00.44 2.185l-1.415 1.414a2.01 2.01 0 00-2.184-.439l-.531.22A2.01 2.01 0 0011 18H9a2.01 2.01 0 00-1.235-1.854l-.53-.22a2.009 2.009 0 00-2.185.438L3.636 14.95a2.009 2.009 0 00.438-2.184l-.22-.531A2.01 2.01 0 002 11V9c.809 0 1.545-.487 1.854-1.235l.22-.53a2.009 2.009 0 00-.438-2.185L5.05 3.636a2.01 2.01 0 002.185.438l.53-.22A2.01 2.01 0 009 2zm-4 8l1.464 3.536L10 15l3.535-1.464L15 10l-1.465-3.536L10 5 6.464 6.464 5 10z" clip-rule="evenodd"></path></g></svg>`,
 
     x: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>`,
+
+    modify(glyph, attributes) {
+        for(let attribute in attributes) {
+            let value = attributes[attribute];
+
+            glyph = glyph.replace(
+                RegExp(`(${ attribute })=(["'])[^\\2]*?\\2`, 'ig'),
+                `$1=$2${value}$2`
+            );
+        }
+
+        return glyph;
+    },
 };
 
 // Returns ordinal numbers
@@ -2142,8 +2173,8 @@ function RestartJob(JobName) {
 // Settings have been saved
 let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?') }$`, 'i');
 
-let EXPERIMENTAL_FEATURES = ['convert_emotes', 'fine_details', 'native_twitch_reply', 'prevent_spam'].map(AsteriskFn),
-    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'first_in_line*', 'prevent*', 'watch_time_placement'].map(AsteriskFn),
+let EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'fine_details', 'native_twitch_reply', 'prevent_spam'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'first_in_line*', 'prevent*', '*placement'].map(AsteriskFn),
     NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent*', 'kill*'].map(AsteriskFn),
     REFRESHABLE_FEATURES = ['auto_focus*', 'filter_messages'].map(AsteriskFn);
 
@@ -2773,45 +2804,16 @@ let Initialize = async(START_OVER = false) => {
     update();
     setInterval(update, 100);
 
-    /*** Auto-Follow
-     *                    _              ______    _ _
-     *         /\        | |            |  ____|  | | |
-     *        /  \  _   _| |_ ___ ______| |__ ___ | | | _____      __
-     *       / /\ \| | | | __/ _ \______|  __/ _ \| | |/ _ \ \ /\ / /
-     *      / ____ \ |_| | || (_) |     | | | (_) | | | (_) \ V  V /
-     *     /_/    \_\__,_|\__\___/      |_|  \___/|_|_|\___/ \_/\_/
+    /*** Automation
+     *                    _                        _   _
+     *         /\        | |                      | | (_)
+     *        /  \  _   _| |_ ___  _ __ ___   __ _| |_ _  ___  _ __
+     *       / /\ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \
+     *      / ____ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |
+     *     /_/    \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|
      *
      *
      */
-    Handlers.auto_follow_raids = () => {
-        if(!defined(STREAMER))
-            return;
-
-        let url = parseURL(top.location),
-            data = url.searchParameters;
-
-        let { like, follow } = STREAMER,
-            raid = data.referrer === 'raid';
-
-        if(!like && raid)
-            follow();
-    };
-    Timers.auto_follow_raids = 1000;
-
-    __AutoFollowRaid__:
-    if(Settings.auto_follow_raids || Settings.auto_follow_all) {
-        RegisterJob('auto_follow_raids');
-    }
-
-    __AutoFollowTime__:
-    if(Settings.auto_follow_time || Settings.auto_follow_all) {
-        let { like, follow } = STREAMER,
-            mins = parseInt(Settings.auto_follow_time_minutes) | 0;
-
-        if(!like)
-            setTimeout(follow, mins * 60_000);
-    }
-
     /*** Auto-Join
      *                    _                  _       _
      *         /\        | |                | |     (_)
@@ -2830,6 +2832,451 @@ let Initialize = async(START_OVER = false) => {
     __AutoMatureAccept__:
     if(Settings.auto_accept_mature) {
         RegisterJob('auto_accept_mature');
+    }
+
+    /*** Auto-Focus
+     *                    _              ______
+     *         /\        | |            |  ____|
+     *        /  \  _   _| |_ ___ ______| |__ ___   ___ _   _ ___
+     *       / /\ \| | | | __/ _ \______|  __/ _ \ / __| | | / __|
+     *      / ____ \ |_| | || (_) |     | | | (_) | (__| |_| \__ \
+     *     /_/    \_\__,_|\__\___/      |_|  \___/ \___|\__,_|___/
+     *
+     *
+     */
+    let CAPTURE_HISTORY = [],
+        CAPTURE_INTERVAL,
+        POLL_INTERVAL,
+        STALLED_FRAMES,
+        POSITIVE_TREND;
+
+    Handlers.auto_focus = () => {
+        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold),
+            pollInterval = parseInt(Settings.auto_focus_poll_interval),
+            imageType = Settings.auto_focus_poll_image_type,
+            detectedTrend = '\u2022';
+
+        POLL_INTERVAL ??= pollInterval * 1000;
+        STALLED_FRAMES = 0;
+
+        if(CAPTURE_HISTORY.length > 90)
+            CAPTURE_HISTORY.shift();
+
+        CAPTURE_INTERVAL = setInterval(() => {
+            let isAdvert = $('video', true).length > 1,
+                video = $('video', true)[+isAdvert];
+
+            if(!defined(video))
+                return;
+
+            let frame = video.captureFrame(`image/${ imageType }`),
+                start = +new Date;
+
+            setTimeout(() => {
+                resemble(frame)
+                    .compareTo(video.captureFrame(`image/${ imageType }`))
+                    .ignoreColors()
+                    .scaleToSameSize()
+                    .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 0, green: 255, blue: 255 } })
+                    .onComplete(async data => {
+                        let { analysisTime, misMatchPercentage } = data,
+                            threshold = detectionThreshold,
+                            totalTime = 0,
+                            bias = [];
+
+                        analysisTime = parseInt(analysisTime);
+                        misMatchPercentage = parseFloat(misMatchPercentage);
+
+                        for(let [misMatchPercentage, analysisTime, trend] of CAPTURE_HISTORY) {
+                            threshold += parseFloat(misMatchPercentage);
+                            totalTime += analysisTime;
+                            bias.push(trend);
+                        }
+                        threshold /= CAPTURE_HISTORY.length || 1;
+
+                        let trend = misMatchPercentage > detectionThreshold? 'up': 'down';
+
+                        CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
+
+                        /* Display capture stats */
+                        let diffImg = $('img#twitch-tools-auto-focus-differences'),
+                            diffDat = $('span#twitch-tools-auto-focus-stats'),
+                            stop = +new Date;
+
+                        DisplayingAutoFocusDetails:
+                        if(Settings.display_of_video) {
+                            let parent = $('.chat-list--default');
+                            // #twilight-sticky-header-root
+
+                            if(!defined(parent))
+                                break DisplayingAutoFocusDetails;
+
+                            let { height, width } = getOffset(video);
+
+                            height = parseInt(height * .25);
+                            width = parseInt(width * .25);
+
+                            if(!defined(diffImg)) {
+                                diffImg = furnish('img#twitch-tools-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
+                                diffDat = furnish('span#twitch-tools-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden;` });
+
+                                parent.appendChild(diffImg);
+                                parent.appendChild(diffDat);
+                            }
+
+                            diffImg.src = data.getImageDataUrl?.();
+
+                            let size = diffImg.src.length,
+                                { totalVideoFrames } = video.getVideoPlaybackQuality();
+
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% ${ ({ up: '&uArr;', down: '&dArr;' })[trend] } / ${ ((stop - start) / 1000).prefix('s') } / ${ size.prefix('B', 2) }`;
+                        } else {
+                            diffImg?.remove();
+                            diffDat?.remove();
+                        }
+
+                        /* Alter other settings according to the trend */
+                        let changes = [];
+
+                        if(bias.length > 30 && FIRST_IN_LINE_TIMER > 60_000) {
+                            // Positive activity trend; disable Away Mode, pause Up Next
+                            if(!POSITIVE_TREND && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < 5) {
+                                POSITIVE_TREND = true;
+
+                                // Pause Up Next
+                                __AutoFocus_Pause_UpNext__: {
+                                    let button = $('#up-next-control'),
+                                        paused = parseBool(button?.getAttribute('paused'));
+
+                                    if(paused)
+                                        break __AutoFocus_Pause_UpNext__;
+
+                                    button?.click();
+
+                                    changes.push('pausing up next');
+                                }
+
+                                // Disable Away Mode
+                                __AutoFocus_Disable_AwayMode__: {
+                                    let button = $('#away-mode button'),
+                                        quality = await GetQuality();
+
+                                    if(quality.auto)
+                                        break __AutoFocus_Disable_AwayMode__;
+
+                                    button?.click();
+
+                                    changes.push('disabling away mode');
+                                }
+
+                                detectedTrend = '+';
+                                LOG('Positive trend detected: ' + changes.join(', '));
+                            }
+                            // Negative activity trend; enable Away Mode, resume Up Next
+                            else if(POSITIVE_TREND && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < 10) {
+                                POSITIVE_TREND = false;
+
+                                // Resume Up Next
+                                __AutoFocus_Resume_UpNext__: {
+                                    let button = $('#up-next-control'),
+                                        paused = parseBool(button?.getAttribute('paused'));
+
+                                    if(!paused)
+                                        break __AutoFocus_Resume_UpNext__;
+
+                                    button?.click();
+
+                                    changes.push('resuming up next');
+                                }
+
+                                // Enable Away Mode
+                                __AutoFocus_Enable_AwayMode__: {
+                                    let button = $('#away-mode button'),
+                                        quality = await GetQuality();
+
+                                    if(quality.low)
+                                        break __AutoFocus_Enable_AwayMode__;
+
+                                    button?.click();
+
+                                    changes.push('enabling away mode');
+                                }
+
+                                detectedTrend = '-';
+                                LOG('Negative trend detected: ' + changes.join(', '));
+                            }
+                        }
+
+                        // Auto-increase the polling time if the job isn't fast enough
+                        if(video.stalling)
+                            ++STALLED_FRAMES;
+                        else if(STALLED_FRAMES > 0)
+                            --STALLED_FRAMES;
+
+                        if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL / 2)) {
+                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's -> ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
+
+                            POLL_INTERVAL *= 1.1;
+                            STALLED_FRAMES = 0;
+
+                            RestartJob('auto_focus');
+                        }
+                    })
+            }, 100);
+        }, POLL_INTERVAL);
+    };
+    Timers.auto_focus = -1_000;
+
+    Unhandlers.auto_focus = () => {
+        $('#twitch-tools-auto-focus-differences, #twitch-tools-auto-focus-stats', true)
+            .forEach(element => element.remove());
+        clearInterval(CAPTURE_INTERVAL);
+    };
+
+    __AutoFocus__:
+    if(Settings.auto_focus) {
+        RegisterJob('auto_focus');
+
+        WARN("Auto-Focus is monitoring the stream...");
+    }
+
+    /*** Away Mode
+     *                                   __  __           _
+     *         /\                       |  \/  |         | |
+     *        /  \__      ____ _ _   _  | \  / | ___   __| | ___
+     *       / /\ \ \ /\ / / _` | | | | | |\/| |/ _ \ / _` |/ _ \
+     *      / ____ \ V  V / (_| | |_| | | |  | | (_) | (_| |  __/
+     *     /_/    \_\_/\_/ \__,_|\__, | |_|  |_|\___/ \__,_|\___|
+     *                            __/ |
+     *                           |___/
+     */
+    let AwayModeEnabled = false,
+        SetupQuality = false;
+
+    Handlers.away_mode = async() => {
+        let button = $('#away-mode'),
+            quality = (Handlers.away_mode.quality ??= await GetQuality());
+
+        if(!defined(quality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
+            return;
+
+        await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
+
+        let enabled = AwayModeEnabled || (quality.low && !(quality.auto || quality.high || quality.source));
+
+        if(!defined(button)) {
+            let sibling, parent, before,
+                container = furnish('div'),
+                placement = (Settings.away_mode_placement ??= "under");
+
+            switch(placement) {
+                // Option 1 "over" - video overlay, play button area
+                case 'over':
+                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"][class*="right-control-group"i] > :last-child', false, parent);
+                    parent = sibling?.parentElement;
+                    before = 'first';
+                    break;
+
+                // Option 2 "under" - quick actions, follow/notify/subscribe area
+                case 'under':
+                    sibling = $('[data-test-selector="live-notifications-toggle"]');
+                    parent = sibling?.parentElement;
+                    before = 'last';
+                    break;
+            }
+
+            if(!defined(parent) || !defined(sibling))
+                return;
+
+            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
+            container.id = 'away-mode';
+
+            parent.insertBefore(container, parent[before + 'ElementChild']);
+
+            if(!!~['over'].indexOf(placement))
+                container.firstElementChild.classList.remove('tw-mg-l-1');
+
+            button = {
+                enabled,
+                container,
+                icon: $('svg', false, container),
+                get offset() { return getOffset(container) },
+                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { direction: 'up', left: +5 }),
+            };
+
+            button.tooltip.id = new UUID().toString().replace(/-/g, '');
+            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+
+            button.icon ??= $('svg', false, container);
+            button.icon.outerHTML = Glyphs.eye;
+            button.icon = $('svg', false, container);
+        } else {
+            let container = $('#away-mode');
+
+            button = {
+                enabled,
+                container,
+                icon: $('svg', false, container),
+                tooltip: Tooltip.get(container),
+                get offset() { return getOffset(container) },
+                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+            };
+        }
+
+        // Change the quality when loaded
+        if(!SetupQuality)
+            SetupQuality = SetQuality(['auto','low'][+enabled]) && true;
+
+        // if(init === true) ->
+        // Don't use above, event listeners won't work
+        button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+(button.container.getAttribute('twitch-tools-away-mode-enabled') === "true")] } !important;`);
+        button.icon.setAttribute('height', '20px');
+        button.icon.setAttribute('width', '20px');
+
+        button.container.onclick ??= event => {
+            let enabled = !parseBool(button.container.getAttribute('twitch-tools-away-mode-enabled'));
+
+            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+            button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
+            button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
+
+            SetQuality(['auto','low'][+enabled]);
+            SaveCache({ AwayModeEnabled: enabled });
+        };
+
+        button.container.onmouseenter ??= event => {
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+        };
+
+        button.container.onmouseleave ??= event => {
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+        };
+
+        if(!defined(EVENT_LISTENER.KEYDOWN_ALT_A))
+            document.addEventListener('keydown', EVENT_LISTENER.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+                if(altKey && key == 'a')
+                    $('#away-mode').click();
+            });
+    };
+    Timers.away_mode = 1000;
+
+    __AwayMode__:
+    if(Settings.away_mode) {
+        RegisterJob('away_mode');
+    }
+
+    /*** Auto-claim Channel Points
+     *                    _                  _       _              _____ _                            _   _____      _       _
+     *         /\        | |                | |     (_)            / ____| |                          | | |  __ \    (_)     | |
+     *        /  \  _   _| |_ ___ ______ ___| | __ _ _ _ __ ___   | |    | |__   __ _ _ __  _ __   ___| | | |__) |__  _ _ __ | |_ ___
+     *       / /\ \| | | | __/ _ \______/ __| |/ _` | | '_ ` _ \  | |    | '_ \ / _` | '_ \| '_ \ / _ \ | |  ___/ _ \| | '_ \| __/ __|
+     *      / ____ \ |_| | || (_) |    | (__| | (_| | | | | | | | | |____| | | | (_| | | | | | | |  __/ | | |  | (_) | | | | | |_\__ \
+     *     /_/    \_\__,_|\__\___/      \___|_|\__,_|_|_| |_| |_|  \_____|_| |_|\__,_|_| |_|_| |_|\___|_| |_|   \___/|_|_| |_|\__|___/
+     *
+     *
+     */
+    Handlers.auto_claim_bonuses = () => {
+        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
+            Enabled = (Settings.auto_claim_bonuses && $('#twitch-tools-auto-claim-bonuses')?.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
+
+        if(Enabled && ChannelPoints)
+            ChannelPoints.click();
+
+        let parent = $('div:not(#twitch-tools-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
+            tooltip = $('#twitch-tools-auto-claim-bonuses [role="tooltip"i]');
+
+        if(tooltip && parent)
+            tooltip.innerText = parent.innerText;
+
+        // Actual jobbing
+        let button = $('#twitch-tools-auto-claim-bonuses');
+
+        if(!defined(button)) {
+            let parent    = $('[data-test-selector="community-points-summary"i]'),
+                heading   = $('.top-nav__menu > div', true).slice(-1)[0],
+                container = furnish('div');
+
+            if(!defined(parent) || !defined(heading)) {
+                // setTimeout(Initialize, 5000);
+                return;
+            }
+
+            container.innerHTML = parent.outerHTML;
+            container.id = 'twitch-tools-auto-claim-bonuses';
+            container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
+
+            heading.insertBefore(container, heading.children[1]);
+
+            $('#twitch-tools-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
+
+            let textContainer = $('[class$="animated-number"i]', false, container);
+
+            if(textContainer) {
+                let { parentElement } = textContainer;
+                parentElement.removeAttribute('data-test-selector');
+            }
+
+            button = {
+                container,
+                enabled: true,
+                text: textContainer,
+                icon: $('svg, img', false, container),
+                get offset() { return getOffset(container) },
+                tooltip: new Tooltip(container, `Collecting Bonuses`, { top: -10 }),
+            };
+
+            button.tooltip.id = new UUID().toString();
+            button.text.innerText = 'ON';
+            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
+
+            button.icon ??= $('svg, img', false, container);
+
+            if(!defined($('.channel-points-icon', false, container)))
+                button.icon.outerHTML = Glyphs.channelpoints;
+
+            button.icon = $('svg, img', false, container);
+        } else {
+            let container = button,
+                textContainer = $('[class$="animated-number"i]', false, container);
+
+            button = {
+                container,
+                enabled: true,
+                text: textContainer,
+                tooltip: Tooltip.get(container),
+                icon: $('svg, img', false, container),
+                get offset() { return getOffset(container) },
+            };
+        }
+
+        button.container.onclick ??= event => {
+            let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
+
+            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
+            button.text.innerText = ['OFF','ON'][+enabled];
+            button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonuses`;
+
+            button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
+        };
+
+        button.container.onmouseenter ??= event => {
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+        };
+
+        button.container.onmouseleave ??= event => {
+            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+        };
+
+        // Make sure the button is all the way to the left
+        for(let max = 10; max > 0 && defined(button.container.previousElementSibling); --max)
+            button.container.parentElement.insertBefore(button.container, button.container.previousElementSibling);
+    };
+    Timers.auto_claim_bonuses = 5000;
+
+    __AutoClaimBonuses__:
+    if(Settings.auto_claim_bonuses) {
+        RegisterJob('auto_claim_bonuses');
     }
 
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
@@ -3687,6 +4134,45 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('first_in_line_plus');
     }
 
+    /*** Auto-Follow
+     *                    _              ______    _ _
+     *         /\        | |            |  ____|  | | |
+     *        /  \  _   _| |_ ___ ______| |__ ___ | | | _____      __
+     *       / /\ \| | | | __/ _ \______|  __/ _ \| | |/ _ \ \ /\ / /
+     *      / ____ \ |_| | || (_) |     | | | (_) | | | (_) \ V  V /
+     *     /_/    \_\__,_|\__\___/      |_|  \___/|_|_|\___/ \_/\_/
+     *
+     *
+     */
+    Handlers.auto_follow_raids = () => {
+        if(!defined(STREAMER))
+            return;
+
+        let url = parseURL(top.location),
+            data = url.searchParameters;
+
+        let { like, follow } = STREAMER,
+            raid = data.referrer === 'raid';
+
+        if(!like && raid)
+            follow();
+    };
+    Timers.auto_follow_raids = 1000;
+
+    __AutoFollowRaid__:
+    if(Settings.auto_follow_raids || Settings.auto_follow_all) {
+        RegisterJob('auto_follow_raids');
+    }
+
+    __AutoFollowTime__:
+    if(Settings.auto_follow_time || Settings.auto_follow_all) {
+        let { like, follow } = STREAMER,
+            mins = parseInt(Settings.auto_follow_time_minutes) | 0;
+
+        if(!like)
+            setTimeout(follow, mins * 60_000);
+    }
+
     /*** Kill Extensions
      *      _  ___ _ _   ______      _                 _
      *     | |/ (_) | | |  ____|    | |               (_)
@@ -3765,7 +4251,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_hosting = 5000;
 
     __PreventHosting__:
-    if(Settings.prevent_hosting != "none") {
+    if(Settings.prevent_hosting != "all") {
         RegisterJob('prevent_hosting');
     }
 
@@ -3828,7 +4314,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_raiding = 5000;
 
     __PreventRaiding__:
-    if(Settings.prevent_raiding != "none") {
+    if(Settings.prevent_raiding != "all") {
         RegisterJob('prevent_raiding');
     }
 
@@ -3892,6 +4378,16 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('stay_live');
     }
 
+    /*** Chat & Messaging
+     *       _____ _           _              __  __                           _
+     *      / ____| |         | |     ___    |  \/  |                         (_)
+     *     | |    | |__   __ _| |_   ( _ )   | \  / | ___  ___ ___  __ _  __ _ _ _ __   __ _
+     *     | |    | '_ \ / _` | __|  / _ \/\ | |\/| |/ _ \/ __/ __|/ _` |/ _` | | '_ \ / _` |
+     *     | |____| | | | (_| | |_  | (_>  < | |  | |  __/\__ \__ \ (_| | (_| | | | | | (_| |
+     *      \_____|_| |_|\__,_|\__|  \___/\/ |_|  |_|\___||___/___/\__,_|\__, |_|_| |_|\__, |
+     *                                                                    __/ |         __/ |
+     *                                                                   |___/         |___/
+     */
     /*** Convert Emotes
      *       _____                          _     ______                 _
      *      / ____|                        | |   |  ____|               | |
@@ -3903,16 +4399,8 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let EMOTES = new Map(),
-        shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
-            let id = parseInt($1).toString(36),
-                version = $2;
-
-            return [id, version].join('-');
-        }),
-        CONVERT_TO_CAPTURED_EMOTE;
-
-    Handlers.convert_emotes = () => {
-        CONVERT_TO_CAPTURED_EMOTE = (emote) => {
+        CAPTURED_EMOTES = new Map(),
+        CONVERT_TO_CAPTURED_EMOTE = emote => {
             let { name, src } = emote;
 
             let emoteContainer =
@@ -3926,7 +4414,12 @@ let Initialize = async(START_OVER = false) => {
                                 name,
                                 'data-a-target': name,
 
-                                onclick: event => {},
+                                onclick: event => {
+                                    let name = event.currentTarget.getAttribute('name'),
+                                        chat = $('[data-a-target="chat-input"]');
+
+                                    chat.innerHTML = (chat.value += `${name} `);
+                                },
                             },
 
                             furnish('figure', {},
@@ -3943,16 +4436,32 @@ let Initialize = async(START_OVER = false) => {
             return emoteContainer;
         };
 
-        let { emotes } = GetChat(30, true),
-            allEmotes = [];
+    // Convert emote URL to a short url
+    let shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
+            let id = parseInt($1).toString(36),
+                version = $2;
 
-        // Put all collected emotes into the emote-picker list
-        for(let emote in emotes)
-            allEmotes.push({ name: emote, src: emotes[emote] });
+            return [id, version].join('-');
+        });
+
+    Handlers.convert_emotes = () => {
+        let emoteSection = $('#twitch-tools-captured-emotes');
+
+        if(defined(emoteSection))
+            return;
 
         let parent = $('.emote-picker__scroll-container > *');
 
-        let emoteSection =
+        if(!defined(parent))
+            return RestartJob('convert_emotes');
+
+        let caughtEmotes = [];
+
+        // Put all collected emotes into the emote-picker list
+        for(let [name, src] of CAPTURED_EMOTES)
+            caughtEmotes.push({ name, src });
+
+        emoteSection =
         furnish('div#twitch-tools-captured-emotes.emote-picker__content-block', {},
             furnish('div.tw-pd-b-1.tw-pd-t-05.tw-pd-x-1.tw-relative', {},
                 // Emote Section Header
@@ -3963,13 +4472,13 @@ let Initialize = async(START_OVER = false) => {
                 ),
 
                 // Emote Section Container
-                furnish('div#twitch-tools-captured-emotes-container.tw-flex.tw-flex-wrap', {}, ...allEmotes.map(CONVERT_TO_CAPTURED_EMOTE))
+                furnish('div#twitch-tools-captured-emotes-container.tw-flex.tw-flex-wrap', {}, ...caughtEmotes.map(CONVERT_TO_CAPTURED_EMOTE))
             )
         );
 
         parent.insertBefore(emoteSection, parent.firstChild);
     };
-    Timers.convert_emotes = -1000;
+    Timers.convert_emotes = 15_000;
 
     __ConvertEmotes__:
     if(Settings.convert_emotes) {
@@ -3979,16 +4488,30 @@ let Initialize = async(START_OVER = false) => {
         function CollectEmotes() {
             chat_emote_button.click();
 
-            setTimeout(() => {
-                $('[class*="emote-picker"i] .emote-button img', true)
-                    .map(img => {
-                        EMOTES.set(img.alt, shrt(img.src));
-                    });
+            let chat_emote_scroll = $('.emote-picker .simplebar-scroll-content');
 
-                top.EMOTES = EMOTES;
-
+            if(!defined(chat_emote_scroll)) {
                 chat_emote_button.click();
-            }, 500);
+                return setTimeout(CollectEmotes, 1000);
+            }
+
+            $('.emote-picker [class*="tab-content"]').id = 'twitch-tools-hidden-emote-container';
+
+            setTimeout(() => {
+                [1, 2, 4].map(n => setTimeout(chat_emote_scroll.scrollTo({ top: getOffset($('*', false, chat_emote_scroll)).height, behavior: 'smooth' }), 1000 * n) );
+
+                setTimeout(() => {
+                    $('.emote-button img', true)
+                        .map(img => EMOTES.set(img.alt, shrt(img.src)) );
+
+                    top.EMOTES = EMOTES;
+
+                    chat_emote_scroll.scrollTo(0, 0);
+                    chat_emote_button.click();
+
+                    $('#twitch-tools-hidden-emote-container').id = '';
+                }, 5000);
+            }, 5000);
         }
 
         if(defined(chat_emote_button))
@@ -4003,18 +4526,21 @@ let Initialize = async(START_OVER = false) => {
 
             for(let emote in chat.emotes)
                 if(!EMOTES.has(emote)) {
-                    EMOTES.set(emote, shrt(chat.emotes[emote]));
+                    // LOG(`Adding emote "${ emote }"`);
 
-                    let capturedEmote = CONVERT_TO_CAPTURED_EMOTE(emote);
+                    EMOTES.set(emote, shrt(chat.emotes[emote]));
+                    CAPTURED_EMOTES.set(emote, chat.emotes[emote]);
+
+                    let capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: chat.emotes[emote] });
 
                     $('#twitch-tools-captured-emotes-container')?.appendChild?.(capturedEmote);
                 }
 
             for(let line of chat) {
-                // Replace emotes for the last 25 chat messages
+                // Replace emotes for the last 30 chat messages
                 if(!!~Queue.emotes.indexOf(line.uuid))
                     continue;
-                if(Queue.emotes.length >= 25)
+                if(Queue.emotes.length >= 30)
                     Queue.emotes = [];
                 Queue.emotes.push(line.uuid);
 
@@ -4035,12 +4561,13 @@ let Initialize = async(START_OVER = false) => {
                             f('span', { 'data-a-target': 'emote-name' },
                                 f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
                                     f('img.chat-image.chat-line__message--emote', {
-                                        title: alt,
                                         srcset, alt, src,
                                     })
                                 )
                             )
                         );
+
+                        new Tooltip(img, alt);
 
                         let { element } = line;
 
@@ -4054,20 +4581,22 @@ let Initialize = async(START_OVER = false) => {
                         });
                     }
             }
+
+            top.EMOTES = EMOTES;
         };
 
         RegisterJob('convert_emotes');
     }
 
-    /*** Message Filter
-     *      __  __                                  ______ _ _ _
-     *     |  \/  |                                |  ____(_) | |
-     *     | \  / | ___  ___ ___  __ _  __ _  ___  | |__   _| | |_ ___ _ __
-     *     | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \ |  __| | | | __/ _ \ '__|
-     *     | |  | |  __/\__ \__ \ (_| | (_| |  __/ | |    | | | ||  __/ |
-     *     |_|  |_|\___||___/___/\__,_|\__, |\___| |_|    |_|_|\__\___|_|
-     *                                  __/ |
-     *                                 |___/
+    /*** Filter Messages
+     *      ______ _ _ _              __  __
+     *     |  ____(_) | |            |  \/  |
+     *     | |__   _| | |_ ___ _ __  | \  / | ___  ___ ___  __ _  __ _  ___  ___
+     *     |  __| | | | __/ _ \ '__| | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \/ __|
+     *     | |    | | | ||  __/ |    | |  | |  __/\__ \__ \ (_| | (_| |  __/\__ \
+     *     |_|    |_|_|\__\___|_|    |_|  |_|\___||___/___/\__,_|\__, |\___||___/
+     *                                                            __/ |
+     *                                                           |___/
      */
     let UPDATED_FILTER = () => {
         let rules = Settings.filter_rules;
@@ -4380,6 +4909,294 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('highlight_mentions_popup');
     }
 
+    /*** Native Twitch Reply
+     *      _   _       _   _             _______       _ _       _       _____            _
+     *     | \ | |     | | (_)           |__   __|     (_) |     | |     |  __ \          | |
+     *     |  \| | __ _| |_ ___   _____     | |_      ___| |_ ___| |__   | |__) |___ _ __ | |_   _
+     *     | . ` |/ _` | __| \ \ / / _ \    | \ \ /\ / / | __/ __| '_ \  |  _  // _ \ '_ \| | | | |
+     *     | |\  | (_| | |_| |\ V /  __/    | |\ V  V /| | || (__| | | | | | \ \  __/ |_) | | |_| |
+     *     |_| \_|\__,_|\__|_| \_/ \___|    |_| \_/\_/ |_|\__\___|_| |_| |_|  \_\___| .__/|_|\__, |
+     *                                                                              | |       __/ |
+     *                                                                              |_|      |___/
+     */
+    let NATIVE_REPLY_POLYFILL;
+
+    Handlers.native_twitch_reply = () => {
+        if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
+            return;
+
+        NATIVE_REPLY_POLYFILL ??= {
+            // Button above chat elements
+            NewReplyButton: ({ uuid, style, handle, message, mentions, }) => {
+                let f = furnish;
+
+                let addedClasses = {
+                    bubbleContainer: ['chat-input-tray__open','tw-block','tw-border-b','tw-border-l','tw-border-r','tw-border-radius-large','tw-border-t','tw-c-background-base','tw-elevation-1','tw-left-0','tw-pd-05','tw-right-0','tw-z-below'],
+                    chatContainer: ['chat-input-container__open','tw-block','tw-border-bottom-left-radius-large','tw-border-bottom-right-radius-large','tw-c-background-base','tw-pd-05'],
+                    chatContainerChild: ['chat-input-container__input-wrapper'],
+                },
+                removedClasses = {
+                    bubbleContainer: ['tw-block','tw-border-radius-large','tw-elevation-0','tw-left-0','tw-pd-0','tw-right-0','tw-z-below'],
+                    chatContainer: ['tw-block','tw-border-radius-large','tw-pd-0'],
+                };
+
+                return f('div.chat-line__reply-icon.tw-absolute.tw-border-radius-medium.tw-c-background-base.tw-elevation-1', {},
+                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                        {
+                            'data-test-selector': 'chat-reply-button',
+
+                            onclick: event => {
+                                let { currentTarget } = event,
+                                    messageElement = currentTarget.closest('div').previousElementSibling,
+                                    chatInput = $('[data-a-target="chat-input"i]'),
+                                    bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
+                                    chatContainer = bubbleContainer.nextElementSibling,
+                                    chatContainerChild = $('div', false, chatContainer);
+
+                                let f = furnish;
+
+                                AddNativeReplyBubble: {
+                                    chatContainerChild.classList.add(...addedClasses.chatContainerChild);
+                                    bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
+                                    bubbleContainer.classList.add(...addedClasses.bubbleContainer);
+                                    chatContainer.classList.remove(...removedClasses.chatContainer);
+                                    chatContainer.classList.add(...addedClasses.chatContainer);
+
+                                    bubbleContainer.appendChild(
+                                        f(`div#twitch-tools-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
+                                            {
+                                                'data-test-selector': 'chat-input-tray',
+                                            },
+
+                                            f('div.tw-align-center.tw-mg-05', {},
+                                                f('div.tw-align-items-center.tw-flex', { innerHTML: Glyphs.modify(Glyphs.reply, { height: 24, width: 24 }) })
+                                            ),
+                                            f('div.tw-flex-grow-1.tw-pd-l-05.tw-pd-y-05', {},
+                                                f('span.tw-c-text-alt.tw-font-size-5.tw-strong.tw-word-break-word', {
+                                                    'connected-to': uuid,
+
+                                                    handle, message, mentions,
+
+                                                    innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
+                                                })
+                                            ),
+                                            f('div.tw-right-0.tw-top-0', {},
+                                                f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                                                    {
+                                                        onclick: event => {
+                                                            let chatInput = $('[data-a-target="chat-input"i]'),
+                                                                bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
+                                                                chatContainer = bubbleContainer.nextElementSibling,
+                                                                chatContainerChild = $('div', false, chatContainer);
+
+                                                            RemoveNativeReplyBubble: {
+                                                                bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
+                                                                bubbleContainer.classList.add(...removedClasses.bubbleContainer);
+                                                                chatContainer.classList.remove(...addedClasses.chatContainer);
+                                                                chatContainer.classList.add(...removedClasses.chatContainer);
+                                                                chatContainerChild.classList.remove(...addedClasses.chatContainerChild);
+
+                                                                [...bubbleContainer.children].forEach(child => child.remove());
+
+                                                                chatInput.setAttribute('placeholder', 'Send a message');
+                                                            }
+                                                        },
+
+                                                        innerHTML: Glyphs.modify(Glyphs.x, { height: 24, width: 24 }),
+                                                    },
+                                                )
+                                            )
+                                        )
+                                    );
+
+                                    bubbleContainer.appendChild(
+                                        f('div.font-scale--default.tw-pd-x-1.tw-pd-y-05.chat-line__message',
+                                            {
+                                                'data-a-target': 'chat-line-message',
+                                                'data-test-selector': 'chat-line-message',
+                                            },
+                                            f('div.tw-relative', { innerHTML: messageElement.outerHTML })
+                                        )
+                                    );
+
+                                    chatInput.setAttribute('placeholder', 'Send a reply');
+                                }
+
+                                chatInput.focus();
+                            },
+                        },
+                        f('span.tw-button-icon__icon', {},
+                            f('div',
+                                { style: 'width: 2rem; height: 2rem;' },
+                                f('div.tw-icon', {},
+                                    f('div.tw-aspect', { innerHTML: Glyphs.reply })
+                                )
+                            )
+                        )
+                    )
+                );
+            },
+
+            // Highlighter for chat elements
+            AddNativeReplyButton: ({ uuid, style, handle, message, mentions, element }) => {
+                if(!defined(element))
+                    return;
+
+                if(defined($('.chat-line__message-container', false, element)))
+                    return;
+
+                if(handle == USERNAME)
+                    return;
+
+                let parent = $('div', false, element);
+                if(!defined(parent)) return;
+
+                let target = $('div', false, parent);
+                if(!defined(target)) return;
+
+                let highlighter = furnish('div.chat-line__message-highlight.tw-absolute.tw-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
+
+                target.classList.add('chat-line__message-container');
+
+                parent.insertBefore(highlighter, parent.firstElementChild);
+                parent.appendChild(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
+            },
+        };
+
+        LOG('Adding native reply buttons...');
+
+        GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
+
+        GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
+    };
+    Timers.native_twitch_reply = 1000;
+
+    __NativeTwitchReply__:
+    if(Settings.native_twitch_reply) {
+        RegisterJob('native_twitch_reply');
+    }
+
+    /*** Prevent spam
+     *      _____                          _      _____
+     *     |  __ \                        | |    / ____|
+     *     | |__) | __ _____   _____ _ __ | |_  | (___  _ __   __ _ _ __ ___
+     *     |  ___/ '__/ _ \ \ / / _ \ '_ \| __|  \___ \| '_ \ / _` | '_ ` _ \
+     *     | |   | | |  __/\ V /  __/ | | | |_   ____) | |_) | (_| | | | | | |
+     *     |_|   |_|  \___| \_/ \___|_| |_|\__| |_____/| .__/ \__,_|_| |_| |_|
+     *                                                 | |
+     *                                                 |_|
+     */
+    let SPAM = new Set;
+
+    Handlers.prevent_spam = () => {};
+    Timers.prevent_spam = -1000;
+
+    __PreventSpam__:
+    if(Settings.prevent_spam) {
+        RegisterJob('prevent_spam');
+
+        LOG("Adding spam event listener...");
+        GetChat.onnewmessage = chat =>
+            chat.forEach(line => {
+                let { uuid, handle, element, message } = line;
+
+                // The same message is already posted (within X lines)
+                if( defined([...SPAM].slice(-NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM).find(item => !!~[uuid, message].indexOf(item))) ) {
+                    message = message.trim();
+
+                    if(message.length < 1)
+                        return;
+
+                    element.setAttribute('twitch-tools-spam', '\u22ee');
+                    element.setAttribute('plagiarism', true);
+
+                    new Tooltip(element, message, { direction: 'up' });
+
+                    return;
+                }
+
+                // The message contains repetitive (3 or more instances) words/phrases
+                else if(/(\w{5,})((?:.+)?\b\1)((?:.+)?\b\1)/i.test(message)) {
+                    message = message.trim();
+
+                    if(message.length < 1)
+                        return;
+
+                    element.setAttribute('twitch-tools-spam', `@${handle}`);
+                    element.setAttribute('repetitive', true);
+                }
+
+                SPAM = new Set([...SPAM, uuid, message]);
+            });
+    }
+
+    /*** Whisper Audio
+     *     __          ___     _                                         _ _
+     *     \ \        / / |   (_)                         /\            | (_)
+     *      \ \  /\  / /| |__  _ ___ _ __   ___ _ __     /  \  _   _  __| |_  ___
+     *       \ \/  \/ / | '_ \| / __| '_ \ / _ \ '__|   / /\ \| | | |/ _` | |/ _ \
+     *        \  /\  /  | | | | \__ \ |_) |  __/ |     / ____ \ |_| | (_| | | (_) |
+     *         \/  \/   |_| |_|_|___/ .__/ \___|_|    /_/    \_\__,_|\__,_|_|\___/
+     *                              | |
+     *                              |_|
+     */
+    let NOTIFIED = 0,
+        NOTIFICATION_SOUND =
+            furnish('audio#twich-tools-notification-sound',
+                {
+                    style: 'display:none',
+
+                    innerHTML: ['mp3', 'ogg']
+                        .map(type => {
+                            let types = { mp3: 'mpeg' },
+                                src = Extension.getURL(`aud/goes-without-saying-608.${ type }`);
+                            type = `audio/${ types[type] ?? type }`;
+
+                            return furnish('source', { src, type }).outerHTML;
+                        }).join('')
+                }),
+        NOTIFICATION_EVENT;
+
+    Handlers.whisper_audio = () => {
+        // Play sound on new message
+        NOTIFICATION_EVENT ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
+            LOG('Got a new whisper', { unread, highlighted, message });
+
+            if(!unread && !highlighted && !message)
+                return;
+
+            LOG('Playing notification sound...', NOTIFICATION_SOUND, { unread, highlighted, message });
+
+            NOTIFICATION_SOUND?.play();
+        };
+
+        // Play message on pill-change
+        let pill = $('.whispers__pill'),
+            unread = parseInt(pill?.innerText) | 0;
+
+        if(!defined(pill) || (NOTIFIED >= unread))
+            return;
+        NOTIFIED = unread;
+
+        NOTIFICATION_SOUND?.play();
+    };
+    Timers.whisper_audio = 1000;
+
+    __NotificationSounds__:
+    if(Settings.whisper_audio) {
+        RegisterJob('whisper_audio');
+    }
+
+    /*** Currencies
+     *       _____                               _
+     *      / ____|                             (_)
+     *     | |    _   _ _ __ _ __ ___ _ __   ___ _  ___  ___
+     *     | |   | | | | '__| '__/ _ \ '_ \ / __| |/ _ \/ __|
+     *     | |___| |_| | |  | | |  __/ | | | (__| |  __/\__ \
+     *      \_____\__,_|_|  |_|  \___|_| |_|\___|_|\___||___/
+     *
+     *
+     */
     /*** Convert Bits
      *       _____                          _     ____  _ _
      *      / ____|                        | |   |  _ \(_) |
@@ -4466,402 +5283,223 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('convert_bits');
     }
 
-    /*** Recover Video
-     *      _____                               __      ___     _
-     *     |  __ \                              \ \    / (_)   | |
-     *     | |__) |___  ___ _____   _____ _ __   \ \  / / _  __| | ___  ___
-     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|   \ \/ / | |/ _` |/ _ \/ _ \
-     *     | | \ \  __/ (_| (_) \ V /  __/ |       \  /  | | (_| |  __/ (_) |
-     *     |_|  \_\___|\___\___/ \_/ \___|_|        \/   |_|\__,_|\___|\___/
+    /*** Rewards Calculator
+     *      _____                            _        _____      _            _       _
+     *     |  __ \                          | |      / ____|    | |          | |     | |
+     *     | |__) |_____      ____ _ _ __ __| |___  | |     __ _| | ___ _   _| | __ _| |_ ___  _ __
+     *     |  _  // _ \ \ /\ / / _` | '__/ _` / __| | |    / _` | |/ __| | | | |/ _` | __/ _ \| '__|
+     *     | | \ \  __/\ V  V / (_| | | | (_| \__ \ | |___| (_| | | (__| |_| | | (_| | || (_) | |
+     *     |_|  \_\___| \_/\_/ \__,_|_|  \__,_|___/  \_____\__,_|_|\___|\__,_|_|\__,_|\__\___/|_|
      *
      *
      */
-    let RECOVERING_VIDEO = false;
+    let CHANNEL_POINTS_MULTIPLIER,
+        REWARDS_CALCULATOR_TOOLTIP;
 
-    Handlers.recover_video = () => {
-        let errorMessage = $('[data-a-target="player-overlay-content-gate"i]');
+    Handlers.rewards_calculator = () => {
+        let have = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
+            goal = parseInt($('[data-test-selector="RequiredPoints"]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
+            need = goal - have;
 
-        if(!defined(errorMessage))
-            return;
+        let container = $('[data-test-selector="RequiredPoints"]:not(:empty)')?.parentElement;
 
-        if(RECOVERING_VIDEO)
-            return;
-        RECOVERING_VIDEO = true;
+        if(!defined(container))
+            return REWARDS_CALCULATOR_TOOLTIP = null;
 
-        errorMessage = errorMessage.textContent;
+        let averageBroadcastTime = 4.5, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
+            pointsEarnedPerHour = 280; // https://help.twitch.tv/s/article/channel-points-guide
 
-        ERROR('The stream ran into an error:', errorMessage, new Date);
+        let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container),
+            needed,
+            timeNeeded;
 
-        if(/subscribe/i.test(errorMessage)) {
-            let next = GetNextStreamer();
+        let hours = parseInt(need / (pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER)),
+            days = hours / 24,
+            weeks = days / 7,
+            months = weeks / 4,
+            years = months / 12;
 
-            // Subscriber only, etc.
-            if(defined(next))
-                open(next.href, '_self');
-        } else {
-            // Failed to play video at...
-            PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
+        if(hours) {
+            needed = 'hour';
+            timeNeeded = hours;
+        } if(hours > 48) {
+            needed = 'day';
+            timeNeeded = days;
+        } if(days > 10) {
+            needed = 'week';
+            timeNeeded = weeks;
+        } if(days > 30) {
+            needed = 'month';
+            timeNeeded = months;
+        } if(months > 12) {
+            needed = 'year';
+            timeNeeded = years;
         }
-    };
-    Timers.recover_video = 5_000;
 
-    __RecoverVideo__:
-    if(Settings.recover_video) {
-        RegisterJob('recover_video');
+        timeNeeded = parseInt(timeNeeded);
+
+        tooltip.innerHTML =
+            hours < 1?
+                `less than an hour needed`:
+            `${ comify(timeNeeded) } ${ needed + (timeNeeded != 1? 's': '') } needed`;
+    };
+    Timers.rewards_calculator = 100;
+
+    __RewardsCalculator__:
+    if(Settings.rewards_calculator) {
+        let button = $('[data-test-selector="community-points-summary"i] button');
+
+        if(defined(button)) {
+            button.click();
+
+            CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText ?? 1);
+
+            button.click();
+        }
+
+        RegisterJob('rewards_calculator');
     }
 
-    /*** Recover Stream
-     *      _____                                 _____ _
-     *     |  __ \                               / ____| |
-     *     | |__) |___  ___ _____   _____ _ __  | (___ | |_ _ __ ___  __ _ _ __ ___
-     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|  \___ \| __| '__/ _ \/ _` | '_ ` _ \
-     *     | | \ \  __/ (_| (_) \ V /  __/ |     ____) | |_| | |  __/ (_| | | | | | |
-     *     |_|  \_\___|\___\___/ \_/ \___|_|    |_____/ \__|_|  \___|\__,_|_| |_| |_|
+    /*** Customization
+     *       _____          _                  _          _   _
+     *      / ____|        | |                (_)        | | (_)
+     *     | |    _   _ ___| |_ ___  _ __ ___  _ ______ _| |_ _  ___  _ __
+     *     | |   | | | / __| __/ _ \| '_ ` _ \| |_  / _` | __| |/ _ \| '_ \
+     *     | |___| |_| \__ \ || (_) | | | | | | |/ / (_| | |_| | (_) | | | |
+     *      \_____\__,_|___/\__\___/|_| |_| |_|_/___\__,_|\__|_|\___/|_| |_|
      *
      *
      */
-    let VIDEO_PLAYER_TIMEOUT = -1;
+    /*** Points Receipt
+     *      _____      _       _         _____               _       _
+     *     |  __ \    (_)     | |       |  __ \             (_)     | |
+     *     | |__) |__  _ _ __ | |_ ___  | |__) |___  ___ ___ _ _ __ | |_
+     *     |  ___/ _ \| | '_ \| __/ __| |  _  // _ \/ __/ _ \ | '_ \| __|
+     *     | |  | (_) | | | | | |_\__ \ | | \ \  __/ (_|  __/ | |_) | |_
+     *     |_|   \___/|_|_| |_|\__|___/ |_|  \_\___|\___\___|_| .__/ \__|
+     *                                                        | |
+     *                                                        |_|
+     */
+    let INITIAL_POINTS,
+        COUNTING_POINTS;
 
-    Handlers.recover_stream = (video = $('video')) => {
-        if(!defined(video))
+    Handlers.points_receipt_placecment = () => {
+        INITIAL_POINTS = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0);
+
+        let placement;
+
+        if((placement = Settings.points_receipt_placecment ??= "null") == "null")
             return;
 
-        let { paused } = video,
-            isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = $('video', true).length > 1;
+        let live_time = $('.live-time');
 
-        // Leave the video alone
-            // if the video isn't paused
-            // if the video was paused by the user (trusted)
-            // if the video is an ad AND auto-play ads is disabled
-            // if the player event-timeout has been set
-        if(!paused || isTrusted || (isAdvert && !Settings.recover_ads) || VIDEO_PLAYER_TIMEOUT > -1)
+        if(!defined(live_time))
             return;
 
-        // Wait before trying to press play again
-        VIDEO_PLAYER_TIMEOUT = setTimeout(() => VIDEO_PLAYER_TIMEOUT = -1, 1000);
+        let classes = element => [...element.classList].map(label => '.' + label).join('');
 
-        try {
-            let playing = video.play();
+        let container = live_time.closest(`*:not(${ classes(live_time) })`),
+            parent = container.closest(`*:not(${ classes(container) })`);
 
-            if(defined(playing))
-                playing.then(() => {
-                    // async playing
-                    return;
-                })
-                .catch(error => {
-                    // something went wrong
-                    throw error;
-                });
-        } catch(error) {
-            ERROR(error);
+        let f = furnish;
+        let points_receipt =
+        f(`${ container.tagName }${ classes(container) }`, {},
+            f(`${ live_time.tagName }#twitch-tools-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0 })
+        );
 
-            let control = $('button[data-a-player-state]'),
-                playing = control.getAttribute('data-a-player-state') !== 'paused';
+        parent.appendChild(points_receipt);
 
-            if(!playing) {
-                // PAUSED -> PLAY
-                control.click();
-            } else {
-                // PLAYING -> PAUSE, PLAY
-                control.click();
-                control.click();
-            }
-        }
+        COUNTING_POINTS = setInterval(() => {
+            let points_receipt = $('#twitch-tools-points-receipt'),
+                receipt = parseInt(points_receipt?.getAttribute('receipt')) | 0;
+
+            if(!defined(points_receipt))
+                return;
+
+            receipt = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0) - INITIAL_POINTS;
+
+            points_receipt.setAttribute('receipt', receipt);
+
+            points_receipt.innerHTML = `&${'du'[+(receipt > 0)]}arr; ${receipt.prefix(Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px' }))}`;
+
+            let glyph = $('svg', false, points_receipt);
+
+            glyph?.setAttribute('style', 'vertical-align:bottom');
+        }, 1000);
     };
-    Timers.recover_stream = 2500;
+    Timers.points_receipt_placecment = -1500;
 
-    __RecoverStream__:
-    if(Settings.recover_stream) {
-        let video = $('video');
-
-        if(!defined(video))
-            return;
-
-        video.addEventListener('pause', event => Handlers.recover_stream(event.currentTarget));
-
-        RegisterJob('recover_stream');
+    __PointsReceiptPlacement__:
+    if(Settings.points_receipt_placecment != "null") {
+        RegisterJob('points_receipt_placecment');
     }
 
-    /*** Recover Frames
-     *      _____                                ______
-     *     |  __ \                              |  ____|
-     *     | |__) |___  ___ _____   _____ _ __  | |__ _ __ __ _ _ __ ___   ___  ___
-     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__| |  __| '__/ _` | '_ ` _ \ / _ \/ __|
-     *     | | \ \  __/ (_| (_) \ V /  __/ |    | |  | | | (_| | | | | | |  __/\__ \
-     *     |_|  \_\___|\___\___/ \_/ \___|_|    |_|  |_|  \__,_|_| |_| |_|\___||___/
+    /*** Point Watcher
+     *      _____      _       _    __          __   _       _
+     *     |  __ \    (_)     | |   \ \        / /  | |     | |
+     *     | |__) |__  _ _ __ | |_   \ \  /\  / /_ _| |_ ___| |__   ___ _ __
+     *     |  ___/ _ \| | '_ \| __|   \ \/  \/ / _` | __/ __| '_ \ / _ \ '__|
+     *     | |  | (_) | | | | | |_     \  /\  / (_| | || (__| | | |  __/ |
+     *     |_|   \___/|_|_| |_|\__|     \/  \/ \__,_|\__\___|_| |_|\___|_|
      *
      *
      */
-    let SECONDS_PAUSED_UNSAFELY = 0,
-        CREATION_TIME,
-        TOTAL_VIDEO_FRAMES,
-        PAGE_HAS_FOCUS = document.visibilityState === "visible";
+    let pointWatcherCounter = 0;
 
+    Handlers.point_watcher_placecment = () => {
+        let rich_tooltip = $('.dialog-layer div:not([class])');
 
-    Handlers.recover_frames = () => {
-        let video = $('video');
+        // Update the points (every minute)
+        if(++pointWatcherCounter % 600) {
+            pointWatcherCounter = 0;
 
-        if(!defined(video))
-            return;
-
-        let { paused } = video,
-            isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = $('video', true).length > 1,
-            { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
-
-        // Time that's passed since creation. Should constantly increase
-        CREATION_TIME ??= creationTime;
-
-        // The total number of frames created. Should constantly increase
-        TOTAL_VIDEO_FRAMES ??= totalVideoFrames;
-
-        // if the page isn't in focus, ignore this setting
-        // if the video is paused by the user (trusted) move on
-        if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
-            return;
-
-        // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
-        if(CREATION_TIME != creationTime && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
-            if(SECONDS_PAUSED_UNSAFELY> 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
-                WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
-
-            // Try constantly overwriting to see if the video plays
-            // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
-            TOTAL_VIDEO_FRAMES = totalVideoFrames;
-
-            ++SECONDS_PAUSED_UNSAFELY;
-
-            video.stalling = true;
-        }
-        // The video is playing
-        else {
-            // Start over
-            CREATION_TIME = creationTime;
-            TOTAL_VIDEO_FRAMES = totalVideoFrames;
-
-            video.stalling = false;
-
-            // Reset the timer whenever the video is recovered
-            return SECONDS_PAUSED_UNSAFELY = 0;
-        }
-
-        if(SECONDS_PAUSED_UNSAFELY > 15)
-            location.reload();
-    };
-    Timers.recover_frames = 1000;
-
-    __RecoverFrames__:
-    if(Settings.recover_frames) {
-        document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
-
-        RegisterJob('recover_frames');
-    }
-
-    /*** User Intent Listener - NOT A SETTING. Observe the user's intent, and prevent over-riding it
-     *
-     *      _    _                 _       _             _
-     *     | |  | |               (_)     | |           | |
-     *     | |  | |___  ___ _ __   _ _ __ | |_ ___ _ __ | |_
-     *     | |  | / __|/ _ \ '__| | | '_ \| __/ _ \ '_ \| __|
-     *     | |__| \__ \  __/ |    | | | | | ||  __/ | | | |_
-     *      \____/|___/\___|_|    |_|_| |_|\__\___|_| |_|\__|
-     *
-     *
-     * Wait for the elements to populate
-     * May not always be present
-     */
-    setTimeout(() => {
-        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
-            a.addEventListener('mousedown', async event => {
-                let { currentTarget } = event;
-
-                let url = parseURL(currentTarget.href),
-                    UserIntent = url.pathname.replace('/', '');
-
-                await SaveCache({ UserIntent });
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
+                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? ChannelPoints[STREAMER.name] ?? 'Not available';
+                SaveCache({ ChannelPoints });
             });
-        });
-    }, 1000);
+        }
 
-    /*** Native Twitch Reply
-     *      _   _       _   _             _______       _ _       _       _____            _
-     *     | \ | |     | | (_)           |__   __|     (_) |     | |     |  __ \          | |
-     *     |  \| | __ _| |_ ___   _____     | |_      ___| |_ ___| |__   | |__) |___ _ __ | |_   _
-     *     | . ` |/ _` | __| \ \ / / _ \    | \ \ /\ / / | __/ __| '_ \  |  _  // _ \ '_ \| | | | |
-     *     | |\  | (_| | |_| |\ V /  __/    | |\ V  V /| | || (__| | | | | | \ \  __/ |_) | | |_| |
-     *     |_| \_|\__,_|\__|_| \_/ \___|    |_| \_/\_/ |_|\__\___|_| |_| |_|  \_\___| .__/|_|\__, |
-     *                                                                              | |       __/ |
-     *                                                                              |_|      |___/
-     */
-    let NATIVE_REPLY_POLYFILL;
-
-    Handlers.native_twitch_reply = () => {
-        if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
+        if(!defined(rich_tooltip))
             return;
 
-        NATIVE_REPLY_POLYFILL ??= {
-            // Button above chat elements
-            NewReplyButton: ({ uuid, style, handle, message, mentions, }) => {
-                let f = furnish;
+        let pointDisplay = $('.twitch-tools-point-display');
+        let [title, subtitle, footer] = $('[class*="online-side-nav-channel-tooltip"i] > *', true, rich_tooltip),
+            target = footer?.lastElementChild;
 
-                let addedClasses = {
-                    bubbleContainer: ['chat-input-tray__open','tw-block','tw-border-b','tw-border-l','tw-border-r','tw-border-radius-large','tw-border-t','tw-c-background-base','tw-elevation-1','tw-left-0','tw-pd-05','tw-right-0','tw-z-below'],
-                    chatContainer: ['chat-input-container__open','tw-block','tw-border-bottom-left-radius-large','tw-border-bottom-right-radius-large','tw-c-background-base','tw-pd-05'],
-                    chatContainerChild: ['chat-input-container__input-wrapper'],
-                },
-                removedClasses = {
-                    bubbleContainer: ['tw-block','tw-border-radius-large','tw-elevation-0','tw-left-0','tw-pd-0','tw-right-0','tw-z-below'],
-                    chatContainer: ['tw-block','tw-border-radius-large','tw-pd-0'],
-                };
+        if(!defined(target))
+            return;
 
-                return f('div.chat-line__reply-icon.tw-absolute.tw-border-radius-medium.tw-c-background-base.tw-elevation-1', {},
-                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
-                        {
-                            'data-test-selector': 'chat-reply-button',
+        let [name, game] = title.innerText.split(/[^\w\s]/);
 
-                            onclick: event => {
-                                let { currentTarget } = event,
-                                    messageElement = currentTarget.closest('div').previousElementSibling,
-                                    chatInput = $('[data-a-target="chat-input"i]'),
-                                    bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                    chatContainer = bubbleContainer.nextElementSibling,
-                                    chatContainerChild = $('div', false, chatContainer);
+        name = name?.trim();
+        game = game?.trim();
 
-                                let f = furnish;
+        // Update the display
+        if(defined(pointDisplay))
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => pointDisplay.innerHTML = (ChannelPoints ??= {})[name] ?? 0);
+        else
+            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
+                    let text = furnish('span.twitch-tools-point-display', {
+                            innerHTML: (ChannelPoints ??= {})[name] ?? 0,
+                        }),
+                        icon = furnish('span', {
+                            innerHTML: ` | ${ Glyphs.channelpoints.replace(/(height|width)="100%"/g, '$1="20px"') } `,
+                        });
 
-                                AddNativeReplyBubble: {
-                                    let modifyAttributes = (glyph, attributes) => {
-                                        for(let attribute in attributes) {
-                                            let value = attributes[attribute];
+                    target.appendChild(icon);
+                    target.appendChild(text);
 
-                                            glyph = glyph.replace(
-                                                RegExp(`(${ attribute })=(["'])[^\\2]*?\\2`, 'ig'),
-                                                `$1=$2${value}$2`
-                                            );
-                                        }
+                    let svg = $('svg', false, icon);
 
-                                        return glyph;
-                                    };
-
-                                    chatContainerChild.classList.add(...addedClasses.chatContainerChild);
-                                    bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
-                                    bubbleContainer.classList.add(...addedClasses.bubbleContainer);
-                                    chatContainer.classList.remove(...removedClasses.chatContainer);
-                                    chatContainer.classList.add(...addedClasses.chatContainer);
-
-                                    bubbleContainer.appendChild(
-                                        f(`div#twitch-tools-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
-                                            {
-                                                'data-test-selector': 'chat-input-tray',
-                                            },
-
-                                            f('div.tw-align-center.tw-mg-05', {},
-                                                f('div.tw-align-items-center.tw-flex', { innerHTML: modifyAttributes(Glyphs.reply, { height: 24, width: 24 }) })
-                                            ),
-                                            f('div.tw-flex-grow-1.tw-pd-l-05.tw-pd-y-05', {},
-                                                f('span.tw-c-text-alt.tw-font-size-5.tw-strong.tw-word-break-word', {
-                                                    'connected-to': uuid,
-
-                                                    handle, message, mentions,
-
-                                                    innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
-                                                })
-                                            ),
-                                            f('div.tw-right-0.tw-top-0', {},
-                                                f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
-                                                    {
-                                                        onclick: event => {
-                                                            let chatInput = $('[data-a-target="chat-input"i]'),
-                                                                bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                                                chatContainer = bubbleContainer.nextElementSibling,
-                                                                chatContainerChild = $('div', false, chatContainer);
-
-                                                            RemoveNativeReplyBubble: {
-                                                                bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
-                                                                bubbleContainer.classList.add(...removedClasses.bubbleContainer);
-                                                                chatContainer.classList.remove(...addedClasses.chatContainer);
-                                                                chatContainer.classList.add(...removedClasses.chatContainer);
-                                                                chatContainerChild.classList.remove(...addedClasses.chatContainerChild);
-
-                                                                [...bubbleContainer.children].forEach(child => child.remove());
-
-                                                                chatInput.setAttribute('placeholder', 'Send a message');
-                                                            }
-                                                        },
-
-                                                        innerHTML: modifyAttributes(Glyphs.x, { height: 24, width: 24 }),
-                                                    },
-                                                )
-                                            )
-                                        )
-                                    );
-
-                                    bubbleContainer.appendChild(
-                                        f('div.font-scale--default.tw-pd-x-1.tw-pd-y-05.chat-line__message',
-                                            {
-                                                'data-a-target': 'chat-line-message',
-                                                'data-test-selector': 'chat-line-message',
-                                            },
-                                            f('div.tw-relative', { innerHTML: messageElement.outerHTML })
-                                        )
-                                    );
-
-                                    chatInput.setAttribute('placeholder', 'Send a reply');
-                                }
-
-                                chatInput.focus();
-                            },
-                        },
-                        f('span.tw-button-icon__icon', {},
-                            f('div',
-                                { style: 'width: 2rem; height: 2rem;' },
-                                f('div.tw-icon', {},
-                                    f('div.tw-aspect', { innerHTML: Glyphs.reply })
-                                )
-                            )
-                        )
-                    )
-                );
-            },
-
-            // Highlighter for chat elements
-            AddNativeReplyButton: ({ uuid, style, handle, message, mentions, element }) => {
-                if(!defined(element))
-                    return;
-
-                if(defined($('.chat-line__message-container', false, element)))
-                    return;
-
-                if(handle == USERNAME)
-                    return;
-
-                let parent = $('div', false, element);
-                if(!defined(parent)) return;
-
-                let target = $('div', false, parent);
-                if(!defined(target)) return;
-
-                let highlighter = furnish('div.chat-line__message-highlight.tw-absolute.tw-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
-
-                target.classList.add('chat-line__message-container');
-
-                parent.insertBefore(highlighter, parent.firstElementChild);
-                parent.appendChild(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
-            },
-        };
-
-        LOG('Adding native reply buttons...');
-
-        GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
-
-        GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
+                    svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+                }
+            );
     };
-    Timers.native_twitch_reply = 1000;
+    Timers.point_watcher_placecment = 100;
 
-    __NativeTwitchReply__:
-    if(Settings.native_twitch_reply) {
-        RegisterJob('native_twitch_reply');
+    __PointWatcherPlacement__:
+    if(Settings.point_watcher_placecment != "null") {
+        RegisterJob('point_watcher_placecment');
     }
 
     /*** Watch Time Placement
@@ -4933,73 +5571,247 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('watch_time_placement');
     }
 
-    /*** Point Watcher
-     *      _____      _       _    __          __   _       _
-     *     |  __ \    (_)     | |   \ \        / /  | |     | |
-     *     | |__) |__  _ _ __ | |_   \ \  /\  / /_ _| |_ ___| |__   ___ _ __
-     *     |  ___/ _ \| | '_ \| __|   \ \/  \/ / _` | __/ __| '_ \ / _ \ '__|
-     *     | |  | (_) | | | | | |_     \  /\  / (_| | || (__| | | |  __/ |
-     *     |_|   \___/|_|_| |_|\__|     \/  \/ \__,_|\__\___|_| |_|\___|_|
+    /*** Video Recovery
+     *     __      ___     _              _____
+     *     \ \    / (_)   | |            |  __ \
+     *      \ \  / / _  __| | ___  ___   | |__) |___  ___ _____   _____ _ __ _   _
+     *       \ \/ / | |/ _` |/ _ \/ _ \  |  _  // _ \/ __/ _ \ \ / / _ \ '__| | | |
+     *        \  /  | | (_| |  __/ (_) | | | \ \  __/ (_| (_) \ V /  __/ |  | |_| |
+     *         \/   |_|\__,_|\___|\___/  |_|  \_\___|\___\___/ \_/ \___|_|   \__, |
+     *                                                                        __/ |
+     *                                                                       |___/
+     */
+    /*** Recover Frames
+     *      _____                                ______
+     *     |  __ \                              |  ____|
+     *     | |__) |___  ___ _____   _____ _ __  | |__ _ __ __ _ _ __ ___   ___  ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__| |  __| '__/ _` | '_ ` _ \ / _ \/ __|
+     *     | | \ \  __/ (_| (_) \ V /  __/ |    | |  | | | (_| | | | | | |  __/\__ \
+     *     |_|  \_\___|\___\___/ \_/ \___|_|    |_|  |_|  \__,_|_| |_| |_|\___||___/
      *
      *
      */
-    let pointWatcherCounter = 0;
+    let SECONDS_PAUSED_UNSAFELY = 0,
+        CREATION_TIME,
+        TOTAL_VIDEO_FRAMES,
+        PAGE_HAS_FOCUS = document.visibilityState === "visible";
 
-    Handlers.point_watcher_placecment = () => {
-        let rich_tooltip = $('.dialog-layer div:not([class])');
+    Handlers.recover_frames = () => {
+        let video = $('video');
 
-        // Update the points (every minute)
-        if(++pointWatcherCounter % 600) {
-            pointWatcherCounter = 0;
+        if(!defined(video))
+            return;
 
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
-                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? ChannelPoints[STREAMER.name] ?? 'Not available';
-                SaveCache({ ChannelPoints });
-            });
+        let { paused } = video,
+            isTrusted = defined($('button[data-a-player-state="paused"i]')),
+            isAdvert = $('video', true).length > 1,
+            { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
+
+        // Time that's passed since creation. Should constantly increase
+        CREATION_TIME ??= creationTime;
+
+        // The total number of frames created. Should constantly increase
+        TOTAL_VIDEO_FRAMES ??= totalVideoFrames;
+
+        // if the page isn't in focus, ignore this setting
+        // if the video is paused by the user (trusted) move on
+        if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
+            return;
+
+        // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
+        if(CREATION_TIME != creationTime && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
+            if(SECONDS_PAUSED_UNSAFELY> 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
+                WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
+
+            // Try constantly overwriting to see if the video plays
+            // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
+            TOTAL_VIDEO_FRAMES = totalVideoFrames;
+
+            ++SECONDS_PAUSED_UNSAFELY;
+
+            video.stalling = true;
+        }
+        // The video is playing
+        else {
+            // Start over
+            CREATION_TIME = creationTime;
+            TOTAL_VIDEO_FRAMES = totalVideoFrames;
+
+            video.stalling = false;
+
+            // Reset the timer whenever the video is recovered
+            return SECONDS_PAUSED_UNSAFELY = 0;
         }
 
-        if(!defined(rich_tooltip))
-            return;
-
-        let pointDisplay = $('.twitch-tools-point-display');
-        let [title, subtitle, footer] = $('[class*="online-side-nav-channel-tooltip"i] > *', true, rich_tooltip),
-            target = footer?.lastElementChild;
-
-        if(!defined(target))
-            return;
-
-        let [name, game] = title.innerText.split(/[^\w\s]/);
-
-        name = name?.trim();
-        game = game?.trim();
-
-        // Update the display
-        if(defined(pointDisplay))
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => pointDisplay.innerHTML = (ChannelPoints ??= {})[name] ?? 0);
-        else
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
-                    let text = furnish('span.twitch-tools-point-display', {
-                            innerHTML: (ChannelPoints ??= {})[name] ?? 0,
-                        }),
-                        icon = furnish('span', {
-                            innerHTML: ` | ${ Glyphs.channelpoints.replace(/(height|width)="100%"/g, '$1="20px"') } `,
-                        });
-
-                    target.appendChild(icon);
-                    target.appendChild(text);
-
-                    let svg = $('svg', false, icon);
-
-                    svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
-                }
-            );
+        if(SECONDS_PAUSED_UNSAFELY > 15)
+            location.reload();
     };
-    Timers.point_watcher_placecment = 100;
+    Timers.recover_frames = 1000;
 
-    __PointWatcherPlacement__:
-    if(Settings.point_watcher_placecment != "null") {
-        RegisterJob('point_watcher_placecment');
+    __RecoverFrames__:
+    if(Settings.recover_frames) {
+        document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
+
+        RegisterJob('recover_frames');
     }
+
+    /*** Recover Stream
+     *      _____                                 _____ _
+     *     |  __ \                               / ____| |
+     *     | |__) |___  ___ _____   _____ _ __  | (___ | |_ _ __ ___  __ _ _ __ ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|  \___ \| __| '__/ _ \/ _` | '_ ` _ \
+     *     | | \ \  __/ (_| (_) \ V /  __/ |     ____) | |_| | |  __/ (_| | | | | | |
+     *     |_|  \_\___|\___\___/ \_/ \___|_|    |_____/ \__|_|  \___|\__,_|_| |_| |_|
+     *
+     *
+     */
+    let VIDEO_PLAYER_TIMEOUT = -1;
+
+    Handlers.recover_stream = (video = $('video')) => {
+        if(!defined(video))
+            return;
+
+        let { paused } = video,
+            isTrusted = defined($('button[data-a-player-state="paused"i]')),
+            isAdvert = $('video', true).length > 1;
+
+        // Leave the video alone
+            // if the video isn't paused
+            // if the video was paused by the user (trusted)
+            // if the video is an ad AND auto-play ads is disabled
+            // if the player event-timeout has been set
+        if(!paused || isTrusted || (isAdvert && !Settings.recover_ads) || VIDEO_PLAYER_TIMEOUT > -1)
+            return;
+
+        // Wait before trying to press play again
+        VIDEO_PLAYER_TIMEOUT = setTimeout(() => VIDEO_PLAYER_TIMEOUT = -1, 1000);
+
+        __RecoverVideoProgramatically__:
+        try {
+            let playing = video.play();
+
+            if(defined(playing))
+                playing
+                    .catch(error => { throw error });
+        } catch(error) {
+            ERROR(error);
+
+            let control = $('button[data-a-player-state]'),
+                playing = control.getAttribute('data-a-player-state') !== 'paused',
+                attempts = parseInt(control.getAttribute('attempts')) | 0;
+
+            if(!defined(control)) {
+                WARN('No video controls presented.');
+
+                break __RecoverVideoProgramatically__;
+            } if(attempts > 3) {
+                WARN('Automatic attempts are not helping.');
+
+                break __RecoverVideoProgramatically__;
+            }
+
+            if(!playing) {
+                // PAUSED -> PLAY
+                control.click();
+            } else if(playing) {
+                // PLAYING -> PAUSE, PLAY
+                control.click();
+                control.click();
+            }
+
+            control.setAttribute('attempts', ++attempts);
+
+            setTimeout(() => {
+                let control = $('button[data-a-player-state]'),
+                    attempts = parseInt(control.getAttribute('attempts')) | 0;
+
+                control.setAttribute('attempts', --attempts);
+            }, 5000);
+        }
+    };
+    Timers.recover_stream = 2500;
+
+    __RecoverStream__:
+    if(Settings.recover_stream) {
+        let video = $('video');
+
+        if(!defined(video))
+            return;
+
+        video.addEventListener('pause', event => Handlers.recover_stream(event.currentTarget));
+
+        RegisterJob('recover_stream');
+    }
+
+    /*** Recover Video
+     *      _____                               __      ___     _
+     *     |  __ \                              \ \    / (_)   | |
+     *     | |__) |___  ___ _____   _____ _ __   \ \  / / _  __| | ___  ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|   \ \/ / | |/ _` |/ _ \/ _ \
+     *     | | \ \  __/ (_| (_) \ V /  __/ |       \  /  | | (_| |  __/ (_) |
+     *     |_|  \_\___|\___\___/ \_/ \___|_|        \/   |_|\__,_|\___|\___/
+     *
+     *
+     */
+    let RECOVERING_VIDEO = false;
+
+    Handlers.recover_video = () => {
+        let errorMessage = $('[data-a-target="player-overlay-content-gate"i]');
+
+        if(!defined(errorMessage))
+            return;
+
+        if(RECOVERING_VIDEO)
+            return;
+        RECOVERING_VIDEO = true;
+
+        errorMessage = errorMessage.textContent;
+
+        ERROR('The stream ran into an error:', errorMessage, new Date);
+
+        if(/subscribe/i.test(errorMessage)) {
+            let next = GetNextStreamer();
+
+            // Subscriber only, etc.
+            if(defined(next))
+                open(next.href, '_self');
+        } else {
+            // Failed to play video at...
+            PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
+        }
+    };
+    Timers.recover_video = 5_000;
+
+    __RecoverVideo__:
+    if(Settings.recover_video) {
+        RegisterJob('recover_video');
+    }
+
+    /*** User Intent Listener - NOT A SETTING. Observe the user's intent, and prevent over-riding it
+     *
+     *      _    _                 _       _             _
+     *     | |  | |               (_)     | |           | |
+     *     | |  | |___  ___ _ __   _ _ __ | |_ ___ _ __ | |_
+     *     | |  | / __|/ _ \ '__| | | '_ \| __/ _ \ '_ \| __|
+     *     | |__| \__ \  __/ |    | | | | | ||  __/ | | | |_
+     *      \____/|___/\___|_|    |_|_| |_|\__\___|_| |_|\__|
+     *
+     *
+     * Wait for the elements to populate
+     * May not always be present
+     */
+    setTimeout(() => {
+        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+            a.addEventListener('mousedown', async event => {
+                let { currentTarget } = event;
+
+                let url = parseURL(currentTarget.href),
+                    UserIntent = url.pathname.replace('/', '');
+
+                await SaveCache({ UserIntent });
+            });
+        });
+    }, 1000);
 
     /*** Recover Pages
      *      _____                                _____
@@ -5030,578 +5842,7 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('recover_pages');
     }
 
-    /*** Whisper Audio
-     *     __          ___     _                                         _ _
-     *     \ \        / / |   (_)                         /\            | (_)
-     *      \ \  /\  / /| |__  _ ___ _ __   ___ _ __     /  \  _   _  __| |_  ___
-     *       \ \/  \/ / | '_ \| / __| '_ \ / _ \ '__|   / /\ \| | | |/ _` | |/ _ \
-     *        \  /\  /  | | | | \__ \ |_) |  __/ |     / ____ \ |_| | (_| | | (_) |
-     *         \/  \/   |_| |_|_|___/ .__/ \___|_|    /_/    \_\__,_|\__,_|_|\___/
-     *                              | |
-     *                              |_|
-     */
-    let NOTIFIED = 0,
-        NOTIFICATION_SOUND =
-            furnish('audio#twich-tools-notification-sound',
-                {
-                    style: 'display:none',
-
-                    innerHTML: ['mp3', 'ogg']
-                        .map(type => {
-                            let types = { mp3: 'mpeg' },
-                                src = Extension.getURL(`aud/goes-without-saying-608.${ type }`);
-                            type = `audio/${ types[type] ?? type }`;
-
-                            return furnish('source', { src, type }).outerHTML;
-                        }).join('')
-                }),
-        NOTIFICATION_EVENT;
-
-    Handlers.whisper_audio = () => {
-        // Play sound on new message
-        NOTIFICATION_EVENT ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
-            LOG('Got a new whisper', { unread, highlighted, message });
-
-            if(!unread && !highlighted && !message)
-                return;
-
-            LOG('Playing notification sound...', NOTIFICATION_SOUND, { unread, highlighted, message });
-
-            NOTIFICATION_SOUND?.play();
-        };
-
-        // Play message on pill-change
-        let pill = $('.whispers__pill'),
-            unread = parseInt(pill?.innerText) | 0;
-
-        if(!defined(pill) || (NOTIFIED >= unread))
-            return;
-        NOTIFIED = unread;
-
-        NOTIFICATION_SOUND?.play();
-    };
-    Timers.whisper_audio = 1000;
-
-    __NotificationSounds__:
-    if(Settings.whisper_audio) {
-        RegisterJob('whisper_audio');
-    }
-
-    /*** Scoped under Initialize
-     *      _______             _____
-     *     |__   __|           / ____|
-     *        | | ___  _ __   | (___   ___ ___  _ __   ___
-     *        | |/ _ \| '_ \   \___ \ / __/ _ \| '_ \ / _ \
-     *        | | (_) | |_) |  ____) | (_| (_) | |_) |  __/
-     *        |_|\___/| .__/  |_____/ \___\___/| .__/ \___|
-     *                | |                      | |
-     *                |_|                      |_|
-     */
-    /*** Away Mode
-     *                                   __  __           _
-     *         /\                       |  \/  |         | |
-     *        /  \__      ____ _ _   _  | \  / | ___   __| | ___
-     *       / /\ \ \ /\ / / _` | | | | | |\/| |/ _ \ / _` |/ _ \
-     *      / ____ \ V  V / (_| | |_| | | |  | | (_) | (_| |  __/
-     *     /_/    \_\_/\_/ \__,_|\__, | |_|  |_|\___/ \__,_|\___|
-     *                            __/ |
-     *                           |___/
-     */
-    let AwayModeEnabled = false,
-        SetupQuality = false;
-
-    Handlers.away_mode = async() => {
-        let button = $('#away-mode'),
-            quality = (Handlers.away_mode.quality ??= await GetQuality());
-
-        if(!defined(quality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
-            return;
-
-        await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
-
-        let enabled = AwayModeEnabled || (quality.low && !(quality.auto || quality.high || quality.source));
-
-        if(!defined(button)) {
-            let sibling, parent, before,
-                container = furnish('div'),
-                placement = (Settings.away_mode_placement ??= "under");
-
-            switch(placement) {
-                // Option 1 "over" - video overlay, play button area
-                case 'over':
-                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"][class*="right-control-group"i] > :last-child', false, parent);
-                    parent = sibling?.parentElement;
-                    before = 'first';
-                    break;
-
-                // Option 2 "under" - quick actions, follow/notify/subscribe area
-                case 'under':
-                    sibling = $('[data-test-selector="live-notifications-toggle"]');
-                    parent = sibling?.parentElement;
-                    before = 'last';
-                    break;
-            }
-
-            if(!defined(parent) || !defined(sibling))
-                return;
-
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
-            container.id = 'away-mode';
-
-            parent.insertBefore(container, parent[before + 'ElementChild']);
-
-            if(!!~['over'].indexOf(placement))
-                container.firstElementChild.classList.remove('tw-mg-l-1');
-
-            button = {
-                enabled,
-                container,
-                icon: $('svg', false, container),
-                get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { direction: 'up', left: +5 }),
-            };
-
-            button.tooltip.id = new UUID().toString().replace(/-/g, '');
-            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-
-            button.icon ??= $('svg', false, container);
-            button.icon.outerHTML = Glyphs.eye;
-            button.icon = $('svg', false, container);
-        } else {
-            let container = $('#away-mode');
-
-            button = {
-                enabled,
-                container,
-                icon: $('svg', false, container),
-                tooltip: Tooltip.get(container),
-                get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
-            };
-        }
-
-        // Change the quality when loaded
-        if(!SetupQuality)
-            SetupQuality = SetQuality(['auto','low'][+enabled]) && true;
-
-        // if(init === true) ->
-        // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+(button.container.getAttribute('twitch-tools-away-mode-enabled') === "true")] } !important;`);
-        button.icon.setAttribute('height', '20px');
-        button.icon.setAttribute('width', '20px');
-
-        button.container.onclick ??= event => {
-            let enabled = !parseBool(button.container.getAttribute('twitch-tools-away-mode-enabled'));
-
-            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-            button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
-            button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
-
-            SetQuality(['auto','low'][+enabled]);
-            SaveCache({ AwayModeEnabled: enabled });
-        };
-
-        button.container.onmouseenter ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-        };
-
-        button.container.onmouseleave ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-        };
-
-        if(!defined(EVENT_LISTENER.KEYDOWN_ALT_A))
-            document.addEventListener('keydown', EVENT_LISTENER.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
-                if(altKey && key == 'a')
-                    $('#away-mode').click();
-            });
-    };
-    Timers.away_mode = 1000;
-
-    __AwayMode__:
-    if(Settings.away_mode) {
-        RegisterJob('away_mode');
-    }
-
-    /*** Auto-claim Channel Points
-     *                    _                  _       _              _____ _                            _   _____      _       _
-     *         /\        | |                | |     (_)            / ____| |                          | | |  __ \    (_)     | |
-     *        /  \  _   _| |_ ___ ______ ___| | __ _ _ _ __ ___   | |    | |__   __ _ _ __  _ __   ___| | | |__) |__  _ _ __ | |_ ___
-     *       / /\ \| | | | __/ _ \______/ __| |/ _` | | '_ ` _ \  | |    | '_ \ / _` | '_ \| '_ \ / _ \ | |  ___/ _ \| | '_ \| __/ __|
-     *      / ____ \ |_| | || (_) |    | (__| | (_| | | | | | | | | |____| | | | (_| | | | | | | |  __/ | | |  | (_) | | | | | |_\__ \
-     *     /_/    \_\__,_|\__\___/      \___|_|\__,_|_|_| |_| |_|  \_____|_| |_|\__,_|_| |_|_| |_|\___|_| |_|   \___/|_|_| |_|\__|___/
-     *
-     *
-     */
-    Handlers.auto_claim_bonuses = () => {
-        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = (Settings.auto_claim_bonuses && $('#twitch-tools-auto-claim-bonuses')?.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
-
-        if(Enabled && ChannelPoints)
-            ChannelPoints.click();
-
-        let parent = $('div:not(#twitch-tools-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
-            tooltip = $('#twitch-tools-auto-claim-bonuses [role="tooltip"i]');
-
-        if(tooltip && parent)
-            tooltip.innerText = parent.innerText;
-
-        // Actual jobbing
-        let button = $('#twitch-tools-auto-claim-bonuses');
-
-        let comify = number => (number + '').split('').reverse.join().replace(/(\d{3})/g, '$1,').split('').reverse().join('');
-
-        if(!defined(button)) {
-            let parent    = $('[data-test-selector="community-points-summary"i]'),
-                heading   = $('.top-nav__menu > div', true).slice(-1)[0],
-                container = furnish('div');
-
-            if(!defined(parent) || !defined(heading)) {
-                // setTimeout(Initialize, 5000);
-                return;
-            }
-
-            container.innerHTML = parent.outerHTML;
-            container.id = 'twitch-tools-auto-claim-bonuses';
-            container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
-
-            heading.insertBefore(container, heading.children[1]);
-
-            $('#twitch-tools-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
-
-            let textContainer = $('[class$="animated-number"i]', false, container);
-
-            if(textContainer) {
-                let { parentElement } = textContainer;
-                parentElement.removeAttribute('data-test-selector');
-            }
-
-            button = {
-                container,
-                enabled: true,
-                text: textContainer,
-                icon: $('svg, img', false, container),
-                get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `Collecting Bonuses`, { top: -10 }),
-            };
-
-            button.tooltip.id = new UUID().toString();
-            button.text.innerText = 'ON';
-            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
-
-            button.icon ??= $('svg, img', false, container);
-
-            if(!defined($('.channel-points-icon', false, container)))
-                button.icon.outerHTML = Glyphs.channelpoints;
-
-            button.icon = $('svg, img', false, container);
-        } else {
-            let container = button,
-                textContainer = $('[class$="animated-number"i]', false, container);
-
-            button = {
-                container,
-                enabled: true,
-                text: textContainer,
-                tooltip: Tooltip.get(container),
-                icon: $('svg, img', false, container),
-                get offset() { return getOffset(container) },
-            };
-        }
-
-        button.container.onclick ??= event => {
-            let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
-
-            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
-            button.text.innerText = ['OFF','ON'][+enabled];
-            button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonuses`;
-
-            button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
-        };
-
-        button.container.onmouseenter ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-        };
-
-        button.container.onmouseleave ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-        };
-
-        // Make sure the button is all the way to the left
-        for(let max = 10; max > 0 && defined(button.container.previousElementSibling); --max)
-            button.container.parentElement.insertBefore(button.container, button.container.previousElementSibling);
-    };
-    Timers.auto_claim_bonuses = 5000;
-
-    __AutoClaimBonuses__:
-    if(Settings.auto_claim_bonuses) {
-        RegisterJob('auto_claim_bonuses');
-    }
-
-    /*** Prevent spam
-     *      _____                          _      _____
-     *     |  __ \                        | |    / ____|
-     *     | |__) | __ _____   _____ _ __ | |_  | (___  _ __   __ _ _ __ ___
-     *     |  ___/ '__/ _ \ \ / / _ \ '_ \| __|  \___ \| '_ \ / _` | '_ ` _ \
-     *     | |   | | |  __/\ V /  __/ | | | |_   ____) | |_) | (_| | | | | | |
-     *     |_|   |_|  \___| \_/ \___|_| |_|\__| |_____/| .__/ \__,_|_| |_| |_|
-     *                                                 | |
-     *                                                 |_|
-     */
-    let SPAM = new Set;
-
-    Handlers.prevent_spam = () => {};
-    Timers.prevent_spam = -1000;
-
-    __PreventSpam__:
-    if(Settings.prevent_spam) {
-        RegisterJob('prevent_spam');
-
-        LOG("Adding spam event listener...");
-        GetChat.onnewmessage = chat =>
-            chat.forEach(line => {
-                let { uuid, handle, element, message } = line;
-
-                // The same message is already posted (within X lines)
-                if( defined([...SPAM].slice(-NUMBER_OF_LINES_TO_REFERENCE_FOR_SPAM).find(item => !!~[uuid, message].indexOf(item))) ) {
-                    message = message.trim();
-
-                    if(message.length < 1)
-                        return;
-
-                    element.setAttribute('twitch-tools-spam', '\u22ee');
-                    element.setAttribute('plagiarism', true);
-
-                    new Tooltip(element, message, { direction: 'up' });
-
-                    return;
-                }
-
-                // The message contains repetitive (3 or more instances) words/phrases
-                else if(/(\w{5,})((?:.+)?\b\1)((?:.+)?\b\1)/i.test(message)) {
-                    message = message.trim();
-
-                    if(message.length < 1)
-                        return;
-
-                    element.setAttribute('twitch-tools-spam', `@${handle}`);
-                    element.setAttribute('repetitive', true);
-                }
-
-                SPAM = new Set([...SPAM, uuid, message]);
-            });
-    }
-
-    /*** Auto-Focus
-     *                    _              ______
-     *         /\        | |            |  ____|
-     *        /  \  _   _| |_ ___ ______| |__ ___   ___ _   _ ___
-     *       / /\ \| | | | __/ _ \______|  __/ _ \ / __| | | / __|
-     *      / ____ \ |_| | || (_) |     | | | (_) | (__| |_| \__ \
-     *     /_/    \_\__,_|\__\___/      |_|  \___/ \___|\__,_|___/
-     *
-     *
-     */
-    let CAPTURE_HISTORY = new Set,
-        CAPTURE_INTERVAL,
-        POLL_INTERVAL,
-        STALLED_FRAMES,
-        POSITIVE_TREND;
-
-    Handlers.auto_focus = () => {
-        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold),
-            pollInterval = parseInt(Settings.auto_focus_poll_interval),
-            imageType = Settings.auto_focus_poll_image_type,
-            detectedTrend = '\u2022';
-
-        POLL_INTERVAL ??= pollInterval * 1000;
-        STALLED_FRAMES = 0;
-
-        if(CAPTURE_HISTORY.size > 60) {
-            CAPTURE_HISTORY = [...CAPTURE_HISTORY];
-
-            CAPTURE_HISTORY.shift();
-
-            CAPTURE_HISTORY = new Set(CAPTURE_HISTORY);
-        }
-
-        CAPTURE_INTERVAL = setInterval(() => {
-            let isAdvert = $('video', true).length > 1,
-                video = $('video', true)[+isAdvert];
-
-            if(!defined(video))
-                return;
-
-            let frame = video.captureFrame(`image/${ imageType }`),
-                start = +new Date;
-
-            setTimeout(() => {
-                resemble(frame)
-                    .compareTo(video.captureFrame(`image/${ imageType }`))
-                    .ignoreColors()
-                    .scaleToSameSize()
-                    .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 255, green: 255, blue: 0 } })
-                    .onComplete(async data => {
-                        let { analysisTime, misMatchPercentage } = data,
-                            threshold = detectionThreshold,
-                            totalTime = 0,
-                            bias = [];
-
-                        analysisTime = parseInt(analysisTime);
-                        misMatchPercentage = parseFloat(misMatchPercentage);
-
-                        for(let [misMatchPercentage, analysisTime, trend] of CAPTURE_HISTORY) {
-                            threshold += parseFloat(misMatchPercentage);
-                            totalTime += analysisTime;
-                            bias.push(trend);
-                        }
-                        threshold /= CAPTURE_HISTORY.size || 1;
-
-                        let trend = misMatchPercentage > detectionThreshold? 'up': 'down';
-
-                        CAPTURE_HISTORY.add([misMatchPercentage, analysisTime, trend]);
-
-                        /* Display capture stats */
-                        let diffImg = $('img#twitch-tools-auto-focus-differences'),
-                            diffDat = $('span#twitch-tools-auto-focus-stats'),
-                            stop = +new Date;
-
-                        DisplayingAutoFocusDetails:
-                        if(Settings.display_of_video) {
-                            let parent = $('.chat-list--default');
-                            // #twilight-sticky-header-root
-
-                            if(!defined(parent))
-                                break DisplayingAutoFocusDetails;
-
-                            let { height, width } = getOffset(video);
-
-                            height = parseInt(height * .25);
-                            width = parseInt(width * .25);
-
-                            if(!defined(diffImg)) {
-                                diffImg = furnish('img#twitch-tools-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
-                                diffDat = furnish('span#twitch-tools-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden;` });
-
-                                parent.appendChild(diffImg);
-                                parent.appendChild(diffDat);
-                            }
-
-                            diffImg.src = data.getImageDataUrl?.();
-
-                            let size = diffImg.src.length,
-                                { totalVideoFrames } = video.getVideoPlaybackQuality();
-
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% ${ ({ up: '&uArr;', down: '&dArr;' })[trend] } / ${ ((stop - start) / 1000).prefix('s') } / ${ size.prefix('B', 2) }`;
-                        } else {
-                            diffImg?.remove();
-                            diffDat?.remove();
-                        }
-
-                        /* Alter other settings according to the trend */
-                        let changes = [];
-
-                        if(bias.length > 30 && FIRST_IN_LINE_TIMER > 60_000) {
-                            // Positive activity trend; disable Away Mode, pause Up Next
-                            if(!POSITIVE_TREND && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < 5) {
-                                POSITIVE_TREND = true;
-
-                                // Pause Up Next
-                                __AutoFocus_Pause_UpNext__: {
-                                    let button = $('#up-next-control'),
-                                        paused = parseBool(button?.getAttribute('paused'));
-
-                                    if(paused)
-                                        break __AutoFocus_Pause_UpNext__;
-
-                                    button?.click();
-
-                                    changes.push('pausing up next');
-                                }
-
-                                // Disable Away Mode
-                                __AutoFocus_Disable_AwayMode__: {
-                                    let button = $('#away-mode button'),
-                                        quality = await GetQuality();
-
-                                    if(quality.auto)
-                                        break __AutoFocus_Disable_AwayMode__;
-
-                                    button?.click();
-
-                                    changes.push('disabling away mode');
-                                }
-
-                                detectedTrend = '+';
-                                LOG('Positive trend detected: ' + changes.join(', '));
-                            }
-                            // Negative activity trend; enable Away Mode, resume Up Next
-                            else if(POSITIVE_TREND && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < 5) {
-                                POSITIVE_TREND = false;
-
-                                // Resume Up Next
-                                __AutoFocus_Resume_UpNext__: {
-                                    let button = $('#up-next-control'),
-                                        paused = parseBool(button?.getAttribute('paused'));
-
-                                    if(!paused)
-                                        break __AutoFocus_Resume_UpNext__;
-
-                                    button?.click();
-
-                                    changes.push('resuming up next');
-                                }
-
-                                // Enable Away Mode
-                                __AutoFocus_Enable_AwayMode__: {
-                                    let button = $('#away-mode button'),
-                                        quality = await GetQuality();
-
-                                    if(quality.low)
-                                        break __AutoFocus_Enable_AwayMode__;
-
-                                    button?.click();
-
-                                    changes.push('enabling away mode');
-                                }
-
-                                detectedTrend = '-';
-                                LOG('Negative trend detected: ' + changes.join(', '));
-                            }
-                        }
-
-                        // Auto-increase the polling time if the job isn't fast enough
-                        if(video.stalling)
-                            ++STALLED_FRAMES;
-                        else if(STALLED_FRAMES > 0)
-                            --STALLED_FRAMES;
-
-                        if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL / 2)) {
-                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's -> ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
-
-                            POLL_INTERVAL *= 1.1;
-                            STALLED_FRAMES = 0;
-
-                            RestartJob('auto_focus');
-                        }
-                    })
-            }, 100);
-        }, POLL_INTERVAL);
-    };
-    Timers.auto_focus = -1_000;
-
-    Unhandlers.auto_focus = () => {
-        $('#twitch-tools-auto-focus-differences, #twitch-tools-auto-focus-stats', true)
-            .forEach(element => element.remove());
-        clearInterval(CAPTURE_INTERVAL);
-    };
-
-    __AutoFocus__:
-    if(Settings.auto_focus) {
-        RegisterJob('auto_focus');
-
-        WARN("Auto-Focus is monitoring the stream...");
-    }
+    // End of Initialize
 };
 // End of Initialize
 
@@ -5709,6 +5950,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                             });
                         }
                     }
+
+                    results.emotes = emotes;
 
                     for(let [name, callback] of GetChat.__onnewmessage__)
                         callback(results);
@@ -5832,6 +6075,24 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
             CUSTOM_CSS = furnish('style#twitch-tools-custom-css', {},
 `
 #twitch-tools-auto-claim-bonuses .tw-z-above { display: none }
+#twitch-tools-hidden-emote-container::after {
+    content: 'Collecting emotes...\\A Do not close this window';
+    text-align: center;
+    white-space: break-spaces;
+
+    --background: #000e;
+    --text-align: center;
+
+    position: absolute;
+    --padding-top: 100%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    --height: 100%;
+    --width: 100%;
+}
+#twitch-tools-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 [animationID] a { cursor: grab }
 [animationID] a:active { cursor: grabbing }
 [twitch-tools-hidden] { display: none }
