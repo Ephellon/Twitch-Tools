@@ -60,6 +60,8 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 - *Away Mode* &mdash; Choose where the **Away Mode** button is placed
     - *Where should the __Away Mode__ button be placed?* `Do not display`
+- *Point Receipt* &mdash; Choose where the **Point Receipt** is placed
+    - *Where should the __Point Receipt__ text be placed?* `Do not display`
 - *Point Watcher* &mdash; Choose where the **Point Watcher** is placed
     - *Where should the __Point Watcher__ text be placed?* `Do not display`
 - *Watch Time* &mdash; Choose where the **Watch Time** is placed

@@ -84,6 +84,8 @@ let // These are option names. Anything else will be removed
         /* Chat & Messaging */
         // Highlight Mentions
         'highlight_mentions',
+            // Extra
+            'highlight_mentions_extra',
         // Show Pop-ups
         'highlight_mentions_popup',
         // Filter Messages

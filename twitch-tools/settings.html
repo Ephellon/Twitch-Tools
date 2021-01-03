@@ -175,8 +175,8 @@
                         Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
                     </p>
                     <select id="prevent_hosting">
-                        <option value="all" selected>Allow all channels to host</option>
-                        <option value="none">Prevent all channels from hosting</option>
+                        <option value="none" selected>Allow all channels to host</option>
+                        <option value="all">Prevent all channels from hosting</option>
                         <option value="unfollowed">Prevent unfollowed channels from being hosted</option>
                     </select>
                 </div>
@@ -189,8 +189,8 @@
                         Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
                     </p>
                     <select id="prevent_raiding">
-                        <option value="all" selected>Allow all channels to raid</option>
-                        <option value="none">Prevent all channels from raiding</option>
+                        <option value="none" selected>Allow all channels to raid</option>
+                        <option value="all">Prevent all channels from raiding</option>
                         <option value="unfollowed">Prevent unfollowed channels from being raided</option>
                     </select>
                 </div>
@@ -276,6 +276,18 @@
                     <p>
                         When someone mentions you (<code purple>@<i>username</i></code>), make the message stand out by highlighting it.
                     </p>
+                    <details>
+                        <summary subtitle="Adjust extra settings for &quot;Highlight Mentions&quot;">Extras</summary>
+
+                        <h3>General Highlighting</h3>
+                        <div class="toggle">
+                            <input id="highlight_mentions_extra" type="checkbox"/>
+                            <label for="highlight_mentions_extra"></label>
+                        </div>
+                        <p>
+                            When someone sends a general mention (<code purple>@<i>all</i></code>, <code purple>@<i>chat</i></code>, <code purple>@<i>everyone</i></code>), make the message stand out by highlighting it.
+                        </p>
+                    </details>
                 </div>
             </section>
 

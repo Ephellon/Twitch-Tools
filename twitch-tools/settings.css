@@ -420,6 +420,10 @@ details[open] summary + * {
     padding-top: .5rem;
 }
 
+details h1, details h2, details h3, details h4, details h5, details h6 {
+    padding-left: .5rem;
+}
+
 *:not([details-marker])::-webkit-details-marker {
     display: none;
 }

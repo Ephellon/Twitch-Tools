@@ -1056,7 +1056,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     for(let line of chat) {
         let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
             author = handle.toLowerCase(),
-            message = $('.chat-line__message .text-fragment, .chat-line__message img:not(.chat-badge), .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
+            message = $('.chat-line__message .text-fragment, .chat-line__message [data-a-target*="emote"i] img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
             style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
@@ -1999,7 +1999,7 @@ async function update() {
 
                     element.setAttribute('draggable', true);
                     element.setAttribute('twitch-tools-streamer-data', JSON.stringify(channel));
-                    element.ondragstart ||= event => {
+                    element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
                         event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2042,7 +2042,7 @@ async function update() {
 
                     element.setAttribute('draggable', true);
                     element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                    element.ondragstart ||= event => {
+                    element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
                         event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2085,7 +2085,7 @@ async function update() {
 
                     element.setAttribute('draggable', true);
                     element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                    element.ondragstart ||= event => {
+                    element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
                         event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2389,7 +2389,7 @@ let Initialize = async(START_OVER = false) => {
 
                     element.setAttribute('draggable', true);
                     element.setAttribute('twitch-tools-streamer-data', JSON.stringify(channel));
-                    element.ondragstart ||= event => {
+                    element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
                         event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2596,7 +2596,7 @@ let Initialize = async(START_OVER = false) => {
 
                         element.setAttribute('draggable', true);
                         element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                        element.ondragstart ||= event => {
+                        element.ondragstart ??= event => {
                             let { currentTarget } = event;
 
                             event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2646,7 +2646,7 @@ let Initialize = async(START_OVER = false) => {
 
                         element.setAttribute('draggable', true);
                         element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                        element.ondragstart ||= event => {
+                        element.ondragstart ??= event => {
                             let { currentTarget } = event;
 
                             event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2693,7 +2693,7 @@ let Initialize = async(START_OVER = false) => {
 
                         element.setAttribute('draggable', true);
                         element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
-                        element.ondragstart ||= event => {
+                        element.ondragstart ??= event => {
                             let { currentTarget } = event;
 
                             event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2730,7 +2730,7 @@ let Initialize = async(START_OVER = false) => {
 
         element.setAttribute('draggable', true);
         element.setAttribute('twitch-tools-streamer-data', JSON.stringify({ href, icon, live, name }));
-        element.ondragstart = event => {
+        element.ondragstart ??= event => {
             let { currentTarget } = event;
 
             event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
@@ -2940,7 +2940,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(bias.length > 30 && FIRST_IN_LINE_TIMER > 60_000) {
                             // Positive activity trend; disable Away Mode, pause Up Next
-                            if(!POSITIVE_TREND && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < 5) {
+                            if(!POSITIVE_TREND && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
 
                                 // Pause Up Next
@@ -2973,7 +2973,7 @@ let Initialize = async(START_OVER = false) => {
                                 LOG('Positive trend detected: ' + changes.join(', '));
                             }
                             // Negative activity trend; enable Away Mode, resume Up Next
-                            else if(POSITIVE_TREND && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < 10) {
+                            else if(POSITIVE_TREND && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
                                 POSITIVE_TREND = false;
 
                                 // Resume Up Next
@@ -4164,13 +4164,18 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('auto_follow_raids');
     }
 
-    __AutoFollowTime__:
-    if(Settings.auto_follow_time || Settings.auto_follow_all) {
+    Handlers.auto_follow_time = () => {
         let { like, follow } = STREAMER,
             mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
         if(!like)
             setTimeout(follow, mins * 60_000);
+    };
+    Timers.auto_follow_time = 1000;
+
+    __AutoFollowTime__:
+    if(Settings.auto_follow_time || Settings.auto_follow_all) {
+        RegisterJob('auto_follow_time');
     }
 
     /*** Kill Extensions
@@ -4225,7 +4230,7 @@ let Initialize = async(START_OVER = false) => {
         host_stopper:
         if(hosting && defined(next)) {
             // Ignore followed channels
-            if(!!~["unfollowed", "none"].indexOf(Settings.prevent_hosting)) {
+            if(!!~["unfollowed", "all"].indexOf(Settings.prevent_hosting)) {
                 let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
@@ -4251,7 +4256,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_hosting = 5000;
 
     __PreventHosting__:
-    if(Settings.prevent_hosting != "all") {
+    if(Settings.prevent_hosting != "none") {
         RegisterJob('prevent_hosting');
     }
 
@@ -4285,7 +4290,7 @@ let Initialize = async(START_OVER = false) => {
         raid_stopper:
         if((raiding || raided) && defined(next)) {
             // Ignore followed channels
-            if(!!~["unfollowed", "none"].indexOf(Settings.prevent_raiding)) {
+            if(!!~["unfollowed", "all"].indexOf(Settings.prevent_raiding)) {
                 // The channel being raided (to) is already in "followed." No need to leave
                 if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
                     CONTINUE_RAIDING = true;
@@ -4314,7 +4319,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_raiding = 5000;
 
     __PreventRaiding__:
-    if(Settings.prevent_raiding != "all") {
+    if(Settings.prevent_raiding != "none") {
         RegisterJob('prevent_raiding');
     }
 
@@ -4418,7 +4423,14 @@ let Initialize = async(START_OVER = false) => {
                                     let name = event.currentTarget.getAttribute('name'),
                                         chat = $('[data-a-target="chat-input"]');
 
-                                    chat.innerHTML = (chat.value += `${name} `);
+                                    // chat.innerHTML = (chat.value += `${name} `);
+                                },
+
+                                ondragstart: event => {
+                                    let { currentTarget } = event;
+
+                                    event.dataTransfer.setData('text/plain', currentTarget.getAttribute('name').trim() + ' ');
+                                    event.dataTransfer.dropEffect = 'move';
                                 },
                             },
 
@@ -4430,8 +4442,7 @@ let Initialize = async(START_OVER = false) => {
                 )
             );
 
-            let emoteTooltip =
-            new Tooltip(emoteContainer, name);
+            let emoteTooltip = new Tooltip(emoteContainer, name);
 
             return emoteContainer;
         };
@@ -4450,7 +4461,7 @@ let Initialize = async(START_OVER = false) => {
         if(defined(emoteSection))
             return;
 
-        let parent = $('.emote-picker__scroll-container > *');
+        let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
         if(!defined(parent))
             return RestartJob('convert_emotes');
@@ -4462,13 +4473,26 @@ let Initialize = async(START_OVER = false) => {
             caughtEmotes.push({ name, src });
 
         emoteSection =
-        furnish('div#twitch-tools-captured-emotes.emote-picker__content-block', {},
+        furnish('div#twitch-tools-captured-emotes.emote-picker__content-block',
+            {
+                ondragover: event => {
+                    event.preventDefault();
+                    // event.dataTransfer.dropEffect = 'move';
+                },
+
+                ondrop: async event => {
+                    event.preventDefault();
+
+                    return event.dataTransfer.getData('text/plain');
+                },
+            },
+
             furnish('div.tw-pd-b-1.tw-pd-t-05.tw-pd-x-1.tw-relative', {},
                 // Emote Section Header
                 furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
-                    furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {},
-                        "Captured Emotes"
-                    )
+                    furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {
+                        innerHTML: "Captured Emotes &mdash; Drag to use"
+                    })
                 ),
 
                 // Emote Section Container
@@ -4478,7 +4502,7 @@ let Initialize = async(START_OVER = false) => {
 
         parent.insertBefore(emoteSection, parent.firstChild);
     };
-    Timers.convert_emotes = 15_000;
+    Timers.convert_emotes = 5000;
 
     __ConvertEmotes__:
     if(Settings.convert_emotes) {
@@ -4545,7 +4569,7 @@ let Initialize = async(START_OVER = false) => {
                 Queue.emotes.push(line.uuid);
 
                 for(let [emote, url] of EMOTES)
-                    if((regexp = RegExp(emote.replace(/(\W)/g, '\\$1'), 'g')).test(line.message)) {
+                    if((regexp = RegExp('\\b' + emote.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
                         let alt = emote,
                             src = '//static-cdn.jtvnw.net/emoticons/v1/' + url.split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
                             srcset;
@@ -4567,16 +4591,17 @@ let Initialize = async(START_OVER = false) => {
                             )
                         );
 
-                        new Tooltip(img, alt);
-
                         let { element } = line;
 
-                        $('.text-fragment:not([twitch-tools-converted-emote])', true, element).map(fragment => {
-                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', innerHTML: img.innerHTML });
+                        alt = alt.replace(/\s+/g, '_');
 
-                            new Tooltip(container, alt);
+                        $(`.text-fragment:not([twitch-tools-converted-emotes~="${alt}"])`, true, element).map(fragment => {
+                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', innerHTML: img.innerHTML, title: alt }),
+                                converted = (fragment.getAttribute('twitch-tools-converted-emotes') ?? "").split(' ');
 
-                            fragment.setAttribute('twitch-tools-converted-emote', alt);
+                            converted.push(alt);
+
+                            fragment.setAttribute('twitch-tools-converted-emotes', converted.join(' ').trim());
                             fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
                         });
                     }
@@ -4827,7 +4852,12 @@ let Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_mentions = () => {
-        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
+        let usernames = [USERNAME];
+
+        if(Settings.highlight_mentions_extra)
+            usernames.push('all', 'chat', 'everyone');
+
+        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
 
         for(let line of chat)
             if(!~Queue.messages.indexOf(line.uuid)) {
@@ -5420,7 +5450,7 @@ let Initialize = async(START_OVER = false) => {
 
             points_receipt.setAttribute('receipt', receipt);
 
-            points_receipt.innerHTML = `&${'du'[+(receipt > 0)]}arr; ${receipt.prefix(Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px' }))}`;
+            points_receipt.innerHTML = `&${'du'[+(receipt > 0)]}arr; ${Math.abs(receipt).prefix(Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px' }))}`;
 
             let glyph = $('svg', false, points_receipt);
 
@@ -5428,6 +5458,10 @@ let Initialize = async(START_OVER = false) => {
         }, 1000);
     };
     Timers.points_receipt_placecment = -1500;
+
+    Unhandlers.points_receipt_placecment = () => {
+        INITIAL_POINTS = 0;
+    };
 
     __PointsReceiptPlacement__:
     if(Settings.points_receipt_placecment != "null") {
@@ -5909,7 +5943,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
                             let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
                                 author = handle.toLowerCase(),
-                                message = $('.chat-line__message .text-fragment, .chat-line__message img:not(.chat-badge), .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
+                                message = $('.chat-line__message .text-fragment, .chat-line__message [data-a-target*="emote"i] img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
                                 mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                 badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
                                 style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
@@ -6023,7 +6057,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                     }
                 }),
 
-                pill = $('[data-a-target^="threads-box-"i]').previousElementSibling,
+                pill = $('[data-a-target^="threads-box-"i]')?.previousElementSibling,
                 pill_observer = new MutationObserver(mutations => {
                     mutations = mutations.filter(({ type }) => type == 'childList');
 
