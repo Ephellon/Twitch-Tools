@@ -172,7 +172,8 @@ class Popup {
             D = 'Close',
             A = event => $('#twitch-tools-popup')?.remove(),
             C = event => $('#twitch-tools-popup')?.remove(),
-            U, S, M, G, T, W;
+            R = '_self',
+            U, S, M, G, T, W, H;
 
         let uuid = U = UUID.from(subject).toString(),
             existing = Popup.#POPUPS.get(subject);
@@ -209,6 +210,10 @@ class Popup {
                     A = options[N = n] ?? A;
             else if(/\b(figure|(?:fav)?icon|image|picture|profile|symbol)\b/i.test(n))
                 I = options[n] ?? I;
+            else if(/\b(href|link)\b/i.test(n))
+                H = options[n] ?? H;
+            else if(/\b(target|to)\b/i.test(n))
+                H = options[n] ?? H;
 
         let p =
         f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { 'twitch-tools-id': subject.replace(/\s+/g, '-'), style: 'z-index:9; bottom:10rem; right:1rem' },
@@ -217,7 +222,7 @@ class Popup {
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
                             style: 'background-color:#387aff!important;'
                         },
-                        f('div', {},
+                        f('a', { href: H, target: R, style: 'text-decoration:none' },
                             f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
                                 f('div.tw-flex.tw-flex-nowrap.tw-pd-l-1.tw-pd-y-1', {},
                                     f('div', {},
@@ -231,7 +236,7 @@ class Popup {
                                     ),
                                     f('div.tw-flex.tw-flex-column.tw-flex-nowrap.tw-overflow-hidden.tw-pd-x-1', {},
                                         f('div.tw-full-height.tw-overflow-hidden', {},
-                                            f('span', {},
+                                            f('span.tw-c-text-alt', {},
                                                 f('div', {},
                                                     S = f('p', {}, subject)
                                                 )
@@ -1056,18 +1061,31 @@ function GetChat(lines = 30, keepEmotes = false) {
     for(let line of chat) {
         let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
             author = handle.toLowerCase(),
-            message = $('.chat-line__message .text-fragment, .chat-line__message [data-a-target*="emote"i] img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
+            message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
             style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
             reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
 
-        let [raw] = message.splice(0, 1);
-
-        raw = raw?.innerText?.trim();
+        let raw = line.innerText?.trim();
 
         message = message
-            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e.alt))(element) }:`: element.innerText)
+            .map(element => {
+                let string;
+
+                switch(element.dataset.testSelector) {
+                    case 'emote-button':
+                        if(keepEmotes)
+                            string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                        break;
+
+                    default:
+                        string = element.innerText;
+                        break;
+                }
+
+                return string;
+            })
             .filter(defined)
             .join(' ')
             .trim()
@@ -1102,7 +1120,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     results.bullets = [];
 
     for(let bullet of bullets) {
-        let message = $('.mention-fragment, .chat-line__username, .chat-line__message .text-fragment, .chat-line__message img:not(.chat-badge), .chat-line__message a, p, [class^="tw-c-text-"i]', true, bullet),
+        let message = $('[data-test-selector="chat-message-separator"i] ~ *', true, bullet),
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             subject = (subject =>
                 /\braid/i.test(subject)?                'raid': // Incoming raid
@@ -1116,12 +1134,25 @@ function GetChat(lines = 30, keepEmotes = false) {
         if(!defined(subject) && message.length < 1)
             continue;
 
-        let [raw] = message.splice(0, 1);
-
-        raw = raw?.innerText?.trim();
+        let raw = bullet.innerText?.trim();
 
         message = message
-            .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e.alt))(element) }:`: element.innerText)
+            .map(element => {
+                let string;
+
+                switch(element.dataset.testSelector) {
+                    case 'emote-button':
+                        if(keepEmotes)
+                            string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                        break;
+
+                    default:
+                        string = element.innerText;
+                        break;
+                }
+
+                return string;
+            })
             .filter(defined)
             .join(' ')
             .trim()
@@ -2437,7 +2468,15 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get game() {
-            return $('[data-a-target$="game-link"i], [data-a-target$="game-name"i]')?.textContent
+            let element = $('[data-a-target$="game-link"i], [data-a-target$="game-name"i]'),
+                name = element?.textContent,
+                game = new String(name ?? "");
+
+            Object.defineProperties(game, {
+                href: { value: $('[href]', false, element).href }
+            });
+
+            return game;
         },
 
         href: parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href,
@@ -2767,6 +2806,7 @@ let Initialize = async(START_OVER = false) => {
                 value = (defined(videoID)? videoID: channelName),
                 token = cookies['auth-token'];
 
+            // Get Twitch specific data
             await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
                 .then(response => response.json())
                 .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
@@ -2789,6 +2829,96 @@ let Initialize = async(START_OVER = false) => {
                         STREAMER[key] = TWITCH_API[conversion[key]];
                 })
                 .catch(ERROR);
+
+            /** Get Twitch analytics data
+             * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
+             * averageGamesPerStream:number - the average number of games played (per stream)
+             * dailyBroadcastTime:number    - the average number of hours streamed (per day)
+             * followersPerHour:number      - the average number of followers gained (per hour)
+             * followersPerStream:number    - the average number of followers gained (per stream)
+             * followersToDate:number       - the total number of followers
+             * hoursWatchedDaily:number     - the average number of hours watched (per day)
+             * totalGamesStreamed:number    - the number of games streamed
+             * viewsPerHour:number          - the average number of views (per hour)
+             * viewsPerStream:number        - the average number of views (per stream)
+             * viewsToDate:number           - the total number of views
+             */
+            // First, attempt to retrieve the cached data (no older than 12h)
+            try {
+                await LoadCache(`${ STREAMER.name }.data`, cache => {
+                    let data = cache[`${ STREAMER.name }.data`],
+                        { dataRetrievedAt } = data;
+
+                    dataRetrievedAt ||= 0;
+
+                    // Only refresh every 12h
+                    if((dataRetrievedAt + 43_200_000) > +new Date)
+                        STREAMER.data = data;
+                    else
+                        throw "The data likely expired";
+
+                    LOG(`Cached details about "${ STREAMER.name }"`, data);
+                });
+            } catch(exception) {
+                // Proper CORS request to fetch the HTML data
+                await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, {
+                    mode: 'cors',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', },
+                })
+                    .then(text => text.text())
+                    // Conversion => Text -> HTML -> Element -> JSON
+                    .then(html => {
+                        let doc = (new DOMParser).parseFromString(html, 'text/html'),
+                            body = doc.body;
+
+                        let data = {};
+
+                        [...doc.querySelectorAll('#report .table tr')]
+                            .map(tr => {
+                                let [name, value] = tr.querySelectorAll('td');
+
+                                // Set initial name
+                                name = name
+                                    .innerText
+                                    .toLowerCase();
+
+                                // Set initial value, and adjust name
+                                value = value
+                                    .innerText
+                                    .trim()
+                                    .replace(/\s+/g, ' ')
+                                    .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
+                                        name += " per " + $1;
+
+                                        return '';
+                                    });
+
+                                // Set final value
+                                value = (
+                                    /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
+                                        parseFloat(value):
+                                    value
+                                );
+
+                                // Set final name
+                                name = name
+                                    .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
+
+                                // Set property
+                                data[name] = value;
+                            });
+
+                        LOG(`Details about "${ STREAMER.name }"`, data);
+
+                        return STREAMER.data = data;
+                    })
+                    .catch(WARN)
+                    .then(data => {
+                        data = { ...data, dataRetrievedAt: +new Date };
+
+                        SaveCache({ [`${ STREAMER.name }.data`]: data });
+                    });
+            }
         }
     };
 
@@ -3350,25 +3480,16 @@ let Initialize = async(START_OVER = false) => {
                 LOG('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER | 0), FIRST_IN_LINE_HREF, new Date);
 
                 let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
-                    Icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
+                    icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
+                    href: FIRST_IN_LINE_HREF,
 
-                    Goto: () => {
-                        let existing = $('#twitch-tools-popup'),
-                            [thisJob] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+                    Hide: () => {
+                        let existing = $('#twitch-tools-popup');
 
                         if(defined(existing))
                             existing.remove();
-                        LOG('Heading to stream now', thisJob);
-
-                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                        SaveCache({ FIRST_IN_LINE_TIMER });
-
-                        [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-
-                        open(FIRST_IN_LINE_HREF, '_self');
-
-                        FIRST_IN_LINE_HREF = undefined;
                     },
+
                     Cancel: () => {
                         let existing = $('#twitch-tools-popup'),
                             removal = $('button[connected-to][data-test-selector$="delete"i]'),
@@ -4916,20 +5037,6 @@ let Initialize = async(START_OVER = false) => {
                         reply?.click();
                     },
                 });
-
-                // new Popup(`@${ author } sent you a message`, message, {
-                //     Reply: event => {
-                //         let chatbox = $('.chat-input__textarea textarea'),
-                //             existing = $('#twitch-tools-popup');
-                //
-                //         if(defined(chatbox))
-                //             chatbox.focus();
-                //         if(defined(existing))
-                //             existing.remove();
-                //
-                //         reply?.click();
-                //     }
-                // });
             }
     };
     Timers.highlight_mentions_popup = 500;
@@ -5336,12 +5443,13 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(container))
             return REWARDS_CALCULATOR_TOOLTIP = null;
 
-        let averageBroadcastTime = 4.5, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
-            pointsEarnedPerHour = 280; // https://help.twitch.tv/s/article/channel-points-guide
+        let averageBroadcastTime = STREAMER.data?.dailyBroadcastTime ?? 4.5, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
+            activeDaysPerWeek = STREAMER.data?.activeDaysPerWeek ?? 5,
+            pointsEarnedPerHour = 240; // https://help.twitch.tv/s/article/channel-points-guide
 
         let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container),
-            needed,
-            timeNeeded;
+            estimated,
+            timeEstimated;
 
         let hours = parseInt(need / (pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER)),
             days = hours / 24,
@@ -5350,28 +5458,28 @@ let Initialize = async(START_OVER = false) => {
             years = months / 12;
 
         if(hours) {
-            needed = 'hour';
-            timeNeeded = hours;
+            estimated = 'hour';
+            timeEstimated = hours;
         } if(hours > 48) {
-            needed = 'day';
-            timeNeeded = days;
+            estimated = 'day';
+            timeEstimated = days * (24 / averageBroadcastTime);
         } if(days > 10) {
-            needed = 'week';
-            timeNeeded = weeks;
+            estimated = 'week';
+            timeEstimated = weeks * (7 / activeDaysPerWeek);
         } if(days > 30) {
-            needed = 'month';
-            timeNeeded = months;
+            estimated = 'month';
+            timeEstimated = months;
         } if(months > 12) {
-            needed = 'year';
-            timeNeeded = years;
+            estimated = 'year';
+            timeEstimated = years;
         }
 
-        timeNeeded = parseInt(timeNeeded);
+        timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
             hours < 1?
-                `less than an hour needed`:
-            `${ comify(timeNeeded) } ${ needed + (timeNeeded != 1? 's': '') } needed`;
+                `less than an hour estimated`:
+            `${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') } estimated`;
     };
     Timers.rewards_calculator = 100;
 
@@ -5411,10 +5519,16 @@ let Initialize = async(START_OVER = false) => {
      *                                                        |_|
      */
     let INITIAL_POINTS,
-        COUNTING_POINTS;
+        COUNTING_POINTS,
+        COUNTING_HREF = NORMALIZED_PATHNAME;
 
     Handlers.points_receipt_placecment = () => {
-        INITIAL_POINTS = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0);
+        if(COUNTING_HREF == NORMALIZED_PATHNAME) {
+            INITIAL_POINTS = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0);
+        } else {
+            COUNTING_HREF = NORMALIZED_PATHNAME;
+            INITIAL_POINTS = 0;
+        }
 
         let placement;
 
@@ -5943,18 +6057,31 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
                             let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
                                 author = handle.toLowerCase(),
-                                message = $('.chat-line__message .text-fragment, .chat-line__message [data-a-target*="emote"i] img, .chat-line__message a, p, div[class*="inline"]:first-child:last-child', true, line),
+                                message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
                                 mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                 badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
                                 style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
                                 reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
 
-                            let [raw] = message.splice(0, 1);
-
-                            raw = raw?.innerText?.trim();
+                            let raw = line.innerText?.trim();
 
                             message = message
-                                .map(element => element.alt && keepEmotes? `:${ (e=>(emotes[e.alt]=e.src,e.alt))(element) }:`: element.innerText)
+                                .map(element => {
+                                    let string;
+
+                                    switch(element.dataset.testSelector) {
+                                        case 'emote-button':
+                                            if(keepEmotes)
+                                                string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                                            break;
+
+                                        default:
+                                            string = element.innerText;
+                                            break;
+                                    }
+
+                                    return string;
+                                })
                                 .filter(defined)
                                 .join(' ')
                                 .trim()
@@ -6026,13 +6153,28 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
                                     let handle = $('[data-a-target="whisper-message-name"i]', false, node).innerText,
                                         author = handle.toLowerCase(),
-                                        message = $('.text-fragment', true, node),
+                                        message = $('[data-test-selector="separator"i] ~ *', true, node),
                                         style = node.getAttribute('style');
 
                                     let raw = node.innerText;
 
                                     message = message
-                                        .map(element => element.alt && keepEmotes? `:${ element.alt }:`: element.innerText)
+                                        .map(element => {
+                                            let string;
+
+                                            switch(element.dataset.aTarget) {
+                                                case 'emote-name':
+                                                    if(keepEmotes)
+                                                        string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                                                    break;
+
+                                                default:
+                                                    string = element.innerText;
+                                                    break;
+                                            }
+
+                                            return string;
+                                        })
                                         .filter(defined)
                                         .join(' ')
                                         .trim()

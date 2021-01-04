@@ -339,7 +339,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 details {
-    background-color: var(--black);
+    background-color: var(--background-dark);
     border: 1px solid var(--purple);
     border-radius: 3px;
     display: flex;
@@ -530,7 +530,8 @@ hr {
 }
 
 code, [code], [type^="code"i] {
-    background: var(--black);
+    background: var(--background-light);
+    color: var(--text-light);
     border-radius: 3px;
     box-shadow: none;
     box-sizing: border-box;
