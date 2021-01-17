@@ -54,6 +54,7 @@ Number.prototype.prefix = function prefix(unit = '', decimalPlaces, format = "me
         prefix = '';
 
     number = Math.abs(number);
+    decimalPlaces ??= false;
 
     let system = {};
 
@@ -93,5 +94,5 @@ Number.prototype.prefix = function prefix(unit = '', decimalPlaces, format = "me
         }
     }
 
-    return sign + (decimalPlaces? number.toFixed(decimalPlaces): number) + prefix + unit;
+    return sign + (decimalPlaces !== false? number.toFixed(decimalPlaces): number) + prefix + unit;
 }

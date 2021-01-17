@@ -49,13 +49,16 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
         if(!defined(tabs))
             return;
 
-        Storage.set({ onInstalledReason: reason });
+        Storage.set({ onInstalledReason: reason, chromeUpdateAvailable: false, githubUpdateAvailable: false });
 
         if(reason == 'install')
             Container.tabs.create({ url: 'settings.html' });
         else
             for(let tab of tabs)
                 Container.tabs.reload(tab.id);
+
+        // Update the badge text when there's an update available
+        Container.browserAction.setBadgeText({ text: '' });
     });
 });
 
@@ -78,3 +81,33 @@ let TabWatcherInterval = setInterval(() => {
                 UnloadedTabs.add(tab.id);
     });
 }, 1000);
+
+// Update the badge text when there's an update available
+Container.browserAction.setBadgeBackgroundColor({ color: '#9147ff' });
+
+Storage.onChanged.addListener(changes => {
+    // Use this to set the badge text when there's an update available
+        // if installed from Chrome, wait for an auto-update
+        // if installed from GitHub, update the badge text
+    let installedFromWebstore = (Runtime.id === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
+
+    TopScope:
+    for(let key in changes) {
+        let change = changes[key],
+            { oldValue, newValue } = change;
+
+        switch(key) {
+            case 'chromeUpdateAvailable':
+                if(newValue === true && installedFromWebstore)
+                    Container.browserAction.setBadgeText({ text: '\u21d1' });
+                break TopScope;
+
+            case 'githubUpdateAvailable':
+                if(newValue === true && !installedFromWebstore)
+                    Container.browserAction.setBadgeText({ text: '\u21d1' });
+                break TopScope;
+
+            default: continue;
+        }
+    }
+});

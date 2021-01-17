@@ -1482,6 +1482,7 @@ function parseCoin(amount = '') {
     // parseBool(*:value) -> Boolean
 function parseBool(value = null) {
     switch(value) {
+        case "undefined":
         case undefined:
         case "false":
         case "null":
@@ -1497,7 +1498,7 @@ function parseBool(value = null) {
             return false;
 
         default:
-            return true;
+            return (!!~["bigint", "number"].indexOf(typeof value)? !isNaN(value): true);
     }
 }
 
@@ -1924,16 +1925,18 @@ let Glyphs = {
     x: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>`,
 
     modify(glyph, attributes) {
+        let XMLParser = Glyphs.DOMParser ??= new DOMParser;
+
+        let XML = XMLParser.parseFromString((glyph in Glyphs? Glyphs[glyph]: glyph), 'text/xml'),
+            SVG = $('svg', false, XML);
+
         for(let attribute in attributes) {
             let value = attributes[attribute];
 
-            glyph = glyph.replace(
-                RegExp(`(${ attribute })=(["'])[^\\2]*?\\2`, 'ig'),
-                `$1=$2${value}$2`
-            );
+            SVG.setAttribute(attribute, value);
         }
 
-        return glyph;
+        return SVG.outerHTML;
     },
 };
 
@@ -1949,7 +1952,7 @@ let nth = n => (n + '')
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object#Channel, index:number, channels:array) -> boolean
 let uniqueChannels = (channel, index, channels) =>
-    channels.findIndex(ch => ch.name === channel.name) == index;
+    channels.filter(defined).findIndex(ch => ch.name === channel?.name) == index;
 
 // Returns whether or not a channel is live (used with `Array..filter`)
     // isLive(channel:object#Channel) -> boolean
@@ -2469,11 +2472,11 @@ let Initialize = async(START_OVER = false) => {
 
         get game() {
             let element = $('[data-a-target$="game-link"i], [data-a-target$="game-name"i]'),
-                name = element?.textContent,
+                name = element?.innerText,
                 game = new String(name ?? "");
 
             Object.defineProperties(game, {
-                href: { value: $('[href]', false, element).href }
+                href: { value: element.href }
             });
 
             return game;
@@ -2488,7 +2491,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get live() {
-            return SPECIAL_MODE || (defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] .tw-channel-status-text-indicator`)) && !defined($(`[class*="offline-recommendations"i]`)))
+            return SPECIAL_MODE || (defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommendations"i]`)))
         },
 
         name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent,
@@ -2576,7 +2579,8 @@ let Initialize = async(START_OVER = false) => {
             )
     ];
 
-    __GetAllChannels__: {
+    __GetAllChannels__:
+    if(true) {
         let element;
 
         // Is the nav open?
@@ -2763,7 +2767,7 @@ let Initialize = async(START_OVER = false) => {
     // Every channel
     ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 
-    if(STREAMER) {
+    if(defined(STREAMER)) {
         let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
             { href, icon, live, name } = STREAMER;
 
@@ -2778,7 +2782,7 @@ let Initialize = async(START_OVER = false) => {
 
         /* Attempt to use the Twitch API */
         __FineDetails__:
-        if(Settings.fine_details) {
+        if(parseBool(Settings.fine_details)) {
             // Get the cookie values
             let cookies = {};
 
@@ -2812,7 +2816,7 @@ let Initialize = async(START_OVER = false) => {
                 .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
                 .then(json => {
                     if(!defined(json))
-                        return;
+                        throw "Fine Detail JSON data could not be parsed...";
 
                     LOG('Getting fine details...', { [type]: value, cookies }, json);
 
@@ -2845,8 +2849,8 @@ let Initialize = async(START_OVER = false) => {
              */
             // First, attempt to retrieve the cached data (no older than 12h)
             try {
-                await LoadCache(`${ STREAMER.name }.data`, cache => {
-                    let data = cache[`${ STREAMER.name }.data`],
+                await LoadCache(`data/${ STREAMER.name }`, cache => {
+                    let data = cache[`data/${ STREAMER.name }`],
                         { dataRetrievedAt } = data;
 
                     dataRetrievedAt ||= 0;
@@ -2861,10 +2865,7 @@ let Initialize = async(START_OVER = false) => {
                 });
             } catch(exception) {
                 // Proper CORS request to fetch the HTML data
-                await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, {
-                    mode: 'cors',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', },
-                })
+                await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
                     .then(text => text.text())
                     // Conversion => Text -> HTML -> Element -> JSON
                     .then(html => {
@@ -2916,7 +2917,7 @@ let Initialize = async(START_OVER = false) => {
                     .then(data => {
                         data = { ...data, dataRetrievedAt: +new Date };
 
-                        SaveCache({ [`${ STREAMER.name }.data`]: data });
+                        SaveCache({ [`data/${ STREAMER.name }`]: data });
                     });
             }
         }
@@ -2960,7 +2961,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_accept_mature = -1000;
 
     __AutoMatureAccept__:
-    if(Settings.auto_accept_mature) {
+    if(parseBool(Settings.auto_accept_mature)) {
         RegisterJob('auto_accept_mature');
     }
 
@@ -3059,7 +3060,8 @@ let Initialize = async(START_OVER = false) => {
                             let size = diffImg.src.length,
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% ${ ({ up: '&uArr;', down: '&dArr;' })[trend] } / ${ ((stop - start) / 1000).prefix('s') } / ${ size.prefix('B', 2) }`;
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% &${ trend[0] }Arr; / ${ ((stop - start) / 1000).prefix('s') } / ${ size.prefix('B', 2) }`;
+                            diffDat.title = `Frame-No / Overall-Trend Change-Percentage Current-Trend / Time-Taken-to-Calculate-Changes / Size-of-Changes-in-Bytes`;
                         } else {
                             diffImg?.remove();
                             diffDat?.remove();
@@ -3088,7 +3090,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Disable Away Mode
                                 __AutoFocus_Disable_AwayMode__: {
-                                    let button = $('#away-mode button'),
+                                    let button = $('#away-mode'),
                                         quality = await GetQuality();
 
                                     if(quality.auto)
@@ -3121,7 +3123,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Enable Away Mode
                                 __AutoFocus_Enable_AwayMode__: {
-                                    let button = $('#away-mode button'),
+                                    let button = $('#away-mode'),
                                         quality = await GetQuality();
 
                                     if(quality.low)
@@ -3164,7 +3166,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __AutoFocus__:
-    if(Settings.auto_focus) {
+    if(parseBool(Settings.auto_focus)) {
         RegisterJob('auto_focus');
 
         WARN("Auto-Focus is monitoring the stream...");
@@ -3180,14 +3182,15 @@ let Initialize = async(START_OVER = false) => {
      *                            __/ |
      *                           |___/
      */
-    let AwayModeEnabled = false,
+    let AwayModeButton,
+        AwayModeEnabled = false,
         SetupQuality = false;
 
     Handlers.away_mode = async() => {
         let button = $('#away-mode'),
             quality = (Handlers.away_mode.quality ??= await GetQuality());
 
-        if(!defined(quality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
+        if(defined(button) || !defined(quality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
             return;
 
         await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
@@ -3265,22 +3268,22 @@ let Initialize = async(START_OVER = false) => {
         button.icon.setAttribute('width', '20px');
 
         button.container.onclick ??= event => {
-            let enabled = !parseBool(button.container.getAttribute('twitch-tools-away-mode-enabled'));
+            let enabled = !parseBool(AwayModeButton.container.getAttribute('twitch-tools-away-mode-enabled'));
 
-            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
-            button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
-            button.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
+            AwayModeButton.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+            AwayModeButton.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
+            AwayModeButton.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
             SetQuality(['auto','low'][+enabled]);
             SaveCache({ AwayModeEnabled: enabled });
         };
 
         button.container.onmouseenter ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+            AwayModeButton.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
         };
 
         button.container.onmouseleave ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+            AwayModeButton.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
         };
 
         if(!defined(EVENT_LISTENER.KEYDOWN_ALT_A))
@@ -3288,11 +3291,13 @@ let Initialize = async(START_OVER = false) => {
                 if(altKey && key == 'a')
                     $('#away-mode').click();
             });
+
+        AwayModeButton = button;
     };
-    Timers.away_mode = 1000;
+    Timers.away_mode = 5_000;
 
     __AwayMode__:
-    if(Settings.away_mode) {
+    if(parseBool(Settings.away_mode)) {
         RegisterJob('away_mode');
     }
 
@@ -3402,10 +3407,10 @@ let Initialize = async(START_OVER = false) => {
         for(let max = 10; max > 0 && defined(button.container.previousElementSibling); --max)
             button.container.parentElement.insertBefore(button.container, button.container.previousElementSibling);
     };
-    Timers.auto_claim_bonuses = 5000;
+    Timers.auto_claim_bonuses = 5_000;
 
     __AutoClaimBonuses__:
-    if(Settings.auto_claim_bonuses) {
+    if(parseBool(Settings.auto_claim_bonuses)) {
         RegisterJob('auto_claim_bonuses');
     }
 
@@ -3436,11 +3441,11 @@ let Initialize = async(START_OVER = false) => {
 
     // First in Line wait time
     FIRST_IN_LINE_WAIT_TIME = parseInt(
-        Settings.first_in_line?
+        parseBool(Settings.first_in_line)?
             Settings.first_in_line_time_minutes:
-        Settings.first_in_line_plus?
+        parseBool(Settings.first_in_line_plus)?
             Settings.first_in_line_plus_time_minutes:
-        Settings.first_in_line_all?
+        parseBool(Settings.first_in_line_all)?
             Settings.first_in_line_all_time_minutes:
         0
     ) | 0;
@@ -3651,7 +3656,7 @@ let Initialize = async(START_OVER = false) => {
         // Load cache
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
-            FIRST_IN_LINE_BOOST = (parseBool(cache.FIRST_IN_LINE_BOOST) ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
+            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 1;
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
 
             LOG(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
@@ -4114,10 +4119,10 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __FirstInLine__:
-    if(Settings.first_in_line || Settings.first_in_line_plus || Settings.first_in_line_all) {
+    if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
-            FIRST_IN_LINE_BOOST = (parseBool(cache.FIRST_IN_LINE_BOOST) ?? false) && ALL_FIRST_IN_LINE_JOBS.length > 1;
+            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 1;
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
         });
 
@@ -4251,7 +4256,7 @@ let Initialize = async(START_OVER = false) => {
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
     __FirstInLinePlus__:
-    if(Settings.first_in_line_plus || Settings.first_in_line_all) {
+    if(parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         RegisterJob('first_in_line_plus');
     }
 
@@ -4281,7 +4286,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_follow_raids = 1000;
 
     __AutoFollowRaid__:
-    if(Settings.auto_follow_raids || Settings.auto_follow_all) {
+    if(parseBool(Settings.auto_follow_raids) || parseBool(Settings.auto_follow_all)) {
         RegisterJob('auto_follow_raids');
     }
 
@@ -4295,7 +4300,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_follow_time = 1000;
 
     __AutoFollowTime__:
-    if(Settings.auto_follow_time || Settings.auto_follow_all) {
+    if(parseBool(Settings.auto_follow_time) || parseBool(Settings.auto_follow_all)) {
         RegisterJob('auto_follow_time');
     }
 
@@ -4325,7 +4330,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __KillExtensions__:
-    if(Settings.kill_extensions) {
+    if(parseBool(Settings.kill_extensions)) {
         RegisterJob('kill_extensions');
     }
 
@@ -4374,7 +4379,7 @@ let Initialize = async(START_OVER = false) => {
             }
         }
     };
-    Timers.prevent_hosting = 5000;
+    Timers.prevent_hosting = 5_000;
 
     __PreventHosting__:
     if(Settings.prevent_hosting != "none") {
@@ -4497,10 +4502,10 @@ let Initialize = async(START_OVER = false) => {
             await SaveCache({ UserIntent: term });
         }
     };
-    Timers.stay_live = 5000;
+    Timers.stay_live = 5_000;
 
     __StayLive__:
-    if(Settings.stay_live) {
+    if(parseBool(Settings.stay_live)) {
         RegisterJob('stay_live');
     }
 
@@ -4623,12 +4628,15 @@ let Initialize = async(START_OVER = false) => {
 
         parent.insertBefore(emoteSection, parent.firstChild);
     };
-    Timers.convert_emotes = 5000;
+    Timers.convert_emotes = 5_000;
 
     __ConvertEmotes__:
-    if(Settings.convert_emotes) {
+    if(parseBool(Settings.convert_emotes)) {
         // Collect emotes
         let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
+
+        if(!defined(chat_emote_button))
+            break __ConvertEmotes__;
 
         function CollectEmotes() {
             chat_emote_button.click();
@@ -4647,7 +4655,7 @@ let Initialize = async(START_OVER = false) => {
 
                 setTimeout(() => {
                     $('.emote-button img', true)
-                        .map(img => EMOTES.set(img.alt, shrt(img.src)) );
+                        .map(img => EMOTES.set(img.alt, shrt(img.src)));
 
                     top.EMOTES = EMOTES;
 
@@ -4863,7 +4871,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __FilterMessages__:
-    if(Settings.filter_messages) {
+    if(parseBool(Settings.filter_messages)) {
         RegisterJob('filter_messages');
     }
 
@@ -4958,7 +4966,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.easy_filter = 500;
 
     __EasyFilter__:
-    if(Settings.filter_messages) {
+    if(parseBool(Settings.filter_messages)) {
         RegisterJob('easy_filter');
     }
 
@@ -4975,7 +4983,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.highlight_mentions = () => {
         let usernames = [USERNAME];
 
-        if(Settings.highlight_mentions_extra)
+        if(parseBool(Settings.highlight_mentions_extra))
             usernames.push('all', 'chat', 'everyone');
 
         let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
@@ -4994,7 +5002,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.highlight_mentions = 500;
 
     __HighlightMentions__:
-    if(Settings.highlight_mentions) {
+    if(parseBool(Settings.highlight_mentions)) {
         RegisterJob('highlight_mentions');
     }
 
@@ -5042,7 +5050,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.highlight_mentions_popup = 500;
 
     __HighlightMentionsPopup__:
-    if(Settings.highlight_mentions_popup) {
+    if(parseBool(Settings.highlight_mentions_popup)) {
         RegisterJob('highlight_mentions_popup');
     }
 
@@ -5209,7 +5217,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.native_twitch_reply = 1000;
 
     __NativeTwitchReply__:
-    if(Settings.native_twitch_reply) {
+    if(parseBool(Settings.native_twitch_reply)) {
         RegisterJob('native_twitch_reply');
     }
 
@@ -5225,14 +5233,9 @@ let Initialize = async(START_OVER = false) => {
      */
     let SPAM = new Set;
 
-    Handlers.prevent_spam = () => {};
-    Timers.prevent_spam = -1000;
-
-    __PreventSpam__:
-    if(Settings.prevent_spam) {
-        RegisterJob('prevent_spam');
-
+    Handlers.prevent_spam = () => {
         LOG("Adding spam event listener...");
+
         GetChat.onnewmessage = chat =>
             chat.forEach(line => {
                 let { uuid, handle, element, message } = line;
@@ -5265,6 +5268,12 @@ let Initialize = async(START_OVER = false) => {
 
                 SPAM = new Set([...SPAM, uuid, message]);
             });
+    };
+    Timers.prevent_spam = -1000;
+
+    __PreventSpam__:
+    if(parseBool(Settings.prevent_spam)) {
+        RegisterJob('prevent_spam');
     }
 
     /*** Whisper Audio
@@ -5311,7 +5320,9 @@ let Initialize = async(START_OVER = false) => {
         let pill = $('.whispers__pill'),
             unread = parseInt(pill?.innerText) | 0;
 
-        if(!defined(pill) || (NOTIFIED >= unread))
+        if(!defined(pill))
+            return NOTIFIED = 0;
+        if(NOTIFIED >= unread)
             return;
         NOTIFIED = unread;
 
@@ -5320,7 +5331,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.whisper_audio = 1000;
 
     __NotificationSounds__:
-    if(Settings.whisper_audio) {
+    if(parseBool(Settings.whisper_audio)) {
         RegisterJob('whisper_audio');
     }
 
@@ -5416,7 +5427,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.convert_bits = 1000;
 
     __ConvertBits__:
-    if(Settings.convert_bits) {
+    if(parseBool(Settings.convert_bits)) {
         RegisterJob('convert_bits');
     }
 
@@ -5434,6 +5445,21 @@ let Initialize = async(START_OVER = false) => {
         REWARDS_CALCULATOR_TOOLTIP;
 
     Handlers.rewards_calculator = () => {
+        __GetMultiplierAmount__:
+        if(!defined(CHANNEL_POINTS_MULTIPLIER)) {
+            let button = $('[data-test-selector="community-points-summary"i] button');
+
+            if(defined(button)) {
+                button.click();
+
+                CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText ?? 1);
+
+                button.click();
+            } else {
+                CHANNEL_POINTS_MULTIPLIER = 1;
+            }
+        }
+
         let have = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
             goal = parseInt($('[data-test-selector="RequiredPoints"]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
             need = goal - have;
@@ -5445,27 +5471,29 @@ let Initialize = async(START_OVER = false) => {
 
         let averageBroadcastTime = STREAMER.data?.dailyBroadcastTime ?? 4.5, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
             activeDaysPerWeek = STREAMER.data?.activeDaysPerWeek ?? 5,
-            pointsEarnedPerHour = 240; // https://help.twitch.tv/s/article/channel-points-guide
+            pointsEarnedPerHour = 320; // https://help.twitch.tv/s/article/channel-points-guide
 
-        let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container),
-            estimated,
-            timeEstimated;
+        let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
 
         let hours = parseInt(need / (pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER)),
-            days = hours / 24,
-            weeks = days / 7,
+            days = (hours / 24) * (24 / averageBroadcastTime),
+            weeks = (days / 7) * (7 / activeDaysPerWeek),
             months = weeks / 4,
             years = months / 12;
+
+        let streams = Math.round(hours / averageBroadcastTime),
+            estimated = 'minute',
+            timeEstimated = 60 * (Math.round((need / pointsEarnedPerHour) * 4) / 4);
 
         if(hours) {
             estimated = 'hour';
             timeEstimated = hours;
         } if(hours > 48) {
             estimated = 'day';
-            timeEstimated = days * (24 / averageBroadcastTime);
+            timeEstimated = days;
         } if(days > 10) {
             estimated = 'week';
-            timeEstimated = weeks * (7 / activeDaysPerWeek);
+            timeEstimated = weeks;
         } if(days > 30) {
             estimated = 'month';
             timeEstimated = months;
@@ -5477,24 +5505,12 @@ let Initialize = async(START_OVER = false) => {
         timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
-            hours < 1?
-                `less than an hour estimated`:
-            `${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') } estimated`;
+            `Available ${ streams < 1? 'during this': `in ${comify(streams)} more` } stream${(streams > 1? 's': '')} (${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') })`;
     };
     Timers.rewards_calculator = 100;
 
     __RewardsCalculator__:
-    if(Settings.rewards_calculator) {
-        let button = $('[data-test-selector="community-points-summary"i] button');
-
-        if(defined(button)) {
-            button.click();
-
-            CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText ?? 1);
-
-            button.click();
-        }
-
+    if(parseBool(Settings.rewards_calculator)) {
         RegisterJob('rewards_calculator');
     }
 
@@ -5523,13 +5539,6 @@ let Initialize = async(START_OVER = false) => {
         COUNTING_HREF = NORMALIZED_PATHNAME;
 
     Handlers.points_receipt_placecment = () => {
-        if(COUNTING_HREF == NORMALIZED_PATHNAME) {
-            INITIAL_POINTS = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0);
-        } else {
-            COUNTING_HREF = NORMALIZED_PATHNAME;
-            INITIAL_POINTS = 0;
-        }
-
         let placement;
 
         if((placement = Settings.points_receipt_placecment ??= "null") == "null")
@@ -5555,30 +5564,34 @@ let Initialize = async(START_OVER = false) => {
 
         COUNTING_POINTS = setInterval(() => {
             let points_receipt = $('#twitch-tools-points-receipt'),
-                receipt = parseInt(points_receipt?.getAttribute('receipt')) | 0;
+                balance = $('[data-test-selector="balance-string"i]');
 
-            if(!defined(points_receipt))
-                return;
+            if(!defined(points_receipt) || !defined(balance)) {
+                points_receipt?.parentElement?.remove();
 
-            receipt = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0) - INITIAL_POINTS;
+                RestartJob('points_receipt_placecment');
 
-            points_receipt.setAttribute('receipt', receipt);
+                return clearInterval(COUNTING_POINTS);
+            }
 
-            points_receipt.innerHTML = `&${'du'[+(receipt > 0)]}arr; ${Math.abs(receipt).prefix(Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px' }))}`;
+            let current = parseCoin(balance?.innerText ?? 0);
 
-            let glyph = $('svg', false, points_receipt);
+            INITIAL_POINTS ??= current;
 
-            glyph?.setAttribute('style', 'vertical-align:bottom');
+            let receipt = current - INITIAL_POINTS;
+
+            points_receipt.innerHTML = `${ Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } ${ Math.abs(receipt).prefix(`&${ 'du'[+(receipt > 0)] }arr;`).replace(/\.0+$/, '') }`;
         }, 1000);
     };
-    Timers.points_receipt_placecment = -1500;
+    Timers.points_receipt_placecment = -2500;
 
     Unhandlers.points_receipt_placecment = () => {
-        INITIAL_POINTS = 0;
+        INITIAL_POINTS = undefined;
+        clearInterval(COUNTING_POINTS);
     };
 
     __PointsReceiptPlacement__:
-    if(Settings.points_receipt_placecment != "null") {
+    if(parseBool(Settings.points_receipt_placecment)) {
         RegisterJob('points_receipt_placecment');
     }
 
@@ -5595,14 +5608,14 @@ let Initialize = async(START_OVER = false) => {
     let pointWatcherCounter = 0;
 
     Handlers.point_watcher_placecment = () => {
-        let rich_tooltip = $('.dialog-layer div:not([class])');
+        let rich_tooltip = $('[class*="channel-tooltip"i]');
 
         // Update the points (every minute)
         if(++pointWatcherCounter % 600) {
             pointWatcherCounter = 0;
 
             LoadCache('ChannelPoints', ({ ChannelPoints }) => {
-                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? ChannelPoints[STREAMER.name] ?? 'Not available';
+                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? ChannelPoints[STREAMER.name] ?? 'Unavailable';
                 SaveCache({ ChannelPoints });
             });
         }
@@ -5646,7 +5659,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.point_watcher_placecment = 100;
 
     __PointWatcherPlacement__:
-    if(Settings.point_watcher_placecment != "null") {
+    if(parseBool(Settings.point_watcher_placecment)) {
         RegisterJob('point_watcher_placecment');
     }
 
@@ -5715,7 +5728,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __WatchTimePlacement__:
-    if(Settings.watch_time_placement) {
+    if(parseBool(Settings.watch_time_placement)) {
         RegisterJob('watch_time_placement');
     }
 
@@ -5797,7 +5810,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.recover_frames = 1000;
 
     __RecoverFrames__:
-    if(Settings.recover_frames) {
+    if(parseBool(Settings.recover_frames)) {
         document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
 
         RegisterJob('recover_frames');
@@ -5828,7 +5841,7 @@ let Initialize = async(START_OVER = false) => {
             // if the video was paused by the user (trusted)
             // if the video is an ad AND auto-play ads is disabled
             // if the player event-timeout has been set
-        if(!paused || isTrusted || (isAdvert && !Settings.recover_ads) || VIDEO_PLAYER_TIMEOUT > -1)
+        if(!paused || isTrusted || (isAdvert && !parseBool(Settings.recover_ads)) || VIDEO_PLAYER_TIMEOUT > -1)
             return;
 
         // Wait before trying to press play again
@@ -5880,11 +5893,11 @@ let Initialize = async(START_OVER = false) => {
     Timers.recover_stream = 2500;
 
     __RecoverStream__:
-    if(Settings.recover_stream) {
+    if(parseBool(Settings.recover_stream)) {
         let video = $('video');
 
         if(!defined(video))
-            return;
+            break __RecoverStream__;
 
         video.addEventListener('pause', event => Handlers.recover_stream(event.currentTarget));
 
@@ -5931,7 +5944,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.recover_video = 5_000;
 
     __RecoverVideo__:
-    if(Settings.recover_video) {
+    if(parseBool(Settings.recover_video)) {
         RegisterJob('recover_video');
     }
 
@@ -5983,10 +5996,10 @@ let Initialize = async(START_OVER = false) => {
 
         location.reload();
     };
-    Timers.recover_pages = 5000;
+    Timers.recover_pages = 5_000;
 
     __RecoverPages__:
-    if(Settings.recover_page) {
+    if(parseBool(Settings.recover_page)) {
         RegisterJob('recover_pages');
     }
 
@@ -6013,6 +6026,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
             // The page is a channel viewing page
             // || /^(ChannelWatch|SquadStream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
         )
+        // There is an error message
+        || defined($('[data-a-target="core-error-message"i]'))
     );
 
     if(ready) {

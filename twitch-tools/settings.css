@@ -834,6 +834,14 @@ input[type="number"]::-webkit-inner-spin-button {
     fill: var(--gold);
 }
 
+[from-github="false"i], [from-chrome="false"i] {
+    transition: all 0.3s;
+}
+
+[from-github="false"i]:not(:hover), [from-chrome="false"i]:not(:hover) {
+    opacity: 0.1;
+}
+
 .cc-container {
     align-items: center;
     border: 1px solid var(--grey);

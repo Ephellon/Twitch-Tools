@@ -624,6 +624,41 @@ async function LoadSettings() {
     });
 }
 
+function compareVersions(oldVersion = '', newVersion = '', returnType) {
+    if(!oldVersion.length || !newVersion.length)
+        throw 'Unable to compare empty versions.';
+
+    oldVersion = oldVersion.split('.');
+    newVersion = newVersion.split('.');
+
+    let diff = 0;
+
+    for(let index = 0, length = Math.min(oldVersion.length, newVersion.length); index < length; ++index) {
+        let L = parseInt(oldVersion[index].replace(/[^a-z0-9]+/g), 36),
+            R = parseInt(newVersion[index].replace(/[^a-z0-9]+/g), 36);
+
+        if(L == R) {
+            continue;
+        } else if(L < R) {
+            diff = -1;
+            break;
+        } else {
+            diff = +1;
+            break;
+        }
+    }
+
+    switch(returnType?.toLowerCase()) {
+        case 'string':
+            return ['less than', 'equal to', 'greater than'][diff + 1];
+
+        case 'update':
+            return ['there is an update available', 'the installed version is the latest', 'the installed version is pre-built'][diff + 1];
+    }
+
+    return diff;
+}
+
 document.body.onload = async() => {
     let url = parseURL(location.href),
         search = url.searchParameters;
@@ -738,12 +773,13 @@ $('[glyph]', true).map(element => {
 
 // Getting the version information
 $('[set]', true).map(async(element) => {
-    let [attribute, property] = element.getAttribute('set').split(':'),
-        value;
-
-    property = property.split('.');
+    let installedFromWebstore = (location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
     let properties = {
+        origin: {
+            github: !installedFromWebstore,
+            chrome: installedFromWebstore,
+        },
         version: {
             installed: Manifest.version,
             github: 'Learn more',
@@ -751,22 +787,73 @@ $('[set]', true).map(async(element) => {
         },
     };
 
-	await fetch('https://api.github.com/repos/ephellon/twitch-tools/releases/latest')
-		.then(response => response.json())
-		.then(version => properties.version.github = version.tag_name)
+    let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
+
+    await fetch(githubURL)
+        .then(response => response.json())
+        .then(metadata => properties.version.github = metadata.tag_name)
         .then(version => Storage.set({ githubVersion: version }))
         .catch(async error => {
             await Storage.get(['githubVersion'], ({ githubVersion }) => {
                 if(defined(githubVersion))
                     properties.version.github = githubVersion;
             });
+        })
+        .finally(() => {
+            let githubUpdateAvailable = compareVersions(properties.version.installed, properties.version.github) < 0;
+
+            Storage.set({ githubUpdateAvailable });
         });
 
-    // Traverse the property path...
-    for(value = properties; property.length;)
-        value = value[property.splice(0,1)[0]];
+    // Unauthorized? See paragraph 4.4.2 of https://developer.chrome.com/docs/webstore/terms/#use
+    let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
 
-    element.setAttribute(attribute, value);
+    await fetch(chromeURL, { mode: 'cors' })
+        .then(response => response.text())
+        .then(html => {
+            let DOM = new DOMParser(),
+                doc = DOM.parseFromString(html, 'text/html');
+
+            if(!defined(doc.body))
+                throw 'Data could not be loaded';
+
+            let metadata = JSON.parse(`{${
+                $('hr ~ div div > span', true, doc)
+                    .filter((span, index) => index % 2 == 0)
+                    .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
+                    .join(',')
+            }}`);
+
+            return metadata;
+        })
+        .then(metadata => properties.version.chrome = metadata.version)
+        .then(version => Storage.set({ chromeVersion: version }))
+        .catch(async error => {
+            await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
+                if(defined(chromeVersion))
+                    properties.version.chrome = chromeVersion;
+            });
+        })
+        .finally(() => {
+            let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
+
+            Storage.set({ chromeUpdateAvailable });
+        });
+
+    let expressions = element.getAttribute('set').split(';');
+
+    for(let expression of expressions) {
+        let [attribute, property] = expression.split(':'),
+            value;
+
+        property = property.split('.');
+
+        // Traverse the property path...
+        for(value = properties; property.length;)
+            value = value[property.splice(0,1)[0]];
+
+        element.setAttribute(attribute, value);
+    }
 });
 
 // All anchors with the [continue-search] attribute
