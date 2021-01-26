@@ -29,13 +29,13 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - Go with the most channel points
 - *Kill Extensions* `off` &mdash; *Currently under __Experimental Features__*
 - *Prevent Hosting* &mdash; When a channel begins hosting, go to the __Next Channel__
-    - `default` Allow all channels to host
-    - Prevent all channels from hosting
-    - Prevent hosting unfollowed channels
+    - `default` Allow all channels to be hosted
+    - Prevent all channels from being hosted
+    - Prevent unfollowed channels from being hosted
 - *Prevent Raiding* &mdash; When a raid begins, go to the __Next Channel__
-    - `default` Allow all channels to raid
-    - Prevent all channels from raiding
-    - Prevent raiding unfollowed channels
+    - `default` Allow all channels to be raided
+    - Prevent all channels from being raided
+    - Prevent unfollowed channels from being raided
 - *Stay Live* `on` &mdash; When the current stream ends, got to the __Next Channel__
 
 ### Chat & Messaging
@@ -49,6 +49,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - `[^\/*+?$]` &mdash; [JavaScript-based RegExps](https://javascript.info/regular-expressions) can also be used: `swears?` will remove "swear", "swears", "SWEAR", "SWEARS" and all other variations
 - *Highlight Mentions* `on` &mdash; When someone mentions you (*@username*), highlight the message(s) in chat
 - *Show pop-ups* `on` &mdash; When someone mentions you (*@username*), show a pop-up of the message(s)
+- *Prevent Spam* `off` &mdash; *Currently under __Experimental Features__*
 - *Whisper Audio* `off` &mdash; When someone sends you a whisper, play a notification sound
 
 ### Currencies
@@ -88,5 +89,5 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
 - *Prevent spam* `off` &mdash; Hide repetitive messages in chat
-- *Recover Pages* `off` &mdash; When the webpage fails to display, reload it
+- *Recover Pages* `off` &mdash; When the webpage or chat fails to display, reload the webpage
 - *Use Fine Details* `off` &mdash; Allow the extension to use (not collect) Twitch&trade; API data

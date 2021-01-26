@@ -97,6 +97,9 @@ let // These are option names. Anything else will be removed
         'native_twitch_reply',
         // Prevent spam
         'prevent_spam',
+            'prevent_spam_look_back',
+            'prevent_spam_minimum_length',
+            'prevent_spam_ignore_under',
         // Whisper Audio
         'whisper_audio',
 
@@ -112,9 +115,9 @@ let // These are option names. Anything else will be removed
         // Watch Time Text Placement
         'watch_time_placement',
         // Points Collected Text Placement
-        'points_receipt_placecment',
-        // Point Watcher Text Placecment
-        'point_watcher_placecment',
+        'points_receipt_placement',
+        // Point Watcher Text placement
+        'point_watcher_placement',
 
         /* Data-Collection Features */
         // Fine Details*
@@ -201,6 +204,8 @@ class UUID {
     }
 
     static from(key = '') {
+        key = (key ?? '').toString();
+
         let hash = Uint8Array.from(btoa(UUID.BWT(key.replace(/[^\u0000-\u00ff]+/g, '').slice(-1024))).split('').map(character => character.charCodeAt(0))),
             l = hash.length,
             i = 0;
@@ -261,6 +266,8 @@ class Tooltip {
         tooltip.id = uuid;
 
         parent.addEventListener('mouseenter', event => {
+            $('.tooltip-layer', true).map(layer => layer.remove());
+
             let { currentTarget } = event,
                 offset = getOffset(currentTarget),
                 screen = getOffset(document.body),
@@ -350,6 +357,22 @@ let Glyphs = {
 
     // Google Chrome
     chrome: '<svg width="100%" height="100%" version="1.1" viewbox="0 0 190 190" x="0px" y="0px"><circle fill="#FFF" cx="85.314" cy="85.713" r="83.805"/><path fill-opacity=".1" d="M138.644 100.95c0-29.454-23.877-53.331-53.33-53.331-29.454 0-53.331 23.877-53.331 53.331H47.22c0-21.039 17.055-38.094 38.093-38.094s38.093 17.055 38.093 38.094"/><circle fill-opacity=".1" cx="89.123" cy="96.379" r="28.951"/><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-149.309" y1="-72.211" x2="-149.309" y2="-71.45" gradientTransform="matrix(82 0 0 82 12328.615 5975.868)"><stop offset="0" stop-color="#81b4e0"/><stop offset="1" stop-color="#0c5a94"/></linearGradient><circle fill="url(#a)" cx="85.314" cy="85.712" r="31.236"/><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-114.66" y1="591.553" x2="-114.66" y2="660.884" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#f06b59"/><stop offset="1" stop-color="#df2227"/></linearGradient><path fill="url(#b)" d="M161.5 47.619C140.525 5.419 89.312-11.788 47.111 9.186a85.315 85.315 0 0 0-32.65 28.529l34.284 59.426c-6.313-20.068 4.837-41.456 24.905-47.77a38.128 38.128 0 0 1 10.902-1.752"/><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="-181.879" y1="737.534" x2="-146.834" y2="679.634" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#388b41"/><stop offset="1" stop-color="#4cb749"/></linearGradient><path fill="url(#c)" d="M14.461 37.716c-26.24 39.145-15.78 92.148 23.363 118.39a85.33 85.33 0 0 0 40.633 14.175l35.809-60.948c-13.39 16.229-37.397 18.529-53.625 5.141a38.096 38.096 0 0 1-11.896-17.33"/><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="-64.479" y1="743.693" x2="-101.81" y2="653.794" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#e4b022"/><stop offset=".3" stop-color="#fcd209"/></linearGradient><path fill="url(#d)" d="M78.457 170.28c46.991 3.552 87.965-31.662 91.519-78.653a85.312 85.312 0 0 0-8.477-44.007H84.552c21.036.097 38.014 17.23 37.917 38.269a38.099 38.099 0 0 1-8.205 23.443"/><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="-170.276" y1="686.026" x2="-170.276" y2="625.078" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#e)" d="M14.461 37.716l34.284 59.426a38.093 38.093 0 0 1 1.523-25.904L15.984 35.43"/><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="-86.149" y1="705.707" x2="-128.05" y2="748.37" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#f)" d="M78.457 170.28l35.809-60.948a38.105 38.105 0 0 1-22.095 12.951L76.933 170.28"/><linearGradient id="chrome-logo-gradient" gradientUnits="userSpaceOnUse" x1="-86.757" y1="717.981" x2="-80.662" y2="657.797" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#chrome-logo-gradient)" d="M161.5 47.619H84.552a38.094 38.094 0 0 1 29.712 14.476l48.759-12.189"/></svg>',
+
+    // Glyph methods
+    modify(glyph, attributes) {
+        let XMLParser = Glyphs.DOMParser ??= new DOMParser;
+
+        let XML = XMLParser.parseFromString((glyph in Glyphs? Glyphs[glyph]: glyph), 'text/xml'),
+            SVG = $('svg', false, XML);
+
+        for(let attribute in attributes) {
+            let value = attributes[attribute];
+
+            SVG.setAttribute(attribute, value);
+        }
+
+        return SVG.outerHTML;
+    },
 };
 
 // Create elements
@@ -489,7 +512,8 @@ function RedoFilterRulesElement(rules) {
         if(!(rule && rule.length))
             continue;
 
-        let R = document.createElement('input');
+        let E = document.createElement('button'),
+            R = document.createElement('button');
 
         let fID = UUID.from(rule).toString();
 
@@ -520,23 +544,43 @@ function RedoFilterRulesElement(rules) {
                 break;
         }
 
-        if(defined($(`#filter_rules [filter-type="${ filterType }"i] [filter="${ fID }"i]`)))
+        if(defined($(`#filter_rules [filter-type="${ filterType }"i] [filter-id="${ fID }"i]`)))
             continue;
 
-        R.type = 'button';
-        R.value = rule;
-        R.classList.add('remove');
-        R.setAttribute('filter', fID);
+        // "Edit" button
+        E.innerHTML = `<code fill>${ encodeHTML(rule) }</code>`;
+        E.classList.add('edit');
+        E.setAttribute('filter-id', fID);
 
-        R.onclick = event => {
-            let { currentTarget } = event;
+        E.onclick = event => {
+            let { currentTarget } = event,
+                { innerText } = currentTarget,
+                input = $('#filter_rules-input');
+
+            input.value = [...input.value.split(','), innerText].filter(v => v?.trim()?.length).join(',');
 
             currentTarget.remove();
         };
-        R.setAttribute('up-tooltip', `Remove <code>${ encodeHTML(rule) }</code>`);
+        E.setAttribute('up-tooltip', `Edit rule`);
+        E.appendChild(R);
+
+        // "Remove" button
+        R.id = fID;
+        R.innerHTML = Glyphs.modify('trash', { height: '20px', width: '20px' });
+        R.classList.add('remove');
+
+        R.onclick = event => {
+            let { currentTarget } = event,
+                { id } = currentTarget;
+
+            $(`[filter-id="${ id }"]`)?.remove();
+
+            event.stopPropagation();
+        };
+        R.setAttribute('up-tooltip', `Remove rule`);
 
         $(`#filter_rules [filter-type="${ filterType }"i]`).setAttribute('not-empty', true);
-        $(`#filter_rules [filter-type="${ filterType }"i]`)?.appendChild(R);
+        $(`#filter_rules [filter-type="${ filterType }"i]`)?.appendChild(E);
         $('#filter_rules-input').value = "";
     }
 }
@@ -565,10 +609,11 @@ async function SaveSettings() {
                 if(input)
                     rules = [...input.split(',')];
 
-                for(let rule of $('#filter_rules input[value]', true))
-                    rules.push(rule.value);
+                for(let rule of $('#filter_rules code', true))
+                    rules.push(rule.innerText);
+                rules = [...new Set(rules)].filter(value => value);
 
-                settings.filter_rules = rules.join(',').split(',').filter(value => value).join(',');
+                settings.filter_rules = rules.sort().join(',');
 
                 RedoFilterRulesElement(settings.filter_rules);
                 break;
@@ -772,6 +817,8 @@ $('[glyph]', true).map(element => {
 });
 
 // Getting the version information
+let FETCHED_DATA = {};
+
 $('[set]', true).map(async(element) => {
     let installedFromWebstore = (location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
@@ -785,75 +832,97 @@ $('[set]', true).map(async(element) => {
             github: 'Learn more',
             chrome: 'Learn more',
         },
+        ...FETCHED_DATA,
     };
 
-    let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
+    await Storage.get(['chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ chromeVersion, githubVersion, versionRetrivalDate }) => {
+        versionRetrivalDate ||= 0;
 
-    await fetch(githubURL)
-        .then(response => response.json())
-        .then(metadata => properties.version.github = metadata.tag_name)
-        .then(version => Storage.set({ githubVersion: version }))
-        .catch(async error => {
-            await Storage.get(['githubVersion'], ({ githubVersion }) => {
-                if(defined(githubVersion))
-                    properties.version.github = githubVersion;
-            });
-        })
-        .finally(() => {
-            let githubUpdateAvailable = compareVersions(properties.version.installed, properties.version.github) < 0;
+        // Only refresh if the data is older than 12h
+        // The data has expired
+        if(!defined(FETCHED_DATA.wasFetched) && (versionRetrivalDate + 43_200_000) < +new Date) {
+            let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
-            Storage.set({ githubUpdateAvailable });
-        });
+            await fetch(githubURL)
+                .then(response => response.json())
+                .then(metadata => properties.version.github = metadata.tag_name)
+                .then(version => Storage.set({ githubVersion: version }))
+                .catch(async error => {
+                    await Storage.get(['githubVersion'], ({ githubVersion }) => {
+                        if(defined(githubVersion))
+                            properties.version.github = githubVersion;
+                    });
+                })
+                .finally(() => {
+                    let githubUpdateAvailable = compareVersions(properties.version.installed, properties.version.github) < 0;
 
-    // Unauthorized? See paragraph 4.4.2 of https://developer.chrome.com/docs/webstore/terms/#use
-    let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
+                    FETCHED_DATA = { ...FETCHED_DATA, ...properties };
+                    Storage.set({ githubUpdateAvailable });
+                });
 
-    await fetch(chromeURL, { mode: 'cors' })
-        .then(response => response.text())
-        .then(html => {
-            let DOM = new DOMParser(),
-                doc = DOM.parseFromString(html, 'text/html');
+            // Unauthorized? See paragraph 4.4.2 of https://developer.chrome.com/docs/webstore/terms/#use
+            __GitHubOnly__: {
+                let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
 
-            if(!defined(doc.body))
-                throw 'Data could not be loaded';
+                await fetch(chromeURL, { mode: 'cors' })
+                .then(response => response.text())
+                .then(html => {
+                    let DOM = new DOMParser(),
+                    doc = DOM.parseFromString(html, 'text/html');
 
-            let metadata = JSON.parse(`{${
-                $('hr ~ div div > span', true, doc)
-                    .filter((span, index) => index % 2 == 0)
-                    .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
-                    .join(',')
-            }}`);
+                    if(!defined(doc.body))
+                    throw 'Data could not be loaded';
 
-            return metadata;
-        })
-        .then(metadata => properties.version.chrome = metadata.version)
-        .then(version => Storage.set({ chromeVersion: version }))
-        .catch(async error => {
-            await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
-                if(defined(chromeVersion))
-                    properties.version.chrome = chromeVersion;
-            });
-        })
-        .finally(() => {
-            let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
+                    let metadata = JSON.parse(`{${
+                        $('hr ~ div div > span', true, doc)
+                        .filter((span, index) => index % 2 == 0)
+                        .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
+                        .join(',')
+                    }}`);
 
-            Storage.set({ chromeUpdateAvailable });
-        });
+                    return metadata;
+                })
+                .then(metadata => properties.version.chrome = metadata.version)
+                .then(version => Storage.set({ chromeVersion: version }))
+                .catch(async error => {
+                    await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
+                        if(defined(chromeVersion))
+                        properties.version.chrome = chromeVersion;
+                    });
+                })
+                .finally(() => {
+                    let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
 
-    let expressions = element.getAttribute('set').split(';');
+                    FETCHED_DATA = { ...FETCHED_DATA, ...properties };
+                    Storage.set({ chromeUpdateAvailable });
+                });
+            }
 
-    for(let expression of expressions) {
-        let [attribute, property] = expression.split(':'),
-            value;
+            FETCHED_DATA.wasFetched = true;
+            Storage.set({ versionRetrivalDate: +new Date });
+        }
+        // The data hasn't expired yet
+        else {
+            properties.version.github = githubVersion;
+            properties.version.chrome = chromeVersion;
+        }
 
-        property = property.split('.');
+        // Continue with the data...
+        let expressions = element.getAttribute('set').split(';');
 
-        // Traverse the property path...
-        for(value = properties; property.length;)
-            value = value[property.splice(0,1)[0]];
+        for(let expression of expressions) {
+            let [attribute, property] = expression.split(':'),
+                value;
 
-        element.setAttribute(attribute, value);
-    }
+            property = property.split('.');
+
+            // Traverse the property path...
+            for(value = properties; property.length;)
+                value = value[property.splice(0,1)[0]];
+
+            element.setAttribute(attribute, value);
+        }
+    });
 });
 
 // All anchors with the [continue-search] attribute

@@ -1,3 +1,13 @@
+/*** /polyfill.js
+ *      _____      _        __ _ _ _   _
+ *     |  __ \    | |      / _(_) | | (_)
+ *     | |__) |__ | |_   _| |_ _| | |  _ ___
+ *     |  ___/ _ \| | | | |  _| | | | | / __|
+ *     | |  | (_) | | |_| | | | | | |_| \__ \
+ *     |_|   \___/|_|\__, |_| |_|_|_(_) |___/
+ *                    __/ |          _/ |
+ *                   |___/          |__/
+ */
 // Finds the last index using the same format as `Array..findIndex`
     // Array..findLastIndex(predicate:function[, thisArg:object]) -> number#Integer
 Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = null) {
@@ -46,15 +56,18 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 };
 
 // Returns a number formatted using unit prefixes
-    // Number..prefix([unit:string[, decimalPlaces:number[, format:string]]]) -> string
+    // Number..prefix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) -> string
+        // decimalPlaces = true | false | *:number
+            // true -> 123.456.prefix('m', true) => "123.456m"
+            // false -> 123.456.prefix('m', false) => "123m"
+            // 1 -> 123.456.prefix('m', 1) => "123.4m"
         // format = "metric" | "imperial" | "readable"
-Number.prototype.prefix = function prefix(unit = '', decimalPlaces, format = "metric") {
+Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
         sign = number < 0? '-': '',
         prefix = '';
 
     number = Math.abs(number);
-    decimalPlaces ??= false;
 
     let system = {};
 
@@ -94,5 +107,11 @@ Number.prototype.prefix = function prefix(unit = '', decimalPlaces, format = "me
         }
     }
 
-    return sign + (decimalPlaces !== false? number.toFixed(decimalPlaces): number) + prefix + unit;
+    return sign + (
+        decimalPlaces === true?
+            number:
+        decimalPlaces === false?
+            Math.round(number):
+        number.toFixed(decimalPlaces)
+    ) + prefix + unit;
 }

@@ -59,7 +59,7 @@
                         Adds a button to toggle between low and auto video quality.
                     </p>
                     <p>
-                        <code>Alt + A</code> can be used as well.
+                        The keyboard shortcut <code>Alt + A</code> can also be used.
                     </p>
                 </div>
             </section>
@@ -92,22 +92,34 @@
                         <div>
                             <div class="radio">
                                 <input id="first_in_line_none" type="radio" name="first-in-line" checked/>
-                                <label for="first_in_line_none">Do not ues this feature.</label>
+                                <label for="first_in_line_none">
+                                    <h2>Disabled</h2>
+                                    Do not ues this feature
+                                </label>
                             </div>
 
                             <div class="radio">
                                 <input id="first_in_line" type="radio" name="first-in-line"/>
-                                <label for="first_in_line">When you receive a notification for a channel going live, go to its stream after <span><input id="first_in_line_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
+                                <label for="first_in_line">
+                                    <h2>Notification</h2>
+                                    When you receive a notification for a channel going live, go to its stream after <span><input id="first_in_line_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>
+                                </label>
                             </div>
 
                             <div class="radio">
                                 <input id="first_in_line_plus" type="radio" name="first-in-line"/>
-                                <label for="first_in_line_plus">When a channel appears in your Followed Channels, go to its stream after <span><input id="first_in_line_plus_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
+                                <label for="first_in_line_plus">
+                                    <h2>Appearance</h2>
+                                    When a channel appears in your Followed Channels, go to its stream after <span><input id="first_in_line_plus_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>
+                                </label>
                             </div>
 
                             <div class="radio">
                                 <input id="first_in_line_all" type="radio" name="first-in-line"/>
-                                <label for="first_in_line_all">Go to all streams automatically after <span><input id="first_in_line_all_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>.</label>
+                                <label for="first_in_line_all">
+                                    <h2>Automatic <bubble>Smart Notifications</bubble></h2>
+                                    Go to all streams automatically after <span><input id="first_in_line_all_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>
+                                </label>
                             </div>
                         </div>
                     </details>
@@ -125,22 +137,34 @@
                         <div>
                             <div class="radio">
                                 <input id="auto_follow_none" type="radio" name="auto-follow" checked/>
-                                <label for="auto_follow_none">Do not use this feature.</label>
+                                <label for="auto_follow_none">
+                                    <h2>Disabled</h2>
+                                    Do not use this feature
+                                </label>
                             </div>
 
                             <div class="radio">
                                 <input id="auto_follow_raids" type="radio" name="auto-follow"/>
-                                <label for="auto_follow_raids">When participating in a raid, follow the channel being raided.</label>
+                                <label for="auto_follow_raids">
+                                    <h2>Raids</h2>
+                                    When participating in a raid, follow the channel being raided
+                                </label>
                             </div>
 
                             <div class="radio">
                                 <input id="auto_follow_time" type="radio" name="auto-follow"/>
-                                <label for="auto_follow_time">After watching <span><input id="auto_follow_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b> of content, follow the channel.</label>
+                                <label for="auto_follow_time">
+                                    <h2>Viewership</h2>
+                                    After watching <span><input id="auto_follow_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b> of content, follow the channel
+                                </label>
                             </div>
 
                             <div class="radio">
                                 <input id="auto_follow_all" type="radio" name="auto-follow"/>
-                                <label for="auto_follow_all">Follow all channels automatically.</label>
+                                <label for="auto_follow_all">
+                                    <h2>Automatic</h2>
+                                    Follow all channels automatically
+                                </label>
                             </div>
                         </div>
                     </details>
@@ -249,7 +273,7 @@
                     </p>
                     <details>
                         <summary subtitle="View, or remove rules">Filter Rules</summary>
-                        <div id="filter_rules">
+                        <div id="filter_rules" type="list">
                             <div filter-type="channel"><h2>Channel Rules</h2></div>
 
                             <div filter-type="badge"><h2>Badges</h2></div>
@@ -274,19 +298,22 @@
                         <label for="highlight_mentions"></label>
                     </div>
                     <p>
-                        When someone mentions you (<code purple>@<i>username</i></code>), make the message stand out by highlighting it.
+                        When someone mentions you (<code purple>@username</code>), make the message stand out by highlighting it.
                     </p>
                     <details>
                         <summary subtitle="Adjust extra settings for &quot;Highlight Mentions&quot;">Extras</summary>
-
-                        <h3>General Highlighting</h3>
-                        <div class="toggle">
-                            <input id="highlight_mentions_extra" type="checkbox"/>
-                            <label for="highlight_mentions_extra"></label>
+                        <div>
+                            <div class="title">General Highlighting</div>
+                            <div class="summary">
+                                <div class="toggle">
+                                    <input id="highlight_mentions_extra" type="checkbox"/>
+                                    <label for="highlight_mentions_extra"></label>
+                                </div>
+                                <p>
+                                    When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
+                                </p>
+                            </div>
                         </div>
-                        <p>
-                            When someone sends a general mention (<code purple>@<i>all</i></code>, <code purple>@<i>chat</i></code>, <code purple>@<i>everyone</i></code>), make the message stand out by highlighting it.
-                        </p>
                     </details>
                 </div>
             </section>
@@ -303,7 +330,7 @@
                         <label for="highlight_mentions_popup"></label>
                     </div>
                     <p>
-                        When someone mentions you (<code purple>@<i>username</i></code>), make the message stand out by showing a pop-up.
+                        When someone mentions you (<code purple>@username</code>), make the message stand out by showing a pop-up.
                     </p>
                 </div>
             </section>
@@ -415,7 +442,7 @@
                         Where should the <b>Points Receipt</b> text be displayed?
                     </p>
 
-                    <select id="points_receipt_placecment">
+                    <select id="points_receipt_placement">
                         <option value="null" selected>Do not display</option>
                         <option value="under">Under the video</option>
                     </select>
@@ -429,7 +456,7 @@
                         Where should the <b>Point Watcher</b> text be displayed?
                     </p>
 
-                    <select id="point_watcher_placecment">
+                    <select id="point_watcher_placement">
                         <option value="null" selected>Do not display</option>
                         <option value="on">On the tooltip</option>
                     </select>
@@ -445,6 +472,7 @@
 
                     <select id="watch_time_placement">
                         <option value="null" selected>Do not display</option>
+                        <option value="over">Over the video</option>
                         <option value="under">Under the video</option>
                     </select>
                 </div>
@@ -643,41 +671,53 @@
                     <details>
                         <summary subtitle="Adjust options for Auto-Focus">Options</summary>
                         <div>
-                            <p>
-                                How much activity should activate <b>Auto-Focus</b>?
-                            </p>
+                            <div>
+                                <div class="title">Detection Level</div>
+                                <div class="summary">
+                                    <p>
+                                        How much activity should activate <b>Auto-Focus</b>?
+                                    </p>
 
-                            <select id="auto_focus_detection_threshold">
-                                <option value="30">High activity (FPS / IRL / Rhythm)</option>
-                                <option value="20" selected>Modest activity (Action / Adventure / Platformer)</option>
-                                <option value="10">Seasonal activity (Horror / Puzzle / Trivia)</option>
-                                <option value="5">Low activity (Just Chatting / Simulation / Strategy)</option>
-                            </select>
-                        </div>
-                        <hr>
-                        <div>
-                            <p>
-                                How often should the stream be <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polled</b>?
-                            </p>
+                                    <select id="auto_focus_detection_threshold">
+                                        <option value="30">High activity &mdash; FPS / IRL / Rhythm</option>
+                                        <option value="20" selected>Modest activity &mdash; Action / Adventure / Platformer</option>
+                                        <option value="10">Seasonal activity &mdash; Horror / Puzzle / Trivia</option>
+                                        <option value="5">Low activity &mdash; Just Chatting / Simulation / Strategy</option>
+                                    </select>
+                                </div>
+                            </div>
 
-                            <select id="auto_focus_poll_interval">
-                                <option value="1">Every second (CPU intensive, great detection)</option>
-                                <option value="3" selected>Every 3 seconds (CPU friendly, good detection)</option>
-                                <option value="5">Every 5 seconds (CPU friendly, fair detection)</option>
-                                <option value="10">Every 10 seconds (CPU friendly, poor detection)</option>
-                            </select>
-                        </div>
-                        <hr>
-                        <div>
-                            <p>
-                                What image type should be used for <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polling</b>?
-                            </p>
+                            <div>
+                                <div class="title">Polling Interval</div>
+                                <div class="summary">
+                                    <p>
+                                        How often should the stream be <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polled</b>?
+                                    </p>
 
-                            <select id="auto_focus_poll_image_type">
-                                <option value="webp" selected>WebP (CPU friendly, great detection)</option>
-                                <option value="png">PNG (CPU intensive, great detection)</option>
-                                <option value="jpeg">JPG (CPU friendly, good detection)</option>
-                            </select>
+                                    <select id="auto_focus_poll_interval">
+                                        <option value="1">Every second &mdash; CPU intensive, great detection</option>
+                                        <option value="3" selected>Every 3 seconds &mdash; CPU friendly, good detection</option>
+                                        <option value="5">Every 5 seconds &mdash; CPU friendly, fair detection</option>
+                                        <option value="10">Every 10 seconds &mdash; CPU friendly, poor detection</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="title">Image Type</div>
+                                <div class="summary">
+                                    <p>
+                                        What image type should be used for <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polling</b>?
+                                    </p>
+
+                                    <select id="auto_focus_poll_image_type">
+                                        <option value="webp" selected>WebP &mdash; CPU friendly, great detection</option>
+                                        <option value="png">PNG &mdash; CPU intensive, great detection</option>
+                                        <option value="jpeg">JPG &mdash; CPU friendly, good detection</option>
+                                    </select>
+                                </div>
+                            </div>
+
                         </div>
                     </details>
                 </div>
@@ -738,6 +778,37 @@
                     <p>
                         Hide repetitive messages in chat.
                     </p>
+                    <details>
+                        <summary subtitle="Adjust options for Prevent Spam">Options</summary>
+                        <div>
+                            <div>
+                                <div class="title">Message History</div>
+                                <div class="summary">
+                                    <p>
+                                        <b>Prevent spam</b> will look back <span><input id="prevent_spam_look_back" type="number" value="15" max="250" min="1" step="1"/></span> lines to detect <b attention-text up-tooltip="This will look for messages that match word-for-word">plagiarism</b>.
+                                    </p>
+                                </div>
+                            </div>
+                            <hr>
+                            <div>
+                                <div class="title">Minimum Word Length</div>
+                                <div class="summary">
+                                    <p>
+                                        <b>Prevent spam</b> will ignore messages if there aren't any words longer than <span><input id="prevent_spam_minimum_length" type="number" value="3" max="500" min="3" step="1"/></span> characters.
+                                    </p>
+                                </div>
+                            </div>
+                            <hr>
+                            <div>
+                                <div class="title">Maximum Occurrences</div>
+                                <div class="summary">
+                                    <p>
+                                        <b>Prevent spam</b> will mark messages as <b>repetitive</b> after a word appears <span><input id="prevent_spam_ignore_under" type="number" value="5" max="150" min="3" step="1"/></span> or more times.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -750,6 +821,9 @@
                     </div>
                     <p>
                         If the webpage fails to display, attempt to recover it.
+                    </p>
+                    <p>
+                        If the <b>Stream Chat</b> is not loaded (or suddenly destroyed), attempt to recover it.
                     </p>
                 </div>
             </section>
