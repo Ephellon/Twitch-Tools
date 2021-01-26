@@ -15,6 +15,7 @@
 5. When all channels are deleted (on the side-panel by Twitch), First in Line re-adds all channels
     * Added code to *detect* if the channels were deleted, and ignore the change
     * Fixed? 2.8.3
+6. Accessibility options?
 
 - Clean up SVGs and loading
 - Provide more concise and informative console messages
