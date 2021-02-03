@@ -838,9 +838,9 @@ $('[set]', true).map(async(element) => {
     await Storage.get(['chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ chromeVersion, githubVersion, versionRetrivalDate }) => {
         versionRetrivalDate ||= 0;
 
-        // Only refresh if the data is older than 12h
-        // The data has expired
-        if(!defined(FETCHED_DATA.wasFetched) && (versionRetrivalDate + 43_200_000) < +new Date) {
+        // Only refresh if the data is older than 1h
+        // The data has expired ->
+        if(!defined(FETCHED_DATA.wasFetched) && (versionRetrivalDate + 3_600_000) < +new Date) {
             let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
             await fetch(githubURL)

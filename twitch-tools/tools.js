@@ -896,6 +896,7 @@ class Tooltip {
     // new ChatFooter(title:string[, options:object]) -> Element~ChatFooter
 class ChatFooter {
     static #FOOTERS = new Map()
+    static #FOOTER_TIMEOUT = -1
 
     constructor(title, options = {}) {
         let f = furnish;
@@ -936,7 +937,9 @@ class ChatFooter {
         this.parent = parent;
         this.container = footer;
 
-        setTimeout(() => this?.container?.remove(), 15_000);
+        clearTimeout(ChatFooter.FOOTER_TIMEOUT);
+
+        ChatFooter.FOOTER_TIMEOUT = setTimeout(() => this?.container?.remove(), 15_000);
 
         return this;
     }
@@ -1225,8 +1228,8 @@ Object.defineProperties(GetChat, {
 });
 
 // Pushes parameters to the URL's search
-    // PushToSearch(newParameters:object[, reload:boolean]) -> String#URL.Search
-function PushToSearch(newParameters, reload = true) {
+    // PushToTopSearch(newParameters:object[, reload:boolean]) -> String#URL.Search
+function PushToTopSearch(newParameters, reload = true) {
     let { searchParameters } = parseURL(location),
         parameters = { ...searchParameters, ...newParameters };
 
@@ -1241,8 +1244,8 @@ function PushToSearch(newParameters, reload = true) {
 }
 
 // Removevs parameters from the URL's search
-    // RemoveFromSearch(keys:array[, reload:boolean]) -> String#URL.Search
-function RemoveFromSearch(keys, reload = true) {
+    // RemoveFromTopSearch(keys:array[, reload:boolean]) -> String#URL.Search
+function RemoveFromTopSearch(keys, reload = true) {
     let { searchParameters } = parseURL(location),
         parameters = { ...searchParameters };
 
@@ -1301,7 +1304,23 @@ function parseURL(url) {
 
             return s;
         })(data[i++] || e),
-        hash:            (data[i++] || e)
+        hash:            (data[i++] || e),
+
+        pushToSearch(parameters, overwrite = false) {
+            if(typeof url == 'string')
+                url = parseURL(url);
+
+            let { origin, pathname, hash, searchParameters } = url;
+
+            if(overwrite)
+                searchParameters = Object.entries({ ...searchParameters, ...parameters });
+            else
+                searchParameters = [searchParameters, parameters].map(Object.entries).flat();
+
+            searchParameters = '?' + searchParameters.map(parameter => parameter.join('=')).join('&');
+
+            return parseURL(origin + pathname + searchParameters + hash);
+        },
     };
 };
 
@@ -2184,7 +2203,7 @@ function RegisterJob(JobName, JobReason = 'default') {
 
     return Jobs[JobName] ??= Timers[JobName] > 0?
         setInterval(Handlers[JobName], Timers[JobName]):
-    setTimeout(Handlers[JobName], -Timers[JobName]);
+    -setTimeout(Handlers[JobName], -Timers[JobName]);
 }
 Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).toString());
 
@@ -2193,7 +2212,12 @@ Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).toString());
 function UnregisterJob(JobName, JobReason = 'default') {
     UnregisterJob.__reason__ = JobReason;
 
-    clearInterval(Jobs[JobName]);
+    let CurrentJob = Jobs[JobName];
+
+    if(CurrentJob < 0)
+        clearTimeout(-CurrentJob);
+    else
+        clearInterval(CurrentJob);
 
     let unhandler = Unhandlers[JobName];
 
@@ -2213,14 +2237,14 @@ function RestartJob(JobName, JobReason = 'default') {
 
     new Promise((resolve, reject) => {
         try {
-            UnregisterJob(JobName, 'restart');
+            UnregisterJob(JobName, JobReason);
 
             resolve();
         } catch(error) {
             reject(error);
         }
     }).then(() => {
-        RegisterJob(JobName, 'restart');
+        RegisterJob(JobName, JobReason);
     });
 }
 Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).toString());
@@ -3025,7 +3049,7 @@ let Initialize = async(START_OVER = false) => {
         let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold),
             pollInterval = parseInt(Settings.auto_focus_poll_interval),
             imageType = Settings.auto_focus_poll_image_type,
-            detectedTrend = '\u2022';
+            detectedTrend = '&bull;';
 
         POLL_INTERVAL ??= pollInterval * 1000;
         STALLED_FRAMES = 0;
@@ -3089,7 +3113,7 @@ let Initialize = async(START_OVER = false) => {
 
                             if(!defined(diffImg)) {
                                 diffImg = furnish('img#twitch-tools-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
-                                diffDat = furnish('span#twitch-tools-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden;` });
+                                diffDat = furnish('span#twitch-tools-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace;` });
 
                                 parent.appendChild(diffImg);
                                 parent.appendChild(diffDat);
@@ -3100,8 +3124,8 @@ let Initialize = async(START_OVER = false) => {
                             let size = diffImg.src.length,
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% &${ trend[0] }Arr; / ${ ((stop - start) / 1000).prefix('s') } / ${ size.prefix('B', 2) }`;
-                            diffDat.title = `Frame-No / Overall-Trend Change-Percentage Current-Trend / Time-Taken-to-Calculate-Changes / Size-of-Changes-in-Bytes`;
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).prefix('s', 2) } / ${ size.prefix('B', 2) }`;
+                            diffDat.title = `Frame Number / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes)`;
                         } else {
                             diffImg?.remove();
                             diffDat?.remove();
@@ -3141,7 +3165,7 @@ let Initialize = async(START_OVER = false) => {
                                     changes.push('disabling away mode');
                                 }
 
-                                detectedTrend = '+';
+                                detectedTrend = '&uArr;';
                                 LOG('Positive trend detected: ' + changes.join(', '));
                             }
                             // Negative activity trend; enable Away Mode, resume Up Next
@@ -3174,7 +3198,7 @@ let Initialize = async(START_OVER = false) => {
                                     changes.push('enabling away mode');
                                 }
 
-                                detectedTrend = '-';
+                                detectedTrend = '&dArr;';
                                 LOG('Negative trend detected: ' + changes.join(', '));
                             }
                         }
@@ -3647,6 +3671,8 @@ let Initialize = async(START_OVER = false) => {
 
                 currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
 
+                $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +speeding }px solid var(--color-yellow)`);
+
                 let oneMin = 60_000,
                     fiveMin = 5 * oneMin,
                     tenMin = 10 * oneMin;
@@ -3731,6 +3757,8 @@ let Initialize = async(START_OVER = false) => {
             first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
             first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+FIRST_IN_LINE_BOOST | 0] }`);
             first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][+FIRST_IN_LINE_BOOST | 0] } Boost`);
+
+            $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +FIRST_IN_LINE_BOOST | 0 }px solid var(--color-yellow)`);
 
             // Pause
             first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
@@ -4254,7 +4282,7 @@ let Initialize = async(START_OVER = false) => {
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
 
             // Failed to get channel at...
-            PushToSearch({ 'twitch-tools-ftgca': (+new Date).toString(36) });
+            PushToTopSearch({ 'twitch-tools-ftgca': (+new Date).toString(36) });
         }
 
         if(OLD_STREAMERS == NEW_STREAMERS)
@@ -4472,38 +4500,60 @@ let Initialize = async(START_OVER = false) => {
         from = from?.innerText;
         to = to?.innerText ?? STREAMER.name;
 
+        let method = Settings.prevent_raiding ?? "none";
+
         raid_stopper:
         if(raiding || raided) {
+            window.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5_000);
+
             // Ignore followed channels
-            if(!!~["unfollowed"].indexOf(Settings.prevent_raiding)) {
+            if(!!~["greed", "unfollowed"].indexOf(method)) {
+                // #1
+                // Collect the channel points by participating in the raid, then leave
+                // #3 should fire automatically after the page has successfully loaded
+                if(method == "greed" && raiding) {
+                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).pushToSearch({ referrer: 'raid' }, true).href);
+
+                    CONTINUE_RAIDING = true;
+                    break raid_stopper;
+                }
+                // #2
                 // The channel being raided (to) is already in "followed." No need to leave
-                if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
+                else if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
                     LOG(`[RAIDING] ${ to } is already followed. No need to leave the raid`);
 
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
+                // #3
                 // The channel that was raided (to) is already in "followed." No need to leave
                 else if(raided && STREAMER.like) {
                     LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
 
-                    RemoveFromSearch(['referrer']);
+                    CONTINUE_RAIDING = true;
+                    // RemoveFromTopSearch(['referrer']);
                     break raid_stopper;
                 }
             }
 
-            STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
+            let leaveStream = () => {
+                CONTINUE_RAIDING = false;
 
-            if(defined(next)) {
-                WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
+                STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
 
-                open(next.href, '_self');
-            } else {
-                WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
-            }
+                if(defined(next)) {
+                    WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
+
+                    open(next.href, '_self');
+                } else {
+                    WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
+                }
+            };
+
+            CONTINUE_RAIDING = !!setTimeout(leaveStream, 60_000 * +!!~["greed"].indexOf(method));
         }
     };
-    Timers.prevent_raiding = 5_000;
+    Timers.prevent_raiding = 15_000;
 
     __PreventRaiding__:
     if(Settings.prevent_raiding != "none") {
@@ -4940,7 +4990,7 @@ let Initialize = async(START_OVER = false) => {
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
                             || (!!~badges.indexOf(badge)? reason = 'channel badge': false)
-                            || (RegExp(text || '(?:^$)', 'i').test(message)? reason = 'channel text': false)
+                            || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).indexOf(true)
                 );
@@ -5170,7 +5220,7 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(GLOBAL_EVENT_LISTENERS.ENTER))
             $('[data-a-target="chat-input"i]').addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
                 if(!(altKey || ctrlKey || metaKey || shiftKey) && key == 'Enter')
-                    $('#twitch-tools-close-native-twitch-reply').click();
+                    $('#twitch-tools-close-native-twitch-reply')?.click();
             });
 
         NATIVE_REPLY_POLYFILL ??= {
@@ -5334,7 +5384,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                 | |
      *                                                 |_|
      */
-    let SPAM = new Set;
+    let SPAM = [];
 
     Handlers.prevent_spam = () => {
         LOG("Adding spam event listener...");
@@ -5388,7 +5438,7 @@ let Initialize = async(START_OVER = false) => {
                     markAsSpam(element, 'repetitive', message);
                 }
 
-                SPAM = new Set([...SPAM, message.trim()]);
+                SPAM = [...SPAM, message.trim()];
             });
     };
     Timers.prevent_spam = -1000;
@@ -5627,7 +5677,7 @@ let Initialize = async(START_OVER = false) => {
         timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
-            `Available ${ streams < 1? 'during this': `in ${comify(streams)} more` } stream${(streams > 1? 's': '')} (${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') })`;
+            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${comify(streams)} more` } stream${(streams > 1? 's': '')} (${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') })`;
     };
     Timers.rewards_calculator = 100;
 
@@ -5702,7 +5752,7 @@ let Initialize = async(START_OVER = false) => {
 
             let receipt = current - INITIAL_POINTS;
 
-            points_receipt.innerHTML = `${ Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } ${ Math.abs(receipt).prefix(`&${ 'du'[+(receipt > 0)] }arr;`, false).replace(/\.0+$/, '') }`;
+            points_receipt.innerHTML = `${ Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } ${ Math.abs(receipt).prefix(`&${ 'du'[+(receipt > 0)] }arr;`, 1).replace(/\.0+&/, '&') }`;
         }, 1000);
     };
     Timers.points_receipt_placement = -2500;
@@ -5712,7 +5762,7 @@ let Initialize = async(START_OVER = false) => {
 
         $('#twitch-tools-points-receipt')?.parentElement?.remove();
 
-        if(UnregisterJob.__reason__ == 'restart')
+        if(UnregisterJob.__reason__ == 'modify')
             return;
 
         INITIAL_POINTS = null;
@@ -5882,9 +5932,9 @@ let Initialize = async(START_OVER = false) => {
         clearInterval(WATCH_TIME_INTERVAL);
 
         $('#twitch-tools-watch-time')?.parentElement?.remove();
-        $('.live-time').removeAttribute('style');
+        $('.live-time')?.removeAttribute('style');
 
-        if(UnregisterJob.__reason__ == 'restart')
+        if(UnregisterJob.__reason__ == 'modify')
             return;
 
         SaveCache({ Watching: null, WatchTime: 0 });
@@ -6101,7 +6151,7 @@ let Initialize = async(START_OVER = false) => {
                 open(next.href, '_self');
         } else {
             // Failed to play video at...
-            PushToSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
+            PushToTopSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
         }
     };
     Timers.recover_video = 5_000;
@@ -6444,7 +6494,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
 
 CUSTOM_CSS.innerHTML =
 `
-#twitch-tools-auto-claim-bonuses .tw-z-above { display: none }
+#twitch-tools-auto-claim-bonuses .tw-z-above, [plagiarism], [repetitive] { display: none }
 #twitch-tools-hidden-emote-container::after {
     content: 'Collecting emotes...\\A Do not close this window';
     text-align: center;

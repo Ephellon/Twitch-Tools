@@ -2,7 +2,7 @@
 
 ### TO-DO (Known Issues)
 1. Some elements don't register (like SVG animations)
-    * Fixed?
+    * Fixed? 2.9
 2. The Up Next timer resets when clicking a channel from the side-panel
     * In work...
     * Fine how it is?
@@ -16,6 +16,9 @@
     * Added code to *detect* if the channels were deleted, and ignore the change
     * Fixed? 2.8.3
 6. Accessibility options?
+    * Not sure what to add...
+7. Instance (tab) data separation?
+    * Simply separate each tab's data for certain things, e.g. "Up Next"
 
 - Clean up SVGs and loading
 - Provide more concise and informative console messages
@@ -23,6 +26,12 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.1
+- Added "Greedy" option for "Prevent Raid" to collect bonus channel points
+- Adjusted job reasoning functionality
+- Fixed issue that would cause chat to be destroyed or inaccessible
+- Added small border to notify the user "Up Next Boost" is enabled
+
 > 2.9
 - Added settings for "Prevent Spam"
 - Adjusted spam filter settings to look prettier
