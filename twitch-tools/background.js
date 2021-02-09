@@ -51,11 +51,12 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
         Storage.set({ onInstalledReason: reason, chromeUpdateAvailable: false, githubUpdateAvailable: false });
 
-        if(reason == 'install')
+        if(reason == 'install') {
             Container.tabs.create({ url: 'settings.html' });
-        else
+        } else {
             for(let tab of tabs)
                 Container.tabs.reload(tab.id);
+        }
 
         // Update the badge text when there's an update available
         Container.browserAction.setBadgeText({ text: '' });

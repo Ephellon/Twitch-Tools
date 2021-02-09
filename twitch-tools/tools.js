@@ -2354,7 +2354,7 @@ let Initialize = async(START_OVER = false) => {
     NORMAL_MODE = !SPECIAL_MODE;
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
-        .replace(/^(\/[^\/]+?)\/(squad)$/i, '$1');
+        .replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1');
 
     if(SPECIAL_MODE) {
         let { $1, $2 } = RegExp;
@@ -2867,7 +2867,7 @@ let Initialize = async(START_OVER = false) => {
             if(pathname.startsWith('/videos/'))
                 videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
             else
-                channelName = pathname.replace(/^(\/[^\/]+?)\/(squad)$/i, '$1').replace(/\//g, '');
+                channelName = pathname.replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
 
             // Fetch an API request
             let type = (defined(videoID)? 'vod': 'channel'),
@@ -2897,6 +2897,9 @@ let Initialize = async(START_OVER = false) => {
                         STREAMER[key] = TWITCH_API[conversion[key]];
                 })
                 .catch(ERROR);
+
+            if(!defined(STREAMER.name))
+                break __FineDetails__;
 
             /** Get Twitch analytics data
              * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
@@ -4250,7 +4253,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS;
+    let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 
     await LoadCache(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
         OLD_STREAMERS = cache.OLD_STREAMERS;
@@ -4297,7 +4300,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
-        switch(Settings.onInstalledReason) {
+        switch(ON_INSTALLED_REASON ??= Settings.onInstalledReason) {
             case 'chrome_update':
             case 'shared_module_update':
                 // Not used. Ignore
@@ -4313,9 +4316,6 @@ let Initialize = async(START_OVER = false) => {
                 // Should function normally
                 break;
         }
-
-        if(defined(Settings.onInstalledReason))
-            Storage.set({ onInstalledReason: null });
 
         creating_new_events:
         for(let name of new_names) {
@@ -4379,12 +4379,25 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('auto_follow_raids');
     }
 
-    Handlers.auto_follow_time = () => {
+    let AUTO_FOLLOW_EVENT;
+    Handlers.auto_follow_time = async() => {
         let { like, follow } = STREAMER,
             mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
-        if(!like)
-            setTimeout(follow, mins * 60_000);
+        if(!like) {
+            await LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
+                let watch_time = $('#twitch-tools-watch-time'),
+                    time = parseInt(watch_time?.getAttribute('time')) | 0;
+
+                if(!defined(watch_time))
+                    return;
+
+                if(time >= mins * 60_000)
+                    follow();
+            });
+
+            AUTO_FOLLOW_EVENT ??= setTimeout(follow, mins * 60_000);
+        }
     };
     Timers.auto_follow_time = 1000;
 
@@ -4960,9 +4973,6 @@ let Initialize = async(START_OVER = false) => {
     Handlers.filter_messages = () => {
         LOG('Adding message filter event listener...');
 
-        if(defined(MESSAGE_FILTER))
-            MESSAGE_FILTER(GetChat(250, true));
-
         MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
             let Filter = UPDATED_FILTER();
 
@@ -4989,7 +4999,7 @@ let Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (!!~badges.indexOf(badge)? reason = 'channel badge': false)
+                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge))? reason = 'channel badge': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).indexOf(true)
@@ -5008,6 +5018,9 @@ let Initialize = async(START_OVER = false) => {
                 element.setAttribute('twitch-tools-hidden', true);
             }
         };
+
+        if(defined(MESSAGE_FILTER))
+            MESSAGE_FILTER(GetChat(250, true));
     };
     Timers.filter_messages = -2500;
 
@@ -5218,7 +5231,7 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         if(!defined(GLOBAL_EVENT_LISTENERS.ENTER))
-            $('[data-a-target="chat-input"i]').addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+            $('[data-a-target="chat-input"i]')?.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
                 if(!(altKey || ctrlKey || metaKey || shiftKey) && key == 'Enter')
                     $('#twitch-tools-close-native-twitch-reply')?.click();
             });
@@ -5624,7 +5637,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(button)) {
                 button.click();
 
-                CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText ?? 1);
+                CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText) || 1;
 
                 button.click();
             } else {
@@ -5636,7 +5649,7 @@ let Initialize = async(START_OVER = false) => {
             goal = parseInt($('[data-test-selector="RequiredPoints"]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
             need = goal - have;
 
-        let container = $('[data-test-selector="RequiredPoints"]:not(:empty)')?.parentElement;
+        let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.parentElement;
 
         if(!defined(container))
             return REWARDS_CALCULATOR_TOOLTIP = null;
@@ -5657,7 +5670,7 @@ let Initialize = async(START_OVER = false) => {
             estimated = 'minute',
             timeEstimated = 60 * (Math.ceil((need / pointsEarnedPerHour) * 4) / 4);
 
-        if(hours) {
+        if(hours > 1) {
             estimated = 'hour';
             timeEstimated = hours;
         } if(hours > 48) {
@@ -5672,12 +5685,15 @@ let Initialize = async(START_OVER = false) => {
         } if(months > 12) {
             estimated = 'year';
             timeEstimated = years;
+        } if(years > 70) {
+            estimated = 'life time';
+            timeEstimated = years / 70;
         }
 
         timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
-            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${comify(streams)} more` } stream${(streams > 1? 's': '')} (${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') })`;
+            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } stream${ (streams != 1? 's': '') } (${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') })`;
     };
     Timers.rewards_calculator = 100;
 
@@ -6141,8 +6157,6 @@ let Initialize = async(START_OVER = false) => {
 
         errorMessage = errorMessage.textContent;
 
-        ERROR('The stream ran into an error:', errorMessage, new Date);
-
         if(/subscribe/i.test(errorMessage)) {
             let next = GetNextStreamer();
 
@@ -6150,6 +6164,8 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next))
                 open(next.href, '_self');
         } else {
+            ERROR('The stream ran into an error:', errorMessage, new Date);
+
             // Failed to play video at...
             PushToTopSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
         }
@@ -6199,7 +6215,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.recover_pages = () => {
         let error = $('[data-a-target="core-error-message"i]'),
-            [chat] = $('[role="log"i]', true);
+            [chat] = $('[role="log"i], [data-test-selector^="video-chat"]', true);
 
         if(!defined(chat))
             error ??= ({ innerText: `The chat element is missing` });
@@ -6240,7 +6256,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                 && defined($('[data-a-target^="threads-box-"i]'))
             )
             // The page is a channel viewing page
-            // || /^(ChannelWatch|SquadStream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+            // || /^(ChannelWatch|SquadStream|VideoWatch)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
         )
         // There is an error message
         || defined($('[data-a-target="core-error-message"i]'))
@@ -6513,6 +6529,12 @@ CUSTOM_CSS.innerHTML =
     --width: 100%;
 }
 #twitch-tools-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
+.twitch-tools-first-run {
+    border: 1px solid var(--color-blue);
+    border-radius: 3px;
+
+    transition: border 1s;
+}
 [animationID] a { cursor: grab }
 [animationID] a:active { cursor: grabbing }
 [twitch-tools-hidden] { display: none }
@@ -6533,6 +6555,21 @@ CUSTOM_CSS.innerHTML =
     width: 100%;
 }
 `;
+
+            // Is this the first time the extension has run?
+            // If so, then point out what's been changed
+            if(Settings.onInstalledReason == 'install')
+                setTimeout(() => {
+                    for(let element of $('#twitch-tools-auto-claim-bonuses, [up-next--container]', true))
+                        element.classList.add('twitch-tools-first-run');
+
+                    setTimeout(() => {
+                        $('.twitch-tools-first-run', true)
+                            .forEach(element => element.classList.remove('twitch-tools-first-run'));
+                    }, 30_000);
+                }, 5_000);
+
+            Storage.set({ onInstalledReason: null });
 
             CUSTOM_CSS?.remove();
             $('body').appendChild(CUSTOM_CSS);

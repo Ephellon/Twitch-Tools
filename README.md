@@ -34,6 +34,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - Prevent unfollowed channels from being hosted
 - *Prevent Raiding* &mdash; When a raid begins, go to the __Next Channel__
     - `default` Allow all channels to be raided
+    - Only raid to collect the bonus points
     - Prevent all channels from being raided
     - Prevent unfollowed channels from being raided
 - *Stay Live* `on` &mdash; When the current stream ends, got to the __Next Channel__

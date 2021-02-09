@@ -875,9 +875,9 @@ $('[set]', true).map(async(element) => {
 
                     let metadata = JSON.parse(`{${
                         $('hr ~ div div > span', true, doc)
-                        .filter((span, index) => index % 2 == 0)
-                        .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
-                        .join(',')
+                            .filter((span, index) => index % 2 == 0)
+                            .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
+                            .join(',')
                     }}`);
 
                     return metadata;
@@ -944,3 +944,27 @@ $('a[continue-search]', true).map(a => {
 
 // All anchors without a target
 $('a:not([target])', true).map(a => a.target = '_blank');
+
+// Translate the user's page to their preferred language
+setTimeout(async() => {
+    let [language] = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-');
+
+    await fetch(`/lang/${ language }.json`)
+        .catch(error => {
+            console.log(`Translations to "${ language.toUpperCase() }" are not available`);
+
+            return {};
+        })
+        .then(text => text.json?.())
+        .then(json => {
+            if(!defined(json))
+                return;
+
+            for(let element of $('[tr-id]', true)) {
+                let translation_id = element.getAttribute('tr-id'),
+                    [translation] = json[translation_id].splice(0, 1);
+
+                element.innerHTML = translation;
+            }
+        });
+}, 1);
