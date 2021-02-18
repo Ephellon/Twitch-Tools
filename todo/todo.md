@@ -26,6 +26,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.3
+- Fixed issue where clicking Up Next wouldn't restart the timer
+- Fixed issue where some offline channels still appeared as "live"
+
 > 2.9.2
 - Fixed issue where watching videos (past streams) would trigger some un-needed settings
 - Changed badge filtering functionality: channels can now use pattern-badges like non-channels

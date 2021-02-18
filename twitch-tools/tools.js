@@ -2095,7 +2095,8 @@ async function update() {
                         if(!defined(parent))
                             return false;
 
-                        let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                        let live = defined(parent)
+                                && empty($(`[class*="--offline"i]`, false, parent));
 
                         // if(!defined(parent) && LIVE_CACHE.has(pathname))
                         //     return LIVE_CACHE.get(pathname);
@@ -2138,7 +2139,8 @@ async function update() {
                         if(!defined(parent))
                             return false;
 
-                        let live = defined(parent) && empty($(`[class*="--offline"i]`, false, parent));
+                        let live = defined(parent)
+                                && empty($(`[class*="--offline"i]`, false, parent));
 
                         // if(!defined(parent) && LIVE_CACHE.has(pathname))
                         //     return LIVE_CACHE.get(pathname);
@@ -2555,7 +2557,11 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get live() {
-            return SPECIAL_MODE || (defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommendations"i]`)))
+            return SPECIAL_MODE
+                || (true
+                    && defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommendations"i]`))
+                    && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "")
+                )
         },
 
         name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent,
@@ -3570,6 +3576,12 @@ let Initialize = async(START_OVER = false) => {
                 let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
                     icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
                     href: FIRST_IN_LINE_HREF,
+
+                    onclick: event => {
+                        SaveCache({ FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000 });
+
+                        $('#twitch-tools-popup')?.remove();
+                    },
 
                     Hide: () => {
                         let existing = $('#twitch-tools-popup');
@@ -6554,6 +6566,16 @@ CUSTOM_CSS.innerHTML =
 
     width: 100%;
 }
+/*[class*="tw-number-badge"i] {
+    background-color: var(--color-background-pill-notification);
+    border-radius: var(--border-radius-rounded);
+    color: var(--color-text-overlay);
+    pointer-events: none;
+
+    position: relative;
+
+    padding: 0px 0.4725em;
+}*/
 `;
 
             // Is this the first time the extension has run?
