@@ -106,6 +106,8 @@ let // These are option names. Anything else will be removed
         /* Currencies */
         // Convert Bits
         'convert_bits',
+        // Channel Points Receipt
+        'channelpoints_receipt_display',
         // Rewards Calculator
         'rewards_calculator',
 
@@ -154,28 +156,28 @@ let // These are option names. Anything else will be removed
     // UUID.BWT(string:string) -> String
     // UUID.prototype.toString() -> String
 class UUID {
+    static #BWT_SEED = new UUID()
+
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
-        this.native = native;
+        this.native = this.value = native;
 
         this[Symbol.toPrimitive] = type => {
             switch(type) {
                 case 'boolean':
                     return true;
 
-                case 'default':
-                case 'string':
-                    return native;
-
+                case 'bigint':
                 case 'number':
                     return NaN;
 
+                case 'default':
+                case 'string':
                 case 'object':
-                    return native;
-
+                case 'symbol':
                 default:
-                    break;
+                    return native;
             }
         };
 
@@ -203,34 +205,38 @@ class UUID {
         return p_.map(P => P.slice(-1)[0]).join('');
     }
 
-    static from(key = '') {
+    static from(key = '', traceable = false) {
         key = (key ?? '').toString();
 
-        let hash = Uint8Array.from(btoa(UUID.BWT(key.replace(/[^\u0000-\u00ff]+/g, '').slice(-1024))).split('').map(character => character.charCodeAt(0))),
+        let PRIVATE_KEY = (traceable? '': `private-key=${ UUID.#BWT_SEED }`),
+            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
+            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+
+        let hash = Uint8Array.from(btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
             l = hash.length,
             i = 0;
 
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[(++i<l?i:(i=0))] & 15 >> x / 4).toString(16));
+        hash = hash.map(n => hash[n & 255] ^ hash[n | 170] ^ hash[n ^ 85] ^ hash[-~n] ^ n);
 
-        this.native = native;
+        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
+
+        this.native = this.value = native;
 
         this[Symbol.toPrimitive] = type => {
             switch(type) {
                 case 'boolean':
                     return true;
 
-                case 'default':
-                case 'string':
-                    return native;
-
+                case 'bigint':
                 case 'number':
                     return NaN;
 
+                case 'default':
+                case 'string':
                 case 'object':
-                    return native;
-
+                case 'symbol':
                 default:
-                    break;
+                    return native;
             }
         };
 
@@ -261,7 +267,7 @@ class Tooltip {
             return existing;
 
         let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
-            uuid = UUID.from(text).toString();
+            uuid = UUID.from(text).value;
 
         tooltip.id = uuid;
 
@@ -515,7 +521,7 @@ function RedoFilterRulesElement(rules) {
         let E = document.createElement('button'),
             R = document.createElement('button');
 
-        let fID = UUID.from(rule).toString();
+        let fID = UUID.from(rule).value;
 
         let filterType;
         switch(true) {
@@ -823,6 +829,9 @@ $('[set]', true).map(async(element) => {
     let installedFromWebstore = (location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
     let properties = {
+        context: {
+            id: UUID.from(Manifest.version, true).value,
+        },
         origin: {
             github: !installedFromWebstore,
             chrome: installedFromWebstore,
@@ -835,7 +844,8 @@ $('[set]', true).map(async(element) => {
         ...FETCHED_DATA,
     };
 
-    await Storage.get(['chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ chromeVersion, githubVersion, versionRetrivalDate }) => {
+    await Storage.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
+        buildVersion ??= properties.version.installed;
         versionRetrivalDate ||= 0;
 
         // Only refresh if the data is older than 1h
@@ -865,37 +875,37 @@ $('[set]', true).map(async(element) => {
                 let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
 
                 await fetch(chromeURL, { mode: 'cors' })
-                .then(response => response.text())
-                .then(html => {
-                    let DOM = new DOMParser(),
-                    doc = DOM.parseFromString(html, 'text/html');
+                    .then(response => response.text())
+                    .then(html => {
+                        let DOM = new DOMParser(),
+                            doc = DOM.parseFromString(html, 'text/html');
 
-                    if(!defined(doc.body))
-                    throw 'Data could not be loaded';
+                        if(!defined(doc.body))
+                            throw 'Data could not be loaded';
 
-                    let metadata = JSON.parse(`{${
-                        $('hr ~ div div > span', true, doc)
-                            .filter((span, index) => index % 2 == 0)
-                            .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
-                            .join(',')
-                    }}`);
+                        let metadata = JSON.parse(`{${
+                            $('hr ~ div div > span', true, doc)
+                                .filter((span, index) => index % 2 == 0)
+                                .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
+                                .join(',')
+                        }}`);
 
-                    return metadata;
-                })
-                .then(metadata => properties.version.chrome = metadata.version)
-                .then(version => Storage.set({ chromeVersion: version }))
-                .catch(async error => {
-                    await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
-                        if(defined(chromeVersion))
-                        properties.version.chrome = chromeVersion;
+                        return metadata;
+                    })
+                    .then(metadata => properties.version.chrome = metadata.version)
+                    .then(version => Storage.set({ chromeVersion: version }))
+                    .catch(async error => {
+                        await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
+                            if(defined(chromeVersion))
+                                properties.version.chrome = chromeVersion;
+                        });
+                    })
+                    .finally(() => {
+                        let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
+
+                        FETCHED_DATA = { ...FETCHED_DATA, ...properties };
+                        Storage.set({ chromeUpdateAvailable });
                     });
-                })
-                .finally(() => {
-                    let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
-
-                    FETCHED_DATA = { ...FETCHED_DATA, ...properties };
-                    Storage.set({ chromeUpdateAvailable });
-                });
             }
 
             FETCHED_DATA.wasFetched = true;
@@ -905,6 +915,35 @@ $('[set]', true).map(async(element) => {
         else {
             properties.version.github = githubVersion;
             properties.version.chrome = chromeVersion;
+        }
+
+        // Set the build number, if applicable
+        DisplayBuild: {
+            let [version, build] = buildVersion.split('#');
+
+            build |= 0;
+
+            if(build > 0) {
+                properties.version.installed += (compareVersions(properties.version.installed, properties.version.github) > 0? ` build ${ build }`: '');
+                properties.context.id = UUID.from(properties.version.installed, true).value;
+            }
+        }
+
+        DisplayContextID: {
+            let numbers = properties.context.id.split('-').map(n => parseInt(n, 16));
+
+            let flop = false,
+                value = 0;
+
+            for(let number of numbers)
+                value += flop? -number: number;
+
+            properties.context.id = Math.abs(value).toString(36)
+                .slice(0, 10)
+                .split(/(.{5})/)
+                .filter(s => s.length > 1)
+                .join('-')
+                .toUpperCase();
         }
 
         // Continue with the data...

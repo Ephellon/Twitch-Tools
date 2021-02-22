@@ -39,7 +39,7 @@ if(defined(UserMenuToggleButton)) {
     UserMenuToggleButton.click();
 }
 
-let browser, Storage, Runtime, Extension, Container, BrowserNamespace;
+let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
 if(defined(browser?.runtime))
     BrowserNamespace = 'browser';
@@ -53,6 +53,7 @@ switch(BrowserNamespace) {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
+        Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
         break;
@@ -62,10 +63,13 @@ switch(BrowserNamespace) {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
+        Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
         break;
 }
+
+let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
@@ -75,12 +79,12 @@ switch(BrowserNamespace) {
     // UUID.BWT(string:string) -> String
     // UUID.prototype.toString() -> String
 class UUID {
-    static #BWT_SEED = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16))
+    static #BWT_SEED = new UUID()
 
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
-        this.native = native;
+        this.native = this.value = native;
 
         this[Symbol.toPrimitive] = type => {
             switch(type) {
@@ -127,7 +131,11 @@ class UUID {
     static from(key = '') {
         key = (key ?? '').toString();
 
-        let hash = Uint8Array.from(btoa([`private-key=${ UUID.#BWT_SEED }`, `content="${ key.replace(/[^\u0000-\u00ff]+/g, '').slice(-512) }"`,`public-key=${ USERNAME }`].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
+        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
+            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
+            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+
+        let hash = Uint8Array.from(btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
             l = hash.length,
             i = 0;
 
@@ -135,7 +143,7 @@ class UUID {
 
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
 
-        this.native = native;
+        this.native = this.value = native;
 
         this[Symbol.toPrimitive] = type => {
             switch(type) {
@@ -180,7 +188,7 @@ class Popup {
             R = '_self',
             U, S, M, G, T, W, H;
 
-        let uuid = U = UUID.from(subject).toString(),
+        let uuid = U = UUID.from(subject).value,
             existing = Popup.#POPUPS.get(subject);
 
         if(defined(existing))
@@ -359,7 +367,7 @@ class Balloon {
             I = Extension.getURL('profile.png'),
             F, C, H, U, N;
 
-        let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).toString(),
+        let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).value,
             existing = Balloon.#BALLOONS.get(title);
 
         if(defined(existing))
@@ -503,7 +511,7 @@ class Balloon {
                                 // Body
                                 ...jobs.map(job => {
                                     let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
-                                        guid = guid = UUID.from([href, message].join(':')).toString();
+                                        guid = guid = UUID.from([href, message].join(':')).value;
 
                                     let container = f(`div#twitch-tools-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
                                         f('div.simplebar-scroll-content',
@@ -645,7 +653,7 @@ class Balloon {
 
     addButton({ left = false, icon = 'play', onclick = ($=>$), attributes = {} }) {
         let parent = this.header.closest('div[class*="header"]');
-        let uuid = UUID.from(onclick.toString()).toString(),
+        let uuid = UUID.from(onclick.toString()).value,
             existing = $(`[uuid="${ uuid }"i]`, false, parent);
 
         if(defined(existing))
@@ -682,7 +690,7 @@ class Balloon {
         jobs = jobs.map(job => {
             let { href, message, subheader, src = Extension.getURL('profile.png'), attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
                 { uuid } = this,
-                guid = UUID.from(href).toString(),
+                guid = UUID.from(href).value,
                 f = furnish;
 
             let existing = $(`#twitch-tools-balloon-job-${ uuid }--${ guid }`);
@@ -832,7 +840,7 @@ class Tooltip {
             return existing;
 
         let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
-            uuid = UUID.from(text).toString();
+            uuid = UUID.from(text).value;
 
         tooltip.id = uuid;
 
@@ -901,7 +909,7 @@ class ChatFooter {
     constructor(title, options = {}) {
         let f = furnish;
 
-        let uuid = UUID.from(title).toString(),
+        let uuid = UUID.from(title).value,
             existing = ChatFooter.#FOOTERS.get(title);
 
         if(defined(existing))
@@ -916,13 +924,14 @@ class ChatFooter {
                     style:
                     `
                     background-color: #387aff;
-                    margin-bottom: 5rem!important;
                     left: 50%;
+                    margin-bottom: 5rem!important;
                     transform: translateX(-50%);
+                    width: fit-content;
                     `
                 },
 
-                f('button.tw-align-items-center tw-align-middle tw-border-bottom-left-radius-medium tw-border-bottom-right-radius-medium tw-border-top-left-radius-medium tw-border-top-right-radius-medium tw-core-button tw-core-button--overlay tw-core-button--text tw-inline-flex tw-interactive tw-justify-content-center tw-overflow-hidden tw-relativ', { ...options },
+                f('button.tw-align-items-center tw-align-middle tw-border-bottom-left-radius-medium tw-border-bottom-right-radius-medium tw-border-top-left-radius-medium tw-border-top-right-radius-medium tw-core-button tw-core-button--overlay tw-core-button--text tw-inline-flex tw-interactive tw-justify-content-center tw-overflow-hidden tw-relative', { style: 'padding: 0.5rem 1rem;', ...options },
                     f('div.tw-align-items-center.tw-core-button-label.tw-flex.tw-flex-grow-0', {},
                         f('div.tw-flex-grow-0', {
                             innerHTML: title
@@ -937,9 +946,9 @@ class ChatFooter {
         this.parent = parent;
         this.container = footer;
 
-        clearTimeout(ChatFooter.FOOTER_TIMEOUT);
+        clearTimeout(ChatFooter.#FOOTER_TIMEOUT);
 
-        ChatFooter.FOOTER_TIMEOUT = setTimeout(() => this?.container?.remove(), 15_000);
+        ChatFooter.#FOOTER_TIMEOUT = setTimeout(() => this?.container?.remove(), 15_000);
 
         return this;
     }
@@ -1102,7 +1111,7 @@ function GetChat(lines = 30, keepEmotes = false) {
         style = style
             .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
-        let uuid = UUID.from([author, mentions.join(','), message].join(':')).toString();
+        let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
 
         if(defined(results.find(message => message.uuid == uuid)))
             continue;
@@ -1166,7 +1175,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             .trim()
             .replace(/(\s){2,}/g, '$1');
 
-        let uuid = UUID.from([subject, mentions.join(','), message].join(':')).toString();
+        let uuid = UUID.from([subject, mentions.join(','), message].join(':')).value;
 
         if(defined(results.bullets.find(bullet => bullet.uuid == uuid)))
             continue;
@@ -1190,7 +1199,7 @@ function GetChat(lines = 30, keepEmotes = false) {
 Object.defineProperties(GetChat, {
     onnewmessage: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).toString();
+            let name = callback.name || UUID.from(callback.toString()).value;
 
             if(GetChat.__onnewmessage__.has(name))
                 return GetChat.__onnewmessage__.get(name);
@@ -1210,7 +1219,7 @@ Object.defineProperties(GetChat, {
 
     onwhisper: {
         set(callback) {
-            let name = callback.name || UUID.from(callback.toString()).toString();
+            let name = callback.name || UUID.from(callback.toString()).value;
 
             if(GetChat.__onwhisper__.has(name))
                 return GetChat.__onwhisper__.get(name);
@@ -2019,7 +2028,7 @@ Object.defineProperties(top, {
         },
 
         set(listener) {
-            __ONLOCATIONCHANGE__.set(UUID.from(listener.toString()).toString(), listener);
+            __ONLOCATIONCHANGE__.set(UUID.from(listener.toString()).value, listener);
 
             return listener;
         }
@@ -2207,7 +2216,7 @@ function RegisterJob(JobName, JobReason = 'default') {
         setInterval(Handlers[JobName], Timers[JobName]):
     -setTimeout(Handlers[JobName], -Timers[JobName]);
 }
-Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).toString());
+Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
 // Unregisters a job
     // UnregisterJob(JobName:string) -> undefined
@@ -2230,7 +2239,7 @@ function UnregisterJob(JobName, JobReason = 'default') {
     Jobs[JobName] = undefined;
     delete Jobs[JobName];
 }
-Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).toString());
+Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).value);
 
 // Restarts (unregisters, then registers) a job
     // RestartJob(JobName:string) -> undefined
@@ -2249,8 +2258,8 @@ function RestartJob(JobName, JobReason = 'default') {
         RegisterJob(JobName, JobReason);
     });
 }
-Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).toString());
-Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).toString());
+Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
+Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 
 // Settings have been saved
 let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i');
@@ -2356,6 +2365,7 @@ let Initialize = async(START_OVER = false) => {
     NORMAL_MODE = !SPECIAL_MODE;
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
+        .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
         .replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1');
 
     if(SPECIAL_MODE) {
@@ -2370,8 +2380,6 @@ let Initialize = async(START_OVER = false) => {
             UnregisterJob(job, 'reinit');
         ERRORS = Initialize.errors++
     }
-
-    Settings = await GetSettings();
 
     // Modify the logging feature via the settings
     if(!Settings.display_in_console)
@@ -2873,7 +2881,7 @@ let Initialize = async(START_OVER = false) => {
             if(pathname.startsWith('/videos/'))
                 videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
             else
-                channelName = pathname.replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
+                channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
 
             // Fetch an API request
             let type = (defined(videoID)? 'vod': 'channel'),
@@ -3029,7 +3037,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target="watchparty-overlay-main"i] button, .home [data-a-target^="home"]')?.click();
+        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"]')?.click();
     };
     Timers.auto_accept_mature = -1000;
 
@@ -3632,7 +3640,7 @@ let Initialize = async(START_OVER = false) => {
                 update();
 
                 let { pathname } = parseURL(FIRST_IN_LINE_HREF),
-                    channelID = UUID.from(pathname).toString();
+                    channelID = UUID.from(pathname).value;
 
                 ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined);
                 FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
@@ -4032,7 +4040,7 @@ let Initialize = async(START_OVER = false) => {
 
             let { href, pathname } = parseURL(action.href),
                 { innerText } = action,
-                uuid = UUID.from(innerText).toString();
+                uuid = UUID.from(innerText).value;
 
             if(!!~HANDLED_NOTIFICATIONS.indexOf(uuid))
                 continue;
@@ -4312,18 +4320,18 @@ let Initialize = async(START_OVER = false) => {
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
-        switch(ON_INSTALLED_REASON ??= Settings.onInstalledReason) {
-            case 'chrome_update':
-            case 'shared_module_update':
+        switch(ON_INSTALLED_REASON ||= Settings.onInstalledReason) {
+            case CHROME_UPDATE:
+            case SHARED_MODULE_UPDATE:
                 // Not used. Ignore
                 break;
 
-            case 'install':
+            case INSTALL:
                 // Ignore all current streamers; otherwise this will register them all
                 new_names = [];
                 break;
 
-            case 'update':
+            case UPDATE:
             default:
                 // Should function normally
                 break;
@@ -4399,12 +4407,12 @@ let Initialize = async(START_OVER = false) => {
         if(!like) {
             await LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
                 let watch_time = $('#twitch-tools-watch-time'),
-                    time = parseInt(watch_time?.getAttribute('time')) | 0;
+                    secs = parseInt(watch_time?.getAttribute('time')) | 0;
 
                 if(!defined(watch_time))
                     return;
 
-                if(time >= mins * 60_000)
+                if(secs > (mins * 60))
                     follow();
             });
 
@@ -4602,7 +4610,7 @@ let Initialize = async(START_OVER = false) => {
             next = await GetNextStreamer(),
             { pathname } = window.location;
 
-        let Paths = [USERNAME, '[up]/', 'user', 'watchparty', 'videos?', 'team', 'directory', 'downloads?', 'jobs?', 'turbo', 'friends?', 'subscriptions?', 'inventory', 'wallet', 'settings', 'search', '$'];
+        let Paths = [USERNAME, '$', '[up]/', 'directory', 'downloads?', 'friends?', 'inventory', 'jobs?', 'moderator', 'search', 'settings', 'subscriptions?', 'team', 'turbo', 'user', 'videos?', 'wallet', 'watchparty'];
 
         try {
             await LoadCache('UserIntent', ({ UserIntent }) => {
@@ -5697,15 +5705,15 @@ let Initialize = async(START_OVER = false) => {
         } if(months > 12) {
             estimated = 'year';
             timeEstimated = years;
-        } if(years > 70) {
-            estimated = 'life time';
-            timeEstimated = years / 70;
+        } if(years > 100) {
+            estimated = 'century';
+            timeEstimated = years / 100;
         }
 
         timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
-            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } stream${ (streams != 1? 's': '') } (${ comify(timeEstimated) } ${ estimated + (timeEstimated != 1? 's': '') })`;
+            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } stream${ (streams != 1? 's': '') } (${ comify(timeEstimated) } ${ estimated.replace(/(y?)$/, ($0, $1, $$, $_) => timeEstimated != 1? ['s', 'ies'][+!!$1.length]: $1) })`;
     };
     Timers.rewards_calculator = 100;
 
@@ -5736,6 +5744,8 @@ let Initialize = async(START_OVER = false) => {
      */
     let INITIAL_POINTS,
         COUNTING_POINTS,
+        EXACT_POINTS_COLLECTED = 0,
+        OBSERVING_ANIMATION = false,
         COUNTING_HREF = NORMALIZED_PATHNAME;
 
     Handlers.points_receipt_placement = () => {
@@ -5764,9 +5774,15 @@ let Initialize = async(START_OVER = false) => {
 
         COUNTING_POINTS = setInterval(() => {
             let points_receipt = $('#twitch-tools-points-receipt'),
-                balance = $('[data-test-selector="balance-string"i]');
+                balance = $('[data-test-selector="balance-string"i]'),
+                exact_change = $('[class*="community-points-summary"][class*="points-add-text"]');
 
-            if(!defined(points_receipt) || !defined(balance)) {
+            // Don't keep adding the exact change while the animation is playing
+            if(OBSERVING_ANIMATION)
+                return OBSERVING_ANIMATION = defined(exact_change);
+            OBSERVING_ANIMATION = defined(exact_change);
+
+            if(!~[points_receipt, exact_change, balance].findIndex(defined)) {
                 points_receipt?.parentElement?.remove();
 
                 RestartJob('points_receipt_placement');
@@ -5774,11 +5790,23 @@ let Initialize = async(START_OVER = false) => {
                 return clearInterval(COUNTING_POINTS);
             }
 
-            let current = parseCoin(balance?.innerText ?? 0);
+            let current = parseCoin(balance?.innerText);
 
             INITIAL_POINTS ??= current;
+            EXACT_POINTS_COLLECTED += parseCoin(exact_change?.innerText);
 
-            let receipt = current - INITIAL_POINTS;
+            let receipt;
+
+            switch (Settings.channelpoints_receipt_display) {
+                case "round100":
+                    receipt = current - INITIAL_POINTS;
+                    break;
+
+                case "null":
+                default:
+                    receipt = EXACT_POINTS_COLLECTED;
+                    break;
+            }
 
             points_receipt.innerHTML = `${ Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } ${ Math.abs(receipt).prefix(`&${ 'du'[+(receipt > 0)] }arr;`, 1).replace(/\.0+&/, '&') }`;
         }, 1000);
@@ -6255,7 +6283,7 @@ let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE;
 
-PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
+PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
     let ready = (true
         // The follow button exists
         && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
@@ -6275,6 +6303,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
     );
 
     if(ready) {
+        Settings = await GetSettings();
+
         setTimeout(Initialize, 1000);
         clearInterval(PAGE_CHECKER);
 
@@ -6349,7 +6379,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                             style = style
                                 .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
-                            let uuid = UUID.from([author, mentions.join(','), new Date, message].join(':')).toString();
+                            let uuid = UUID.from([author, mentions.join(','), new Date, message].join(':')).value;
 
                             if(defined(results.find(message => message.uuid == uuid)))
                                 continue;
@@ -6442,7 +6472,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = () => {
                                     style = style
                                         .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
-                                    let uuid = UUID.from([author, new Date, message].join(':')).toString();
+                                    let uuid = UUID.from([author, new Date, message].join(':')).value;
 
                                     callback({
                                         raw,
@@ -6578,23 +6608,29 @@ CUSTOM_CSS.innerHTML =
 }*/
 `;
 
-            // Is this the first time the extension has run?
-            // If so, then point out what's been changed
-            if(Settings.onInstalledReason == 'install')
-                setTimeout(() => {
-                    for(let element of $('#twitch-tools-auto-claim-bonuses, [up-next--container]', true))
-                        element.classList.add('twitch-tools-first-run');
-
-                    setTimeout(() => {
-                        $('.twitch-tools-first-run', true)
-                            .forEach(element => element.classList.remove('twitch-tools-first-run'));
-                    }, 30_000);
-                }, 5_000);
-
-            Storage.set({ onInstalledReason: null });
-
             CUSTOM_CSS?.remove();
             $('body').appendChild(CUSTOM_CSS);
+        }
+
+        // Update the settings
+        SettingsInitializer: {
+            switch(Settings.onInstalledReason) {
+                // Is this the first time the extension has run?
+                // If so, then point out what's been changed
+                case INSTALL:
+                    setTimeout(() => {
+                        for(let element of $('#twitch-tools-auto-claim-bonuses, [up-next--container]', true))
+                            element.classList.add('twitch-tools-first-run');
+
+                        setTimeout(() => {
+                            $('.twitch-tools-first-run', true)
+                                .forEach(element => element.classList.remove('twitch-tools-first-run'));
+                        }, 30_000);
+                    }, 5_000);
+                    break;
+            }
+
+            Storage.set({ onInstalledReason: null });
         }
     }
 }, 500);

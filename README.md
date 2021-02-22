@@ -31,20 +31,20 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Prevent Hosting* &mdash; When a channel begins hosting, go to the __Next Channel__
     - `default` Allow all channels to be hosted
     - Prevent all channels from being hosted
-    - Prevent unfollowed channels from being hosted
+    - Prevent channels you don't follow from being hosted
 - *Prevent Raiding* &mdash; When a raid begins, go to the __Next Channel__
     - `default` Allow all channels to be raided
     - Only raid to collect the bonus points
     - Prevent all channels from being raided
-    - Prevent unfollowed channels from being raided
-- *Stay Live* `on` &mdash; When the current stream ends, got to the __Next Channel__
+    - Prevent channels you don't follow from being raided
+- *Stay Live* `on` &mdash; When the stream you're watching ends, go to the __Next Channel__
 
 ### Chat & Messaging
 
 - *Convert Emotes* `off` &mdash; *Currently under __Experimental Features__*
 - *Filter Messages* `on` &mdash; Remove messages across all channels
     - `text` &mdash; will remove all messages containing *text*
-    - `:emote` &mdash; will remove all messages containing the emote named *emote*
+    - `:emote:` &mdash; will remove all messages containing the emote named *emote*
     - `@username` &mdash; will remove all messages from *username*
     - `/channel text` &mdash; will remove all messages containing *text*, but only on *channel*
     - `[^\/*+?$]` &mdash; [JavaScript-based RegExps](https://javascript.info/regular-expressions) can also be used: `swears?` will remove "swear", "swears", "SWEAR", "SWEARS" and all other variations
@@ -56,7 +56,10 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 ### Currencies
 
 - *Convert Bits* `on` &mdash; When presented with Bits, show the true USD amount they represent
-- *Rewards Calculator* `off` &mdash; Calculates how long a stream needs to be watched non-stop to redeem Channel Point rewards.
+- *Channel Points Receipt* &mdash; Decide whether to display the exact number of channel points collected
+    - `default` Display the exact amount collected
+    - Round to the nearest hundred
+- *Rewards Calculator* `off` &mdash; Estimates how long a stream needs to be watched non-stop to redeem a Channel Points reward
 
 ### Customization
 
@@ -80,13 +83,13 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 ### Developer Mode
 
 - *Display Console Messages* `off` &mdash; Allows the extension to display messages in the console
-- *Experimental Features* `off` &mdash; Allows the extension to display &amp; use experimental features
+- *Experimental Features* `off` &mdash; Allows the extension to display, and use experimental features
 - *Show Default Values* &mdash; Displays the default values
 
 ### Experimental Features
 
-- *Auto-Focus* `off` &mdash; When there is an increase in video activity, automatically pause other features
-- *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emote (without requiring a subscription)
+- *Auto-Focus* `off` &mdash; When there is an increase in video activity, automatically pause other features that would leave or alter the stream
+- *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emotes (without requiring a subscription)
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
 - *Prevent spam* `off` &mdash; Hide repetitive messages in chat

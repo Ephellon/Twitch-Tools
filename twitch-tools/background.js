@@ -12,7 +12,7 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let empty = value => (value === undefined || value === null),
     defined = value => !empty(value);
 
-let browser, Storage, Runtime, Extension, Container, BrowserNamespace;
+let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
 if(browser && browser.runtime)
     BrowserNamespace = 'browser';
@@ -26,6 +26,7 @@ switch(BrowserNamespace) {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
+        Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
         break;
@@ -35,10 +36,13 @@ switch(BrowserNamespace) {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
+        Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
         break;
 }
+
+let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
 // Update the tab(s) when a new version is installed
 // reason:string - install | update | chrome_update | shared_module_update
@@ -51,12 +55,27 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
         Storage.set({ onInstalledReason: reason, chromeUpdateAvailable: false, githubUpdateAvailable: false });
 
-        if(reason == 'install') {
-            Container.tabs.create({ url: 'settings.html' });
-        } else {
-            for(let tab of tabs)
-                Container.tabs.reload(tab.id);
+        switch(reason) {
+            // Has the extension just been installed?
+            // If so, open the settings page
+            case INSTALL:
+                Container.tabs.create({ url: 'settings.html' });
+                break;
+
+            // Has the extension been updated?
+            // If so, but the version hasn't changed, change the build number
+            case UPDATE:
+                Storage.get(['buildVersion'], ({ buildVersion }) => {
+                    let [version, build] = (buildVersion ?? "").split('#');
+
+                    Storage.set({ buildVersion: `${ Manifest.version }#${ (Manifest.version == version? (build | 0) + 1: 0) }` });
+                });
+                break;
+
         }
+
+        for(let tab of tabs)
+            Container.tabs.reload(tab.id);
 
         // Update the badge text when there's an update available
         Container.browserAction.setBadgeText({ text: '' });

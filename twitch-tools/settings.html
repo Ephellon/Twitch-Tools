@@ -390,6 +390,20 @@
             </section>
 
             <section>
+                <div class="title"><span small glyph="bits"></span> Channel Points Receipt</div>
+                <div class="summary">
+                    <p>
+                        How should the receipt display <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Channel Points"><button style="background-color:var(--grey)!important"><span small purple glyph="channelpoints"></span></button></a> collection?
+                    </p>
+
+                    <select id="channelpoints_receipt_display">
+                        <option value="null" selected>Display the exact amount collected</option>
+                        <option value="round100">Round to the nearest hundred</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="channelpoints"></span> Rewards Calculator</div>
                 <div class="summary">
                     <div class="toggle">
@@ -894,12 +908,27 @@
             </footer>
         </article>
 
+        <div id="context-id" set="content:context.id"></div>
+
         <button id="save" class="ripple"></button>
 
         <script src="settings.js"></script>
 
         <style>
         /* CSS needs to be here so that `height:100%` and `width:100%` can render properly */
+        #context-id {
+            color: #9147ff44;
+            font-family: monospace;
+            font-size: 2rem;
+            text-align: center;
+
+            padding: 0 1rem 1rem;
+        }
+
+        #context-id::after {
+            content: attr(content);
+        }
+
         .popup .ripple:after {
             content: ' ';
 

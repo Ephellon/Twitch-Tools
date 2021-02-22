@@ -26,6 +26,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.4
+- Fixed issue where auto-join was disabled
+- Added the "Channel Points Receipt (Display)" option
+
 > 2.9.3
 - Fixed issue where clicking Up Next wouldn't restart the timer
 - Fixed issue where some offline channels still appeared as "live"
