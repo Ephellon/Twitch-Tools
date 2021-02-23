@@ -14,6 +14,18 @@ Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = nu
     return (this.length - this.reverse().findIndex(predicate, thisArg)) - 1;
 };
 
+// Determines if the array contains any of the value(s)
+    // Array..contains(...values:any) -> boolean
+Array.prototype.contains ??= function contains(...values) {
+    let has = false;
+
+    for(let value of values)
+        if(has ||= !!~this.indexOf(value))
+            break;
+
+    return has;
+};
+
 // https://stackoverflow.com/a/35859991/4211612
 // Captures the current frame from a video element
     // HTMLVideoElement..captureFrame([imageType:string[, returnType:string]]) -> String#dataURL | Object | HTMLImageElement

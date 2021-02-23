@@ -195,7 +195,7 @@ class Popup {
             return existing;
 
         if(defined(X)) {
-            if(!~Queue.popups.map(popup => popup.uuid).indexOf(uuid)) {
+            if(!Queue.popups.map(popup => popup.uuid).contains(uuid)) {
                 let interval = setInterval(() => {
                     let existing = $('#twitch-tools-popup');
 
@@ -374,7 +374,7 @@ class Balloon {
             return existing;
 
         if(defined(X)) {
-            if(!~Queue.balloons.map(popup => popup.uuid).indexOf(uuid)) {
+            if(!Queue.balloons.map(popup => popup.uuid).contains(uuid)) {
                 let interval = setInterval(() => {
                     let existing = $('#twitch-tools-balloon');
 
@@ -1260,7 +1260,7 @@ function RemoveFromTopSearch(keys, reload = true) {
 
     let search = [];
     for(let parameter in parameters)
-        if(!~keys.indexOf(parameter))
+        if(!keys.contains(parameter))
             search.push(`${parameter}=${parameters[parameter]}`);
     search = '?' + search.join('&');
 
@@ -1531,7 +1531,7 @@ function parseBool(value = null) {
             return false;
 
         default:
-            return (!!~["bigint", "number"].indexOf(typeof value)? !isNaN(value): true);
+            return (["bigint", "number"].contains(typeof value)? !isNaN(value): true);
     }
 }
 
@@ -1655,7 +1655,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     if(/(auto|high|low|source)/i.test(quality))
         desired = qualities[RegExp.$1];
     else
-        desired = qualities.find(({ label }) => !!~smol(label).indexOf(quality.toLowerCase())) ?? null;
+        desired = qualities.find(({ label }) => smol(label).contains(quality.toLowerCase())) ?? null;
 
     if(!defined(desired))
         /* The desired quality does not exist */
@@ -3314,7 +3314,7 @@ let Initialize = async(START_OVER = false) => {
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
-            if(!!~['over'].indexOf(placement))
+            if(['over'].contains(placement))
                 container.firstElementChild.classList.remove('tw-mg-l-1');
             extra({ container, sibling, parent, before, placement });
 
@@ -3555,7 +3555,7 @@ let Initialize = async(START_OVER = false) => {
 
         href = parseURL(href).href;
 
-        let channel = ALL_CHANNELS.find(channel => channel.href == href);
+        let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname == parseURL(href).pathname);
 
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -3801,7 +3801,7 @@ let Initialize = async(START_OVER = false) => {
 
             let streamer,
                 // Did the event originate from within the ballon?
-                from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
+                from_container = !event.path.slice(0, 5).contains(FIRST_IN_LINE_BALLOON.body);
 
             try {
                 streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer'));
@@ -3872,7 +3872,7 @@ let Initialize = async(START_OVER = false) => {
                 if(!defined(channel))
                     return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
 
-                if(!!~[oldIndex, newIndex].indexOf(0)) {
+                if([oldIndex, newIndex].contains(0)) {
                     LOG('New First in Line event:', channel);
 
                     FIRST_IN_LINE_TIMER = parseInt(
@@ -4042,11 +4042,11 @@ let Initialize = async(START_OVER = false) => {
                 { innerText } = action,
                 uuid = UUID.from(innerText).value;
 
-            if(!!~HANDLED_NOTIFICATIONS.indexOf(uuid))
+            if(HANDLED_NOTIFICATIONS.contains(uuid))
                 continue;
             HANDLED_NOTIFICATIONS.push(uuid);
 
-            if(!!~DO_NOT_AUTO_ADD.indexOf(href))
+            if(DO_NOT_AUTO_ADD.contains(href))
                 continue;
 
             if(!/([^]+? +)(go(?:ing)?|is|went) +live\b/i.test(innerText))
@@ -4055,7 +4055,7 @@ let Initialize = async(START_OVER = false) => {
             LOG('Recieved an actionable notification:', innerText, new Date);
 
             if(defined(FIRST_IN_LINE_HREF)) {
-                if(!~[...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].indexOf(href)) {
+                if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
                     LOG('Pushing to First in Line:', href, new Date);
 
                     ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
@@ -4063,7 +4063,7 @@ let Initialize = async(START_OVER = false) => {
                     WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
                         'It is the next job:', FIRST_IN_LINE_HREF === href,
-                        'It is in the queue already:', !!~ALL_FIRST_IN_LINE_JOBS.indexOf(href),
+                        'It is in the queue already:', ALL_FIRST_IN_LINE_JOBS.contains(href),
                     );
                 }
 
@@ -4312,8 +4312,8 @@ let Initialize = async(START_OVER = false) => {
             return SaveCache({ OLD_STREAMERS });
 
         new_names = new_names
-            .filter(name => !~old_names.indexOf(name))
-            .filter(name => !~bad_names.indexOf(name));
+            .filter(name => !old_names.contains(name))
+            .filter(name => !bad_names.contains(name));
 
         if(new_names.length < 1)
             return SaveCache({ OLD_STREAMERS });
@@ -4477,7 +4477,7 @@ let Initialize = async(START_OVER = false) => {
         host_stopper:
         if(hosting) {
             // Ignore followed channels
-            if(!!~["unfollowed"].indexOf(Settings.prevent_hosting)) {
+            if(["unfollowed"].contains(Settings.prevent_hosting)) {
                 let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
@@ -4540,7 +4540,7 @@ let Initialize = async(START_OVER = false) => {
             window.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5_000);
 
             // Ignore followed channels
-            if(!!~["greed", "unfollowed"].indexOf(method)) {
+            if(["greed", "unfollowed"].contains(method)) {
                 // #1
                 // Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
@@ -4583,7 +4583,7 @@ let Initialize = async(START_OVER = false) => {
                 }
             };
 
-            CONTINUE_RAIDING = !!setTimeout(leaveStream, 60_000 * +!!~["greed"].indexOf(method));
+            CONTINUE_RAIDING = !!setTimeout(leaveStream, 60_000 * +["greed"].contains(method));
         }
     };
     Timers.prevent_raiding = 15_000;
@@ -4631,6 +4631,8 @@ let Initialize = async(START_OVER = false) => {
             if(!ValidTwitchPath.test(pathname)) {
                 if(online.length) {
                     WARN(`${ STREAMER.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
+
+                    REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF).pushToSearch({ from: STREAMER.name }).href );
 
                     open(`${ next.href }?obit=${ STREAMER.name }`, '_self');
                 } else  {
@@ -4871,7 +4873,7 @@ let Initialize = async(START_OVER = false) => {
 
             for(let line of chat) {
                 // Replace emotes for the last 30 chat messages
-                if(!!~Queue.emotes.indexOf(line.uuid))
+                if(Queue.emotes.contains(line.uuid))
                     continue;
                 if(Queue.emotes.length >= 30)
                     Queue.emotes = [];
@@ -5019,7 +5021,7 @@ let Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge))? reason = 'channel badge': false)
+                            || (badges.findIndex(medal => !!~medal.indexOf(badge))? reason = 'channel badge': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).indexOf(true)
@@ -5032,7 +5034,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let hidden = element.getAttribute('twitch-tools-hidden') === 'true';
 
-                if(hidden || !!~mentions.indexOf(USERNAME))
+                if(hidden || mentions.contains(USERNAME))
                     return;
 
                 element.setAttribute('twitch-tools-hidden', true);
@@ -5079,7 +5081,7 @@ let Initialize = async(START_OVER = false) => {
 
         if(type == 'user') {
             /* Filter users */
-            if(filter_rules && !!~filter_rules.split(',').indexOf(`@${ name }`))
+            if(filter_rules && filter_rules.split(',').contains(`@${ name }`))
                 return /* Already filtering messages from this person */;
 
             let filter = furnish('div#twitch-tools-filter-rule-user', {
@@ -5111,7 +5113,7 @@ let Initialize = async(START_OVER = false) => {
             title.appendChild(filter);
         } else if(type == 'emote') {
             /* Filter emotes */
-            if(filter_rules && !!~filter_rules.split(',').indexOf(`:${ name }:`))
+            if(filter_rules && filter_rules.split(',').contains(`:${ name }:`))
                 return /* Already filtering this emote */;
 
             let filter = furnish('div#twitch-tools-filter-rule-emote', {
@@ -5169,7 +5171,7 @@ let Initialize = async(START_OVER = false) => {
         let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
 
         for(let line of chat)
-            if(!~Queue.messages.indexOf(line.uuid)) {
+            if(!Queue.messages.contains(line.uuid)) {
                 Queue.messages.push(line.uuid);
 
                 let { author, message, reply } = line;
@@ -5200,7 +5202,7 @@ let Initialize = async(START_OVER = false) => {
         let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
 
         for(let line of chat)
-            if(!~Queue.message_popups.indexOf(line.uuid)) {
+            if(!Queue.message_popups.contains(line.uuid)) {
                 Queue.message_popups.push(line.uuid);
 
                 let { author, message, reply } = line;
@@ -6426,7 +6428,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                         NodeToObject:
                         for(let node of addedNodes) {
                             let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
-                                newmessage = !!~["whisper-message"].indexOf(node.dataset.aTarget);
+                                newmessage = ["whisper-message"].contains(node.dataset.aTarget);
 
                             if(false
                                 || !highlighted

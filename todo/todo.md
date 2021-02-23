@@ -26,6 +26,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.5
+- Fixed "Stay Live" issue that would continue the timer if the current stream ended
+
 > 2.9.4
 - Fixed issue where auto-join was disabled
 - Added the "Channel Points Receipt (Display)" option
