@@ -1204,7 +1204,7 @@ Object.defineProperties(GetChat, {
             if(GetChat.__onnewmessage__.has(name))
                 return GetChat.__onnewmessage__.get(name);
 
-            // LOG('Adding [on new message] event listener', { [name]: callback });
+            // REMARK('Adding [on new message] event listener', { [name]: callback });
 
             GetChat.__onnewmessage__.set(name, callback);
 
@@ -1224,7 +1224,7 @@ Object.defineProperties(GetChat, {
             if(GetChat.__onwhisper__.has(name))
                 return GetChat.__onwhisper__.get(name);
 
-            // LOG('Adding [on new whisper] event listener', { [name]: callback });
+            // REMARK('Adding [on new whisper] event listener', { [name]: callback });
 
             return GetChat.__onwhisper__.set(name, callback);
         },
@@ -1655,7 +1655,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     if(/(auto|high|low|source)/i.test(quality))
         desired = qualities[RegExp.$1];
     else
-        desired = qualities.find(({ label }) => smol(label).contains(quality.toLowerCase())) ?? null;
+        desired = qualities.find(({ label }) => smol(label).indexOf(quality.toLowerCase())) ?? null;
 
     if(!defined(desired))
         /* The desired quality does not exist */
@@ -1730,7 +1730,7 @@ let LOG = (...messages) => {
         width: 100%;
     `;
 
-    console.group(`%c\u22b3 [LOG] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u22b3 [LOG] \u2014 ${ Manifest?.name }`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -1784,7 +1784,7 @@ let WARN = (...messages) => {
         width: 100%;
     `;
 
-    console.group(`%c\u26a0 [WARNING] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u26a0 [WARNING] \u2014 ${ Manifest?.name }`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -1838,7 +1838,7 @@ let ERROR = (...messages) => {
         width: 100%;
     `;
 
-    console.group(`%c\u2298 [ERROR] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u2298 [ERROR] \u2014 ${ Manifest?.name }`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -1856,6 +1856,60 @@ let ERROR = (...messages) => {
             console.log(message):
         console.log(
             `%${ type }\u2298 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+// Logs comments (blue)
+    // LOG([...messages]) -> undefined
+let REMARK = (...messages) => {
+    let CSS = `
+        background-color: #002b55;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #057;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [COMMENT] \u2014 ${ Manifest?.name }`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
             CSS
         );
     }
@@ -2889,28 +2943,28 @@ let Initialize = async(START_OVER = false) => {
                 token = cookies['auth-token'];
 
             // Get Twitch specific data
-            await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
-                .then(response => response.json())
-                .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
-                .then(json => {
-                    if(!defined(json))
-                        throw "Fine Detail JSON data could not be parsed...";
-
-                    LOG('Getting fine details...', { [type]: value, cookies }, json);
-
-                    let conversion = {
-                        paid: 'subscriber',
-
-                        ally: 'partner',
-                        fast: 'turbo',
-                        nsfw: 'mature',
-                        sole: 'channel_id',
-                    };
-
-                    for(let key in conversion)
-                        STREAMER[key] = TWITCH_API[conversion[key]];
-                })
-                .catch(ERROR);
+            // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
+            //     .then(response => response.json())
+            //     .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
+            //     .then(json => {
+            //         if(!defined(json))
+            //             throw "Fine Detail JSON data could not be parsed...";
+            //
+            //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
+            //
+            //         let conversion = {
+            //             paid: 'subscriber',
+            //
+            //             ally: 'partner',
+            //             fast: 'turbo',
+            //             nsfw: 'mature',
+            //             sole: 'channel_id',
+            //         };
+            //
+            //         for(let key in conversion)
+            //             STREAMER[key] = TWITCH_API[conversion[key]];
+            //     })
+            //     .catch(ERROR);
 
             if(!defined(STREAMER.name))
                 break __FineDetails__;
@@ -2942,7 +2996,7 @@ let Initialize = async(START_OVER = false) => {
                     else
                         STREAMER.data = data;
 
-                    LOG(`Cached details about "${ STREAMER.name }"`, data);
+                    REMARK(`Cached details about "${ STREAMER.name }"`, data);
                 });
             } catch(exception) {
                 // Proper CORS request to fetch the HTML data
@@ -2990,7 +3044,7 @@ let Initialize = async(START_OVER = false) => {
                                 data[name] = value;
                             });
 
-                        LOG(`Details about "${ STREAMER.name }"`, data);
+                        REMARK(`Details about "${ STREAMER.name }"`, data);
 
                         return STREAMER.data = data;
                     })
@@ -3006,7 +3060,7 @@ let Initialize = async(START_OVER = false) => {
 
     // TODO - Add an "un-delete" feature
     // Keep a copy of all messages
-    // LOG("Keeping a log of all original messages");
+    // REMARK("Keeping a log of all original messages");
     // Messages.set(STREAMER.name, new Set);
     //
     // GetChat(250).forEach(line => Messages.get(STREAMER.name).add(line));
@@ -3764,7 +3818,7 @@ let Initialize = async(START_OVER = false) => {
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
 
-            LOG(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
+            REMARK(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
 
             if(FIRST_IN_LINE_BOOST) {
                 let fiveMin = 300_000;
@@ -3801,7 +3855,7 @@ let Initialize = async(START_OVER = false) => {
 
             let streamer,
                 // Did the event originate from within the ballon?
-                from_container = !event.path.slice(0, 5).contains(FIRST_IN_LINE_BALLOON.body);
+                from_container = !event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
 
             try {
                 streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer'));
@@ -4156,7 +4210,7 @@ let Initialize = async(START_OVER = false) => {
 
                             if(time < 0)
                                 setTimeout(() => {
-                                    LOG('Mitigation event fro [First in Line]', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
@@ -4632,7 +4686,7 @@ let Initialize = async(START_OVER = false) => {
                 if(online.length) {
                     WARN(`${ STREAMER.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                    REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF).pushToSearch({ from: STREAMER.name }).href );
+                    REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch({ from: STREAMER.name })?.href );
 
                     open(`${ next.href }?obit=${ STREAMER.name }`, '_self');
                 } else  {
@@ -4853,7 +4907,7 @@ let Initialize = async(START_OVER = false) => {
         else
             setTimeout(CollectEmotes, 1000);
 
-        LOG('Adding emote event listener...');
+        REMARK('Adding emote event listener...');
 
         GetChat.onnewmessage = chat => {
             let regexp;
@@ -4993,7 +5047,7 @@ let Initialize = async(START_OVER = false) => {
     let MESSAGE_FILTER;
 
     Handlers.filter_messages = () => {
-        LOG('Adding message filter event listener...');
+        REMARK('Adding message filter event listener...');
 
         MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
             let Filter = UPDATED_FILTER();
@@ -5011,7 +5065,7 @@ let Initialize = async(START_OVER = false) => {
                     // Filter messges (RegExp) on all channels
                     || (Filter.text.test(message)? reason = 'text': false)
                     // Filter messages/users on specific a channel
-                    || !!~Filter.channel.map(({ name, text, user, badge }) => {
+                    || Filter.channel.map(({ name, text, user, badge }) => {
                         if(!defined(STREAMER))
                             return;
 
@@ -5021,10 +5075,13 @@ let Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (badges.findIndex(medal => !!~medal.indexOf(badge))? reason = 'channel badge': false)
+                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge) && medal.length && badge.length)? reason = 'channel badge': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
+                        ) && (null
+                            ?? LOG('Matched Filter:', { name, text, user, badge, badges, reason })
+                            ?? true
                         )
-                    }).indexOf(true)
+                    }).contains(true)
                 );
 
                 if(!censor)
@@ -5396,7 +5453,7 @@ let Initialize = async(START_OVER = false) => {
             },
         };
 
-        LOG('Adding native reply buttons...');
+        REMARK('Adding native reply buttons...');
 
         GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
@@ -5422,7 +5479,7 @@ let Initialize = async(START_OVER = false) => {
     let SPAM = [];
 
     Handlers.prevent_spam = () => {
-        LOG("Adding spam event listener...");
+        REMARK("Adding spam event listener...");
 
         GetChat.onnewmessage = chat =>
             chat.forEach(line => {

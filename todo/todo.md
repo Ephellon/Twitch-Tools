@@ -26,6 +26,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.6
+- Fixed issue that would filter all messages
+
 > 2.9.5
 - Fixed "Stay Live" issue that would continue the timer if the current stream ended
 
