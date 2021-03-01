@@ -26,6 +26,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.7
+- Fixed issue that would not proceed to the next channel
+
 > 2.9.6
 - Fixed issue that would filter all messages
 

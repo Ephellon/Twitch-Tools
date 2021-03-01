@@ -4686,7 +4686,7 @@ let Initialize = async(START_OVER = false) => {
                 if(online.length) {
                     WARN(`${ STREAMER.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                    REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch({ from: STREAMER.name })?.href );
+                    REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch?.({ from: STREAMER.name })?.href );
 
                     open(`${ next.href }?obit=${ STREAMER.name }`, '_self');
                 } else  {
@@ -5077,9 +5077,6 @@ let Initialize = async(START_OVER = false) => {
                             || (('@' + author) == user? reason = 'channel user': false)
                             || (!!~badges.findIndex(medal => !!~medal.indexOf(badge) && medal.length && badge.length)? reason = 'channel badge': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
-                        ) && (null
-                            ?? LOG('Matched Filter:', { name, text, user, badge, badges, reason })
-                            ?? true
                         )
                     }).contains(true)
                 );
@@ -5772,7 +5769,7 @@ let Initialize = async(START_OVER = false) => {
         timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
-            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } stream${ (streams != 1? 's': '') } (${ comify(timeEstimated) } ${ estimated.replace(/(y?)$/, ($0, $1, $$, $_) => timeEstimated != 1? ['s', 'ies'][+!!$1.length]: $1) })`;
+            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } stream${ (streams > 1? 's': '') } (${ comify(timeEstimated) } ${ estimated.replace(/(y?)$/, ($0, $1, $$, $_) => timeEstimated != 1? ['s', 'ies'][+!!$1.length]: $1) })`;
     };
     Timers.rewards_calculator = 100;
 
@@ -5802,6 +5799,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                        |_|
      */
     let INITIAL_POINTS,
+        RECEIPT_TOOLTIP,
         COUNTING_POINTS,
         EXACT_POINTS_COLLECTED = 0,
         OBSERVING_ANIMATION = false,
@@ -5831,6 +5829,8 @@ let Initialize = async(START_OVER = false) => {
 
         parent.appendChild(points_receipt);
 
+        RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
+
         COUNTING_POINTS = setInterval(() => {
             let points_receipt = $('#twitch-tools-points-receipt'),
                 balance = $('[data-test-selector="balance-string"i]'),
@@ -5854,7 +5854,8 @@ let Initialize = async(START_OVER = false) => {
             INITIAL_POINTS ??= current;
             EXACT_POINTS_COLLECTED += parseCoin(exact_change?.innerText);
 
-            let receipt;
+            let receipt,
+                glyph = Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' });
 
             switch (Settings.channelpoints_receipt_display) {
                 case "round100":
@@ -5863,11 +5864,12 @@ let Initialize = async(START_OVER = false) => {
 
                 case "null":
                 default:
-                    receipt = EXACT_POINTS_COLLECTED;
+                    receipt = EXACT_POINTS_COLLECTED + (current - INITIAL_POINTS);
                     break;
             }
 
-            points_receipt.innerHTML = `${ Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } ${ Math.abs(receipt).prefix(`&${ 'du'[+(receipt > 0)] }arr;`, 1).replace(/\.0+&/, '&') }`;
+            RECEIPT_TOOLTIP.innerHTML = '-+'[+(receipt >= 0)] + comify(Math.abs(receipt));
+            points_receipt.innerHTML = `${ glyph } ${ Math.abs(receipt).prefix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1).replace(/\.0+&/, '&') }`;
         }, 1000);
     };
     Timers.points_receipt_placement = -2500;
