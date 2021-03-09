@@ -67,17 +67,17 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     return data;
 };
 
-// Returns a number formatted using unit prefixes
-    // Number..prefix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) -> string
+// Returns a number formatted using unit suffixes
+    // Number..suffix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) -> string
         // decimalPlaces = true | false | *:number
-            // true -> 123.456.prefix('m', true) => "123.456m"
-            // false -> 123.456.prefix('m', false) => "123m"
-            // 1 -> 123.456.prefix('m', 1) => "123.4m"
+            // true -> 123.456.suffix('m', true) => "123.456m"
+            // false -> 123.456.suffix('m', false) => "123m"
+            // 1 -> 123.456.suffix('m', 1) => "123.4m"
         // format = "metric" | "imperial" | "readable"
-Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, format = "metric") {
+Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
         sign = number < 0? '-': '',
-        prefix = '';
+        suffix = '';
 
     number = Math.abs(number);
 
@@ -85,10 +85,10 @@ Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, for
 
     switch(format.toLowerCase()) {
         case 'imperial':
-            system.large = 'thousand million billion trillion quadrillion qunitillion sextillion septillion octillion nonillion'
+            system.large = 'thous m b tr quadr qunit sext sept oct non'
                 .split(' ')
-                .map(prefix => ' ' + prefix);
-            system.small = system.large.map(prefix => prefix + 'ths');
+                .map((suffix, index) => ' ' + suffix + ['and', 'illion'][+!!index]);
+            system.small = system.large.map(suffix => suffix + 'ths');
             break;
 
         // Common US shorthands (used on Twitch)
@@ -108,13 +108,13 @@ Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, for
         for(let index = 0, units = system.large; index < units.length; ++index)
             if(number >= 1000) {
                 number /= 1000;
-                prefix = units[index];
+                suffix = units[index];
             }
     } else if(number < 1 && number > 0) {
         for(let index = 0, units = system.small; index < units.length; ++index) {
             if(number < 1) {
                 number *= 1000;
-                prefix = units[index];
+                suffix = units[index];
             }
         }
     }
@@ -125,5 +125,48 @@ Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, for
         decimalPlaces === false?
             Math.round(number):
         number.toFixed(decimalPlaces)
-    ) + prefix + unit;
-}
+    ) + suffix + unit;
+};
+
+// Returns a properly formatted string depending on the number given
+    // String..properSuffix([numberOfItems:number])
+String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
+    numberOfItems = parseInt(numberOfItems) | 0;
+
+    let suffix,
+        string = this + "";
+
+    ReplaceEnding:
+    // There is exactly one (1) item
+    if(numberOfItems === 1) {
+        break ReplaceEnding;
+    }
+    // There are X number of items
+    else {
+        // Ends with a <consonant "y">, as in "century" -> "centuries"
+        if(/([^aeiou])([y])$/i.test(string))
+        EndsWith_Consonant: {
+            let { $1, $2 } = RegExp,
+                $L = RegExp["$`"],
+                $T = {
+                    "y": "ies",
+                };
+
+            string = $L + $1 + $T[$2];
+        }
+        // Ends with <vowel "y">, as in "day" -> "days"
+        else if(/([aeiou])([y])$/i.test(string))
+        EndsWith_Vowel: {
+            let { $_ } = RegExp;
+
+            string = $_ + "s";
+        }
+        // Ends with anything else
+        else
+        EndsWith_Normal: {
+            string += "s";
+        }
+    }
+
+    return string;
+};

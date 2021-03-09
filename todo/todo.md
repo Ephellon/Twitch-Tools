@@ -26,6 +26,11 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.9.8
+- Fixed plural suffixes
+- Fixed issue where clicking a channel disabled "Stay Live"
+- Fixed issue where channel points were counted incorrectly
+
 > 2.9.7
 - Fixed issue that would not proceed to the next channel
 

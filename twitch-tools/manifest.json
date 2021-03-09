@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "A set of useful and customizable tools for Twitch",
-    "version": "2.9.7",
+    "version": "2.9.8",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -29,6 +29,7 @@
                 "ext/polyfill.js",
                 "ext/resemble.js",
                 "ext/sortable.js",
+                "ext/glyphs.js",
                 "tools.js"
             ]
         }

@@ -913,8 +913,8 @@ $('[set]', true).map(async(element) => {
         }
         // The data hasn't expired yet
         else {
-            properties.version.github = githubVersion;
-            properties.version.chrome = chromeVersion;
+            properties.version.github = githubVersion ?? properties.version.github;
+            properties.version.chrome = chromeVersion ?? properties.version.chrome;
         }
 
         // Set the build number, if applicable
