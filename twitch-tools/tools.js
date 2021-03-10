@@ -5693,7 +5693,8 @@ let Initialize = async(START_OVER = false) => {
     let INITIAL_POINTS,
         RECEIPT_TOOLTIP,
         COUNTING_POINTS,
-        EXACT_POINTS_COLLECTED = 0,
+        EXACT_POINTS_SPENT = 0,
+        EXACT_POINTS_EARNED = 0,
         COUNTING_HREF = NORMALIZED_PATHNAME,
         OBSERVED_COLLECTION_ANIMATIONS = new Map();
 
@@ -5728,15 +5729,20 @@ let Initialize = async(START_OVER = false) => {
                 balance = $('[data-test-selector="balance-string"i]'),
                 exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
-            let animationID = exact_change?.innerText,
+            let current = parseCoin(balance?.innerText);
+
+            INITIAL_POINTS ??= current;
+            EXACT_POINTS_SPENT = (INITIAL_POINTS > current? INITIAL_POINTS - current: EXACT_POINTS_SPENT);
+
+            let animationID = (exact_change?.innerText ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': null)),
                 animationTimeStamp = +new Date;
 
             // Don't keep adding the exact change while the animation is playing
             if(OBSERVED_COLLECTION_ANIMATIONS.has(animationID)) {
                 let time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
 
-                // It's been less than 1 minute
-                if(!defined(animationID) || Math.abs(animationTimeStamp - time) < 120_000)
+                // It's been less than 5 minutes
+                if(!defined(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
                     return;
 
                 // Continue executing...
@@ -5753,24 +5759,22 @@ let Initialize = async(START_OVER = false) => {
                 return clearInterval(COUNTING_POINTS);
             }
 
-            let current = parseCoin(balance?.innerText);
-
-            INITIAL_POINTS ??= current;
-            EXACT_POINTS_COLLECTED += parseCoin(exact_change?.innerText);
+            EXACT_POINTS_EARNED += parseCoin(exact_change?.innerText);
 
             let receipt,
                 glyph = Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' });
 
-            switch (Settings.channelpoints_receipt_display) {
+            switch(Settings.channelpoints_receipt_display) {
                 case "round100":
                     // Paid or Spent
-                    receipt = current - INITIAL_POINTS;
+                    receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT;
+                    receipt = receipt - (receipt % 100);
                     break;
 
                 case "null":
                 default:
                     // Paid - Spent
-                    receipt = EXACT_POINTS_COLLECTED + (current - INITIAL_POINTS);
+                    receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT;
                     break;
             }
 
