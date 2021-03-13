@@ -1,23 +1,9 @@
 # Twitch Tools - To-Do List
 
 ### TO-DO (Known Issues)
-1. Some elements don't register (like SVG animations)
-    * Fixed? 2.9
-2. The Up Next timer resets when clicking a channel from the side-panel
-    * In work...
-    * Fine how it is?
-3. `UserIntent` doesn't prevent faulty "no longer live" from firing
-    * Causes reloads?
-    * Not sure where to begin...
-4. If the page isn't fully reloaded, pausing the timer doesn't work
-    * Since 2.8.3
-    * Fixed? 2.8.3
-5. When all channels are deleted (on the side-panel by Twitch), First in Line re-adds all channels
-    * Added code to *detect* if the channels were deleted, and ignore the change
-    * Fixed? 2.8.3
-6. Accessibility options?
+1. Accessibility options?
     * Not sure what to add...
-7. Instance (tab) data separation?
+2. Instance (tab) data separation?
     * Simply separate each tab's data for certain things, e.g. "Up Next"
 
 - Clean up SVGs and loading
@@ -26,6 +12,12 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.10.1
+- Fixed issue that wouldn't register `ondrop` events
+- Fixed issue that wouldn't add points collected from bets
+- Fixed `STREAMER.ping` logic
+- Added "BetterTTV Emotes"
+
 > 2.9.9
 - Fixed issue were points were doubled incorrectly
 
@@ -178,6 +170,22 @@
 ----
 
 # TO-DID (Fixed Issues)
+> 2.9.*
+1. Some elements don't register (like SVG animations)
+    * Fixed? 2.9
+2. The Up Next timer resets when clicking a channel from the side-panel
+    * In work...
+    * Fine how it is?
+3. `UserIntent` doesn't prevent faulty "no longer live" from firing
+    * Causes reloads?
+    * Fixed. Was issue with "Stay Live" and page reloading
+4. If the page isn't fully reloaded, pausing the timer doesn't work
+    * Since 2.8.3
+    * Fixed? 2.8.3
+5. When all channels are deleted (on the side-panel by Twitch), First in Line re-adds all channels
+    * Added code to *detect* if the channels were deleted, and ignore the change
+    * Fixed? 2.8.3
+
 > 2.8.8
 1. Away-Mode displayed over the video keeps the "fullscreen" tooltip attached
     * Fixed. 2.8.8

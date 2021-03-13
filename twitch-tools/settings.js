@@ -91,6 +91,10 @@ let // These are option names. Anything else will be removed
         // Filter Messages
         'filter_messages',
             'filter_rules',
+        // BetterTTV Emotes*
+        'bttv_emotes',
+        'bttv_emotes_maximum',
+        'bttv_emotes_location',
         // Convert Emotes*
         'convert_emotes',
         // Native Twitch Replies*
@@ -938,10 +942,10 @@ $('[set]', true).map(async(element) => {
             for(let number of numbers)
                 value += flop? -number: number;
 
-            properties.context.id = Math.abs(value).toString(36)
-                .slice(0, 10)
-                .split(/(.{5})/)
-                .filter(s => s.length > 1)
+            properties.context.id = Math.abs(value).toString(16)
+                .slice(0, 12)
+                .split(/(.{4})/)
+                .filter(s => !!s.length)
                 .join('-')
                 .toUpperCase();
         }

@@ -305,13 +305,13 @@
                         <div>
                             <div class="title">General Highlighting</div>
                             <div class="summary">
+                                <p>
+                                    When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
+                                </p>
                                 <div class="toggle">
                                     <input id="highlight_mentions_extra" type="checkbox"/>
                                     <label for="highlight_mentions_extra"></label>
                                 </div>
-                                <p>
-                                    When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
-                                </p>
                             </div>
                         </div>
                     </details>
@@ -398,7 +398,9 @@
 
                     <select id="channelpoints_receipt_display">
                         <option value="null" selected>Display the exact amount collected</option>
-                        <option value="round100">Round to the nearest hundred</option>
+                        <option value="round100">Round to the nearest 100</option>
+                        <option value="round50">Round to the nearest 50</option>
+                        <option value="round25">Round to the nearest 25</option>
                     </select>
                 </div>
             </section>
@@ -670,7 +672,7 @@
         <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features that may produce errors"></span></header>
         <article caution>
             <section>
-                <div class="title"><span small white glyph="stream"></span> Auto-Focus</div>
+                <div class="title"><span small purple glyph="stream"></span> Auto-Focus</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="auto_focus" type="checkbox"/>
@@ -738,6 +740,51 @@
             </section>
 
             <section>
+                <div class="title"><span small gold glyph="emotes"></span> BetterTTV emotes</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="bttv_emotes" type="checkbox"/>
+                        <label for="bttv_emotes"></label>
+                    </div>
+                    <p>
+                        Use BetterTTV emotes.
+                    </p>
+                    <p warning-text>
+                        This may cause instability while loading emotes.
+                    </p>
+                    <details>
+                        <summary subtitle="Adjust options for BetterTTV emotes">Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Library Size</div>
+                                <div class="summary">
+                                    <p>
+                                        Load <span><input id="bttv_emotes_maximum" type="number" value="150" max="1200" min="30" step="30"/></span> <b>BetterTTV</b> emotes.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Emote Location</div>
+                                <div class="summary">
+                                    <p>
+                                        What <b>BetterTTV</b> emotes should be loaded?
+                                    </p>
+
+                                    <select id="bttv_emotes_location">
+                                        <option value="emotes/shared/trending" selected>Most popular (Trending)</option>
+                                        <option value="emotes/shared">Most shared (Shared)</option>
+                                        <option value="emotes/shared/top">Most used (Top)</option>
+                                        <option value="cached/emotes/global">Most universal (Global)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <section>
                 <div class="title"><span small glyph="emotes"></span> Convert emotes</div>
                 <div class="summary">
                     <div class="toggle" right-tooltip="Experimental feature">
@@ -745,7 +792,7 @@
                         <label for="convert_emotes"></label>
                     </div>
                     <p>
-                        When presented with emote-based-text, convert the text into the corresponding emote (without requiring a subscription).
+                        When presented with Twitch&trade; emotes, collect them for usage (without requiring a subscription).
                     </p>
                     <p>
                         This only works for the current stream you are viewing.
@@ -757,7 +804,7 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="extensions"></span> Kill Extensions</div>
+                <div class="title"><span small purple glyph="extensions"></span> Kill Extensions</div>
                 <div class="summary">
                     <div class="toggle" right-tooltip="Experimental feature">
                         <input id="kill_extensions" type="checkbox"/>
@@ -783,7 +830,7 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="mod"></span> Prevent spam</div>
+                <div class="title"><span small purple glyph="mod"></span> Prevent spam</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="prevent_spam" type="checkbox" checked/>
@@ -795,7 +842,7 @@
                     <details>
                         <summary subtitle="Adjust options for Prevent Spam">Options</summary>
                         <div>
-                            <div>
+                            <div text-only>
                                 <div class="title">Message History</div>
                                 <div class="summary">
                                     <p>
@@ -803,8 +850,8 @@
                                     </p>
                                 </div>
                             </div>
-                            <hr>
-                            <div>
+
+                            <div text-only>
                                 <div class="title">Minimum Word Length</div>
                                 <div class="summary">
                                     <p>
@@ -812,8 +859,8 @@
                                     </p>
                                 </div>
                             </div>
-                            <hr>
-                            <div>
+
+                            <div text-only>
                                 <div class="title">Maximum Occurrences</div>
                                 <div class="summary">
                                     <p>
@@ -843,7 +890,7 @@
             </section>
 
             <section>
-                <div class="title"><span small glyph="stats"></span> Use Fine Details</div>
+                <div class="title"><span small purple glyph="stats"></span> Use Fine Details</div>
                 <div class="summary">
                     <div class="toggle" right-tooltip="Experimental feature">
                         <input id="fine_details" type="checkbox"/>

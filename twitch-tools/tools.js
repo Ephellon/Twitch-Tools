@@ -15,7 +15,7 @@ let unknown = value => (value === undefined || value === null),
 let Settings = {},
     UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
     Jobs = {},
-    Queue = { balloons: [], bullets: [], emotes: [], messages: [], message_popups: [], popups: [] },
+    Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Timers = {},
     Handlers = {
         __reasons__: new Map(),
@@ -1093,7 +1093,7 @@ function GetChat(lines = 30, keepEmotes = false) {
                 switch(element.dataset.testSelector) {
                     case 'emote-button':
                         if(keepEmotes)
-                            string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                            string = `:${ (i=>(emotes[i.alt]??=i.src,i.alt))($('img', false, element)) }:`;
                         break;
 
                     default:
@@ -1139,13 +1139,13 @@ function GetChat(lines = 30, keepEmotes = false) {
     for(let bullet of bullets) {
         let message = $('[data-test-selector="chat-message-separator"i] ~ *', true, bullet),
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-            subject = (subject =>
-                /\braid/i.test(subject)?                'raid': // Incoming raid
-                /\bredeem/i.test(subject)?              'cash': // Redeeming (spending) channel points
-                /\bcontinu/i.test(subject)?             'keep': // Continuing a gifted subscription
-                /\bgift/i.test(subject)?                'gift': // Gifting a subscription
-                /\b(re)?subs|\bconvert/i.test(subject)? 'dues': // New subscription, continued subscription, or converted subscription
-                null                                            // No subject
+            subject = (text =>
+                /\braid/i.test(text)?                'raid': // Incoming raid
+                /\bredeem/i.test(text)?              'cash': // Redeeming (spending) channel points
+                /\bcontinu/i.test(text)?             'keep': // Continuing a gifted subscription
+                /\bgift/i.test(text)?                'gift': // Gifting a subscription
+                /\b(re)?subs|\bconvert/i.test(text)? 'dues': // New subscription, continued subscription, or converted subscription
+                null                                         // No subject
             )($('*:first-child', false, bullet)?.textContent);
 
         if(!defined(subject) && message.length < 1)
@@ -1160,7 +1160,7 @@ function GetChat(lines = 30, keepEmotes = false) {
                 switch(element.dataset.testSelector) {
                     case 'emote-button':
                         if(keepEmotes)
-                            string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                            string = `:${ (i=>(emotes[i.alt]??=i.src,i.alt))($('img', false, element)) }:`;
                         break;
 
                     default:
@@ -1499,8 +1499,8 @@ function parseCoin(amount = '') {
     let points = 0,
         COIN, UNIT;
 
-    amount = amount.replace(/([\d\.]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
-        COIN = $1;
+    amount = amount.replace(/([\d\.,]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
+        COIN = $1.replace(/,+/g, '');
         UNIT = ($2 ?? '').toUpperCase();
     });
 
@@ -2208,7 +2208,7 @@ Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 // Settings have been saved
 let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i');
 
-let EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'fine_details', 'native_twitch_reply', 'prevent_spam'].map(AsteriskFn),
+let EXPERIMENTAL_FEATURES = ['auto_focus', 'bttv_emotes*', 'convert_emotes', 'fine_details', 'native_twitch_reply', 'prevent_spam'].map(AsteriskFn),
     SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'first_in_line*', 'prevent_#'].map(AsteriskFn),
     NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
     REFRESHABLE_FEATURES = ['auto_focus*', 'filter_messages', '*placement'].map(AsteriskFn);
@@ -2231,7 +2231,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                 WARN(`Disabling experimental feature: ${ name }`, new Date);
             else
-                LOG(`Disabling feature: ${ name }`, new Date);
+                REMARK(`Disabling feature: ${ name }`, new Date);
 
             UnregisterJob(key, 'disable');
         } else if(newValue === true) {
@@ -2239,7 +2239,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                 WARN(`Enabling experimental feature: ${ name }`, new Date);
             else
-                LOG(`Enabling feature: ${ name }`, new Date);
+                REMARK(`Enabling feature: ${ name }`, new Date);
 
             RegisterJob(key, 'enable');
         } else {
@@ -2247,7 +2247,7 @@ Storage.onChanged.addListener((changes, namespace) => {
             if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                 WARN(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
             else
-                LOG(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
+                REMARK(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
 
             switch(key) {
                 case 'filter_rules':
@@ -2523,7 +2523,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get ping() {
-            return defined($('[data-a-target="notifications-toggle"i] [class*="--notificationbellfilled"i]'))
+            return defined($('[data-a-target^="live-notifications"i][data-a-target$="on"i]'))
         },
 
         get poll() {
@@ -3745,7 +3745,7 @@ let Initialize = async(START_OVER = false) => {
 
             let streamer,
                 // Did the event originate from within the ballon?
-                from_container = !event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
+                from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
 
             try {
                 streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer'));
@@ -4436,11 +4436,11 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.__eventlisteners__.onhost.forEach(job => job({ hosting, next }));
 
             if(defined(next)) {
-                WARN(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
+                LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                 open(next.href, '_self');
             } else {
-                WARN(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
+                LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
             }
         }
     };
@@ -4519,11 +4519,11 @@ let Initialize = async(START_OVER = false) => {
                 STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
 
                 if(defined(next)) {
-                    WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
+                    LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                     open(next.href, '_self');
                 } else {
-                    WARN(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
+                    LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
                 }
             };
 
@@ -4611,6 +4611,201 @@ let Initialize = async(START_OVER = false) => {
      *                                                                    __/ |         __/ |
      *                                                                   |___/         |___/
      */
+    /*** BetterTTV Emotes
+     *      ____       _   _         _______ _________      __  ______                 _
+     *     |  _ \     | | | |       |__   __|__   __\ \    / / |  ____|               | |
+     *     | |_) | ___| |_| |_ ___ _ __| |     | |   \ \  / /  | |__   _ __ ___   ___ | |_ ___  ___
+     *     |  _ < / _ \ __| __/ _ \ '__| |     | |    \ \/ /   |  __| | '_ ` _ \ / _ \| __/ _ \/ __|
+     *     | |_) |  __/ |_| ||  __/ |  | |     | |     \  /    | |____| | | | | | (_) | ||  __/\__ \
+     *     |____/ \___|\__|\__\___|_|  |_|     |_|      \/     |______|_| |_| |_|\___/ \__\___||___/
+     *
+     *
+     */
+    let BTTV_EMOTES = new Map(),
+        BTTV_LOADED_INDEX = 0,
+        CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
+            let { name, src } = emote,
+                existing = $(`img.bttv[alt="${ name }"]`);
+
+            if(defined(existing))
+                return existing.closest('div.bttv-container');
+
+            let emoteContainer =
+            furnish('div.bttv-container.tw-pd-x-05.tw-relative', {},
+                furnish('div.emote-button', {},
+                    furnish('div.tw-inline-flex', {},
+                        furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
+                            {
+                                'data-test-selector': 'emote-button-clickable',
+                                'aria-label': name,
+                                name,
+                                'data-a-target': name,
+
+                                onclick: event => {
+                                    let name = event.currentTarget.getAttribute('name'),
+                                        chat = $('[data-a-target="chat-input"]');
+
+                                    // chat.innerHTML = (chat.value += `${name} `);
+                                },
+
+                                ondragstart: event => {
+                                    let { currentTarget } = event;
+
+                                    event.dataTransfer.setData('text/plain', currentTarget.getAttribute('name').trim() + ' ');
+                                    event.dataTransfer.dropEffect = 'move';
+                                },
+                            },
+
+                            furnish('figure', {},
+                                /*
+                                <div class="emote-button__lock tw-absolute tw-border-radius-small tw-c-background-overlay tw-c-text-overlay tw-inline-flex tw-justify-content-center tw-z-above" data-test-selector="badge-button-lock">
+                                    <figure class="ScFigure-sc-1j5mt50-0 laJGEQ tw-svg">
+                                        <!-- badge icon -->
+                                    </figure>
+                                </div>
+                                */
+                                furnish('div.emote-button__lock.tw-absolute.tw-border-radius-small.tw-c-background-overlay.tw-c-text-overlay.tw-inline-flex.tw-justify-content-center.tw-z-above', { 'data-test-selector': 'badge-button-icon' },
+                                    furnish('figure.tw-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
+                                ),
+                                furnish('img.bttv.emote-picker__image', { src, alt: name })
+                            )
+                        )
+                    )
+                )
+            );
+
+            if(makeTooltip !== false)
+                new Tooltip(emoteContainer, name);
+
+            return emoteContainer;
+        },
+        LOAD_BTTV_EMOTES = async() => {
+            // Load some emotes (max 100 at a time)
+                // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
+                    // emote.code -> emote name
+                    // emote.id -> emote ID (src)
+            for(let batchSize = BTTV_EMOTES.size, batchMax = 30, maxEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30); batchSize < maxEmotes; batchSize += batchMax)
+                await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ batchSize }&limit=${ batchMax }`)
+                    .then(response => response.json())
+                    .then(emotes => {
+                        for(let { emote } of emotes) {
+                            let { code, id } = emote;
+
+                            BTTV_EMOTES.set(code, `https://cdn.betterttv.net/emote/${ id }/3x`);
+                        }
+                    });
+        };
+
+    Handlers.bttv_emotes = () => {
+        let BTTVEmoteSection = $('#twitch-tools-bttv-emotes');
+
+        if(defined(BTTVEmoteSection))
+            return;
+
+        let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
+
+        if(!defined(parent))
+            return RestartJob('bttv_emotes');
+
+        // Put all BTTV emotes into the emote-picker list
+        let BTTVEmotes = [];
+
+        for(let [name, src] of BTTV_EMOTES)
+            BTTVEmotes.push({ name, src });
+
+        BTTVEmoteSection =
+        furnish('div#twitch-tools-bttv-emotes.emote-picker__content-block',
+            {
+                ondragover: event => {
+                    event.preventDefault();
+                    // event.dataTransfer.dropEffect = 'move';
+                },
+
+                ondrop: async event => {
+                    event.preventDefault();
+
+                    return event.dataTransfer.getData('text/plain');
+                },
+            },
+
+            furnish('div.tw-pd-b-1.tw-pd-t-05.tw-pd-x-1.tw-relative', {},
+                // Emote Section Header
+                furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
+                    furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {
+                        innerHTML: "BetterTTV Emotes &mdash; Drag to use"
+                    })
+                ),
+
+                // Emote Section Container
+                furnish('div#twitch-tools-bttv-emotes-container.tw-flex.tw-flex-wrap',
+                    {
+                        class: 'twitch-tools-scrollbar-area',
+                        style: 'max-height: 15rem; overflow: hidden scroll;',
+                    },
+                    ...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE)
+                )
+            )
+        );
+
+        parent.insertBefore(BTTVEmoteSection, parent.firstChild);
+    };
+    Timers.bttv_emotes = 5_000;
+
+    __BetterTTVEmotes__:
+    if(parseBool(Settings.bttv_emotes)) {
+        LOAD_BTTV_EMOTES();
+
+        REMARK('Adding BTTV emote event listener...');
+
+        GetChat.onnewmessage = chat => {
+            let regexp;
+
+            for(let line of chat) {
+                // Replace BTTV emotes for the last 30 chat messages
+                if(Queue.bttv_emotes.contains(line.uuid))
+                    continue;
+                if(Queue.bttv_emotes.length >= 30)
+                    Queue.bttv_emotes = [];
+                Queue.bttv_emotes.push(line.uuid);
+
+                for(let [name, src] of BTTV_EMOTES)
+                    if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
+                        let alt = name;
+
+                        let f = furnish;
+                        let img =
+                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
+                            f('span', { 'data-a-target': 'emote-name' },
+                                f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
+                                    f('img.bttv.chat-image.chat-line__message--emote', {
+                                        alt, src,
+                                    })
+                                )
+                            )
+                        );
+
+                        let { element } = line;
+
+                        alt = alt.replace(/\s+/g, '_');
+
+                        $(`.text-fragment:not([twitch-tools-converted-emotes~="${alt}"])`, true, element).map(fragment => {
+                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', innerHTML: img.innerHTML, title: alt }),
+                                converted = (fragment.getAttribute('twitch-tools-converted-emotes') ?? "").split(' ');
+
+                            converted.push(alt);
+
+                            fragment.setAttribute('twitch-tools-converted-emotes', converted.join(' ').trim());
+                            fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
+                        });
+                    }
+            }
+
+            top.BTTV_EMOTES = BTTV_EMOTES;
+        };
+
+        RegisterJob('bttv_emotes');
+    }
+
     /*** Convert Emotes
      *       _____                          _     ______                 _
      *      / ____|                        | |   |  ____|               | |
@@ -4626,7 +4821,7 @@ let Initialize = async(START_OVER = false) => {
         CONVERT_TO_CAPTURED_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote;
 
-            // Try to filter out Twitch-procided emotes...
+            // Try to filter out Twitch-provided emotes...
             if(/^\W/.test(name))
                 return;
 
@@ -4674,7 +4869,7 @@ let Initialize = async(START_OVER = false) => {
                 )
             );
 
-            if(makeTooltip)
+            if(makeTooltip !== false)
                 new Tooltip(emoteContainer, name);
 
             return emoteContainer;
@@ -4748,7 +4943,13 @@ let Initialize = async(START_OVER = false) => {
                 ),
 
                 // Emote Section Container
-                furnish('div#twitch-tools-captured-emotes-container.tw-flex.tw-flex-wrap', {}, ...caughtEmotes.map(CONVERT_TO_CAPTURED_EMOTE))
+                furnish('div#twitch-tools-captured-emotes-container.tw-flex.tw-flex-wrap',
+                    {
+                        class: 'twitch-tools-scrollbar-area',
+                        style: 'max-height: 15rem; overflow: hidden scroll;',
+                    },
+                    ...caughtEmotes.map(CONVERT_TO_CAPTURED_EMOTE)
+                )
             )
         );
 
@@ -4777,10 +4978,10 @@ let Initialize = async(START_OVER = false) => {
             $('.emote-picker [class*="tab-content"]').id = 'twitch-tools-hidden-emote-container';
 
             setTimeout(() => {
-                // Grabe emotes every couple of seconds
+                // Grab emotes every couple of seconds
                 [1, 2, 4, 8, 16, 32, 64].map(n =>
                     setTimeout(() => {
-                        $('.emote-button img', true)
+                        $('.emote-button img:not(.bttv)', true)
                             .map(img => EMOTES.set(img.alt, shrt(img.src)));
 
                         top.EMOTES = EMOTES;
@@ -5727,14 +5928,15 @@ let Initialize = async(START_OVER = false) => {
         COUNTING_POINTS = setInterval(() => {
             let points_receipt = $('#twitch-tools-points-receipt'),
                 balance = $('[data-test-selector="balance-string"i]'),
+                exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i]'),
                 exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
             let current = parseCoin(balance?.innerText);
 
             INITIAL_POINTS ??= current;
-            EXACT_POINTS_SPENT = (INITIAL_POINTS > current? INITIAL_POINTS - current: EXACT_POINTS_SPENT);
+            EXACT_POINTS_SPENT = parseCoin(exact_debt?.innerText) || (INITIAL_POINTS > current? INITIAL_POINTS - current: EXACT_POINTS_SPENT);
 
-            let animationID = (exact_change?.innerText ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': null)),
+            let animationID = (exact_change?.innerText ?? exact_debt?.innerText ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': null)),
                 animationTimeStamp = +new Date;
 
             // Don't keep adding the exact change while the animation is playing
@@ -5761,25 +5963,34 @@ let Initialize = async(START_OVER = false) => {
 
             EXACT_POINTS_EARNED += parseCoin(exact_change?.innerText);
 
-            let receipt,
-                glyph = Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' });
+            let receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT,
+                glyph = Glyphs.modify(Glyphs.channelpoints, { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
+                { abs } = Math;
 
             switch(Settings.channelpoints_receipt_display) {
                 case "round100":
-                    // Paid or Spent
-                    receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT;
-                    receipt = receipt - (receipt % 100);
+                    // Round to nearest hundred
+                    receipt = receipt.floorToNearest(100);
+                    break;
+
+                case "round50":
+                    // Round to nearest fifty (half)
+                    receipt = receipt.floorToNearest(50);
+                    break;
+
+                case "round25":
+                    // Round to nearest twenty-five (quarter)
+                    receipt = receipt.floorToNearest(25);
                     break;
 
                 case "null":
                 default:
-                    // Paid - Spent
-                    receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT;
+                    // Do nothing...
                     break;
             }
 
-            RECEIPT_TOOLTIP.innerHTML = '-+'[+(receipt >= 0)] + comify(Math.abs(receipt));
-            points_receipt.innerHTML = `${ glyph } ${ Math.abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1).replace(/\.0+/, '') }`;
+            RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } earned / ${ comify(abs(EXACT_POINTS_SPENT)) } spent`;
+            points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1).replace(/\.0+/, '') }`;
         }, 100);
     };
     Timers.points_receipt_placement = -2500;
@@ -6347,7 +6558,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                     switch(element.dataset.testSelector) {
                                         case 'emote-button':
                                             if(keepEmotes)
-                                                string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                                                string = `:${ (i=>(emotes[i.alt]??=i.src,i.alt))($('img', false, element)) }:`;
                                             break;
 
                                         default:
@@ -6440,7 +6651,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                             switch(element.dataset.aTarget) {
                                                 case 'emote-name':
                                                     if(keepEmotes)
-                                                        string = `:${ (i=>(emotes[i.alt]=i.src,i.alt))($('img', false, element)) }:`;
+                                                        string = `:${ (i=>(emotes[i.alt]??=i.src,i.alt))($('img', false, element)) }:`;
                                                     break;
 
                                                 default:
@@ -6581,6 +6792,35 @@ CUSTOM_CSS.innerHTML =
     transform: translateX(-50%);
 
     width: 100%;
+}
+
+::-webkit-scrollbar {
+    width: .6rem;
+}
+::-webkit-scrollbar-button {
+    background: transparent;
+    display: none;
+    visibility: hidden;
+
+    height: 0;
+    width: 0;
+}
+::-webkit-scrollbar-thumb {
+    background: #0008;
+    border: 1px solid #fff4;
+    border-radius: .5rem;
+}
+::-webkit-scrollbar-track {
+    background: #0000;
+}
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+#twitch-tools-captured-emotes [data-test-selector="badge-button-icon"i],
+#twitch-tools-bttv-emotes [data-test-selector="badge-button-icon"i] {
+    left: 0;
+    top: 0;
 }
 /*[class*="tw-number-badge"i] {
     background-color: var(--color-background-pill-notification);

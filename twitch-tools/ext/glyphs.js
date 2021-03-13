@@ -6,8 +6,10 @@
  * checkmark
  * favorite
  * emotes
+ * latest
  * search
  * stream
+ * thread
  * trophy
  * upload
  * wallet
@@ -91,21 +93,24 @@ top.Glyphs ??= {
 
     x: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>`,
 
-    modify(glyph, attributes) {
+    modify(glyph, attributes, element = 'svg') {
         let XMLParser = Glyphs.DOMParser ??= new DOMParser;
 
         let XML = XMLParser.parseFromString((glyph in Glyphs? Glyphs[glyph]: glyph), 'text/xml'),
-            SVG = $('svg', false, XML);
+            ele = $(element, false, XML);
 
         for(let attribute in attributes) {
             let value = attributes[attribute];
 
-            SVG.setAttribute(attribute, value);
+            if([null, undefined].contains(value))
+                ele.removeAttribute(attribute);
+            else
+                ele.setAttribute(attribute, value);
         }
 
-        let string = new String(SVG.outerHTML);
+        let string = new String(ele.outerHTML);
 
-        string.asNode = SVG;
+        string.asNode = ele;
 
         return string;
     },

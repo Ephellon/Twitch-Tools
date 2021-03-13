@@ -128,6 +128,12 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
     ) + suffix + unit;
 };
 
+// Floors a number to the nearest X
+    // Number..floorToNearest(number)
+Number.prototype.floorToNearest ??= function floorToNearest(number) {
+    return this - (this % number);
+};
+
 // Returns a properly formatted string depending on the number given
     // String..properSuffix([numberOfItems:number])
 String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
