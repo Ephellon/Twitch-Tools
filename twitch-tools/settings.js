@@ -95,6 +95,7 @@ let // These are option names. Anything else will be removed
         'bttv_emotes',
         'bttv_emotes_maximum',
         'bttv_emotes_location',
+        'bttv_emotes_channel',
         // Convert Emotes*
         'convert_emotes',
         // Native Twitch Replies*

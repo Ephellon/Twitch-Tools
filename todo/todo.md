@@ -12,14 +12,18 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
-> 2.10.1
+> 2.11
+- Added sub-feature to load channel specific emotes
+- Made emotes searchable
+
+> 2.9.10 **2.10.1**/**2.10.2**
 - Fixed issue that wouldn't register `ondrop` events
 - Fixed issue that wouldn't add points collected from bets
 - Fixed `STREAMER.ping` logic
 - Added "BetterTTV Emotes"
 
 > 2.9.9
-- Fixed issue were points were doubled incorrectly
+- Fixed issue where points were doubled incorrectly
 
 > 2.9.8
 - Fixed plural suffixes

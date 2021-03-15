@@ -305,13 +305,13 @@
                         <div>
                             <div class="title">General Highlighting</div>
                             <div class="summary">
-                                <p>
-                                    When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
-                                </p>
                                 <div class="toggle">
                                     <input id="highlight_mentions_extra" type="checkbox"/>
                                     <label for="highlight_mentions_extra"></label>
                                 </div>
+                                <p>
+                                    When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
+                                </p>
                             </div>
                         </div>
                     </details>
@@ -673,7 +673,7 @@
         <article caution>
             <section>
                 <div class="title"><span small purple glyph="stream"></span> Auto-Focus</div>
-                <div class="summary">
+                <div class="summary" right-tooltip="Experimental feature">
                     <div class="toggle">
                         <input id="auto_focus" type="checkbox"/>
                         <label for="auto_focus"></label>
@@ -756,10 +756,14 @@
                         <summary subtitle="Adjust options for BetterTTV emotes">Options</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Library Size</div>
+                                <div class="title">Channel Specific Emotes</div>
                                 <div class="summary">
+                                    <div class="toggle" right-tooltip="Experimental feature">
+                                        <input id="bttv_emotes_channel" type="checkbox"/>
+                                        <label for="bttv_emotes_channel"></label>
+                                    </div>
                                     <p>
-                                        Load <span><input id="bttv_emotes_maximum" type="number" value="150" max="1200" min="30" step="30"/></span> <b>BetterTTV</b> emotes.
+                                        Load channel specific <b>BetterTTV</b> emotes.
                                     </p>
                                 </div>
                             </div>
@@ -777,6 +781,15 @@
                                         <option value="emotes/shared/top">Most used (Top)</option>
                                         <option value="cached/emotes/global">Most universal (Global)</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Library Size</div>
+                                <div class="summary">
+                                    <p>
+                                        Load <span><input id="bttv_emotes_maximum" type="number" value="150" max="1200" min="30" step="30"/></span> <b>BetterTTV</b> emotes.
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -832,7 +845,7 @@
             <section>
                 <div class="title"><span small purple glyph="mod"></span> Prevent spam</div>
                 <div class="summary">
-                    <div class="toggle">
+                    <div class="toggle" right-tooltip="Experimental feature">
                         <input id="prevent_spam" type="checkbox" checked/>
                         <label for="prevent_spam"></label>
                     </div>

@@ -2465,6 +2465,7 @@ let Initialize = async(START_OVER = false) => {
      * paid:boolean*     - GETTER: is the user  subscribed
      * ping:boolean*     - GETTER: does the user have notifications on
      * poll:number*      - GETTER: how many viewers are watching the channel
+     * sole:number       - the channel's channel ID
      * tags:array*       - GETTER: tags of the current stream
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
      * time:number*      - GETTER: how long has the channel been live
@@ -2474,7 +2475,6 @@ let Initialize = async(START_OVER = false) => {
      * ally:boolean      - is the channel partnered?
      * fast:boolean      - is the channel using turbo?
      * nsfw:boolean      - is the channel deemed NSFW (mature)?
-     * sole:number       - the channel's channel ID
      */
     STREAMER = {
         get chat() {
@@ -2528,6 +2528,12 @@ let Initialize = async(START_OVER = false) => {
 
         get poll() {
             return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, ''))
+        },
+
+        get sole() {
+            let [[,channel_id,]] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => !!~src.indexOf('/panel-')).map(src => parseURL(src).pathname.split('-', 3));
+
+            return channel_id;
         },
 
         get tags() {
@@ -3551,7 +3557,7 @@ let Initialize = async(START_OVER = false) => {
                             existing.remove();
                         LOG('Canceled First in Line event', thisJob);
 
-                        removal.click();
+                        removal?.click?.();
 
                         REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                     },
@@ -4611,6 +4617,68 @@ let Initialize = async(START_OVER = false) => {
      *                                                                    __/ |         __/ |
      *                                                                   |___/         |___/
      */
+    /*** Emote Searching - NOT A SETTING. This is a hlper for "Convert Emotes" and "BTTV Emotes"
+     *      ______                 _          _____                     _     _
+     *     |  ____|               | |        / ____|                   | |   (_)
+     *     | |__   _ __ ___   ___ | |_ ___  | (___   ___  __ _ _ __ ___| |__  _ _ __   __ _
+     *     |  __| | '_ ` _ \ / _ \| __/ _ \  \___ \ / _ \/ _` | '__/ __| '_ \| | '_ \ / _` |
+     *     | |____| | | | | | (_) | ||  __/  ____) |  __/ (_| | | | (__| | | | | | | | (_| |
+     *     |______|_| |_| |_|\___/ \__\___| |_____/ \___|\__,_|_|  \___|_| |_|_|_| |_|\__, |
+     *                                                                                 __/ |
+     *                                                                                |___/
+     */
+    let EmoteSearch = {};
+
+    Handlers.emote_searching = () => {
+        EmoteSearch.input = $('.emote-picker [type="search"i]');
+
+        if(defined(EmoteSearch.input?.value))
+            if(EmoteSearch.input.value != EmoteSearch.value)
+                if((EmoteSearch.value = EmoteSearch.input.value)?.length >= 3)
+                    for(let [name, callback] of EmoteSearch.__onquery__)
+                        callback(EmoteSearch.value);
+    };
+    Timers.emote_searching = 100;
+
+    __EmoteSearching__:
+    if(parseBool(Settings.convert_emotes) || parseBool(Settings.bttv_emotes)) {
+        Object.defineProperties(EmoteSearch, {
+            onquery: {
+                set(callback) {
+                    let name = callback.name || UUID.from(callback.toString()).value;
+
+                    if(EmoteSearch.__onquery__.has(name))
+                        return EmoteSearch.__onquery__.get(name);
+
+                    // REMARK('Adding [on query] event listener', { [name]: callback });
+
+                    EmoteSearch.__onquery__.set(name, callback);
+
+                    return callback;
+                },
+
+                get() {
+                    return EmoteSearch.__onquery__.size;
+                },
+            },
+            __onquery__: { value: new Map() },
+
+            appendResults: {
+                value: function appendResults(nodes, type) {
+                    $(`[tt-${ type }-emote-search-result]`, true).forEach(node => node.remove());
+
+                    for(let node of nodes) {
+                        node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML));
+
+                        $('[class*="emote-picker"i] [class*="wrap"i]:last-child').appendChild(node);
+                    }
+                },
+            },
+        });
+
+        RegisterJob('emote_searching');
+    }
+
     /*** BetterTTV Emotes
      *      ____       _   _         _______ _________      __  ______                 _
      *     |  _ \     | | | |       |__   __|__   __\ \    / / |  ____|               | |
@@ -4628,10 +4696,10 @@ let Initialize = async(START_OVER = false) => {
                 existing = $(`img.bttv[alt="${ name }"]`);
 
             if(defined(existing))
-                return existing.closest('div.bttv-container');
+                return existing.closest('div.tt-emote-bttv');
 
             let emoteContainer =
-            furnish('div.bttv-container.tw-pd-x-05.tw-relative', {},
+            furnish('div.tt-emote-bttv.tw-pd-x-05.tw-relative', {},
                 furnish('div.emote-button', {},
                     furnish('div.tw-inline-flex', {},
                         furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
@@ -4667,7 +4735,7 @@ let Initialize = async(START_OVER = false) => {
                                 furnish('div.emote-button__lock.tw-absolute.tw-border-radius-small.tw-c-background-overlay.tw-c-text-overlay.tw-inline-flex.tw-justify-content-center.tw-z-above', { 'data-test-selector': 'badge-button-icon' },
                                     furnish('figure.tw-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
-                                furnish('img.bttv.emote-picker__image', { src, alt: name })
+                                furnish('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
                             )
                         )
                     )
@@ -4679,21 +4747,44 @@ let Initialize = async(START_OVER = false) => {
 
             return emoteContainer;
         },
-        LOAD_BTTV_EMOTES = async() => {
+        LOAD_BTTV_EMOTES = async(keyword, provider) => {
             // Load some emotes (max 100 at a time)
                 // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
                     // emote.code -> emote name
                     // emote.id -> emote ID (src)
-            for(let batchSize = BTTV_EMOTES.size, batchMax = 30, maxEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30); batchSize < maxEmotes; batchSize += batchMax)
-                await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ batchSize }&limit=${ batchMax }`)
-                    .then(response => response.json())
-                    .then(emotes => {
-                        for(let { emote } of emotes) {
-                            let { code, id } = emote;
 
-                            BTTV_EMOTES.set(code, `https://cdn.betterttv.net/emote/${ id }/3x`);
-                        }
-                    });
+            // Load emotes with a certain name
+            if(defined(keyword))
+                for(let batchSize = 0, batchMax = 50, maxEmotes = 100, allLoaded = false; allLoaded === false && batchSize < maxEmotes; batchSize += batchMax)
+                    await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ batchSize }&limit=${ batchMax }`)
+                        .then(response => response.json())
+                        .then(emotes => {
+                            for(let { emote, user, code, id } of emotes) {
+                                code ??= emote?.code;
+                                user ??= emote?.user;
+
+                                if(!defined(provider) || provider === user.providerId) {
+                                    let name = code,
+                                        src = `https://cdn.betterttv.net/emote/${ id }/3x`;
+
+                                    BTTV_EMOTES.set(name, src);
+                                }
+                            }
+
+                            allLoaded ||= emotes.length < maxEmotes;
+                        });
+            // Load all emotes from...
+            else
+                for(let batchSize = BTTV_EMOTES.size, batchMax = 30, maxEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30); batchSize < maxEmotes; batchSize += batchMax)
+                    await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ batchSize }&limit=${ batchMax }`)
+                        .then(response => response.json())
+                        .then(emotes => {
+                            for(let { emote } of emotes) {
+                                let { code, id } = emote;
+
+                                BTTV_EMOTES.set(code, `https://cdn.betterttv.net/emote/${ id }/3x`);
+                            }
+                        });
         };
 
     Handlers.bttv_emotes = () => {
@@ -4753,7 +4844,11 @@ let Initialize = async(START_OVER = false) => {
 
     __BetterTTVEmotes__:
     if(parseBool(Settings.bttv_emotes)) {
-        LOAD_BTTV_EMOTES();
+        REMARK('Loading BTTV emotes...');
+
+        if(parseBool(Settings.bttv_emotes_channel))
+            await LOAD_BTTV_EMOTES(STREAMER.name, STREAMER.sole);
+        await LOAD_BTTV_EMOTES();
 
         REMARK('Adding BTTV emote event listener...');
 
@@ -4803,6 +4898,18 @@ let Initialize = async(START_OVER = false) => {
             top.BTTV_EMOTES = BTTV_EMOTES;
         };
 
+        REMARK('Adding BTTV emote search listener...');
+
+        EmoteSearch.onquery = async query => {
+            await LOAD_BTTV_EMOTES(query).then(() => {
+                let results = [...BTTV_EMOTES]
+                    .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
+                    .map(([name, src]) => CONVERT_TO_BTTV_EMOTE({ name, src }));
+
+                    EmoteSearch.appendResults(results, 'bttv');
+            });
+        };
+
         RegisterJob('bttv_emotes');
     }
 
@@ -4826,7 +4933,7 @@ let Initialize = async(START_OVER = false) => {
                 return;
 
             let emoteContainer =
-            furnish('div.tw-pd-x-05.tw-relative', {},
+            furnish('div.tt-emote-captured.tw-pd-x-05.tw-relative', {},
                 furnish('div.emote-button', {},
                     furnish('div.tw-inline-flex', {},
                         furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
@@ -5066,6 +5173,16 @@ let Initialize = async(START_OVER = false) => {
             }
 
             top.EMOTES = EMOTES;
+        };
+
+        REMARK('Adding emote search listener...');
+
+        EmoteSearch.onquery = query => {
+            let results = [...EMOTES]
+                .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
+                .map(([name, src]) => CONVERT_TO_CAPTURED_EMOTE({ name, src }));
+
+            EmoteSearch.appendResults(results, 'captured');
         };
 
         RegisterJob('convert_emotes');
@@ -6817,8 +6934,8 @@ CUSTOM_CSS.innerHTML =
     background: transparent;
 }
 
-#twitch-tools-captured-emotes [data-test-selector="badge-button-icon"i],
-#twitch-tools-bttv-emotes [data-test-selector="badge-button-icon"i] {
+.tt-emote-captured [data-test-selector="badge-button-icon"i],
+.tt-emote-bttv [data-test-selector="badge-button-icon"i] {
     left: 0;
     top: 0;
 }
