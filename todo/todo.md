@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.11.1
+- Fixed issue where `BAD_STREAMERS` was null by default and caused fail
+
 > 2.11
 - Added sub-feature to load channel specific emotes
 - Made emotes searchable

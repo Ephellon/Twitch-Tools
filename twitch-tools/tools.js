@@ -4226,8 +4226,8 @@ let Initialize = async(START_OVER = false) => {
     let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 
     await LoadCache(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
-        OLD_STREAMERS = cache.OLD_STREAMERS;
-        BAD_STREAMERS = cache.BAD_STREAMERS;
+        OLD_STREAMERS = cache.OLD_STREAMERS ?? "";
+        BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
 
     Handlers.first_in_line_plus = () => {
@@ -4667,11 +4667,17 @@ let Initialize = async(START_OVER = false) => {
                 value: function appendResults(nodes, type) {
                     $(`[tt-${ type }-emote-search-result]`, true).forEach(node => node.remove());
 
+                    let container = $('[class*="emote-picker"i] [class*="wrap"i]:last-child');
+
                     for(let node of nodes) {
                         node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML));
 
-                        $('[class*="emote-picker"i] [class*="wrap"i]:last-child').appendChild(node);
+                        container.appendChild(node);
                     }
+
+                    let title = $('[class*="emote-picker"i] p');
+
+                    title.innerText = title.innerText.replace(/^.*("[^]+")/, `${ container.children.length } search results for $1`);
                 },
             },
         });
