@@ -12,14 +12,25 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.11.3
+- Fixed "Channel Specific BTTV Emotes"
+
+> 2.11.2 **Chrome**
+- Fixed Chrome icon color
+
 > 2.11.1
 - Fixed issue where `BAD_STREAMERS` was null by default and caused fail
+- Added "number of emote results"
 
 > 2.11
 - Added sub-feature to load channel specific emotes
 - Made emotes searchable
 
-> 2.9.10 **2.10.1**/**2.10.2**
+> *2.10.1*/*2.10.2* **GitHub**
+- Fixed version information
+- Fixed icon color
+
+> 2.9.10
 - Fixed issue that wouldn't register `ondrop` events
 - Fixed issue that wouldn't add points collected from bets
 - Fixed `STREAMER.ping` logic

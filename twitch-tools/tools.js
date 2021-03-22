@@ -2465,7 +2465,7 @@ let Initialize = async(START_OVER = false) => {
      * paid:boolean*     - GETTER: is the user  subscribed
      * ping:boolean*     - GETTER: does the user have notifications on
      * poll:number*      - GETTER: how many viewers are watching the channel
-     * sole:number       - the channel's channel ID
+     * sole:number       - GETTER: the channel's ID
      * tags:array*       - GETTER: tags of the current stream
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
      * time:number*      - GETTER: how long has the channel been live
@@ -2533,7 +2533,7 @@ let Initialize = async(START_OVER = false) => {
         get sole() {
             let [[,channel_id,]] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => !!~src.indexOf('/panel-')).map(src => parseURL(src).pathname.split('-', 3));
 
-            return channel_id;
+            return parseInt(channel_id ?? NaN);
         },
 
         get tags() {
@@ -4670,6 +4670,9 @@ let Initialize = async(START_OVER = false) => {
                     let container = $('[class*="emote-picker"i] [class*="wrap"i]:last-child');
 
                     for(let node of nodes) {
+                        if(!defined(node))
+                            continue;
+
                         node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML));
 
                         container.appendChild(node);
@@ -4759,22 +4762,34 @@ let Initialize = async(START_OVER = false) => {
                     // emote.code -> emote name
                     // emote.id -> emote ID (src)
 
+            // Load emotes from a certain user
+            if(defined(provider))
+                await fetch(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
+                    .then(response => response.json())
+                    .then(json => {
+                        let { channelEmotes, sharedEmotes } = json;
+
+                        if(!defined(channelEmotes ?? sharedEmotes))
+                            return;
+
+                        let emotes = [...channelEmotes, ...sharedEmotes];
+
+                        for(let { emote, code, id } of emotes) {
+                            code ??= emote?.code;
+
+                            BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
+                        }
+                    });
             // Load emotes with a certain name
-            if(defined(keyword))
+            else if(defined(keyword))
                 for(let batchSize = 0, batchMax = 50, maxEmotes = 100, allLoaded = false; allLoaded === false && batchSize < maxEmotes; batchSize += batchMax)
                     await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ batchSize }&limit=${ batchMax }`)
                         .then(response => response.json())
                         .then(emotes => {
-                            for(let { emote, user, code, id } of emotes) {
+                            for(let { emote, code, id } of emotes) {
                                 code ??= emote?.code;
-                                user ??= emote?.user;
 
-                                if(!defined(provider) || provider === user.providerId) {
-                                    let name = code,
-                                        src = `https://cdn.betterttv.net/emote/${ id }/3x`;
-
-                                    BTTV_EMOTES.set(name, src);
-                                }
+                                BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
                             }
 
                             allLoaded ||= emotes.length < maxEmotes;
@@ -4788,7 +4803,7 @@ let Initialize = async(START_OVER = false) => {
                             for(let { emote } of emotes) {
                                 let { code, id } = emote;
 
-                                BTTV_EMOTES.set(code, `https://cdn.betterttv.net/emote/${ id }/3x`);
+                                BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
                             }
                         });
         };
