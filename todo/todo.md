@@ -12,6 +12,11 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.11.4
+- Quality of life changes
+- Added emote cards `new Card({ ... })`
+- Enhanced message filtering, esp. emotes and BTTV emotes
+
 > 2.11.3
 - Fixed "Channel Specific BTTV Emotes"
 

@@ -11,7 +11,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Auto-Join* `off` &mdash; Automatically proceed to watch parties and mature streams
 - *Away Mode* `on` &mdash; Toggle between **low** and **auto** quality
 - *Claim Bonuses* `on` &mdash; When the Bonus Channel Points button appears, click it
-- *First in Line* &mdash; When a channel you follow begins streaming, automatically go to it
+- *First in Line/Up Next* &mdash; When a channel you follow begins streaming, automatically go to it
     - `default` Do not go to any channels automatically
     - When you receive a notification for a followed channel going live, head to it after `15` minutes
     - When a followed channel's icon appears, head to it after `15` minutes
@@ -83,12 +83,14 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 ### Developer Mode
 
 - *Display Console Messages* `off` &mdash; Allows the extension to display messages in the console
+- *Display Statistics* `off` &mdash; Allow the extension to display statistics of the video
 - *Experimental Features* `off` &mdash; Allows the extension to display, and use experimental features
 - *Show Default Values* &mdash; Displays the default values
 
 ### Experimental Features
 
 - *Auto-Focus* `off` &mdash; When there is an increase in video activity, automatically pause other features that would leave or alter the stream
+- *BetterTTV emotes* `off` &mdash; Allow the extension to use and display BTTV emotes
 - *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emotes (without requiring a subscription)
 - *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
