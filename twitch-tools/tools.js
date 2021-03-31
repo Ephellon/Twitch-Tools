@@ -968,7 +968,7 @@ class ChatFooter {
 class Card {
     static #CARDS = new Map()
 
-    constructor({ title, subtitle = "", icon, fineTuning = {} }) {
+    constructor({ title, subtitle = "", footer, icon, fineTuning = {} }) {
         fineTuning.top ??= '7rem';
         fineTuning.left ??= '0px';
         fineTuning.cursor ??= 'auto';
@@ -1045,9 +1045,42 @@ class Card {
         // Add the card
         container.appendChild(card);
 
+        // Add the optional footer
+        if(footer?.href?.length)
+            $('div', false, card).append(
+                f('div.emote-card__content.tw-c-background-base.tw-full-width.tw-inline-flex.tw-pd-1.viewer-card-drag-cancel', {},
+                    f('div', {},
+                        f('div.tw-align-items-center.tw-align-self-start.tw-mg-b-05', {},
+                            f('div.tw-align-items-center.tw-flex', {},
+                                f('div.tw-align-items-center.tw-flex.tw-mg-r-1', {},
+                                    f('a.tw-link [rel="noopener noreferrer" target="_blank"]', { href: footer.href },
+                                        f('div.tw-flex', {
+                                            innerHTML: ""
+                                                + Glyphs.modify('video', { height: '20px', width: '20px' })
+                                                + f('div.tw-mg-l-05', {},
+                                                    f('p.tw-c-text-link.tw-font-size-5.tw-strong', {}, footer.name)
+                                                ).outerHTML
+                                        })
+                                    )
+                                ),
+                                f('div.tw-align-items-center.tw-flex', {},
+                                    f(`div[tt-live-status-indicator="${ parseBool(footer.live) }"]`),
+                                    f('div.tw-flex.tw-mg-l-05', {},
+                                        f('p.tw-c-text-base.tw-font-size-6', { style: 'text-transform:uppercase' },
+                                            ['offline', 'live'][+footer.live]
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
         this.body = card;
         this.icon = iconElement;
         this.uuid = uuid;
+        this.footer = footer;
         this.container = container;
 
         Card.#CARDS.set(title, this);
@@ -1062,6 +1095,44 @@ class Card {
 
     static get(title) {
         return Card.#CARDS.get(title);
+    }
+}
+
+// Search Twitch for channels/categories
+    // new Search([query:string[, maximum:integer[, type:string="channels"|"categories"[, OVER_RIDE_CACHE:boolean]]]])
+/** Returns an Array of Objects ->
+ * broadcaster_language: String~I18N-Language
+ * broadcaster_login: String
+ * display_name: String
+ * game_id: String~Integer
+ * id: String~Integer
+ * is_live: Boolean
+ * started_at: String~Date
+ * tag_ids: Array:String
+ * thumbnail_url: String~URL
+ * title: String:Unicode16
+ */
+class Search {
+    static #TOKENS = JSON.parse(atob("WyJ2MnNnZWN5NWJ3eDNmc3pyYmpscm92OWtpYTVyMjkiLCJraW1uZTc4a3gzbmN4NmJyZ280bXY2d2tpNWgxa28iXQ=="))
+    static #CACHE = new Map()
+
+    constructor(query = "", maximum = 15, type = "channels", OVER_RIDE_CACHE = false) {
+        let [bearer, clientID] = Search.#TOKENS,
+            token = UUID.from(Object.values({ query, maximum, type }).join('|')).value;
+
+        if(!query?.length)
+            return;
+        if(!parseBool(OVER_RIDE_CACHE) && Search.#CACHE.has(token))
+            return new Promise((resolve, reject) => resolve(Search.#CACHE.get(token)));
+
+        return fetch(`https://api.twitch.tv/helix/search/${ type }?first=${ maximum }&query=${ query }`, { headers: { 'Authorization': `Bearer ${ bearer }`, 'Client-ID': clientID, } })
+            .then(response => response.json())
+            .then(json => {
+                Search.#CACHE.set(token, json);
+
+                return json;
+            })
+            .catch(WARN);
     }
 }
 
@@ -1481,16 +1552,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
 
     children
         .filter( defined )
-        .forEach(
-            child =>
-                child instanceof Element?
-                    element.append(child):
-                child instanceof Node?
-                    element.appendChild(child):
-                element.appendChild(
-                    document.createTextNode(child)
-                )
-        );
+        .forEach( child => element.append(child) );
 
     return element;
 }
@@ -1539,7 +1601,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
                 if(milliseconds >= value) {
                     let amount = (milliseconds / value) | 0;
 
-                    time.push(`${ amount } ${ name }${ (amount == 1? '': 's') }`);
+                    time.push(`${ amount } ${ name.pluralSuffix(amount) }`);
 
                     milliseconds -= amount * value;
                 }
@@ -1567,7 +1629,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
 
             times.push(['millisecond', milliseconds]);
 
-            result = format.split(/!(year|day|hour|minute|(?:milli)?second)s?\b/g)
+            result = format.split(/\!(year|day|hour|minute|(?:milli)?second)s?\b/g)
                 .map($1 => {
                     for(let [name, value] of times)
                         if($1 == 'millisecond')
@@ -2402,6 +2464,7 @@ Storage.onChanged.addListener((changes, namespace) => {
     // Initialize(START_OVER:boolean) -> undefined
 
 let LIVE_CACHE = new Map();
+const PRIVATE_SYMBOL = Symbol(new UUID);
 
 let Initialize = async(START_OVER = false) => {
     let TWITCH_API = {},
@@ -2941,30 +3004,6 @@ let Initialize = async(START_OVER = false) => {
                 value = (defined(videoID)? videoID: channelName),
                 token = cookies['auth-token'];
 
-            // Get Twitch specific data
-            // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
-            //     .then(response => response.json())
-            //     .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
-            //     .then(json => {
-            //         if(!defined(json))
-            //             throw "Fine Detail JSON data could not be parsed...";
-            //
-            //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
-            //
-            //         let conversion = {
-            //             paid: 'subscriber',
-            //
-            //             ally: 'partner',
-            //             fast: 'turbo',
-            //             nsfw: 'mature',
-            //             sole: 'channel_id',
-            //         };
-            //
-            //         for(let key in conversion)
-            //             STREAMER[key] = TWITCH_API[conversion[key]];
-            //     })
-            //     .catch(ERROR);
-
             if(!defined(STREAMER.name))
                 break __FineDetails__;
 
@@ -2985,12 +3024,15 @@ let Initialize = async(START_OVER = false) => {
             try {
                 await LoadCache(`data/${ STREAMER.name }`, cache => {
                     let data = cache[`data/${ STREAMER.name }`],
-                        { dataRetrievedAt } = data;
+                        { dataRetrievedAt, dataRetrievedOK } = data;
 
                     dataRetrievedAt ||= 0;
+                    dataRetrievedOK ||= false;
 
                     // Only refresh every 12h
-                    if((dataRetrievedAt + 43_200_000) < +new Date)
+                    if(!parseBool(dataRetrievedOK))
+                        throw "The data wasn't saved correctly";
+                    else if((dataRetrievedAt + 43_200_000) < +new Date)
                         throw "The data likely expired";
                     else
                         STREAMER.data = data;
@@ -2999,49 +3041,27 @@ let Initialize = async(START_OVER = false) => {
                 });
             } catch(exception) {
                 // Proper CORS request to fetch the HTML data
-                await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
-                    .then(text => text.text())
-                    // Conversion => Text -> HTML -> Element -> JSON
-                    .then(html => {
-                        let doc = (new DOMParser).parseFromString(html, 'text/html'),
-                            body = doc.body;
+                await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ STREAMER.sole }-${ STREAMER.name }/stream_time_values`)}`, { mode: 'cors' })
+                    .then(response => response.json())
+                    .then(json => {
+                        let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, },
+                            today = new Date;
 
-                        let data = {};
+                        let averageStreamTime = 0,
+                            daysWithStreams = new Set(),
+                            totalStreamTime = (json ?? []).reverse()
+                                .map(dates => dates.map(date => {
+                                    date = new Date(date.toUpperCase().replace("T", " "));
 
-                        [...doc.querySelectorAll('#report .table tr')]
-                            .map(tr => {
-                                let [name, value] = tr.querySelectorAll('td');
+                                    if(Math.abs(today - date) < 604_800_000)
+                                        daysWithStreams.add(date.getDay());
 
-                                // Set initial name
-                                name = name
-                                    .innerText
-                                    .toLowerCase();
+                                    return date;
+                                }))
+                                .map(([start, stop]) => averageStreamTime += Math.abs(start - stop));
 
-                                // Set initial value, and adjust name
-                                value = value
-                                    .innerText
-                                    .trim()
-                                    .replace(/\s+/g, ' ')
-                                    .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
-                                        name += " per " + $1;
-
-                                        return '';
-                                    });
-
-                                // Set final value
-                                value = (
-                                    /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
-                                        parseFloat(value):
-                                    value
-                                );
-
-                                // Set final name
-                                name = name
-                                    .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
-
-                                // Set property
-                                data[name] = value;
-                            });
+                        data.dailyBroadcastTime = (averageStreamTime / totalStreamTime.length) / 3_600_000;
+                        data.activeDaysPerWeek = daysWithStreams.size;
 
                         REMARK(`Details about "${ STREAMER.name }"`, data);
 
@@ -3049,10 +3069,90 @@ let Initialize = async(START_OVER = false) => {
                     })
                     .catch(WARN)
                     .then(data => {
-                        data = { ...data, dataRetrievedAt: +new Date };
+                        data = { ...data, dataRetrievedOK: defined(data.dailyBroadcastTime), dataRetrievedAt: +new Date };
 
                         SaveCache({ [`data/${ STREAMER.name }`]: data });
                     });
+
+                //  OBSOLETE //
+                // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
+                //     .then(response => response.json())
+                //     .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
+                //     .then(json => {
+                //         if(!defined(json))
+                //             throw "Fine Detail JSON data could not be parsed...";
+                //
+                //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
+                //
+                //         let conversion = {
+                //             paid: 'subscriber',
+                //
+                //             ally: 'partner',
+                //             fast: 'turbo',
+                //             nsfw: 'mature',
+                //             sole: 'channel_id',
+                //         };
+                //
+                //         for(let key in conversion)
+                //             STREAMER[key] = TWITCH_API[conversion[key]];
+                //     })
+                //     .catch(ERROR);
+
+                // OBSOLETE //
+                // await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
+                //     .then(text => text.text())
+                //     /* Conversion => Text -> HTML -> Element -> JSON */
+                //     .then(html => {
+                //         let doc = (new DOMParser).parseFromString(html, 'text/html'),
+                //             body = doc.body;
+                //
+                //         let data = {};
+                //
+                //         [...doc.querySelectorAll('#report .table tr')]
+                //             .map(tr => {
+                //                 let [name, value] = tr.querySelectorAll('td');
+                //
+                //                 /* Set initial name */
+                //                 name = name
+                //                     .innerText
+                //                     .toLowerCase();
+                //
+                //                 /* Set initial value, and adjust name */
+                //                 value = value
+                //                     .innerText
+                //                     .trim()
+                //                     .replace(/\s+/g, ' ')
+                //                     .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
+                //                         name += " per " + $1;
+                //
+                //                         return '';
+                //                     });
+                //
+                //                 /* Set final value */
+                //                 value = (
+                //                     /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
+                //                         parseFloat(value):
+                //                     value
+                //                 );
+                //
+                //                 /* Set final name */
+                //                 name = name
+                //                     .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
+                //
+                //                 /* Set property */
+                //                 data[name] = value;
+                //             });
+                //
+                //         REMARK(`Details about "${ STREAMER.name }"`, data, { bearer, clientID });
+                //
+                //         return STREAMER.data = data;
+                //     })
+                //     .catch(WARN)
+                //     .then(data => {
+                //         data = { ...data, dataRetrievedAt: +new Date };
+                //
+                //         SaveCache({ [`data/${ STREAMER.name }`]: data });
+                //     });
             }
         }
     };
@@ -3491,7 +3591,7 @@ let Initialize = async(START_OVER = false) => {
 
             $('#twitch-tools-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
 
-            let textContainer = $('[class$="animated-number"i]', false, container);
+            let textContainer = $('[class*="animate"i]', false, container);
 
             if(textContainer) {
                 let { parentElement } = textContainer;
@@ -3519,7 +3619,7 @@ let Initialize = async(START_OVER = false) => {
             button.icon = $('svg, img', false, container);
         } else {
             let container = button,
-                textContainer = $('[class$="animated-number"i]', false, container);
+                textContainer = $('[class*="animate"i]', false, container);
 
             button = {
                 container,
@@ -4776,7 +4876,7 @@ let Initialize = async(START_OVER = false) => {
                         if(!defined(node))
                             continue;
 
-                        node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML));
+                        node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML).value);
 
                         container.appendChild(node);
                     }
@@ -4997,7 +5097,9 @@ let Initialize = async(START_OVER = false) => {
                 for(let [name, src] of BTTV_EMOTES)
                     if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
                         let alt = name,
-                            own = BTTV_OWNERS.get(alt)?.displayName ?? 'Anonymous';
+                            owner = BTTV_OWNERS.get(alt),
+                            own = owner?.displayName ?? 'Anonymous',
+                            pid = owner?.providerId;
 
                         let f = furnish;
                         let img =
@@ -5016,7 +5118,7 @@ let Initialize = async(START_OVER = false) => {
                         alt = alt.replace(/\s+/g, '_');
 
                         $(`.text-fragment:not([twitch-tools-converted-emotes~="${alt}"])`, true, element).map(fragment => {
-                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, innerHTML: img.innerHTML }),
+                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, 'data-bttv-owner-id': pid, innerHTML: img.innerHTML }),
                                 converted = (fragment.getAttribute('twitch-tools-converted-emotes') ?? "").split(' ');
 
                             converted.push(alt);
@@ -5030,14 +5132,50 @@ let Initialize = async(START_OVER = false) => {
                                     let { bttvEmote } = element.dataset,
                                         tooltip = new Tooltip(element, bttvEmote);
 
-                                    element.addEventListener('mouseup', event => {
+                                    element.addEventListener('mouseup', async event => {
                                         let { currentTarget } = event,
-                                            { bttvEmote, bttvOwner } = currentTarget.dataset,
-                                            { left, top } = getOffset(currentTarget);
+                                            { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
+                                            { top } = getOffset(currentTarget);
 
-                                        top -= 100;
+                                        top -= 150;
 
-                                        let card = new Card({ title: bttvEmote, subtitle: `BetterTTV Emote (${ bttvOwner })`, icon: { src: BTTV_EMOTES.get(bttvEmote), alt: bttvEmote }, fineTuning: { top } });
+                                        await new Search(bttvOwner)
+                                            .then(({ data }) => {
+                                                let [streamer] = data.filter(({ id }) => id == bttvOwnerId);
+
+                                                if(!defined(streamer))
+                                                    throw "Emote owner not found...";
+
+                                                let { broadcaster_login, display_name, is_live } = streamer;
+
+                                                new Card({
+                                                    title: bttvEmote,
+                                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                                    icon: {
+                                                        src: BTTV_EMOTES.get(bttvEmote),
+                                                        alt: bttvEmote,
+                                                    },
+                                                    footer: {
+                                                        href: `/${ broadcaster_login }`,
+                                                        name: display_name,
+                                                        live: parseBool(is_live),
+                                                    },
+                                                    fineTuning: { top }
+                                                });
+                                            })
+                                            .catch(error => {
+                                                WARN(error);
+
+                                                new Card({
+                                                    title: bttvEmote,
+                                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                                    icon: {
+                                                        src: BTTV_EMOTES.get(bttvEmote),
+                                                        alt: bttvEmote,
+                                                    },
+                                                    fineTuning: { top }
+                                                });
+                                            });
                                     });
                                 });
                         });
@@ -6148,7 +6286,7 @@ let Initialize = async(START_OVER = false) => {
         timeEstimated = parseInt(timeEstimated);
 
         tooltip.innerHTML =
-            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } ${ "stream".pluralSuffix(streams) } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } ${ "stream".pluralSuffix(+(streams < 1)) } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
     };
     Timers.rewards_calculator = 100;
 
@@ -7108,6 +7246,18 @@ CUSTOM_CSS.innerHTML =
     left: 0;
     top: 0;
 }
+
+[tt-live-status-indicator] {
+    background-color: var(--color-hinted-grey-6);
+    border-radius: var(--border-radius-rounded);
+    width: 0.8rem;
+    height: 0.8rem;
+    display: inline-block;
+    position: relative;
+}
+
+[tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+
 /*[class*="tw-number-badge"i] {
     background-color: var(--color-background-pill-notification);
     border-radius: var(--border-radius-rounded);

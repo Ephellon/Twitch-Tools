@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 2.11.5
+- Added searching feature (for cards) `new Search(...)`
+
 > 2.11.4
 - Quality of life changes
 - Added emote cards `new Card({ ... })`
