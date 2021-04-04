@@ -29,6 +29,7 @@
         -->
         <header>Automation</header>
         <article>
+            <!-- Auto-Join -->
             <section>
                 <div class="title"><span small glyph="mod"></span> Auto-Join</div>
                 <div class="summary">
@@ -47,6 +48,7 @@
 
             <!-- [[Auto-Focus]] -->
 
+            <!-- Away Mode -->
             <section>
                 <div class="title"><span small glyph="eye"></span>Away Mode</div>
                 <div class="summary">
@@ -63,6 +65,7 @@
                 </div>
             </section>
 
+            <!-- Claim Bonuses -->
             <section>
                 <div class="title"><span small glyph="channelpoints"></span> Claim Bonuses</div>
                 <div class="summary">
@@ -76,6 +79,7 @@
                 </div>
             </section>
 
+            <!-- First in Line / Up Next -->
             <section>
                 <div class="title"><span small glyph="favorite"></span> First in Line / Up Next</div>
                 <div class="summary">
@@ -125,6 +129,7 @@
                 </div>
             </section>
 
+            <!-- Follows -->
             <section>
                 <div class="title"><span small glyph="favorite"></span> Follows</div>
                 <div class="summary">
@@ -170,8 +175,21 @@
                 </div>
             </section>
 
-            <!-- [[Kill Extensions]] -->
+            <!-- Kill Extensions -->
+            <section new>
+                <div class="title"><span small purple glyph="extensions"></span> Kill Extensions</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="kill_extensions" type="checkbox"/>
+                        <label for="kill_extensions"></label>
+                    </div>
+                    <p>
+                        Do not allow Twitch&trade; extensions to display.
+                    </p>
+                </div>
+            </section>
 
+            <!-- Next Channel -->
             <section>
                 <div class="title"><span small glyph="favorite"></span> Next Channel</div>
                 <div class="summary">
@@ -191,6 +209,7 @@
                 </div>
             </section>
 
+            <!-- Prevent Hosting -->
             <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Hosting</div>
                 <div class="summary">
@@ -205,6 +224,7 @@
                 </div>
             </section>
 
+            <!-- Prevent Raiding -->
             <section>
                 <div class="title"><span small glyph="lock"></span> Prevent Raiding</div>
                 <div class="summary">
@@ -213,13 +233,14 @@
                     </p>
                     <select id="prevent_raiding">
                         <option value="none" selected>Allow all channels to raid</option>
-                        <option value="greed">Only raid to collect the bonus points</option>
+                        <option value="greed">Only raid to collect channel points</option>
                         <option value="all">Prevent all channels from raiding</option>
                         <option value="unfollowed">Prevent unfollowed channels from being raided</option>
                     </select>
                 </div>
             </section>
 
+            <!-- Stay Live -->
             <section>
                 <div class="title"><span small glyph="stream"></span> Stay Live</div>
                 <div class="summary">
@@ -251,8 +272,77 @@
         -->
         <header>Chat &amp; Messaging</header>
         <article>
+            <!-- BetterTTV Emotes -->
+            <section new>
+                <div class="title"><span small gold glyph="emotes"></span> BetterTTV emotes</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="bttv_emotes" type="checkbox"/>
+                        <label for="bttv_emotes"></label>
+                    </div>
+                    <p>
+                        Use BetterTTV emotes.
+                    </p>
+                    <p warning-text>
+                        This may cause instability while loading emotes.
+                    </p>
+                    <details>
+                        <summary subtitle="Adjust options for BetterTTV emotes">Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Channel Specific Emotes</div>
+                                <div class="summary">
+                                    <div class="toggle" right-tooltip="Experimental feature">
+                                        <input id="bttv_emotes_channel" type="checkbox"/>
+                                        <label for="bttv_emotes_channel"></label>
+                                    </div>
+                                    <p>
+                                        Load channel specific <b>BetterTTV</b> emotes.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Emote Location</div>
+                                <div class="summary">
+                                    <p>
+                                        What <b>BetterTTV</b> emotes should be loaded?
+                                    </p>
+
+                                    <select id="bttv_emotes_location">
+                                        <option value="emotes/shared/trending" selected>Most popular (Trending)</option>
+                                        <option value="emotes/shared">Most shared (Shared)</option>
+                                        <option value="emotes/shared/top">Most used (Top)</option>
+                                        <option value="cached/emotes/global">Most universal (Global)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Library Size</div>
+                                <div class="summary">
+                                    <p>
+                                        Load up to <span><input id="bttv_emotes_maximum" type="number" value="150" max="1200" min="30" step="30"/></span> <b>BetterTTV</b> emotes.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Extra Emotes</div>
+                                <div class="summary">
+                                    <p>
+                                        Add <b>BetterTTV</b> emotes that have the words: <input id="bttv_emotes_extras" type="text" value="" left-tooltip="Case insensitive &bull; Comma separated" placeholder="monka,flex,pls"/>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
             <!-- [[Convert Emotes]] -->
 
+            <!-- Filter Messages -->
             <section>
                 <div class="title"><span small glyph="mod"></span> Filter messages</div>
                 <div class="summary">
@@ -269,7 +359,7 @@
                         for assistance.
                     </p>
                     <p>
-                        <input id="filter_rules-input" type="text" value="" left-tooltip="Case insensitive &bull; Comma separated" placeholder="word &#8703; WORD | @user &#8703; @USER"/>
+                        <input id="filter_rules-input" type="text" value="" left-tooltip="Case insensitive &bull; Comma separated" placeholder="<badge> @user :emote: text reg.exp?"/>
                     </p>
                     <details>
                         <summary subtitle="View, or remove rules">Filter Rules</summary>
@@ -290,6 +380,7 @@
                 </div>
             </section>
 
+            <!-- Highlight Mentions -->
             <section>
                 <div class="title"><span glyph="thread"></span> Highlight mentions</div>
                 <div class="summary">
@@ -318,10 +409,80 @@
                 </div>
             </section>
 
-            <!-- [[Native Replies]] -->
+            <!-- Native Reply -->
+            <section new>
+                <div class="title"><span small glyph="reply"></span> Native Reply</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="native_twitch_reply" type="checkbox"/>
+                        <label for="native_twitch_reply"></label>
+                    </div>
+                    <p>
+                        Attempt to display native Twitch&trade; replies on all channels.
+                    </p>
+                </div>
+            </section>
 
-            <!-- [[Prevent Spam]] -->
+            <!-- Prevent Spam -->
+            <section new>
+                <div class="title"><span small purple glyph="mod"></span> Prevent spam</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="prevent_spam" type="checkbox" checked/>
+                        <label for="prevent_spam"></label>
+                    </div>
+                    <p>
+                        Hide repetitive messages in chat.
+                    </p>
+                    <details>
+                        <summary subtitle="Adjust options for Prevent Spam">Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Message History</div>
+                                <div class="summary">
+                                    <p>
+                                        <b>Prevent spam</b> will look back <span><input id="prevent_spam_look_back" type="number" value="15" max="250" min="1" step="1"/></span> lines to detect <b attention-text up-tooltip="This will look for messages that match word-for-word">plagiarism</b>.
+                                    </p>
+                                </div>
+                            </div>
 
+                            <div text-only>
+                                <div class="title">Minimum Word Length</div>
+                                <div class="summary">
+                                    <p>
+                                        <b>Prevent spam</b> will ignore messages if there aren't any words longer than <span><input id="prevent_spam_minimum_length" type="number" value="3" max="500" min="3" step="1"/></span> characters.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Maximum Occurrences</div>
+                                <div class="summary">
+                                    <p>
+                                        <b>Prevent spam</b> will mark messages as <b>repetitive</b> after a word appears <span><input id="prevent_spam_ignore_under" type="number" value="5" max="150" min="3" step="1"/></span> or more times.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Recover Chat -->
+            <section new>
+                <div class="title"><span gold glyph="thread"></span> Recover Chat</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="recover_chat" type="checkbox"/>
+                        <label for="recover_chat"></label>
+                    </div>
+                    <p>
+                        If the <b>Stream Chat</b> is not loaded (or suddenly destroyed), attempt to recover it.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Show Pop-ups -->
             <section>
                 <div class="title"><span glyph="thread"></span> Show pop-ups</div>
                 <div class="summary">
@@ -335,6 +496,7 @@
                 </div>
             </section>
 
+            <!-- Whisper Audio -->
             <section>
                 <div class="title"><span small gold glyph="stream"></span> Whisper Audio</div>
                 <div class="summary">
@@ -376,6 +538,7 @@
         -->
         <header>Currencies</header>
         <article>
+            <!-- Convert Bits -->
             <section>
                 <div class="title"><span small glyph="bits"></span> Convert Bits</div>
                 <div class="summary">
@@ -389,6 +552,7 @@
                 </div>
             </section>
 
+            <!-- Channel Points Receipt -->
             <section>
                 <div class="title"><span small glyph="bits"></span> Channel Points Receipt</div>
                 <div class="summary">
@@ -405,6 +569,7 @@
                 </div>
             </section>
 
+            <!-- Rewards Calculator -->
             <section>
                 <div class="title"><span small glyph="channelpoints"></span> Rewards Calculator</div>
                 <div class="summary">
@@ -436,6 +601,7 @@
         -->
         <header>Customization</header>
         <article>
+            <!-- Away Mode Placement -->
             <section>
                 <div class="title"><span small glyph="latest"></span> Away Mode</div>
                 <div class="summary">
@@ -451,6 +617,7 @@
                 </div>
             </section>
 
+            <!-- Points Receipt Placement -->
             <section>
                 <div class="title"><span small glyph="latest"></span> Points Receipt</div>
                 <div class="summary">
@@ -465,6 +632,7 @@
                 </div>
             </section>
 
+            <!-- Point Watcher Placement -->
             <section>
                 <div class="title"><span small glyph="latest"></span> Point Watcher</div>
                 <div class="summary">
@@ -479,6 +647,7 @@
                 </div>
             </section>
 
+            <!-- Watch Time Placement -->
             <section>
                 <div class="title"><span small glyph="latest"></span> Watch Time</div>
                 <div class="summary">
@@ -512,8 +681,9 @@
         -->
         <header>Video Recovery</header>
         <article>
+            <!-- Keep Pop-out -->
             <section>
-                <div class="title"><span small glyph="play"></span> Keep Pop-out</div>
+                <div class="title"><span small gold glyph="video"></span> Keep Pop-out</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="keep_popout" type="checkbox"/>
@@ -525,6 +695,7 @@
                 </div>
             </section>
 
+            <!-- Recover Ads -->
             <section>
                 <div class="title"><span small glyph="play"></span> Recover Ads</div>
                 <div class="summary">
@@ -538,8 +709,9 @@
                 </div>
             </section>
 
+            <!-- Recover Frames -->
             <section>
-                <div class="title"><span small glyph="play"></span> Recover Frames</div>
+                <div class="title"><span small glyph="video"></span> Recover Frames</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="recover_frames" type="checkbox" checked/>
@@ -551,8 +723,23 @@
                 </div>
             </section>
 
+            <!-- Recover Pages -->
+            <section new>
+                <div class="title"><span small glyph="extensions"></span> Recover Pages</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="recover_pages" type="checkbox"/>
+                        <label for="recover_pages"></label>
+                    </div>
+                    <p>
+                        If the webpage fails to display, attempt to recover it.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Recover Stream -->
             <section>
-                <div class="title"><span small glyph="play"></span> Recover Stream</div>
+                <div class="title"><span small purple glyph="video"></span> Recover Stream</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="recover_stream" type="checkbox"/>
@@ -564,8 +751,9 @@
                 </div>
             </section>
 
+            <!-- Recover Video -->
             <section>
-                <div class="title"><span small glyph="play"></span> Recover Video</div>
+                <div class="title"><span small purple glyph="video"></span> Recover Video</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="recover_video" type="checkbox" checked/>
@@ -596,6 +784,7 @@
 
         <header>Developer Features <span glyph="help" right-tooltip="These are advanced features that should be used for testing"></span></header>
         <article danger>
+            <!-- Display Console Messages -->
             <section>
                 <div class="title"><span small glyph="stats"></span> Display Console Messages</div>
                 <div class="summary">
@@ -609,6 +798,7 @@
                 </div>
             </section>
 
+            <!-- Display Statistics -->
             <section>
                 <div class="title"><span small glyph="stats"></span> Display Statistics</div>
                 <div class="summary">
@@ -622,8 +812,9 @@
                 </div>
             </section>
 
+            <!-- Experimental Features -->
             <section>
-                <div class="title"><span small glyph="stats"></span> Experimental Features</div>
+                <div class="title"><span small gold glyph="stats"></span> Experimental Features</div>
                 <div class="summary">
                     <div class="toggle">
                         <input id="experimental_mode" type="checkbox"/>
@@ -638,6 +829,24 @@
                 </div>
             </section>
 
+            <!-- Use Fine Details -->
+            <section new>
+                <div class="title"><span small purple glyph="stats"></span> Use Fine Details</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="fine_details" type="checkbox"/>
+                        <label for="fine_details"></label>
+                    </div>
+                    <p>
+                        Allow the extension to use Twitch&trade; API data to enhance your experience.
+                    </p>
+                    <p warning-text>
+                        This will not collect any data. It will use the data Twitch&trade; has collected.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Show Default Values -->
             <section hide-on="show-defaults">
                 <div class="title"><span small glyph="help"></span> Show Default Values</div>
                 <div class="summary">
@@ -671,6 +880,7 @@
 
         <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features that may produce errors"></span></header>
         <article caution>
+            <!-- Auto-focus -->
             <section>
                 <div class="title"><span small purple glyph="stream"></span> Auto-Focus</div>
                 <div class="summary">
@@ -739,64 +949,7 @@
                 </div>
             </section>
 
-            <section>
-                <div class="title"><span small gold glyph="emotes"></span> BetterTTV emotes</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="bttv_emotes" type="checkbox"/>
-                        <label for="bttv_emotes"></label>
-                    </div>
-                    <p>
-                        Use BetterTTV emotes.
-                    </p>
-                    <p warning-text>
-                        This may cause instability while loading emotes.
-                    </p>
-                    <details>
-                        <summary subtitle="Adjust options for BetterTTV emotes">Options</summary>
-                        <div>
-                            <div text-only>
-                                <div class="title">Channel Specific Emotes</div>
-                                <div class="summary">
-                                    <div class="toggle" right-tooltip="Experimental feature">
-                                        <input id="bttv_emotes_channel" type="checkbox"/>
-                                        <label for="bttv_emotes_channel"></label>
-                                    </div>
-                                    <p>
-                                        Load channel specific <b>BetterTTV</b> emotes.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div text-only>
-                                <div class="title">Emote Location</div>
-                                <div class="summary">
-                                    <p>
-                                        What <b>BetterTTV</b> emotes should be loaded?
-                                    </p>
-
-                                    <select id="bttv_emotes_location">
-                                        <option value="emotes/shared/trending" selected>Most popular (Trending)</option>
-                                        <option value="emotes/shared">Most shared (Shared)</option>
-                                        <option value="emotes/shared/top">Most used (Top)</option>
-                                        <option value="cached/emotes/global">Most universal (Global)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div text-only>
-                                <div class="title">Library Size</div>
-                                <div class="summary">
-                                    <p>
-                                        Load <span><input id="bttv_emotes_maximum" type="number" value="150" max="1200" min="30" step="30"/></span> <b>BetterTTV</b> emotes.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-            </section>
-
+            <!-- Convert Emotes -->
             <section>
                 <div class="title"><span small glyph="emotes"></span> Convert emotes</div>
                 <div class="summary">
@@ -812,108 +965,6 @@
                     </p>
                     <p warning-text>
                         This does <b>not</b> save/unlock the emote.
-                    </p>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small purple glyph="extensions"></span> Kill Extensions</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="kill_extensions" type="checkbox"/>
-                        <label for="kill_extensions"></label>
-                    </div>
-                    <p>
-                        Do not allow Twitch&trade; extensions to display.
-                    </p>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small glyph="reply"></span> Native Reply</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="native_twitch_reply" type="checkbox"/>
-                        <label for="native_twitch_reply"></label>
-                    </div>
-                    <p>
-                        Attempt to display native Twitch&trade; replies on all channels.
-                    </p>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small purple glyph="mod"></span> Prevent spam</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="prevent_spam" type="checkbox" checked/>
-                        <label for="prevent_spam"></label>
-                    </div>
-                    <p>
-                        Hide repetitive messages in chat.
-                    </p>
-                    <details>
-                        <summary subtitle="Adjust options for Prevent Spam">Options</summary>
-                        <div>
-                            <div text-only>
-                                <div class="title">Message History</div>
-                                <div class="summary">
-                                    <p>
-                                        <b>Prevent spam</b> will look back <span><input id="prevent_spam_look_back" type="number" value="15" max="250" min="1" step="1"/></span> lines to detect <b attention-text up-tooltip="This will look for messages that match word-for-word">plagiarism</b>.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div text-only>
-                                <div class="title">Minimum Word Length</div>
-                                <div class="summary">
-                                    <p>
-                                        <b>Prevent spam</b> will ignore messages if there aren't any words longer than <span><input id="prevent_spam_minimum_length" type="number" value="3" max="500" min="3" step="1"/></span> characters.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div text-only>
-                                <div class="title">Maximum Occurrences</div>
-                                <div class="summary">
-                                    <p>
-                                        <b>Prevent spam</b> will mark messages as <b>repetitive</b> after a word appears <span><input id="prevent_spam_ignore_under" type="number" value="5" max="150" min="3" step="1"/></span> or more times.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small glyph="extensions"></span> Recover Pages</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="recover_pages" type="checkbox"/>
-                        <label for="recover_pages"></label>
-                    </div>
-                    <p>
-                        If the webpage fails to display, attempt to recover it.
-                    </p>
-                    <p>
-                        If the <b>Stream Chat</b> is not loaded (or suddenly destroyed), attempt to recover it.
-                    </p>
-                </div>
-            </section>
-
-            <section>
-                <div class="title"><span small purple glyph="stats"></span> Use Fine Details</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="fine_details" type="checkbox"/>
-                        <label for="fine_details"></label>
-                    </div>
-                    <p>
-                        Allow the extension to use Twitch&trade; API data to enhance your experience.
-                    </p>
-                    <p>
-                        This will not collect any data. It will use the data Twitch&trade; has collected.
                     </p>
                 </div>
             </section>

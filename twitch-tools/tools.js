@@ -24,6 +24,7 @@ let Settings = {},
         __reasons__: new Map(),
     },
     Messages = new Map(),
+    PostOffice = new Map(),
     // These won't change (often)
     USERNAME,
     THEME,
@@ -34,7 +35,7 @@ let Settings = {},
 // Populate the username field by quickly showing the menu
 if(defined(UserMenuToggleButton)) {
     UserMenuToggleButton.click();
-    USERNAME = $('[data-a-target="user-display-name"i]').innerText;
+    USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]').innerText;
     THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
     UserMenuToggleButton.click();
 }
@@ -46,7 +47,7 @@ if(defined(browser?.runtime))
 else if(defined(chrome?.extension))
     BrowserNamespace = 'chrome';
 
-Container = window[BrowserNamespace];
+Container = top[BrowserNamespace];
 
 switch(BrowserNamespace) {
     case 'browser':
@@ -71,6 +72,222 @@ switch(BrowserNamespace) {
 
 let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
+// Logs messages (green)
+    // LOG([...messages]) -> undefined
+let LOG = (...messages) => {
+    let CSS = `
+        background-color: #00332b;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #065;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [LOG] \u2014 ${ Manifest?.name }`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+// Logs warnings (yellow)
+    // WARN([...messages]) -> undefined
+let WARN = (...messages) => {
+    let CSS = `
+        background-color: #332b00;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #650;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u26a0 [WARNING] \u2014 ${ Manifest?.name }`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u26a0 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+// Logs errors (red)
+    // ERROR([...messages]) -> undefined
+let ERROR = (...messages) => {
+    let CSS = `
+        background-color: #290000;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #5c0000;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u2298 [ERROR] \u2014 ${ Manifest?.name }`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u2298 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
+// Logs comments (blue)
+    // LOG([...messages]) -> undefined
+let REMARK = (...messages) => {
+    let CSS = `
+        background-color: #002b55;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #057;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [COMMENT] \u2014 ${ Manifest?.name }`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+};
+
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
@@ -82,7 +299,7 @@ class UUID {
     static #BWT_SEED = new UUID()
 
     constructor() {
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
+        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ top.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
         this.native = this.value = native;
 
@@ -179,12 +396,12 @@ class Popup {
         let f = furnish;
 
         let P = $('.stream-chat-header'),
-            X = $('#twitch-tools-popup', false, P),
+            X = $('#tt-popup', false, P),
             I = Extension.getURL('profile.png'),
             N = 'Continue',
             D = 'Close',
-            A = event => $('#twitch-tools-popup')?.remove(),
-            C = event => $('#twitch-tools-popup')?.remove(),
+            A = event => $('#tt-popup')?.remove(),
+            C = event => $('#tt-popup')?.remove(),
             R = '_self',
             U, S, M, G, T, W, H;
 
@@ -197,7 +414,7 @@ class Popup {
         if(defined(X)) {
             if(!Queue.popups.map(popup => popup.uuid).contains(uuid)) {
                 let interval = setInterval(() => {
-                    let existing = $('#twitch-tools-popup');
+                    let existing = $('#tt-popup');
 
                     if(defined(existing))
                         return;
@@ -229,7 +446,7 @@ class Popup {
                 H = options[n] ?? H;
 
         let p =
-        f('div#twitch-tools-popup.tw-absolute.tw-mg-t-5', { 'twitch-tools-id': subject.replace(/\s+/g, '-'), style: 'z-index:9; bottom:10rem; right:1rem' },
+        f('div#tt-popup.tw-absolute.tw-mg-t-5', { 'tt-id': subject.replace(/\s+/g, '-'), style: 'z-index:9; bottom:10rem; right:1rem' },
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
@@ -263,16 +480,16 @@ class Popup {
                             )
                         ),
                         // Notification counter
-                        f('div#twitch-tools-notification-counter--popup.tw-absolute.tw-font-size-7.tw-right-0.tw-top-0', { style: 'visibility:hidden' },
+                        f('div#tt-notification-counter--popup.tw-absolute.tw-font-size-7.tw-right-0.tw-top-0', { style: 'visibility:hidden' },
                             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
                                     'data-a-target': 'tw-animation-target'
                                 },
                                 f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
-                                    f('div#twitch-tools-notification-counter-output--popup.tw-c-text-overlay.tw-number-badge__badge.tw-relative', {
+                                    f('div#tt-notification-counter-output--popup.tw-c-text-overlay.tw-number-badge__badge.tw-relative', {
                                         'interval-id': setInterval(() => {
                                             let { length } = Queue.popups,
-                                                counter = $('#twitch-tools-notification-counter--popup'),
-                                                output = $('#twitch-tools-notification-counter-output--popup');
+                                                counter = $('#tt-notification-counter--popup'),
+                                                output = $('#tt-notification-counter-output--popup');
 
                                             if(!defined(counter) || !defined(output))
                                                 return;
@@ -363,7 +580,7 @@ class Balloon {
         let f = furnish;
 
         let [P] = $('.top-nav__menu > div', true).slice(-1),
-            X = $('#twitch-tools-balloon', false, P),
+            X = $('#tt-balloon', false, P),
             I = Extension.getURL('profile.png'),
             F, C, H, U, N;
 
@@ -376,7 +593,7 @@ class Balloon {
         if(defined(X)) {
             if(!Queue.balloons.map(popup => popup.uuid).contains(uuid)) {
                 let interval = setInterval(() => {
-                    let existing = $('#twitch-tools-balloon');
+                    let existing = $('#tt-balloon');
 
                     if(defined(existing))
                         return;
@@ -414,7 +631,7 @@ class Balloon {
                                         let { currentTarget } = event,
                                             connectedTo = currentTarget.getAttribute('connected-to');
 
-                                        let balloon = $(`#twitch-tools-balloon-${ connectedTo }`);
+                                        let balloon = $(`#tt-balloon-${ connectedTo }`);
 
                                         if(!defined(balloon))
                                             return;
@@ -434,15 +651,15 @@ class Balloon {
                                 ),
 
                                 // Notification counter
-                                F = f(`div#twitch-tools-notification-counter--${ U }.tw-absolute.tw-right-0.tw-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
+                                F = f(`div#tt-notification-counter--${ U }.tw-absolute.tw-right-0.tw-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
                                     f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
                                             'data-a-target': 'tw-animation-target'
                                         },
                                         f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
-                                            f(`div#twitch-tools-notification-counter-output--${ U }.tw-c-text-overlay.tw-number-badge__badge.tw-relative`, {
+                                            f(`div#tt-notification-counter-output--${ U }.tw-c-text-overlay.tw-number-badge__badge.tw-relative`, {
                                                 'interval-id': setInterval(() => {
-                                                    let counter = $(`#twitch-tools-notification-counter--${ uuid }`),
-                                                        output = $(`#twitch-tools-notification-counter-output--${ uuid }`),
+                                                    let counter = $(`#tt-notification-counter--${ uuid }`),
+                                                        output = $(`#tt-notification-counter-output--${ uuid }`),
                                                         length = parseInt(counter?.getAttribute('length'));
 
                                                     if(!defined(counter) || !defined(output))
@@ -467,14 +684,14 @@ class Balloon {
                         )
                     ),
                     // Balloon
-                    f(`div#twitch-tools-balloon-${ U }.tw-absolute.tw-balloon.tw-right-0.tw-balloon--down.tw-balloon--right.tw-balloon-lg.tw-block`,
+                    f(`div#tt-balloon-${ U }.tw-absolute.tw-balloon.tw-right-0.tw-balloon--down.tw-balloon--right.tw-balloon-lg.tw-block`,
                         {
                             style: 'display:none!important',
                             display: 'none',
                             role: 'dialog',
                         },
                         f('div.tw-border-radius-large.tw-c-background-base.tw-c-text-inherit.tw-elevation-4', {},
-                            (C = f(`div#twitch-tools-balloon-container-${ U }.tw-flex.tw-flex-column`,
+                            (C = f(`div#tt-balloon-container-${ U }.tw-flex.tw-flex-column`,
                                 {
                                     style: 'min-height:20rem; min-width:40rem;',
                                     role: 'dialog',
@@ -482,7 +699,7 @@ class Balloon {
                                 // Header
                                 f('div.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-c-text-base.tw-elevation-1.tw-flex.tw-flex-shrink-0.tw-pd-x-1.tw-pd-y-05.tw-popover-header', {},
                                     f('div.tw-align-items-center.tw-flex.tw-flex-column.tw-flex-grow-1.tw-justify-content-center', {},
-                                        (H = f(`h5#twitch-tools-balloon-header-${ U }.tw-align-center.tw-c-text-alt.tw-semibold`, { style: 'margin-left:4rem!important' }, title))
+                                        (H = f(`h5#tt-balloon-header-${ U }.tw-align-center.tw-c-text-alt.tw-semibold`, { style: 'margin-left:4rem!important' }, title))
                                     ),
                                     f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
                                         {
@@ -495,7 +712,7 @@ class Balloon {
                                                 let { currentTarget } = event,
                                                     connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                let balloon = $(`#twitch-tools-balloon-${ connectedTo }`);
+                                                let balloon = $(`#tt-balloon-${ connectedTo }`);
 
                                                 if(!defined(balloon))
                                                     return;
@@ -513,7 +730,7 @@ class Balloon {
                                     let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
                                         guid = guid = UUID.from([href, message].join(':')).value;
 
-                                    let container = f(`div#twitch-tools-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
+                                    let container = f(`div#tt-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
                                         f('div.simplebar-scroll-content',
                                             {
                                                 style: 'overflow: hidden;',
@@ -542,7 +759,7 @@ class Balloon {
                                                                         let { currentTarget } = event,
                                                                             connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                                        let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
+                                                                        let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                                         if(defined(element)) {
                                                                             onremove({ ...event, uuid, guid, href, canceled: false });
@@ -556,7 +773,7 @@ class Balloon {
                                                                     f('div', {},
                                                                         f('div.tw-border-radius-rounded.tw-card-img.tw-card-img--size-4.tw-flex-shrink-0.tw-overflow-hidden', {},
                                                                             f('div.tw-aspect.tw-aspect--align-top', {},
-                                                                                f('img.twitch-tools-balloon-avatar.tw-image', { src })
+                                                                                f('img.tt-balloon-avatar.tw-image', { src })
                                                                             )
                                                                         )
                                                                     ),
@@ -567,13 +784,13 @@ class Balloon {
                                                                                 'data-test-selector': 'persistent-notification__body'
                                                                             },
                                                                             f('span.tw-c-text-alt', {},
-                                                                                f('p.twitch-tools-balloon-message', { innerHTML: message })
+                                                                                f('p.tt-balloon-message', { innerHTML: message })
                                                                             )
                                                                         ),
                                                                         // Subheader
                                                                         f('div.tw-align-items-center.tw-flex.tw-flex-shrink-0.tw-mg-t-05', {},
                                                                             f('div.tw-mg-l-05', {},
-                                                                                f('span.twitch-tools-balloon-subheader.tw-c-text-alt', { innerHTML: subheader })
+                                                                                f('span.tt-balloon-subheader.tw-c-text-alt', { innerHTML: subheader })
                                                                             )
                                                                         )
                                                                     )
@@ -590,7 +807,7 @@ class Balloon {
                                                                                 let { currentTarget } = event,
                                                                                     connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                                                let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
+                                                                                let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                                                 if(defined(element)) {
                                                                                     onremove({ ...event, uuid, guid, href, canceled: true });
@@ -693,14 +910,14 @@ class Balloon {
                 guid = UUID.from(href).value,
                 f = furnish;
 
-            let existing = $(`#twitch-tools-balloon-job-${ uuid }--${ guid }`);
+            let existing = $(`#tt-balloon-job-${ uuid }--${ guid }`);
 
             if(defined(existing))
                 return existing;
 
             ++this.length;
 
-            let container = f(`div#twitch-tools-balloon-job-${ uuid }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
+            let container = f(`div#tt-balloon-job-${ uuid }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
                 f('div.simplebar-scroll-content',
                     {
                         style: 'overflow: hidden;',
@@ -729,7 +946,7 @@ class Balloon {
                                                 let { currentTarget } = event,
                                                     connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
+                                                let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                 if(defined(element)) {
                                                     onremove({ ...event, uuid, guid, href, canceled: false });
@@ -743,7 +960,7 @@ class Balloon {
                                             f('div', {},
                                                 f('div.tw-border-radius-rounded.tw-card-img.tw-card-img--size-4.tw-flex-shrink-0.tw-overflow-hidden', {},
                                                     f('div.tw-aspect.tw-aspect--align-top', {},
-                                                        f('img.twitch-tools-balloon-avatar.tw-image', { src })
+                                                        f('img.tt-balloon-avatar.tw-image', { src })
                                                     )
                                                 )
                                             ),
@@ -754,13 +971,13 @@ class Balloon {
                                                         'data-test-selector': 'persistent-notification__body'
                                                     },
                                                     f('span.tw-c-text-alt', {},
-                                                        f('p.twitch-tools-balloon-message', { innerHTML: message })
+                                                        f('p.tt-balloon-message', { innerHTML: message })
                                                     )
                                                 ),
                                                 // Subheader
                                                 f('div.tw-align-items-center.tw-flex.tw-flex-shrink-0.tw-mg-t-05', {},
                                                     f('div.tw-mg-l-05', {},
-                                                        f('span.twitch-tools-balloon-subheader.tw-c-text-alt', { innerHTML: subheader })
+                                                        f('span.tt-balloon-subheader.tw-c-text-alt', { innerHTML: subheader })
                                                     )
                                                 )
                                             )
@@ -777,7 +994,7 @@ class Balloon {
                                                         let { currentTarget } = event,
                                                             connectedTo = currentTarget.getAttribute('connected-to');
 
-                                                        let element = $(`#twitch-tools-balloon-job-${ connectedTo }`);
+                                                        let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                         if(defined(element)) {
                                                             onremove({ ...event, uuid, guid, href, canceled: true });
@@ -853,7 +1070,7 @@ class Tooltip {
             let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             $('div#root > *').appendChild(
-                furnish('div.twitch-tools-tooltip-layer.tooltip-layer',
+                furnish('div.tt-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
                             switch(direction) {
@@ -885,7 +1102,7 @@ class Tooltip {
         });
 
         parent.addEventListener('mouseleave', event => {
-            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
+            $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
 
             tooltip?.setAttribute('style', 'display:none');
         });
@@ -917,7 +1134,7 @@ class ChatFooter {
 
         let parent = $('[data-a-target="chat-scroller"]'),
             footer =
-            f('div#twitch-tools-chat-footer.tw-absolute.tw-border-radius-medium.tw-bottom-0.tw-c-text-overlay.tw-mg-b-1',
+            f('div#tt-chat-footer.tw-absolute.tw-border-radius-medium.tw-bottom-0.tw-c-text-overlay.tw-mg-b-1',
                 {
                     uuid,
 
@@ -1136,6 +1353,39 @@ class Search {
     }
 }
 
+// https://stackoverflow.com/a/45205645/4211612
+// Creates a CSS object that can be used to easily transform an object to a CSS string
+    // new CSSObject({ ...css-properties }) -> Object~CSSObject
+class CSSObject {
+    constructor(properties = {}) {
+        for(let key in properties)
+            this[key] = properties[key];
+
+        return this;
+    }
+
+    toString() {
+        return Object.entries(this).map(([key, value]) => {
+            key = key.replace(/([A-Z])/g, ($0, $1, $$, $_) => '-' + $1.toLowerCase());
+
+            return [key, value].join(':');
+        })
+        .join(';');
+    }
+
+    toObject() {
+        let object = {};
+
+        for(let key in this) {
+            let properKey = key.replace(/([A-Z])/g, ($0, $1, $$, $_) => '-' + $1.toLowerCase());
+
+            object[properKey] = this[key];
+        }
+
+        return object;
+    }
+}
+
 // Get the current settings
     // GetSettings() -> Object
 function GetSettings() {
@@ -1156,6 +1406,7 @@ function GetSettings() {
 }
 
 let StorageSpace = localStorage || sessionStorage;
+
 // Saves data to the page's storage
     // SaveCache(keys:object[, callback:function]) -> undefined
 async function SaveCache(keys = {}, callback = () => {}) {
@@ -1663,7 +1914,7 @@ function parseCoin(amount = '') {
     let points = 0,
         COIN, UNIT;
 
-    amount = amount.replace(/([\d\.,]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
+    amount = (amount + "").replace(/([\d\.,]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
         COIN = $1.replace(/,+/g, '');
         UNIT = ($2 ?? '').toUpperCase();
     });
@@ -1743,8 +1994,15 @@ async function GetQuality() {
 
     let current = qualities.find(({ input }) => input.checked);
 
-    if(!defined(current))
-        return /* Is the streamer live? */;
+    if(!defined(current)) {
+        let { videoHeight } = $('[data-a-target="video-player"] video');
+
+        if((videoHeight |= 0) < 1)
+            return /* Is the streamer even live? */;
+
+        // Assume ALL streams are progressive, HTML does not support interlaced video
+        current = ({ label: { textContent: `${ videoHeight }p` } });
+    }
 
     let quality = new String(current.label.textContent);
 
@@ -1865,222 +2123,6 @@ function comify(number) {
         .replace(/^,+|,+$/g, '')
 };
 
-// Logs messages (green)
-    // LOG([...messages]) -> undefined
-let LOG = (...messages) => {
-    let CSS = `
-        background-color: #00332b;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #065;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u22b3 [LOG] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u22b3 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// Logs warnings (yellow)
-    // WARN([...messages]) -> undefined
-let WARN = (...messages) => {
-    let CSS = `
-        background-color: #332b00;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #650;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u26a0 [WARNING] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u26a0 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// Logs errors (red)
-    // ERROR([...messages]) -> undefined
-let ERROR = (...messages) => {
-    let CSS = `
-        background-color: #290000;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #5c0000;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u2298 [ERROR] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u2298 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// Logs comments (blue)
-    // LOG([...messages]) -> undefined
-let REMARK = (...messages) => {
-    let CSS = `
-        background-color: #002b55;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #057;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u22b3 [COMMENT] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u22b3 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
 let DefaultFill = ({
     dark: '#ffffff',
     light: '#0e0e10',
@@ -2101,7 +2143,7 @@ let nth = n => (n + '')
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object#Channel, index:number, channels:array) -> boolean
 let uniqueChannels = (channel, index, channels) =>
-    channels.filter(defined).findIndex(ch => ch.name === channel?.name) == index;
+    channels.filter(channel => defined(channel?.name)).findIndex(ch => ch.name === channel?.name) == index;
 
 // Returns whether or not a channel is live (used with `Array..filter`)
     // isLive(channel:object#Channel) -> boolean
@@ -2124,34 +2166,154 @@ let PATHNAME = top.location.pathname,
 
 let __ONLOCATIONCHANGE__ = new Map;
 
-Object.defineProperties(top, {
-    onlocationchange: {
-        get() {
-            let last;
+// Yes, I could make this fail go away... or I can use it to force once-a-page events...
+// The following will only execute in the top frame, once
+try {
+    // Add onlocationchange containers
+    Object.defineProperties(top, {
+        onlocationchange: {
+            get() {
+                let last;
 
-            for(let key of __ONLOCATIONCHANGE__)
-                last = key;
+                for(let key of __ONLOCATIONCHANGE__)
+                    last = key;
 
-            return __ONLOCATIONCHANGE__.get(last);
-        },
+                return __ONLOCATIONCHANGE__.get(last);
+            },
 
-        set(listener) {
-            __ONLOCATIONCHANGE__.set(UUID.from(listener.toString()).value, listener);
+            set(listener) {
+                __ONLOCATIONCHANGE__.set(UUID.from(listener.toString()).value, listener);
 
-            return listener;
+                return listener;
+            }
+        }
+    });
+
+    // Automatic garbage collection...
+    REMARK(`Removing expired cache data...`);
+    for(let key in StorageSpace) {
+        if(!/^ext\.twitch-tools\/data\/(\w+)?/i.test(key))
+            continue;
+
+        let data = JSON.parse(StorageSpace[key]),
+            { dataRetrievedAt } = data;
+
+        // If there isn't a proper date, remove the data...
+        if(+dataRetrievedAt < 0) {
+            StorageSpace.removeItem(key);
+
+            continue;
+        }
+
+        let lastFetch = Math.abs(dataRetrievedAt - +new Date);
+
+        // If the last fetch was more than 30 days ago, remove the data...
+        if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
+            WARN(`\tThe last fetch for "${ RegExp.$1 }" was ${ ConvertTime(lastFetch) } ago. Marking as "expried"`);
+
+            StorageSpace.removeItem(key);
         }
     }
-});
+
+    // Add storage listener
+    Storage.onChanged.addListener((changes, namespace) => {
+        let reload = false,
+            refresh = [];
+
+        for(let key in changes) {
+            if(SPECIAL_MODE && !!~NORMALIZED_FEATURES.findIndex(feature => feature.test(key)))
+                continue;
+
+            let change = changes[key],
+                { oldValue, newValue } = change;
+
+            let name = key.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase());
+
+            if(newValue === false) {
+
+                if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
+                    WARN(`Disabling experimental feature: ${ name }`, new Date);
+                else
+                    REMARK(`Disabling feature: ${ name }`, new Date);
+
+                UnregisterJob(key, 'disable');
+            } else if(newValue === true) {
+
+                if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
+                    WARN(`Enabling experimental feature: ${ name }`, new Date);
+                else
+                    REMARK(`Enabling feature: ${ name }`, new Date);
+
+                RegisterJob(key, 'enable');
+            } else {
+
+                if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
+                    WARN(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
+                else
+                    REMARK(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
+
+                switch(key) {
+                    case 'filter_rules':
+                        RestartJob('filter_messages', 'modify');
+                        break;
+
+                    case 'away_mode_placement':
+                        RestartJob('away_mode', 'modify');
+                        break;
+
+                    case 'watch_time_placement':
+                        RestartJob('watch_time_placement', 'modify');
+                        RestartJob('points_receipt_placement', 'dependent');
+                        break;
+
+                    default: break;
+                }
+
+                // Adjust the timer to compensate for lost time
+                // new-time-left = (old-wait-time - old-time-left) + (new-wait-time - old-wait-time)
+                // if(/(\w+)_time_minutes$/i.test(key))
+                //     FIRST_IN_LINE_TIMER = (FIRST_IN_LINE_WAIT_TIME - FIRST_IN_LINE_TIMER) + ((parseInt(settings[RegExp.$1] === true? newValue: 0) | 0) - FIRST_IN_LINE_WAIT_TIME);
+            }
+
+            reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].findIndex(feature => feature.test(key));
+            if(!!~[...REFRESHABLE_FEATURES].findIndex(feature => feature.test(key)))
+                refresh.push(key);
+
+            Settings[key] = newValue;
+        }
+
+        if(reload)
+            return location.reload();
+
+        for(let job of refresh)
+            RestartJob(job, 'modify');
+    });
+
+    // Add message listener
+    top.addEventListener("message", async event => {
+        if(event.origin != top.location.origin)
+            return /* Not meant for us... */;
+
+        let { data } = event;
+
+        for(let target in data)
+            PostOffice.set(target, data[target]);
+    });
+} catch(error) {
+    // Most likely in aa child frame...
+    // REMARK('Moving to chat child frame...');
+    WARN(error);
+}
 
 async function update() {
     // The location
-    PATHNAME = top.location.pathname;
+    top.PATHNAME = PATHNAME = top.location.pathname;
 
     // The theme
-    THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+    top.THEME = THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
 
     // All Channels under Search
-    SEARCH = [
+    top.SEARCH = SEARCH = [
         ...SEARCH,
         // Current (followed) streamers
         ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
@@ -2181,11 +2343,11 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('twitch-tools-streamer-data', JSON.stringify(channel));
+                element.setAttribute('tt-streamer-data', JSON.stringify(channel));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
-                    event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -2194,7 +2356,7 @@ async function update() {
     ].filter(uniqueChannels);
 
     // All visible Channels
-    CHANNELS = [
+    top.CHANNELS = CHANNELS = [
         ...CHANNELS,
         // Current (followed) streamers
         ...$(`#sideNav .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
@@ -2225,11 +2387,11 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
-                    event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -2238,7 +2400,7 @@ async function update() {
     ].filter(uniqueChannels);
 
     // All followed Channels
-    STREAMERS = [
+    top.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
         ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
@@ -2269,11 +2431,11 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
-                    event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -2282,7 +2444,7 @@ async function update() {
     ].filter(uniqueChannels);
 
     // All Notifications
-    NOTIFICATIONS = [
+    top.NOTIFICATIONS = NOTIFICATIONS = [
         ...NOTIFICATIONS,
         // Notification elements
         ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true).map(
@@ -2298,11 +2460,11 @@ async function update() {
                     return;
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
-                    event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -2312,7 +2474,7 @@ async function update() {
 
     // Every channel
         // Putting the channels in this order guarantees channels already defined aren't overridden
-    ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
+    top.ALL_CHANNELS = ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 }
 
 // Registers a job
@@ -2370,85 +2532,18 @@ Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 
 // Settings have been saved
-let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i');
+let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i'),
+    // Features that require the experimental flag
+    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes'].map(AsteriskFn),
 
-let EXPERIMENTAL_FEATURES = ['auto_focus', 'bttv_emotes*', 'convert_emotes', 'fine_details', 'native_twitch_reply', 'prevent_spam'].map(AsteriskFn),
-    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'first_in_line*', 'prevent_#'].map(AsteriskFn),
+    // Features that need the page reloaded when changed
+    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#'].map(AsteriskFn),
+
+    // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
-    REFRESHABLE_FEATURES = ['auto_focus*', 'filter_messages', '*placement'].map(AsteriskFn);
 
-Storage.onChanged.addListener((changes, namespace) => {
-    let reload = false,
-        refresh = [];
-
-    for(let key in changes) {
-        if(SPECIAL_MODE && !!~NORMALIZED_FEATURES.findIndex(feature => feature.test(key)))
-            continue;
-
-        let change = changes[key],
-            { oldValue, newValue } = change;
-
-        let name = key.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase());
-
-        if(newValue === false) {
-
-            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                WARN(`Disabling experimental feature: ${ name }`, new Date);
-            else
-                REMARK(`Disabling feature: ${ name }`, new Date);
-
-            UnregisterJob(key, 'disable');
-        } else if(newValue === true) {
-
-            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                WARN(`Enabling experimental feature: ${ name }`, new Date);
-            else
-                REMARK(`Enabling feature: ${ name }`, new Date);
-
-            RegisterJob(key, 'enable');
-        } else {
-
-            if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                WARN(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
-            else
-                REMARK(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
-
-            switch(key) {
-                case 'filter_rules':
-                    RestartJob('filter_messages', 'modify');
-                    break;
-
-                case 'away_mode_placement':
-                    RestartJob('away_mode', 'modify');
-                    break;
-
-                case 'watch_time_placement':
-                    RestartJob('watch_time_placement', 'modify');
-                    RestartJob('points_receipt_placement', 'dependent');
-                    break;
-
-                default: break;
-            }
-
-            // Adjust the timer to compensate for lost time
-            // new-time-left = (old-wait-time - old-time-left) + (new-wait-time - old-wait-time)
-            // if(/(\w+)_time_minutes$/i.test(key))
-            //     FIRST_IN_LINE_TIMER = (FIRST_IN_LINE_WAIT_TIME - FIRST_IN_LINE_TIMER) + ((parseInt(settings[RegExp.$1] === true? newValue: 0) | 0) - FIRST_IN_LINE_WAIT_TIME);
-        }
-
-        reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].findIndex(feature => feature.test(key));
-        if(!!~[...REFRESHABLE_FEATURES].findIndex(feature => feature.test(key)))
-            refresh.push(key);
-
-        Settings[key] = newValue;
-    }
-
-    if(reload)
-        return location.reload();
-
-    for(let job of refresh)
-        RestartJob(job, 'modify');
-});
+    // Features that need to be refreshed when changed
+    REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'native_twitch_reply', '*placement'].map(AsteriskFn);
 
 /*** Initialization
 *      _____       _ _   _       _ _          _   _
@@ -2467,8 +2562,8 @@ let LIVE_CACHE = new Map();
 const PRIVATE_SYMBOL = Symbol(new UUID);
 
 let Initialize = async(START_OVER = false) => {
-    let TWITCH_API = {},
-        GLOBAL_EVENT_LISTENERS = {};
+    let GLOBAL_TWITCH_API = top.GLOBAL_TWITCH_API = {},
+        GLOBAL_EVENT_LISTENERS = top.GLOBAL_EVENT_LISTENERS = {};
 
     SPECIAL_MODE = defined($('[data-test-selector="exit-button"]'));
     NORMAL_MODE = !SPECIAL_MODE;
@@ -2517,18 +2612,18 @@ let Initialize = async(START_OVER = false) => {
             leastWatched = null,
             leastPoints = 1_000_000_000;
 
-        await LoadCache('ChannelPoints', cache => {
-            let counter = cache.ChannelPoints;
+        await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+            for(let channel in ChannelPoints) {
+                let [amount, fiat, face] = ChannelPoints[channel].split('|');
 
-            for(let channel in counter) {
-                let points = parseCoin(counter[channel]);
+                amount = parseCoin(amount);
 
-                if(points > mostPoints) {
+                if(amount > mostPoints) {
                     mostWatched = channel;
-                    mostPoints = points;
-                } else if(points < leastPoints) {
+                    mostPoints = amount;
+                } else if(amount < leastPoints) {
                     leastWatched = channel;
-                    leastPoints = points;
+                    leastPoints = amount;
                 }
             }
         });
@@ -2605,11 +2700,11 @@ let Initialize = async(START_OVER = false) => {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('twitch-tools-streamer-data', JSON.stringify(channel));
+                element.setAttribute('tt-streamer-data', JSON.stringify(channel));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
-                    event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -2620,6 +2715,7 @@ let Initialize = async(START_OVER = false) => {
     /** Streamer Array - the current streamer/channel
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
+     * fiat:string*      - GETTER: returns the name of the streamer's coin, if applicable
      * follow:function   - follows the current channel
      * game:string*      - GETTER: the name of the current game/category
      * href:string       - link to the channel (usually the current href)
@@ -2641,7 +2737,7 @@ let Initialize = async(START_OVER = false) => {
      * fast:boolean      - is the channel using turbo?
      * nsfw:boolean      - is the channel deemed NSFW (mature)?
      */
-    STREAMER = {
+    STREAMER = top.STREAMER = {
         get chat() {
             return GetChat();
         },
@@ -2651,6 +2747,30 @@ let Initialize = async(START_OVER = false) => {
                 points = parseCoin(balance?.textContent);
 
             return points;
+        },
+
+        get face() {
+            let balance = $('[data-test-selector="balance-string"i]');
+
+            if(!defined(balance))
+                return PostOffice.get('points_receipt_placement')?.coin_face;
+
+            let container = balance?.closest('button'),
+                icon = $('img[alt]', false, container);
+
+            return icon?.src;
+        },
+
+        get fiat() {
+            let balance = $('[data-test-selector="balance-string"i]');
+
+            if(!defined(balance))
+                return PostOffice.get('points_receipt_placement')?.coin_name;
+
+            let container = balance?.closest('button'),
+                icon = $('img[alt]', false, container);
+
+            return icon?.alt;
         },
 
         get game() {
@@ -2754,6 +2874,22 @@ let Initialize = async(START_OVER = false) => {
         },
     };
 
+    // Make the main icon draggable...
+    let StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`),
+        StreamerFilteredData = { ...STREAMER };
+
+    for(let key of 'chat coin paid ping poll tags team time __eventlisteners__'.split(' '))
+        delete StreamerFilteredData[key];
+
+    StreamerMainIcon.setAttribute('draggable', true);
+    StreamerMainIcon.setAttribute('tt-streamer-data', JSON.stringify(STREAMER));
+    StreamerMainIcon.ondragstart ??= event => {
+        let { currentTarget } = event;
+
+        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
+        event.dataTransfer.dropEffect = 'move';
+    };
+
     /** Notification Array - the visible, actionable notifications
      * href:string   - link to the channel
      * icon:string   - link to the channel's image
@@ -2773,6 +2909,7 @@ let Initialize = async(START_OVER = false) => {
             ),
     ].filter(uniqueChannels);
 
+    // Expand the left-hand panel until the last live channel is visible
     __GetAllChannels__:
     if(true) {
         let element;
@@ -2832,11 +2969,11 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                    element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
-                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                         event.dataTransfer.dropEffect = 'move';
                     };
 
@@ -2882,11 +3019,11 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                    element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
-                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                         event.dataTransfer.dropEffect = 'move';
                     };
 
@@ -2929,11 +3066,11 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('twitch-tools-streamer-data', JSON.stringify(streamer));
+                    element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
-                        event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+                        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                         event.dataTransfer.dropEffect = 'move';
                     };
 
@@ -2966,11 +3103,11 @@ let Initialize = async(START_OVER = false) => {
             { href, icon, live, name } = STREAMER;
 
         element.setAttribute('draggable', true);
-        element.setAttribute('twitch-tools-streamer-data', JSON.stringify({ href, icon, live, name }));
+        element.setAttribute('tt-streamer-data', JSON.stringify({ href, icon, live, name }));
         element.ondragstart ??= event => {
             let { currentTarget } = event;
 
-            event.dataTransfer.setData('application/twitch-tools-streamer', currentTarget.getAttribute('twitch-tools-streamer-data'));
+            event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
             event.dataTransfer.dropEffect = 'move';
         };
 
@@ -2986,7 +3123,7 @@ let Initialize = async(START_OVER = false) => {
                 cookies[name] = value;
             });
 
-            USERNAME = cookies.name ?? USERNAME;
+            USERNAME = top.USERNAME = cookies.name ?? USERNAME;
 
             // Get the channel/vod information
             let channelName,
@@ -3077,7 +3214,7 @@ let Initialize = async(START_OVER = false) => {
                 //  OBSOLETE //
                 // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
                 //     .then(response => response.json())
-                //     .then(json => TWITCH_API = JSON.parse(json.token ?? "null"))
+                //     .then(json => GLOBAL_TWITCH_API = JSON.parse(json.token ?? "null"))
                 //     .then(json => {
                 //         if(!defined(json))
                 //             throw "Fine Detail JSON data could not be parsed...";
@@ -3094,7 +3231,7 @@ let Initialize = async(START_OVER = false) => {
                 //         };
                 //
                 //         for(let key in conversion)
-                //             STREAMER[key] = TWITCH_API[conversion[key]];
+                //             STREAMER[key] = GLOBAL_TWITCH_API[conversion[key]];
                 //     })
                 //     .catch(ERROR);
 
@@ -3264,8 +3401,8 @@ let Initialize = async(START_OVER = false) => {
                         CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
 
                         /* Display capture stats */
-                        let diffImg = $('img#twitch-tools-auto-focus-differences'),
-                            diffDat = $('span#twitch-tools-auto-focus-stats'),
+                        let diffImg = $('img#tt-auto-focus-differences'),
+                            diffDat = $('span#tt-auto-focus-stats'),
                             stop = +new Date;
 
                         DisplayingAutoFocusDetails:
@@ -3282,8 +3419,8 @@ let Initialize = async(START_OVER = false) => {
                             width = parseInt(width * .25);
 
                             if(!defined(diffImg)) {
-                                diffImg = furnish('img#twitch-tools-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
-                                diffDat = furnish('span#twitch-tools-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace;` });
+                                diffImg = furnish('img#tt-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
+                                diffDat = furnish('span#tt-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace;` });
 
                                 parent.appendChild(diffImg);
                                 parent.appendChild(diffDat);
@@ -3394,7 +3531,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_focus = -1_000;
 
     Unhandlers.auto_focus = () => {
-        $('#twitch-tools-auto-focus-differences, #twitch-tools-auto-focus-stats', true)
+        $('#tt-auto-focus-differences, #tt-auto-focus-stats', true)
             .forEach(element => element.remove());
         clearInterval(CAPTURE_INTERVAL);
     };
@@ -3481,7 +3618,7 @@ let Initialize = async(START_OVER = false) => {
             };
 
             button.tooltip.id = new UUID().toString().replace(/-/g, '');
-            button.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+            button.container.setAttribute('tt-away-mode-enabled', enabled);
 
             button.icon ??= $('svg', false, container);
             button.icon.outerHTML = Glyphs.eye;
@@ -3505,14 +3642,14 @@ let Initialize = async(START_OVER = false) => {
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+(button.container.getAttribute('twitch-tools-away-mode-enabled') === "true")] } !important;`);
+        button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
         button.icon.setAttribute('height', '20px');
         button.icon.setAttribute('width', '20px');
 
         button.container.onclick ??= event => {
-            let enabled = !parseBool(AwayModeButton.container.getAttribute('twitch-tools-away-mode-enabled'));
+            let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled'));
 
-            AwayModeButton.container.setAttribute('twitch-tools-away-mode-enabled', enabled);
+            AwayModeButton.container.setAttribute('tt-away-mode-enabled', enabled);
             AwayModeButton.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
             AwayModeButton.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
@@ -3557,112 +3694,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    Handlers.auto_claim_bonuses = () => {
-        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
-            Enabled = (Settings.auto_claim_bonuses && $('#twitch-tools-auto-claim-bonuses')?.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') === 'true');
-
-        if(Enabled && ChannelPoints)
-            ChannelPoints.click();
-
-        let parent = $('div:not(#twitch-tools-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
-            tooltip = $('#twitch-tools-auto-claim-bonuses [role="tooltip"i]');
-
-        if(tooltip && parent)
-            tooltip.innerText = parent.innerText;
-
-        // Actual jobbing
-        let button = $('#twitch-tools-auto-claim-bonuses');
-
-        if(!defined(button)) {
-            let parent    = $('[data-test-selector="community-points-summary"i]'),
-                heading   = $('.top-nav__menu > div', true).slice(-1)[0],
-                container = furnish('div');
-
-            if(!defined(parent) || !defined(heading)) {
-                // setTimeout(Initialize, 5000);
-                return;
-            }
-
-            container.innerHTML = parent.outerHTML;
-            container.id = 'twitch-tools-auto-claim-bonuses';
-            container.classList.add('community-points-summary', 'tw-align-items-center', 'tw-flex', 'tw-full-height');
-
-            heading.insertBefore(container, heading.children[1]);
-
-            $('#twitch-tools-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
-
-            let textContainer = $('[class*="animate"i]', false, container);
-
-            if(textContainer) {
-                let { parentElement } = textContainer;
-                parentElement.removeAttribute('data-test-selector');
-            }
-
-            button = {
-                container,
-                enabled: true,
-                text: textContainer,
-                icon: $('svg, img', false, container),
-                get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `Collecting Bonuses`, { top: -10 }),
-            };
-
-            button.tooltip.id = new UUID().toString();
-            button.text.innerText = 'ON';
-            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', true);
-
-            button.icon ??= $('svg, img', false, container);
-
-            if(!defined($('.channel-points-icon', false, container)))
-                button.icon.outerHTML = Glyphs.channelpoints;
-
-            button.icon = $('svg, img', false, container);
-        } else {
-            let container = button,
-                textContainer = $('[class*="animate"i]', false, container);
-
-            button = {
-                container,
-                enabled: true,
-                text: textContainer,
-                tooltip: Tooltip.get(container),
-                icon: $('svg, img', false, container),
-                get offset() { return getOffset(container) },
-            };
-        }
-
-        button.container.onclick ??= event => {
-            let enabled = button.container.getAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled') !== 'true';
-
-            button.container.setAttribute('twitch-tools-auto-claim-bonus-channel-points-enabled', enabled);
-            button.text.innerText = ['OFF','ON'][+enabled];
-            button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing Bonuses`;
-
-            button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
-        };
-
-        button.container.onmouseenter ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
-        };
-
-        button.container.onmouseleave ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
-        };
-
-        // Make sure the button is all the way to the left
-        for(let max = 10; max > 0 && defined(button.container.previousElementSibling); --max)
-            button.container.parentElement.insertBefore(button.container, button.container.previousElementSibling);
-    };
-    Timers.auto_claim_bonuses = 5_000;
-
-    Unhandlers.auto_claim_bonuses = () => {
-        $('#twitch-tools-auto-claim-bonuses')?.remove();
-    };
-
-    __AutoClaimBonuses__:
-    if(parseBool(Settings.auto_claim_bonuses)) {
-        RegisterJob('auto_claim_bonuses');
-    }
+    // /chat.js
 
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
      *      ______ _          _     _         _      _              _    _      _
@@ -3741,18 +3773,18 @@ let Initialize = async(START_OVER = false) => {
                     onclick: event => {
                         SaveCache({ FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000 });
 
-                        $('#twitch-tools-popup')?.remove();
+                        $('#tt-popup')?.remove();
                     },
 
                     Hide: () => {
-                        let existing = $('#twitch-tools-popup');
+                        let existing = $('#tt-popup');
 
                         if(defined(existing))
                             existing.remove();
                     },
 
                     Cancel: () => {
-                        let existing = $('#twitch-tools-popup'),
+                        let existing = $('#tt-popup'),
                             removal = $('button[connected-to][data-test-selector$="delete"i]'),
                             [thisJob] = ALL_FIRST_IN_LINE_JOBS;
 
@@ -3957,7 +3989,7 @@ let Initialize = async(START_OVER = false) => {
                 from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
 
             try {
-                streamer = JSON.parse(event.dataTransfer.getData('application/twitch-tools-streamer'));
+                streamer = JSON.parse(event.dataTransfer.getData('application/tt-streamer'));
             } catch(error) {
                 /* error suppression for sorting-related drops */;
                 if(!from_container)
@@ -3988,7 +4020,7 @@ let Initialize = async(START_OVER = false) => {
                 offset = getOffset(container);
 
             $('div#root > *').appendChild(
-                furnish('div.twitch-tools-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 2000;` },
+                furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 2000;` },
                     furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper--show' },
                         furnish('div', { style: 'width: 30px; height: 30px;' }),
                         tooltip
@@ -4000,7 +4032,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         FIRST_IN_LINE_BALLOON.icon.onmouseleave = event => {
-            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
+            $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
 
             FIRST_IN_LINE_BALLOON.tooltip.setAttribute('style', 'display:none');
         };
@@ -4009,7 +4041,7 @@ let Initialize = async(START_OVER = false) => {
             animation: 150,
             draggable: '[name]',
 
-            filter: '.twitch-tools-static',
+            filter: '.tt-static',
 
             onUpdate: ({ oldIndex, newIndex }) => {
                 // LOG('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
@@ -4097,7 +4129,7 @@ let Initialize = async(START_OVER = false) => {
                         },
 
                         animate: container => {
-                            let subheader = $('.twitch-tools-balloon-subheader', false, container);
+                            let subheader = $('.tt-balloon-subheader', false, container);
 
                             return setInterval(() => {
                                 if(FIRST_IN_LINE_PAUSED)
@@ -4141,7 +4173,7 @@ let Initialize = async(START_OVER = false) => {
                                     .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
                                 if(container.getAttribute('live') != (live + '')) {
-                                    $('.twitch-tools-balloon-message', false, container).innerHTML =
+                                    $('.tt-balloon-message', false, container).innerHTML =
                                         `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`;
                                     container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
                                     container.setAttribute('live', live);
@@ -4286,7 +4318,7 @@ let Initialize = async(START_OVER = false) => {
                     },
 
                     animate: container => {
-                        let subheader = $('.twitch-tools-balloon-subheader', false, container);
+                        let subheader = $('.tt-balloon-subheader', false, container);
 
                         return setInterval(() => {
                             if(FIRST_IN_LINE_PAUSED)
@@ -4330,7 +4362,7 @@ let Initialize = async(START_OVER = false) => {
                                 .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
                             if(container.getAttribute('live') != (live + '')) {
-                                $('.twitch-tools-balloon-message', false, container).innerHTML =
+                                $('.tt-balloon-message', false, container).innerHTML =
                                     `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`;
                                 container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
                                 container.setAttribute('live', live);
@@ -4346,7 +4378,7 @@ let Initialize = async(START_OVER = false) => {
                     REDO_FIRST_IN_LINE_QUEUE(href);
                     LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
-                    let existing = $('#twitch-tools-popup');
+                    let existing = $('#tt-popup');
 
                     if(defined(existing))
                         existing.remove();
@@ -4396,7 +4428,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                channel = STREAMERS.filter(isLive).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+                channel = ALL_CHANNELS.filter(isLive).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
             if(!defined(channel)) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -4458,7 +4490,7 @@ let Initialize = async(START_OVER = false) => {
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
 
             // Failed to get channel at...
-            PushToTopSearch({ 'twitch-tools-ftgca': (+new Date).toString(36) });
+            PushToTopSearch({ 'tt-ftgca': (+new Date).toString(36) });
         }
 
         if(OLD_STREAMERS == NEW_STREAMERS)
@@ -4559,7 +4591,7 @@ let Initialize = async(START_OVER = false) => {
 
         if(!like) {
             await LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
-                let watch_time = $('#twitch-tools-watch-time'),
+                let watch_time = $('#tt-watch-time'),
                     secs = parseInt(watch_time?.getAttribute('time')) | 0;
 
                 if(!defined(watch_time))
@@ -4690,7 +4722,7 @@ let Initialize = async(START_OVER = false) => {
 
         raid_stopper:
         if(raiding || raided) {
-            window.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5_000);
+            top.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5_000);
 
             // Ignore followed channels
             if(["greed", "unfollowed"].contains(method)) {
@@ -4736,7 +4768,7 @@ let Initialize = async(START_OVER = false) => {
                 }
             };
 
-            CONTINUE_RAIDING = !!setTimeout(leaveStream, 60_000 * +["greed"].contains(method));
+            CONTINUE_RAIDING = !!setTimeout(leaveStream, 120_000 * +["greed"].contains(method));
         }
     };
     Timers.prevent_raiding = 15_000;
@@ -4761,7 +4793,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stay_live = async() => {
         let online = STREAMERS.filter(isLive),
             next = await GetNextStreamer(),
-            { pathname } = window.location;
+            { pathname } = top.location;
 
         let Paths = [USERNAME, '$', '[up]/', 'directory', 'downloads?', 'friends?', 'inventory', 'jobs?', 'moderator', 'search', 'settings', 'subscriptions?', 'team', 'turbo', 'user', 'videos?', 'wallet', 'watchparty'];
 
@@ -4830,66 +4862,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                                                 __/ |
      *                                                                                |___/
      */
-    let EmoteSearch = {};
-
-    Handlers.emote_searching = () => {
-        EmoteSearch.input = $('.emote-picker [type="search"i]');
-
-        if(defined(EmoteSearch.input?.value))
-            if(EmoteSearch.input.value != EmoteSearch.value)
-                if((EmoteSearch.value = EmoteSearch.input.value)?.length >= 3)
-                    for(let [name, callback] of EmoteSearch.__onquery__)
-                        callback(EmoteSearch.value);
-    };
-    Timers.emote_searching = 100;
-
-    __EmoteSearching__:
-    if(parseBool(Settings.convert_emotes) || parseBool(Settings.bttv_emotes)) {
-        Object.defineProperties(EmoteSearch, {
-            onquery: {
-                set(callback) {
-                    let name = callback.name || UUID.from(callback.toString()).value;
-
-                    if(EmoteSearch.__onquery__.has(name))
-                        return EmoteSearch.__onquery__.get(name);
-
-                    // REMARK('Adding [on query] event listener', { [name]: callback });
-
-                    EmoteSearch.__onquery__.set(name, callback);
-
-                    return callback;
-                },
-
-                get() {
-                    return EmoteSearch.__onquery__.size;
-                },
-            },
-            __onquery__: { value: new Map() },
-
-            appendResults: {
-                value: function appendResults(nodes, type) {
-                    $(`[tt-${ type }-emote-search-result]`, true).forEach(node => node.remove());
-
-                    let container = $('[class*="emote-picker"i] [class*="wrap"i]:last-child');
-
-                    for(let node of nodes) {
-                        if(!defined(node))
-                            continue;
-
-                        node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML).value);
-
-                        container.appendChild(node);
-                    }
-
-                    let title = $('[class*="emote-picker"i] p');
-
-                    title.innerText = title.innerText.replace(/^.*("[^]+")/, `${ container.children.length } search results for $1`);
-                },
-            },
-        });
-
-        RegisterJob('emote_searching');
-    }
+    // /chat.js
 
     /*** BetterTTV Emotes
      *      ____       _   _         _______ _________      __  ______                 _
@@ -4901,304 +4874,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let BTTV_EMOTES = new Map(),
-        BTTV_OWNERS = new Map(),
-        BTTV_LOADED_INDEX = 0,
-        CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
-            let { name, src } = emote,
-                existing = $(`img.bttv[alt="${ name }"]`);
-
-            if(defined(existing))
-                return existing.closest('div.tt-emote-bttv');
-
-            let emoteContainer =
-            furnish('div.tt-emote-bttv.tw-pd-x-05.tw-relative', {},
-                furnish('div.emote-button', {},
-                    furnish('div.tw-inline-flex', {},
-                        furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
-                            {
-                                'data-test-selector': 'emote-button-clickable',
-                                'aria-label': name,
-                                name,
-                                'data-a-target': name,
-
-                                onclick: event => {
-                                    let name = event.currentTarget.getAttribute('name'),
-                                        chat = $('[data-a-target="chat-input"]');
-
-                                    // chat.innerHTML = (chat.value += `${name} `);
-                                },
-
-                                ondragstart: event => {
-                                    let { currentTarget } = event;
-
-                                    event.dataTransfer.setData('text/plain', currentTarget.getAttribute('name').trim() + ' ');
-                                    event.dataTransfer.dropEffect = 'move';
-                                },
-                            },
-
-                            furnish('figure', {},
-                                /*
-                                <div class="emote-button__lock tw-absolute tw-border-radius-small tw-c-background-overlay tw-c-text-overlay tw-inline-flex tw-justify-content-center tw-z-above" data-test-selector="badge-button-lock">
-                                    <figure class="ScFigure-sc-1j5mt50-0 laJGEQ tw-svg">
-                                        <!-- badge icon -->
-                                    </figure>
-                                </div>
-                                */
-                                furnish('div.emote-button__lock.tw-absolute.tw-border-radius-small.tw-c-background-overlay.tw-c-text-overlay.tw-inline-flex.tw-justify-content-center.tw-z-above', { 'data-test-selector': 'badge-button-icon' },
-                                    furnish('figure.tw-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
-                                ),
-                                furnish('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
-                            )
-                        )
-                    )
-                )
-            );
-
-            if(makeTooltip !== false)
-                new Tooltip(emoteContainer, name);
-
-            return emoteContainer;
-        },
-        LOAD_BTTV_EMOTES = async(keyword, provider) => {
-            // Load some emotes (max 100 at a time)
-                // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
-                    // emote.code -> emote name
-                    // emote.id -> emote ID (src)
-
-            // Load emotes from a certain user
-            if(defined(provider))
-                await fetch(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
-                    .then(response => response.json())
-                    .then(json => {
-                        let { channelEmotes, sharedEmotes } = json;
-
-                        if(!defined(channelEmotes ?? sharedEmotes))
-                            return;
-
-                        let emotes = [...channelEmotes, ...sharedEmotes];
-
-                        for(let { emote, code, user, id } of emotes) {
-                            code ??= emote?.code;
-                            user ??= emote?.user ?? { displayName: STREAMER.name, name: STREAMER.name.toLowerCase(), providerId: STREAMER.sole };
-
-                            BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
-                            BTTV_OWNERS.set(code, user);
-                        }
-                    });
-            // Load emotes with a certain name
-            else if(defined(keyword))
-                for(let batchSize = 0, batchMax = 50, maxEmotes = 100, allLoaded = false; allLoaded === false && batchSize < maxEmotes; batchSize += batchMax)
-                    await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ batchSize }&limit=${ batchMax }`)
-                        .then(response => response.json())
-                        .then(emotes => {
-                            for(let { emote, code, user, id } of emotes) {
-                                code ??= emote?.code;
-                                user ??= emote?.user;
-
-                                BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
-                                BTTV_OWNERS.set(code, user ?? {});
-                            }
-
-                            allLoaded ||= emotes.length < maxEmotes;
-                        });
-            // Load all emotes from...
-            else
-                for(let batchSize = BTTV_EMOTES.size, batchMax = 30, maxEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30); batchSize < maxEmotes; batchSize += batchMax)
-                    await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ batchSize }&limit=${ batchMax }`)
-                        .then(response => response.json())
-                        .then(emotes => {
-                            for(let { emote } of emotes) {
-                                let { code, user, id } = emote;
-
-                                BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
-                                BTTV_OWNERS.set(code, user ?? {});
-                            }
-                        });
-        };
-
-    Handlers.bttv_emotes = () => {
-        let BTTVEmoteSection = $('#twitch-tools-bttv-emotes');
-
-        if(defined(BTTVEmoteSection))
-            return;
-
-        let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
-
-        if(!defined(parent))
-            return RestartJob('bttv_emotes');
-
-        // Put all BTTV emotes into the emote-picker list
-        let BTTVEmotes = [];
-
-        for(let [name, src] of BTTV_EMOTES)
-            BTTVEmotes.push({ name, src });
-
-        BTTVEmoteSection =
-        furnish('div#twitch-tools-bttv-emotes.emote-picker__content-block',
-            {
-                ondragover: event => {
-                    event.preventDefault();
-                    // event.dataTransfer.dropEffect = 'move';
-                },
-
-                ondrop: async event => {
-                    event.preventDefault();
-
-                    return event.dataTransfer.getData('text/plain');
-                },
-            },
-
-            furnish('div.tw-pd-b-1.tw-pd-t-05.tw-pd-x-1.tw-relative', {},
-                // Emote Section Header
-                furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
-                    furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {
-                        innerHTML: "BetterTTV Emotes &mdash; Drag to use"
-                    })
-                ),
-
-                // Emote Section Container
-                furnish('div#twitch-tools-bttv-emotes-container.tw-flex.tw-flex-wrap',
-                    {
-                        class: 'twitch-tools-scrollbar-area',
-                        style: 'max-height: 15rem; overflow: hidden scroll;',
-                    },
-                    ...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE)
-                )
-            )
-        );
-
-        parent.insertBefore(BTTVEmoteSection, parent.firstChild);
-    };
-    Timers.bttv_emotes = 5_000;
-
-    __BetterTTVEmotes__:
-    if(parseBool(Settings.bttv_emotes)) {
-        REMARK('Loading BTTV emotes...');
-
-        if(parseBool(Settings.bttv_emotes_channel))
-            await LOAD_BTTV_EMOTES(STREAMER.name, STREAMER.sole);
-        await LOAD_BTTV_EMOTES();
-
-        REMARK('Adding BTTV emote event listener...');
-
-        // Run the bttv-emote changer on pre-populated messages
-        (GetChat.onnewmessage = chat => {
-            let regexp;
-
-            for(let line of chat) {
-                // Replace BTTV emotes for the last 30 chat messages
-                if(Queue.bttv_emotes.contains(line.uuid))
-                    continue;
-                if(Queue.bttv_emotes.length >= 30)
-                    Queue.bttv_emotes = [];
-                Queue.bttv_emotes.push(line.uuid);
-
-                for(let [name, src] of BTTV_EMOTES)
-                    if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
-                        let alt = name,
-                            owner = BTTV_OWNERS.get(alt),
-                            own = owner?.displayName ?? 'Anonymous',
-                            pid = owner?.providerId;
-
-                        let f = furnish;
-                        let img =
-                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                            f('span', { 'data-a-target': 'emote-name' },
-                                f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
-                                    f('img.bttv.chat-image.chat-line__message--emote', {
-                                        alt, src,
-                                    })
-                                )
-                            )
-                        );
-
-                        let { element } = line;
-
-                        alt = alt.replace(/\s+/g, '_');
-
-                        $(`.text-fragment:not([twitch-tools-converted-emotes~="${alt}"])`, true, element).map(fragment => {
-                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, 'data-bttv-owner-id': pid, innerHTML: img.innerHTML }),
-                                converted = (fragment.getAttribute('twitch-tools-converted-emotes') ?? "").split(' ');
-
-                            converted.push(alt);
-
-                            fragment.setAttribute('data-tt-emote', alt);
-                            fragment.setAttribute('twitch-tools-converted-emotes', converted.join(' ').trim());
-                            fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
-
-                            $('[data-bttv-emote]', true, fragment)
-                                .forEach(element => {
-                                    let { bttvEmote } = element.dataset,
-                                        tooltip = new Tooltip(element, bttvEmote);
-
-                                    element.addEventListener('mouseup', async event => {
-                                        let { currentTarget } = event,
-                                            { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
-                                            { top } = getOffset(currentTarget);
-
-                                        top -= 150;
-
-                                        await new Search(bttvOwner)
-                                            .then(({ data }) => {
-                                                let [streamer] = data.filter(({ id }) => id == bttvOwnerId);
-
-                                                if(!defined(streamer))
-                                                    throw "Emote owner not found...";
-
-                                                let { broadcaster_login, display_name, is_live } = streamer;
-
-                                                new Card({
-                                                    title: bttvEmote,
-                                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                                    icon: {
-                                                        src: BTTV_EMOTES.get(bttvEmote),
-                                                        alt: bttvEmote,
-                                                    },
-                                                    footer: {
-                                                        href: `/${ broadcaster_login }`,
-                                                        name: display_name,
-                                                        live: parseBool(is_live),
-                                                    },
-                                                    fineTuning: { top }
-                                                });
-                                            })
-                                            .catch(error => {
-                                                WARN(error);
-
-                                                new Card({
-                                                    title: bttvEmote,
-                                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                                    icon: {
-                                                        src: BTTV_EMOTES.get(bttvEmote),
-                                                        alt: bttvEmote,
-                                                    },
-                                                    fineTuning: { top }
-                                                });
-                                            });
-                                    });
-                                });
-                        });
-                    }
-            }
-
-            top.BTTV_EMOTES = BTTV_EMOTES;
-        })(GetChat());
-
-        REMARK('Adding BTTV emote search listener...');
-
-        EmoteSearch.onquery = async query => {
-            await LOAD_BTTV_EMOTES(query).then(() => {
-                let results = [...BTTV_EMOTES]
-                    .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
-                    .map(([name, src]) => CONVERT_TO_BTTV_EMOTE({ name, src }));
-
-                    EmoteSearch.appendResults(results, 'bttv');
-            });
-        };
-
-        RegisterJob('bttv_emotes');
-    }
+    // /chat.js
 
     /*** Convert Emotes
      *       _____                          _     ______                 _
@@ -5210,277 +4886,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let EMOTES = new Map(),
-        CAPTURED_EMOTES = new Map(),
-        CONVERT_TO_CAPTURED_EMOTE = (emote, makeTooltip = true) => {
-            let { name, src } = emote;
-
-            // Try to filter out Twitch-provided emotes...
-            if(/^\W/.test(name))
-                return;
-
-            let emoteContainer =
-            furnish('div.tt-emote-captured.tw-pd-x-05.tw-relative', {},
-                furnish('div.emote-button', {},
-                    furnish('div.tw-inline-flex', {},
-                        furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
-                            {
-                                'data-test-selector': 'emote-button-clickable',
-                                'aria-label': name,
-                                name,
-                                'data-a-target': name,
-
-                                onclick: event => {
-                                    let name = event.currentTarget.getAttribute('name'),
-                                        chat = $('[data-a-target="chat-input"]');
-
-                                    // chat.innerHTML = (chat.value += `${name} `);
-                                },
-
-                                ondragstart: event => {
-                                    let { currentTarget } = event;
-
-                                    event.dataTransfer.setData('text/plain', currentTarget.getAttribute('name').trim() + ' ');
-                                    event.dataTransfer.dropEffect = 'move';
-                                },
-                            },
-
-                            furnish('figure', {},
-                                /*
-                                <div class="emote-button__lock tw-absolute tw-border-radius-small tw-c-background-overlay tw-c-text-overlay tw-inline-flex tw-justify-content-center tw-z-above" data-test-selector="badge-button-lock">
-                                    <figure class="ScFigure-sc-1j5mt50-0 laJGEQ tw-svg">
-                                        <!-- badge icon -->
-                                    </figure>
-                                </div>
-                                */
-                                furnish('div.emote-button__lock.tw-absolute.tw-border-radius-small.tw-c-background-overlay.tw-c-text-overlay.tw-inline-flex.tw-justify-content-center.tw-z-above', { 'data-test-selector': 'badge-button-icon' },
-                                    furnish('figure.tw-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
-                                ),
-                                furnish('img.emote-picker__image', { src, alt: name })
-                            )
-                        )
-                    )
-                )
-            );
-
-            if(makeTooltip !== false)
-                new Tooltip(emoteContainer, name);
-
-            return emoteContainer;
-        };
-
-    // Convert emote URL to a short url
-    let shrt = url => url.replace(/https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v1\/(\d+)\/([\d\.]+)/i, ($0, $1, $2, $$, $_) => {
-            let id = parseInt($1).toString(36),
-                version = $2;
-
-            return [id, version].join('-');
-        });
-
-    Handlers.convert_emotes = () => {
-        let emoteSection = $('#twitch-tools-captured-emotes');
-
-        if(defined(emoteSection))
-            return;
-
-        let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
-
-        if(!defined(parent))
-            return RestartJob('convert_emotes');
-
-        // Get the streamer's emotes and make them draggable
-        let streamersEmotes = $(`[class^="emote-picker"] img[alt="${ STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
-
-        if(!defined(streamersEmotes))
-            return RegisterJob('convert_emotes');
-
-        for(let lock of $('[data-test-selector*="lock"i]', true, streamersEmotes)) {
-            let emote = lock.nextElementSibling,
-                { alt, src } = emote,
-                parent = emote.closest('[class^="emote-picker"]').parentElement,
-                container = parent.parentElement;
-
-            container.insertBefore(CONVERT_TO_CAPTURED_EMOTE({ name: alt, src }, false), parent);
-
-            lock.remove();
-            emote.remove();
-            parent.remove();
-        }
-
-        // Put all collected emotes into the emote-picker list
-        let caughtEmotes = [];
-
-        for(let [name, src] of CAPTURED_EMOTES)
-            caughtEmotes.push({ name, src });
-
-        emoteSection =
-        furnish('div#twitch-tools-captured-emotes.emote-picker__content-block',
-            {
-                ondragover: event => {
-                    event.preventDefault();
-                    // event.dataTransfer.dropEffect = 'move';
-                },
-
-                ondrop: async event => {
-                    event.preventDefault();
-
-                    return event.dataTransfer.getData('text/plain');
-                },
-            },
-
-            furnish('div.tw-pd-b-1.tw-pd-t-05.tw-pd-x-1.tw-relative', {},
-                // Emote Section Header
-                furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
-                    furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {
-                        innerHTML: "Captured Emotes &mdash; Drag to use"
-                    })
-                ),
-
-                // Emote Section Container
-                furnish('div#twitch-tools-captured-emotes-container.tw-flex.tw-flex-wrap',
-                    {
-                        class: 'twitch-tools-scrollbar-area',
-                        style: 'max-height: 15rem; overflow: hidden scroll;',
-                    },
-                    ...caughtEmotes.map(CONVERT_TO_CAPTURED_EMOTE)
-                )
-            )
-        );
-
-        parent.insertBefore(emoteSection, parent.firstChild);
-    };
-    Timers.convert_emotes = 5_000;
-
-    __ConvertEmotes__:
-    if(parseBool(Settings.convert_emotes)) {
-        // Collect emotes
-        let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
-
-        if(!defined(chat_emote_button))
-            break __ConvertEmotes__;
-
-        function CollectEmotes() {
-            chat_emote_button.click();
-
-            let chat_emote_scroll = $('.emote-picker .simplebar-scroll-content');
-
-            if(!defined(chat_emote_scroll)) {
-                chat_emote_button.click();
-                return setTimeout(CollectEmotes, 1000);
-            }
-
-            $('.emote-picker [class*="tab-content"]').id = 'twitch-tools-hidden-emote-container';
-
-            setTimeout(() => {
-                // Grab emotes every couple of seconds
-                [1, 2, 4, 8, 16, 32, 64].map(n =>
-                    setTimeout(() => {
-                        $('.emote-button img:not(.bttv)', true)
-                            .map(img => EMOTES.set(img.alt, shrt(img.src)));
-
-                        top.EMOTES = EMOTES;
-
-                        $('#twitch-tools-hidden-emote-container')?.removeAttribute('id');
-                    }, 1000 * n)
-                );
-
-                chat_emote_scroll.scrollTo(0, 0);
-                chat_emote_button.click();
-            }, 5000);
-        }
-
-        if(defined(chat_emote_button))
-            CollectEmotes();
-        else
-            setTimeout(CollectEmotes, 1000);
-
-        REMARK('Adding emote event listener...');
-
-        // Run the emote catcher on pre-populated messages
-        (GetChat.onnewmessage = chat => {
-            let regexp;
-
-            for(let emote in chat.emotes)
-                if(!EMOTES.has(emote)) {
-                    // LOG(`Adding emote "${ emote }"`);
-
-                    EMOTES.set(emote, shrt(chat.emotes[emote]));
-                    CAPTURED_EMOTES.set(emote, chat.emotes[emote]);
-
-                    let capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: chat.emotes[emote] });
-
-                    if(defined(capturedEmote))
-                        $('#twitch-tools-captured-emotes-container')?.appendChild?.(capturedEmote);
-                }
-
-            for(let line of chat) {
-                // Replace emotes for the last 30 chat messages
-                if(Queue.emotes.contains(line.uuid))
-                    continue;
-                if(Queue.emotes.length >= 30)
-                    Queue.emotes = [];
-                Queue.emotes.push(line.uuid);
-
-                for(let [emote, url] of EMOTES)
-                    if((regexp = RegExp('\\b' + emote.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
-                        let alt = emote,
-                            src = '//static-cdn.jtvnw.net/emoticons/v1/' + url.split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
-                            srcset;
-
-                        if(/\/https?:\/\//i.test(src))
-                            src = src.replace(/[^]*\/(https?:\/\/[^]*)(?:\/https?:\/\/)?$/i, '$1');
-                        else
-                            srcset = [1, 2, 4].map((v, i) => src.replace(/[\d\.]+$/, `${ (i + 1).toFixed(1) } ${ v }x`)).join(',');
-
-                        let f = furnish;
-                        let img =
-                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                            f('span', { 'data-a-target': 'emote-name' },
-                                f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
-                                    f('img.chat-image.chat-line__message--emote', {
-                                        srcset, alt, src,
-                                    })
-                                )
-                            )
-                        );
-
-                        let { element } = line;
-
-                        alt = alt.replace(/\s+/g, '_');
-
-                        $(`.text-fragment:not([twitch-tools-converted-emotes~="${alt}"])`, true, element).map(fragment => {
-                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-captured-emote': alt, innerHTML: img.innerHTML }),
-                                converted = (fragment.getAttribute('twitch-tools-converted-emotes') ?? "").split(' ');
-
-                            converted.push(alt);
-
-                            fragment.setAttribute('data-tt-emote', alt);
-                            fragment.setAttribute('twitch-tools-converted-emotes', converted.join(' ').trim());
-                            fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
-
-                            $('[data-captured-emote]', true, fragment)
-                                .forEach(element => {
-                                    let { capturedEmote } = element.dataset;
-                                });
-                        });
-                    }
-            }
-
-            top.EMOTES = EMOTES;
-        })(GetChat());
-
-        REMARK('Adding emote search listener...');
-
-        EmoteSearch.onquery = query => {
-            let results = [...EMOTES]
-                .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
-                .map(([name, src]) => CONVERT_TO_CAPTURED_EMOTE({ name, src }));
-
-            EmoteSearch.appendResults(results, 'captured');
-        };
-
-        RegisterJob('convert_emotes');
-    }
+    // /chat.js
 
     /*** Filter Messages
      *      ______ _ _ _              __  __
@@ -5492,141 +4898,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                            __/ |
      *                                                           |___/
      */
-    let UPDATED_FILTER = () => {
-        let rules = Settings.filter_rules;
-
-        let channel = [], user = [], badge = [], emote = [], text = [];
-
-        if(defined(rules?.length)) {
-            rules = rules.split(/\s*,\s*/).map(rule => rule.trim()).filter(rule => rule.length);
-
-            for(let rule of rules)
-                // /channel text
-                if(/^\/[\w\-]+/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    let name, text, user, badge, emote;
-
-                    $_.replace(/^\/([\w\-]+) +([<:]([^>]+?)[:>]|(@)?[^]*?)$/, ($0, $1, $2, $3, $4, $$, $_) => {
-                        name = $1;
-
-                        if($4 ?? false)
-                            user = $2;
-                        else if($3 ?? false)
-                            if($2[0] == ':')
-                                emote = $3;
-                            else
-                                badge = $3;
-                        else
-                            text = $2;
-                    });
-
-                    channel.push({ name, text, user, badge, emote });
-                }
-                // @username
-                else if(/^@[\w\-]+$/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    user.push($_.replace(/^@/, ''));
-                }
-                // <badge>
-                else if(/^<[\w\- ]+>$/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    badge.push($_.replace(/^<|>$/g, ''));
-                }
-                // :emote:
-                else if(/^:[\w\- ]+:$/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    emote.push($_.replace(/^:|:$/g, ''));
-                }
-                // text
-                else if(rule) {
-                    let $_ = rule;
-
-                    text.push(/^[\w\s]+$/.test($_)? `\\b${ $_.trim() }\\b`: $_);
-                }
-        }
-
-        return {
-            text: (text.length? RegExp(`(${ text.join('|') })`, 'i'): /^[\b]$/),
-            user: (user.length? RegExp(`(${ user.join('|') })`, 'i'): /^[\b]$/),
-            emote: (emote.length? RegExp(`(${ emote.join('|') })`, 'i'): /^[\b]$/),
-            badge: (badge.length? RegExp(`(${ badge.join('|') })`, 'i'): /^[\b]$/),
-            channel
-        }
-    };
-
-    let MESSAGE_FILTER;
-
-    Handlers.filter_messages = () => {
-        REMARK('Adding message filter event listener...');
-
-        MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
-            let Filter = UPDATED_FILTER();
-
-            censoring:
-            for(let line of chat) {
-                let { message, mentions, author, badges, emotes, element } = line,
-                    reason;
-
-                let censor = parseBool(false
-                    // Filter users on all channels
-                    || (Filter.user.test(author)? reason = 'user': false)
-                    // Filter badges on all channels
-                    || (Filter.badge.test(badges)? reason = 'badge': false)
-                    // Filter emotes on all channels
-                    || (Filter.emote.test(emotes)? reason = 'emote': false)
-                    // Filter messges (RegExp) on all channels
-                    || (Filter.text.test(message)? reason = 'text': false)
-                    // Filter messages/users on specific a channel
-                    || Filter.channel.map(({ name, text, user, badge, emote }) => {
-                        if(!defined(STREAMER))
-                            return;
-
-                        let channel = STREAMER.name?.toLowerCase();
-
-                        return parseBool(false
-                            || channel == name.toLowerCase()
-                        ) && parseBool(false
-                            || (('@' + author) == user? reason = 'channel user': false)
-                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                            || (!!~emotes.findIndex(glyph => !!~glyph.indexOf(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
-                            || (text?.test?.(message)? reason = 'channel text': false)
-                        )
-                    }).contains(true)
-                );
-
-                if(!censor)
-                    continue censoring;
-
-                LOG(`Censoring message because the ${ reason } matches`, line);
-
-                let hidden = element.getAttribute('twitch-tools-hidden') === 'true';
-
-                if(hidden || mentions.contains(USERNAME))
-                    return;
-
-                element.setAttribute('twitch-tools-hidden', true);
-            }
-        };
-
-        if(defined(MESSAGE_FILTER))
-            MESSAGE_FILTER(GetChat(250, true));
-    };
-    Timers.filter_messages = -2500;
-
-    Unhandlers.filter_messages = () => {
-        let hidden = $('[twitch-tools-hidden]', true);
-
-        hidden.map(element => element.removeAttribute('twitch-tools-hidden'));
-    };
-
-    __FilterMessages__:
-    if(parseBool(Settings.filter_messages)) {
-        RegisterJob('filter_messages');
-    }
+    // /chat.js
 
     /*** Easy Filter - NOT A SETTING. This is a helper for "Message Filter"
      *      ______                  ______ _ _ _
@@ -5638,90 +4910,7 @@ let Initialize = async(START_OVER = false) => {
      *                       __/ |
      *                      |___/
      */
-    Handlers.easy_filter = () => {
-        let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
-            existing = $('#twitch-tools-filter-rule-user, #twitch-tools-filter-rule-emote');
-
-        if(!defined(card) || defined(existing))
-            return;
-
-        let title = $('h4', false, card),
-            name = title.textContent.toLowerCase(),
-            type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
-            { filter_rules } = Settings;
-
-        if(type == 'user') {
-            /* Filter users */
-            if(filter_rules && filter_rules.split(',').contains(`@${ name }`))
-                return /* Already filtering messages from this person */;
-
-            let filter = furnish('div#twitch-tools-filter-rule-user', {
-                title: `Filter all messages from @${ name }`,
-                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal',
-                username: name,
-
-                onclick: event => {
-                    let { currentTarget } = event,
-                        username = currentTarget.getAttribute('username'),
-                        { filter_rules } = Settings;
-
-                    filter_rules = (filter_rules || '').split(',');
-                    filter_rules.push(`@${ username }`);
-                    filter_rules = filter_rules.join(',');
-
-                    currentTarget.remove();
-
-                    Storage.set({ filter_rules });
-                },
-
-                innerHTML: `${ Glyphs.trash } Filter messages from @${ name }`,
-            });
-
-            let svg = $('svg', false, filter);
-
-            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
-
-            title.appendChild(filter);
-        } else if(type == 'emote') {
-            /* Filter emotes */
-            if(filter_rules && filter_rules.split(',').contains(`:${ name }:`))
-                return /* Already filtering this emote */;
-
-            let filter = furnish('div#twitch-tools-filter-rule-emote', {
-                title: 'Filter this emote',
-                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal',
-                emote: `:${ name }:`,
-
-                onclick: event => {
-                    let { currentTarget } = event,
-                        emote = currentTarget.getAttribute('emote'),
-                        { filter_rules } = Settings;
-
-                    filter_rules = (filter_rules || '').split(',');
-                    filter_rules.push(emote);
-                    filter_rules = filter_rules.join(',');
-
-                    currentTarget.remove();
-
-                    Storage.set({ filter_rules });
-                },
-
-                innerHTML: `${ Glyphs.trash } Filter this emote`,
-            });
-
-            let svg = $('svg', false, filter);
-
-            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
-
-            title.appendChild(filter);
-        }
-    };
-    Timers.easy_filter = 500;
-
-    __EasyFilter__:
-    if(parseBool(Settings.filter_messages)) {
-        RegisterJob('easy_filter');
-    }
+    // /chat.js
 
     /*** Message Highlighter
      *      __  __                                  _    _ _       _     _ _       _     _
@@ -5733,31 +4922,7 @@ let Initialize = async(START_OVER = false) => {
      *                                  __/ |                 __/ |           __/ |
      *                                 |___/                 |___/           |___/
      */
-    Handlers.highlight_mentions = () => {
-        let usernames = [USERNAME];
-
-        if(parseBool(Settings.highlight_mentions_extra))
-            usernames.push('all', 'chat', 'everyone');
-
-        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
-
-        for(let line of chat)
-            if(!Queue.messages.contains(line.uuid)) {
-                Queue.messages.push(line.uuid);
-
-                let { author, message, reply } = line;
-
-                // LOG('Highlighting message:', { author, message });
-
-                line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
-            }
-    };
-    Timers.highlight_mentions = 500;
-
-    __HighlightMentions__:
-    if(parseBool(Settings.highlight_mentions)) {
-        RegisterJob('highlight_mentions');
-    }
+    // /chat.js
 
     /*** Message Highlighter - Popup
      *      __  __                                  _    _ _       _     _ _       _     _                       _____
@@ -5769,43 +4934,7 @@ let Initialize = async(START_OVER = false) => {
      *                                  __/ |                 __/ |           __/ |                                        | |         | |
      *                                 |___/                 |___/           |___/                                         |_|         |_|
      */
-    Handlers.highlight_mentions_popup = () => {
-        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
-
-        for(let line of chat)
-            if(!Queue.message_popups.contains(line.uuid)) {
-                Queue.message_popups.push(line.uuid);
-
-                let { author, message, reply } = line;
-
-                let existing = $('#twitch-tools-chat-footer');
-
-                if(defined(existing))
-                    continue;
-
-                // LOG('Generating footer:', { author, message });
-
-                new ChatFooter(`@${ author } mentioned you.`, {
-                    onclick: event => {
-                        let chatbox = $('.chat-input__textarea textarea'),
-                            existing = $('#twitch-tools-chat-footer');
-
-                        if(defined(chatbox))
-                            chatbox.focus();
-                        if(defined(existing))
-                            existing.remove();
-
-                        reply?.click();
-                    },
-                });
-            }
-    };
-    Timers.highlight_mentions_popup = 500;
-
-    __HighlightMentionsPopup__:
-    if(parseBool(Settings.highlight_mentions_popup)) {
-        RegisterJob('highlight_mentions_popup');
-    }
+    // /chat.js
 
     /*** Native Twitch Reply
      *      _   _       _   _             _______       _ _       _       _____            _
@@ -5817,168 +4946,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                                              | |       __/ |
      *                                                                              |_|      |___/
      */
-    let NATIVE_REPLY_POLYFILL;
-
-    Handlers.native_twitch_reply = () => {
-        if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
-            return;
-
-        if(!defined(GLOBAL_EVENT_LISTENERS.ENTER))
-            $('[data-a-target="chat-input"i]')?.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
-                if(!(altKey || ctrlKey || metaKey || shiftKey) && key == 'Enter')
-                    $('#twitch-tools-close-native-twitch-reply')?.click();
-            });
-
-        NATIVE_REPLY_POLYFILL ??= {
-            // Button above chat elements
-            NewReplyButton: ({ uuid, style, handle, message, mentions, }) => {
-                let f = furnish;
-
-                let addedClasses = {
-                    bubbleContainer: ['chat-input-tray__open','tw-block','tw-border-b','tw-border-l','tw-border-r','tw-border-radius-large','tw-border-t','tw-c-background-base','tw-elevation-1','tw-left-0','tw-pd-05','tw-right-0','tw-z-below'],
-                    chatContainer: ['chat-input-container__open','tw-block','tw-border-bottom-left-radius-large','tw-border-bottom-right-radius-large','tw-c-background-base','tw-pd-05'],
-                    chatContainerChild: ['chat-input-container__input-wrapper'],
-                },
-                removedClasses = {
-                    bubbleContainer: ['tw-block','tw-border-radius-large','tw-elevation-0','tw-left-0','tw-pd-0','tw-right-0','tw-z-below'],
-                    chatContainer: ['tw-block','tw-border-radius-large','tw-pd-0'],
-                };
-
-                return f('div.chat-line__reply-icon.tw-absolute.tw-border-radius-medium.tw-c-background-base.tw-elevation-1', {},
-                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
-                        {
-                            'data-test-selector': 'chat-reply-button',
-
-                            onclick: event => {
-                                let { currentTarget } = event,
-                                    messageElement = currentTarget.closest('div').previousElementSibling,
-                                    chatInput = $('[data-a-target="chat-input"i]'),
-                                    bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                    chatContainer = bubbleContainer.nextElementSibling,
-                                    chatContainerChild = $('div', false, chatContainer);
-
-                                let f = furnish;
-
-                                AddNativeReplyBubble: {
-                                    chatContainerChild.classList.add(...addedClasses.chatContainerChild);
-                                    bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
-                                    bubbleContainer.classList.add(...addedClasses.bubbleContainer);
-                                    chatContainer.classList.remove(...removedClasses.chatContainer);
-                                    chatContainer.classList.add(...addedClasses.chatContainer);
-
-                                    bubbleContainer.appendChild(
-                                        f(`div#twitch-tools-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
-                                            {
-                                                'data-test-selector': 'chat-input-tray',
-                                            },
-
-                                            f('div.tw-align-center.tw-mg-05', {},
-                                                f('div.tw-align-items-center.tw-flex', { innerHTML: Glyphs.modify('reply', { height: '24px', width: '24px' }) })
-                                            ),
-                                            f('div.tw-flex-grow-1.tw-pd-l-05.tw-pd-y-05', {},
-                                                f('span.tw-c-text-alt.tw-font-size-5.tw-strong.tw-word-break-word', {
-                                                    'connected-to': uuid,
-
-                                                    handle, message, mentions,
-
-                                                    innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
-                                                })
-                                            ),
-                                            f('div.tw-right-0.tw-top-0', {},
-                                                f('button#twitch-tools-close-native-twitch-reply.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
-                                                    {
-                                                        onclick: event => {
-                                                            let chatInput = $('[data-a-target="chat-input"i]'),
-                                                                bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                                                chatContainer = bubbleContainer.nextElementSibling,
-                                                                chatContainerChild = $('div', false, chatContainer);
-
-                                                            RemoveNativeReplyBubble: {
-                                                                bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
-                                                                bubbleContainer.classList.add(...removedClasses.bubbleContainer);
-                                                                chatContainer.classList.remove(...addedClasses.chatContainer);
-                                                                chatContainer.classList.add(...removedClasses.chatContainer);
-                                                                chatContainerChild.classList.remove(...addedClasses.chatContainerChild);
-
-                                                                $('[id^="twitch-tools-native-twitch-reply"i]', true).forEach(element => element.remove());
-
-                                                                chatInput.setAttribute('placeholder', 'Send a message');
-                                                            }
-                                                        },
-
-                                                        innerHTML: Glyphs.modify('x', { height: '24px', width: '24px' }),
-                                                    },
-                                                )
-                                            )
-                                        )
-                                    );
-
-                                    bubbleContainer.appendChild(
-                                        f('div#twitch-tools-native-twitch-reply-message.font-scale--default.tw-pd-x-1.tw-pd-y-05.chat-line__message',
-                                            {
-                                                'data-a-target': 'chat-line-message',
-                                                'data-test-selector': 'chat-line-message',
-                                            },
-                                            f('div.tw-relative', { innerHTML: messageElement.outerHTML })
-                                        )
-                                    );
-
-                                    chatInput.setAttribute('placeholder', 'Send a reply');
-                                }
-
-                                chatInput.focus();
-                            },
-                        },
-                        f('span.tw-button-icon__icon', {},
-                            f('div',
-                                { style: 'width: 2rem; height: 2rem;' },
-                                f('div.tw-icon', {},
-                                    f('div.tw-aspect', { innerHTML: Glyphs.reply })
-                                )
-                            )
-                        )
-                    )
-                );
-            },
-
-            // Highlighter for chat elements
-            AddNativeReplyButton: ({ uuid, style, handle, message, mentions, element }) => {
-                if(!defined(element))
-                    return;
-
-                if(defined($('.chat-line__message-container', false, element)))
-                    return;
-
-                if(handle == USERNAME)
-                    return;
-
-                let parent = $('div', false, element);
-                if(!defined(parent)) return;
-
-                let target = $('div', false, parent);
-                if(!defined(target)) return;
-
-                let highlighter = furnish('div.chat-line__message-highlight.tw-absolute.tw-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
-
-                target.classList.add('chat-line__message-container');
-
-                parent.insertBefore(highlighter, parent.firstElementChild);
-                parent.appendChild(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
-            },
-        };
-
-        REMARK('Adding native reply buttons...');
-
-        GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
-
-        GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
-    };
-    Timers.native_twitch_reply = 1000;
-
-    __NativeTwitchReply__:
-    if(parseBool(Settings.native_twitch_reply)) {
-        RegisterJob('native_twitch_reply');
-    }
+    // /chat.js
 
     /*** Prevent spam
      *      _____                          _      _____
@@ -5990,69 +4958,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                 | |
      *                                                 |_|
      */
-    let SPAM = [];
-
-    Handlers.prevent_spam = () => {
-        REMARK("Adding spam event listener...");
-
-        GetChat.onnewmessage = chat =>
-            chat.forEach(line => {
-                let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
-                    minLen = parseInt(Settings.prevent_spam_minimum_length ?? 5),
-                    minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 3);
-
-                let { handle, element, message } = line;
-
-                let spam_placeholder = "chat-deleted-message-placeholder";
-
-                function markAsSpam(element, type = 'spam', message) {
-                    let span = furnish(`span.chat-line__message--deleted-notice.tiwtch-tools__spam-filter-${ type }`, { 'data-a-target': spam_placeholder, 'data-test-selector': spam_placeholder }, `message marked as ${ type }.`);
-
-                    $('[data-test-selector="chat-message-separator"i] ~ *', true, element).forEach(sibling => sibling.remove());
-                    $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.appendChild(span);
-
-                    element.setAttribute(type, message);
-
-                    let tooltip = new Tooltip(element, message, { direction: 'up' });
-
-                    // Re-make the tooltip if the tooltip is too long to display correctly
-                    // if(getOffset(tooltip).width > getOffset(element).width)
-                    if(message.length > 60) {
-                        tooltip.closest('[class]:not([aria-describedby])')?.remove();
-
-                        new Tooltip(element, message, { direction: 'up', style: `width:fit-content; height:auto; white-space:break-spaces;` });
-                    }
-                }
-
-                // The same message is already posted (within X lines)
-                if( defined([...SPAM].slice(-lookBack).find(item => item == message.trim())) ) {
-                    message = message.trim();
-
-                    if(message.length < 1)
-                        return;
-
-                    markAsSpam(element, 'plagiarism', message);
-                }
-
-                // The message contains repetitive (more than X instances) words/phrases
-                else if(RegExp(`(\\w{${ minLen },})${ "((?:.+)?\\b\\1)".repeat(minOcc) }`, 'i').test(message)) {
-                    message = message.trim();
-
-                    if(message.length < 1)
-                        return;
-
-                    markAsSpam(element, 'repetitive', message);
-                }
-
-                SPAM = [...SPAM, message.trim()];
-            });
-    };
-    Timers.prevent_spam = -1000;
-
-    __PreventSpam__:
-    if(parseBool(Settings.prevent_spam)) {
-        RegisterJob('prevent_spam');
-    }
+    // /chat.js
 
     /*** Whisper Audio
      *     __          ___     _                                         _ _
@@ -6133,81 +5039,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    Handlers.convert_bits = () => {
-        let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('[class*="bits-count"]:not([twitch-tools-true-usd-amount])', true),
-            bits_cheer = $('[class*="cheer-amount"i]:not([twitch-tools-true-usd-amount])', true),
-            hype_trains = $('[class*="community-highlight-stack"i] p:not([twitch-tools-true-usd-amount])', true);
-
-        let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
-            bits_alp_regexp = /([\d,]+) +bits/i;
-
-        if(defined(dropdown))
-            $('h5:not([twitch-tools-true-usd-amount])', true, dropdown).map(header => {
-                let bits = parseInt(header.textContent.replace(/\D+/g, '')),
-                    usd;
-
-                usd = (bits * .01).toFixed(2);
-
-                header.textContent += ` ($${ comify(usd) })`;
-
-                header.setAttribute('twitch-tools-true-usd-amount', usd);
-            });
-
-        for(let counter of bits_counter) {
-            let { innerHTML } = counter;
-
-            if(bits_alp_regexp.test(innerHTML))
-                counter.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
-
-                    usd = (bits * .01).toFixed(2);
-
-                    counter.setAttribute('twitch-tools-true-usd-amount', usd);
-
-                    return `${ $0 } ($${ comify(usd) })`;
-                });
-        }
-
-        for(let cheer of bits_cheer) {
-            let { innerHTML } = cheer;
-
-            if(bits_num_regexp.test(innerHTML))
-                cheer.innerHTML = innerHTML.replace(bits_num_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
-
-                    usd = (bits * .01).toFixed(2);
-
-                    cheer.setAttribute('twitch-tools-true-usd-amount', usd);
-
-                    return `${ $0 } ($${ comify(usd) })`;
-                });
-        }
-
-        for(let train of hype_trains) {
-            let { innerHTML } = train;
-
-            if(bits_alp_regexp.test(innerHTML))
-                train.innerHTML = innerHTML.replace(bits_alp_regexp, ($0, $1, $$, $_) => {
-                    let bits = parseInt($1.replace(/\D+/g, '')),
-                        usd;
-
-                    usd = (bits * .01).toFixed(2);
-
-                    train.setAttribute('twitch-tools-true-usd-amount', usd);
-
-                    return `${ $0 } ($${ comify(usd) })`;
-                });
-        }
-    };
-    Timers.convert_bits = 1000;
-
-    __ConvertBits__:
-    if(parseBool(Settings.convert_bits)) {
-        RegisterJob('convert_bits');
-    }
+    // /chat.js
 
     /*** Rewards Calculator
      *      _____                            _        _____      _            _       _
@@ -6219,81 +5051,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let CHANNEL_POINTS_MULTIPLIER,
-        REWARDS_CALCULATOR_TOOLTIP;
-
-    Handlers.rewards_calculator = () => {
-        __GetMultiplierAmount__:
-        if(!defined(CHANNEL_POINTS_MULTIPLIER)) {
-            let button = $('[data-test-selector="community-points-summary"i] button');
-
-            if(defined(button)) {
-                button.click();
-
-                CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText) || 1;
-
-                button.click();
-            } else {
-                CHANNEL_POINTS_MULTIPLIER = 1;
-            }
-        }
-
-        let have = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
-            goal = parseInt($('[data-test-selector="RequiredPoints"]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
-            need = goal - have;
-
-        let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.parentElement;
-
-        if(!defined(container))
-            return REWARDS_CALCULATOR_TOOLTIP = null;
-
-        let averageBroadcastTime = STREAMER.data?.dailyBroadcastTime ?? 4.5, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
-            activeDaysPerWeek = STREAMER.data?.activeDaysPerWeek ?? 5,
-            pointsEarnedPerHour = 120 + (200 * +Settings.auto_claim_bonuses); // https://help.twitch.tv/s/article/channel-points-guide
-
-        let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
-
-        let hours = parseInt(need / (pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER)),
-            days = (hours / 24) * (24 / averageBroadcastTime),
-            weeks = (days / 7) * (7 / activeDaysPerWeek),
-            months = weeks / 4,
-            years = months / 12;
-
-        let streams = Math.round(hours / averageBroadcastTime),
-            estimated = 'minute',
-            timeEstimated = 60 * (Math.ceil((need / pointsEarnedPerHour) * 4) / 4);
-
-        if(hours > 1) {
-            estimated = 'hour';
-            timeEstimated = hours;
-        } if(hours > 48) {
-            estimated = 'day';
-            timeEstimated = days;
-        } if(days > 10) {
-            estimated = 'week';
-            timeEstimated = weeks;
-        } if(days > 30) {
-            estimated = 'month';
-            timeEstimated = months;
-        } if(months > 12) {
-            estimated = 'year';
-            timeEstimated = years;
-        } if(years > 100) {
-            estimated = 'century';
-            timeEstimated = years / 100;
-        }
-
-        timeEstimated = parseInt(timeEstimated);
-
-        tooltip.innerHTML =
-            `Available ${ (streams < 1 || hours < averageBroadcastTime)? 'during this': `in ${ comify(streams) } more` } ${ "stream".pluralSuffix(+(streams < 1)) } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
-    };
-    Timers.rewards_calculator = 100;
-
-    __RewardsCalculator__:
-    if(parseBool(Settings.rewards_calculator)) {
-        RegisterJob('rewards_calculator');
-    }
+    // /chat.js
 
     /*** Customization
      *       _____          _                  _          _   _
@@ -6342,7 +5100,7 @@ let Initialize = async(START_OVER = false) => {
         let f = furnish;
         let points_receipt =
         f(`${ container.tagName }${ classes(container) }`, {},
-            f(`${ live_time.tagName }#twitch-tools-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0 })
+            f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0 })
         );
 
         parent.appendChild(points_receipt);
@@ -6350,18 +5108,36 @@ let Initialize = async(START_OVER = false) => {
         RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
 
         COUNTING_POINTS = setInterval(() => {
-            let points_receipt = $('#twitch-tools-points-receipt'),
+            let points_receipt = $('#tt-points-receipt'),
                 balance = $('[data-test-selector="balance-string"i]'),
                 exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p'),
                 exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
+            let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
+
+            if(!defined(chat)) {
+                let framedData = PostOffice.get('points_receipt_placement');
+
+                top.PostOffice = PostOffice;
+
+                if(!defined(framedData))
+                    return;
+
+                balance ??= { innerText: framedData.balance };
+                exact_debt ??= { innerText: framedData.exact_debt };
+                exact_change ??= { innerText: framedData.exact_change };
+            }
+
             let current = parseCoin(balance?.innerText);
 
             INITIAL_POINTS ??= current;
-            EXACT_POINTS_SPENT = parseCoin(exact_debt?.innerText) || (INITIAL_POINTS > current? INITIAL_POINTS - current: EXACT_POINTS_SPENT);
+            EXACT_POINTS_SPENT = parseCoin(exact_debt?.innerText ?? (INITIAL_POINTS > current? INITIAL_POINTS - current: EXACT_POINTS_SPENT));
 
-            let animationID = (exact_change?.innerText ?? exact_debt?.innerText ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': null)),
+            let animationID = (exact_change?.innerText ?? exact_debt?.innerText ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': 0)),
                 animationTimeStamp = +new Date;
+
+            if(!/^([\+\-, \d]+)$/.test(animationID))
+                return;
 
             // Don't keep adding the exact change while the animation is playing
             if(OBSERVED_COLLECTION_ANIMATIONS.has(animationID)) {
@@ -6422,7 +5198,7 @@ let Initialize = async(START_OVER = false) => {
     Unhandlers.points_receipt_placement = () => {
         clearInterval(COUNTING_POINTS);
 
-        $('#twitch-tools-points-receipt')?.parentElement?.remove();
+        $('#tt-points-receipt')?.parentElement?.remove();
 
         if(UnregisterJob.__reason__ == 'modify')
             return;
@@ -6448,23 +5224,32 @@ let Initialize = async(START_OVER = false) => {
     let pointWatcherCounter = 0;
 
     Handlers.point_watcher_placement = () => {
-        let rich_tooltip = $('[class*="channel-tooltip"i]');
+        let richTooltip = $('[class*="channel-tooltip"i]');
 
         // Update the points (every minute)
         if(++pointWatcherCounter % 600) {
             pointWatcherCounter = 0;
 
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
-                (ChannelPoints ??= {})[STREAMER.name] = $('[data-test-selector="balance-string"i]')?.innerText ?? ChannelPoints[STREAMER.name] ?? 'Unavailable';
+            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+                let [amount, fiat, face] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|');
+
+                amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
+                fiat = (STREAMER?.fiat ?? fiat);
+                face = (STREAMER?.face ?? face);
+
+                ChannelPoints[STREAMER.name] = [amount, fiat, face].join('|');
+
                 SaveCache({ ChannelPoints });
             });
         }
 
-        if(!defined(rich_tooltip))
+        if(!defined(richTooltip))
             return;
 
-        let pointDisplay = $('.twitch-tools-point-display');
-        let [title, subtitle, footer] = $('[class*="online-side-nav-channel-tooltip"i] > *', true, rich_tooltip),
+        let pointAmount = $('.tt-point-amount'),
+            pointFace = $('.tt-point-face');
+
+        let [title, subtitle, footer] = $('[class*="online-side-nav-channel-tooltip"i] > *', true, richTooltip),
             target = footer?.lastElementChild;
 
         if(!defined(target))
@@ -6476,30 +5261,46 @@ let Initialize = async(START_OVER = false) => {
         game = game?.trim();
 
         // Update the display
-        if(defined(pointDisplay))
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => pointDisplay.innerHTML = (ChannelPoints ??= {})[name] ?? 0);
+        if(defined(pointAmount))
+            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+                let [amount, fiat, face] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                    style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+
+                let newFace = face?.length?
+                        furnish('span.tt-point-face', {
+                            innerHTML: ` | ${ furnish('img', { src: face, style: style.toString() }).outerHTML } `
+                        }):
+                    furnish('span.tt-point-face', {
+                        innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
+                    });
+
+                pointFace.outerHTML = newFace.outerHTML;
+                pointAmount.innerHTML = amount;
+            });
         else
-            LoadCache('ChannelPoints', ({ ChannelPoints }) => {
-                    let text = furnish('span.twitch-tools-point-display', {
-                            innerHTML: (ChannelPoints ??= {})[name] ?? 0,
-                        }),
-                        icon = furnish('span', {
-                            innerHTML: ` | ${ Glyphs.channelpoints.replace(/(height|width)="100%"/g, '$1="20px"') } `,
-                        });
+            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+                let [amount, fiat, face] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                    style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
 
-                    target.appendChild(icon);
-                    target.appendChild(text);
+                let text = furnish('span.tt-point-amount', {
+                        innerHTML: amount,
+                    }),
+                    icon = face?.length?
+                        furnish('span.tt-point-face', {
+                            innerHTML: ` | ${ furnish('img', { src: face, style: style.toString() }).outerHTML } `
+                        }):
+                    furnish('span.tt-point-face', {
+                        innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
+                    });
 
-                    let svg = $('svg', false, icon);
-
-                    svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
-                }
-            );
+                target.appendChild(icon);
+                target.appendChild(text);
+            });
     };
     Timers.point_watcher_placement = 100;
 
     Unhandlers.point_watcher_placement = () => {
-        $('.twitch-tools-point-display', true)
+        $('.tt-point-amount', true)
             .forEach(span => span?.remove());
     };
 
@@ -6561,7 +5362,7 @@ let Initialize = async(START_OVER = false) => {
         let f = furnish;
         let watch_time = f(`${ container.tagName }${ classes(container) }`,
             { style: `color: var(--color-${ color })` },
-            f(`${ live_time.tagName }#twitch-tools-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
+            f(`${ live_time.tagName }#tt-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
 
         WATCH_TIME_TOOLTIP = new Tooltip(watch_time);
@@ -6572,10 +5373,10 @@ let Initialize = async(START_OVER = false) => {
 
         await LoadCache(['WatchTime', 'Watching'], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME }) => {
             if(NORMALIZED_PATHNAME == Watching)
-                $('#twitch-tools-watch-time').setAttribute('time', WatchTime);
+                $('#tt-watch-time').setAttribute('time', WatchTime);
 
             WATCH_TIME_INTERVAL = setInterval(() => {
-                let watch_time = $('#twitch-tools-watch-time'),
+                let watch_time = $('#tt-watch-time'),
                     time = parseInt(watch_time?.getAttribute('time')) | 0;
 
                 if(!defined(watch_time)) {
@@ -6604,7 +5405,7 @@ let Initialize = async(START_OVER = false) => {
     Unhandlers.watch_time_placement = () => {
         clearInterval(WATCH_TIME_INTERVAL);
 
-        $('#twitch-tools-watch-time')?.parentElement?.remove();
+        $('#tt-watch-time')?.parentElement?.remove();
         $('.live-time')?.removeAttribute('style');
 
         if(UnregisterJob.__reason__ == 'modify')
@@ -6824,7 +5625,7 @@ let Initialize = async(START_OVER = false) => {
             ERROR('The stream ran into an error:', errorMessage, new Date);
 
             // Failed to play video at...
-            PushToTopSearch({ 'twitch-tools-ftpva': (+new Date).toString(36) });
+            PushToTopSearch({ 'tt-ftpva': (+new Date).toString(36) });
         }
     };
     Timers.recover_video = 5_000;
@@ -6860,6 +5661,38 @@ let Initialize = async(START_OVER = false) => {
         });
     }, 1000);
 
+    /*** Recover Chat
+     *      _____                                 _____ _           _
+     *     |  __ \                               / ____| |         | |
+     *     | |__) |___  ___ _____   _____ _ __  | |    | |__   __ _| |_
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__| | |    | '_ \ / _` | __|
+     *     | | \ \  __/ (_| (_) \ V /  __/ |    | |____| | | | (_| | |_
+     *     |_|  \_\___|\___\___/ \_/ \___|_|     \_____|_| |_|\__,_|\__|
+     *
+     *
+     */
+    // /chat.js
+    Handlers.recover_chat = () => {
+        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
+
+        if(defined(chat))
+            return;
+
+        // Add an iframe...
+        let { name } = STREAMER,
+            input = $('.chat-input'),
+            iframe = furnish(`iframe.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
+            container = (input?.closest('section') ?? $('.chat-shell .stream-chat'));
+
+        container.replaceChild(iframe, container.firstChild);
+    };
+    Timers.recover_chat = 500;
+
+    __RecoverChat__:
+    if(parseBool(Settings.recover_chat)) {
+        RegisterJob('recover_chat');
+    }
+
     /*** Recover Pages
      *      _____                                _____
      *     |  __ \                              |  __ \
@@ -6871,11 +5704,8 @@ let Initialize = async(START_OVER = false) => {
      *                                                      |___/
      */
     Handlers.recover_pages = () => {
-        let error = $('[data-a-target="core-error-message"i]'),
-            [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
+        let error = $('[data-a-target="core-error-message"i]');
 
-        if(!defined(chat))
-            error ??= ({ innerText: `The chat element is missing` });
         if(!defined(error))
             return;
 
@@ -6928,6 +5758,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
         setTimeout(Initialize, 1000);
         clearInterval(PAGE_CHECKER);
+
+        top.MAIN_CONTROLLER_READY = true;
 
         // Observe location changes
         LocationObserver: {
@@ -7139,7 +5971,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                 pill_observer.observe(pill, { childList: true });
         }
 
-        window.onlocationchange = () => {
+        top.onlocationchange = () => {
             WARN('Re-initializing...');
 
             Balloon.get('Up Next')?.remove();
@@ -7169,12 +6001,12 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
         // Add custom styling
         CustomCSSInitializer: {
-            CUSTOM_CSS = $('#twitch-tools-custom-css') ?? furnish('style#twitch-tools-custom-css', {});
+            CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
 
 CUSTOM_CSS.innerHTML =
 `
-#twitch-tools-auto-claim-bonuses .tw-z-above, [plagiarism], [repetitive] { display: none }
-#twitch-tools-hidden-emote-container::after {
+#tt-auto-claim-bonuses .tw-z-above, [plagiarism], [repetitive] { display: none }
+#tt-hidden-emote-container::after {
     content: 'Collecting emotes...\\A Do not close this window';
     text-align: center;
     white-space: break-spaces;
@@ -7191,8 +6023,8 @@ CUSTOM_CSS.innerHTML =
     --height: 100%;
     --width: 100%;
 }
-#twitch-tools-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
-.twitch-tools-first-run {
+#tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
+.tt-first-run {
     border: 1px solid var(--color-blue);
     border-radius: 3px;
 
@@ -7200,7 +6032,7 @@ CUSTOM_CSS.innerHTML =
 }
 [animationID] a { cursor: grab }
 [animationID] a:active { cursor: grabbing }
-[twitch-tools-hidden] { display: none }
+[tt-hidden] { display: none }
 [up-next--body] {
     background-color: #387aff;
     border-radius: 0.5rem;
@@ -7281,14 +6113,14 @@ CUSTOM_CSS.innerHTML =
                 // If so, then point out what's been changed
                 case INSTALL:
                     setTimeout(() => {
-                        for(let element of $('#twitch-tools-auto-claim-bonuses, [up-next--container]', true))
-                            element.classList.add('twitch-tools-first-run');
+                        for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
+                            element.classList.add('tt-first-run');
 
                         setTimeout(() => {
-                            $('.twitch-tools-first-run', true)
-                                .forEach(element => element.classList.remove('twitch-tools-first-run'));
+                            $('.tt-first-run', true)
+                                .forEach(element => element.classList.remove('tt-first-run'));
                         }, 30_000);
-                    }, 5_000);
+                    }, 10_000);
                     break;
             }
 

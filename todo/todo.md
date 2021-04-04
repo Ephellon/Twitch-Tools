@@ -12,13 +12,27 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0
+- Moved features that can be run on the chat iFrame to `chat.js`
+    - Moved "Recover Chat" to its own feature-space
+- Fixed channel point receipt addition
+- Fixed message filtering (plagiarized and repetitious)
+- Quality of life changes
+    - Added "New!" styling to the settings page
+    - Made the large streamer icon draggable to "Up Next"
+    - Added automatic garbage collector for cached data
+    - Added custom channel point icons to the rich tooltip
+    - Corrected "Available during this stream" logic
+- Fixed issue where captured (esp. locked) emotes wouldn't be displayed under "Captured Emotes"
+- Fixed issue that removed unfollowed channels from "Up Next"
+
 > 2.11.5
 - Added searching feature (for cards) `new Search(...)`
 
 > 2.11.4
 - Quality of life changes
-- Added emote cards `new Card({ ... })`
-- Enhanced message filtering, esp. emotes and BTTV emotes
+    - Added emote cards `new Card({ ... })`
+    - Enhanced message filtering, esp. emotes and BTTV emotes
 
 > 2.11.3
 - Fixed "Channel Specific BTTV Emotes"

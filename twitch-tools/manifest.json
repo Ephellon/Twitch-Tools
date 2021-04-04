@@ -2,8 +2,8 @@
     "manifest_version": 2,
 
     "name": "Twitch Tools",
-    "description": "A set of useful and customizable tools for Twitch",
-    "version": "2.11.5",
+    "description": "Adds extra features to Twitch",
+    "version": "3.0",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -19,6 +19,22 @@
     "content_scripts": [
         {
             "matches": [
+                "https://www.twitch.tv/popout/*",
+                "http://www.twitch.tv/popout/*"
+            ],
+
+            "all_frames": true,
+            "run_at": "document_end",
+            "js": [
+                "ext/polyfill.js",
+                "ext/resemble.js",
+                "ext/sortable.js",
+                "ext/glyphs.js",
+                "chat.js"
+            ]
+        },
+        {
+            "matches": [
                 "https://www.twitch.tv/*",
                 "http://www.twitch.tv/*"
             ],
@@ -30,7 +46,8 @@
                 "ext/resemble.js",
                 "ext/sortable.js",
                 "ext/glyphs.js",
-                "tools.js"
+                "tools.js",
+                "chat.js"
             ]
         }
     ],

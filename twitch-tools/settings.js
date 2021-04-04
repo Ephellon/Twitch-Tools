@@ -71,7 +71,7 @@ let // These are option names. Anything else will be removed
         'prevent_raiding',
         // Prevent Hosting
         'prevent_hosting',
-        // Kill Extensions*
+        // Kill Extensions
         'kill_extensions',
         // Auto Accept Mature Content
         'auto_accept_mature',
@@ -91,20 +91,23 @@ let // These are option names. Anything else will be removed
         // Filter Messages
         'filter_messages',
             'filter_rules',
-        // BetterTTV Emotes*
+        // BetterTTV Emotes
         'bttv_emotes',
         'bttv_emotes_maximum',
         'bttv_emotes_location',
         'bttv_emotes_channel',
+        'bttv_emotes_extras',
         // Convert Emotes*
         'convert_emotes',
-        // Native Twitch Replies*
+        // Native Twitch Replies
         'native_twitch_reply',
         // Prevent spam
         'prevent_spam',
             'prevent_spam_look_back',
             'prevent_spam_minimum_length',
             'prevent_spam_ignore_under',
+        // Recover chat
+        'recover_chat',
         // Whisper Audio
         'whisper_audio',
 
@@ -127,7 +130,7 @@ let // These are option names. Anything else will be removed
         'point_watcher_placement',
 
         /* Data-Collection Features */
-        // Fine Details*
+        // Fine Details
         'fine_details',
 
         /* Error Recovery */
@@ -352,6 +355,7 @@ let Glyphs = {
     reply: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>',
     stats: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
     trash: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
+    video: `<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M12.002 3.999a2 2 0 012 2v2L18 6v8l-3.998-2v2a2 2 0 01-2 1.999h-8a2 2 0 01-2-2V6a2 2 0 012-2h8zM12 6H4v8h8V6z" clip-rule="evenodd"></path></g></svg>`,
     bits: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></svg>',
     chat: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>',
     help: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8a1 1 0 011-1h.146a.87.87 0 01.854.871c0 .313-.179.6-.447.735A2.81 2.81 0 009 11.118V12h2v-.882a.81.81 0 01.447-.724A2.825 2.825 0 0013 7.871C13 6.307 11.734 5 10.146 5H10a3 3 0 00-3 3h2zM9 14a1 1 0 112 0 1 1 0 01-2 0z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8 6a6 6 0 110-12 6 6 0 010 12z"></path></g></svg>',
@@ -828,7 +832,7 @@ $('[glyph]', true).map(element => {
 });
 
 // Getting the version information
-let FETCHED_DATA = {};
+let FETCHED_DATA = { wasFetched: false };
 
 $('[set]', true).map(async(element) => {
     let installedFromWebstore = (location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
@@ -855,7 +859,7 @@ $('[set]', true).map(async(element) => {
 
         // Only refresh if the data is older than 1h
         // The data has expired ->
-        if(!defined(FETCHED_DATA.wasFetched) && (versionRetrivalDate + 3_600_000) < +new Date) {
+        if(!FETCHED_DATA.wasFetched && (versionRetrivalDate + 3_600_000) < +new Date) {
             let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
             await fetch(githubURL)
@@ -913,8 +917,8 @@ $('[set]', true).map(async(element) => {
                     });
             }
 
-            FETCHED_DATA.wasFetched = true;
             Storage.set({ versionRetrivalDate: +new Date });
+            FETCHED_DATA.wasFetched = true;
         }
         // The data hasn't expired yet
         else {
