@@ -2715,6 +2715,7 @@ let Initialize = async(START_OVER = false) => {
     /** Streamer Array - the current streamer/channel
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
+     * face:string       - GETTER: a URL to the channel points image, if applicable
      * fiat:string*      - GETTER: returns the name of the streamer's coin, if applicable
      * follow:function   - follows the current channel
      * game:string*      - GETTER: the name of the current game/category
@@ -2849,7 +2850,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get time() {
-            return parseTime($('.live-time')?.textContent ?? 0);
+            return parseTime($('.live-time')?.textContent ?? '0');
         },
 
         follow() {
@@ -3206,7 +3207,7 @@ let Initialize = async(START_OVER = false) => {
                     })
                     .catch(WARN)
                     .then(data => {
-                        data = { ...data, dataRetrievedOK: defined(data.dailyBroadcastTime), dataRetrievedAt: +new Date };
+                        data = { ...data, dataRetrievedOK: defined(data?.dailyBroadcastTime), dataRetrievedAt: +new Date };
 
                         SaveCache({ [`data/${ STREAMER.name }`]: data });
                     });
@@ -4428,7 +4429,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                channel = ALL_CHANNELS.filter(isLive).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+                channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
             if(!defined(channel)) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -5237,6 +5238,8 @@ let Initialize = async(START_OVER = false) => {
                 fiat = (STREAMER?.fiat ?? fiat);
                 face = (STREAMER?.face ?? face);
 
+                face = face.replace(/^.*([\d]+\/[\w\-\.\/]+)$/i, '$1');
+
                 ChannelPoints[STREAMER.name] = [amount, fiat, face].join('|');
 
                 SaveCache({ ChannelPoints });
@@ -5249,7 +5252,8 @@ let Initialize = async(START_OVER = false) => {
         let pointAmount = $('.tt-point-amount'),
             pointFace = $('.tt-point-face');
 
-        let [title, subtitle, footer] = $('[class*="online-side-nav-channel-tooltip"i] > *', true, richTooltip),
+        let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip),
+            footer = footers[footers.length - 1],
             target = footer?.lastElementChild;
 
         if(!defined(target))
@@ -5268,7 +5272,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let newFace = face?.length?
                         furnish('span.tt-point-face', {
-                            innerHTML: ` | ${ furnish('img', { src: face, style: style.toString() }).outerHTML } `
+                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
                         }):
                     furnish('span.tt-point-face', {
                         innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
@@ -5287,7 +5291,7 @@ let Initialize = async(START_OVER = false) => {
                     }),
                     icon = face?.length?
                         furnish('span.tt-point-face', {
-                            innerHTML: ` | ${ furnish('img', { src: face, style: style.toString() }).outerHTML } `
+                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
                         }):
                     furnish('span.tt-point-face', {
                         innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,

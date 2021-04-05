@@ -12,6 +12,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.2
+- Fixed point viewer on extended rich-tooltip
+- Fixed issue with `parseTime` parsing integers instead of strings
+
 > 3.0.1
 - Fixed duplicate "Up Next" additions
 
@@ -28,6 +32,8 @@
     - Corrected "Available during this stream" logic
 - Fixed issue where captured (esp. locked) emotes wouldn't be displayed under "Captured Emotes"
 - Fixed issue that removed unfollowed channels from "Up Next"
+
+----
 
 > 2.11.5
 - Added searching feature (for cards) `new Search(...)`
