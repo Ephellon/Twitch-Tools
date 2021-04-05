@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.1
+- Fixed duplicate "Up Next" additions
+
 > 3.0
 - Moved features that can be run on the chat iFrame to `chat.js`
     - Moved "Recover Chat" to its own feature-space

@@ -2630,7 +2630,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
-            return ALL_CHANNELS.find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]);
+            return ALL_CHANNELS.filter(channel => channel.href !== STREAMER.href).find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]);
 
         let next;
 
@@ -5110,7 +5110,7 @@ let Initialize = async(START_OVER = false) => {
         COUNTING_POINTS = setInterval(() => {
             let points_receipt = $('#tt-points-receipt'),
                 balance = $('[data-test-selector="balance-string"i]'),
-                exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p'),
+                exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"] ~ p *:not(:empty)'),
                 exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
             let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
