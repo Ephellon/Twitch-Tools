@@ -12,6 +12,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.3
+- Fixed short icon URLs
+- Fixed "Native Reply"
+
 > 3.0.2
 - Fixed point viewer on extended rich-tooltip
 - Fixed issue with `parseTime` parsing integers instead of strings

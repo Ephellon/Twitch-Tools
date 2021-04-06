@@ -1191,18 +1191,17 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 let { currentTarget } = event,
                                     messageElement = currentTarget.closest('div').previousElementSibling,
                                     chatInput = $('[data-a-target="chat-input"i]'),
-                                    bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                    chatContainer = bubbleContainer.nextElementSibling,
+                                    [bubbleContainer, chatContainer] = $('.chat-input > :last-child > :first-child > :not(:first-child)', true),
                                     chatContainerChild = $('div', false, chatContainer);
 
                                 let f = furnish;
 
                                 AddNativeReplyBubble: {
-                                    chatContainerChild.classList.add(...addedClasses.chatContainerChild);
                                     bubbleContainer.classList.remove(...removedClasses.bubbleContainer);
                                     bubbleContainer.classList.add(...addedClasses.bubbleContainer);
                                     chatContainer.classList.remove(...removedClasses.chatContainer);
                                     chatContainer.classList.add(...addedClasses.chatContainer);
+                                    chatContainerChild.classList.add(...addedClasses.chatContainerChild);
 
                                     bubbleContainer.appendChild(
                                         f(`div#tt-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
@@ -1227,8 +1226,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                     {
                                                         onclick: event => {
                                                             let chatInput = $('[data-a-target="chat-input"i]'),
-                                                                bubbleContainer = chatInput.closest('div[class=""]').firstElementChild,
-                                                                chatContainer = bubbleContainer.nextElementSibling,
+                                                                [bubbleContainer, chatContainer] = $('.chat-input > :last-child > :first-child > :not(:first-child)', true),
                                                                 chatContainerChild = $('div', false, chatContainer);
 
                                                             RemoveNativeReplyBubble: {

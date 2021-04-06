@@ -5235,10 +5235,10 @@ let Initialize = async(START_OVER = false) => {
                 let [amount, fiat, face] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|');
 
                 amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
-                fiat = (STREAMER?.fiat ?? fiat);
-                face = (STREAMER?.face ?? face);
+                fiat = (STREAMER?.fiat ?? fiat ?? 0);
+                face = (STREAMER?.face ?? face ?? '');
 
-                face = face.replace(/^.*([\d]+\/[\w\-\.\/]+)$/i, '$1');
+                face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
                 ChannelPoints[STREAMER.name] = [amount, fiat, face].join('|');
 
@@ -5249,8 +5249,8 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(richTooltip))
             return;
 
-        let pointAmount = $('.tt-point-amount'),
-            pointFace = $('.tt-point-face');
+        // Remove the old face and values...
+        $('.tt-point-amount, .tt-point-face', true).map(element => element?.remove());
 
         let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip),
             footer = footers[footers.length - 1],
@@ -5265,43 +5265,26 @@ let Initialize = async(START_OVER = false) => {
         game = game?.trim();
 
         // Update the display
-        if(defined(pointAmount))
-            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
-                let [amount, fiat, face] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                    style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+        LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+            let [amount, fiat, face] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
 
-                let newFace = face?.length?
-                        furnish('span.tt-point-face', {
-                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
-                        }):
+            let text = furnish('span.tt-point-amount', {
+                    innerHTML: amount,
+                }),
+                icon = face?.length?
                     furnish('span.tt-point-face', {
-                        innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
-                    });
+                        innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
+                    }):
+                furnish('span.tt-point-face', {
+                    innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
+                });
 
-                pointFace.outerHTML = newFace.outerHTML;
-                pointAmount.innerHTML = amount;
-            });
-        else
-            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
-                let [amount, fiat, face] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                    style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
-
-                let text = furnish('span.tt-point-amount', {
-                        innerHTML: amount,
-                    }),
-                    icon = face?.length?
-                        furnish('span.tt-point-face', {
-                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
-                        }):
-                    furnish('span.tt-point-face', {
-                        innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
-                    });
-
-                target.appendChild(icon);
-                target.appendChild(text);
-            });
+            target.appendChild(icon);
+            target.appendChild(text);
+        });
     };
-    Timers.point_watcher_placement = 100;
+    Timers.point_watcher_placement = 250;
 
     Unhandlers.point_watcher_placement = () => {
         $('.tt-point-amount', true)
