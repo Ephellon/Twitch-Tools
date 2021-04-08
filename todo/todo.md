@@ -12,6 +12,15 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.4
+- Fixed BTTV emote loading (stability)
+- Added `LIVE_CACHE` functionality as a `STREAMER` back-up
+- Fixed "Recover Chat"
+    > Fixed issue where Twitch could delete chat multiple times, preventing point collection
+    - The extension will now rebuild the broken frame each time it malfunctions
+- Quality of life changes
+    - Made text gold for channels where all Rewards/Challenges are redeemable
+
 > 3.0.3
 - Fixed short icon URLs
 - Fixed "Native Reply"

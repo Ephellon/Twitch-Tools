@@ -311,41 +311,50 @@ let Chat__Initialize = async(START_OVER = false) => {
                             code ??= emote?.code;
                             user ??= emote?.user ?? { displayName: STREAMER.name, name: STREAMER.name.toLowerCase(), providerId: STREAMER.sole };
 
+                            if(BTTV_EMOTES.has(code))
+                                continue;
+
                             BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
                             BTTV_OWNERS.set(code, user);
                         }
                     });
             // Load emotes with a certain name
             else if(defined(keyword))
-                for(let batchSize = 0, batchMax = 100, allLoaded = false; allLoaded === false && batchSize < batchMax;)
-                    await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ batchSize }&limit=${ batchMax }`)
+                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0, allLoaded = false; allLoaded === false && BTTV_EMOTES.size < maxNumOfEmotes;)
+                    await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
                             for(let { emote, code, user, id } of emotes) {
                                 code ??= emote?.code;
                                 user ??= emote?.user;
 
+                                if(BTTV_EMOTES.has(code))
+                                    continue;
+
                                 BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
                                 BTTV_OWNERS.set(code, user ?? {});
                             }
 
-                            batchSize += emotes.length | 0;
-                            allLoaded ||= emotes.length < batchMax;
+                            offset += emotes.length | 0;
+                            allLoaded ||= emotes.length < 80;
                         });
             // Load all emotes from...
             else
-                for(let batchSize = BTTV_EMOTES.size, batchMax = parseInt(Settings.bttv_emotes_maximum ?? 30); batchSize < batchMax;)
-                    await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ batchSize }&limit=100`)
+                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0; BTTV_EMOTES.size < maxNumOfEmotes;)
+                    await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
                             for(let { emote } of emotes) {
                                 let { code, user, id } = emote;
 
+                                if(BTTV_EMOTES.has(code))
+                                    continue;
+
                                 BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
                                 BTTV_OWNERS.set(code, user ?? {});
                             }
 
-                            batchSize += emotes.length | 0;
+                            offset += emotes.length | 0;
                         });
         };
 
@@ -408,14 +417,16 @@ let Chat__Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.bttv_emotes)) {
         REMARK('Loading BTTV emotes...');
 
-        // Load extra emotes
-        for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
-            await LOAD_BTTV_EMOTES(keyword);
         // Load streamer specific emotes
         if(parseBool(Settings.bttv_emotes_channel))
             await LOAD_BTTV_EMOTES(STREAMER.name, STREAMER.sole);
         // Load emotes (not to exceed the max size)
-        await LOAD_BTTV_EMOTES();
+        await LOAD_BTTV_EMOTES()
+            .then(async() => {
+                // Load extra emotes
+                for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
+                    await LOAD_BTTV_EMOTES(keyword);
+            });
 
         REMARK('Adding BTTV emote event listener...');
 
@@ -1637,7 +1648,26 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      *
      */
-    // /tools.js
+    Handlers.recover_chat = () => {
+        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
+
+        if(defined(chat))
+            return;
+
+        // Add an iframe...
+        let { name } = STREAMER,
+            input = $('.chat-input'),
+            iframe = furnish(`iframe.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
+            container = (input?.closest('section') ?? $('.chat-shell .stream-chat', false, top.document));
+
+        container.replaceChild(iframe, container.firstChild);
+    };
+    Timers.recover_chat = 500;
+
+    __RecoverChat__:
+    if(parseBool(Settings.recover_chat)) {
+        RegisterJob('recover_chat');
+    }
 
     // End of Chat__Initialize
 };
@@ -1662,9 +1692,11 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
+        LOG('Child container ready');
+
         Settings = await GetSettings();
 
-        setTimeout(Chat__Initialize, 1000);
+        setTimeout(Chat__Initialize, 5000);
         clearInterval(Chat__PAGE_CHECKER);
 
         // Observe location changes

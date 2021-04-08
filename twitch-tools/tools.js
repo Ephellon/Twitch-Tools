@@ -1330,11 +1330,15 @@ class Card {
  * title: String:Unicode16
  */
 class Search {
-    static #TOKENS = JSON.parse(atob("WyJ2MnNnZWN5NWJ3eDNmc3pyYmpscm92OWtpYTVyMjkiLCJraW1uZTc4a3gzbmN4NmJyZ280bXY2d2tpNWgxa28iXQ=="))
+    static #TOKENS = {
+        oauth: JSON.parse(atob("WyJ2MnNnZWN5NWJ3eDNmc3pyYmpscm92OWtpYTVyMjkiLCAia2ltbmU3OGt4M25jeDZicmdvNG12NndraTVoMWtvIl0=")),
+        bauth: JSON.parse(atob("WyJ2MnNnZWN5NWJ3eDNmc3pyYmpscm92OWtpYTVyMjkiLCJraW1uZTc4a3gzbmN4NmJyZ280bXY2d2tpNWgxa28iXQ==")),
+    }
+
     static #CACHE = new Map()
 
     constructor(query = "", maximum = 15, type = "channels", OVER_RIDE_CACHE = false) {
-        let [bearer, clientID] = Search.#TOKENS,
+        let [bearer, clientID] = Search.#TOKENS.bauth,
             token = UUID.from(Object.values({ query, maximum, type }).join('|')).value;
 
         if(!query?.length)
@@ -2333,10 +2337,6 @@ async function update() {
 
                         let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
 
-                        // if(LIVE_CACHE.has(pathname))
-                        //     return LIVE_CACHE.get(pathname);
-                        // LIVE_CACHE.set(pathname, live);
-
                         return live;
                     },
                     name: $('img', false, element)?.alt,
@@ -2377,10 +2377,6 @@ async function update() {
                         let live = defined(parent)
                                 && !defined($(`[class*="--offline"i]`, false, parent));
 
-                        // if(!defined(parent) && LIVE_CACHE.has(pathname))
-                        //     return LIVE_CACHE.get(pathname);
-                        // LIVE_CACHE.set(pathname, live);
-
                         return live;
                     },
                     name: $('img', false, element)?.alt,
@@ -2420,10 +2416,6 @@ async function update() {
 
                         let live = defined(parent)
                                 && !defined($(`[class*="--offline"i]`, false, parent));
-
-                        // if(!defined(parent) && LIVE_CACHE.has(pathname))
-                        //     return LIVE_CACHE.get(pathname);
-                        // LIVE_CACHE.set(pathname, live);
 
                         return live;
                     },
@@ -2555,12 +2547,25 @@ let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace(
 *
 *
 */
-// Intializes the extension
-    // Initialize(START_OVER:boolean) -> undefined
-
-let LIVE_CACHE = new Map();
+// A non-repeating token representing the current window
 const PRIVATE_SYMBOL = Symbol(new UUID);
 
+/** Streamer Array (Backup) - the current streamer/channel
+ * call:string       - the streamer's login ID
+ * date:string       - a date string representing the current stream's start time
+ * game:number       - the current game/category
+ * head:string       - the title of the stream
+ * icon:string       - link to the channel's icon/image
+ * lang:string       - the language of the broadcast
+ * live:boolean      - is the channel currently live
+ * name:string       - the channel's username
+ * sole:number       - the channel's ID
+ * tags:array        - tags of the current stream
+ */
+let LIVE_CACHE = new Map();
+
+// Intializes the extension
+    // Initialize(START_OVER:boolean) -> undefined
 let Initialize = async(START_OVER = false) => {
     let GLOBAL_TWITCH_API = top.GLOBAL_TWITCH_API = {},
         GLOBAL_EVENT_LISTENERS = top.GLOBAL_EVENT_LISTENERS = {};
@@ -2614,7 +2619,7 @@ let Initialize = async(START_OVER = false) => {
 
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
             for(let channel in ChannelPoints) {
-                let [amount, fiat, face] = ChannelPoints[channel].split('|');
+                let [amount, fiat, face, earnedAll] = ChannelPoints[channel].split('|');
 
                 amount = parseCoin(amount);
 
@@ -2689,10 +2694,6 @@ let Initialize = async(START_OVER = false) => {
                                 return false;
 
                             let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
-
-                        // if(LIVE_CACHE.has(pathname))
-                        //     return LIVE_CACHE.get(pathname);
-                        // LIVE_CACHE.set(pathname, live);
 
                         return live;
                     },
@@ -2783,7 +2784,7 @@ let Initialize = async(START_OVER = false) => {
                 href: { value: element?.href }
             });
 
-            return game;
+            return game ?? LIVE_CACHE.get('game');
         },
 
         href: parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href,
@@ -2800,9 +2801,10 @@ let Initialize = async(START_OVER = false) => {
                     && defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommendations"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "")
                 )
+                || LIVE_CACHE.get('live')
         },
 
-        name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent,
+        name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent  ?? LIVE_CACHE.get('name'),
 
         get paid() {
             return defined($('[data-a-target="subscribed-button"i]'))
@@ -2819,7 +2821,7 @@ let Initialize = async(START_OVER = false) => {
         get sole() {
             let [channel_id] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => !!~src.indexOf('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
 
-            return parseInt(channel_id ?? NaN);
+            return parseInt(channel_id ?? LIVE_CACHE.get('sole') ?? NaN);
         },
 
         get tags() {
@@ -2835,7 +2837,7 @@ let Initialize = async(START_OVER = false) => {
                 return name;
             });
 
-            return tags;
+            return tags ?? LIVE_CACHE.get('tags');
         },
 
         get team() {
@@ -2960,10 +2962,6 @@ let Initialize = async(START_OVER = false) => {
 
                             let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
 
-                            // if(!defined(parent) && LIVE_CACHE.has(pathname))
-                            //     return LIVE_CACHE.get(pathname);
-                            // LIVE_CACHE.set(pathname, live);
-
                             return live;
                         },
                         name: $('img', false, element)?.alt,
@@ -3010,10 +3008,6 @@ let Initialize = async(START_OVER = false) => {
 
                             let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
 
-                            // if(!defined(parent) && LIVE_CACHE.has(pathname))
-                            //     return LIVE_CACHE.get(pathname);
-                            // LIVE_CACHE.set(pathname, live);
-
                             return live;
                         },
                         name: $('img', false, element)?.alt,
@@ -3057,10 +3051,6 @@ let Initialize = async(START_OVER = false) => {
 
                             let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
 
-                            // if(!defined(parent) && LIVE_CACHE.has(pathname))
-                            //     return LIVE_CACHE.get(pathname);
-                            // LIVE_CACHE.set(pathname, live);
-
                             return live;
                         },
                         name: $('img', false, element)?.alt,
@@ -3099,201 +3089,231 @@ let Initialize = async(START_OVER = false) => {
     // Every channel
     ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 
-    if(defined(STREAMER)) {
-        let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
-            { href, icon, live, name } = STREAMER;
+    // Load the streamer's data from Twitch as a backup...
+    let __Profile__ = NORMALIZED_PATHNAME.replace(/\/([^\/]+?)(?:\/.*)?$/, '$1'),
+        __Profile_Image__ = url => parseURL(url).pathname?.replace(__Profile_Image_Size__, ''),
+        __Profile_Image_Size__ = /-profile.+?$/i;
 
-        element.setAttribute('draggable', true);
-        element.setAttribute('tt-streamer-data', JSON.stringify({ href, icon, live, name }));
-        element.ondragstart ??= event => {
-            let { currentTarget } = event;
+    await new Search(__Profile__)
+        .then(({ data }) => data.filter(streamer => __Profile_Image__(STREAMER.icon) === __Profile_Image__(streamer.thumbnail_url) ))
+        .then(([streamer]) => {
+            let ConversionKey = {
+                broadcaster_language: 'lang',
+                broadcaster_login: 'call',
+                display_name: 'name',
+                game_id: 'game',
+                id: 'sole',
+                is_live: 'live',
+                started_at: 'date',
+                tag_ids: 'tags',
+                thumbnail_url: 'icon',
+                title: 'head',
+            };
 
-            event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
-            event.dataTransfer.dropEffect = 'move';
-        };
+            for(let from in ConversionKey) {
+                let to = ConversionKey[from];
 
-        /* Attempt to use the Twitch API */
-        __FineDetails__:
-        if(parseBool(Settings.fine_details)) {
-            // Get the cookie values
-            let cookies = {};
+                LIVE_CACHE.set(to, streamer?.[from]);
+            }
+        })
+        .catch(WARN)
+        .finally(async() => {
+            if(defined(STREAMER)) {
+                let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
+                    { href, icon, live, name } = STREAMER;
 
-            document.cookie.split(/(?:\s*;\s*)+/).map(cookie => {
-                let [name, value = null] = cookie.split('=');
+                element.setAttribute('draggable', true);
+                element.setAttribute('tt-streamer-data', JSON.stringify({ href, icon, live, name }));
+                element.ondragstart ??= event => {
+                    let { currentTarget } = event;
 
-                cookies[name] = value;
-            });
+                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
+                    event.dataTransfer.dropEffect = 'move';
+                };
 
-            USERNAME = top.USERNAME = cookies.name ?? USERNAME;
+                /* Attempt to use the Twitch API */
+                __FineDetails__:
+                if(parseBool(Settings.fine_details)) {
+                    // Get the cookie values
+                    let cookies = {};
 
-            // Get the channel/vod information
-            let channelName,
-                videoID;
+                    document.cookie.split(/(?:\s*;\s*)+/).map(cookie => {
+                        let [name, value = null] = cookie.split('=');
 
-            let { pathname } = location;
-
-            if(pathname.startsWith('/videos/'))
-                videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
-            else
-                channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
-
-            // Fetch an API request
-            let type = (defined(videoID)? 'vod': 'channel'),
-                value = (defined(videoID)? videoID: channelName),
-                token = cookies['auth-token'];
-
-            if(!defined(STREAMER.name))
-                break __FineDetails__;
-
-            /** Get Twitch analytics data
-             * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
-             * averageGamesPerStream:number - the average number of games played (per stream)
-             * dailyBroadcastTime:number    - the average number of hours streamed (per day)
-             * followersPerHour:number      - the average number of followers gained (per hour)
-             * followersPerStream:number    - the average number of followers gained (per stream)
-             * followersToDate:number       - the total number of followers
-             * hoursWatchedDaily:number     - the average number of hours watched (per day)
-             * totalGamesStreamed:number    - the number of games streamed
-             * viewsPerHour:number          - the average number of views (per hour)
-             * viewsPerStream:number        - the average number of views (per stream)
-             * viewsToDate:number           - the total number of views
-             */
-            // First, attempt to retrieve the cached data (no older than 12h)
-            try {
-                await LoadCache(`data/${ STREAMER.name }`, cache => {
-                    let data = cache[`data/${ STREAMER.name }`],
-                        { dataRetrievedAt, dataRetrievedOK } = data;
-
-                    dataRetrievedAt ||= 0;
-                    dataRetrievedOK ||= false;
-
-                    // Only refresh every 12h
-                    if(!parseBool(dataRetrievedOK))
-                        throw "The data wasn't saved correctly";
-                    else if((dataRetrievedAt + 43_200_000) < +new Date)
-                        throw "The data likely expired";
-                    else
-                        STREAMER.data = data;
-
-                    REMARK(`Cached details about "${ STREAMER.name }"`, data);
-                });
-            } catch(exception) {
-                // Proper CORS request to fetch the HTML data
-                await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ STREAMER.sole }-${ STREAMER.name }/stream_time_values`)}`, { mode: 'cors' })
-                    .then(response => response.json())
-                    .then(json => {
-                        let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, },
-                            today = new Date;
-
-                        let averageStreamTime = 0,
-                            daysWithStreams = new Set(),
-                            totalStreamTime = (json ?? []).reverse()
-                                .map(dates => dates.map(date => {
-                                    date = new Date(date.toUpperCase().replace("T", " "));
-
-                                    if(Math.abs(today - date) < 604_800_000)
-                                        daysWithStreams.add(date.getDay());
-
-                                    return date;
-                                }))
-                                .map(([start, stop]) => averageStreamTime += Math.abs(start - stop));
-
-                        data.dailyBroadcastTime = (averageStreamTime / totalStreamTime.length) / 3_600_000;
-                        data.activeDaysPerWeek = daysWithStreams.size;
-
-                        REMARK(`Details about "${ STREAMER.name }"`, data);
-
-                        return STREAMER.data = data;
-                    })
-                    .catch(WARN)
-                    .then(data => {
-                        data = { ...data, dataRetrievedOK: defined(data?.dailyBroadcastTime), dataRetrievedAt: +new Date };
-
-                        SaveCache({ [`data/${ STREAMER.name }`]: data });
+                        cookies[name] = value;
                     });
 
-                //  OBSOLETE //
-                // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
-                //     .then(response => response.json())
-                //     .then(json => GLOBAL_TWITCH_API = JSON.parse(json.token ?? "null"))
-                //     .then(json => {
-                //         if(!defined(json))
-                //             throw "Fine Detail JSON data could not be parsed...";
-                //
-                //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
-                //
-                //         let conversion = {
-                //             paid: 'subscriber',
-                //
-                //             ally: 'partner',
-                //             fast: 'turbo',
-                //             nsfw: 'mature',
-                //             sole: 'channel_id',
-                //         };
-                //
-                //         for(let key in conversion)
-                //             STREAMER[key] = GLOBAL_TWITCH_API[conversion[key]];
-                //     })
-                //     .catch(ERROR);
+                    USERNAME = top.USERNAME = cookies.name ?? USERNAME;
 
-                // OBSOLETE //
-                // await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
-                //     .then(text => text.text())
-                //     /* Conversion => Text -> HTML -> Element -> JSON */
-                //     .then(html => {
-                //         let doc = (new DOMParser).parseFromString(html, 'text/html'),
-                //             body = doc.body;
-                //
-                //         let data = {};
-                //
-                //         [...doc.querySelectorAll('#report .table tr')]
-                //             .map(tr => {
-                //                 let [name, value] = tr.querySelectorAll('td');
-                //
-                //                 /* Set initial name */
-                //                 name = name
-                //                     .innerText
-                //                     .toLowerCase();
-                //
-                //                 /* Set initial value, and adjust name */
-                //                 value = value
-                //                     .innerText
-                //                     .trim()
-                //                     .replace(/\s+/g, ' ')
-                //                     .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
-                //                         name += " per " + $1;
-                //
-                //                         return '';
-                //                     });
-                //
-                //                 /* Set final value */
-                //                 value = (
-                //                     /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
-                //                         parseFloat(value):
-                //                     value
-                //                 );
-                //
-                //                 /* Set final name */
-                //                 name = name
-                //                     .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
-                //
-                //                 /* Set property */
-                //                 data[name] = value;
-                //             });
-                //
-                //         REMARK(`Details about "${ STREAMER.name }"`, data, { bearer, clientID });
-                //
-                //         return STREAMER.data = data;
-                //     })
-                //     .catch(WARN)
-                //     .then(data => {
-                //         data = { ...data, dataRetrievedAt: +new Date };
-                //
-                //         SaveCache({ [`data/${ STREAMER.name }`]: data });
-                //     });
-            }
-        }
-    };
+                    // Get the channel/vod information
+                    let channelName,
+                        videoID;
+
+                    let { pathname } = location;
+
+                    if(pathname.startsWith('/videos/'))
+                        videoID = pathname.replace('/videos/', '').replace(/\/g/, '').replace(/^v/i, '');
+                    else
+                        channelName = pathname.replace(/^(moderator)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1').replace(/\//g, '');
+
+                    // Fetch an API request
+                    let type = (defined(videoID)? 'vod': 'channel'),
+                        value = (defined(videoID)? videoID: channelName),
+                        token = cookies['auth-token'];
+
+                    if(!defined(STREAMER.name))
+                        break __FineDetails__;
+
+                    /** Get Twitch analytics data
+                     * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
+                     * averageGamesPerStream:number - the average number of games played (per stream)
+                     * dailyBroadcastTime:number    - the average number of hours streamed (per day)
+                     * followersPerHour:number      - the average number of followers gained (per hour)
+                     * followersPerStream:number    - the average number of followers gained (per stream)
+                     * followersToDate:number       - the total number of followers
+                     * hoursWatchedDaily:number     - the average number of hours watched (per day)
+                     * totalGamesStreamed:number    - the number of games streamed
+                     * viewsPerHour:number          - the average number of views (per hour)
+                     * viewsPerStream:number        - the average number of views (per stream)
+                     * viewsToDate:number           - the total number of views
+                     */
+                    // First, attempt to retrieve the cached data (no older than 12h)
+                    try {
+                        await LoadCache(`data/${ STREAMER.name }`, cache => {
+                            let data = cache[`data/${ STREAMER.name }`],
+                                { dataRetrievedAt, dataRetrievedOK } = data;
+
+                            dataRetrievedAt ||= 0;
+                            dataRetrievedOK ||= false;
+
+                            // Only refresh every 12h
+                            if(!parseBool(dataRetrievedOK))
+                                throw "The data wasn't saved correctly";
+                            else if((dataRetrievedAt + 43_200_000) < +new Date)
+                                throw "The data likely expired";
+                            else
+                                STREAMER.data = data;
+
+                            REMARK(`Cached details about "${ STREAMER.name }"`, data);
+                        });
+                    } catch(exception) {
+                        // Proper CORS request to fetch the HTML data
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ STREAMER.sole }-${ STREAMER.name }/stream_time_values`)}`, { mode: 'cors' })
+                            .then(response => response.json())
+                            .then(json => {
+                                let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, },
+                                    today = new Date;
+
+                                let averageStreamTime = 0,
+                                    daysWithStreams = new Set(),
+                                    totalStreamTime = (json ?? []).reverse()
+                                        .map(dates => dates.map(date => {
+                                            date = new Date(date.toUpperCase().replace("T", " "));
+
+                                            if(Math.abs(today - date) < 604_800_000)
+                                                daysWithStreams.add(date.getDay());
+
+                                            return date;
+                                        }))
+                                        .map(([start, stop]) => averageStreamTime += Math.abs(start - stop));
+
+                                data.dailyBroadcastTime = (averageStreamTime / totalStreamTime.length) / 3_600_000;
+                                data.activeDaysPerWeek = daysWithStreams.size;
+
+                                REMARK(`Details about "${ STREAMER.name }"`, data);
+
+                                return STREAMER.data = data;
+                            })
+                            .catch(WARN)
+                            .then(data => {
+                                data = { ...data, dataRetrievedOK: defined(data?.dailyBroadcastTime), dataRetrievedAt: +new Date };
+
+                                SaveCache({ [`data/${ STREAMER.name }`]: data });
+                            });
+
+                        //  OBSOLETE //
+                        // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
+                        //     .then(response => response.json())
+                        //     .then(json => GLOBAL_TWITCH_API = JSON.parse(json.token ?? "null"))
+                        //     .then(json => {
+                        //         if(!defined(json))
+                        //             throw "Fine Detail JSON data could not be parsed...";
+                        //
+                        //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
+                        //
+                        //         let conversion = {
+                        //             paid: 'subscriber',
+                        //
+                        //             ally: 'partner',
+                        //             fast: 'turbo',
+                        //             nsfw: 'mature',
+                        //             sole: 'channel_id',
+                        //         };
+                        //
+                        //         for(let key in conversion)
+                        //             STREAMER[key] = GLOBAL_TWITCH_API[conversion[key]];
+                        //     })
+                        //     .catch(ERROR);
+
+                        // OBSOLETE //
+                        // await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
+                        //     .then(text => text.text())
+                        //     /* Conversion => Text -> HTML -> Element -> JSON */
+                        //     .then(html => {
+                        //         let doc = (new DOMParser).parseFromString(html, 'text/html'),
+                        //             body = doc.body;
+                        //
+                        //         let data = {};
+                        //
+                        //         [...doc.querySelectorAll('#report .table tr')]
+                        //             .map(tr => {
+                        //                 let [name, value] = tr.querySelectorAll('td');
+                        //
+                        //                 /* Set initial name */
+                        //                 name = name
+                        //                     .innerText
+                        //                     .toLowerCase();
+                        //
+                        //                 /* Set initial value, and adjust name */
+                        //                 value = value
+                        //                     .innerText
+                        //                     .trim()
+                        //                     .replace(/\s+/g, ' ')
+                        //                     .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
+                        //                         name += " per " + $1;
+                        //
+                        //                         return '';
+                        //                     });
+                        //
+                        //                 /* Set final value */
+                        //                 value = (
+                        //                     /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
+                        //                         parseFloat(value):
+                        //                     value
+                        //                 );
+                        //
+                        //                 /* Set final name */
+                        //                 name = name
+                        //                     .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
+                        //
+                        //                 /* Set property */
+                        //                 data[name] = value;
+                        //             });
+                        //
+                        //         REMARK(`Details about "${ STREAMER.name }"`, data, { bearer, clientID });
+                        //
+                        //         return STREAMER.data = data;
+                        //     })
+                        //     .catch(WARN)
+                        //     .then(data => {
+                        //         data = { ...data, dataRetrievedAt: +new Date };
+                        //
+                        //         SaveCache({ [`data/${ STREAMER.name }`]: data });
+                        //     });
+                    }
+                }
+            };
+        });
 
     // TODO - Add an "un-delete" feature
     // Keep a copy of all messages
@@ -5222,7 +5242,8 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let pointWatcherCounter = 0;
+    let pointWatcherCounter = 0,
+        balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button');
 
     Handlers.point_watcher_placement = () => {
         let richTooltip = $('[class*="channel-tooltip"i]');
@@ -5231,16 +5252,18 @@ let Initialize = async(START_OVER = false) => {
         if(++pointWatcherCounter % 600) {
             pointWatcherCounter = 0;
 
-            LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
-                let [amount, fiat, face] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|');
+            LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
+                let [amount, fiat, face, earnedAll] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|'),
+                    allRewards = $('[data-test-selector="cost"]', true);
 
                 amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? '');
+                earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
 
                 face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
-                ChannelPoints[STREAMER.name] = [amount, fiat, face].join('|');
+                ChannelPoints[STREAMER.name] = [amount, fiat, face, earnedAll].join('|');
 
                 SaveCache({ ChannelPoints });
             });
@@ -5265,11 +5288,15 @@ let Initialize = async(START_OVER = false) => {
         game = game?.trim();
 
         // Update the display
-        LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
-            let [amount, fiat, face] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+        LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
+            let [amount, fiat, face, earnedAll] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
+                allRewards = $('[data-test-selector="cost"]', true);
+
+            earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
 
             let text = furnish('span.tt-point-amount', {
+                    'tt-earned-all': earnedAll,
                     innerHTML: amount,
                 }),
                 icon = face?.length?
@@ -5294,6 +5321,11 @@ let Initialize = async(START_OVER = false) => {
     __PointWatcherPlacement__:
     if(parseBool(Settings.point_watcher_placement)) {
         RegisterJob('point_watcher_placement');
+
+        if(defined(balanceButton)) {
+            balanceButton.click();
+            setTimeout(() => balanceButton.click(), 300);
+        }
     }
 
     /*** Watch Time Placement
@@ -5659,26 +5691,6 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     // /chat.js
-    Handlers.recover_chat = () => {
-        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
-
-        if(defined(chat))
-            return;
-
-        // Add an iframe...
-        let { name } = STREAMER,
-            input = $('.chat-input'),
-            iframe = furnish(`iframe.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
-            container = (input?.closest('section') ?? $('.chat-shell .stream-chat'));
-
-        container.replaceChild(iframe, container.firstChild);
-    };
-    Timers.recover_chat = 500;
-
-    __RecoverChat__:
-    if(parseBool(Settings.recover_chat)) {
-        RegisterJob('recover_chat');
-    }
 
     /*** Recover Pages
      *      _____                                _____
@@ -5741,6 +5753,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
+        LOG('Main container ready');
+
         Settings = await GetSettings();
 
         setTimeout(Initialize, 1000);
@@ -6076,6 +6090,8 @@ CUSTOM_CSS.innerHTML =
 }
 
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+
+[tt-earned-all="true"i] { color: gold }
 
 /*[class*="tw-number-badge"i] {
     background-color: var(--color-background-pill-notification);
