@@ -12,6 +12,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.5
+- Fixed "Rewards Calculator"
+- Fixed "Stay Live"
+
 > 3.0.4
 - Fixed BTTV emote loading (stability)
 - Added `LIVE_CACHE` functionality as a `STREAMER` back-up

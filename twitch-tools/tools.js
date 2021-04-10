@@ -2801,7 +2801,6 @@ let Initialize = async(START_OVER = false) => {
                     && defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommendations"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "")
                 )
-                || LIVE_CACHE.get('live')
         },
 
         name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent  ?? LIVE_CACHE.get('name'),

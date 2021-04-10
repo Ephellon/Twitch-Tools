@@ -1543,16 +1543,18 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
 
-        let hours = parseInt(need / (pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER)),
+        let { ceil, floor, round } = Math;
+
+        let hours = (need / (pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER)),
             days = (hours / 24) * (24 / averageBroadcastTime),
             weeks = (days / 7) * (7 / (activeDaysPerWeek || (averageBroadcastTime / 24))),
                 // ... OR fraction of active day
             months = weeks / 4,
             years = months / 12;
 
-        let streams = Math.round(hours / averageBroadcastTime),
+        let streams = ceil(hours / averageBroadcastTime),
             estimated = 'minute',
-            timeEstimated = 60 * (Math.ceil((need / pointsEarnedPerHour) * 4) / 4);
+            timeEstimated = 60 * (ceil(hours * 4) / 4);
 
         if(hours > 1) {
             estimated = 'hour';
@@ -1574,7 +1576,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             timeEstimated = years / 100;
         }
 
-        timeEstimated = parseInt(timeEstimated);
+        timeEstimated = ceil(timeEstimated);
 
         tooltip.innerHTML =
             `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
