@@ -12,6 +12,11 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.6
+- Fixed "Prevent Raiding"
+- Fixed "Prevent Hosting"
+- Fixed emote searching
+
 > 3.0.5
 - Fixed "Rewards Calculator"
 - Fixed "Stay Live"

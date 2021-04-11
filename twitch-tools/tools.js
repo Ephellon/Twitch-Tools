@@ -4674,15 +4674,18 @@ let Initialize = async(START_OVER = false) => {
     Handlers.prevent_hosting = async() => {
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"]')),
             next = await GetNextStreamer(),
-            [guest, host] = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true);
+            host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
+            host = STREAMER.name,
+            [guest] = host_banner.filter(name => name.toLowerCase() != host.toLowerCase());
 
-        guest = guest?.innerText ?? $('[data-a-target="hosting-indicator"i]')?.innerText ?? "anonymous";
-        host = host?.innerText ?? STREAMER.name;
+        guest ??= "anonymous";
+
+        let method = Settings.prevent_hosting ?? "none";
 
         host_stopper:
         if(hosting) {
             // Ignore followed channels
-            if(["unfollowed"].contains(Settings.prevent_hosting)) {
+            if(["unfollowed"].contains(method)) {
                 let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
@@ -4733,10 +4736,9 @@ let Initialize = async(START_OVER = false) => {
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             next = await GetNextStreamer(),
-            [from, to] = $('[data-test-selector="raid-banner"i] strong', true);
-
-        from = from?.innerText;
-        to = to?.innerText ?? STREAMER.name;
+            raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
+            from = STREAMER.name,
+            [to] = raid_banner.filter(name => name.toLowerCase() != from.toLowerCase());
 
         let method = Settings.prevent_raiding ?? "none";
 

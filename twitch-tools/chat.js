@@ -289,7 +289,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             return emoteContainer;
         },
-        LOAD_BTTV_EMOTES = async(keyword, provider) => {
+        LOAD_BTTV_EMOTES = async(keyword, provider, ignoreCap = false) => {
             // Load some emotes (max 100 at a time)
                 // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
                     // emote.code -> emote name
@@ -320,7 +320,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     });
             // Load emotes with a certain name
             else if(defined(keyword))
-                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0, allLoaded = false; allLoaded === false && BTTV_EMOTES.size < maxNumOfEmotes;)
+                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0, allLoaded = false; !allLoaded && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
                     await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -336,11 +336,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                             }
 
                             offset += emotes.length | 0;
-                            allLoaded ||= emotes.length < 80;
+                            allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
                         });
             // Load all emotes from...
             else
-                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0; BTTV_EMOTES.size < maxNumOfEmotes;)
+                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
                     await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -355,6 +355,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             }
 
                             offset += emotes.length | 0;
+                            allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
                         });
         };
 
@@ -411,7 +412,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         parent.insertBefore(BTTVEmoteSection, parent.firstChild);
     };
-    Timers.bttv_emotes = 5_000;
+    Timers.bttv_emotes = 2_500;
 
     __BetterTTVEmotes__:
     if(parseBool(Settings.bttv_emotes)) {
@@ -534,7 +535,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         REMARK('Adding BTTV emote search listener...');
 
         EmoteSearch.onquery = async query => {
-            await LOAD_BTTV_EMOTES(query).then(() => {
+            await LOAD_BTTV_EMOTES(query, null, true).then(() => {
                 let results = [...BTTV_EMOTES]
                     .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
                     .map(([name, src]) => CONVERT_TO_BTTV_EMOTE({ name, src }));
@@ -697,7 +698,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         parent.insertBefore(emoteSection, parent.firstChild);
     };
-    Timers.convert_emotes = 5_000;
+    Timers.convert_emotes = 2_500;
 
     __ConvertEmotes__:
     if(parseBool(Settings.convert_emotes)) {
