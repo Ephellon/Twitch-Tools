@@ -395,18 +395,21 @@ class Popup {
     constructor(subject, message, options = {}) {
         let f = furnish;
 
-        let P = $('.stream-chat-header'),
+        // The document (container)
+        top.CHILD_CONTROLLER_CONTAINER = $('#tt-popup-container', false, top.document)?.contentDocument ?? top.document;
+
+        let P = $('.stream-chat-header', false, top.CHILD_CONTROLLER_CONTAINER),
             X = $('#tt-popup', false, P),
             I = Extension.getURL('profile.png'),
             N = 'Continue',
             D = 'Close',
-            A = event => $('#tt-popup')?.remove(),
-            C = event => $('#tt-popup')?.remove(),
+            A = event => $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER)?.remove(),
+            C = event => $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER)?.remove(),
             R = '_self',
             U, S, M, G, T, W, H;
 
         let uuid = U = UUID.from(subject).value,
-            existing = Popup.#POPUPS.get(subject);
+            existing = Popup.#POPUPS.get(uuid);
 
         if(defined(existing))
             return existing;
@@ -414,7 +417,7 @@ class Popup {
         if(defined(X)) {
             if(!Queue.popups.map(popup => popup.uuid).contains(uuid)) {
                 let interval = setInterval(() => {
-                    let existing = $('#tt-popup');
+                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
 
                     if(defined(existing))
                         return;
@@ -446,7 +449,7 @@ class Popup {
                 H = options[n] ?? H;
 
         let p =
-        f('div#tt-popup.tw-absolute.tw-mg-t-5', { 'tt-id': subject.replace(/\s+/g, '-'), style: 'z-index:9; bottom:10rem; right:1rem' },
+        f('div#tt-popup.tw-absolute.tw-mg-t-5', { uuid, style: 'z-index:9; bottom:10rem; right:1rem' },
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
@@ -537,7 +540,7 @@ class Popup {
             )
         );
 
-        P.appendChild(p);
+        P?.appendChild(p);
 
         this.uuid = U;
         this.next = A;
@@ -553,18 +556,21 @@ class Popup {
             container: p,
         };
 
-        Popup.#POPUPS.set(subject, this);
+        Popup.#POPUPS.set(uuid, this);
 
         return this;
     }
 
-    remove() {
-        if(this.container)
-            this.container.remove();
+    static remove(uuid) {
+        let popup = Popup.#POPUPS.get(uuid);
+
+        popup.container?.remove();
+
+        Popup.#POPUPS.delete(uuid);
     }
 
-    static get(subject) {
-        return Popup.#POPUPS.get(subject);
+    static get(uuid) {
+        return Popup.#POPUPS.get(uuid);
     }
 }
 
@@ -3791,25 +3797,29 @@ let Initialize = async(START_OVER = false) => {
                     href: FIRST_IN_LINE_HREF,
 
                     onclick: event => {
+                        let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
+                            uuid = existing?.getAttribute('uuid');
+
+                        Popup.remove(uuid);
+
                         SaveCache({ FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000 });
-
-                        $('#tt-popup')?.remove();
                     },
 
-                    Hide: () => {
-                        let existing = $('#tt-popup');
+                    Hide: event => {
+                        let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
+                            uuid = existing?.getAttribute('uuid');
 
-                        if(defined(existing))
-                            existing.remove();
+                        Popup.remove(uuid);
                     },
 
-                    Cancel: () => {
-                        let existing = $('#tt-popup'),
+                    Cancel: event => {
+                        let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
+                            uuid = existing?.getAttribute('uuid'),
                             removal = $('button[connected-to][data-test-selector$="delete"i]'),
                             [thisJob] = ALL_FIRST_IN_LINE_JOBS;
 
-                        if(defined(existing))
-                            existing.remove();
+                        Popup.remove(uuid);
+
                         LOG('Canceled First in Line event', thisJob);
 
                         removal?.click?.();
@@ -3964,7 +3974,7 @@ let Initialize = async(START_OVER = false) => {
         first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel in the blue area to queue it');
 
         // Load cache
-        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
+        LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
             FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
@@ -4029,7 +4039,7 @@ let Initialize = async(START_OVER = false) => {
 
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
 
-                await SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
 
                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
             }
@@ -4398,7 +4408,7 @@ let Initialize = async(START_OVER = false) => {
                     REDO_FIRST_IN_LINE_QUEUE(href);
                     LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
-                    let existing = $('#tt-popup');
+                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
 
                     if(defined(existing))
                         existing.remove();
@@ -4610,7 +4620,7 @@ let Initialize = async(START_OVER = false) => {
             mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
         if(!like) {
-            await LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
+            LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
                 let watch_time = $('#tt-watch-time'),
                     secs = parseInt(watch_time?.getAttribute('time')) | 0;
 
@@ -4824,7 +4834,7 @@ let Initialize = async(START_OVER = false) => {
                 if(parseBool(UserIntent))
                     Paths.push(UserIntent);
 
-                await RemoveCache('UserIntent');
+                RemoveCache('UserIntent');
             });
         } catch(error) {
             return RemoveCache('UserIntent');
@@ -4854,7 +4864,7 @@ let Initialize = async(START_OVER = false) => {
         } else if(/\/search\b/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
 
-            await SaveCache({ UserIntent: term });
+            SaveCache({ UserIntent: term });
         }
     };
     Timers.stay_live = 7_000;
@@ -5391,7 +5401,7 @@ let Initialize = async(START_OVER = false) => {
 
         extra({ parent, container, live_time, placement });
 
-        await LoadCache(['WatchTime', 'Watching'], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME }) => {
+        LoadCache(['WatchTime', 'Watching'], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME }) => {
             if(NORMALIZED_PATHNAME == Watching)
                 $('#tt-watch-time').setAttribute('time', WatchTime);
 
@@ -5416,9 +5426,7 @@ let Initialize = async(START_OVER = false) => {
 
                 SaveCache({ WatchTime: time });
             }, 1000);
-        });
-
-        SaveCache({ Watching: NORMALIZED_PATHNAME });
+        }).then(() => SaveCache({ Watching: NORMALIZED_PATHNAME }));
     };
     Timers.watch_time_placement = -1000;
 
@@ -5676,7 +5684,7 @@ let Initialize = async(START_OVER = false) => {
                 let url = parseURL(currentTarget.href),
                     UserIntent = url.pathname.replace('/', '');
 
-                await SaveCache({ UserIntent });
+                SaveCache({ UserIntent });
             });
         });
     }, 1000);

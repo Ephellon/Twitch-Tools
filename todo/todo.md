@@ -12,6 +12,12 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.7
+- Fixed "Highlight mentions"
+- Fixed iframe loading (Chat reload)
+- Fixed iframe Popups
+- Removed unnecessary awaits
+
 > 3.0.6
 - Fixed "Prevent Raiding"
 - Fixed "Prevent Hosting"

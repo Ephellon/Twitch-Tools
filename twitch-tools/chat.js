@@ -420,13 +420,13 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Load streamer specific emotes
         if(parseBool(Settings.bttv_emotes_channel))
-            await LOAD_BTTV_EMOTES(STREAMER.name, STREAMER.sole);
+            LOAD_BTTV_EMOTES(STREAMER.name, STREAMER.sole);
         // Load emotes (not to exceed the max size)
-        await LOAD_BTTV_EMOTES()
+        LOAD_BTTV_EMOTES()
             .then(async() => {
                 // Load extra emotes
                 for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
-                    await LOAD_BTTV_EMOTES(keyword);
+                    LOAD_BTTV_EMOTES(keyword);
             });
 
         REMARK('Adding BTTV emote event listener...');
@@ -1084,25 +1084,27 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_mentions = () => {
-        let usernames = [USERNAME];
+        GetChat.onnewmessage = chat => {
+            let usernames = [USERNAME];
 
-        if(parseBool(Settings.highlight_mentions_extra))
-            usernames.push('all', 'chat', 'everyone');
+            if(parseBool(Settings.highlight_mentions_extra))
+                usernames.push('all', 'chat', 'everyone');
 
-        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
+            chat = chat.filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
 
-        for(let line of chat)
-            if(!Queue.messages.contains(line.uuid)) {
-                Queue.messages.push(line.uuid);
+            for(let line of chat)
+                if(!Queue.messages.contains(line.uuid)) {
+                    Queue.messages.push(line.uuid);
 
-                let { author, message, reply } = line;
+                    let { author, message, reply } = line;
 
-                // LOG('Highlighting message:', { author, message });
+                    // LOG('Highlighting message:', { author, message });
 
-                line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
-            }
+                    line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
+                }
+        };
     };
-    Timers.highlight_mentions = 500;
+    Timers.highlight_mentions = -500;
 
     __HighlightMentions__:
     if(parseBool(Settings.highlight_mentions)) {
@@ -1120,37 +1122,41 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/                                         |_|         |_|
      */
     Handlers.highlight_mentions_popup = () => {
-        let chat = GetChat().filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
+        GetChat.onnewmessage = chat => {
+            chat = chat.filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
 
-        for(let line of chat)
-            if(!Queue.message_popups.contains(line.uuid)) {
-                Queue.message_popups.push(line.uuid);
+            for(let line of chat)
+                if(!Queue.message_popups.contains(line.uuid)) {
+                    Queue.message_popups.push(line.uuid);
 
-                let { author, message, reply } = line;
+                    let { author, message, reply } = line;
 
-                let existing = $('#tt-chat-footer');
+                    let existing = $('#tt-chat-footer');
 
-                if(defined(existing))
-                    continue;
+                    if(defined(existing))
+                        continue;
 
-                // LOG('Generating footer:', { author, message });
+                    // LOG('Generating footer:', { author, message });
 
-                new ChatFooter(`@${ author } mentioned you.`, {
-                    onclick: event => {
-                        let chatbox = $('.chat-input__textarea textarea'),
-                            existing = $('#tt-chat-footer');
+                    new ChatFooter(`@${ author } mentioned you.`, {
+                        onclick: event => {
+                            let chatbox = $('[class*="chat-input"i] textarea'),
+                                existing = $('#tt-chat-footer');
 
-                        if(defined(chatbox))
-                            chatbox.focus();
-                        if(defined(existing))
-                            existing.remove();
+                            if(defined(chatbox))
+                                chatbox.focus();
+                            if(defined(existing))
+                                existing.remove();
 
-                        reply?.click();
-                    },
-                });
-            }
+                            LOG('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
+
+                            (reply ?? $('button[data-test-selector="chat-reply-button"i]', false, line.element))?.click();
+                        },
+                    });
+                }
+        };
     };
-    Timers.highlight_mentions_popup = 500;
+    Timers.highlight_mentions_popup = -500;
 
     __HighlightMentionsPopup__:
     if(parseBool(Settings.highlight_mentions_popup)) {
@@ -1660,10 +1666,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Add an iframe...
         let { name } = STREAMER,
             input = $('.chat-input'),
-            iframe = furnish(`iframe.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
-            container = (input?.closest('section') ?? $('.chat-shell .stream-chat', false, top.document));
+            iframe = furnish(`iframe#tt-popup-container.stream-chat.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
+            container = $('.chat-shell .stream-chat', false, top.CHILD_CONTROLLER_CONTAINER);
 
-        container.replaceChild(iframe, container.firstChild);
+        container.parentElement.replaceChild(iframe, container);
     };
     Timers.recover_chat = 500;
 
@@ -1701,6 +1707,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
         setTimeout(Chat__Initialize, 5000);
         clearInterval(Chat__PAGE_CHECKER);
+
+        top.CHILD_CONTROLLER_READY;
 
         // Observe location changes
         LocationObserver: {
@@ -1813,9 +1821,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
 Chat__CUSTOM_CSS.innerHTML =
 `
-[data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] {
-    display: none !important;
-}
+/* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
 #tt-auto-claim-bonuses .tw-z-above, [plagiarism], [repetitive] { display: none }
 #tt-hidden-emote-container::after {
