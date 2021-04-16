@@ -1667,7 +1667,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let { name } = STREAMER,
             input = $('.chat-input'),
             iframe = furnish(`iframe#tt-popup-container.stream-chat.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
-            container = $('.chat-shell .stream-chat', false, top.CHILD_CONTROLLER_CONTAINER);
+            container = $('.chat-shell .stream-chat', false, top.document);
 
         container.parentElement.replaceChild(iframe, container);
     };

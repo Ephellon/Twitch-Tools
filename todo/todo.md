@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.0.8
+- Fixed iframe loading (Chat reload)
+
 > 3.0.7
 - Fixed "Highlight mentions"
 - Fixed iframe loading (Chat reload)
