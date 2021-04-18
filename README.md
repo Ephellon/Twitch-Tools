@@ -27,7 +27,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - Go with the most viewers
     - Go with the least channel points
     - Go with the most channel points
-- *Kill Extensions* `off` &mdash; *Currently under __Experimental Features__*
+- *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
 - *Prevent Hosting* &mdash; When a channel begins hosting, go to the __Next Channel__
     - `default` Allow all channels to be hosted
     - Prevent all channels from being hosted
@@ -41,6 +41,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 
 ### Chat & Messaging
 
+- *BetterTTV emotes* `off` &mdash; Allow the extension to use and display BTTV emotes
 - *Convert Emotes* `off` &mdash; *Currently under __Experimental Features__*
 - *Filter Messages* `on` &mdash; Remove messages across all channels
     - `text` &mdash; will remove all messages containing *text*
@@ -49,8 +50,10 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
     - `/channel text` &mdash; will remove all messages containing *text*, but only on *channel*
     - `[^\/*+?$]` &mdash; [JavaScript-based RegExps](https://javascript.info/regular-expressions) can also be used: `swears?` will remove "swear", "swears", "SWEAR", "SWEARS" and all other variations
 - *Highlight Mentions* `on` &mdash; When someone mentions you (*@username*), highlight the message(s) in chat
+- *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
 - *Show pop-ups* `on` &mdash; When someone mentions you (*@username*), show a pop-up of the message(s)
-- *Prevent Spam* `off` &mdash; *Currently under __Experimental Features__*
+- *Prevent spam* `off` &mdash; Hide repetitive messages in chat
+- *Simplify Chat* `off` &mdash; Makes chat elements dual-toned to ease readability
 - *Whisper Audio* `off` &mdash; When someone sends you a whisper, play a notification sound
 
 ### Currencies
@@ -77,6 +80,7 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Keep Pop-out* `off` &mdash; Prevent the extension from destroying the pop-out of the stream
 - *Recover Ads* `off` &mdash; When an advertisement freezes, attempt to recover it
 - *Recover Frames* `on` &mdash; When the video fails to play for more than 15 seconds, reload the webpage
+- *Recover Pages* `off` &mdash; When the webpage or chat fails to display, reload the webpage
 - *Recover Stream* `off` &mdash; When the stream freezes, attempt to recover it
 - *Recover Video* `on` &mdash; When the video fails to download, reload the webpage
 
@@ -86,14 +90,10 @@ Get for [Google Chrome](https://chrome.google.com/webstore/detail/twitch-tools/f
 - *Display Statistics* `off` &mdash; Allow the extension to display statistics of the video
 - *Experimental Features* `off` &mdash; Allows the extension to display, and use experimental features
 - *Show Default Values* &mdash; Displays the default values
+- *Use Fine Details* `off` &mdash; Allow the extension to use (not collect) Twitch&trade; API data
 
 ### Experimental Features
 
 - *Auto-Focus* `off` &mdash; When there is an increase in video activity, automatically pause other features that would leave or alter the stream
-- *BetterTTV emotes* `off` &mdash; Allow the extension to use and display BTTV emotes
 - *Convert Emotes* `off` &mdash; When presented with emote-based text, convert the text into its corresponding emotes (without requiring a subscription)
-- *Kill Extensions* `off` &mdash; Do not allow Twitch&trade; extensions to display
-- *Native Reply* `off` &mdash; Attempt to display Twitch&trade; replies
-- *Prevent spam* `off` &mdash; Hide repetitive messages in chat
-- *Recover Pages* `off` &mdash; When the webpage or chat fails to display, reload the webpage
-- *Use Fine Details* `off` &mdash; Allow the extension to use (not collect) Twitch&trade; API data
+- *Soft Unban* `off` &mdash; Re-enables chat on channels you've been banned from (view only)

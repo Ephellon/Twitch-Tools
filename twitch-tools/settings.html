@@ -179,7 +179,7 @@
             <section>
                 <div class="title"><span small purple glyph="extensions"></span> Kill Extensions</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
+                    <div class="toggle">
                         <input id="kill_extensions" type="checkbox"/>
                         <label for="kill_extensions"></label>
                     </div>
@@ -270,13 +270,13 @@
         #                                                                  __/ |         __/ |
         #                                                                 |___/         |___/
         -->
-        <header>Chat &amp; Messaging</header>
+        <header>Chat &amp; Messaging <span white glyph="help" tooltip="These settings do not apply to banned channels"></span></header>
         <article>
             <!-- BetterTTV Emotes -->
             <section>
                 <div class="title"><span small gold glyph="emotes"></span> BetterTTV emotes</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
+                    <div class="toggle">
                         <input id="bttv_emotes" type="checkbox"/>
                         <label for="bttv_emotes"></label>
                     </div>
@@ -292,7 +292,7 @@
                             <div text-only>
                                 <div class="title">Channel Specific Emotes</div>
                                 <div class="summary">
-                                    <div class="toggle" right-tooltip="Experimental feature">
+                                    <div class="toggle">
                                         <input id="bttv_emotes_channel" type="checkbox"/>
                                         <label for="bttv_emotes_channel"></label>
                                     </div>
@@ -413,7 +413,7 @@
             <section>
                 <div class="title"><span small glyph="reply"></span> Native Reply</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
+                    <div class="toggle">
                         <input id="native_twitch_reply" type="checkbox"/>
                         <label for="native_twitch_reply"></label>
                     </div>
@@ -427,7 +427,7 @@
             <section>
                 <div class="title"><span small purple glyph="mod"></span> Prevent spam</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
+                    <div class="toggle">
                         <input id="prevent_spam" type="checkbox" checked/>
                         <label for="prevent_spam"></label>
                     </div>
@@ -496,8 +496,72 @@
                 </div>
             </section>
 
+            <!-- Simplify Chat -->
+            <section new="3.1">
+                <div class="title"><span large gold glyph="accessible"></span> Simplify Chat</div>
+                <div class="summary">
+                    <div class="toggle">
+                        <input id="simplify_chat" type="checkbox"/>
+                        <label for="simplify_chat"></label>
+                    </div>
+                    <p>
+                        Apply dual tones to make chat easier to read.
+                    </p>
+                    <details>
+                        <summary subtitle="Adjust extra settings for Simplify Chat">Extras</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Monotone Usernames</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="simplify_chat_monotone_usernames" type="checkbox"/>
+                                        <label for="simplify_chat_monotone_usernames"></label>
+                                    </div>
+                                    <p>
+                                        Keep username colors uniform.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Chat Font</div>
+                                <div class="summary">
+                                    <p>
+                                        Display chat in the following font:
+                                    </p>
+
+                                    <select id="simplify_chat_font">
+                                        <option value="null" style="font-family:Roobert!important" selected>Default &rarr; TWITCH.tv&trade;</option>
+                                        <option value="Arial" style="font-family:Arial!important">Arial &rarr; TWITCH.tv&trade;</option>
+                                        <option value="Calibri" style="font-family:Calibri!important">Calibri &rarr; TWITCH.tv&trade;</option>
+                                        <option value="Helvetica" style="font-family:Helvetica!important">Helvetica &rarr; TWITCH.tv&trade;</option>
+                                        <option value="Monospace" style="font-family:Monospace!important">Monospace &rarr; TWITCH.tv&trade;</option>
+                                        <option value="System-UI" style="font-family:System-UI!important">System-UI &rarr; TWITCH.tv&trade;</option>
+                                        <option value="Tahoma" style="font-family:Tahoma!important">Tahoma &rarr; TWITCH.tv&trade;</option>
+                                        <option value="Verdana" style="font-family:Verdana!important">Verdana &rarr; TWITCH.tv&trade;</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div disabled text-only>
+                                <div class="title">Reverse Emotes</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="simplify_chat_reverse_emotes" type="checkbox"/>
+                                        <label for="simplify_chat_reverse_emotes"></label>
+                                    </div>
+                                    <p>
+                                        Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
             <!-- Whisper Audio -->
-            <section>
+            <section new="3.1">
                 <div class="title"><span small gold glyph="stream"></span> Whisper Audio</div>
                 <div class="summary">
                     <div class="toggle">
@@ -507,16 +571,34 @@
                     <p>
                         When someone sends you a whisper, play a notification sound.
                     </p>
-                    <br>
-                    <p>
-                        <div class="cc-container">
-                            <div class="cc-svg"><span black glyph="cc"></span></div>
-                            <p class="cc-text">
-                                <a href="https://notificationsounds.com/notification-sounds/goes-without-saying-608" rel="nofollow">This sound</a> is licensed under the Creative Commons Attribution license.
-                                <a href="https://creativecommons.org/licenses/by/4.0/legalcode" rel="nofollow">Find out more</a>
+                    <details>
+                        <summary subtitle="Adjust options for Whisper Audio">Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Notification Sound</div>
+                                <div class="summary">
+                                    <select id="whisper_audio_sound">
+                                        <option value="beyond-doubt-2-581">Beyond doubt 2</option>
+                                        <option value="consequence-544">Consequence</option>
+                                        <option value="definite-555">Definite</option>
+                                        <option value="goes-without-saying-608" selected>Goes without saying</option>
+                                        <option value="point-blank-589">Point blank</option>
+                                        <option value="slow-spring-board-570">Slow spring board</option>
+                                        <option value="to-the-point-568">To the point</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p>
+                                <div class="cc-container">
+                                    <div class="cc-svg"><span black glyph="cc"></span></div>
+                                    <p class="cc-text">
+                                        <a id="sound-href" href="https://notificationsounds.com/notification-sounds/goes-without-saying-608" rel="nofollow">This sound</a> is licensed under the Creative Commons Attribution license.
+                                        <a id="sound-license" href="https://creativecommons.org/licenses/by/4.0/legalcode" rel="nofollow">Find out more</a>
+                                    </p>
+                                </div>
                             </p>
                         </div>
-                    </p>
+                    </details>
                 </div>
             </section>
 
@@ -727,7 +809,7 @@
             <section>
                 <div class="title"><span small glyph="extensions"></span> Recover Pages</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
+                    <div class="toggle">
                         <input id="recover_pages" type="checkbox"/>
                         <label for="recover_pages"></label>
                     </div>
@@ -833,7 +915,7 @@
             <section>
                 <div class="title"><span small purple glyph="stats"></span> Use Fine Details</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
+                    <div class="toggle">
                         <input id="fine_details" type="checkbox"/>
                         <label for="fine_details"></label>
                     </div>
@@ -966,6 +1048,66 @@
                     <p warning-text>
                         This does <b>not</b> save/unlock the emote.
                     </p>
+                </div>
+            </section>
+
+            <!-- Soft Unban -->
+            <section new="3.1">
+                <div class="title"><span small red glyph="chat"></span> Soft Unban</div>
+                <div class="summary">
+                    <div class="toggle" right-tooltip="Experimental feature">
+                        <input id="soft_unban" type="checkbox"/>
+                        <label for="soft_unban"></label>
+                    </div>
+                    <p>
+                        Re-enable chat for channels you've been banned from.
+                    </p>
+                    <p warning-text>
+                        This only allows viewing the chat.
+                    </p>
+                    <details>
+                        <summary subtitle="Adjust options for Soft Unban">Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Fade Messages</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="soft_unban_fade_old_messages" type="checkbox"/>
+                                        <label for="soft_unban_fade_old_messages"></label>
+                                    </div>
+                                    <p>
+                                        Keep chat from overflowing.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Keep Bots</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="soft_unban_keep_bots" type="checkbox"/>
+                                        <label for="soft_unban_keep_bots"></label>
+                                    </div>
+                                    <p>
+                                        Allow bot messages to display.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Prevent Clipping</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="soft_unban_prevent_clipping" type="checkbox"/>
+                                        <label for="soft_unban_prevent_clipping"></label>
+                                    </div>
+                                    <p>
+                                        Hide clip URLs in chat.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 

@@ -3,7 +3,7 @@
 
     "name": "Twitch Tools",
     "description": "Adds extra features to Twitch",
-    "version": "3.0.8",
+    "version": "3.1",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -81,5 +81,5 @@
         "storage"
     ],
 
-    "web_accessible_resources": ["*.png", "aud/*.mp3", "aud/*.ogg"]
+    "web_accessible_resources": ["*.png", "aud/*.*"]
 }

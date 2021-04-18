@@ -8,9 +8,35 @@
  *                             _/ |
  *                            |__/
  */
+function AddCustomCSSBlock(name, block) {
+    Chat__CUSTOM_CSS.innerHTML += `/*${ name }*/${ block }/*#${ name }*/`;
+
+    Chat__CUSTOM_CSS?.remove();
+    $('body').appendChild(Chat__CUSTOM_CSS);
+}
+
+function RemoveCustomCSSBlock(name, flags = '') {
+    let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
+
+    Chat__CUSTOM_CSS.innerHTML = Chat__CUSTOM_CSS.innerHTML.replace(regexp, '');
+
+    Chat__CUSTOM_CSS?.remove();
+    $('body').appendChild(Chat__CUSTOM_CSS);
+}
 
 let Chat__Initialize = async(START_OVER = false) => {
-    let { USERNAME, STREAMER, STREAMERS, ALL_CHANNELS, CHANNELS, PATHNAME, THEME, SEARCH, NOTIFICATIONS, GLOBAL_EVENT_LISTENERS } = top;
+    let {
+        USERNAME,
+        STREAMER,
+        STREAMERS,
+        ALL_CHANNELS,
+        CHANNELS,
+        PATHNAME,
+        THEME,
+        SEARCH,
+        NOTIFICATIONS,
+        GLOBAL_EVENT_LISTENERS,
+    } = top;
 
     /*** Automation
      *                    _                        _   _
@@ -230,8 +256,8 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let BTTV_EMOTES = top.BTTV_EMOTES ?? new Map(),
-        BTTV_OWNERS = top.BTTV_OWNERS ?? new Map(),
+    let BTTV_EMOTES = (top.BTTV_EMOTES ??= new Map),
+        BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map),
         BTTV_LOADED_INDEX = 0,
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
@@ -472,7 +498,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             converted.push(alt);
 
-                            fragment.setAttribute('data-tt-emote', alt);
+                            let tte = fragment.getAttribute('data-tt-emote') ?? '';
+
+                            fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
                             fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
                             fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
 
@@ -544,8 +572,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             });
         };
 
-        top.BTTV_EMOTES = BTTV_EMOTES;
-        top.BTTV_OWNERS = BTTV_OWNERS;
+        // top.BTTV_EMOTES = BTTV_EMOTES;
+        // top.BTTV_OWNERS = BTTV_OWNERS;
         RegisterJob('bttv_emotes');
     }
 
@@ -559,8 +587,8 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let OWNED_EMOTES = top.OWNED_EMOTES ?? new Map(),
-        CAPTURED_EMOTES = top.CAPTURED_EMOTES ?? new Map(),
+    let OWNED_EMOTES = (top.OWNED_EMOTES ??= new Map),
+        CAPTURED_EMOTES = (top.CAPTURED_EMOTES ??= new Map),
         CONVERT_TO_CAPTURED_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote;
 
@@ -804,7 +832,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             converted.push(alt);
 
-                            fragment.setAttribute('data-tt-emote', alt);
+                            let tte = fragment.getAttribute('data-tt-emote') ?? '';
+
+                            fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
                             fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
                             fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
 
@@ -827,8 +857,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             EmoteSearch.appendResults(results, 'captured');
         };
 
-        top.CAPTURED_EMOTES = CAPTURED_EMOTES;
-        top.OWNED_EMOTES = OWNED_EMOTES;
+        // top.CAPTURED_EMOTES = CAPTURED_EMOTES;
+        // top.OWNED_EMOTES = OWNED_EMOTES;
         RegisterJob('convert_emotes');
     }
 
@@ -1408,6 +1438,50 @@ let Chat__Initialize = async(START_OVER = false) => {
         RegisterJob('prevent_spam');
     }
 
+    /*** Simplify Chat
+     *       _____ _                 _ _  __          _____ _           _
+     *      / ____(_)               | (_)/ _|        / ____| |         | |
+     *     | (___  _ _ __ ___  _ __ | |_| |_ _   _  | |    | |__   __ _| |_
+     *      \___ \| | '_ ` _ \| '_ \| | |  _| | | | | |    | '_ \ / _` | __|
+     *      ____) | | | | | | | |_) | | | | | |_| | | |____| | | | (_| | |_
+     *     |_____/|_|_| |_| |_| .__/|_|_|_|  \__, |  \_____|_| |_|\__,_|\__|
+     *                        | |             __/ |
+     *                        |_|            |___/
+     */
+    let SimplifyChatIndexToggle = 0;
+
+    Handlers.simplify_chat = () => {
+        AddCustomCSSBlock('SimplifyChat', `.tt-visible-message-even { background-color: #8882 }`);
+
+        if(parseBool(Settings.simplify_chat_monotone_usernames))
+            AddCustomCSSBlock('SimplifyChatMonotoneUsernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
+
+        if(parseBool(Settings.simplify_chat_font))
+            AddCustomCSSBlock('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
+
+        (GetChat.onnewmessage = chat => {
+            chat.filter(line => !line.deleted)
+                .forEach(({ element }) => {
+                    let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden'));
+
+                    if(keep)
+                        element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
+                });
+        })(GetChat());
+    };
+    Timers.simplify_chat = -250;
+
+    Unhandlers.simplify_chat = () => {
+        ['SimplifyChat', 'SimplifyChatMonotoneUsernames', 'SimplifyChatFont'].map(block => RemoveCustomCSSBlock(block));
+    };
+
+    __SimplifyChat__:
+    if(parseBool(Settings.simplify_chat)) {
+        REMARK('Applying readability settings...');
+
+        RegisterJob('simplify_chat');
+    }
+
     /*** Currencies
      *       _____                               _
      *      / ____|                             (_)
@@ -1542,7 +1616,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(!defined(container))
             return REWARDS_CALCULATOR_TOOLTIP = null;
 
-        let averageBroadcastTime = STREAMER.data?.dailyBroadcastTime ?? 4.5, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
+        let averageBroadcastTime = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
             activeDaysPerWeek = STREAMER.data?.activeDaysPerWeek ?? 5,
             pointsEarnedPerHour = 120 + (200 * +Settings.auto_claim_bonuses); // https://help.twitch.tv/s/article/channel-points-guide
 
@@ -1682,11 +1756,86 @@ let Chat__Initialize = async(START_OVER = false) => {
 };
 // End of Chat__Initialize
 
+let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
+    /*** Video Recovery
+     *     __      ___     _              _____
+     *     \ \    / (_)   | |            |  __ \
+     *      \ \  / / _  __| | ___  ___   | |__) |___  ___ _____   _____ _ __ _   _
+     *       \ \/ / | |/ _` |/ _ \/ _ \  |  _  // _ \/ __/ _ \ \ / / _ \ '__| | | |
+     *        \  /  | | (_| |  __/ (_) | | | \ \  __/ (_| (_) \ V /  __/ |  | |_| |
+     *         \/   |_|\__,_|\___|\___/  |_|  \_\___|\___\___/ \_/ \___|_|   \__, |
+     *                                                                        __/ |
+     *                                                                       |___/
+     */
+     /*** Soft Unban | tmarenko @ GitHub | https://github.com/tmarenko/twitch_chat_antiban
+      *       _____        __ _     _    _       _
+      *      / ____|      / _| |   | |  | |     | |
+      *     | (___   ___ | |_| |_  | |  | |_ __ | |__   __ _ _ __
+      *      \___ \ / _ \|  _| __| | |  | | '_ \| '_ \ / _` | '_ \
+      *      ____) | (_) | | | |_  | |__| | | | | |_) | (_| | | | |
+      *     |_____/ \___/|_|  \__|  \____/|_| |_|_.__/ \__,_|_| |_|
+      *
+      *
+      */
+    Handlers.soft_unban = () => {
+        if(!STREAMER.veto)
+            return;
+
+        LOG(`Performing Soft Unban...`);
+
+        let url = parseURL(`https://nightdev.com/hosted/obschat/`).pushToSearch({
+                theme: `bttv_${ THEME }`,
+                channel: STREAMER.name,
+                fade: parseBool(Settings.soft_unban_fade_old_messages),
+                bot_activity: parseBool(Settings.soft_unban_keep_bots),
+                prevent_clipping: parseBool(Settings.soft_unban_prevent_clipping),
+            }),
+            div = furnish(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
+            chat = $('.chat-room__content > .tw-flex');
+
+        chat.classList.remove(...chat.classList);
+        chat.classList.add("chat-list--default", "scrollable-area");
+        chat.replaceChild(div, chat.firstChild);
+    };
+    Timers.soft_unban = -2_500;
+
+    Unhandlers.soft_unban = () => {
+        let iframe = $('iframe#tt-proxy-chat'),
+            div = furnish('div.tw-flex');
+
+        if(!defined(iframe))
+            return;
+
+        iframe.parentElement.replaceChild(div, iframe);
+    };
+
+    __SoftUnban__:
+    if(parseBool(Settings.soft_unban)) {
+        RegisterJob('soft_unban');
+    }
+    // End of Chat__Initialize_Safe_Mode
+};
+// End of Chat__Initialize_Safe_Mode
+
 let Chat__CUSTOM_CSS,
     Chat__PAGE_CHECKER,
-    Chat__WAIT_FOR_PAGE;
+    Chat__WAIT_FOR_PAGE,
+    Chat__SETTING_RELOADER;
 
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
+    // Only executes if the user is banned
+    let banned = STREAMER?.veto || !!$('[class*="banned"]', true).length;
+
+    if([banned].contains(true)) {
+        WARN('[NON_FATAL] Child container unavailable. Reason:', { banned });
+
+        Settings = await GetSettings();
+
+        setTimeout(Chat__Initialize_Safe_Mode, 5000);
+        clearInterval(Chat__PAGE_CHECKER);
+    }
+
+    // Only executes if the user is NOT banned
     let ready = (true
         // The main controller is ready
         && parseBool(top.MAIN_CONTROLLER_READY)
@@ -1708,111 +1857,114 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         setTimeout(Chat__Initialize, 5000);
         clearInterval(Chat__PAGE_CHECKER);
 
-        top.CHILD_CONTROLLER_READY;
+        top.CHILD_CONTROLLER_READY = true;
 
-        // Observe location changes
-        LocationObserver: {
-            let { body } = document,
-                observer = new MutationObserver(mutations => {
-                    mutations.map(mutation => {
-                        if(PATHNAME !== top.location.pathname) {
-                            let OLD_HREF = PATHNAME;
+        // Only re-execute if in an iframe
+        if(top != window) {
+            // Observe location changes
+            LocationObserver: {
+                let { body } = document,
+                    observer = new MutationObserver(mutations => {
+                        mutations.map(mutation => {
+                            if(PATHNAME !== top.location.pathname) {
+                                let OLD_HREF = PATHNAME;
 
-                            PATHNAME = top.location.pathname;
+                                PATHNAME = top.location.pathname;
 
-                            for(let [name, func] of __ONLOCATIONCHANGE__)
-                                func(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
-                        }
+                                for(let [name, func] of __ONLOCATIONCHANGE__)
+                                    func(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
+                            }
+                        });
                     });
-                });
 
-            observer.observe(body, { childList: true, subtree: true });
-        }
+                observer.observe(body, { childList: true, subtree: true });
+            }
 
-        // Observe chat changes
-        ChatObserver: {
-            let chat = $('[data-test-selector$="message-container"i]'),
-                observer = new MutationObserver(mutations => {
-                    let emotes = {},
-                        results = [];
+            // Observe chat changes
+            ChatObserver: {
+                let chat = $('[data-test-selector$="message-container"i]'),
+                    observer = new MutationObserver(mutations => {
+                        let emotes = {},
+                            results = [];
 
-                    mutations = mutations.filter(({ type }) => type == 'childList');
+                        mutations = mutations.filter(({ type }) => type == 'childList');
 
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
+                        MutationToNode:
+                        for(let mutation of mutations) {
+                            let { addedNodes } = mutation;
 
-                        NodeToObject:
-                        for(let line of addedNodes) {
-                            let keepEmotes = true;
+                            NodeToObject:
+                            for(let line of addedNodes) {
+                                let keepEmotes = true;
 
-                            let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
-                                author = handle.toLowerCase(),
-                                message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
-                                mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-                                badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
-                                style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
-                                reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
+                                let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
+                                    author = handle.toLowerCase(),
+                                    message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
+                                    mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
+                                    badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
+                                    style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
+                                    reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
 
-                            let raw = line.innerText?.trim(),
-                                containedEmotes = [];
+                                let raw = line.innerText?.trim(),
+                                    containedEmotes = [];
 
-                            message = message
-                                .map(element => {
-                                    let string;
+                                message = message
+                                    .map(element => {
+                                        let string;
 
-                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote)) {
-                                        let img = $('img', false, element);
+                                        if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
+                                            let img = $('img', false, element);
 
-                                        if(defined(img))
-                                            containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
-                                    } else {
-                                        string = element.innerText;
-                                    }
+                                            if(defined(img))
+                                                containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
+                                        } else {
+                                            string = element.innerText;
+                                        }
 
-                                    return string;
-                                })
-                                .filter(defined)
-                                .join(' ')
-                                .trim()
-                                .replace(/(\s){2,}/g, '$1');
+                                        return string;
+                                    })
+                                    .filter(defined)
+                                    .join(' ')
+                                    .trim()
+                                    .replace(/(\s){2,}/g, '$1');
 
-                            style = style
-                                .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+                                style = style
+                                    .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
 
-                            let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
+                                let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
 
-                            if(defined(results.find(message => message.uuid == uuid)))
-                                continue;
+                                if(defined(results.find(message => message.uuid == uuid)))
+                                    continue;
 
-                            results.push({
-                                raw,
-                                uuid,
-                                reply,
-                                style,
-                                author,
-                                badges,
-                                handle,
-                                message,
-                                mentions,
-                                element: line,
-                                emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
-                                deleted: defined($('[class*="--deleted-notice"i]', false, line)),
-                                highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
-                            });
+                                results.push({
+                                    raw,
+                                    uuid,
+                                    reply,
+                                    style,
+                                    author,
+                                    badges,
+                                    handle,
+                                    message,
+                                    mentions,
+                                    element: line,
+                                    emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
+                                    deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+                                    highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
+                                });
+                            }
                         }
-                    }
 
-                    results.emotes = emotes;
+                        results.emotes = emotes;
 
-                    for(let [name, callback] of GetChat.__onnewmessage__)
-                        callback(results);
-                });
+                        for(let [name, callback] of GetChat.__onnewmessage__)
+                            callback(results);
+                    });
 
-            if(!defined(chat))
-                break ChatObserver;
+                if(!defined(chat))
+                    break ChatObserver;
 
-            observer.observe(chat, { childList: true });
+                observer.observe(chat, { childList: true });
+            }
         }
 
         // Add custom styling
@@ -1935,3 +2087,8 @@ Chat__CUSTOM_CSS.innerHTML =
         }
     }
 }, 500);
+
+Chat__SETTING_RELOADER = setInterval(() => {
+    for(let MAX_CALLS = 60; MAX_CALLS > 0 && top.REFRESH_ON_CHILD?.length; --MAX_CALLS)
+        RestartJob(top.REFRESH_ON_CHILD.pop());
+}, 250);

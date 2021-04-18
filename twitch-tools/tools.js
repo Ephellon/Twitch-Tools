@@ -36,7 +36,7 @@ let Settings = {},
 if(defined(UserMenuToggleButton)) {
     UserMenuToggleButton.click();
     USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]').innerText;
-    THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+    THEME = top.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
     UserMenuToggleButton.click();
 }
 
@@ -1525,7 +1525,7 @@ function GetChat(lines = 30, keepEmotes = false) {
             .map(element => {
                 let string;
 
-                if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote)) {
+                if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
                     let img = $('img', false, element);
 
                     if(defined(img))
@@ -2295,8 +2295,10 @@ try {
         if(reload)
             return location.reload();
 
-        for(let job of refresh)
+        for(let job of refresh) {
             RestartJob(job, 'modify');
+            (top.REFRESH_ON_CHILD ??= []).push(job);
+        }
     });
 
     // Add message listener
@@ -2532,10 +2534,10 @@ Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 // Settings have been saved
 let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i'),
     // Features that require the experimental flag
-    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes'].map(AsteriskFn),
+    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*', 'whisper_audio_#'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
@@ -2739,6 +2741,7 @@ let Initialize = async(START_OVER = false) => {
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
      * time:number*      - GETTER: how long has the channel been live
      * unfollow:function - unfollows the current channel
+     * veto:boolean      - GETTER: determines if the user is banned from the streamer's chat or not
 
      * Only available with Fine Details enabled
      * ally:boolean      - is the channel partnered?
@@ -2858,6 +2861,10 @@ let Initialize = async(START_OVER = false) => {
 
         get time() {
             return parseTime($('.live-time')?.textContent ?? '0');
+        },
+
+        get veto() {
+            return !!$('[class*="banned"]', true).length;
         },
 
         follow() {
@@ -3194,7 +3201,7 @@ let Initialize = async(START_OVER = false) => {
                             // Only refresh every 12h
                             if(!parseBool(dataRetrievedOK))
                                 throw "The data wasn't saved correctly";
-                            else if((dataRetrievedAt + 43_200_000) < +new Date)
+                            else if((dataRetrievedAt + (12 * 60 * 60 * 1000)) < +new Date)
                                 throw "The data likely expired";
                             else
                                 STREAMER.data = data;
@@ -3206,24 +3213,88 @@ let Initialize = async(START_OVER = false) => {
                         await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ STREAMER.sole }-${ STREAMER.name }/stream_time_values`)}`, { mode: 'cors' })
                             .then(response => response.json())
                             .then(json => {
-                                let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, },
+                                let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
                                     today = new Date;
 
-                                let averageStreamTime = 0,
-                                    daysWithStreams = new Set(),
-                                    totalStreamTime = (json ?? []).reverse()
-                                        .map(dates => dates.map(date => {
-                                            date = new Date(date.toUpperCase().replace("T", " "));
+                                let toDoW = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
 
-                                            if(Math.abs(today - date) < 604_800_000)
+                                let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
+
+                                let daysWithStreams = new Set(),
+                                    totalStreamHistory = (json ?? [])
+                                        // All except today
+                                        .slice(0, -1)
+                                        // Last 2 weeks (excluding today)
+                                        // .slice(-14)
+                                        .reverse()
+                                        .map(([start, stop]) => {
+                                            let date = new Date(start.toUpperCase());
+
+                                            if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
                                                 daysWithStreams.add(date.getDay());
 
-                                            return date;
-                                        }))
-                                        .map(([start, stop]) => averageStreamTime += Math.abs(start - stop));
+                                            return [start, stop];
+                                        })
+                                        .reverse()
+                                        .map(([start, stop]) => {
+                                            // Set the average start/stop times (overall)
+                                            let [S_, _S] = [start, stop].map(date => new Date(date));
 
-                                data.dailyBroadcastTime = (averageStreamTime / totalStreamTime.length) / 3_600_000;
-                                data.activeDaysPerWeek = daysWithStreams.size;
+                                            avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
+                                            avgStreamSpan.push(Math.abs(+S_ - +_S));
+                                            avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
+
+                                            return [start, stop];
+                                        });
+
+                                // Set the daily start time
+                                avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
+
+                                for(let day in dlyStartTime) {
+                                    let avgH = 0, avgM = 0;
+
+                                    dlyStartTime[day]
+                                        .map(([h, m]) => { avgH += h; avgM += m })
+                                        .filter((v, i, a) => !i)
+                                        .map(() => {
+                                            let { length } = dlyStartTime[day];
+
+                                            avgH = Math.round(avgH / length);
+                                            avgM = (avgM / length).floorToNearest(15);
+
+                                            data.dailyStartTimes[day] = data.dailyStartTimes[toDoW(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                        });
+                                }
+
+                                // Set the daily stop time
+                                avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= []).push([h, m]));
+
+                                for(let day in dlyStopTime) {
+                                    let avgH = 0, avgM = 0;
+
+                                    dlyStopTime[day]
+                                        .map(([h, m]) => { avgH += h; avgM += m })
+                                        .filter((v, i, a) => !i)
+                                        .map(() => {
+                                            let { length } = dlyStopTime[day];
+
+                                            avgH = Math.round(avgH / length);
+                                            avgM = (avgM / length).floorToNearest(15);
+
+                                            data.dailyStopTimes[day] = data.dailyStopTimes[toDoW(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                        });
+                                }
+
+                                // Set the average stream length
+                                avgStreamSpan.map(t => data.dailyBroadcastTime += t);
+                                data.dailyBroadcastTime /= avgStreamSpan.length;
+
+                                // Set today's start/stop times
+                                data.usualStartTime = data.dailyStartTimes[today.getDay()];
+                                data.usualStopTime = data.dailyStopTimes[today.getDay()];
+
+                                data.daysStreaming = toDoW(...daysWithStreams);
+                                data.activeDaysPerWeek = data.daysStreaming.length;
 
                                 REMARK(`Details about "${ STREAMER.name }"`, data);
 
@@ -5004,14 +5075,17 @@ let Initialize = async(START_OVER = false) => {
      */
     let NOTIFIED = 0,
         NOTIFICATION_SOUND =
-            furnish('audio#twich-tools-notification-sound',
+            furnish('audio#tt-notification-sound',
                 {
                     style: 'display:none',
 
-                    innerHTML: ['mp3', 'ogg']
+                    innerHTML: [
+                        // 'mp3',
+                        'ogg',
+                    ]
                         .map(type => {
                             let types = { mp3: 'mpeg' },
-                                src = Extension.getURL(`aud/goes-without-saying-608.${ type }`);
+                                src = Extension.getURL(`aud/${ Settings.whisper_audio_sound ?? "goes-without-saying-608" }.${ type }`);
                             type = `audio/${ types[type] ?? type }`;
 
                             return furnish('source', { src, type }).outerHTML;
@@ -5756,9 +5830,9 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             )
             // The page is a channel viewing page
             // || /^(ChannelWatch|SquadStream|VideoWatch)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+            // There is an error message
+            || defined($('[data-a-target="core-error-message"i]'))
         )
-        // There is an error message
-        || defined($('[data-a-target="core-error-message"i]'))
     );
 
     if(ready) {
@@ -5822,7 +5896,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                 .map(element => {
                                     let string;
 
-                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote)) {
+                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
                                         let img = $('img', false, element);
 
                                         if(defined(img))

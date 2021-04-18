@@ -77,9 +77,9 @@ let // These are option names. Anything else will be removed
         'auto_accept_mature',
         // Auto-Focus*
         'auto_focus',
-        'auto_focus_detection_threshold',
-        'auto_focus_poll_interval',
-        'auto_focus_poll_image_type',
+            'auto_focus_detection_threshold',
+            'auto_focus_poll_interval',
+            'auto_focus_poll_image_type',
 
         /* Chat & Messaging */
         // Highlight Mentions
@@ -93,10 +93,10 @@ let // These are option names. Anything else will be removed
             'filter_rules',
         // BetterTTV Emotes
         'bttv_emotes',
-        'bttv_emotes_maximum',
-        'bttv_emotes_location',
-        'bttv_emotes_channel',
-        'bttv_emotes_extras',
+            'bttv_emotes_maximum',
+            'bttv_emotes_location',
+            'bttv_emotes_channel',
+            'bttv_emotes_extras',
         // Convert Emotes*
         'convert_emotes',
         // Native Twitch Replies
@@ -106,10 +106,21 @@ let // These are option names. Anything else will be removed
             'prevent_spam_look_back',
             'prevent_spam_minimum_length',
             'prevent_spam_ignore_under',
+        // Simplify Chat
+        'simplify_chat',
+            'simplify_chat_monotone_usernames',
+            'simplify_chat_font',
+            // 'simplify_chat_reverse_emotes',
         // Recover chat
         'recover_chat',
+        // Soft Unban
+        'soft_unban',
+            'soft_unban_keep_bots',
+            'soft_unban_prevent_clipping',
+            'soft_unban_fade_old_messages',
         // Whisper Audio
         'whisper_audio',
+            'whisper_audio_sound',
 
         /* Currencies */
         // Convert Bits
@@ -363,6 +374,9 @@ let Glyphs = {
     play: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 17.066V2.934a.5.5 0 01.777-.416L17 10 5.777 17.482A.5.5 0 015 17.066z"></path></g></svg>',
     eye: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11.998 10a2 2 0 11-4 0 2 2 0 014 0z"></path><path fill-rule="evenodd" d="M16.175 7.567L18 10l-1.825 2.433a9.992 9.992 0 01-2.855 2.575l-.232.14a6 6 0 01-6.175 0 35.993 35.993 0 00-.233-.14 9.992 9.992 0 01-2.855-2.575L2 10l1.825-2.433A9.992 9.992 0 016.68 4.992l.233-.14a6 6 0 016.175 0l.232.14a9.992 9.992 0 012.855 2.575zm-1.6 3.666a7.99 7.99 0 01-2.28 2.058l-.24.144a4 4 0 01-4.11 0 38.552 38.552 0 00-.239-.144 7.994 7.994 0 01-2.28-2.058L4.5 10l.925-1.233a7.992 7.992 0 012.28-2.058 37.9 37.9 0 00.24-.144 4 4 0 014.11 0l.239.144a7.996 7.996 0 012.28 2.058L15.5 10l-.925 1.233z" clip-rule="evenodd"></path></g></svg>',
     mod: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M5.003 3.947A10 10 0 009.519 2.32L10 2l.48.32A10 10 0 0016.029 4H17l-.494 5.641a9 9 0 01-4.044 6.751L10 18l-2.462-1.608a9 9 0 01-4.044-6.75L3 4h.972c.346 0 .69-.018 1.031-.053zm.174 1.992l.309 3.528a7 7 0 003.146 5.25l1.368.894 1.368-.893a7 7 0 003.146-5.25l.309-3.529A12 12 0 0110 4.376 12 12 0 015.177 5.94z" clip-rule="evenodd"></path></g></svg>',
+
+    // Accessibility
+    accessible: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 1224 792" x="0px" y="0px" enable-background="new 0 0 1224 792" xml:space="preserve"><g><path d="M833.556,367.574c-7.753-7.955-18.586-12.155-29.656-11.549l-133.981,7.458l73.733-83.975   c10.504-11.962,13.505-27.908,9.444-42.157c-2.143-9.764-8.056-18.648-17.14-24.324c-0.279-0.199-176.247-102.423-176.247-102.423   c-14.369-8.347-32.475-6.508-44.875,4.552l-85.958,76.676c-15.837,14.126-17.224,38.416-3.097,54.254   c14.128,15.836,38.419,17.227,54.255,3.096l65.168-58.131l53.874,31.285l-95.096,108.305   c-39.433,6.431-74.913,24.602-102.765,50.801l49.66,49.66c22.449-20.412,52.256-32.871,84.918-32.871   c69.667,0,126.346,56.68,126.346,126.348c0,32.662-12.459,62.467-32.869,84.916l49.657,49.66   c33.08-35.166,53.382-82.484,53.382-134.576c0-31.035-7.205-60.384-20.016-86.482l51.861-2.889l-12.616,154.75   c-1.725,21.152,14.027,39.695,35.18,41.422c1.059,0.086,2.116,0.127,3.163,0.127c19.806,0,36.621-15.219,38.257-35.306   l16.193-198.685C845.235,386.445,841.305,375.527,833.556,367.574z"/><path d="M762.384,202.965c35.523,0,64.317-28.797,64.317-64.322c0-35.523-28.794-64.323-64.317-64.323   c-35.527,0-64.323,28.8-64.323,64.323C698.061,174.168,726.856,202.965,762.384,202.965z"/><path d="M535.794,650.926c-69.668,0-126.348-56.68-126.348-126.348c0-26.256,8.056-50.66,21.817-70.887l-50.196-50.195   c-26.155,33.377-41.791,75.393-41.791,121.082c0,108.535,87.983,196.517,196.518,196.517c45.691,0,87.703-15.636,121.079-41.792   l-50.195-50.193C586.452,642.867,562.048,650.926,535.794,650.926z"/></g></svg>',
 
     // Creative Commons
     cc: '<svg fill="var(--grey)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path d="M10.089 19.0119C15.0659 19.0119 19.1004 14.9773 19.1004 10.0005C19.1004 5.02361 15.0659 0.989075 10.089 0.989075C5.11217 0.989075 1.07764 5.02361 1.07764 10.0005C1.07764 14.9773 5.11217 19.0119 10.089 19.0119Z" fill="white"></path><path d="M9.98172 0C12.779 0 15.1606 0.976578 17.1246 2.9288C18.0647 3.86912 18.7794 4.94383 19.2675 6.15197C19.7553 7.36043 20 8.64295 20 10.0002C20 11.3692 19.7584 12.6521 19.2769 13.848C18.7947 15.0443 18.0831 16.1012 17.1431 17.0178C16.1671 17.9818 15.0599 18.7203 13.8215 19.2322C12.5836 19.7441 11.3036 20 9.98234 20C8.66107 20 7.39605 19.7475 6.1876 19.2409C4.97945 18.7353 3.896 18.0031 2.93755 17.045C1.97909 16.0868 1.25002 15.0062 0.750012 13.8037C0.250004 12.6011 0 11.3336 0 10.0002C0 8.67857 0.252816 7.40793 0.758762 6.1876C1.26471 4.96727 2.00003 3.87506 2.96411 2.91067C4.86883 0.97064 7.20793 0 9.98172 0ZM10.018 1.80378C7.73231 1.80378 5.80947 2.6016 4.24975 4.19663C3.4638 4.99445 2.85973 5.89009 2.43723 6.88417C2.01409 7.87825 1.80315 8.91701 1.80315 10.0005C1.80315 11.072 2.01409 12.1049 2.43723 13.0983C2.86004 14.093 3.4638 14.9799 4.24975 15.7596C5.03539 16.5396 5.92197 17.1343 6.91073 17.5456C7.89856 17.9562 8.93451 18.1615 10.018 18.1615C11.0892 18.1615 12.1274 17.9537 13.1346 17.5368C14.1405 17.1196 15.0474 16.519 15.8574 15.7334C17.4168 14.2096 18.1962 12.2989 18.1962 10.0008C18.1962 8.89358 17.9937 7.84606 17.589 6.85792C17.185 5.86978 16.5953 4.98914 15.8221 4.21475C14.214 2.60754 12.2799 1.80378 10.018 1.80378ZM9.89265 8.33982L8.55295 9.03639C8.40982 8.7392 8.2345 8.53045 8.02638 8.41138C7.81793 8.29263 7.62449 8.23294 7.44574 8.23294C6.55323 8.23294 6.10635 8.82201 6.10635 10.0008C6.10635 10.5364 6.21947 10.9645 6.44541 11.2861C6.67167 11.6077 7.00511 11.7686 7.44574 11.7686C8.02919 11.7686 8.43982 11.4827 8.67826 10.9114L9.91016 11.5364C9.64828 12.0249 9.28515 12.4086 8.82076 12.6883C8.35701 12.9683 7.84481 13.108 7.28511 13.108C6.39229 13.108 5.67165 12.8346 5.12414 12.2864C4.57663 11.7389 4.30288 10.977 4.30288 10.0011C4.30288 9.04858 4.57976 8.29294 5.13321 7.73325C5.68665 7.17386 6.38604 6.89386 7.23168 6.89386C8.47013 6.89323 9.35671 7.37543 9.89265 8.33982ZM15.6606 8.33982L14.339 9.03639C14.1962 8.7392 14.0202 8.53045 13.8121 8.41138C13.6033 8.29263 13.4036 8.23294 13.214 8.23294C12.3211 8.23294 11.8742 8.82201 11.8742 10.0008C11.8742 10.5364 11.9877 10.9645 12.2136 11.2861C12.4396 11.6077 12.7727 11.7686 13.214 11.7686C13.7968 11.7686 14.2077 11.4827 14.4455 10.9114L15.6956 11.5364C15.4221 12.0249 15.0527 12.4086 14.589 12.6883C14.1246 12.9683 13.6187 13.108 13.0711 13.108C12.1661 13.108 11.4433 12.8346 10.902 12.2864C10.3595 11.7389 10.0889 10.977 10.0889 10.0011C10.0889 9.04858 10.3655 8.29294 10.9195 7.73325C11.4727 7.17386 12.1721 6.89386 13.0174 6.89386C14.2555 6.89323 15.1371 7.37543 15.6606 8.33982Z"></path></svg>',
@@ -693,9 +707,9 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
     let diff = 0;
 
-    for(let index = 0, length = Math.min(oldVersion.length, newVersion.length); index < length; ++index) {
-        let L = parseInt(oldVersion[index].replace(/[^a-z0-9]+/g), 36),
-            R = parseInt(newVersion[index].replace(/[^a-z0-9]+/g), 36);
+    for(let index = 0, length = Math.max(oldVersion.length, newVersion.length); index < length; ++index) {
+        let L = parseInt((oldVersion[index] ?? '').replace(/[^a-z0-9]+/g), 36),
+            R = parseInt((newVersion[index] ?? '').replace(/[^a-z0-9]+/g), 36);
 
         if(L == R) {
             continue;
@@ -709,6 +723,12 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     }
 
     switch(returnType?.toLowerCase()) {
+        case 'arrow':
+            return ['v', '-', '^'][diff + 1];
+
+        case 'glyph':
+            return ['<', '=', '>'][diff + 1];
+
         case 'string':
             return ['less than', 'equal to', 'greater than'][diff + 1];
 
@@ -797,6 +817,29 @@ document.body.onload = async() => {
     }, 1000);
 };
 
+$('#whisper_audio_sound', true).map(element => element.onchange = async event => {
+    let [selected] = event.currentTarget.selectedOptions;
+    let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+
+    $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
+
+    let test_sound = furnish('audio#tt-test-sound', {
+        style: 'display:none',
+
+        innerHTML: ['mp3', 'ogg']
+            .map(type => {
+                let types = { mp3: 'mpeg' },
+                    src = Runtime.getURL(`aud/${ selected.value }.${ type }`);
+                type = `audio/${ types[type] ?? type }`;
+
+                return furnish('source', { src, type }).outerHTML;
+            }).join('')
+    });
+
+    test_sound.play();
+    test_sound.onended = event => test_sound.remove();
+});
+
 $('#save, .save', true).map(element => element.onclick = async event => {
     let { currentTarget } = event;
 
@@ -850,6 +893,7 @@ $('[set]', true).map(async(element) => {
             github: 'Learn more',
             chrome: 'Learn more',
         },
+        Glyphs,
         ...FETCHED_DATA,
     };
 
@@ -951,6 +995,7 @@ $('[set]', true).map(async(element) => {
                 .slice(0, 12)
                 .split(/(.{4})/)
                 .filter(s => !!s.length)
+                .map(s => s.padStart(4, '0000'))
                 .join('-')
                 .toUpperCase();
         }
@@ -992,6 +1037,15 @@ $('a[continue-search]', true).map(a => {
 
 // All anchors without a target
 $('a:not([target])', true).map(a => a.target = '_blank');
+
+// All "new" features for this version
+$('[new]', true).map(element => {
+    let { version } = Manifest,
+        conception = element.getAttribute('new');
+
+    if(compareVersions(version, conception) > 0)
+        element.removeAttribute('new');
+});
 
 // Translate the user's page to their preferred language
 setTimeout(async() => {

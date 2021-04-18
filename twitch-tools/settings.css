@@ -968,7 +968,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .cc-text {
-    padding: .75rem 1rem .75rem 0;
+    padding: .25rem .5rem .25rem 0;
 }
 
 /* Save button(s) */
@@ -1051,8 +1051,8 @@ section[save] {
     background-color: var(--red-dark) !important;
 }
 
-/* New sections */
-section[new]::before {
+/* New/Beta sections */
+section[new]::before, section[beta]::before {
     background-color: var(--baby-blue);
     border-radius: 100rem;
     color: var(--white);
@@ -1069,6 +1069,10 @@ section[new]::before {
     position: absolute;
     left: 0;
     top: -1rem;
+}
+
+section[beta]::before {
+    content: "BETA";
 }
 
 /* Version button */
