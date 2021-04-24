@@ -12,11 +12,24 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.1)
+- Fixed sound linking on options page
+- Added `chat.js` re-initializer
+- Quality of life changes
+    - Moved Whisper Audio from `SENSITIVE_FEATURES` to reload audio independent of the frame
+    - Changed "Away Mode" `enabled` color to match neighbors
+    - Updated settings page to enable/disable features that require one-another accordingly
+    - Fixed input padding on settings page
+- Fixed "Collect Emotes" logic
+- Added extra options for "Display in Console"
+- Modified BTTV emote loading
+
 > [3.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1)
 - Added "Soft Unban"
 - Added skeleton for "Adaptive Scheduling"
 - Fixed mixed-emote handling
 - Added "Simplify Chat" (first "real" accessibility option)
+- Added optional notification sounds for "Whisper Audio"
 
 > [3.0.8](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.0.8)
 - Fixed iframe loading (Chat reload)

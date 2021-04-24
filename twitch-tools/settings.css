@@ -229,6 +229,7 @@ details .title {
     vertical-align: middle;
 
     height: auto;
+    max-width: 15rem;
     width: 30%;
 }
 
@@ -655,6 +656,34 @@ code[fill], [code][fill], [type^="code"i][fill] {
     font-size: 100% !important;
 }
 
+[style\:log] {
+    background-color: #00332b;
+    border-bottom: 1px solid #0000;
+    border-top: 1px solid #065;
+    color: #f5f5f5;
+}
+
+[style\:warn] {
+    background-color: #332b00;
+    border-bottom: 1px solid #0000;
+    border-top: 1px solid #650;
+    color: #f5f5f5;
+}
+
+[style\:error] {
+    background-color: #290000;
+    border-bottom: 1px solid #0000;
+    border-top: 1px solid #5c0000;
+    color: #f5f5f5;
+}
+
+[style\:remark] {
+    background-color: #002b55;
+    border-bottom: 1px solid #0000;
+    border-top: 1px solid #057;
+    color: #f5f5f5;
+}
+
 .toggle {
     display: inline-block;
     flex-direction: column;
@@ -793,7 +822,7 @@ textarea, input[type="text"i], input[type="number"i] {
     overflow-x: hidden;
     resize: none;
 
-    padding: 1rem 6.5rem 1rem 1rem;
+    padding: 1rem;
 
     height: 1rem;
     width: 100%;
@@ -1103,7 +1132,7 @@ body.popup {
 
 .popup input[type="number"] {
     height: 1rem;
-    width: 3rem;
+    width: 4rem;
 }
 
 .popup #filter_rules {

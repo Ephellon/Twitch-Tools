@@ -2005,7 +2005,7 @@ async function GetQuality() {
     let current = qualities.find(({ input }) => input.checked);
 
     if(!defined(current)) {
-        let { videoHeight } = $('[data-a-target="video-player"] video');
+        let { videoHeight = 0 } = $('[data-a-target="video-player"] video') ?? ({});
 
         if((videoHeight |= 0) < 1)
             return /* Is the streamer even live? */;
@@ -2276,6 +2276,10 @@ try {
                         RestartJob('points_receipt_placement', 'dependent');
                         break;
 
+                    case 'whisper_audio_sound':
+                        RestartJob('whisper_audio', 'modify');
+                        break;
+
                     default: break;
                 }
 
@@ -2313,7 +2317,7 @@ try {
     });
 } catch(error) {
     // Most likely in aa child frame...
-    // REMARK('Moving to chat child frame...');
+    // REMARK("Moving to chat child frame...");
     WARN(error);
 }
 
@@ -2537,7 +2541,7 @@ let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace(
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*', 'whisper_audio_#'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
@@ -2575,6 +2579,27 @@ let LIVE_CACHE = new Map();
 // Intializes the extension
     // Initialize(START_OVER:boolean) -> undefined
 let Initialize = async(START_OVER = false) => {
+    // Modify the logging feature via the settings
+    if(!Settings.display_in_console)
+        LOG =
+        WARN =
+        ERROR =
+        REMARK = ($=>$);
+
+    if(!Settings.display_in_console__log)
+        LOG = ($=>$);
+
+    if(!Settings.display_in_console__warn)
+        WARN = ($=>$);
+
+    if(!Settings.display_in_console__error)
+        ERROR = ($=>$);
+
+    if(!Settings.display_in_console__remark)
+        REMARK = ($=>$);
+
+    // Initialize all settings/features //
+
     let GLOBAL_TWITCH_API = top.GLOBAL_TWITCH_API = {},
         GLOBAL_EVENT_LISTENERS = top.GLOBAL_EVENT_LISTENERS = {};
 
@@ -2597,10 +2622,6 @@ let Initialize = async(START_OVER = false) => {
             UnregisterJob(job, 'reinit');
         ERRORS = Initialize.errors++
     }
-
-    // Modify the logging feature via the settings
-    if(!Settings.display_in_console)
-        LOG = WARN = ERROR = ($=>$);
 
     // Disable experimental features
     if(!Settings.experimental_mode) {
@@ -2643,7 +2664,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
-            return ALL_CHANNELS.filter(channel => channel.href !== STREAMER.href).find(channel => channel.href === ALL_FIRST_IN_LINE_JOBS[0]);
+            return ALL_CHANNELS.find(channel => !!~channel.href.indexOf(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
 
         let next;
 
@@ -2892,6 +2913,9 @@ let Initialize = async(START_OVER = false) => {
     // Make the main icon draggable...
     let StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`),
         StreamerFilteredData = { ...STREAMER };
+
+    if(!defined(StreamerMainIcon))
+        return /* Leave the main function (Initialize) if there's no streamer icon... Probably not in a stream */;
 
     for(let key of 'chat coin paid ping poll tags team time __eventlisteners__'.split(' '))
         delete StreamerFilteredData[key];
@@ -3510,7 +3534,8 @@ let Initialize = async(START_OVER = false) => {
                             if(!defined(parent))
                                 break DisplayingAutoFocusDetails;
 
-                            let { height, width } = getOffset(video);
+                            let { height, width } = getOffset(video),
+                                { videoHeight } = video;
 
                             height = parseInt(height * .25);
                             width = parseInt(width * .25);
@@ -3528,8 +3553,8 @@ let Initialize = async(START_OVER = false) => {
                             let size = diffImg.src.length,
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) }`;
-                            diffDat.title = `Frame Number / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes)`;
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
+                            diffDat.title = `Frame Number / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`;
                         } else {
                             diffImg?.remove();
                             diffDat?.remove();
@@ -3637,7 +3662,7 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.auto_focus)) {
         RegisterJob('auto_focus');
 
-        WARN("Auto-Focus is monitoring the stream...");
+        WARN("[Auto-Focus] is monitoring the stream...");
     }
 
     /*** Away Mode
@@ -3739,7 +3764,7 @@ let Initialize = async(START_OVER = false) => {
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
+        button.background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
         button.icon.setAttribute('height', '20px');
         button.icon.setAttribute('width', '20px');
 
@@ -3747,7 +3772,7 @@ let Initialize = async(START_OVER = false) => {
             let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled'));
 
             AwayModeButton.container.setAttribute('tt-away-mode-enabled', enabled);
-            AwayModeButton.background?.setAttribute('style', `background:#${ ['387aff', 'f5009b'][+enabled] } !important;`);
+            AwayModeButton.background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
             AwayModeButton.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
             SetQuality(['auto','low'][+enabled]);
@@ -4586,7 +4611,7 @@ let Initialize = async(START_OVER = false) => {
 
             SaveCache({ BAD_STREAMERS });
         } else if(!defined($('[role="group"i][aria-label*="followed"i] a[class*="side-nav-card"]'))) {
-            WARN('"Followed Channels" is missing. Reloading...');
+            WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
 
@@ -4739,6 +4764,8 @@ let Initialize = async(START_OVER = false) => {
 
     __KillExtensions__:
     if(parseBool(Settings.kill_extensions)) {
+        REMARK("Adding extension killer...");
+
         RegisterJob('kill_extensions');
     }
 
@@ -4756,7 +4783,7 @@ let Initialize = async(START_OVER = false) => {
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"]')),
             next = await GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
-            host = STREAMER.name,
+            host = (STREAMER.name ?? ''),
             [guest] = host_banner.filter(name => name.toLowerCase() != host.toLowerCase());
 
         guest ??= "anonymous";
@@ -4911,23 +4938,24 @@ let Initialize = async(START_OVER = false) => {
             return RemoveCache('UserIntent');
         }
 
-        let ValidTwitchPath = RegExp(`/(${ Paths.join('|') })`, 'i');
+        let ReservedTwitchPaths = RegExp(`/(${ Paths.join('|') })`, 'i');
 
         IsLive:
         if(!STREAMER.live) {
-            if(!RegExp(STREAMER.name, 'i').test(PATHNAME))
+            if(ReservedTwitchPaths.test(pathname))
                 break IsLive;
 
-            if(!ValidTwitchPath.test(pathname)) {
-                if(online.length) {
-                    WARN(`${ STREAMER.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
+            if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
+                break IsLive;
 
-                    REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch?.({ from: STREAMER.name })?.href );
+            if(online.length) {
+                WARN(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                    open(`${ next.href }?obit=${ STREAMER.name }`, '_self');
-                } else  {
-                    WARN(`${ STREAMER.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
-                }
+                REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch?.({ from: STREAMER?.name })?.href );
+
+                open(`${ next.href }?obit=${ STREAMER?.name }`, '_self');
+            } else  {
+                WARN(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
 
             // After 30 seconds, remove the intent
@@ -5074,26 +5102,28 @@ let Initialize = async(START_OVER = false) => {
      *                              |_|
      */
     let NOTIFIED = 0,
-        NOTIFICATION_SOUND =
-            furnish('audio#tt-notification-sound',
-                {
-                    style: 'display:none',
-
-                    innerHTML: [
-                        // 'mp3',
-                        'ogg',
-                    ]
-                        .map(type => {
-                            let types = { mp3: 'mpeg' },
-                                src = Extension.getURL(`aud/${ Settings.whisper_audio_sound ?? "goes-without-saying-608" }.${ type }`);
-                            type = `audio/${ types[type] ?? type }`;
-
-                            return furnish('source', { src, type }).outerHTML;
-                        }).join('')
-                }),
+        NOTIFICATION_SOUND,
         NOTIFICATION_EVENT;
 
     Handlers.whisper_audio = () => {
+        // Manufacture the <AUDIO/>
+        NOTIFICATION_SOUND ??= furnish('audio#tt-notification-sound',
+            {
+                style: 'display:none',
+
+                innerHTML: [
+                    // 'mp3',
+                    'ogg',
+                ]
+                    .map(type => {
+                        let types = { mp3: 'mpeg' },
+                            src = Extension.getURL(`aud/${ Settings.whisper_audio_sound ?? "goes-without-saying-608" }.${ type }`);
+                        type = `audio/${ types[type] ?? type }`;
+
+                        return furnish('source', { src, type }).outerHTML;
+                    }).join('')
+            });
+
         // Play sound on new message
         NOTIFICATION_EVENT ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
             LOG('Got a new whisper', { unread, highlighted, message });
@@ -5119,6 +5149,11 @@ let Initialize = async(START_OVER = false) => {
         NOTIFICATION_SOUND?.play();
     };
     Timers.whisper_audio = 1000;
+
+    Unhandlers.whisper_audio = () => {
+        NOTIFICATION_SOUND?.remove();
+        NOTIFICATION_SOUND = null;
+    };
 
     __NotificationSounds__:
     if(parseBool(Settings.whisper_audio)) {
@@ -5257,7 +5292,8 @@ let Initialize = async(START_OVER = false) => {
             }
             OBSERVED_COLLECTION_ANIMATIONS.set(animationID, animationTimeStamp);
 
-            LOG(`Observing "${ animationID }" @ ${ new Date }`, OBSERVED_COLLECTION_ANIMATIONS);
+            if(+animationID)
+                LOG(`Observing "${ animationID }" @ ${ new Date }`, OBSERVED_COLLECTION_ANIMATIONS);
 
             if(!~[points_receipt, exact_change, balance].findIndex(defined)) {
                 points_receipt?.parentElement?.remove();
@@ -5603,6 +5639,8 @@ let Initialize = async(START_OVER = false) => {
         document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
 
         RegisterJob('recover_frames');
+
+        WARN("[Recover-Frames] is monitoring the stream...");
     }
 
     /*** Recover Stream
@@ -5651,11 +5689,11 @@ let Initialize = async(START_OVER = false) => {
                 attempts = parseInt(control.getAttribute('attempts')) | 0;
 
             if(!defined(control)) {
-                WARN('No video controls presented.');
+                WARN("No video controls presented.");
 
                 break __RecoverVideoProgramatically__;
             } if(attempts > 3) {
-                WARN('Automatic attempts are not helping.');
+                WARN("Automatic attempts are not helping.");
 
                 break __RecoverVideoProgramatically__;
             }
@@ -5836,7 +5874,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
-        LOG('Main container ready');
+        LOG("Main container ready");
 
         Settings = await GetSettings();
 
@@ -6056,7 +6094,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
         }
 
         top.onlocationchange = () => {
-            WARN('Re-initializing...');
+            WARN("[Parent] Re-initializing...");
 
             Balloon.get('Up Next')?.remove();
 

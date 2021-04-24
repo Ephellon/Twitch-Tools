@@ -161,6 +161,10 @@ let // These are option names. Anything else will be removed
         /* Developer Options */
         // Log messages
         'display_in_console',
+            'display_in_console__log',
+            'display_in_console__warn',
+            'display_in_console__error',
+            'display_in_console__remark',
         // Display stats
         'display_of_video',
         // Enable emperimental features
@@ -788,6 +792,17 @@ document.body.onload = async() => {
     });
 
     setTimeout(() => {
+        $('#whisper_audio_sound', true).map(element => {
+            let [selected] = element.selectedOptions;
+            let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+
+            console.log({ element, selected, pathname })
+
+            $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
+        })
+    }, 1000);
+
+    setTimeout(() => {
         $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
             let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
                 direction = tooltip.replace(/-?tooltip$/, '');
@@ -797,22 +812,47 @@ document.body.onload = async() => {
             new Tooltip(element, element.getAttribute(tooltip), { direction });
         });
 
+        // All experimental features - auto-enable "Experimental Features" if a feature is turned on
+        $('[id=":settings--experimental"i] section > .summary .toggle input', true).map(input => {
+            let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
+
+            prerequisites.push('#experimental_mode');
+
+            input.setAttribute('requires', prerequisites.join(','));
+        });
+
         // All "required" parents
         $('[requires]', true).map(dependent => {
-            let providers = $(dependent.getAttribute('requires'), true).map(element => element.closest('div'));
+            let providers = $(dependent.getAttribute('requires'), true);
 
             Observing:
             for(let provider of providers) {
-                let observer = new MutationObserver(mutations => {
-                    // TODO
-                    // Apply the false status to `dependent` when the `provider` is set to false
-                        // when(provider.checked === false) -> dependent.checked = false
-                    // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
-                        // when(dependent.checked === true) -> provider.checked = true
-                });
+                // Apply the false status to `dependent` when the `provider` is set to false
+                    // when(provider.checked === false) -> dependent.checked = false
+                // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
+                    // when(dependent.checked === true) -> provider.checked = true
+                let dependents = (provider.getAttribute('dependents') ?? '').split(',');
 
-                observer.observe(provider, { attributes: true, childList: true, subtree: true });
+                provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
+
+                provider.addEventListener('change', event => {
+                    let { currentTarget } = event,
+                        { checked } = currentTarget,
+                        dependents = currentTarget.getAttribute('dependents');
+
+                    if(!checked)
+                        $(dependents, true).filter(dependent => dependent.checked).map(dependent => dependent.click());
+                });
             }
+
+            dependent.addEventListener('change', event => {
+                let { currentTarget } = event,
+                    { checked } = currentTarget,
+                    providers = currentTarget.getAttribute('requires');
+
+                if(checked)
+                    $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
+            });
         });
     }, 1000);
 };

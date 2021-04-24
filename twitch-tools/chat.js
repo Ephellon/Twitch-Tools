@@ -175,7 +175,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                                                    __/ |         __/ |
      *                                                                   |___/         |___/
      */
-    /*** Emote Searching - NOT A SETTING. This is a hlper for "Convert Emotes" and "BTTV Emotes"
+    /*** Emote Searching - NOT A SETTING. This is a helper for "Convert Emotes" and "BTTV Emotes"
      *      ______                 _          _____                     _     _
      *     |  ____|               | |        / ____|                   | |   (_)
      *     | |__   _ __ ___   ___ | |_ ___  | (___   ___  __ _ _ __ ___| |__  _ _ __   __ _
@@ -196,7 +196,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     for(let [name, callback] of EmoteSearch.__onquery__)
                         callback(EmoteSearch.value);
     };
-    Timers.emote_searching = 100;
+    Timers.emote_searching = 250;
 
     __EmoteSearching__:
     if(parseBool(Settings.convert_emotes) || parseBool(Settings.bttv_emotes)) {
@@ -259,6 +259,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let BTTV_EMOTES = (top.BTTV_EMOTES ??= new Map),
         BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map),
         BTTV_LOADED_INDEX = 0,
+        BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ?? 30),
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
                 existing = $(`img.bttv[alt="${ name }"]`);
@@ -346,7 +347,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     });
             // Load emotes with a certain name
             else if(defined(keyword))
-                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0, allLoaded = false; !allLoaded && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; !allLoaded && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
                     await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -366,7 +367,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         });
             // Load all emotes from...
             else
-                for(let maxNumOfEmotes = parseInt(Settings.bttv_emotes_maximum ?? 30), offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
                     await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -383,6 +384,59 @@ let Chat__Initialize = async(START_OVER = false) => {
                             offset += emotes.length | 0;
                             allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
                         });
+        },
+        REFURBISH_BTTV_EMOTE_TOOLTIPS = fragment => {
+            $('[data-bttv-emote]', true, fragment)
+                .forEach(emote => {
+                    let { bttvEmote } = emote.dataset,
+                        tooltip = new Tooltip(emote, bttvEmote);
+
+                    emote.addEventListener('mouseup', async event => {
+                        let { currentTarget } = event,
+                            { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
+                            { top } = getOffset(currentTarget);
+
+                        top -= 150;
+
+                        await new Search(bttvOwner)
+                            .then(({ data }) => {
+                                let [streamer] = data.filter(({ id }) => id == bttvOwnerId);
+
+                                if(!defined(streamer))
+                                    throw "Emote owner not found...";
+
+                                let { broadcaster_login, display_name, is_live } = streamer;
+
+                                new Card({
+                                    title: bttvEmote,
+                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                    icon: {
+                                        src: BTTV_EMOTES.get(bttvEmote),
+                                        alt: bttvEmote,
+                                    },
+                                    footer: {
+                                        href: `/${ broadcaster_login }`,
+                                        name: display_name,
+                                        live: parseBool(is_live),
+                                    },
+                                    fineTuning: { top }
+                                });
+                            })
+                            .catch(error => {
+                                WARN(error);
+
+                                new Card({
+                                    title: bttvEmote,
+                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                    icon: {
+                                        src: BTTV_EMOTES.get(bttvEmote),
+                                        alt: bttvEmote,
+                                    },
+                                    fineTuning: { top }
+                                });
+                            });
+                    });
+                });
         };
 
     Handlers.bttv_emotes = () => {
@@ -442,7 +496,10 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __BetterTTVEmotes__:
     if(parseBool(Settings.bttv_emotes)) {
-        REMARK('Loading BTTV emotes...');
+        REMARK("Loading BTTV emotes...");
+
+        // Use 85% of available space to load "required" emotes
+        BTTV_MAX_EMOTES = Math.round(parseInt(Settings.bttv_emotes_maximum ?? 30) * 0.85);
 
         // Load streamer specific emotes
         if(parseBool(Settings.bttv_emotes_channel))
@@ -450,12 +507,30 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Load emotes (not to exceed the max size)
         LOAD_BTTV_EMOTES()
             .then(async() => {
+                // Allow the remaing 15% to be filled with extra emotes
+                BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ?? 30);
+
                 // Load extra emotes
                 for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
-                    LOAD_BTTV_EMOTES(keyword);
+                    // TODO - might cause loading issues?
+                    await LOAD_BTTV_EMOTES(keyword);
+            })
+            .then(() => {
+                let container = $('#tt-bttv-emotes-container');
+
+                if(!defined(container))
+                    return;
+
+                // Put all BTTV emotes into the emote-picker list
+                let BTTVEmotes = [];
+
+                for(let [name, src] of BTTV_EMOTES)
+                    BTTVEmotes.push({ name, src });
+
+                container.append(...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE));
             });
 
-        REMARK('Adding BTTV emote event listener...');
+        REMARK("Adding BTTV emote event listener...");
 
         // Run the bttv-emote changer on pre-populated messages
         (GetChat.onnewmessage = chat => {
@@ -504,63 +579,13 @@ let Chat__Initialize = async(START_OVER = false) => {
                             fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
                             fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
 
-                            $('[data-bttv-emote]', true, fragment)
-                                .forEach(element => {
-                                    let { bttvEmote } = element.dataset,
-                                        tooltip = new Tooltip(element, bttvEmote);
-
-                                    element.addEventListener('mouseup', async event => {
-                                        let { currentTarget } = event,
-                                            { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
-                                            { top } = getOffset(currentTarget);
-
-                                        top -= 150;
-
-                                        await new Search(bttvOwner)
-                                            .then(({ data }) => {
-                                                let [streamer] = data.filter(({ id }) => id == bttvOwnerId);
-
-                                                if(!defined(streamer))
-                                                    throw "Emote owner not found...";
-
-                                                let { broadcaster_login, display_name, is_live } = streamer;
-
-                                                new Card({
-                                                    title: bttvEmote,
-                                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                                    icon: {
-                                                        src: BTTV_EMOTES.get(bttvEmote),
-                                                        alt: bttvEmote,
-                                                    },
-                                                    footer: {
-                                                        href: `/${ broadcaster_login }`,
-                                                        name: display_name,
-                                                        live: parseBool(is_live),
-                                                    },
-                                                    fineTuning: { top }
-                                                });
-                                            })
-                                            .catch(error => {
-                                                WARN(error);
-
-                                                new Card({
-                                                    title: bttvEmote,
-                                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                                    icon: {
-                                                        src: BTTV_EMOTES.get(bttvEmote),
-                                                        alt: bttvEmote,
-                                                    },
-                                                    fineTuning: { top }
-                                                });
-                                            });
-                                    });
-                                });
+                            REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
                         });
                     }
             }
         })(GetChat());
 
-        REMARK('Adding BTTV emote search listener...');
+        REMARK("Adding BTTV emote search listener...");
 
         EmoteSearch.onquery = async query => {
             await LOAD_BTTV_EMOTES(query, null, true).then(() => {
@@ -746,26 +771,31 @@ let Chat__Initialize = async(START_OVER = false) => {
                 return setTimeout(CollectEmotes, 1000);
             }
 
+            // Set the ID to display the "Hold on..." message
             $('.emote-picker [class*="tab-content"]').id = 'tt-hidden-emote-container';
 
+            // Click on the channel's tab
+            $('[data-a-target="CHANNEL_EMOTES"i]')?.click();
+
+            // Grab locked emotes when the page loads
             setTimeout(() => {
-                // Grab locked emotes every couple of seconds
-                [1, 2, 4, 8, 16, 32, 64].map(n =>
-                    setTimeout(() => {
-                        $('.emote-button [data-test-selector*="lock"i] ~ img:not(.bttv)', true)
-                            .map(img => CAPTURED_EMOTES.set(img.alt, shrt(img.src)));
+                // Collect the emotes
+                $('.emote-button [data-test-selector*="lock"i] ~ img:not(.bttv)', true)
+                    .map(img => CAPTURED_EMOTES.set(img.alt, shrt(img.src)));
 
-                        $('.emote-button img:not(.bttv)', true)
-                            .filter(img => !CAPTURED_EMOTES.has(img.alt))
-                            .map(img => OWNED_EMOTES.set(img.alt, shrt(img.src)));
+                $('.emote-button img:not(.bttv)', true)
+                    .filter(img => !CAPTURED_EMOTES.has(img.alt))
+                    .map(img => OWNED_EMOTES.set(img.alt, shrt(img.src)));
 
-                        $('#tt-hidden-emote-container')?.removeAttribute('id');
-                    }, 1000 * n)
-                );
+                // Close and continue...
+                // TODO - add an `onscroll` event listener to close the panel dynamically
+                setTimeout(() => {
+                    $('#tt-hidden-emote-container')?.removeAttribute('id');
 
-                chat_emote_scroll.scrollTo(0, 0);
-                chat_emote_button.click();
-            }, 2500);
+                    chat_emote_scroll.scrollTo(0, 0);
+                    chat_emote_button.click();
+                }, 5000);
+            }, 500);
         }
 
         if(defined(chat_emote_button))
@@ -773,7 +803,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         else
             setTimeout(CollectEmotes, 1000);
 
-        REMARK('Adding emote event listener...');
+        REMARK("Adding emote event listener...");
 
         // Run the emote catcher on pre-populated messages
         (GetChat.onnewmessage = chat => {
@@ -841,13 +871,15 @@ let Chat__Initialize = async(START_OVER = false) => {
                             $('[data-captured-emote]', true, fragment)
                                 .forEach(element => {
                                     let { capturedEmote } = element.dataset;
+                                    // ... //
                                 });
+                            REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
                         });
                     }
             }
         })(GetChat());
 
-        REMARK('Adding emote search listener...');
+        REMARK("Adding emote search listener...");
 
         EmoteSearch.onquery = query => {
             let results = [...CAPTURED_EMOTES]
@@ -941,8 +973,6 @@ let Chat__Initialize = async(START_OVER = false) => {
     let MESSAGE_FILTER;
 
     Handlers.filter_messages = () => {
-        REMARK('Adding message filter event listener...');
-
         MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
             let Filter = UPDATED_FILTER();
 
@@ -1005,6 +1035,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __FilterMessages__:
     if(parseBool(Settings.filter_messages)) {
+        REMARK("Adding message filter event listener...");
+
         RegisterJob('filter_messages');
     }
 
@@ -1351,8 +1383,6 @@ let Chat__Initialize = async(START_OVER = false) => {
             },
         };
 
-        REMARK('Adding native reply buttons...');
-
         GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
         GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
@@ -1361,6 +1391,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __NativeTwitchReply__:
     if(parseBool(Settings.native_twitch_reply)) {
+        REMARK("Adding native reply buttons...");
+
         RegisterJob('native_twitch_reply');
     }
 
@@ -1377,8 +1409,6 @@ let Chat__Initialize = async(START_OVER = false) => {
     let SPAM = [];
 
     Handlers.prevent_spam = () => {
-        REMARK("Adding spam event listener...");
-
         GetChat.onnewmessage = chat =>
             chat.forEach(async line => {
                 let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
@@ -1435,6 +1465,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __PreventSpam__:
     if(parseBool(Settings.prevent_spam)) {
+        REMARK("Adding spam event listener...");
+
         RegisterJob('prevent_spam');
     }
 
@@ -1477,7 +1509,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __SimplifyChat__:
     if(parseBool(Settings.simplify_chat)) {
-        REMARK('Applying readability settings...');
+        REMARK("Applying readability settings...");
 
         RegisterJob('simplify_chat');
     }
@@ -1575,6 +1607,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __ConvertBits__:
     if(parseBool(Settings.convert_bits)) {
+        REMARK("Adding Bit converter...");
+
         RegisterJob('convert_bits');
     }
 
@@ -1666,6 +1700,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __RewardsCalculator__:
     if(parseBool(Settings.rewards_calculator)) {
+        REMARK("Adding Rewards Calculator...");
+
         RegisterJob('rewards_calculator');
     }
 
@@ -1743,7 +1779,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             iframe = furnish(`iframe#tt-popup-container.stream-chat.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
             container = $('.chat-shell .stream-chat', false, top.document);
 
-        container.parentElement.replaceChild(iframe, container);
+        container?.parentElement?.replaceChild?.(iframe, container);
     };
     Timers.recover_chat = 500;
 
@@ -1850,7 +1886,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
-        LOG('Child container ready');
+        LOG("Child container ready");
 
         Settings = await GetSettings();
 
@@ -1966,6 +2002,33 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 observer.observe(chat, { childList: true });
             }
         }
+
+        top.onlocationchange = () => {
+            WARN("[Child] Re-initializing...");
+
+            // Do NOT soft-reset ("turn off, turn on") these settings
+            // They will be destroyed, including any data they are using
+            let NON_VOLATILE = [].map(AsteriskFn);
+
+            DestroyingJobs:
+            for(let job in Jobs)
+                if(!!~NON_VOLATILE.findIndex(name => name.test(job)))
+                    continue DestroyingJobs;
+                else
+                    RestartJob(job);
+
+            Reinitialize:
+            if(NORMAL_MODE) {
+                if(Settings.keep_popout) {
+                    Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE, 500);
+
+                    break Reinitialize;
+                }
+
+                // Handled by parent controller
+                // location.reload();
+            }
+        };
 
         // Add custom styling
         CustomCSSInitializer: {

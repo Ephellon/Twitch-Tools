@@ -91,7 +91,7 @@
                     </p>
 
                     <details>
-                        <summary subtitle="Adjust settings for First in Line">Options</summary>
+                        <summary subtitle="Adjust settings for &quot;First in Line&quot;">Options</summary>
                         <div>
                             <div class="radio">
                                 <input id="first_in_line_none" type="radio" name="first-in-line" checked/>
@@ -137,7 +137,7 @@
                         While watching a channel that isn't followed, follow it automatically.
                     </p>
                     <details>
-                        <summary subtitle="Adjust settings for Auto-Follow">Options</summary>
+                        <summary subtitle="Adjust settings for &quot;Auto-Follow&quot;">Options</summary>
                         <div>
                             <div class="radio">
                                 <input id="auto_follow_none" type="radio" name="auto-follow" checked/>
@@ -184,7 +184,7 @@
                         <label for="kill_extensions"></label>
                     </div>
                     <p>
-                        Do not allow Twitch&trade; extensions to display.
+                        Do not allow Twitch&trade; extensions to display over the stream.
                     </p>
                 </div>
             </section>
@@ -270,7 +270,7 @@
         #                                                                  __/ |         __/ |
         #                                                                 |___/         |___/
         -->
-        <header>Chat &amp; Messaging <span white glyph="help" tooltip="These settings do not apply to banned channels"></span></header>
+        <header>Chat &amp; Messaging <span white glyph="help" right-tooltip="These settings do not apply to banned channels"></span></header>
         <article>
             <!-- BetterTTV Emotes -->
             <section>
@@ -287,7 +287,7 @@
                         This may cause instability while loading emotes.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for BetterTTV emotes">Options</summary>
+                        <summary subtitle="Adjust options for &quot;BetterTTV emotes&quot;">Options</summary>
                         <div>
                             <div text-only>
                                 <div class="title">Channel Specific Emotes</div>
@@ -435,7 +435,7 @@
                         Hide repetitive messages in chat.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for Prevent Spam">Options</summary>
+                        <summary subtitle="Adjust options for &quot;Prevent Spam&quot;">Options</summary>
                         <div>
                             <div text-only>
                                 <div class="title">Message History</div>
@@ -508,7 +508,7 @@
                         Apply dual tones to make chat easier to read.
                     </p>
                     <details>
-                        <summary subtitle="Adjust extra settings for Simplify Chat">Extras</summary>
+                        <summary subtitle="Adjust extra settings for &quot;Simplify Chat&quot;">Extras</summary>
                         <div>
                             <div text-only>
                                 <div class="title">Monotone Usernames</div>
@@ -572,7 +572,7 @@
                         When someone sends you a whisper, play a notification sound.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for Whisper Audio">Options</summary>
+                        <summary subtitle="Adjust options for &quot;Whisper Audio&quot;">Options</summary>
                         <div>
                             <div text-only>
                                 <div class="title">Notification Sound</div>
@@ -772,7 +772,7 @@
                         <label for="keep_popout"></label>
                     </div>
                     <p>
-                        When moving to a page, prevent the extension from destroying the small video (pop-out) of the stream.
+                        When moving to another page, prevent the extension from destroying the small video (pop-out) of the stream.
                     </p>
                 </div>
             </section>
@@ -781,8 +781,8 @@
             <section>
                 <div class="title"><span small glyph="play"></span> Recover Ads</div>
                 <div class="summary">
-                    <div class="toggle" right-tooltip="Requires &quot;Recover Stream&quot;" requires="#recover_stream">
-                        <input id="recover_ads" type="checkbox"/>
+                    <div class="toggle" right-tooltip="Requires &quot;Recover Stream&quot;">
+                        <input id="recover_ads" type="checkbox" requires="#recover_stream"/>
                         <label for="recover_ads"></label>
                     </div>
                     <p>
@@ -865,7 +865,7 @@
         -->
 
         <header>Developer Features <span glyph="help" right-tooltip="These are advanced features that should be used for testing"></span></header>
-        <article danger>
+        <article id=":settings--developer" danger>
             <!-- Display Console Messages -->
             <section>
                 <div class="title"><span small glyph="stats"></span> Display Console Messages</div>
@@ -877,6 +877,62 @@
                     <p>
                         Allow the extension to display messages in the console.
                     </p>
+                    <details>
+                        <summary subtitle="Adjust extra settings for &quot;Display Console Messages&quot;">Extras</summary>
+                        <div>
+                            <div text-only>
+                                <div class="title">Allow logs</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="display_in_console__log" type="checkbox" checked/>
+                                        <label for="display_in_console__log"></label>
+                                    </div>
+                                    <p>
+                                        Display <code style:log>console.log</code> messages.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Allow warnings</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="display_in_console__warn" type="checkbox" checked/>
+                                        <label for="display_in_console__warn"></label>
+                                    </div>
+                                    <p>
+                                        Display <code style:warn>console.warn</code> messages.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Allow errors</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="display_in_console__error" type="checkbox" checked/>
+                                        <label for="display_in_console__error"></label>
+                                    </div>
+                                    <p>
+                                        Display <code style:error>console.error</code> messages.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class="title">Allow remarks</div>
+                                <div class="summary">
+                                    <div class="toggle">
+                                        <input id="display_in_console__remark" type="checkbox" checked/>
+                                        <label for="display_in_console__remark"></label>
+                                    </div>
+                                    <p>
+                                        Display <code style:remark>console.remark</code> messages.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -889,7 +945,7 @@
                         <label for="display_of_video"></label>
                     </div>
                     <p>
-                        Allow the extension to display statistics of the video.
+                        Allow the extension to display statistics.
                     </p>
                 </div>
             </section>
@@ -961,7 +1017,7 @@
         -->
 
         <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features that may produce errors"></span></header>
-        <article caution>
+        <article id=":settings--experimental" caution>
             <!-- Auto-focus -->
             <section>
                 <div class="title"><span small purple glyph="stream"></span> Auto-Focus</div>
@@ -977,7 +1033,7 @@
                         This will <b>not</b> stop the one minute timer.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for Auto-Focus">Options</summary>
+                        <summary subtitle="Adjust options for &quot;Auto-Focus&quot;">Options</summary>
                         <div>
                             <div>
                                 <div class="title">Detection Level</div>
@@ -1066,7 +1122,7 @@
                         This only allows viewing the chat.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for Soft Unban">Options</summary>
+                        <summary subtitle="Adjust options for &quot;Soft Unban&quot;">Options</summary>
                         <div>
                             <div text-only>
                                 <div class="title">Fade Messages</div>
