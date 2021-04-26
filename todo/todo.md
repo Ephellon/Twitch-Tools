@@ -12,6 +12,12 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.2)
+- Fixed issue where clicking a channel from the side panel would remove all First in Line events
+
+> *3.1.1.1* **Chrome**
+- Fixed badge color
+
 > [3.1.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.1)
 - Fixed sound linking on options page
 - Added `chat.js` re-initializer

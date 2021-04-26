@@ -4532,6 +4532,9 @@ let Initialize = async(START_OVER = false) => {
         if(defined(FIRST_IN_LINE_JOB))
             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
+        if(UnregisterJob.__reason__ == 'default')
+            return;
+
         if(defined(FIRST_IN_LINE_HREF))
             FIRST_IN_LINE_HREF = '?';
 
