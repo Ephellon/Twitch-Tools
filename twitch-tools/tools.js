@@ -1512,7 +1512,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     for(let line of chat) {
         let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
             author = handle.toLowerCase(),
-            message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
+            message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
             style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
@@ -1571,7 +1571,7 @@ function GetChat(lines = 30, keepEmotes = false) {
     results.bullets = [];
 
     for(let bullet of bullets) {
-        let message = $('[data-test-selector="chat-message-separator"i] ~ *', true, bullet),
+        let message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, bullet),
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             subject = (text =>
                 /\braid/i.test(text)?                'raid': // Incoming raid
@@ -5924,7 +5924,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                             let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
                                 author = handle.toLowerCase(),
-                                message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
+                                message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
                                 mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                 badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
                                 style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
@@ -6020,7 +6020,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                                     let handle = $('[data-a-target="whisper-message-name"i]', false, node).innerText,
                                         author = handle.toLowerCase(),
-                                        message = $('[data-test-selector="separator"i] ~ *', true, node),
+                                        message = $('[data-test-selector="separator"i] ~ * > *', true, node),
                                         style = node.getAttribute('style');
 
                                     let raw = node.innerText;

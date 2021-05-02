@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.3)
+- Fixed an issue for message filtering
+
 > [3.1.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.2)
 - Fixed issue where clicking a channel from the side panel would remove all First in Line events
 

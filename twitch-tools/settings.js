@@ -963,8 +963,48 @@ $('[set]', true).map(async(element) => {
                     Storage.set({ githubUpdateAvailable });
                 });
 
-            Storage.set({ versionRetrivalDate: +new Date });
+            // Unauthorized? See paragraph 4.4.2 of https://developer.chrome.com/docs/webstore/terms/#use
+            __GitHubOnly__: {
+                let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
+
+                await fetch(chromeURL, { mode: 'cors' })
+                    .then(response => response.text())
+                    .then(html => {
+                        let DOM = new DOMParser(),
+                            doc = DOM.parseFromString(html, 'text/html');
+
+                        if(!defined(doc.body))
+                            throw 'Data could not be loaded';
+
+                        let metadata = JSON.parse(`{${
+                            $('hr ~ div div > span', true, doc)
+                                .filter((span, index) => index % 2 == 0)
+                                .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
+                                .join(',')
+                        }}`);
+
+                        return metadata;
+                    })
+                    .then(metadata => properties.version.chrome = metadata.version)
+                    .then(version => Storage.set({ chromeVersion: version }))
+                    .catch(async error => {
+                        await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
+                            if(defined(chromeVersion))
+                                properties.version.chrome = chromeVersion;
+                        });
+                    })
+                    .finally(() => {
+                        let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
+
+                        FETCHED_DATA = { ...FETCHED_DATA, ...properties };
+                        Storage.set({ chromeUpdateAvailable });
+                    });
+            }
+
             FETCHED_DATA.wasFetched = true;
+            versionRetrivalDate = +new Date;
+
+            Storage.set({ versionRetrivalDate });
         }
         // The data hasn't expired yet
         else {
