@@ -794,7 +794,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     chat_emote_scroll.scrollTo(0, 0);
                     chat_emote_button.click();
-                }, 5000);
+                }, 2_500);
             }, 500);
         }
 
@@ -1146,7 +1146,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_mentions = () => {
-        GetChat.onnewmessage = chat => {
+        (GetChat.onnewmessage = chat => {
             let usernames = [USERNAME];
 
             if(parseBool(Settings.highlight_mentions_extra))
@@ -1164,7 +1164,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
                 }
-        };
+        })(GetChat());
     };
     Timers.highlight_mentions = -500;
 
@@ -1184,7 +1184,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/                                         |_|         |_|
      */
     Handlers.highlight_mentions_popup = () => {
-        GetChat.onnewmessage = chat => {
+        (GetChat.onnewmessage = chat => {
             chat = chat.filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
 
             for(let line of chat)
@@ -1216,7 +1216,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         },
                     });
                 }
-        };
+        })(GetChat());
     };
     Timers.highlight_mentions_popup = -500;
 
@@ -1409,11 +1409,11 @@ let Chat__Initialize = async(START_OVER = false) => {
     let SPAM = [];
 
     Handlers.prevent_spam = () => {
-        GetChat.onnewmessage = chat =>
+        (GetChat.onnewmessage = chat => {
             chat.forEach(async line => {
                 let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
-                    minLen = parseInt(Settings.prevent_spam_minimum_length ?? 5),
-                    minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 3);
+                    minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
+                    minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
 
                 let { handle, element, message } = line;
 
@@ -1422,7 +1422,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 function markAsSpam(element, type = 'spam', message) {
                     let span = furnish(`span.chat-line__message--deleted-notice.tiwtch-tools__spam-filter-${ type }`, { 'data-a-target': spam_placeholder, 'data-test-selector': spam_placeholder }, `message marked as ${ type }.`);
 
-                    $('[data-test-selector="chat-message-separator"i] ~ *', true, element).forEach(sibling => sibling.remove());
+                    $('[data-test-selector="chat-message-separator"i] ~ * > *', true, element).forEach(sibling => sibling.remove());
                     $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.appendChild(span);
 
                     element.setAttribute(type, message);
@@ -1447,7 +1447,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         markAsSpam(element, 'plagiarism', message);
 
                     // The message contains repetitive (more than X instances) words/phrases
-                    else if(RegExp(`(\\w{${ minLen },})${ "((?:.+)?\\b\\1)".repeat(minOcc) }`, 'i').test(message))
+                    else if(RegExp(`(.{${ minLen },})${ "(?:(?:.+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
                         markAsSpam(element, 'repetitive', message);
 
                     return message;
@@ -1455,11 +1455,12 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 // If not run asynchrounously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
                 new Promise(resolve => {
-                    resolve(spamChecker(message.trim()));
+                    resolve(spamChecker(message));
                 }).then(message => {
                     SPAM = [...new Set([...SPAM, message])];
                 });
-            });
+            })
+        })(GetChat());
     };
     Timers.prevent_spam = -1000;
 
@@ -1650,8 +1651,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(!defined(container))
             return REWARDS_CALCULATOR_TOOLTIP = null;
 
+        // Average broadcast time is 4.5h
+        // Average number of streamed days is 5 (Mon - Fri)
         let averageBroadcastTime = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
-            activeDaysPerWeek = STREAMER.data?.activeDaysPerWeek ?? 5,
+            activeDaysPerWeek = (STREAMER.data?.activeDaysPerWeek ?? 5),
             pointsEarnedPerHour = 120 + (200 * +Settings.auto_claim_bonuses); // https://help.twitch.tv/s/article/channel-points-guide
 
         let timeLeftInBroadcast = averageBroadcastTime - (STREAMER.time / 3_600_000);
@@ -1674,10 +1677,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(hours > 1) {
             estimated = 'hour';
             timeEstimated = hours;
-        } if(hours > 48) {
+        } if(hours > averageBroadcastTime) {
             estimated = 'day';
             timeEstimated = days;
-        } if(days > 10) {
+        } if(days > activeDaysPerWeek) {
             estimated = 'week';
             timeEstimated = weeks;
         } if(days > 30) {
@@ -1819,19 +1822,41 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
         LOG(`Performing Soft Unban...`);
 
-        let url = parseURL(`https://nightdev.com/hosted/obschat/`).pushToSearch({
+        let f = furnish;
+
+        let { name, fiat } = STREAMER,
+            url = parseURL(`https://nightdev.com/hosted/obschat/`).pushToSearch({
                 theme: `bttv_${ THEME }`,
-                channel: STREAMER.name,
+                channel: name,
                 fade: parseBool(Settings.soft_unban_fade_old_messages),
                 bot_activity: parseBool(Settings.soft_unban_keep_bots),
                 prevent_clipping: parseBool(Settings.soft_unban_prevent_clipping),
             }),
-            div = furnish(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
-            chat = $('.chat-room__content > .tw-flex');
+            iframe = furnish(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
+            chat = $('.chat-room__content > .tw-flex'),
+            banner = $('.chat-input').closest('.tw-block');
+
+        name = name?.replace(/(.)$/, ($0, $1, $$, $_) => $1 + (/([s])/i.test($1)? "'": "'s")) || 'this';
+        fiat = fiat.replace(/([^s])$/i, '$1s');
+
+        banner.insertBefore(
+            f('div#tt-banned-banner.tw-pd-b-2.tw-pd-x-2', {},
+                f('div.tw-border-t.tw-pd-b-1.tw-pd-x-2'),
+                f('div.tw-align-center', {},
+                    f('p.tw-c-text.tw-strong[data-test-selector="current-user-timed-out-text"]', {},
+                        `Messages from ${ name } chat.`
+                    ),
+                    f('p.tw-c-text-alt-2', {},
+                        `Unable to collect ${ fiat }.`
+                    )
+                )
+            ),
+            banner.firstElementChild
+        );
 
         chat.classList.remove(...chat.classList);
         chat.classList.add("chat-list--default", "scrollable-area");
-        chat.replaceChild(div, chat.firstChild);
+        chat.replaceChild(iframe, chat.firstChild);
     };
     Timers.soft_unban = -2_500;
 
@@ -1935,7 +1960,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
                                     author = handle.toLowerCase(),
-                                    message = $('[data-test-selector="chat-message-separator"i] ~ *', true, line),
+                                    message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
                                     mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                     badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
                                     style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),

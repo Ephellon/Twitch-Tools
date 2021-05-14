@@ -1191,7 +1191,7 @@ class ChatFooter {
 class Card {
     static #CARDS = new Map()
 
-    constructor({ title, subtitle = "", footer, icon, fineTuning = {} }) {
+    constructor({ title = "", subtitle = "", footer, icon, fineTuning = {} }) {
         fineTuning.top ??= '7rem';
         fineTuning.left ??= '0px';
         fineTuning.cursor ??= 'auto';
@@ -2219,7 +2219,7 @@ try {
 
         // If the last fetch was more than 30 days ago, remove the data...
         if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
-            WARN(`\tThe last fetch for "${ RegExp.$1 }" was ${ ConvertTime(lastFetch) } ago. Marking as "expried"`);
+            WARN(`\tThe last fetch for "${ RegExp.$1 }" was ${ ConvertTime(lastFetch) } ago. Marking as "expired"`);
 
             StorageSpace.removeItem(key);
         }
@@ -2580,40 +2580,45 @@ let LIVE_CACHE = new Map();
     // Initialize(START_OVER:boolean) -> undefined
 let Initialize = async(START_OVER = false) => {
     // Modify the logging feature via the settings
-    if(!Settings.display_in_console)
+    if(!parseBool(Settings.display_in_console))
         LOG =
         WARN =
         ERROR =
         REMARK = ($=>$);
 
-    if(!Settings.display_in_console__log)
+    if(!parseBool(Settings.display_in_console__log))
         LOG = ($=>$);
 
-    if(!Settings.display_in_console__warn)
+    if(!parseBool(Settings.display_in_console__warn))
         WARN = ($=>$);
 
-    if(!Settings.display_in_console__error)
+    if(!parseBool(Settings.display_in_console__error))
         ERROR = ($=>$);
 
-    if(!Settings.display_in_console__remark)
+    if(!parseBool(Settings.display_in_console__remark))
         REMARK = ($=>$);
 
     // Initialize all settings/features //
 
-    let GLOBAL_TWITCH_API = top.GLOBAL_TWITCH_API = {},
-        GLOBAL_EVENT_LISTENERS = top.GLOBAL_EVENT_LISTENERS = {};
+    let GLOBAL_TWITCH_API = (top.GLOBAL_TWITCH_API ??= {}),
+        GLOBAL_EVENT_LISTENERS = (top.GLOBAL_EVENT_LISTENERS ??= {});
 
     SPECIAL_MODE = defined($('[data-test-selector="exit-button"]'));
     NORMAL_MODE = !SPECIAL_MODE;
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
         .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
-        .replace(/^(\/[^\/]+?)\/(squad|videos)\b/i, '$1');
+        .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
     if(SPECIAL_MODE) {
-        let { $1, $2 } = RegExp;
+        let { $1, $2 } = RegExp,
+            normalized = [];
 
-        WARN(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled:`, NORMALIZED_FEATURES);
+        for(let key in Settings)
+            if(!!~NORMALIZED_FEATURES.findIndex(regexp => regexp.test(key)))
+                normalized.push(key);
+
+        WARN(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled:`, normalized);
     }
 
     let ERRORS = Initialize.errors |= 0;
@@ -2802,7 +2807,7 @@ let Initialize = async(START_OVER = false) => {
             let container = balance?.closest('button'),
                 icon = $('img[alt]', false, container);
 
-            return icon?.alt;
+            return icon?.alt ?? 'Channel Points';
         },
 
         get game() {
@@ -2833,7 +2838,7 @@ let Initialize = async(START_OVER = false) => {
                 )
         },
 
-        name: $(`a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent  ?? LIVE_CACHE.get('name'),
+        name: $(`.channel-info-content a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name'),
 
         get paid() {
             return defined($('[data-a-target="subscribed-button"i]'))
@@ -2844,13 +2849,13 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get poll() {
-            return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, ''))
+            return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) || 0
         },
 
         get sole() {
             let [channel_id] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => !!~src.indexOf('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
 
-            return parseInt(channel_id ?? LIVE_CACHE.get('sole') ?? NaN);
+            return parseInt(channel_id ?? LIVE_CACHE.get('sole')) || 0;
         },
 
         get tags() {
@@ -3311,7 +3316,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Set the average stream length
                                 avgStreamSpan.map(t => data.dailyBroadcastTime += t);
-                                data.dailyBroadcastTime /= avgStreamSpan.length;
+                                data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
 
                                 // Set today's start/stop times
                                 data.usualStartTime = data.dailyStartTimes[today.getDay()];
@@ -3542,7 +3547,7 @@ let Initialize = async(START_OVER = false) => {
 
                             if(!defined(diffImg)) {
                                 diffImg = furnish('img#tt-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
-                                diffDat = furnish('span#tt-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace;` });
+                                diffDat = furnish('span#tt-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace; font-size: 10px;` });
 
                                 parent.appendChild(diffImg);
                                 parent.appendChild(diffDat);
@@ -4859,8 +4864,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Ignore followed channels
             if(["greed", "unfollowed"].contains(method)) {
-                // #1
-                // Collect the channel points by participating in the raid, then leave
+                // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
                 if(method == "greed" && raiding) {
                     LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).pushToSearch({ referrer: 'raid' }, true).href);
@@ -4868,16 +4872,14 @@ let Initialize = async(START_OVER = false) => {
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
-                // #2
-                // The channel being raided (to) is already in "followed." No need to leave
+                // #2 - The channel being raided (to) is already in "followed." No need to leave
                 else if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
                     LOG(`[RAIDING] ${ to } is already followed. No need to leave the raid`);
 
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
-                // #3
-                // The channel that was raided (to) is already in "followed." No need to leave
+                // #3 - The channel that was raided (to) is already in "followed." No need to leave
                 else if(raided && STREAMER.like) {
                     LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
 
@@ -4901,6 +4903,7 @@ let Initialize = async(START_OVER = false) => {
                 }
             };
 
+            // Leave the raided channel after 2mins to ensure points were collected
             CONTINUE_RAIDING = !!setTimeout(leaveStream, 120_000 * +["greed"].contains(method));
         }
     };

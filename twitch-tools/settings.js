@@ -728,9 +728,9 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
     switch(returnType?.toLowerCase()) {
         case 'arrow':
-            return ['v', '-', '^'][diff + 1];
+            return ['\u2193', '\u2022', '\u2191'][diff + 1];
 
-        case 'glyph':
+        case 'symbol':
             return ['<', '=', '>'][diff + 1];
 
         case 'string':
@@ -742,120 +742,6 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
     return diff;
 }
-
-document.body.onload = async() => {
-    let url = parseURL(location.href),
-        search = url.searchParameters;
-
-    for(let attribute in search)
-        $('body').classList.add(attribute);
-
-    if((search['show-defaults'] + '') != 'true')
-        await LoadSettings();
-
-    $('.summary', true).map(element => {
-        let article = element.parentElement,
-            summary = element,
-            uuid = 'uuid-' + Math.random().toString(36).replace('.','');
-
-        if(summary.children.length <= 2)
-            return;
-
-        let margin = ['.5rem'],
-            getHeight = element => {
-                let style = getComputedStyle(element),
-                    attributes = ['height'],
-                    height = 0;
-
-                for(let attribute of attributes)
-                    height += parseInt(style[attribute]);
-
-                return height;
-            };
-
-        // summary *
-        let not = [];
-
-        // Dynamically adjust the elements' heights
-        summary.id = uuid;
-        $('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), true, summary)
-            .map(element => {
-                let height = getHeight(element);
-
-                if(height)
-                    margin.push(height + 'px');
-                else
-                    element.setAttribute('style', 'display:none!important');
-            });
-
-        summary.setAttribute('style', `padding-bottom:calc(${ margin.join(' + ') })`);
-    });
-
-    setTimeout(() => {
-        $('#whisper_audio_sound', true).map(element => {
-            let [selected] = element.selectedOptions;
-            let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
-
-            console.log({ element, selected, pathname })
-
-            $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
-        })
-    }, 1000);
-
-    setTimeout(() => {
-        $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
-            let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
-                direction = tooltip.replace(/-?tooltip$/, '');
-
-            direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
-
-            new Tooltip(element, element.getAttribute(tooltip), { direction });
-        });
-
-        // All experimental features - auto-enable "Experimental Features" if a feature is turned on
-        $('[id=":settings--experimental"i] section > .summary .toggle input', true).map(input => {
-            let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
-
-            prerequisites.push('#experimental_mode');
-
-            input.setAttribute('requires', prerequisites.join(','));
-        });
-
-        // All "required" parents
-        $('[requires]', true).map(dependent => {
-            let providers = $(dependent.getAttribute('requires'), true);
-
-            Observing:
-            for(let provider of providers) {
-                // Apply the false status to `dependent` when the `provider` is set to false
-                    // when(provider.checked === false) -> dependent.checked = false
-                // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
-                    // when(dependent.checked === true) -> provider.checked = true
-                let dependents = (provider.getAttribute('dependents') ?? '').split(',');
-
-                provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
-
-                provider.addEventListener('change', event => {
-                    let { currentTarget } = event,
-                        { checked } = currentTarget,
-                        dependents = currentTarget.getAttribute('dependents');
-
-                    if(!checked)
-                        $(dependents, true).filter(dependent => dependent.checked).map(dependent => dependent.click());
-                });
-            }
-
-            dependent.addEventListener('change', event => {
-                let { currentTarget } = event,
-                    { checked } = currentTarget,
-                    providers = currentTarget.getAttribute('requires');
-
-                if(checked)
-                    $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
-            });
-        });
-    }, 1000);
-};
 
 $('#whisper_audio_sound', true).map(element => element.onchange = async event => {
     let [selected] = event.currentTarget.selectedOptions;
@@ -983,6 +869,8 @@ $('[set]', true).map(async(element) => {
                                 .join(',')
                         }}`);
 
+                        console.log({ metadata });
+
                         return metadata;
                     })
                     .then(metadata => properties.version.chrome = metadata.version)
@@ -1108,7 +996,117 @@ setTimeout(async() => {
                 let translation_id = element.getAttribute('tr-id'),
                     [translation] = json[translation_id].splice(0, 1);
 
-                element.innerHTML = translation;
+                element.innerHTML = translation ?? element.innerHTML;
             }
         });
 }, 1);
+
+document.body.onload = async() => {
+    let url = parseURL(location.href),
+        search = url.searchParameters;
+
+    for(let attribute in search)
+        $('body').classList.add(attribute);
+
+    if((search['show-defaults'] + '') != 'true')
+        await LoadSettings();
+
+    $('.summary', true).map(element => {
+        let article = element.parentElement,
+            summary = element,
+            uuid = 'uuid-' + Math.random().toString(36).replace('.','');
+
+        if(summary.children.length <= 2)
+            return;
+
+        let margin = ['.5rem'],
+            getHeight = element => {
+                let style = getComputedStyle(element),
+                    attributes = ['height'],
+                    height = 0;
+
+                for(let attribute of attributes)
+                    height += parseInt(style[attribute]);
+
+                return height;
+            };
+
+        // summary *
+        let not = [];
+
+        // Dynamically adjust the elements' heights
+        summary.id = uuid;
+        $('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), true, summary)
+            .map(element => {
+                let height = getHeight(element);
+
+                if(height)
+                    margin.push(height + 'px');
+                else
+                    element.setAttribute('style', 'display:none!important');
+            });
+
+        summary.setAttribute('style', `padding-bottom:calc(${ margin.join(' + ') })`);
+    });
+
+    setTimeout(() => {
+        $('#whisper_audio_sound', true).map(element => {
+            let [selected] = element.selectedOptions;
+            let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+
+            $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
+        });
+
+        $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
+            let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
+                direction = tooltip.replace(/-?tooltip$/, '');
+
+            direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
+
+            new Tooltip(element, element.getAttribute(tooltip), { direction });
+        });
+
+        // All experimental features - auto-enable "Experimental Features" if a feature is turned on
+        $('[id=":settings--experimental"i] section > .summary .toggle input', true).map(input => {
+            let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
+
+            prerequisites.push('#experimental_mode');
+
+            input.setAttribute('requires', prerequisites.join(','));
+        });
+
+        // All "required" parents
+        $('[requires]', true).map(dependent => {
+            let providers = $(dependent.getAttribute('requires'), true);
+
+            Observing:
+            for(let provider of providers) {
+                // Apply the false status to `dependent` when the `provider` is set to false
+                    // when(provider.checked === false) -> dependent.checked = false
+                // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
+                    // when(dependent.checked === true) -> provider.checked = true
+                let dependents = (provider.getAttribute('dependents') ?? '').split(',');
+
+                provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
+
+                provider.addEventListener('change', event => {
+                    let { currentTarget } = event,
+                        { checked } = currentTarget,
+                        dependents = currentTarget.getAttribute('dependents');
+
+                    if(!checked)
+                        $(dependents, true).filter(dependent => dependent.checked).map(dependent => dependent.click());
+                });
+            }
+
+            dependent.addEventListener('change', event => {
+                let { currentTarget } = event,
+                    { checked } = currentTarget,
+                    providers = currentTarget.getAttribute('requires');
+
+                if(checked)
+                    $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
+            });
+        });
+    }, 1000);
+};
