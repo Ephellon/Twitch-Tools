@@ -197,7 +197,7 @@
                         How should the next channel be decided when <b>Up Next</b> is empty?
                     </p>
                     <p>
-                        This only activates when the current stream goes offline.
+                        <b warning-text>This only activates when the current stream goes offline.</b>
                     </p>
                     <select id="next_channel_preference">
                         <option value="random" selected>Go to a random channel</option>
@@ -251,6 +251,21 @@
                     <p>
                         After the current stream ends, go to the <b>Next Channel</b>.
                     </p>
+                </div>
+            </section>
+
+            <!-- View Mode -->
+            <section>
+                <div class="title"><span small glyph="video"></span> View Mode</div>
+                <div class="summary">
+                    <p>
+                        When the page is done loading, change the view to:
+                    </p>
+                    <select id="view_mode">
+                        <option value="null" selected>Nothing (no change)</option>
+                        <option value="theatre">Theatre Mode</option>
+                        <option value="fullscreen">Fullscreen Mode</option>
+                    </select>
                 </div>
             </section>
 

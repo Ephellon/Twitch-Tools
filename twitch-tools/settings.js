@@ -80,6 +80,8 @@ let // These are option names. Anything else will be removed
             'auto_focus_detection_threshold',
             'auto_focus_poll_interval',
             'auto_focus_poll_image_type',
+        // View Mode
+        'view_mode',
 
         /* Chat & Messaging */
         // Highlight Mentions

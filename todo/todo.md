@@ -12,6 +12,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5)
+- Added "View Mode"
+- Fixed Tooltips
+
 > [3.1.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.4)
 - Updated Prevent Spam handling (can now handle bit donations)
 - Added "You are banned" banner for Soft Unban

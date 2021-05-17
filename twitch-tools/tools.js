@@ -867,7 +867,7 @@ class Balloon {
         for(let key of 'body icon header parent container'.split(' '))
             this[key].setAttribute(`${ cssName }--${ key }`, (+new Date).toString(36));
 
-        this.tooltip = furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
+        this.tooltip = furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip', style: 'display:block' }, this.title = title);
 
         Balloon.#BALLOONS.set(title, this);
 
@@ -1062,7 +1062,7 @@ class Tooltip {
         if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', style: 'display:block', innerHTML: text }),
             uuid = UUID.from(text).value;
 
         tooltip.id = uuid;
@@ -1098,7 +1098,7 @@ class Tooltip {
                         })()
                     },
                     furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper--show' },
-                        furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
+                        furnish('div', { style: `display: block; width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
                 )
@@ -2541,7 +2541,7 @@ let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace(
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
@@ -4977,6 +4977,45 @@ let Initialize = async(START_OVER = false) => {
     __StayLive__:
     if(parseBool(Settings.stay_live)) {
         RegisterJob('stay_live');
+    }
+
+    /*** View Mode
+     *     __      ___                 __  __           _
+     *     \ \    / (_)               |  \/  |         | |
+     *      \ \  / / _  _____      __ | \  / | ___   __| | ___
+     *       \ \/ / | |/ _ \ \ /\ / / | |\/| |/ _ \ / _` |/ _ \
+     *        \  /  | |  __/\ V  V /  | |  | | (_) | (_| |  __/
+     *         \/   |_|\___| \_/\_/   |_|  |_|\___/ \__,_|\___|
+     *
+     *
+     */
+    Handlers.view_mode = () => {
+        let buttons = [];
+
+        switch(Settings.view_mode) {
+            case 'fullscreen':
+                buttons.push(
+                    `button[data-a-target^="player-theatre"][data-a-target$="button"i]`,
+                    `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
+                );
+                break;
+
+            case 'theatre':
+                buttons.push(
+                    `button[data-a-target^="player-theatre"][data-a-target$="button"i]`,
+                    `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
+                );
+                break;
+        }
+
+        for(let button of buttons)
+            $(button)?.click?.();
+    };
+    Timers.view_mode = -2_500;
+
+    __ViewMode__:
+    if(parseBool(Settings.view_mode)) {
+        RegisterJob('view_mode');
     }
 
     /*** Chat & Messaging
