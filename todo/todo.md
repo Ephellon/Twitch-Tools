@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.5.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.1)
+- Fixed Tooltips
+
 > [3.1.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5)
 - Added "View Mode"
 - Fixed Tooltips
