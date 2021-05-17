@@ -59,11 +59,14 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_claim_bonuses = () => {
-        let ChannelPoints = $('[data-test-selector="community-points-summary"i] button[class*="--success"i]'),
+        let ChannelPoints = (null
+                ?? $('[data-test-selector="community-points-summary"i] button[class*="--success"i]')
+                ?? $('[class*="bonus"i]')?.closest?.('button')
+            ),
             Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-bonus-channel-points-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
-        if(Enabled && ChannelPoints)
-            ChannelPoints.click();
+        if(Enabled)
+            ChannelPoints?.click?.();
 
         let parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
             tooltip = $('#tt-auto-claim-bonuses [role="tooltip"i]');
@@ -2147,6 +2150,171 @@ Chat__CUSTOM_CSS.innerHTML =
 }
 
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+
+/* Tooltips */
+.tooltip-layer {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+}
+
+.tt-relative {
+    position: relative !important;
+}
+
+.tt-inline-flex {
+    display: inline-flex !important;
+}
+
+.tooltip-layer code {
+    background-color: var(--color-background-tooltip)!important;
+    font-size: 100%!important;
+}
+
+.tt-tooltip-wrapper--show .tt-tooltip {
+    display: block;
+}
+
+.tt-tooltip {
+    background-color: var(--color-background-tooltip);
+    border-radius: .4rem;
+    color: var(--color-text-tooltip);
+    font-family: Roobert-Bold;
+    font-size: 100%;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: .5rem;
+    pointer-events: none;
+    position: absolute;
+    text-align: left;
+    user-select: none;
+    white-space: nowrap;
+    z-index: 9999;
+}
+
+.tt-tooltip::after, .tt-tooltip::before {
+    content: '';
+    position: absolute;
+}
+
+.tt-tooltip::before {
+    height: calc(100% + 12px);
+    left: -6px;
+    top: -6px;
+    width: calc(100% + 12px);
+    z-index: -1;
+}
+
+.tt-tooltip::after {
+    background-color: var(--color-background-tooltip);
+    height: 6px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Directionally aligned tooltips */
+/* Center */
+.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
+    left: 50%;
+    margin-left: -3px;
+}
+
+.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
+    margin-top: -3px;
+    top: 50%;
+}
+
+/* Left */
+/* ??? */
+
+/* Right */
+.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
+    left: auto;
+    right: 0;
+}
+
+.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
+    left: 100%;
+    margin-left: -12px;
+    top: 100%;
+}
+
+/* Up (over) tooltip */
+.tt-tooltip--up {
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 6px;
+    top: auto;
+}
+
+.tt-tooltip--up::after {
+    border-radius: 0 0 .4rem;
+    height: 6px;
+    left: 6px;
+    margin-top: -3px;
+    top: 100%;
+    z-index: -1;
+}
+
+/* Down (under) tooltip */
+.tt-tooltip--down {
+    left: 0;
+    margin-top: 6px;
+    top: 100%;
+}
+
+.tt-tooltip--down::after {
+    border-radius: .4rem 0 0;
+    height: 6px;
+    left: 6px;
+    top: -3px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Left tooltip */
+.tt-tooltip--left {
+    left: auto;
+    margin-right: 6px;
+    right: 100%;
+    top: 0;
+}
+
+.tt-tooltip--left::after {
+    border-radius: 0 .4rem 0 0;
+    left: 100%;
+    margin-left: -3px;
+    right: -3px;
+    top: 6px;
+}
+
+/* Right tooltip */
+.tt-tooltip--right {
+    left: 100%;
+    margin-left: 6px;
+    top: 0;
+}
+
+.tt-tooltip--right::after {
+    border-radius: 0 0 0 .4rem;
+    left: 0;
+    margin-left: -3px;
+    top: 6px;
+}
 `;
 
             Chat__CUSTOM_CSS?.remove();

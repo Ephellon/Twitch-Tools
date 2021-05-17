@@ -867,7 +867,7 @@ class Balloon {
         for(let key of 'body icon header parent container'.split(' '))
             this[key].setAttribute(`${ cssName }--${ key }`, (+new Date).toString(36));
 
-        this.tooltip = furnish('div.tw-tooltip.tw-tooltip--align-center.tw-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip', style: 'display:block' }, this.title = title);
+        this.tooltip = furnish('div.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip', style: 'display:block' }, this.title = title);
 
         Balloon.#BALLOONS.set(title, this);
 
@@ -1062,7 +1062,7 @@ class Tooltip {
         if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
             uuid = UUID.from(text).value;
 
         tooltip.id = uuid;
@@ -1097,7 +1097,7 @@ class Tooltip {
                             }
                         })()
                     },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper--show' },
+                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tt-tooltip-wrapper--show' },
                         furnish('div', { style: `display: block; width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
@@ -1234,7 +1234,7 @@ class Card {
             f('div.emote-card.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-large.tw-border-t.tw-elevation-1 [data-a-target="emote-card"]', {},
                 f('div.emote-card__banner.tw-align-center.tw-align-items-center.tw-c-background-alt.tw-flex.tw-flex-grow-2.tw-flex-row.tw-full-width.tw-justify-content-start.tw-pd-l-1.tw-pd-y-1.tw-relative', {},
                     f('div.tw-inline-flex.viewer-card-drag-cancel', {},
-                        f('div.tw-inline.tw-relative.tw-tooltip__container[data-a-target="emote-name"]', {},
+                        f('div.tw-inline.tw-relative.tt-tooltip__container[data-a-target="emote-name"]', {},
                             iconElement,
                             new Tooltip(iconElement, icon.alt)
                         )
@@ -4152,7 +4152,7 @@ let Initialize = async(START_OVER = false) => {
 
             $('div#root > *').appendChild(
                 furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper--show' },
+                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tt-tooltip-wrapper--show' },
                         furnish('div', { style: 'width: 30px; height: 30px;' }),
                         tooltip
                     )
@@ -6269,6 +6269,171 @@ CUSTOM_CSS.innerHTML =
 
     padding: 0px 0.4725em;
 }*/
+
+/* Tooltips */
+.tooltip-layer {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+}
+
+.tt-relative {
+    position: relative !important;
+}
+
+.tt-inline-flex {
+    display: inline-flex !important;
+}
+
+.tooltip-layer code {
+    background-color: var(--color-background-tooltip)!important;
+    font-size: 100%!important;
+}
+
+.tt-tooltip-wrapper--show .tt-tooltip {
+    display: block;
+}
+
+.tt-tooltip {
+    background-color: var(--color-background-tooltip);
+    border-radius: .4rem;
+    color: var(--color-text-tooltip);
+    font-family: Roobert-Bold;
+    font-size: 100%;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: .5rem;
+    pointer-events: none;
+    position: absolute;
+    text-align: left;
+    user-select: none;
+    white-space: nowrap;
+    z-index: 9999;
+}
+
+.tt-tooltip::after, .tt-tooltip::before {
+    content: '';
+    position: absolute;
+}
+
+.tt-tooltip::before {
+    height: calc(100% + 12px);
+    left: -6px;
+    top: -6px;
+    width: calc(100% + 12px);
+    z-index: -1;
+}
+
+.tt-tooltip::after {
+    background-color: var(--color-background-tooltip);
+    height: 6px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Directionally aligned tooltips */
+/* Center */
+.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
+    left: 50%;
+    margin-left: -3px;
+}
+
+.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
+    margin-top: -3px;
+    top: 50%;
+}
+
+/* Left */
+/* ??? */
+
+/* Right */
+.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
+    left: auto;
+    right: 0;
+}
+
+.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
+    left: 100%;
+    margin-left: -12px;
+    top: 100%;
+}
+
+/* Up (over) tooltip */
+.tt-tooltip--up {
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 6px;
+    top: auto;
+}
+
+.tt-tooltip--up::after {
+    border-radius: 0 0 .4rem;
+    height: 6px;
+    left: 6px;
+    margin-top: -3px;
+    top: 100%;
+    z-index: -1;
+}
+
+/* Down (under) tooltip */
+.tt-tooltip--down {
+    left: 0;
+    margin-top: 6px;
+    top: 100%;
+}
+
+.tt-tooltip--down::after {
+    border-radius: .4rem 0 0;
+    height: 6px;
+    left: 6px;
+    top: -3px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Left tooltip */
+.tt-tooltip--left {
+    left: auto;
+    margin-right: 6px;
+    right: 100%;
+    top: 0;
+}
+
+.tt-tooltip--left::after {
+    border-radius: 0 .4rem 0 0;
+    left: 100%;
+    margin-left: -3px;
+    right: -3px;
+    top: 6px;
+}
+
+/* Right tooltip */
+.tt-tooltip--right {
+    left: 100%;
+    margin-left: 6px;
+    top: 0;
+}
+
+.tt-tooltip--right::after {
+    border-radius: 0 0 0 .4rem;
+    left: 0;
+    margin-left: -3px;
+    top: 6px;
+}
 `;
 
             CUSTOM_CSS?.remove();

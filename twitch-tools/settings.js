@@ -291,7 +291,7 @@ class Tooltip {
         if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tw-tooltip.tw-tooltip--align-${ fineTuning.lean || 'center' }.tw-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
             uuid = UUID.from(text).value;
 
         tooltip.id = uuid;
@@ -328,7 +328,7 @@ class Tooltip {
                             }
                         })()
                     },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tw-tooltip-wrapper tw-tooltip-wrapper--show' },
+                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tt-inline-flex tt-relative tt-tooltip-wrapper tt-tooltip-wrapper--show' },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )

@@ -12,6 +12,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.5.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.2)
+- Fixed Tooltips (again)
+- Fixed Auto Claim
+
 > [3.1.5.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.1)
 - Fixed Tooltips
 
