@@ -306,7 +306,7 @@ class Tooltip {
 
             let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
-            $('body').appendChild(
+            $('body').append(
                 furnish('div.twitch-tools-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
@@ -461,8 +461,8 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
                 child instanceof Element?
                     element.append(child):
                 child instanceof Node?
-                    element.appendChild(child):
-                element.appendChild(
+                    element.append(child):
+                element.append(
                     document.createTextNode(child)
                 )
         );
@@ -597,7 +597,7 @@ function RedoFilterRulesElement(rules) {
             currentTarget.remove();
         };
         E.setAttribute('up-tooltip', `Edit rule`);
-        E.appendChild(R);
+        E.append(R);
 
         // "Remove" button
         R.id = fID;
@@ -615,7 +615,7 @@ function RedoFilterRulesElement(rules) {
         R.setAttribute('up-tooltip', `Remove rule`);
 
         $(`#filter_rules [filter-type="${ filterType }"i]`).setAttribute('not-empty', true);
-        $(`#filter_rules [filter-type="${ filterType }"i]`)?.appendChild(E);
+        $(`#filter_rules [filter-type="${ filterType }"i]`)?.append(E);
         $('#filter_rules-input').value = "";
     }
 }

@@ -12,7 +12,7 @@ function AddCustomCSSBlock(name, block) {
     Chat__CUSTOM_CSS.innerHTML += `/*${ name }*/${ block }/*#${ name }*/`;
 
     Chat__CUSTOM_CSS?.remove();
-    $('body').appendChild(Chat__CUSTOM_CSS);
+    $('body').append(Chat__CUSTOM_CSS);
 }
 
 function RemoveCustomCSSBlock(name, flags = '') {
@@ -21,7 +21,7 @@ function RemoveCustomCSSBlock(name, flags = '') {
     Chat__CUSTOM_CSS.innerHTML = Chat__CUSTOM_CSS.innerHTML.replace(regexp, '');
 
     Chat__CUSTOM_CSS?.remove();
-    $('body').appendChild(Chat__CUSTOM_CSS);
+    $('body').append(Chat__CUSTOM_CSS);
 }
 
 let Chat__Initialize = async(START_OVER = false) => {
@@ -228,7 +228,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 value: function appendResults(nodes, type) {
                     $(`[tt-${ type }-emote-search-result]`, true).forEach(node => node.remove());
 
-                    let container = $('[class*="emote-picker"i] [class*="wrap"i]:last-child');
+                    let container = $('[class*="emote-picker"i] [class*="emote-picker"i][class*="block"i] > *:last-child');
 
                     for(let node of nodes) {
                         if(!defined(node))
@@ -236,12 +236,15 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML).value);
 
-                        container.appendChild(node);
+                        container.append(node);
                     }
 
-                    let title = $('[class*="emote-picker"i] p');
+                    let title = (null
+                        ?? $('p', false, container.previousElementSibling)
+                        ?? $('[class*="emote-picker"i] p')
+                    );
 
-                    title.innerText = title.innerText.replace(/^.*("[^]+")/, `${ container.children.length } search results for $1`);
+                    title.innerText = title.innerText.replace(/^.*("[^]+").*?$/, `${ container.children.length } search results for $1`);
                 },
             },
         });
@@ -821,7 +824,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: chat.emotes[emote] });
 
                     if(defined(capturedEmote))
-                        $('#tt-captured-emotes-container')?.appendChild?.(capturedEmote);
+                        $('#tt-captured-emotes-container')?.append?.(capturedEmote);
                 }
 
             for(let line of chat) {
@@ -1096,7 +1099,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
-            title.appendChild(filter);
+            title.append(filter);
         } else if(type == 'emote') {
             /* Filter emotes */
             if(filter_rules && filter_rules.split(',').contains(`:${ name }:`))
@@ -1128,7 +1131,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
-            title.appendChild(filter);
+            title.append(filter);
         }
     };
     Timers.easy_filter = 500;
@@ -1286,7 +1289,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     chatContainer.classList.add(...addedClasses.chatContainer);
                                     chatContainerChild.classList.add(...addedClasses.chatContainerChild);
 
-                                    bubbleContainer.appendChild(
+                                    bubbleContainer.append(
                                         f(`div#tt-native-twitch-reply.tw-align-items-start.tw-flex.tw-flex-row.tw-pd-0`,
                                             {
                                                 'data-test-selector': 'chat-input-tray',
@@ -1332,7 +1335,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                    bubbleContainer.appendChild(
+                                    bubbleContainer.append(
                                         f('div#tt-native-twitch-reply-message.font-scale--default.tw-pd-x-1.tw-pd-y-05.chat-line__message',
                                             {
                                                 'data-a-target': 'chat-line-message',
@@ -1382,7 +1385,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 target.classList.add('chat-line__message-container');
 
                 parent.insertBefore(highlighter, parent.firstElementChild);
-                parent.appendChild(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
+                parent.append(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
             },
         };
 
@@ -1426,7 +1429,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let span = furnish(`span.chat-line__message--deleted-notice.tiwtch-tools__spam-filter-${ type }`, { 'data-a-target': spam_placeholder, 'data-test-selector': spam_placeholder }, `message marked as ${ type }.`);
 
                     $('[data-test-selector="chat-message-separator"i] ~ * > *', true, element).forEach(sibling => sibling.remove());
-                    $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.appendChild(span);
+                    $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.append(span);
 
                     element.setAttribute(type, message);
 
@@ -2341,7 +2344,7 @@ Chat__CUSTOM_CSS.innerHTML =
 `;
 
             Chat__CUSTOM_CSS?.remove();
-            $('body').appendChild(Chat__CUSTOM_CSS);
+            $('body').append(Chat__CUSTOM_CSS);
         }
 
         // Update the settings

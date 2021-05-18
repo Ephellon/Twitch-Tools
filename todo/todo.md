@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.5.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.4)
+- Fixed emote searching
+
 > [3.1.5.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.3)
 - Fixed Soft Unban
 

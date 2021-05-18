@@ -540,7 +540,7 @@ class Popup {
             )
         );
 
-        P?.appendChild(p);
+        P?.append(p);
 
         this.uuid = U;
         this.next = A;
@@ -1029,7 +1029,7 @@ class Balloon {
 
             container.setAttribute('animationID', animate(container));
 
-            this.body.appendChild(container);
+            this.body.append(container);
 
             return container;
         });
@@ -1075,7 +1075,7 @@ class Tooltip {
 
             let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
-            $('div#root > *').appendChild(
+            $('div#root > *').append(
                 furnish('div.tt-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
@@ -1163,7 +1163,7 @@ class ChatFooter {
                 )
             );
 
-        parent.appendChild(footer);
+        parent.append(footer);
 
         this.uuid = uuid;
         this.parent = parent;
@@ -1266,7 +1266,7 @@ class Card {
         );
 
         // Add the card
-        container.appendChild(card);
+        container.append(card);
 
         // Add the optional footer
         if(footer?.href?.length)
@@ -3549,8 +3549,8 @@ let Initialize = async(START_OVER = false) => {
                                 diffImg = furnish('img#tt-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
                                 diffDat = furnish('span#tt-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace; font-size: 10px;` });
 
-                                parent.appendChild(diffImg);
-                                parent.appendChild(diffDat);
+                                parent.append(diffImg);
+                                parent.append(diffDat);
                             }
 
                             diffImg.src = data.getImageDataUrl?.();
@@ -4150,7 +4150,7 @@ let Initialize = async(START_OVER = false) => {
             let { container, tooltip, title } = FIRST_IN_LINE_BALLOON,
                 offset = getOffset(container);
 
-            $('div#root > *').appendChild(
+            $('div#root > *').append(
                 furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
                     furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tt-tooltip-wrapper--show' },
                         furnish('div', { style: 'width: 30px; height: 30px;' }),
@@ -5289,7 +5289,7 @@ let Initialize = async(START_OVER = false) => {
             f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0 })
         );
 
-        parent.appendChild(points_receipt);
+        parent.append(points_receipt);
 
         RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
 
@@ -5473,8 +5473,8 @@ let Initialize = async(START_OVER = false) => {
                     innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
                 });
 
-            target.appendChild(icon);
-            target.appendChild(text);
+            target.append(icon);
+            target.append(text);
         });
     };
     Timers.point_watcher_placement = 250;
@@ -5552,7 +5552,7 @@ let Initialize = async(START_OVER = false) => {
 
         WATCH_TIME_TOOLTIP = new Tooltip(watch_time);
 
-        parent.appendChild(watch_time);
+        parent.append(watch_time);
 
         extra({ parent, container, live_time, placement });
 
@@ -6437,7 +6437,7 @@ CUSTOM_CSS.innerHTML =
 `;
 
             CUSTOM_CSS?.remove();
-            $('body').appendChild(CUSTOM_CSS);
+            $('body').append(CUSTOM_CSS);
         }
 
         // Update the settings
