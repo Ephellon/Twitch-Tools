@@ -1820,7 +1820,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
       *
       */
     Handlers.soft_unban = () => {
-        if(!STREAMER.veto)
+        if(!STREAMER?.veto)
             return;
 
         LOG(`Performing Soft Unban...`);
@@ -1835,31 +1835,54 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
                 bot_activity: parseBool(Settings.soft_unban_keep_bots),
                 prevent_clipping: parseBool(Settings.soft_unban_prevent_clipping),
             }),
-            iframe = furnish(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
-            chat = $('.chat-room__content > .tw-flex'),
-            banner = $('.chat-input').closest('.tw-block');
+            iframe = f(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
+            preBanner =
+                f('div#tt-banned-banner.tw-pd-b-2.tw-pd-x-2', {},
+                    f('div.tw-border-t.tw-pd-b-1.tw-pd-x-2'),
+                    f('div.tw-align-center', {},
+                        f('p.tw-c-text.tw-strong[data-test-selector="current-user-timed-out-text"]', {},
+                            `Messages from ${ name } chat.`
+                        ),
+                        f('p.tw-c-text-alt-2', {},
+                            `Unable to collect ${ fiat }.`
+                        )
+                    )
+                ),
+            chat, cont, banner;
 
         name = name?.replace(/(.)$/, ($0, $1, $$, $_) => $1 + (/([s])/i.test($1)? "'": "'s")) || 'this';
         fiat = fiat.replace(/([^s])$/i, '$1s');
 
-        banner.insertBefore(
-            f('div#tt-banned-banner.tw-pd-b-2.tw-pd-x-2', {},
-                f('div.tw-border-t.tw-pd-b-1.tw-pd-x-2'),
-                f('div.tw-align-center', {},
-                    f('p.tw-c-text.tw-strong[data-test-selector="current-user-timed-out-text"]', {},
-                        `Messages from ${ name } chat.`
-                    ),
-                    f('p.tw-c-text-alt-2', {},
-                        `Unable to collect ${ fiat }.`
-                    )
-                )
-            ),
-            banner.firstElementChild
-        );
+        // Try the "old" method, then the new one
+        try {
+            chat = $('.chat-room__content > .tw-flex');
+            banner = $('.chat-input').closest('.tw-block');
 
-        chat.classList.remove(...chat.classList);
-        chat.classList.add("chat-list--default", "scrollable-area");
-        chat.replaceChild(iframe, chat.firstChild);
+            banner.insertBefore(
+                preBanner,
+                banner.firstElementChild
+            );
+
+            chat.classList.remove(...chat.classList);
+            chat.classList.add("chat-list--default", "scrollable-area");
+            chat.replaceChild(iframe, chat.firstChild);
+        } catch(error) {
+            WARN(`Could not perform "old" unban method`, error);
+
+            chat = $('.chat-input');
+            cont = chat.previousElementSibling;
+
+            try {
+                chat.insertBefore(
+                    preBanner,
+                    chat.firstElementChild
+                );
+
+                cont.replaceChild(iframe, cont.firstChild);
+            } catch(error) {
+                WARN(`Could not perform "new" unban method`, error);
+            }
+        }
     };
     Timers.soft_unban = -2_500;
 

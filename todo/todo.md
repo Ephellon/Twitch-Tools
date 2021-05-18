@@ -12,6 +12,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.5.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.3)
+- Fixed Soft Unban
+
 > [3.1.5.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.2)
 - Fixed Tooltips (again)
 - Fixed Auto Claim
