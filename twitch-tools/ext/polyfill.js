@@ -29,7 +29,7 @@ Array.prototype.contains ??= function contains(...values) {
 // https://stackoverflow.com/a/35859991/4211612
 // Captures the current frame from a video element
     // HTMLVideoElement..captureFrame([imageType:string[, returnType:string]]) -> String#dataURL | Object | HTMLImageElement
-        // imageType = "jpeg" | "png" | "webp"
+        // imageType = "image/jpeg" | "image/png" | "image/webp"
         // returnType = "img" | "element" | "HTMLImageElement"
             // -> HTMLImageElement
         // returnType = "json" | "object"
@@ -137,7 +137,7 @@ Number.prototype.floorToNearest ??= function floorToNearest(number) {
 // Returns a properly formatted string depending on the number given
     // String..properSuffix([numberOfItems:number])
 String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
-    numberOfItems = parseInt(numberOfItems) | 0;
+    numberOfItems = parseFloat(numberOfItems) | 0;
 
     let suffix,
         string = this + "";
@@ -151,7 +151,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
     else {
         // Ends with a <consonant "y">, as in "century" -> "centuries"
         if(/([^aeiou])([y])$/i.test(string))
-        EndsWith_Consonant: {
+        EndsWith_Consonant_Y: {
             let { $1, $2 } = RegExp,
                 $L = RegExp["$`"],
                 $T = {
@@ -162,7 +162,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
         }
         // Ends with <vowel "y">, as in "day" -> "days"
         else if(/([aeiou])([y])$/i.test(string))
-        EndsWith_Vowel: {
+        EndsWith_Vowel_Y: {
             let { $_ } = RegExp;
 
             string = $_ + "s";

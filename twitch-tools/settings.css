@@ -960,7 +960,7 @@ input[type="number"]::-webkit-inner-spin-button {
     overflow: auto;
 }
 
-#filter_rules h2:only-child, #filter_rules [filter-type]:not([not-empty]) {
+#filter_rules h2:only-child, #filter_rules [filter-type]:not([not-empty]), #filter_rules > [filter-type][not-empty] ~ *:last-child {
     display: none;
 }
 

@@ -273,11 +273,13 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(defined(existing))
                 return existing.closest('div.tt-emote-bttv');
 
+            let f = furnish;
+
             let emoteContainer =
-            furnish('div.tt-emote-bttv.tw-pd-x-05.tw-relative', {},
-                furnish('div.emote-button', {},
-                    furnish('div.tw-inline-flex', {},
-                        furnish('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
+            f('div.tt-emote-bttv.tw-pd-x-05.tw-relative', {},
+                f('div.emote-button', {},
+                    f('div.tw-inline-flex', {},
+                        f('button.emote-button__link.tw-align-items-center.tw-flex.tw-justify-content-center',
                             {
                                 'data-test-selector': 'emote-button-clickable',
                                 'aria-label': name,
@@ -299,7 +301,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 },
                             },
 
-                            furnish('figure', {},
+                            f('figure', {},
                                 /*
                                 <div class="emote-button__lock tw-absolute tw-border-radius-small tw-c-background-overlay tw-c-text-overlay tw-inline-flex tw-justify-content-center tw-z-above" data-test-selector="badge-button-lock">
                                     <figure class="ScFigure-sc-1j5mt50-0 laJGEQ tw-svg">
@@ -307,10 +309,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                furnish('div.emote-button__lock.tw-absolute.tw-border-radius-small.tw-c-background-overlay.tw-c-text-overlay.tw-inline-flex.tw-justify-content-center.tw-z-above', { 'data-test-selector': 'badge-button-icon' },
-                                    furnish('figure.tw-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
+                                f('div.emote-button__lock.tw-absolute.tw-border-radius-small.tw-c-background-overlay.tw-c-text-overlay.tw-inline-flex.tw-justify-content-center.tw-z-above', { 'data-test-selector': 'badge-button-icon' },
+                                    f('figure.tw-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
-                                furnish('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
+                                f('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
                             )
                         )
                     )
@@ -350,7 +352,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                             BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
                             BTTV_OWNERS.set(code, user);
                         }
-                    });
+                    })
+                    .catch(WARN);
             // Load emotes with a certain name
             else if(defined(keyword))
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; !allLoaded && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
@@ -370,7 +373,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             offset += emotes.length | 0;
                             allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
-                        });
+                        })
+                        .catch(WARN);
             // Load all emotes from...
             else
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
@@ -389,7 +393,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             offset += emotes.length | 0;
                             allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
-                        });
+                        })
+                        .catch(WARN);
         },
         REFURBISH_BTTV_EMOTE_TOOLTIPS = fragment => {
             $('[data-bttv-emote]', true, fragment)
@@ -2207,7 +2212,7 @@ Chat__CUSTOM_CSS.innerHTML =
     background-color: var(--color-background-tooltip);
     border-radius: .4rem;
     color: var(--color-text-tooltip);
-    font-family: Roobert-Bold;
+    font-family: inherit;
     font-size: 100%;
     font-weight: 600;
     line-height: 1.2;

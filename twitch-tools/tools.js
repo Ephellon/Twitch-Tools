@@ -293,6 +293,7 @@ let REMARK = (...messages) => {
 // Creates a random UUID
     // new UUID() -> Object
     // UUID.from(string:string) -> Object
+    // UUID.ergo(string;string) -> Promise#String
     // UUID.BWT(string:string) -> String
     // UUID.prototype.toString() -> String
 class UUID {
@@ -383,6 +384,28 @@ class UUID {
         this.toString = () => this.native;
 
         return this;
+    }
+
+    static async ergo(key = '') {
+        key = (key ?? '').toString();
+
+        // Privatize (pre-hash) the message a bit
+        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
+            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
+            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+
+        key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>'));
+
+        // Digest the message
+        // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+        const UTF8String = new TextEncoder().encode(key);                     // encode as (utf-8) Uint8Array
+        const hashBuffer = await crypto.subtle.digest('SHA-256', UTF8String); // hash the message
+        const hashString =
+            [...new Uint8Array(hashBuffer)]                                   // convert buffer to byte array
+                .map(b => b.toString(16).padStart(2, '0')).join('')           // convert bytes to hex string
+                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');        // format the string into a large UUID string
+
+        return hashString;
     }
 }
 
@@ -867,7 +890,7 @@ class Balloon {
         for(let key of 'body icon header parent container'.split(' '))
             this[key].setAttribute(`${ cssName }--${ key }`, (+new Date).toString(36));
 
-        this.tooltip = furnish('div.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip', style: 'display:block' }, this.title = title);
+        this.tooltip = furnish('div.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
 
         Balloon.#BALLOONS.set(title, this);
 
@@ -1104,7 +1127,7 @@ class Tooltip {
                 )
             );
 
-            tooltip.setAttribute('style', `display:block;${ fineTuning.style ?? '' }`);
+            tooltip.setAttribute('style', (fineTuning.style ?? ''));
         });
 
         parent.addEventListener('mouseleave', event => {
@@ -6300,7 +6323,7 @@ CUSTOM_CSS.innerHTML =
     background-color: var(--color-background-tooltip);
     border-radius: .4rem;
     color: var(--color-text-tooltip);
-    font-family: Roobert-Bold;
+    font-family: inherit;
     font-size: 100%;
     font-weight: 600;
     line-height: 1.2;

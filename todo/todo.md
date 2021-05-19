@@ -12,6 +12,12 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.1.5.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.5)
+- Fixed Tooltips (font)
+- Quality of life changes
+    - Updated settings page
+- Added `UUID.ergo` (a more secure `UUID.from`)
+
 > [3.1.5.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.4)
 - Fixed emote searching
 
