@@ -14,6 +14,7 @@
  * upload
  * wallet
  * close
+ * crown
  * unfav
  * globe
  * leave
@@ -57,6 +58,8 @@ top.Glyphs ??= {
     more_vertical: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 18a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM8 4a2 2 0 104 0 2 2 0 00-4 0z"></path></g></svg>`,
     channelpoints: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
 
+    extensions: '<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M4 16h11a1 1 0 001-1V7h-5V5.5a1.5 1.5 0 00-3 0V7H4v1.035a3.5 3.5 0 010 6.93V16zM2 5v5h1.5a1.5 1.5 0 010 3H2v5h13c1.5 0 3-1.5 3-3V5h-5a3 3 0 00-3-3H9a3 3 0 00-3 3H2z" clip-rule="evenodd"></path></g></svg>',
+
     checkmark: `<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>`,
 
     favorite: `<svg fill="#bb1411" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>`,
@@ -71,6 +74,7 @@ top.Glyphs ??= {
     wallet: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 11h2v2h-2v-2z"></path><path fill-rule="evenodd" d="M13.45 2.078L2 6v12h14a2 2 0 002-2V8a2 2 0 00-2-2V4.001a2 2 0 00-2.55-1.923zM14 6V4.004L8.172 6H14zM4 8v8h12V8H4z" clip-rule="evenodd"></path></g></svg>`,
 
     close: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 16V4H2v12h2zM13 15l-1.5-1.5L14 11H6V9h8l-2.5-2.5L13 5l5 5-5 5z"></path></g></svg>`,
+    crown: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M13.798 10.456L10 6.657l-3.798 3.799L4 8.805V13h12V8.805l-2.202 1.65zM18 5v8a2 2 0 0 1-2 2H4a2.002 2.002 0 0 1-2-2V5l4 3 4-4 4 4 4-3z"></path></g></svg>`,
     unfav: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.456 8.255L10 5.125l-1.456 3.13-3.49.485 2.552 2.516-.616 3.485L10 13.064l3.01 1.677-.616-3.485 2.553-2.516-3.491-.485zM7.19 6.424l-4.2.583c-.932.13-1.318 1.209-.664 1.853l3.128 3.083-.755 4.272c-.163.92.876 1.603 1.722 1.132L10 15.354l3.579 1.993c.846.47 1.885-.212 1.722-1.132l-.755-4.272 3.128-3.083c.654-.644.268-1.723-.664-1.853l-4.2-.583-1.754-3.77c-.406-.872-1.706-.872-2.112 0L7.19 6.424z"></path></svg>`,
     globe: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M10 2c4.415 0 8 3.585 8 8s-3.585 8-8 8-8-3.585-8-8 3.585-8 8-8zm5.917 9a6.015 6.015 0 01-3.584 4.529A10 10 0 0013.95 11h1.967zm0-2a6.015 6.015 0 00-3.584-4.529A10 10 0 0113.95 9h1.967zm-3.98 0A8.002 8.002 0 0010 4.708 8.002 8.002 0 008.063 9h3.874zm-3.874 2A8.002 8.002 0 0010 15.292 8.002 8.002 0 0011.937 11H8.063zM6.05 11a10 10 0 001.617 4.529A6.014 6.014 0 014.083 11H6.05zm0-2a10 10 0 011.617-4.529A6.014 6.014 0 004.083 9H6.05z" clip-rule="evenodd"></path></g></svg>`,
     leave: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 18h-4a2 2 0 01-2-2v-2h2v2h4V4h-4v2h-2V4a2 2 0 012-2h4a2 2 0 012 2v12a2 2 0 01-2 2z"></path><path d="M7 5l1.5 1.5L6 9h8v2H6l2.5 2.5L7 15l-5-5 5-5z"></path></g></svg>`,
@@ -107,7 +111,7 @@ top.Glyphs ??= {
         for(let attribute in attributes) {
             let value = attributes[attribute];
 
-            if([null, undefined].contains(value))
+            if(!!~[null, undefined].indexOf(value))
                 ele.removeAttribute(attribute);
             else
                 ele.setAttribute(attribute, value);
@@ -118,5 +122,63 @@ top.Glyphs ??= {
         string.asNode = ele;
 
         return string;
+    },
+
+    get utf8() {
+        return ({
+            bonuschannelpoints: "\u{1F9F0}",
+            more_horizontal: "\u{2026}",
+            more_vertical: "\u{22EE}",
+            channelpoints: "\u{1F4AF}",
+            checkmark: "\u{2713}",
+            favorite: "\u{1F493}",
+            emotes: "\u{1F600}",
+            latest: "\u{1F31F}",
+            search: "\u{1F50D}",
+            stream: "\u{1F39E}",
+            thread: "\u{1F4AC}",
+            trophy: "\u{1F3C6}",
+            upload: "\u{21A5}",
+            wallet: "\u{1F45B}",
+            close: "\u{21A6}",
+            crown: "\u{1F451}",
+            unfav: "\u{2606}",
+            globe: "\u{1F310}",
+            leave: "\u{21A4}",
+            music: "\u{1F3B5}",
+            pause: "\u{23F8}",
+            reply: "\u{2936}",
+            stats: "\u{1F4CA}",
+            trash: "\u{1F5D1}",
+            bits: "\u{1F4A0}",
+            chat: "\u{1F4AC}",
+            gift: "\u{1F381}",
+            help: "\u{2139}",
+            lock: "\u{1F512}",
+            loot: "\u{1FA82}",
+            moon: "\u{1F319}",
+            play: "\u{25B6}",
+            star: "\u{2606}",
+            eye: "\u{1F441}",
+            fav: "\u{2605}",
+            mod: "\u{1F6E1}",
+            cog: "\u{2699}",
+            x: "\u{274C}",
+        });
+    },
+
+    get base64() {
+        return (() => {
+            let exclusions = ["modify", "base64", "utf8", "__base64__"],
+                __base64__ = top.Glyphs.__base64__ ?? {};
+
+            for(let glyph in top.Glyphs)
+                if(!!~exclusions.indexOf(glyph))
+                    continue;
+                else
+                    __base64__[glyph] ??= btoa(top.Glyphs[glyph]);
+
+            return top.Glyphs.__base64__ ??= __base64__;
+        })();
     },
 };

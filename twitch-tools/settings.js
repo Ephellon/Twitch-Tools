@@ -47,6 +47,9 @@ let // These are option names. Anything else will be removed
         /* Automation */
         // Away Mode
         'away_mode',
+            'away_mode__hide_chat',
+            'away_mode__volume_control',
+            'away_mode__volume',
         // Auto-claim Bonuses
         'auto_claim_bonuses',
         // Auto-Follow
@@ -71,6 +74,8 @@ let // These are option names. Anything else will be removed
         'prevent_raiding',
         // Prevent Hosting
         'prevent_hosting',
+        // Prime Loot
+        'claim_loot',
         // Kill Extensions
         'kill_extensions',
         // Auto Accept Mature Content
@@ -359,27 +364,7 @@ class Tooltip {
 
 let Glyphs = {
     // Twitch
-    bonuschannelpoints: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>',
-    channelpoints: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
-    extensions: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M4 16h11a1 1 0 001-1V7h-5V5.5a1.5 1.5 0 00-3 0V7H4v1.035a3.5 3.5 0 010 6.93V16zM2 5v5h1.5a1.5 1.5 0 010 3H2v5h13c1.5 0 3-1.5 3-3V5h-5a3 3 0 00-3-3H9a3 3 0 00-3 3H2z" clip-rule="evenodd"></path></g></svg>',
-    checkmark: '<svg fill="var(--green)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>',
-    favorite: '<svg fill="var(--red)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>',
-    chevron: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M6.5 5.5L11 10l-4.5 4.5L8 16l6-6-6-6-1.5 1.5z"></path></g></svg>',
-    emotes: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>',
-    latest: '<svg fill="var(--yellow)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>',
-    stream: '<svg fill="var(--live-red)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11.414 8.586c.362.362.586.862.586 1.414 0 .552-.224 1.052-.586 1.414l1.414 1.415A3.987 3.987 0 0014 10a3.987 3.987 0 00-1.172-2.828l-1.414 1.414zM5.757 5.757L4.343 4.343A7.975 7.975 0 002 10c0 2.21.895 4.21 2.343 5.657l1.414-1.414A5.981 5.981 0 014 10c0-1.657.672-3.157 1.757-4.243zM7.172 12.829l1.414-1.415A1.994 1.994 0 018 10c0-.552.224-1.052.586-1.414L7.172 7.172A3.987 3.987 0 006 10c0 1.105.448 2.105 1.172 2.829zM14.243 14.243l1.414 1.414A7.975 7.975 0 0018 10c0-2.209-.895-4.209-2.343-5.657l-1.414 1.414A5.981 5.981 0 0116 10a5.981 5.981 0 01-1.757 4.243z"></path></g></svg>',
-    thread: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 6H7V8H5V6Z"></path><path d="M9 6H11V8H9V6Z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M8 14L10 12H13C13.5523 12 14 11.5523 14 11V3C14 2.44772 13.5523 2 13 2H3C2.44772 2 2 2.44772 2 3V11C2 11.5523 2.44772 12 3 12H6L8 14ZM6.82843 10H4V4H12V10H9.17157L8 11.1716L6.82843 10Z"></path></g></svg>',
-    reply: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 5.5L7 4L2 9L7 14L8.5 12.5L6 10H10C12.2091 10 14 11.7909 14 14V16H16V14C16 10.6863 13.3137 8 10 8H6L8.5 5.5Z"></path></g></svg>',
-    stats: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 10h2v4H7v-4zM13 6h-2v8h2V6z"></path><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm12 2H4v12h12V4z" clip-rule="evenodd"></path></g></svg>',
-    trash: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 2H8v1H3v2h14V3h-5V2zM4 7v9a2 2 0 002 2h8a2 2 0 002-2V7h-2v9H6V7H4z"></path><path d="M11 7H9v7h2V7z"></path></g></svg>',
-    video: `<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M12.002 3.999a2 2 0 012 2v2L18 6v8l-3.998-2v2a2 2 0 01-2 1.999h-8a2 2 0 01-2-2V6a2 2 0 012-2h8zM12 6H4v8h8V6z" clip-rule="evenodd"></path></g></svg>`,
-    bits: '<svg fill="var(--purple)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></svg>',
-    chat: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>',
-    help: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8a1 1 0 011-1h.146a.87.87 0 01.854.871c0 .313-.179.6-.447.735A2.81 2.81 0 009 11.118V12h2v-.882a.81.81 0 01.447-.724A2.825 2.825 0 0013 7.871C13 6.307 11.734 5 10.146 5H10a3 3 0 00-3 3h2zM9 14a1 1 0 112 0 1 1 0 01-2 0z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8 6a6 6 0 110-12 6 6 0 010 12z"></path></g></svg>',
-    lock: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.001 5.99A3.992 3.992 0 0010.01 2h-.018a3.992 3.992 0 00-3.991 3.99V8H3.999v8c0 1.105.896 2 2 2h8c1.104 0 2-.895 2-2V8h-1.998V5.99zm-2 2.01V5.995A1.996 1.996 0 0010.006 4h-.01a1.996 1.996 0 00-1.995 1.995V8h4z" clip-rule="evenodd"></path></g></svg>',
-    play: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 17.066V2.934a.5.5 0 01.777-.416L17 10 5.777 17.482A.5.5 0 015 17.066z"></path></g></svg>',
-    eye: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11.998 10a2 2 0 11-4 0 2 2 0 014 0z"></path><path fill-rule="evenodd" d="M16.175 7.567L18 10l-1.825 2.433a9.992 9.992 0 01-2.855 2.575l-.232.14a6 6 0 01-6.175 0 35.993 35.993 0 00-.233-.14 9.992 9.992 0 01-2.855-2.575L2 10l1.825-2.433A9.992 9.992 0 016.68 4.992l.233-.14a6 6 0 016.175 0l.232.14a9.992 9.992 0 012.855 2.575zm-1.6 3.666a7.99 7.99 0 01-2.28 2.058l-.24.144a4 4 0 01-4.11 0 38.552 38.552 0 00-.239-.144 7.994 7.994 0 01-2.28-2.058L4.5 10l.925-1.233a7.992 7.992 0 012.28-2.058 37.9 37.9 0 00.24-.144 4 4 0 014.11 0l.239.144a7.996 7.996 0 012.28 2.058L15.5 10l-.925 1.233z" clip-rule="evenodd"></path></g></svg>',
-    mod: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M5.003 3.947A10 10 0 009.519 2.32L10 2l.48.32A10 10 0 0016.029 4H17l-.494 5.641a9 9 0 01-4.044 6.751L10 18l-2.462-1.608a9 9 0 01-4.044-6.75L3 4h.972c.346 0 .69-.018 1.031-.053zm.174 1.992l.309 3.528a7 7 0 003.146 5.25l1.368.894 1.368-.893a7 7 0 003.146-5.25l.309-3.529A12 12 0 0110 4.376 12 12 0 015.177 5.94z" clip-rule="evenodd"></path></g></svg>',
+    ...top.Glyphs,
 
     // Accessibility
     accessible: '<svg fill="var(--white)" width="100%" height="100%" version="1.1" viewBox="0 0 1224 792" x="0px" y="0px" enable-background="new 0 0 1224 792" xml:space="preserve"><g><path d="M833.556,367.574c-7.753-7.955-18.586-12.155-29.656-11.549l-133.981,7.458l73.733-83.975   c10.504-11.962,13.505-27.908,9.444-42.157c-2.143-9.764-8.056-18.648-17.14-24.324c-0.279-0.199-176.247-102.423-176.247-102.423   c-14.369-8.347-32.475-6.508-44.875,4.552l-85.958,76.676c-15.837,14.126-17.224,38.416-3.097,54.254   c14.128,15.836,38.419,17.227,54.255,3.096l65.168-58.131l53.874,31.285l-95.096,108.305   c-39.433,6.431-74.913,24.602-102.765,50.801l49.66,49.66c22.449-20.412,52.256-32.871,84.918-32.871   c69.667,0,126.346,56.68,126.346,126.348c0,32.662-12.459,62.467-32.869,84.916l49.657,49.66   c33.08-35.166,53.382-82.484,53.382-134.576c0-31.035-7.205-60.384-20.016-86.482l51.861-2.889l-12.616,154.75   c-1.725,21.152,14.027,39.695,35.18,41.422c1.059,0.086,2.116,0.127,3.163,0.127c19.806,0,36.621-15.219,38.257-35.306   l16.193-198.685C845.235,386.445,841.305,375.527,833.556,367.574z"/><path d="M762.384,202.965c35.523,0,64.317-28.797,64.317-64.322c0-35.523-28.794-64.323-64.317-64.323   c-35.527,0-64.323,28.8-64.323,64.323C698.061,174.168,726.856,202.965,762.384,202.965z"/><path d="M535.794,650.926c-69.668,0-126.348-56.68-126.348-126.348c0-26.256,8.056-50.66,21.817-70.887l-50.196-50.195   c-26.155,33.377-41.791,75.393-41.791,121.082c0,108.535,87.983,196.517,196.518,196.517c45.691,0,87.703-15.636,121.079-41.792   l-50.195-50.193C586.452,642.867,562.048,650.926,535.794,650.926z"/></g></svg>',
@@ -392,22 +377,6 @@ let Glyphs = {
 
     // Google Chrome
     chrome: '<svg width="100%" height="100%" version="1.1" viewbox="0 0 190 190" x="0px" y="0px"><circle fill="#FFF" cx="85.314" cy="85.713" r="83.805"/><path fill-opacity=".1" d="M138.644 100.95c0-29.454-23.877-53.331-53.33-53.331-29.454 0-53.331 23.877-53.331 53.331H47.22c0-21.039 17.055-38.094 38.093-38.094s38.093 17.055 38.093 38.094"/><circle fill-opacity=".1" cx="89.123" cy="96.379" r="28.951"/><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-149.309" y1="-72.211" x2="-149.309" y2="-71.45" gradientTransform="matrix(82 0 0 82 12328.615 5975.868)"><stop offset="0" stop-color="#81b4e0"/><stop offset="1" stop-color="#0c5a94"/></linearGradient><circle fill="url(#a)" cx="85.314" cy="85.712" r="31.236"/><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-114.66" y1="591.553" x2="-114.66" y2="660.884" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#f06b59"/><stop offset="1" stop-color="#df2227"/></linearGradient><path fill="url(#b)" d="M161.5 47.619C140.525 5.419 89.312-11.788 47.111 9.186a85.315 85.315 0 0 0-32.65 28.529l34.284 59.426c-6.313-20.068 4.837-41.456 24.905-47.77a38.128 38.128 0 0 1 10.902-1.752"/><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="-181.879" y1="737.534" x2="-146.834" y2="679.634" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#388b41"/><stop offset="1" stop-color="#4cb749"/></linearGradient><path fill="url(#c)" d="M14.461 37.716c-26.24 39.145-15.78 92.148 23.363 118.39a85.33 85.33 0 0 0 40.633 14.175l35.809-60.948c-13.39 16.229-37.397 18.529-53.625 5.141a38.096 38.096 0 0 1-11.896-17.33"/><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="-64.479" y1="743.693" x2="-101.81" y2="653.794" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#e4b022"/><stop offset=".3" stop-color="#fcd209"/></linearGradient><path fill="url(#d)" d="M78.457 170.28c46.991 3.552 87.965-31.662 91.519-78.653a85.312 85.312 0 0 0-8.477-44.007H84.552c21.036.097 38.014 17.23 37.917 38.269a38.099 38.099 0 0 1-8.205 23.443"/><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="-170.276" y1="686.026" x2="-170.276" y2="625.078" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#e)" d="M14.461 37.716l34.284 59.426a38.093 38.093 0 0 1 1.523-25.904L15.984 35.43"/><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="-86.149" y1="705.707" x2="-128.05" y2="748.37" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#f)" d="M78.457 170.28l35.809-60.948a38.105 38.105 0 0 1-22.095 12.951L76.933 170.28"/><linearGradient id="chrome-logo-gradient" gradientUnits="userSpaceOnUse" x1="-86.757" y1="717.981" x2="-80.662" y2="657.797" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#chrome-logo-gradient)" d="M161.5 47.619H84.552a38.094 38.094 0 0 1 29.712 14.476l48.759-12.189"/></svg>',
-
-    // Glyph methods
-    modify(glyph, attributes) {
-        let XMLParser = Glyphs.DOMParser ??= new DOMParser;
-
-        let XML = XMLParser.parseFromString((glyph in Glyphs? Glyphs[glyph]: glyph), 'text/xml'),
-            SVG = $('svg', false, XML);
-
-        for(let attribute in attributes) {
-            let value = attributes[attribute];
-
-            SVG.setAttribute(attribute, value);
-        }
-
-        return SVG.outerHTML;
-    },
 };
 
 // Create elements
@@ -601,7 +570,7 @@ function RedoFilterRulesElement(rules) {
 
         // "Remove" button
         R.id = fID;
-        R.innerHTML = Glyphs.modify('trash', { height: '20px', width: '20px' });
+        R.innerHTML = Glyphs.modify('trash', { fill: 'white', height: '20px', width: '20px' });
         R.classList.add('remove');
 
         R.onclick = event => {
@@ -623,7 +592,9 @@ function RedoFilterRulesElement(rules) {
 async function SaveSettings() {
     let extractValue = element => {
         return element[{
+            'date': 'value',
             'text': 'value',
+            'time': 'value',
             'radio': 'checked',
             'number': 'value',
             'checkbox': 'checked',
@@ -635,6 +606,7 @@ async function SaveSettings() {
         using = elements.map(element => element.id),
         settings = {};
 
+    // Edit settings before exporting them (if needed)
     for(let id of using)
         switch(id) {
             case 'filter_rules':
@@ -653,6 +625,12 @@ async function SaveSettings() {
                 RedoFilterRulesElement(settings.filter_rules);
                 break;
 
+            case 'away_mode__volume':
+                let volume = extractValue($('#away_mode__volume'));
+
+                settings.away_mode__volume = parseFloat(volume) / 100;
+                break;
+
             default:
                 settings[id] = extractValue($(`#${ id }`));
                 break;
@@ -667,7 +645,9 @@ async function LoadSettings() {
             return;
 
         return element[{
+            'date': 'value',
             'text': 'value',
+            'time': 'value',
             'radio': 'checked',
             'number': 'value',
             'checkbox': 'checked',
@@ -689,6 +669,12 @@ async function LoadSettings() {
                     let rules = settings[id];
 
                     RedoFilterRulesElement(rules);
+                    break;
+
+                case 'away_mode__volume':
+                    let volume = settings[id];
+
+                    assignValue(element, volume * 100);
                     break;
 
                 default:
@@ -714,18 +700,18 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     let diff = 0;
 
     for(let index = 0, length = Math.max(oldVersion.length, newVersion.length); index < length; ++index) {
-        let L = parseInt((oldVersion[index] ?? '').replace(/[^a-z0-9]+/g), 36),
-            R = parseInt((newVersion[index] ?? '').replace(/[^a-z0-9]+/g), 36);
+        let L = parseInt((oldVersion[index] ?? '').replace(/[^a-z0-9]+/gi), 36),
+            R = parseInt((newVersion[index] ?? '').replace(/[^a-z0-9]+/gi), 36);
 
-        if(L == R) {
+        if(L == R)
             continue;
-        } else if(L < R) {
+
+        if(L < R)
             diff = -1;
-            break;
-        } else {
+        else
             diff = +1;
-            break;
-        }
+
+        break;
     }
 
     switch(returnType?.toLowerCase()) {
@@ -821,6 +807,7 @@ $('[set]', true).map(async(element) => {
             github: 'Learn more',
             chrome: 'Learn more',
         },
+        this: Object.fromEntries([...element.attributes].map(({ name, value }) => [name, value])),
         Glyphs,
         ...FETCHED_DATA,
     };
@@ -979,136 +966,185 @@ $('[new]', true).map(element => {
         element.removeAttribute('new');
 });
 
-// Translate the user's page to their preferred language
-setTimeout(async() => {
-    let [language] = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-');
-
-    await fetch(`/lang/${ language }.json`)
-        .catch(error => {
-            console.log(`Translations to "${ language.toUpperCase() }" are not available`);
-
-            return {};
-        })
-        .then(text => text.json?.())
-        .then(json => {
-            if(!defined(json))
-                return;
-
-            for(let element of $('[tr-id]', true)) {
-                let translation_id = element.getAttribute('tr-id'),
-                    [translation] = json[translation_id].splice(0, 1);
-
-                element.innerHTML = translation ?? element.innerHTML;
-            }
-        });
-}, 1);
-
 document.body.onload = async() => {
     let url = parseURL(location.href),
         search = url.searchParameters;
 
-    for(let attribute in search)
-        $('body').classList.add(attribute);
+    // Translate the user's page to their preferred language
+    let [language] = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-');
 
-    if((search['show-defaults'] + '') != 'true')
-        await LoadSettings();
+    await fetch(`/_locales/${ language }/settings.json`)
+        .catch(error => {
+            console.log(`Translations to "${ language.toUpperCase() }" are not available`);
 
-    $('.summary', true).map(element => {
-        let article = element.parentElement,
-            summary = element,
-            uuid = 'uuid-' + Math.random().toString(36).replace('.','');
+            return { json() { return null } };
+        })
+        .then(text => text.json?.())
+        .then(json => {
+            if(json?.LANG_PACK_READY !== true)
+                return /* Translation package isn't ready */;
 
-        if(summary.children.length <= 2)
-            return;
+            let lastTrID,
+                placement = {};
 
-        let margin = ['.5rem'],
-            getHeight = element => {
-                let style = getComputedStyle(element),
-                    attributes = ['height'],
-                    height = 0;
+            let { ELEMENT_NODE, TEXT_NODE } = document;
 
-                for(let attribute of attributes)
-                    height += parseInt(style[attribute]);
+            for(let element of $('[tr-id]', true)) {
+                let translation_id = (element.getAttribute('tr-id') || lastTrID),
+                    translations = (null
+                        ?? json['?']?.[translation_id]
+                        ?? json[translation_id]
+                        ?? []
+                    );
 
-                return height;
-            };
+                let nodes = [...element.childNodes]
+                    .filter(node => !!~[ELEMENT_NODE, TEXT_NODE].indexOf(node.nodeType))
+                    .filter(node => (node.textContent ?? "").trim().length > 1)
+                    .map(node => {
+                        let { attributes, nodeType } = node;
 
-        // summary *
-        let not = [];
+                        if(!!~[TEXT_NODE].indexOf(nodeType))
+                            return node;
 
-        // Dynamically adjust the elements' heights
-        summary.id = uuid;
-        $('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), true, summary)
-            .map(element => {
-                let height = getHeight(element);
+                        if(!defined(attributes) || ('tr-id' in attributes))
+                            return;
 
-                if(height)
-                    margin.push(height + 'px');
-                else
-                    element.setAttribute('style', 'display:none!important');
-            });
+                        return node;
+                    })
+                    .filter(defined);
 
-        summary.setAttribute('style', `padding-bottom:calc(${ margin.join(' + ') })`);
-    });
+                for(let node of nodes) {
+                    let translation = translations[placement[translation_id] |= 0];
+                    let padding = {
+                        start: node.textContent.replace(/^([\s\.!:?,]*)[^]*?$/, '$1'),
+                        stop: node.textContent.replace(/^[^]*?((?:&#?[\w\-]+?;)?[\s\.!:?,]*)$/, '$1'),
+                    };
 
-    setTimeout(() => {
-        $('#whisper_audio_sound', true).map(element => {
-            let [selected] = element.selectedOptions;
-            let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+                    if(defined(translation))
+                        node.textContent = padding.start + translation + padding.stop;
 
-            $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
-        });
+                    if(translation?.length < 1)
+                        node.textContent = node.textContent.trim();
 
-        $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
-            let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
-                direction = tooltip.replace(/-?tooltip$/, '');
+                    placement[translation_id] = (placement[translation_id] + 1 < translations.length)?
+                        placement[translation_id] + 1:
+                    0;
+                }
 
-            direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
-
-            new Tooltip(element, element.getAttribute(tooltip), { direction });
-        });
-
-        // All experimental features - auto-enable "Experimental Features" if a feature is turned on
-        $('[id=":settings--experimental"i] section > .summary .toggle input', true).map(input => {
-            let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
-
-            prerequisites.push('#experimental_mode');
-
-            input.setAttribute('requires', prerequisites.join(','));
-        });
-
-        // All "required" parents
-        $('[requires]', true).map(dependent => {
-            let providers = $(dependent.getAttribute('requires'), true);
-
-            Observing:
-            for(let provider of providers) {
-                // Apply the false status to `dependent` when the `provider` is set to false
-                    // when(provider.checked === false) -> dependent.checked = false
-                // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
-                    // when(dependent.checked === true) -> provider.checked = true
-                let dependents = (provider.getAttribute('dependents') ?? '').split(',');
-
-                provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
-
-                provider.addEventListener('change', event => {
-                    let { currentTarget } = event,
-                        { checked } = currentTarget,
-                        dependents = currentTarget.getAttribute('dependents');
-
-                    if(!checked)
-                        $(dependents, true).filter(dependent => dependent.checked).map(dependent => dependent.click());
-                });
+                lastTrID = translation_id;
             }
+        })
+        .then(async() => {
+            /* Continue loading the page after translations have been made/skipped */
 
-            dependent.addEventListener('change', event => {
-                let { currentTarget } = event,
-                    { checked } = currentTarget,
-                    providers = currentTarget.getAttribute('requires');
+            // Add classes to the body
+            for(let attribute in search)
+                $('body').classList.add(attribute);
 
-                if(checked)
-                    $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
+            // Stop or continue loading settings
+            if((search['show-defaults'] + '') != 'true')
+                await LoadSettings();
+
+            // Adjust summaries
+            $('.summary', true).map(element => {
+                let article = element.parentElement,
+                    summary = element,
+                    uuid = 'uuid-' + Math.random().toString(36).replace('.','');
+
+                if(summary.children.length <= 2)
+                    return;
+
+                let margin = ['.5rem'],
+                    getHeight = element => {
+                        let style = getComputedStyle(element),
+                            attributes = ['height'],
+                            height = 0;
+
+                        for(let attribute of attributes)
+                            height += parseInt(style[attribute]);
+
+                        return height;
+                    };
+
+                // summary *
+                let not = [];
+
+                // Dynamically adjust the elements' heights
+                summary.id = uuid;
+                $('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), true, summary)
+                    .map(element => {
+                        let height = getHeight(element);
+
+                        if(height)
+                            margin.push(height + 'px');
+                        else
+                            element.setAttribute('style', 'display:none!important');
+                    });
+
+                summary.setAttribute('style', `padding-bottom:calc(${ margin.join(' + ') })`);
             });
+
+            // Update links (hrefs), tooltips, and other items
+            setTimeout(() => {
+                $('#whisper_audio_sound', true).map(element => {
+                    let [selected] = element.selectedOptions;
+                    let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
+
+                    $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
+                });
+
+                $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
+                    let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
+                        direction = tooltip.replace(/-?tooltip$/, '');
+
+                    direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
+
+                    new Tooltip(element, element.getAttribute(tooltip), { direction });
+                });
+
+                // All experimental features - auto-enable "Experimental Features" if a feature is turned on
+                $('[id=":settings--experimental"i] section > .summary .toggle input', true).map(input => {
+                    let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
+
+                    prerequisites.push('#experimental_mode');
+
+                    input.setAttribute('requires', prerequisites.join(','));
+                });
+
+                // All "required" parents
+                $('[requires]', true).map(dependent => {
+                    let providers = $(dependent.getAttribute('requires'), true);
+
+                    Observing:
+                    for(let provider of providers) {
+                        // Apply the false status to `dependent` when the `provider` is set to false
+                            // when(provider.checked === false) -> dependent.checked = false
+                        // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
+                            // when(dependent.checked === true) -> provider.checked = true
+                        let dependents = (provider.getAttribute('dependents') ?? '').split(',');
+
+                        provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
+
+                        provider.addEventListener('change', event => {
+                            let { currentTarget } = event,
+                                { checked } = currentTarget,
+                                dependents = currentTarget.getAttribute('dependents');
+
+                            if(!checked)
+                                $(dependents, true).filter(dependent => dependent.checked).map(dependent => dependent.click());
+                        });
+                    }
+
+                    // Add "requires" event listeners
+                    dependent.addEventListener('change', event => {
+                        let { currentTarget } = event,
+                            { checked } = currentTarget,
+                            providers = currentTarget.getAttribute('requires');
+
+                        if(checked)
+                            $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
+                    });
+                });
+            }, 1000);
         });
-    }, 1000);
 };

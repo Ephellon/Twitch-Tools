@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html dir='ltr' lang='en'>
     <!-- /settings.html
     #     _____      _   _   _                   _     _             _
     #    / ____|    | | | | (_)                 | |   | |           | |
@@ -11,10 +11,17 @@
     #                                |___/
     -->
     <head>
-        <title>Twitch Tools &mdash; Settings</title>
+        <title tr-id='title'>Twitch Tools &mdash; Settings</title>
 
-        <link rel="icon" href="favicon.png"/>
-        <link rel="stylesheet" href="settings.css"/>
+        <!-- Colors & Meanings
+            # Gold - deals with cosmetics
+            # Red - deals with followage
+            # Purple - deals with channel points
+            # White - everything else
+        -->
+
+        <link rel='icon' href='favicon.png'/>
+        <link rel='stylesheet' href='settings.css'/>
     </head>
     <body>
         <!-- Automation
@@ -27,21 +34,21 @@
         #
         #
         -->
-        <header>Automation</header>
+        <header tr-id='header:automation'>Automation</header>
         <article>
             <!-- Auto-Join -->
             <section>
-                <div class="title"><span small glyph="mod"></span> Auto-Join</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="auto_accept_mature" type="checkbox"/>
-                        <label for="auto_accept_mature"></label>
+                <div class='title' tr-id='auto-join'><span small glyph='mod'></span> Auto-Join</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='auto_accept_mature' type='checkbox'/>
+                        <label for='auto_accept_mature'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When presented with a warning that the stream is intended for <b warning-text>mature audiences</b>, proceed automatically.
                     </p>
-                    <p>
-                        This will also join <a href="https://help.twitch.tv/s/article/watch-parties" top-tooltip="Watch Parties">Watch Parties</a> automatically.
+                    <p tr-id>
+                        This will also join <a href='https://help.twitch.tv/s/article/watch-parties' top-tooltip='Watch Parties'>Watch Parties</a> automatically.
                     </p>
                 </div>
             </section>
@@ -49,79 +56,226 @@
             <!-- [[Auto-Focus]] -->
 
             <!-- Away Mode -->
-            <section>
-                <div class="title"><span small glyph="eye"></span>Away Mode</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="away_mode" type="checkbox" checked/>
-                        <label for="away_mode"></label>
+            <section new='3.2'>
+                <div class='title' tr-id='away-mode'><span small glyph='eye'></span>Away Mode</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='away_mode' type='checkbox' checked/>
+                        <label for='away_mode'></label>
                     </div>
-                    <p>
-                        Adds a button to toggle between low and auto video quality.
+                    <p tr-id>
+                        Adds a button to toggle <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                     </p>
-                    <p>
+                    <p tr-id>
                         The keyboard shortcut <code>Alt + A</code> can also be used.
                     </p>
+
+                    <details>
+                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Away Mode&quot;'>Extras</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id='away-mode:hide-chat'>Hide Chat</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='away_mode__hide_chat' type='checkbox'/>
+                                        <label for='away_mode__hide_chat'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Keep chat hidden while <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='away-mode:volume'>Lurking Volume</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='away_mode__volume_control' type='checkbox'/>
+                                        <label for='away_mode__volume_control'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Set the volume to <span top-tooltip='1 &mdash; 25' unit='%'><input id='away_mode__volume' type='number' value='25' min='1' max='25'/></span> when <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only disabled>
+                                <div class='title' tr-id='away-mode:schedule'>Schedule</div>
+                                <div class='summary'>
+                                    <details>
+                                        <summary tr-id subtitle='Automatically lurk at these times'>Select Times</summary>
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_0' type='checkbox' name='away-mode-schedule-0'/>
+                                            <label for='away_mode__on_0' tr-id='day-of-week'>Sunday</label>
+                                            <label for='away_mode__on_0:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_0_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_0_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_1' type='checkbox' name='away-mode-schedule-1'/>
+                                            <label for='away_mode__on_1' tr-id='day-of-week'>Monday</label>
+                                            <label for='away_mode__on_1:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_1_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_1_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_2' type='checkbox' name='away-mode-schedule-2'/>
+                                            <label for='away_mode__on_2' tr-id='day-of-week'>Tuesday</label>
+                                            <label for='away_mode__on_2:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_2_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_2_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_3' type='checkbox' name='away-mode-schedule-3'/>
+                                            <label for='away_mode__on_3' tr-id='day-of-week'>Wednesday</label>
+                                            <label for='away_mode__on_3:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_3_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_3_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_4' type='checkbox' name='away-mode-schedule-4'/>
+                                            <label for='away_mode__on_4' tr-id='day-of-week'>Thursday</label>
+                                            <label for='away_mode__on_4:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_4_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_4_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_5' type='checkbox' name='away-mode-schedule-5'/>
+                                            <label for='away_mode__on_5' tr-id='day-of-week'>Friday</label>
+                                            <label for='away_mode__on_5:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_5_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_5_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div class='checkbox'>
+                                            <input id='away_mode__on_6' type='checkbox' name='away-mode-schedule-6'/>
+                                            <label for='away_mode__on_6' tr-id='day-of-week'>Saturday</label>
+                                            <label for='away_mode__on_6:checked'>
+                                                <div>
+                                                    <h3 tr-id='en|dis'>Enable at</h3>
+                                                    <input id='away_mode__on_6_from' type='time' required/>
+                                                </div>
+                                                <div>
+                                                    <h3 tr-id>Disable at</h3>
+                                                    <input id='away_mode__on_6_to' type='time' required/>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
             <!-- Claim Bonuses -->
             <section>
-                <div class="title"><span small glyph="channelpoints"></span> Claim Bonuses</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="auto_claim_bonuses" type="checkbox" checked/>
-                        <label for="auto_claim_bonuses"></label>
+                <div class='title' tr-id='auto-claim-bonuses'><span small glyph='channelpoints'></span> Claim Bonuses</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='auto_claim_bonuses' type='checkbox' checked/>
+                        <label for='auto_claim_bonuses'></label>
                     </div>
-                    <p>
-                        When the <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Bonus Channel Points"><button style="background-color:var(--blue)!important"><span small black glyph="bonuschannelpoints"></span></button></a> button appears, click it automatically.
+                    <p tr-id>
+                        When the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Bonus Channel Points'><button style='background-color:var(--blue)!important'><span small black glyph='bonuschannelpoints'></span></button></a> button appears, click it automatically.
                     </p>
                 </div>
             </section>
 
             <!-- First in Line / Up Next -->
             <section>
-                <div class="title"><span small glyph="favorite"></span> First in Line / Up Next</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='first-in-line'><span small glyph='favorite'></span> First in Line / Up Next</div>
+                <div class='summary'>
+                    <p tr-id>
                         When a channel goes live, head to its stream automatically.
                     </p>
-                    <p>
+                    <p tr-id>
                         <b>Up Next</b> adds a queueing service to Twitch&trade;.
                     </p>
 
                     <details>
-                        <summary subtitle="Adjust settings for &quot;First in Line&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust settings for &quot;First in Line&quot;'>Options</summary>
                         <div>
-                            <div class="radio">
-                                <input id="first_in_line_none" type="radio" name="first-in-line" checked/>
-                                <label for="first_in_line_none">
+                            <div class='radio'>
+                                <input id='first_in_line_none' type='radio' name='first-in-line' checked/>
+                                <label tr-id='first-in-line:disabled' for='first_in_line_none'>
                                     <h2>Disabled</h2>
                                     Do not ues this feature
                                 </label>
                             </div>
 
-                            <div class="radio">
-                                <input id="first_in_line" type="radio" name="first-in-line"/>
-                                <label for="first_in_line">
+                            <div class='radio'>
+                                <input id='first_in_line' type='radio' name='first-in-line'/>
+                                <label tr-id='first-in-line:notification' for='first_in_line'>
                                     <h2>Notification</h2>
-                                    When you receive a notification for a channel going live, go to its stream after <span><input id="first_in_line_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>
+                                    When you receive a notification for a channel going live, go to its stream after
+                                    <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='first_in_line_time_minutes' type='number' value='15' min='5' step='5'/></span>
                                 </label>
                             </div>
 
-                            <div class="radio">
-                                <input id="first_in_line_plus" type="radio" name="first-in-line"/>
-                                <label for="first_in_line_plus">
+                            <div class='radio'>
+                                <input id='first_in_line_plus' type='radio' name='first-in-line'/>
+                                <label tr-id='first-in-line:appearance' for='first_in_line_plus'>
                                     <h2>Appearance</h2>
-                                    When a channel appears in your Followed Channels, go to its stream after <span><input id="first_in_line_plus_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>
+                                    When a channel appears in your Followed Channels, go to its stream after
+                                    <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='first_in_line_plus_time_minutes' type='number' value='15' min='5' step='5'/></span>
                                 </label>
                             </div>
 
-                            <div class="radio">
-                                <input id="first_in_line_all" type="radio" name="first-in-line"/>
-                                <label for="first_in_line_all">
-                                    <h2>Automatic <bubble>Smart Notifications</bubble></h2>
-                                    Go to all streams automatically after <span><input id="first_in_line_all_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b>
+                            <div class='radio'>
+                                <input id='first_in_line_all' type='radio' name='first-in-line'/>
+                                <label tr-id='first-in-line:smart-notifications' for='first_in_line_all'>
+                                    <h2 bubble='Smart Notifications'>Automatic</h2>
+                                    Go to all streams automatically after
+                                    <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='first_in_line_all_time_minutes' type='number' value='15' min='5' step='5'/></span>
                                 </label>
                             </div>
                         </div>
@@ -131,41 +285,41 @@
 
             <!-- Follows -->
             <section>
-                <div class="title"><span small glyph="favorite"></span> Follows</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='auto-follow'><span small glyph='favorite'></span> Follows</div>
+                <div class='summary'>
+                    <p tr-id>
                         While watching a channel that isn't followed, follow it automatically.
                     </p>
                     <details>
-                        <summary subtitle="Adjust settings for &quot;Auto-Follow&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust settings for &quot;Auto-Follow&quot;'>Options</summary>
                         <div>
-                            <div class="radio">
-                                <input id="auto_follow_none" type="radio" name="auto-follow" checked/>
-                                <label for="auto_follow_none">
+                            <div class='radio'>
+                                <input id='auto_follow_none' type='radio' name='auto-follow' checked/>
+                                <label tr-id='auto-follow:none' for='auto_follow_none'>
                                     <h2>Disabled</h2>
                                     Do not use this feature
                                 </label>
                             </div>
 
-                            <div class="radio">
-                                <input id="auto_follow_raids" type="radio" name="auto-follow"/>
-                                <label for="auto_follow_raids">
+                            <div class='radio'>
+                                <input id='auto_follow_raids' type='radio' name='auto-follow'/>
+                                <label tr-id='auto-follow:raids' for='auto_follow_raids'>
                                     <h2>Raids</h2>
                                     When participating in a raid, follow the channel being raided
                                 </label>
                             </div>
 
-                            <div class="radio">
-                                <input id="auto_follow_time" type="radio" name="auto-follow"/>
-                                <label for="auto_follow_time">
+                            <div class='radio'>
+                                <input id='auto_follow_time' type='radio' name='auto-follow'/>
+                                <label tr-id='auto-follow:time' for='auto_follow_time'>
                                     <h2>Viewership</h2>
-                                    After watching <span><input id="auto_follow_time_minutes" type="number" value="15" min="0" step="5"/></span> <b>minutes</b> of content, follow the channel
+                                    After watching <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='auto_follow_time_minutes' type='number' value='15' min='5' step='5'/></span> of content, follow the channel
                                 </label>
                             </div>
 
-                            <div class="radio">
-                                <input id="auto_follow_all" type="radio" name="auto-follow"/>
-                                <label for="auto_follow_all">
+                            <div class='radio'>
+                                <input id='auto_follow_all' type='radio' name='auto-follow'/>
+                                <label tr-id='auto-follow:all' for='auto_follow_all'>
                                     <h2>Automatic</h2>
                                     Follow all channels automatically
                                 </label>
@@ -177,13 +331,13 @@
 
             <!-- Kill Extensions -->
             <section>
-                <div class="title"><span small purple glyph="extensions"></span> Kill Extensions</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="kill_extensions" type="checkbox"/>
-                        <label for="kill_extensions"></label>
+                <div class='title' tr-id='kill-extensions'><span small gold glyph='extensions'></span> Kill Extensions</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='kill_extensions' type='checkbox'/>
+                        <label for='kill_extensions'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Do not allow Twitch&trade; extensions to display over the stream.
                     </p>
                 </div>
@@ -191,87 +345,103 @@
 
             <!-- Next Channel -->
             <section>
-                <div class="title"><span small glyph="favorite"></span> Next Channel</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='next-channel-preference'><span small glyph='favorite'></span> Next Channel</div>
+                <div class='summary'>
+                    <p tr-id>
                         How should the next channel be decided when <b>Up Next</b> is empty?
                     </p>
-                    <p>
-                        <b warning-text>This only activates when the current stream goes offline.</b>
+                    <p tr-id>
+                        <b warning-text>This only activates when the current stream goes offline</b>.
                     </p>
-                    <select id="next_channel_preference">
-                        <option value="random" selected>Go to a random channel</option>
-                        <option value="unpopular">Go with the least viewers</option>
-                        <option value="popular">Go with the most viewers</option>
-                        <option value="poor">Go with the least channel points</option>
-                        <option value="rich">Go with the most channel points</option>
+                    <select id='next_channel_preference'>
+                        <option value='random' tr-id='next-channel-preference:options' selected>Go to a random channel</option>
+                        <option value='unpopular' tr-id>Go with the least viewers</option>
+                        <option value='popular' tr-id>Go with the most viewers</option>
+                        <option value='poor' tr-id>Go with the least channel points</option>
+                        <option value='rich' tr-id>Go with the most channel points</option>
                     </select>
                 </div>
             </section>
 
             <!-- Prevent Hosting -->
             <section>
-                <div class="title"><span small glyph="lock"></span> Prevent Hosting</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='prevent-hosting'><span small glyph='lock'></span> Prevent Hosting</div>
+                <div class='summary'>
+                    <p tr-id>
                         Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
                     </p>
-                    <select id="prevent_hosting">
-                        <option value="none" selected>Allow all channels to host</option>
-                        <option value="all">Prevent all channels from hosting</option>
-                        <option value="unfollowed">Prevent unfollowed channels from being hosted</option>
+                    <select id='prevent_hosting'>
+                        <option value='none' selected tr-id='prevent-hosting:options'>Allow all channels to host</option>
+                        <option value='all' tr-id>Prevent all channels from hosting</option>
+                        <option value='unfollowed' tr-id>Prevent unfollowed channels from being hosted</option>
                     </select>
                 </div>
             </section>
 
             <!-- Prevent Raiding -->
             <section>
-                <div class="title"><span small glyph="lock"></span> Prevent Raiding</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='prevent-raiding'><span small glyph='lock'></span> Prevent Raiding</div>
+                <div class='summary'>
+                    <p tr-id>
                         Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
                     </p>
-                    <select id="prevent_raiding">
-                        <option value="none" selected>Allow all channels to raid</option>
-                        <option value="greed">Only raid to collect channel points</option>
-                        <option value="all">Prevent all channels from raiding</option>
-                        <option value="unfollowed">Prevent unfollowed channels from being raided</option>
+                    <select id='prevent_raiding'>
+                        <option value='none' selected tr-id='prevent-raiding:options'>Allow all channels to raid</option>
+                        <option value='greed' tr-id>Only raid to collect channel points</option>
+                        <option value='all' tr-id>Prevent all channels from raiding</option>
+                        <option value='unfollowed' tr-id>Prevent unfollowed channels from being raided</option>
                     </select>
+                </div>
+            </section>
+
+            <!-- Prime Loot -->
+            <section new='3.2'>
+                <div class='title' tr-id='claim-loot'><span small gold glyph='crown'></span> Prime Loot</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='claim_loot' type='checkbox'/>
+                        <label for='claim_loot'></label>
+                    </div>
+                    <p tr-id>
+                        Automatically claim and dismiss <b>Prime Gaming Loot</b> offers when the page loads.
+                    </p>
                 </div>
             </section>
 
             <!-- Stay Live -->
             <section>
-                <div class="title"><span small glyph="stream"></span> Stay Live</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="stay_live" type="checkbox" checked/>
-                        <label for="stay_live"></label>
+                <div class='title' tr-id='stay-live'><span small glyph='stream'></span> Stay Live</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='stay_live' type='checkbox' checked/>
+                        <label for='stay_live'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         After the current stream ends, go to the <b>Next Channel</b>.
                     </p>
                 </div>
             </section>
 
             <!-- View Mode -->
-            <section new="3.1.5">
-                <div class="title"><span small glyph="video"></span> View Mode</div>
-                <div class="summary">
-                    <p>
+            <section new='3.1.5'>
+                <div class='title' tr-id='view-mode'><span small gold glyph='video'></span> View Mode</div>
+                <div class='summary'>
+                    <p tr-id>
                         When the page is done loading, change the view to:
                     </p>
-                    <select id="view_mode">
-                        <option value="null" selected>Nothing (no change)</option>
-                        <option value="theatre">Theatre Mode</option>
-                        <option value="fullscreen">Fullscreen Mode</option>
+                    <select id='view_mode'>
+                        <option value='null' selected tr-id='view-mode:options'>Nothing (do not change)</option>
+                        <option value='default' tr-id>Default Mode (banner + chat)</option>
+                        <option value='theatre' tr-id>Theatre Mode (chat)</option>
+                        <option value='fullwidth' tr-id>Fullwidth Mode (banner)</option>
+                        <option value='fullscreen' tr-id>Fullscreen Mode</option>
                     </select>
                 </div>
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -285,68 +455,69 @@
         #                                                                  __/ |         __/ |
         #                                                                 |___/         |___/
         -->
-        <header>Chat &amp; Messaging <span white glyph="help" right-tooltip="These settings do not apply to banned channels"></span></header>
+        <header tr-id='header:chat-and-messaging'>Chat &amp; Messaging <span white glyph='help' right-tooltip='These settings do not apply to banned channels'></span></header>
         <article>
             <!-- BetterTTV Emotes -->
             <section>
-                <div class="title"><span small gold glyph="emotes"></span> BetterTTV emotes</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="bttv_emotes" type="checkbox"/>
-                        <label for="bttv_emotes"></label>
+                <div class='title' tr-id='bttv-emotes'><span small gold glyph='emotes'></span> BetterTTV emotes</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='bttv_emotes' type='checkbox'/>
+                        <label for='bttv_emotes'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Use BetterTTV emotes.
                     </p>
-                    <p warning-text>
+                    <p warning-text tr-id>
                         This may cause instability while loading emotes.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for &quot;BetterTTV emotes&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;BetterTTV emotes&quot;'>Options</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Channel Specific Emotes</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="bttv_emotes_channel" type="checkbox"/>
-                                        <label for="bttv_emotes_channel"></label>
+                                <div class='title' tr-id='bttv-emotes:channel-specific-emotes'>Channel Specific Emotes</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='bttv_emotes_channel' type='checkbox'/>
+                                        <label for='bttv_emotes_channel'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Load channel specific <b>BetterTTV</b> emotes.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Emote Location</div>
-                                <div class="summary">
-                                    <p>
+                                <div class='title' tr-id='bttv-emotes:emote-location'>Emote Location</div>
+                                <div class='summary'>
+                                    <p tr-id>
                                         Load these <b>BetterTTV</b> emotes:
                                     </p>
 
-                                    <select id="bttv_emotes_location">
-                                        <option value="emotes/shared/trending" selected>Most popular (Trending)</option>
-                                        <option value="emotes/shared">Most shared (Shared)</option>
-                                        <option value="emotes/shared/top">Most used (Top)</option>
-                                        <option value="cached/emotes/global">Most universal (Global)</option>
+                                    <select id='bttv_emotes_location'>
+                                        <option value='emotes/shared/trending' selected tr-id='bttv-emotes:emote-location:options'>Most popular (Trending)</option>
+                                        <option value='emotes/shared' tr-id>Most shared (Shared)</option>
+                                        <option value='emotes/shared/top' tr-id>Most used (Top)</option>
+                                        <option value='cached/emotes/global' tr-id>Most universal (Global)</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Extra Emotes</div>
-                                <div class="summary">
-                                    <p>
-                                        Add <b>BetterTTV</b> emotes with the words: <input id="bttv_emotes_extras" type="text" value="" left-tooltip="Case insensitive &bull; Comma separated" placeholder="monka,flex,pls"/>
+                                <div class='title' tr-id='bttv-emotes:extra-emotes'>Extra Emotes</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Add <b>BetterTTV</b> emotes with the words:
+                                        <input id='bttv_emotes_extras' type='text' value="" left-tooltip='Case insensitive &bull; Comma separated' placeholder='monka,flex,pls'/>
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Library Size</div>
-                                <div class="summary">
-                                    <p>
-                                        Load up to <span><input id="bttv_emotes_maximum" type="number" value="150" max="1200" min="30" step="30"/></span> <b>BetterTTV</b> emotes.
+                                <div class='title' tr-id='bttv-emotes:library-size'>Library Size</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Load up to <span top-tooltip='30 &mdash; 3000' set='unit:Glyphs.utf8.emotes'><input id='bttv_emotes_maximum' type='number' value='150' min='30' max='3000' step='30'/></span>
                                     </p>
                                 </div>
                             </div>
@@ -359,41 +530,39 @@
 
             <!-- Filter Messages -->
             <section>
-                <div class="title"><span small glyph="mod"></span> Filter messages</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="filter_messages" type="checkbox" checked/>
-                        <label for="filter_messages"></label>
+                <div class='title' tr-id='filter-messages'><span small glyph='mod'></span> Filter messages</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='filter_messages' type='checkbox' checked/>
+                        <label for='filter_messages'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Remove messages/rules across all channels.
                     </p>
-                    <p>
-                        Please see
-                        <a href="https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages">Twitch Tools Wiki &mdash; Filter Messages</a>
-                        for assistance.
+                    <p tr-id>
+                        Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages'>Twitch Tools Wiki &mdash; Filter Messages</a> for assistance.
                     </p>
                     <p>
-                        <input id="filter_rules-input" type="text" value="" left-tooltip="Case insensitive &bull; Comma separated" placeholder="<badge> @user :emote: text reg.exp?"/>
+                        <input id='filter_rules-input' type='text' value="" left-tooltip='Case insensitive &bull; Comma separated' placeholder='<badge> @user :emote: text reg.exp?'/>
                     </p>
                     <details>
-                        <summary subtitle="View, or remove rules">Filter Rules</summary>
-                        <div id="filter_rules" type="list">
-                            <div filter-type="channel"><h2>Channel Rules</h2></div>
+                        <summary tr-id='filter-messages:options' subtitle='View, or remove rules'>Filter Rules</summary>
+                        <div id='filter_rules' type='list'>
+                            <div filter-type='channel' tr-id><h2>Channel Rules</h2></div>
 
-                            <div filter-type="badge"><h2>Badges</h2></div>
+                            <div filter-type='badge' tr-id><h2>Badges</h2></div>
 
-                            <div filter-type="user"><h2>Users</h2></div>
+                            <div filter-type='user' tr-id><h2>Users</h2></div>
 
-                            <div filter-type="emote"><h2>Emotes</h2></div>
+                            <div filter-type='emote' tr-id><h2>Emotes</h2></div>
 
-                            <div filter-type="text"><h2>Text</h2></div>
+                            <div filter-type='text' tr-id><h2>Text</h2></div>
 
-                            <div filter-type="regexp"><h2>RegExp</h2></div>
+                            <div filter-type='regexp' tr-id><h2>RegExp</h2></div>
 
                             <div>
-                                <h3>
-                                    Get started by <a href="#filter_rules-input" target="_self">adding</a> some rules.
+                                <h3 tr-id>
+                                    Get started by <a href='#filter_rules-input' target='_self'>adding</a> some rules.
                                 </h3>
                             </div>
                         </div>
@@ -403,25 +572,25 @@
 
             <!-- Highlight Mentions -->
             <section>
-                <div class="title"><span glyph="thread"></span> Highlight mentions</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="highlight_mentions" type="checkbox" checked/>
-                        <label for="highlight_mentions"></label>
+                <div class='title' tr-id='highlight-mentions'><span gold glyph='thread'></span> Highlight mentions</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='highlight_mentions' type='checkbox' checked/>
+                        <label for='highlight_mentions'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When someone mentions you (<code purple>@username</code>), make the message stand out by highlighting it.
                     </p>
                     <details>
-                        <summary subtitle="Adjust extra settings for &quot;Highlight Mentions&quot;">Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Highlight Mentions&quot;'>Extras</summary>
                         <div>
-                            <div class="title">General Highlighting</div>
-                            <div class="summary">
-                                <div class="toggle">
-                                    <input id="highlight_mentions_extra" type="checkbox"/>
-                                    <label for="highlight_mentions_extra"></label>
+                            <div class='title' tr-id='highlight-mentions:options'>General Highlighting</div>
+                            <div class='summary'>
+                                <div class='toggle'>
+                                    <input id='highlight_mentions_extra' type='checkbox'/>
+                                    <label for='highlight_mentions_extra'></label>
                                 </div>
-                                <p>
+                                <p tr-id>
                                     When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
                                 </p>
                             </div>
@@ -432,13 +601,13 @@
 
             <!-- Native Reply -->
             <section>
-                <div class="title"><span small glyph="reply"></span> Native Reply</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="native_twitch_reply" type="checkbox"/>
-                        <label for="native_twitch_reply"></label>
+                <div class='title' tr-id='native-reply'><span small gold glyph='reply'></span> Native Reply</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='native_twitch_reply' type='checkbox'/>
+                        <label for='native_twitch_reply'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Attempt to display native Twitch&trade; replies on all channels.
                     </p>
                 </div>
@@ -446,41 +615,41 @@
 
             <!-- Prevent Spam -->
             <section>
-                <div class="title"><span small purple glyph="mod"></span> Prevent spam</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="prevent_spam" type="checkbox" checked/>
-                        <label for="prevent_spam"></label>
+                <div class='title' tr-id='prevent-spam'><span small glyph='mod'></span> Prevent spam</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='prevent_spam' type='checkbox' checked/>
+                        <label for='prevent_spam'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Hide repetitive messages in chat.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for &quot;Prevent Spam&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Prevent Spam&quot;'>Options</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Message History</div>
-                                <div class="summary">
-                                    <p>
-                                        <b>Prevent spam</b> will look back <span><input id="prevent_spam_look_back" type="number" value="15" max="250" min="1" step="1"/></span> lines to detect <b attention-text up-tooltip="This will look for messages that match word-for-word">plagiarism</b>.
+                                <div class='title' tr-id='prevent-spam:options'>Message History</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        <b>Prevent spam</b> will look back <span><input id='prevent_spam_look_back' type='number' value='15' min='1' max='250' step='1' top-tooltip='1 &mdash; 250'/></span> lines to detect <b attention-text up-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Minimum Word Length</div>
-                                <div class="summary">
-                                    <p>
-                                        <b>Prevent spam</b> will ignore messages if there aren't any words longer than <span><input id="prevent_spam_minimum_length" type="number" value="3" max="500" min="3" step="1"/></span> characters.
+                                <div class='title' tr-id>Minimum Word Length</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        <b>Prevent spam</b> will ignore messages if there aren't any words longer than <span><input id='prevent_spam_minimum_length' type='number' value='3' min='3' max='500' step='1' top-tooltip='3 &mdash; 500'/></span> characters.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Maximum Occurrences</div>
-                                <div class="summary">
-                                    <p>
-                                        <b>Prevent spam</b> will mark messages as <b>repetitive</b> after a word appears <span><input id="prevent_spam_ignore_under" type="number" value="5" max="150" min="3" step="1"/></span> or more times.
+                                <div class='title' tr-id>Maximum Occurrences</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        <b>Prevent spam</b> will mark messages as <b>repetitive</b> after a word appears <span><input id='prevent_spam_ignore_under' type='number' value='5' min='3' max='150' step='1' top-tooltip='3 &mdash; 150'/></span> or more times.
                                     </p>
                                 </div>
                             </div>
@@ -491,13 +660,13 @@
 
             <!-- Recover Chat -->
             <section>
-                <div class="title"><span gold glyph="thread"></span> Recover Chat</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="recover_chat" type="checkbox"/>
-                        <label for="recover_chat"></label>
+                <div class='title' tr-id='recover-chat'><span glyph='thread'></span> Recover Chat</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='recover_chat' type='checkbox'/>
+                        <label for='recover_chat'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         If the <b>Stream Chat</b> is not loaded (or suddenly destroyed), attempt to recover it.
                     </p>
                 </div>
@@ -505,73 +674,73 @@
 
             <!-- Show Pop-ups -->
             <section>
-                <div class="title"><span glyph="thread"></span> Show pop-ups</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="highlight_mentions_popup" type="checkbox" checked/>
-                        <label for="highlight_mentions_popup"></label>
+                <div class='title' tr-id='highlight-mentions-popup'><span gold glyph='thread'></span> Show pop-ups</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='highlight_mentions_popup' type='checkbox' checked/>
+                        <label for='highlight_mentions_popup'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When someone mentions you (<code purple>@username</code>), make the message stand out by showing a pop-up.
                     </p>
                 </div>
             </section>
 
             <!-- Simplify Chat -->
-            <section new="3.1">
-                <div class="title"><span large gold glyph="accessible"></span> Simplify Chat</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="simplify_chat" type="checkbox"/>
-                        <label for="simplify_chat"></label>
+            <section new='3.1'>
+                <div class='title' tr-id='simplify-chat'><span large gold glyph='accessible'></span> Simplify Chat</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='simplify_chat' type='checkbox'/>
+                        <label for='simplify_chat'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Apply dual tones to make chat easier to read.
                     </p>
                     <details>
-                        <summary subtitle="Adjust extra settings for &quot;Simplify Chat&quot;">Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Simplify Chat&quot;'>Extras</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Monotone Usernames</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="simplify_chat_monotone_usernames" type="checkbox"/>
-                                        <label for="simplify_chat_monotone_usernames"></label>
+                                <div class='title' tr-id='simplify-chat:options'>Monotone Usernames</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='simplify_chat_monotone_usernames' type='checkbox'/>
+                                        <label for='simplify_chat_monotone_usernames'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Keep username colors uniform.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Chat Font</div>
-                                <div class="summary">
-                                    <p>
+                                <div class='title' tr-id>Chat Font</div>
+                                <div class='summary'>
+                                    <p tr-id>
                                         Display chat in the following font:
                                     </p>
 
-                                    <select id="simplify_chat_font">
-                                        <option value="null" style="font-family:Roobert!important" selected>Default &rarr; TWITCH.tv&trade;</option>
-                                        <option value="Arial" style="font-family:Arial!important">Arial &rarr; TWITCH.tv&trade;</option>
-                                        <option value="Calibri" style="font-family:Calibri!important">Calibri &rarr; TWITCH.tv&trade;</option>
-                                        <option value="Helvetica" style="font-family:Helvetica!important">Helvetica &rarr; TWITCH.tv&trade;</option>
-                                        <option value="Monospace" style="font-family:Monospace!important">Monospace &rarr; TWITCH.tv&trade;</option>
-                                        <option value="System-UI" style="font-family:System-UI!important">System-UI &rarr; TWITCH.tv&trade;</option>
-                                        <option value="Tahoma" style="font-family:Tahoma!important">Tahoma &rarr; TWITCH.tv&trade;</option>
-                                        <option value="Verdana" style="font-family:Verdana!important">Verdana &rarr; TWITCH.tv&trade;</option>
+                                    <select id='simplify_chat_font'>
+                                        <option value='null' style='font-family:Roobert!important' selected>Roobert &rarr; TWITCH.tv&trade;</option>
+                                        <option value='Arial' style='font-family:Arial!important'>Arial &rarr; TWITCH.tv&trade;</option>
+                                        <option value='Calibri' style='font-family:Calibri!important'>Calibri &rarr; TWITCH.tv&trade;</option>
+                                        <option value='Helvetica' style='font-family:Helvetica!important'>Helvetica &rarr; TWITCH.tv&trade;</option>
+                                        <option value='Monospace' style='font-family:Monospace!important'>Monospace &rarr; TWITCH.tv&trade;</option>
+                                        <option value='System-UI' style='font-family:System-UI!important'>System-UI &rarr; TWITCH.tv&trade;</option>
+                                        <option value='Tahoma' style='font-family:Tahoma!important'>Tahoma &rarr; TWITCH.tv&trade;</option>
+                                        <option value='Verdana' style='font-family:Verdana!important'>Verdana &rarr; TWITCH.tv&trade;</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div disabled text-only>
-                                <div class="title">Reverse Emotes</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="simplify_chat_reverse_emotes" type="checkbox"/>
-                                        <label for="simplify_chat_reverse_emotes"></label>
+                                <div class='title' tr-id>Reverse Emotes</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='simplify_chat_reverse_emotes' type='checkbox'/>
+                                        <label for='simplify_chat_reverse_emotes'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
                                     </p>
                                 </div>
@@ -582,39 +751,39 @@
             </section>
 
             <!-- Whisper Audio -->
-            <section new="3.1">
-                <div class="title"><span small gold glyph="stream"></span> Whisper Audio</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="whisper_audio" type="checkbox"/>
-                        <label for="whisper_audio"></label>
+            <section new='3.1'>
+                <div class='title' tr-id='whisper-audio'><span small gold glyph='stream'></span> Whisper Audio</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='whisper_audio' type='checkbox'/>
+                        <label for='whisper_audio'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When someone sends you a whisper, play a notification sound.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for &quot;Whisper Audio&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Whisper Audio&quot;'>Options</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Notification Sound</div>
-                                <div class="summary">
-                                    <select id="whisper_audio_sound">
-                                        <option value="beyond-doubt-2-581">Beyond doubt 2</option>
-                                        <option value="consequence-544">Consequence</option>
-                                        <option value="definite-555">Definite</option>
-                                        <option value="goes-without-saying-608" selected>Goes without saying</option>
-                                        <option value="point-blank-589">Point blank</option>
-                                        <option value="slow-spring-board-570">Slow spring board</option>
-                                        <option value="to-the-point-568">To the point</option>
+                                <div class='title' tr-id='whisper-audio:options'>Notification Sound</div>
+                                <div class='summary'>
+                                    <select id='whisper_audio_sound'>
+                                        <option value='beyond-doubt-2-581'>Beyond doubt 2</option>
+                                        <option value='consequence-544'>Consequence</option>
+                                        <option value='definite-555'>Definite</option>
+                                        <option value='goes-without-saying-608' selected>Goes without saying</option>
+                                        <option value='point-blank-589'>Point blank</option>
+                                        <option value='slow-spring-board-570'>Slow spring board</option>
+                                        <option value='to-the-point-568'>To the point</option>
                                     </select>
                                 </div>
                             </div>
                             <p>
-                                <div class="cc-container">
-                                    <div class="cc-svg"><span black glyph="cc"></span></div>
-                                    <p class="cc-text">
-                                        <a id="sound-href" href="https://notificationsounds.com/notification-sounds/goes-without-saying-608" rel="nofollow">This sound</a> is licensed under the Creative Commons Attribution license.
-                                        <a id="sound-license" href="https://creativecommons.org/licenses/by/4.0/legalcode" rel="nofollow">Find out more</a>
+                                <div class='cc-container'>
+                                    <div class='cc-svg'><span black glyph='cc'></span></div>
+                                    <p class='cc-text' tr-id>
+                                        <a id='sound-href' href='https://notificationsounds.com/notification-sounds/goes-without-saying-608' rel='nofollow'>This sound</a> is licensed under the Creative Commons Attribution license.
+                                        <a id='sound-license' href='https://creativecommons.org/licenses/by/4.0/legalcode' rel='nofollow'>Find out more</a>
                                     </p>
                                 </div>
                             </p>
@@ -624,8 +793,8 @@
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -639,56 +808,56 @@
         #
         #
         -->
-        <header>Currencies</header>
+        <header tr-id='header:currencies'>Currencies</header>
         <article>
             <!-- Convert Bits -->
             <section>
-                <div class="title"><span small glyph="bits"></span> Convert Bits</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="convert_bits" type="checkbox" checked/>
-                        <label for="convert_bits"></label>
+                <div class='title' tr-id='convert-bits'><span small glyph='bits'></span> Convert Bits</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='convert_bits' type='checkbox' checked/>
+                        <label for='convert_bits'></label>
                     </div>
-                    <p>
-                        When presented with <a href="https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits" top-tooltip="Bits"><button style="background-color:var(--grey)!important"><img src="bits.gif" alt="Bits" height="20" width="20" type="glyph"/></button></a> show the true <b>USD</b> amount they represent.
+                    <p tr-id>
+                        When presented with <a href='https://www.twitch.tv/creatorcamp/en/get-rewarded/bits-and-subscriptions/#bits' top-tooltip='Bits'><button style='background-color:var(--grey)!important'><img src='bits.gif' alt='Bits' height='20' width='20' type='glyph'/></button></a> show the true <b>USD</b> amount they represent.
                     </p>
                 </div>
             </section>
 
             <!-- Channel Points Receipt -->
             <section>
-                <div class="title"><span small glyph="bits"></span> Channel Points Receipt</div>
-                <div class="summary">
-                    <p>
-                        How should the receipt display <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Channel Points"><button style="background-color:var(--grey)!important"><span small purple glyph="channelpoints"></span></button></a> collection?
+                <div class='title' tr-id='channel-points-receipt'><span small glyph='bits'></span> Channel Points Receipt</div>
+                <div class='summary'>
+                    <p tr-id>
+                        How should the receipt display <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> collection?
                     </p>
 
-                    <select id="channelpoints_receipt_display">
-                        <option value="null" selected>Display the exact amount collected</option>
-                        <option value="round100">Round to the nearest 100</option>
-                        <option value="round50">Round to the nearest 50</option>
-                        <option value="round25">Round to the nearest 25</option>
+                    <select id='channelpoints_receipt_display'>
+                        <option value='null' selected tr-id='channel-points-receipt:options'>Display the exact amount collected</option>
+                        <option value='round100' tr-id>Round to the nearest 100</option>
+                        <option value='round50' tr-id>Round to the nearest 50</option>
+                        <option value='round25' tr-id>Round to the nearest 25</option>
                     </select>
                 </div>
             </section>
 
             <!-- Rewards Calculator -->
             <section>
-                <div class="title"><span small glyph="channelpoints"></span> Rewards Calculator</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="rewards_calculator" type="checkbox"/>
-                        <label for="rewards_calculator"></label>
+                <div class='title' tr-id='rewards-calculator'><span small glyph='channelpoints'></span> Rewards Calculator</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='rewards_calculator' type='checkbox'/>
+                        <label for='rewards_calculator'></label>
                     </div>
-                    <p>
-                        Estimates how long a stream needs to be watched to redeem <a href="https://help.twitch.tv/s/article/channel-points-guide" top-tooltip="Channel Points"><button style="background-color:var(--grey)!important"><span small purple glyph="channelpoints"></span></button></a> rewards.
+                    <p tr-id>
+                        Estimates how long a stream needs to be watched to redeem <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> rewards.
                     </p>
                 </div>
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -702,73 +871,73 @@
         #
         #
         -->
-        <header>Customization</header>
+        <header tr-id='header:customization'>Customization</header>
         <article>
             <!-- Away Mode Placement -->
             <section>
-                <div class="title"><span small glyph="latest"></span> Away Mode</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='placement:away-mode'><span small glyph='latest'></span> Away Mode</div>
+                <div class='summary'>
+                    <p tr-id>
                         Where should the <b>Away Mode</b> button be displayed?
                     </p>
 
-                    <select id="away_mode_placement">
-                        <option value="null" selected>Do not display</option>
-                        <option value="over">Over the video</option>
-                        <option value="under">Under the video</option>
+                    <select id='away_mode_placement'>
+                        <option value='null' selected tr-id='placement:away-mode:options'>Do not display</option>
+                        <option value='over' tr-id>Over the video</option>
+                        <option value='under' tr-id>Under the video</option>
                     </select>
                 </div>
             </section>
 
             <!-- Points Receipt Placement -->
             <section>
-                <div class="title"><span small glyph="latest"></span> Points Receipt</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='placement:points-receipt'><span small glyph='latest'></span> Points Receipt</div>
+                <div class='summary'>
+                    <p tr-id>
                         Where should the <b>Points Receipt</b> text be displayed?
                     </p>
 
-                    <select id="points_receipt_placement">
-                        <option value="null" selected>Do not display</option>
-                        <option value="under">Under the video</option>
+                    <select id='points_receipt_placement'>
+                        <option value='null' selected tr-id='placement:points-receipt:options'>Do not display</option>
+                        <option value='under' tr-id>Under the video</option>
                     </select>
                 </div>
             </section>
 
             <!-- Point Watcher Placement -->
             <section>
-                <div class="title"><span small glyph="latest"></span> Point Watcher</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='placement:point-watcher'><span small glyph='latest'></span> Point Watcher</div>
+                <div class='summary'>
+                    <p tr-id>
                         Where should the <b>Point Watcher</b> text be displayed?
                     </p>
 
-                    <select id="point_watcher_placement">
-                        <option value="null" selected>Do not display</option>
-                        <option value="on">On the tooltip</option>
+                    <select id='point_watcher_placement'>
+                        <option value='null' selected tr-id='placement:point-watcher:options'>Do not display</option>
+                        <option value='on' tr-id>On the tooltip</option>
                     </select>
                 </div>
             </section>
 
             <!-- Watch Time Placement -->
             <section>
-                <div class="title"><span small glyph="latest"></span> Watch Time</div>
-                <div class="summary">
-                    <p>
+                <div class='title' tr-id='placement:watch-time'><span small glyph='latest'></span> Watch Time</div>
+                <div class='summary'>
+                    <p tr-id>
                         Where should the <b>Watch Time</b> be displayed?
                     </p>
 
-                    <select id="watch_time_placement">
-                        <option value="null" selected>Do not display</option>
-                        <option value="over">Over the video</option>
-                        <option value="under">Under the video</option>
+                    <select id='watch_time_placement'>
+                        <option value='null' selected tr-id='placement:watch-time:options'>Do not display</option>
+                        <option value='over' tr-id>Over the video</option>
+                        <option value='under' tr-id>Under the video</option>
                     </select>
                 </div>
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -782,17 +951,17 @@
         #                                                                      __/ |
         #                                                                     |___/
         -->
-        <header>Video Recovery</header>
+        <header tr-id='header:video-recovery'>Video Recovery</header>
         <article>
             <!-- Keep Pop-out -->
             <section>
-                <div class="title"><span small gold glyph="video"></span> Keep Pop-out</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="keep_popout" type="checkbox"/>
-                        <label for="keep_popout"></label>
+                <div class='title' tr-id='keep-popout'><span small gold glyph='video'></span> Keep Pop-out</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='keep_popout' type='checkbox'/>
+                        <label for='keep_popout'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When moving to another page, prevent the extension from destroying the small video (pop-out) of the stream.
                     </p>
                 </div>
@@ -800,13 +969,13 @@
 
             <!-- Recover Ads -->
             <section>
-                <div class="title"><span small glyph="play"></span> Recover Ads</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Requires &quot;Recover Stream&quot;">
-                        <input id="recover_ads" type="checkbox" requires="#recover_stream"/>
-                        <label for="recover_ads"></label>
+                <div class='title' tr-id='recover-ads'><span small glyph='play'></span> Recover Ads</div>
+                <div class='summary'>
+                    <div class='toggle' right-tooltip='Requires &quot;Recover Stream&quot;'>
+                        <input id='recover_ads' type='checkbox' requires='#recover_stream'/>
+                        <label for='recover_ads'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When an advertisement fails to play ("freezes"), attempt to recover it.
                     </p>
                 </div>
@@ -814,13 +983,13 @@
 
             <!-- Recover Frames -->
             <section>
-                <div class="title"><span small glyph="video"></span> Recover Frames</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="recover_frames" type="checkbox" checked/>
-                        <label for="recover_frames"></label>
+                <div class='title' tr-id='recover-frames'><span small glyph='video'></span> Recover Frames</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='recover_frames' type='checkbox' checked/>
+                        <label for='recover_frames'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When the video fails to play (drops frames for longer than <b>15 seconds</b>), reload the webpage.
                     </p>
                 </div>
@@ -828,13 +997,13 @@
 
             <!-- Recover Pages -->
             <section>
-                <div class="title"><span small glyph="extensions"></span> Recover Pages</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="recover_pages" type="checkbox"/>
-                        <label for="recover_pages"></label>
+                <div class='title' tr-id='recover-pages'><span small glyph='extensions'></span> Recover Pages</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='recover_pages' type='checkbox'/>
+                        <label for='recover_pages'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         If the webpage fails to display, attempt to recover it.
                     </p>
                 </div>
@@ -842,13 +1011,13 @@
 
             <!-- Recover Stream -->
             <section>
-                <div class="title"><span small purple glyph="video"></span> Recover Stream</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="recover_stream" type="checkbox"/>
-                        <label for="recover_stream"></label>
+                <div class='title' tr-id='recover-stream'><span small glyph='video'></span> Recover Stream</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='recover_stream' type='checkbox'/>
+                        <label for='recover_stream'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When the stream fails to play ("freezes"), attempt to recover it.
                     </p>
                 </div>
@@ -856,21 +1025,21 @@
 
             <!-- Recover Video -->
             <section>
-                <div class="title"><span small purple glyph="video"></span> Recover Video</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="recover_video" type="checkbox" checked/>
-                        <label for="recover_video"></label>
+                <div class='title' tr-id='recover-video'><span small glyph='video'></span> Recover Video</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='recover_video' type='checkbox' checked/>
+                        <label for='recover_video'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When the video fails to download (black screen), reload the webpage.
                     </p>
                 </div>
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -885,69 +1054,69 @@
         #                                 |_|
         -->
 
-        <header>Developer Features <span glyph="help" right-tooltip="These are advanced features that should be used for testing"></span></header>
-        <article id=":settings--developer" danger>
+        <header tr-id='header:developer-features'>Developer Features <span glyph='help' right-tooltip='These are advanced features that should be used for testing'></span></header>
+        <article id=':settings--developer' danger>
             <!-- Display Console Messages -->
             <section>
-                <div class="title"><span small glyph="stats"></span> Display Console Messages</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="display_in_console" type="checkbox"/>
-                        <label for="display_in_console"></label>
+                <div class='title' tr-id='@console'><span small gold glyph='stats'></span> Display Console Messages</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='display_in_console' type='checkbox'/>
+                        <label for='display_in_console'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Allow the extension to display messages in the console.
                     </p>
                     <details>
-                        <summary subtitle="Adjust extra settings for &quot;Display Console Messages&quot;">Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Display Console Messages&quot;'>Extras</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Allow logs</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="display_in_console__log" type="checkbox" checked/>
-                                        <label for="display_in_console__log"></label>
+                                <div class='title' tr-id='@console.log'>Allow logs</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='display_in_console__log' type='checkbox' checked/>
+                                        <label for='display_in_console__log'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Display <code style:log>console.log</code> messages.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Allow warnings</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="display_in_console__warn" type="checkbox" checked/>
-                                        <label for="display_in_console__warn"></label>
+                                <div class='title' tr-id='@console.warn'>Allow warnings</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='display_in_console__warn' type='checkbox' checked/>
+                                        <label for='display_in_console__warn'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Display <code style:warn>console.warn</code> messages.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Allow errors</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="display_in_console__error" type="checkbox" checked/>
-                                        <label for="display_in_console__error"></label>
+                                <div class='title' tr-id='@console.error'>Allow errors</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='display_in_console__error' type='checkbox' checked/>
+                                        <label for='display_in_console__error'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Display <code style:error>console.error</code> messages.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Allow remarks</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="display_in_console__remark" type="checkbox" checked/>
-                                        <label for="display_in_console__remark"></label>
+                                <div class='title' tr-id='@console.remark'>Allow remarks</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='display_in_console__remark' type='checkbox' checked/>
+                                        <label for='display_in_console__remark'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Display <code style:remark>console.remark</code> messages.
                                     </p>
                                 </div>
@@ -959,13 +1128,13 @@
 
             <!-- Display Statistics -->
             <section>
-                <div class="title"><span small glyph="stats"></span> Display Statistics</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="display_of_video" type="checkbox"/>
-                        <label for="display_of_video"></label>
+                <div class='title' tr-id='@stats'><span small gold glyph='stats'></span> Display Statistics</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='display_of_video' type='checkbox'/>
+                        <label for='display_of_video'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Allow the extension to display statistics.
                     </p>
                 </div>
@@ -973,16 +1142,16 @@
 
             <!-- Experimental Features -->
             <section>
-                <div class="title"><span small gold glyph="stats"></span> Experimental Features</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="experimental_mode" type="checkbox"/>
-                        <label for="experimental_mode"></label>
+                <div class='title' tr-id='@experimental'><span small glyph='stats'></span> Experimental Features</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='experimental_mode' type='checkbox'/>
+                        <label for='experimental_mode'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Allow the extension to display, and use experimental features.
                     </p>
-                    <p warning-text>
+                    <p warning-text tr-id>
                         May cause data loss.
                     </p>
                 </div>
@@ -990,39 +1159,39 @@
 
             <!-- Use Fine Details -->
             <section>
-                <div class="title"><span small purple glyph="stats"></span> Use Fine Details</div>
-                <div class="summary">
-                    <div class="toggle">
-                        <input id="fine_details" type="checkbox"/>
-                        <label for="fine_details"></label>
+                <div class='title' tr-id='@fine-details'><span small glyph='stats'></span> Use Fine Details</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='fine_details' type='checkbox'/>
+                        <label for='fine_details'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Allow the extension to use Twitch&trade; API data to enhance your experience.
                     </p>
-                    <p warning-text>
+                    <p warning-text tr-id>
                         This will not collect any data. It will use the data Twitch&trade; has collected.
                     </p>
                 </div>
             </section>
 
             <!-- Show Default Values -->
-            <section hide-on="show-defaults">
-                <div class="title"><span small glyph="help"></span> Show Default Values</div>
-                <div class="summary">
+            <section hide-on='show-defaults'>
+                <div class='title' tr-id='@default'><span small glyph='help'></span> Show Default Values</div>
+                <div class='summary'>
                     <div>
-                        <a href="?show-defaults=true" target="_self" continue-search>
-                            <button>Show</button>
+                        <a href='?show-defaults=true' target='_self' continue-search>
+                            <button tr-id>Show</button>
                         </a>
                     </div>
-                    <p>
+                    <p tr-id>
                         Show the default values.
                     </p>
                 </div>
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -1037,68 +1206,68 @@
         #               |_|
         -->
 
-        <header>Experimental Features <span glyph="help" right-tooltip="These are experimental features that may produce errors"></span></header>
-        <article id=":settings--experimental" caution>
+        <header tr-id='header:experimental-features'>Experimental Features <span glyph='help' right-tooltip='These are experimental features that may produce errors'></span></header>
+        <article id=':settings--experimental' caution>
             <!-- Auto-focus -->
             <section>
-                <div class="title"><span small purple glyph="stream"></span> Auto-Focus</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="auto_focus" type="checkbox"/>
-                        <label for="auto_focus"></label>
+                <div class='title' tr-id='@@auto-focus'><span small glyph='stream'></span> Auto-Focus</div>
+                <div class='summary'>
+                    <div class='toggle' right-tooltip='Experimental feature'>
+                        <input id='auto_focus' type='checkbox'/>
+                        <label for='auto_focus'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Automatically adjust <b>Up Next</b> and <b>Away Mode</b> based upon stream activity.
                     </p>
-                    <p warning-text>
+                    <p warning-text tr-id>
                         This will <b>not</b> stop the one minute timer.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for &quot;Auto-Focus&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Auto-Focus&quot;'>Options</summary>
                         <div>
                             <div>
-                                <div class="title">Detection Level</div>
-                                <div class="summary">
-                                    <p>
+                                <div class='title' tr-id='@@auto-focus:options:detection-level'>Detection Level</div>
+                                <div class='summary'>
+                                    <p tr-id>
                                         How much activity should activate <b>Auto-Focus</b>?
                                     </p>
 
-                                    <select id="auto_focus_detection_threshold">
-                                        <option value="30">High activity &mdash; FPS / IRL / Rhythm</option>
-                                        <option value="20" selected>Modest activity &mdash; Action / Adventure / Platformer</option>
-                                        <option value="10">Seasonal activity &mdash; Horror / Puzzle / Trivia</option>
-                                        <option value="5">Low activity &mdash; Just Chatting / Simulation / Strategy</option>
+                                    <select id='auto_focus_detection_threshold'>
+                                        <option value='30' tr-id>High activity &mdash; FPS / IRL / Rhythm</option>
+                                        <option value='20' selected tr-id>Modest activity &mdash; Action / Adventure / Platformer</option>
+                                        <option value='10' tr-id>Seasonal activity &mdash; Horror / Puzzle / Trivia</option>
+                                        <option value='5' tr-id>Low activity &mdash; Just Chatting / Simulation / Strategy</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div>
-                                <div class="title">Polling Interval</div>
-                                <div class="summary">
-                                    <p>
-                                        How often should the stream be <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polled</b>?
+                                <div class='title' tr-id='@@auto-focus:options:polling-interval'>Polling Interval</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        How often should the stream be <b attention-text up-tooltip='A screenshot of the stream will be taken to detect activity'>polled</b>?
                                     </p>
 
-                                    <select id="auto_focus_poll_interval">
-                                        <option value="1">Every second &mdash; CPU intensive, great detection</option>
-                                        <option value="3" selected>Every 3 seconds &mdash; CPU friendly, good detection</option>
-                                        <option value="5">Every 5 seconds &mdash; CPU friendly, fair detection</option>
-                                        <option value="10">Every 10 seconds &mdash; CPU friendly, poor detection</option>
+                                    <select id='auto_focus_poll_interval'>
+                                        <option value='1' tr-id>Every second &mdash; CPU intensive, great detection</option>
+                                        <option value='3' selected tr-id>Every 3 seconds &mdash; CPU friendly, good detection</option>
+                                        <option value='5' tr-id>Every 5 seconds &mdash; CPU friendly, fair detection</option>
+                                        <option value='10' tr-id>Every 10 seconds &mdash; CPU friendly, poor detection</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div>
-                                <div class="title">Image Type</div>
-                                <div class="summary">
-                                    <p>
-                                        What image type should be used for <b attention-text up-tooltip="A screenshot of the stream will be taken to detect activity">polling</b>?
+                                <div class='title' tr-id='@@auto-focus:options:image-type'>Image Type</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        What image type should be used for <b attention-text up-tooltip='A screenshot of the stream will be taken to detect activity'>polling</b>?
                                     </p>
 
-                                    <select id="auto_focus_poll_image_type">
-                                        <option value="webp" selected>WebP &mdash; CPU friendly, great detection</option>
-                                        <option value="png">PNG &mdash; CPU intensive, great detection</option>
-                                        <option value="jpeg">JPG &mdash; CPU friendly, good detection</option>
+                                    <select id='auto_focus_poll_image_type'>
+                                        <option value='jpeg' tr-id>JPG &mdash; CPU friendly, good detection</option>
+                                        <option value='png' tr-id>PNG &mdash; CPU intensive, great detection</option>
+                                        <option value='webp' selected tr-id>WebP &mdash; CPU friendly, great detection</option>
                                     </select>
                                 </div>
                             </div>
@@ -1110,75 +1279,75 @@
 
             <!-- Convert Emotes -->
             <section>
-                <div class="title"><span small glyph="emotes"></span> Convert emotes</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="convert_emotes" type="checkbox"/>
-                        <label for="convert_emotes"></label>
+                <div class='title' tr-id='@@convert-emotes'><span small gold glyph='emotes'></span> Convert emotes</div>
+                <div class='summary'>
+                    <div class='toggle' right-tooltip='Experimental feature'>
+                        <input id='convert_emotes' type='checkbox'/>
+                        <label for='convert_emotes'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         When presented with Twitch&trade; emotes, collect them for usage (without requiring a subscription).
                     </p>
-                    <p>
+                    <p tr-id>
                         This only works for the current stream you are viewing.
                     </p>
-                    <p warning-text>
+                    <p warning-text tr-id>
                         This does <b>not</b> save/unlock the emote.
                     </p>
                 </div>
             </section>
 
             <!-- Soft Unban -->
-            <section new="3.1">
-                <div class="title"><span small red glyph="chat"></span> Soft Unban</div>
-                <div class="summary">
-                    <div class="toggle" right-tooltip="Experimental feature">
-                        <input id="soft_unban" type="checkbox"/>
-                        <label for="soft_unban"></label>
+            <section new='3.1'>
+                <div class='title' tr-id='@@soft-unban'><span small glyph='chat'></span> Soft Unban</div>
+                <div class='summary'>
+                    <div class='toggle' right-tooltip='Experimental feature'>
+                        <input id='soft_unban' type='checkbox'/>
+                        <label for='soft_unban'></label>
                     </div>
-                    <p>
+                    <p tr-id>
                         Re-enable chat for channels you've been banned from.
                     </p>
-                    <p warning-text>
+                    <p warning-text tr-id>
                         This only allows viewing the chat.
                     </p>
                     <details>
-                        <summary subtitle="Adjust options for &quot;Soft Unban&quot;">Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Soft Unban&quot;'>Options</summary>
                         <div>
                             <div text-only>
-                                <div class="title">Fade Messages</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="soft_unban_fade_old_messages" type="checkbox"/>
-                                        <label for="soft_unban_fade_old_messages"></label>
+                                <div class='title' tr-id='@@soft-unban:options:fade-messages'>Fade Messages</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='soft_unban_fade_old_messages' type='checkbox'/>
+                                        <label for='soft_unban_fade_old_messages'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Messages will be visible for <b>30s</b>.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Keep Bots</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="soft_unban_keep_bots" type="checkbox"/>
-                                        <label for="soft_unban_keep_bots"></label>
+                                <div class='title' tr-id='@@soft-unban:options:keep-bots'>Keep Bots</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='soft_unban_keep_bots' type='checkbox'/>
+                                        <label for='soft_unban_keep_bots'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Display bot messages.
                                     </p>
                                 </div>
                             </div>
 
                             <div text-only>
-                                <div class="title">Prevent Clips</div>
-                                <div class="summary">
-                                    <div class="toggle">
-                                        <input id="soft_unban_prevent_clipping" type="checkbox"/>
-                                        <label for="soft_unban_prevent_clipping"></label>
+                                <div class='title' tr-id='@@soft-unban:options:prevent-clips'>Prevent Clips</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='soft_unban_prevent_clipping' type='checkbox'/>
+                                        <label for='soft_unban_prevent_clipping'></label>
                                     </div>
-                                    <p>
+                                    <p tr-id>
                                         Hide Twitch&trade; clips.
                                     </p>
                                 </div>
@@ -1189,8 +1358,8 @@
             </section>
 
             <!-- Save Footer -->
-            <section save>
-                <button class="ripple save"></button>
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
             </section>
         </article>
 
@@ -1204,45 +1373,46 @@
         #
         #
         -->
-        <header>About Twitch Tools</header>
+        <header tr-id='about'>About Twitch Tools</header>
         <article>
             <section>
-                <div class="title"><span small glyph="extensions"></span> Version</div>
-                <div class="summary">
-                    <a type="button" set="top-tooltip:version.installed"><span small glyph="extensions"></span> Installed</a>
-                    <a type="button" set="top-tooltip:version.github;from-github:origin.github" href="https://github.com/ephellon/twitch-tools" github><span small glyph="github"></span> GitHub </a>
-                    <a type="button" set="top-tooltip:version.chrome;from-chrome:origin.chrome" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd" chrome><span small glyph="chrome"></span> Chrome Web Store </a>
+                <div class='title' tr-id='version'><span small glyph='extensions'></span> Version</div>
+                <div class='summary'>
+                    <a type='button' set='top-tooltip:version.installed'><span small glyph='extensions'></span> Installed</a>
+                    <a type='button' set='top-tooltip:version.github;from-github:origin.github' href='https://github.com/ephellon/twitch-tools' github><span small glyph='github'></span> GitHub </a>
+                    <a type='button' set='top-tooltip:version.chrome;from-chrome:origin.chrome' href='https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd' chrome><span small glyph='chrome'></span> Chrome Web Store </a>
                 </div>
             </section>
 
             <section>
-                <div class="title"><span small glyph="help"></span> Support</div>
-                <div class="summary">
-                    <a type="button" href="https://github.com/ephellon/twitch-tools" top-tooltip="Fastest communication method" github>
-                        <span small glyph="github"></span>
+                <div class='title' tr-id='support'><span small glyph='help'></span> Support</div>
+                <div class='summary'>
+                    <a type='button' href='https://github.com/ephellon/twitch-tools' top-tooltip='Fastest communication method' github>
+                        <span small glyph='github'></span>
                         GitHub
                     </a>
-                    <a type="button" href="https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd" top-tooltip="Reasonable communication method">
-                        <span small glyph="chrome"></span>
+                    <a type='button' href='https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd' top-tooltip='Reasonable communication method'>
+                        <span small glyph='chrome'></span>
                         Chrome Web Store
                     </a>
-                    <a type="button" href="mailto:minkcbos@gmail.com?subject=Twitch%20Tools" top-tooltip="Slowest communication method">
-                        <span small glyph="chat"></span>
+                    <a type='button' href='mailto:minkcbos@gmail.com?subject=Twitch%20Tools' top-tooltip='Slowest communication method'>
+                        <span small glyph='chat'></span>
                         e-mail
                     </a>
                 </div>
             </section>
 
-            <footer>
+            <footer tr-id='footer'>
                 This extension is in no way affiliated with, nor endorsed by Amazon&trade;, Twitch&trade;, NightDev (LLC), either party's partners, affiliates, or subsidiaries.
             </footer>
         </article>
 
-        <div id="context-id" set="content:context.id"></div>
+        <div id='context-id' set='content:context.id'></div>
 
-        <button id="save" class="ripple"></button>
+        <button id='save' class='ripple'></button>
 
-        <script src="settings.js"></script>
+        <script src='ext/glyphs.js'></script>
+        <script src='settings.js'></script>
 
         <style>
         /* CSS needs to be here so that `height:100%` and `width:100%` can render properly */

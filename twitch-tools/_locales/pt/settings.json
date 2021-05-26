@@ -1,0 +1,466 @@
+{ "[[SOURCE]]": "ROOT->ES->PT", "LANG_PACK_READY": false,
+
+	"header:automation": ["Automação"],
+	"auto-join": [
+		"Ligação automática",
+		"Quando apresentada com um aviso de que a transmissão se destina a um", "público adulto", "proceder automaticamente",
+        "A isto se juntará também o", null, "automaticamente"
+	],
+
+	"away-mode": [
+		"Modo Longe",
+		"Adiciona um botão para alternar o",
+		"monitorização",
+		"Também pode usar o atalho do teclado",
+		null,
+		""
+	],
+    	"away-mode:hide-chat": ["Hide Chat", "Mantenha o chat escondido enquanto", "monitorização"],
+    	"away-mode:volume": ["Volume a monitorizar", "Definir o volume para", "quando em", "monitorização"],
+    	"away-mode:schedule": ["Calendário", "Seleccionar dias"],
+
+	"auto-claim-bonuses": [
+		"Bónus de reclamações",
+		"Quando o botão aparece", "aparece, clique nele automaticamente"
+	],
+
+	"first-in-line": [
+		"Primeiro da Linha",
+		"Quando um canal está ao vivo, ir para o fluxo automaticamente",
+		null, "Acrescentar um serviço de fila de espera a Twitch™"
+	],
+    	"first-in-line:disabled": [
+    		"Deficientes",
+    		"Não utilizar esta função"
+    	],
+    	"first-in-line:notification": [
+    		"Notificação",
+    		"Quando receber uma notificação de um canal ao vivo, vá para a sua transmissão depois"
+    	],
+    	"first-in-line:appearance": [
+    		"Aparência",
+    		"Quando um canal aparece nos seus Canais em fila, vá para a sua transmissão depois"
+    	],
+    	"first-in-line:smart-notifications": [
+    		"Automático",
+    		"Ir automaticamente a todas as transmissões após"
+    	],
+
+	"auto-follow": [
+		"Rastreamento automático",
+		"Enquanto observa um canal que não segue, siga-o automaticamente"
+	],
+    	"auto-follow:none": [
+    		"Deficientes",
+    		"Não utilizar esta função"
+    	],
+    	"auto-follow:raids": [
+    		"Surpresas",
+    		"Ao participar numa surpresa, siga o canal que está a ser surpreendido"
+    	],
+    	"auto-follow:time": [
+    		"Público",
+    		"Depois de assistir", "de conteúdo, siga o canal"
+    	],
+    	"auto-follow:all": [
+    		"Automático",
+    		"Seguir todos os canais automaticamente"
+    	],
+
+	"kill-extensions": [
+		"Extensões de matar",
+		"Não permitir que as extensões Twitch™ apareçam no fluxo"
+	],
+
+	"next-channel-preference": [
+		"Preferência do Canal seguinte",
+		"Como decidir o próximo canal quando", null, "está vazio",
+		"Isto só é activado quando a transmissão de corrente é desligada"
+	],
+    	"next-channel-preference:options": [
+    		"Ir para um canal aleatório",
+    		"Vá com a menor quantidade de espectadores",
+    		"Ir com o maior número de espectadores",
+    		"Ir com a menor quantidade de pontos de canal",
+    		"Ir com a maioria dos pontos de canal"
+    	],
+
+	"prevent-hosting": [
+		"Evite o Anfitrião",
+		"Impedir que alguns ou todos os canais sejam alojados através do acesso ao",
+		"Canal seguinte"
+	],
+    	"prevent-hosting:options": [
+    		"Permitir que todos os canais sejam anfitriões",
+    		"Impedir que todos os canais sejam alojados",
+    		"Impedir que canais não seguidos sejam alojados"
+    	],
+
+	"prevent-raiding": [
+		"Evitar Surpresas",
+		"Impedir que alguns ou todos os canais tenham surpresas, indo ao",
+		"Canal seguinte"
+	],
+    	"prevent-raiding:options": [
+    		"Permitir que todos os canais surpreendam",
+    		"Participar apenas em surpresas para acumular pontos de canal",
+    		"Evitar todas as surpresas em todos os canais",
+    		"Impedir que os canais não seguidos sejam surpreendidos"
+    	],
+
+	"claim-loot": [
+		null,
+		"Reclamação e descarte automático de ofertas de", null, "quando a página é carregada"
+	],
+
+	"stay-live": [
+		"Permanecer Vivo",
+		"Uma vez terminada a emissão actual, vá para", "Canal seguinte"
+	],
+
+	"view-mode": [
+		"Modo Ver",
+		"Quando a página tiver terminado de carregar, altere a vista para"
+	],
+    	"view-mode:options": [
+    		"Nada (não mudar)",
+    		"Modo por defeito",
+    		"Modo teatro",
+    		"Modo de largura total",
+    		"Modo ecrã inteiro"
+    	],
+
+
+
+
+
+	"header:chat-and-messaging": ["Chat e Mensagens"],
+	"bttv-emotes": [
+		"Emoticons BetterTTV",
+		"Utilizar os emoticons BetterTTV",
+		"Isto pode causar instabilidade ao carregar emoticons"
+	],
+    	"bttv-emotes:channel-specific-emotes": [
+    		"Emoticons específicos do canal",
+    		"Carregar emoticons", null, "canal específico"
+    	],
+
+    	"bttv-emotes:emote-location": [
+    		"Localização Emoticon",
+    		"Use estes emoticons de", null, ""
+    	],
+        	"bttv-emotes:emote-location:options": [
+        		"Mais Populares (Tendências)",
+        		"Mais partilhada (Partilhada)",
+        		"Mais utilizados (Primeiro)",
+        		"Mais Universal (Global)"
+        	],
+
+    	"bttv-emotes:extra-emotes": [
+    		"Extra Emoticons",
+    		"Acrescentar emoticons de", null, "com as palavras"
+    	],
+
+    	"bttv-emotes:library-size": [
+    		"Tamanho do catálogo",
+    		"Carregar até"
+    	],
+
+	"filter-messages": [
+		"Filtrar mensagens",
+		"Elimina mensagens/regras em todos os canais",
+		"Ver", null, "para ajuda"
+	],
+    	"filter-messages:options": [
+    		"Regras de filtragem",
+    		"Regras do Canal",
+    		"Crachás",
+    		"Utilizadores",
+    		"Emoticons",
+    		"Texto",
+    		null,
+    		"Início", "acrescentando", "algumas regras"
+    	],
+
+	"highlight-mentions": [
+		"Menções em destaque",
+		"Quando alguém o menciona (",
+		"@nome do utilizador",
+		"), destacar a mensagem para a fazer sobressair"
+	],
+    	"highlight-mentions:options": [
+    		"Destaque Geral",
+    		"Quando alguém envia uma menção geral (", null, "@chat", "@all", "), destacar a mensagem através de uma janela pop-up"
+    	],
+
+	"native-reply": [
+		"Resposta nativa",
+		"Tente mostrar respostas nativas Twitch™ em todos os canais"
+	],
+
+	"prevent-spam": [
+		"Prevenir o spam",
+		"Ocultar mensagens repetitivas no chat"
+	],
+	"prevent-spam:options": [
+		"História da Mensagem",
+		"Prevenir o spam", "irá verificar", "linhas para trás para detectar", "plágio",
+
+		"Comprimento mínimo das palavras",
+		"Prevenir o Spam", "irá ignorar as mensagens se não houver palavras mais longas do que", "personagens",
+
+		"Ocorrências máximas",
+		"Prevenir o Spam", "marcará as mensagens como", "repetitivo", "depois de uma palavra aparecer", "ou mais vezes"
+	],
+
+	"recover-chat": [
+		"Conversa de recuperação",
+		"Se", null, "não carrega (ou é subitamente destruído), tente recuperá-lo"
+	],
+
+	"highlight-mentions-popup": [
+		"Mostrar janelas pop-up",
+		"Quando alguém o menciona (", "@nome do utilizador", "), fazer sobressair a mensagem através de uma janela pop-up"
+	],
+
+	"simplify-chat": [
+		"Simplificar o Chat",
+		"Aplicar tons duplos para tornar a conversa mais fácil de ler"
+	],
+    	"simplify-chat:options": [
+    		"Nomes de utilizador monótonos",
+    		"Manter as cores dos nomes de utilizador consistentes",
+
+    		"Tipo de conversa",
+    		"Mostrar chat na seguinte fonte",
+
+    		"Emoticons invertidos",
+    		"Converter os emoticons de volta ao texto e exibir o emoticon (como", "ponta de ferramenta", ") apenas quando", "pairar sobre", "o texto"
+    	],
+
+	"whisper-audio": [
+		"Sussurro de áudio",
+		"Quando alguém lhe envia um sussurro, toque um som de notificação"
+	],
+    	"whisper-audio:options": [
+    		"Som de notificação",
+    		"Este som", "é licenciado sob a Atribuição Creative Commons", "Saiba mais"
+    	],
+
+
+
+
+
+	"header:currencies": ["Moedas"],
+	"convert-bits": [
+		"Conversão de Bits",
+		"Quando apresentado com", "mostra o montante real em", null, "representando"
+	],
+
+	"channel-points-receipt": [
+		"Recepção de Pontos de Canal",
+		"Como deve o recibo mostrar a colecção de", ""
+	],
+    	"channel-points-receipt:options": [
+    		"Apresenta o montante exacto cobrado",
+    		"Ronda para os 100 mais próximos",
+    		"Ronda para os 50 mais próximos",
+    		"Ronda para os 25 mais próximos"
+    	],
+
+	"rewards-calculator": [
+		"Calculadora de Recompensas",
+		"Calcular quanto tempo um fluxo deve ser vigiado para resgatar recompensas de", ""
+	],
+
+
+
+
+
+	"header:customization": ["Calculadora de Recompensas"],
+	"placement:away-mode": [
+		"Modo Longe",
+		"Onde o botão deve ser afixado", "Modo Longe", ""
+	],
+    	"placement:away-mode:options": [
+    		"Não mostrado",
+    		"Acima do vídeo",
+    		"Abaixo do vídeo"
+    	],
+
+	"placement:points-receipt": [
+		"Recebimento de Pontos",
+		"Onde deve estar o texto do", "Pontos Recebidos", ""
+	],
+    	"placement:points-receipt:options": [
+    		"Não mostrado",
+    		"Abaixo do vídeo"
+    	],
+
+	"placement:point-watcher": [
+		"Vigilante de Pontos",
+		"Onde deve estar o texto de", "Vigilante de Pontos", ""
+	],
+    	"placement:point-watcher:options": [
+    		"Não mostrado",
+    		"Na descrição popup"
+    	],
+
+	"placement:watch-time": [
+		"Tempo de exibição",
+		"Onde deve o", "Tempo de exibição", ""
+	],
+    	"placement:watch-time:options": [
+    		"Não mostrado",
+    		"Acima do vídeo",
+    		"Abaixo do vídeo"
+    	],
+
+
+
+
+
+	"header:video-recovery": ["Recuperação de vídeo"],
+	"keep-popout": [
+		"Manter Janela Popup",
+		"Ao mudar para outra página, impedir que a extensão destrua o pequeno vídeo (janela pop-up) da transmissão"
+	],
+
+	"recover-ads": [
+		"Anúncios de recuperação",
+		"Quando um anúncio não toca (\"congela\"), tente recuperá-lo"
+	],
+
+	"recover-frames": [
+		"Recuperar imagem",
+		"Quando o vídeo não é reproduzido (perde frames por mais de", "15 segundos", "), carregar de novo a página web"
+	],
+
+	"recover-pages": [
+		"Recuperar Páginas",
+		"Se a página web não for exibida, tente recuperá-la"
+	],
+
+	"recover-stream": [
+		"Recovering Video Stream",
+		"Quando o fluxo não tocar (\"congela\"), tente recuperá-lo"
+	],
+
+	"recover-video": [
+		"Recuperar vídeo",
+		"Quando o vídeo não for descarregado (ecrã preto), voltar a carregar a página web"
+	],
+
+
+
+
+
+	"header:developer-features": ["Características do desenvolvedor"],
+	"@console": [
+		"Mostrar mensagens de consola",
+		"Permitir a extensão para exibir mensagens na consola"
+	],
+    	"@console.log": [
+    		"Permitir registos",
+    		"Exibe mensagens de", null, ""
+    	],
+    	"@console.warn": [
+    		"Permitir avisos",
+    		"Exibe mensagens de", null, ""
+    	],
+    	"@console.error": [
+    		"Permitir erros",
+    		"Exibe mensagens de", null, ""
+    	],
+    	"@console.remark": [
+    		"Permitir comentários",
+    		"Exibe mensagens de", null, ""
+    	],
+
+	"@stats": [
+		"Mostrar Estatísticas",
+		"Permitir a extensão para exibir estatísticas"
+	],
+
+	"@experimental": [
+		"Funções experimentais",
+		"Deixar a extensão mostrar e utilizar funções experimentais",
+		"Pode causar perda de dados"
+	],
+
+	"@fine-details": [
+		"Usar Detalhes Finos",
+		"Permita que a extensão utilize Twitch™ Dados API para melhorar a sua experiência",
+		"Isto não irá recolher quaisquer dados. Irá utilizar os dados que Twitch™ recolheu"
+	],
+
+	"@default": [
+		"Mostrar Padrões",
+		"Mostrar",
+		"Mostrar Padrões"
+	],
+
+
+
+
+
+	"header:experimental-features": ["Funções experimentais"],
+	"@@auto-focus": [
+		"Foco automático",
+		"Controlar automaticamente o", "Para cima Próximo", "e", "Modo Longe", "de acordo com a actividade de transmissão",
+		"Isto", "não", "irá parar o temporizador de um minuto"
+	],
+    	"@@auto-focus:options:detection-level": [
+    		"Nível de Detecção",
+    		"Quanta actividade deve o", "autofocus", "",
+
+    		"Alta Actividade - FPS / IRL / Pace",
+    		"Actividade Modesta - Acção / Aventura / Plataforma",
+    		"Actividade Sazonal - Horror / Enigma / Trivialidades",
+    		"Baixa Actividade - Apenas Conversação / Simulação / Estratégia / Estratégia"
+    	],
+    	"@@auto-focus:options:polling-interval": [
+    		"Intervalo de votação",
+    		"Com que frequência deve", "sonda", "o vídeo",
+
+    		"A cada segundo - CPU intensiva, excelente detecção",
+    		"De 3 em 3 segundos - fácil de detectar, boa detecção",
+    		"A cada 5 segundos - CPU compatível, detecção justa",
+    		"A cada 10 segundos - CPU compatível, má detecção"
+    	],
+    	"@@auto-focus:options:image-type": [
+    		"Tipo de imagem",
+    		"Que tipo de imagem deve ser utilizado para o", "sondagem", "",
+
+    		"JPG - Amigo do CPU, boa detecção",
+    		"PNG - CPU intensive, excelente detecção",
+    		"WebP - Amigo da CPU, excelente detecção"
+    	],
+
+	"@@convert-emotes": [
+		"Converter Emoticons",
+		"Quando apresentados com Twitch™ emoticons, seleccione-os para utilizar (não é necessária subscrição)",
+		"Isto só funciona para o fluxo actual que está a ver",
+		"Isto", "não", "guarda/desbloqueia o emoticon"
+	],
+
+	"@@soft-unban": [
+		"Ligeira Revogação",
+		"Conversa reutilizável para canais onde tenha sido bloqueado",
+		"Isto só lhe permite ver o chat"
+	],
+    	"@@soft-unban:options:fade-messages": [
+    		"Mensagens de desvanecimento",
+    		"As mensagens serão visíveis durante", null
+    	],
+    	"@@soft-unban:options:keep-bots": [
+    		"Manter Robôs",
+    		"Mostrar mensagens robotizadas"
+    	],
+    	"@@soft-unban:options:prevent-clips": [
+    		"Evite Partilhar",
+    		"Esconder Twitch™ hiperligações de vídeo"
+    	],
+
+    "$": "[[ END OF FILE ]]"
+}

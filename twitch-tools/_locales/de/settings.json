@@ -1,0 +1,465 @@
+{ "[[SOURCE]]": "ROOT->ES->EN->DE", "LANG_PACK_READY": false,
+
+	"header:automation": ["Automatisering"],
+	"auto-join": [
+		"Automatische Unie",
+		"Wanneer er een waarschuwing wordt gegeven dat de uitzending bedoeld is voor een", "volwassen publiek", "gaat automatisch verder",
+		"Dit zal ook worden samengevoegd tot", null, "automatisch"
+	],
+
+	"away-mode": [
+		"Loer-modus",
+		"Voegt een knop toe om te schakelen tussen", "bewaking",
+		"U kunt ook de sneltoets op het toetsenbord gebruiken", null, ""
+	],
+		"away-mode:hide-chat": ["Chat verbergen", "Houd de chat verborgen terwijl", "bewaking"],
+		"away-mode:volume": ["Volume tijdens het monitoren", "Stel het volume in op", "tidjens op", "bewaking"],
+		"away-mode:schedule": ["Kalender", "Kies dagen"],
+
+	"auto-claim-bonuses": [
+		"Claim Bonus",
+		"Wanneer de knop verschijnt", ", klik er dan automatisch op"
+	],
+
+	"first-in-line": [
+		"Als eerste in de rij",
+		"Wanneer een kanaal live is, ga dan automatisch naar de stream",
+		null, "een wachtrij-service toevoegen aan Twitch™"
+	],
+		"first-in-line:disabled": [
+			"Uitgeschakeld",
+			"Gebruik deze functie niet"
+		],
+		"first-in-line:notification": [
+			"Melding",
+			"Wanneer u een melding ontvangt van een live kanaal, gaat u naar de uitzending ervan na"
+		],
+		"first-in-line:appearance": [
+			"Verschijning",
+			"Wanneer een kanaal wordt weergegeven in uw Kanalen gevolgd, gaat u naar de uitzending ervan na"
+		],
+		"first-in-line:smart-notifications": [
+			"Automatisch",
+			"Ga automatisch naar alle uitzendingen na"
+		],
+
+	"auto-follow": [
+		"Automatisch volgen",
+		"Terwijl u kijkt naar een kanaal dat u niet volgt, volgt u het automatisch"
+	],
+		"auto-follow:none": [
+			"Uitgeschakeld",
+			"Gebruik deze functie niet"
+		],
+		"auto-follow:raids": [
+			"Surprises",
+			"Als je meedoet aan een verrassing, volg dan het kanaal dat verrast wordt"
+		],
+		"auto-follow:time": [
+			"Publiek",
+			"Na het bekijken", "van de inhoud, volg het kanaal"
+		],
+		"auto-follow:all": [
+			"Automatisch",
+			"Volgt alle kanalen automatisch"
+		],
+
+	"kill-extensions": [
+		"Extensies uitschakelen",
+		"Sta niet toe dat Twitch™ extensies worden weergegeven in de stream"
+	],
+
+	"next-channel-preference": [
+		"Volgende kanaal voorkeur",
+		"Hoe wordt het volgende kanaal gekozen wanneer", null, "leeg is",
+		"Dit is alleen geactiveerd wanneer de huidige transmissie is uitgeschakeld"
+	],
+		"next-channel-preference:options": [
+			"Ga naar een willekeurig kanaal",
+			"Ga met het minste aantal kijkers",
+			"Ga met de meeste kijkers",
+			"Ga met het minste aantal kanaal punten",
+			"Ga met de meeste kanaal punten"
+		],
+
+	"prevent-hosting": [
+		"Vermijd Hosting",
+		"Voorkom dat sommige of alle kanalen worden gehost en ga naar het",
+		"Volgende kanaal"
+	],
+		"prevent-hosting:options": [
+			"Alle kanalen toestaan te hosten",
+			"Voorkom dat alle kanalen gehost worden",
+			"Voorkom dat niet-volgde kanalen gehost worden"
+		],
+
+	"prevent-raiding": [
+		"Voorkom verrassingen",
+		"Voorkom dat sommige of alle kanalen verrassingen hebben door te gaan naar",
+		"Volgende kanaal"
+	],
+		"prevent-raiding:options": [
+			"Laat alle kanalen verrassen",
+			"Neem alleen deel aan verrassingen om kanaalpunten te verzamelen",
+			"Vermijd alle verrassingen in alle chatrooms",
+			"Voorkom verrassende niet-volgers"
+		],
+
+	"claim-loot": [
+		null,
+		"Automatisch claimen en weggooien", null, "wanneer de pagina wordt geladen"
+	],
+
+	"stay-live": [
+		"Blijf in leven",
+		"Zodra de huidige transmissie eindigt, gaat u naar", "Volgende kanaal"
+	],
+
+	"view-mode": [
+		"Weergavemodus",
+		"Als de pagina klaar is met laden, verander dan de weergave in"
+	],
+		"view-mode:options": [
+			"Niets (niet veranderen)",
+			"Standaard mode",
+			"Theater mode",
+			"Volledige breedte modus",
+			"Volledig scherm modus"
+		],
+
+
+
+
+
+	"header:chat-and-messaging": ["Chatten en berichten"],
+	"bttv-emotes": [
+		"Emoticons BetterTTV",
+		"Gebruik BetterTTV emoticons",
+		"Dit kan instabiliteit veroorzaken bij het laden van emoticons"
+	],
+		"bttv-emotes:channel-specific-emotes": [
+			"Kanaal Specifieke Emoticons",
+			"Emoticons laden", null, "kanaal specifiek"
+		],
+
+		"bttv-emotes:emote-location": [
+			"Emoticon Locatie",
+			"Gebruik deze emoticons van", null, ""
+		],
+			"bttv-emotes:emote-location:options": [
+				"Meest populair (Trending)",
+				"Meest gedeeld (Gedeeld)",
+				"Meest gebruikt (Eerst)",
+				"Meest universeel (Wereldwijd)"
+			],
+
+		"bttv-emotes:extra-emotes": [
+			"Extra Emoticons",
+			"Voeg emoticons toe van", null, "met de woorden"
+		],
+
+		"bttv-emotes:library-size": [
+			"Catalogusformaat",
+			"Laden tot"
+		],
+
+	"filter-messages": [
+		"Filter berichten",
+		"Verwijdert berichten/regels in alle kanalen",
+		"Zie", null, "voor hulp"
+	],
+		"filter-messages:options": [
+			"Filter Regels",
+			"Kanaal Regels",
+			"Badges",
+			"Gebruiker",
+			"Emoticons",
+			"Tekst",
+			null,
+			"Start",
+			"toevoegen",
+			"enkele regels"
+		],
+
+	"highlight-mentions": [
+		"Markeer vermeldingen",
+		"Wanneer iemand u vermeldt (", "@gebruikersnaam", "), markeer het bericht om het te laten opvallen"
+	],
+		"highlight-mentions:options": [
+			"Algemene vermelding",
+			"Wanneer iemand een algemene vermelding stuurt (", null, "@chat", "@all", "), markeert u het bericht door een pop-upvenster weer te geven"
+		],
+
+	"native-reply": [
+		"Native Reactie",
+		"Probeer native Twitch™-reacties te tonen op alle kanalen"
+	],
+
+	"prevent-spam": [
+		"Voorkom spam",
+		"Herhaalde berichten in de chat verbergen"
+	],
+		"prevent-spam:options": [
+			"Bericht Geschiedenis",
+			"Voorkom spam", "zal controleren", "regels achterstevoren om te detecteren", "plagiaat",
+
+			"Minimum woordlengte",
+			"Spam voorkomen", "zal berichten negeren als er geen woorden zijn langer dan", "tekens",
+
+			"Maximum aantal keren dat het voorkomt",
+			"Voorkom Spam", "zal berichten markeren als", "herhaaldelijk", "nadat een woord voorkomt", "of meer keer"
+		],
+
+	"recover-chat": [
+		"Herstel Chat",
+		"Indien", null, "niet wordt geladen (of plotseling wordt vernietigd), probeer het dan te herstellen"
+	],
+
+	"highlight-mentions-popup": [
+		"Toon pop-up vensters",
+		"Wanneer iemand je noemt (", "@gebruikersnaam", "), laat het bericht dan opvallen door een popup venster te tonen"
+	],
+
+	"simplify-chat": [
+		"Chat vereenvoudigen",
+		"Pas dubbele tonen toe om chat gemakkelijker leesbaar te maken"
+	],
+		"simplify-chat:options": [
+			"Monotone gebruikersnamen",
+			"Houd gebruikersnaam kleuren uniform",
+
+			"Chat lettertype",
+			"Toon chat in het volgende lettertype",
+
+			"Emoticons omkeren",
+			"Converteer emoticons terug naar tekst en toon de emoticon (als", "tooltip", ") alleen wanneer", "de cursor over", "de tekst"
+		],
+
+	"whisper-audio": [
+		"Audio Fluister",
+		"Wanneer iemand je een fluistering stuurt, speelt het een notificatie geluid af"
+	],
+		"whisper-audio:options": [
+			"Meldingsgeluid",
+			"Dit geluid", "is gelicenseerd onder de Creative Commons Naamsvermelding", "Meer informatie"
+		],
+
+
+
+
+
+	"header:currencies": ["Munten"],
+	"convert-bits": [
+		"Converteer Bits",
+		"Wanneer gepresenteerd met", "wordt het werkelijke bedrag in", null, "vertegenwoordigt"
+	],
+
+	"channel-points-receipt": [
+		"Ontvangstbewijs kanaalpunten",
+		"Hoe moet het ontvangstbewijs de verzameling van", ""
+	],
+		"channel-points-receipt:options": [
+			"Toont het exact geïnde bedrag",
+			"Rond af naar de dichtstbijzijnde 100",
+			"Rond af naar de dichtstbijzijnde 50",
+			"Rond af naar de dichtstbijzijnde 25"
+		],
+
+	"rewards-calculator": [
+		"Beloningen Calculator",
+		"Berekent hoe lang een uitzending bekeken moet worden om beloningen van", ""
+	],
+
+
+
+
+
+	"header:customization": ["Aanpassing"],
+	"placement:away-mode": [
+		"Weg-modus",
+		"Waar de knop moet worden weergegeven", "Weg Modus", ""
+	],
+		"placement:away-mode:options": [
+			"Niet afgebeeld",
+			"Boven de video",
+			"Onder de video"
+		],
+
+	"placement:points-receipt": [
+		"Ontvangst van punten",
+		"Waar moet de tekst van de", "Punten Ontvangst", ""
+	],
+		"placement:points-receipt:options": [
+			"Niet getoond",
+			"Onder de video"
+		],
+
+	"placement:point-watcher": [
+		"Point Watcher",
+		"Waar moet de tekst van", "Punt Uitkijkpost", ""
+	],
+		"placement:point-watcher:options": [
+			"Niet afgebeeld",
+			"In de pop-up beschrijving"
+		],
+
+	"placement:watch-time": [
+		"Weergavetijd",
+		"Waar moet de", "Tijd weergeven", ""
+	],
+		"placement:watch-time:options": [
+			"Niet afgebeeld",
+			"Boven de video",
+			"Onder de video"
+		],
+
+
+
+
+
+	"header:video-recovery": ["Video herstel"],
+	"keep-popout": [
+		"Pop-up venster behouden",
+		"Voorkom dat de extensie bij het overschakelen naar een andere pagina de kleine video (pop-up venster) van de verzending vernietigt"
+	],
+
+	"recover-ads": [
+		"Advertenties terughalen",
+		"Wanneer een advertentie niet afspeelt (\"bevriest\"), probeer het dan terug te halen"
+	],
+
+	"recover-frames": [
+		"Beeld herstellen",
+		"Wanneer de video niet afspeelt (frames verliest gedurende meer dan", "15 seconden", "), herlaad de webpagina"
+	],
+
+	"recover-pages": [
+		"Pagina's ophalen",
+		"Als de webpagina niet wordt weergegeven, probeer hem dan op te halen"
+	],
+
+	"recover-stream": [
+		"Videostream herstellen",
+		"Wanneer de stream niet afspeelt (\"bevriest\"), probeer hem dan te herstellen"
+	],
+
+	"recover-video": [
+		"Video ophalen",
+		"Wanneer de video niet downloadt (zwart scherm), herlaad de webpagina"
+	],
+
+
+
+
+
+	"header:developer-features": ["Functies voor ontwikkelaars"],
+	"@console": [
+		"Consoleberichten weergeven",
+		"Activeer de uitbreiding om berichten op de console weer te geven"
+	],
+		"@console.log": [
+			"Logboeken toestaan",
+			"Toont berichten van", null, ""
+		],
+		"@console.warn": [
+			"Waarschuwingen toestaan",
+			"Toont berichten van", null, ""
+		],
+		"@console.error": [
+			"Fouten toestaan",
+			"Toont berichten van", null, ""
+		],
+		"@console.remark": [
+			"Commentaar toestaan",
+			"Toont berichten van", null, ""
+		],
+
+	"@stats": [
+		"Statistieken tonen",
+		"De uitbreiding toestaan statistieken weer te geven"
+	],
+
+	"@experimental": [
+		"Experimentele Functies",
+		"Laat de uitbreiding experimentele functies weergeven en gebruiken",
+		"Kan gegevensverlies veroorzaken"
+	],
+
+	"@fine-details": [
+		"Fijne details gebruiken",
+		"Geef de extensie toestemming om Twitch™ API-gegevens te gebruiken om uw ervaring te verbeteren",
+		"Dit zal geen gegevens verzamelen. Het zal de gegevens gebruiken die Twitch™ heeft verzameld"
+	],
+
+	"@default": [
+		"Toon standaardinstellingen",
+		"Toon",
+		"Toon standaardinstellingen"
+	],
+
+
+
+
+
+	"header:experimental-features": ["Experimentele functies"],
+	"@@auto-focus": [
+		"Automatische scherpstelling",
+		"Automatisch regelen van de", "Volgende", "en", "Weg Modus", "afhankelijk van de zendactiviteit",
+		"Dit", "zal niet", "zal de één-minuut timer stoppen"
+	],
+		"@@auto-focus:options:detection-level": [
+			"Detectieniveau",
+			"Hoeveel activiteit moet de", "autofocus", "",
+
+			"Hoge activiteit - FPS / IRL / Tempo",
+			"Bescheiden Activiteit - Actie / Avontuur / Platforming",
+			"Seizoensgebonden Activiteit - Horror / Puzzel / Trivia",
+			"Lage activiteit - Alleen praten / Simulatie / Strategie / Strategie"
+		],
+
+		"@@auto-focus:options:polling-interval": [
+			"Sondeer interval",
+			"Hoe vaak moet u", "sonderen", "de video",
+
+			"Elke seconde - CPU-intensief, uitstekende detectie",
+			"Elke 3 seconden - CPU-compatibel, goede detectie",
+			"Elke 5 seconden - CPU-compatibel, redelijke detectie",
+			"Elke 10 seconden - CPU-compatibel, slechte detectie"
+		],
+
+		"@@auto-focus:options:image-type": [
+			"Afbeeldingstype",
+			"Welk type afbeelding moet worden gebruikt voor de", "peiling", "",
+
+			"JPG - CPU-vriendelijk, goede detectie",
+			"PNG - CPU-intensief, uitstekende detectie",
+			"WebP - CPU-vriendelijk, uitstekende detectie"
+		],
+
+	"@@convert-emotes": [
+		"Emoticons converteren",
+		"Wanneer u Twitch™ emoticons te zien krijgt, selecteert u deze om te gebruiken (geen abonnement nodig)",
+		"Dit werkt alleen voor de huidige stream die u bekijkt",
+		"Dit", "doet niet", "bewaart/ontgrendelt de emoticon"
+	],
+
+	"@@soft-unban": [
+		"Lichte herroeping",
+		"Chat opnieuw inschakelen voor chatrooms waar het geblokkeerd is",
+		"Hierdoor kun je alleen de chat zien"
+	],
+		"@@soft-unban:options:fade-messages": [
+			"Fade berichten",
+			"Berichten zullen zichtbaar zijn tijdens", null
+		],
+		"@@soft-unban:options:keep-bots": [
+			"Robots onderhouden",
+			"Toon Robot Berichten"
+		],
+		"@@soft-unban:options:prevent-clips": [
+			"Vermijd delen",
+			"Verberg Twitch™ video hyperlinks"
+		],
+
+	"$": "[[ END OF FILE ]]"
+}

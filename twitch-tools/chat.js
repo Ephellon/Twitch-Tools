@@ -27,6 +27,7 @@ function RemoveCustomCSSBlock(name, flags = '') {
 let Chat__Initialize = async(START_OVER = false) => {
     let {
         USERNAME,
+        LANGUAGE,
         STREAMER,
         STREAMERS,
         ALL_CHANNELS,
@@ -108,11 +109,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                 text: textContainer,
                 icon: $('svg, img', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `Collecting ${ STREAMER.fiat ?? 'Bonuses' }`, { top: -10 }),
+                tooltip: new Tooltip(container, `&uarr; ${ STREAMER.fiat ?? 'Bonuses' }`, { top: -10 }),
             };
 
             button.tooltip.id = new UUID().toString();
-            button.text.innerText = 'ON';
+            button.text.innerHTML = '&uarr;';
             button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', true);
 
             button.icon ??= $('svg, img', false, container);
@@ -139,8 +140,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             let enabled = button.container.getAttribute('tt-auto-claim-bonus-channel-points-enabled') !== 'true';
 
             button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', enabled);
-            button.text.innerText = ['OFF','ON'][+enabled];
-            button.tooltip.innerHTML = `${ ['Ignor','Collect'][+enabled] }ing ${ STREAMER.fiat ?? 'Bonuses' }`;
+            button.text.innerHTML = ['&darr;','&uarr;'][+enabled];
+            button.tooltip.innerHTML = `&${ ['d','u'][+enabled] }arr; ${ STREAMER.fiat ?? 'Bonuses' }`;
 
             button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
         };
@@ -188,7 +189,26 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                                                                 __/ |
      *                                                                                |___/
      */
-    let EmoteSearch = {};
+    let EmoteSearch = {},
+        EmoteDragCommand = (lang => {
+            switch(lang) {
+                case 'de':
+                    return 'Ziehen, um zu benutzen';
+
+                case 'es':
+                    return 'Arrastre para usar';
+
+                case 'pt':
+                    return 'Arraste para usar';
+
+                case 'ru':
+                    return 'Перетащите для использования';
+
+                case 'en':
+                default:
+                    return 'Drag to use';
+            }
+        })(LANGUAGE);
 
     Handlers.emote_searching = () => {
         EmoteSearch.input = $('.emote-picker [type="search"i]');
@@ -288,7 +308,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                                 onclick: event => {
                                     let name = event.currentTarget.getAttribute('name'),
-                                        chat = $('[data-a-target="chat-input"]');
+                                        chat = $('[data-a-target="chat-input"i]');
 
                                     // chat.innerHTML = (chat.value += `${name} `);
                                 },
@@ -486,7 +506,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 // Emote Section Header
                 furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
                     furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {
-                        innerHTML: "BetterTTV Emotes &mdash; Drag to use"
+                        innerHTML: `BetterTTV Emotes &mdash; ${ EmoteDragCommand }`
                     })
                 ),
 
@@ -578,7 +598,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         alt = alt.replace(/\s+/g, '_');
 
-                        $(`.text-fragment:not([tt-converted-emotes~="${alt}"])`, true, element).map(fragment => {
+                        $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
                             let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, 'data-bttv-owner-id': pid, innerHTML: img.innerHTML }),
                                 converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
@@ -645,7 +665,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                                 onclick: event => {
                                     let name = event.currentTarget.getAttribute('name'),
-                                        chat = $('[data-a-target="chat-input"]');
+                                        chat = $('[data-a-target="chat-input"i]');
 
                                     // chat.innerHTML = (chat.value += `${name} `);
                                 },
@@ -702,7 +722,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             return RestartJob('convert_emotes');
 
         // Get the streamer's emotes and make them draggable
-        let streamersEmotes = $(`[class^="emote-picker"] img[alt="${ STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
+        let streamersEmotes = $(`[class^="emote-picker"i] img[alt="${ STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
 
         if(!defined(streamersEmotes))
             return RegisterJob('convert_emotes');
@@ -710,7 +730,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         for(let lock of $('[data-test-selector*="lock"i]', true, streamersEmotes)) {
             let emote = lock.nextElementSibling,
                 { alt, src } = emote,
-                parent = emote.closest('[class^="emote-picker"]').parentElement,
+                parent = emote.closest('[class^="emote-picker"i]').parentElement,
                 container = parent.parentElement;
 
             container.insertBefore(CONVERT_TO_CAPTURED_EMOTE({ name: alt, src }, false), parent);
@@ -745,7 +765,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 // Emote Section Header
                 furnish('div.emote-grid-section__header-title.tw-align-items-center.tw-flex.tw-pd-x-1.tw-pd-y-05', {},
                     furnish('p.tw-align-middle.tw-c-text-alt.tw-strong', {
-                        innerHTML: "Captured Emotes &mdash; Drag to use"
+                        innerHTML: `Captured Emotes &mdash; ${ EmoteDragCommand }`
                     })
                 ),
 
@@ -783,7 +803,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             }
 
             // Set the ID to display the "Hold on..." message
-            $('.emote-picker [class*="tab-content"]').id = 'tt-hidden-emote-container';
+            $('.emote-picker [class*="tab-content"i]').id = 'tt-hidden-emote-container';
 
             // Click on the channel's tab
             $('[data-a-target="CHANNEL_EMOTES"i]')?.click();
@@ -867,7 +887,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         alt = alt.replace(/\s+/g, '_');
 
-                        $(`.text-fragment:not([tt-converted-emotes~="${alt}"])`, true, element).map(fragment => {
+                        $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
                             let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-captured-emote': alt, innerHTML: img.innerHTML }),
                                 converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
@@ -1112,7 +1132,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let filter = furnish('div#tt-filter-rule-emote', {
                 title: 'Filter this emote',
-                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal',
+                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal; text-decoration:line-through;',
                 emote: `:${ name }:`,
 
                 onclick: event => {
@@ -1129,7 +1149,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     Storage.set({ filter_rules });
                 },
 
-                innerHTML: `${ Glyphs.trash } Filter this emote`,
+                innerHTML: `${ Glyphs.trash } ${ name }`,
             });
 
             let svg = $('svg', false, filter);
@@ -1548,7 +1568,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      */
     Handlers.convert_bits = () => {
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('[class*="bits-count"]:not([tt-true-usd-amount])', true),
+            bits_counter = $('[class*="bits-count"i]:not([tt-true-usd-amount])', true),
             bits_cheer = $('[class*="cheer-amount"i]:not([tt-true-usd-amount])', true),
             hype_trains = $('[class*="community-highlight-stack"i] p:not([tt-true-usd-amount])', true);
 
@@ -1654,7 +1674,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         }
 
         let have = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
-            goal = parseInt($('[data-test-selector="RequiredPoints"]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
+            goal = parseInt($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
             need = goal - have;
 
         let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.parentElement;
@@ -1707,8 +1727,88 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         timeEstimated = ceil(timeEstimated);
 
-        tooltip.innerHTML =
-            `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+        switch(LANGUAGE) {
+            case 'de':
+                // In diesem Strom verfügbar (30 Minuten)
+                // Erhältlich in 33 mehr Streams (3 Wochen)
+
+                estimated = ({
+                    "minute": "Minuten",
+                    "hour": "Stunden",
+                    "day": "Tage",
+                    "week": "Wochen",
+                    "month": "Monate",
+                    "year": "Jahre",
+                    "century": "Jahrhunderte",
+                }[estimated]);
+
+                tooltip.innerHTML =
+                    `${ (streams < 1 || hours < timeLeftInBroadcast)? 'In diesem Strom': `Erhältlich in ${ comify(streams) } mehr` } ${ "Stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated })`;
+                break;
+
+            case 'es':
+                // Disponible durante este flujo (30 minutos)
+                // Disponible en 33 arroyos más (3 semanas)
+
+                estimated = ({
+                    "minute": "minuto",
+                    "hour": "hora",
+                    "day": "dia",
+                    "week": "semana",
+                    "month": "mese",
+                    "year": "año",
+                    "century": "siglo",
+                }[estimated]);
+
+                tooltip.innerHTML =
+                    `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este flujo': `en ${ comify(streams) } arroyos más` } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+                break;
+
+            case 'pt':
+                // Disponível durante este fluxo (30 minutos)
+                // Disponível em 33 mais fluxos (3 semanas)
+
+                estimated = ({
+                    "minute": "minuto",
+                    "hour": "hora",
+                    "day": "dia",
+                    "week": "semana",
+                    "month": "mese",
+                    "year": "ano",
+                    "century": "século",
+                }[estimated]);
+
+                tooltip.innerHTML =
+                    `Disponível ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este': `en ${ comify(streams) } mais` } ${ "fluxo" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+                break;
+
+            case 'ru':
+                // Доступно во время этого потока (30 минут)
+                // Доступно в 33 ручьях (3 недели)
+
+                estimated = ({
+                    "minute": "минут",
+                    "hour": "часов",
+                    "day": "дней",
+                    "week": "недель",
+                    "month": "месяцев",
+                    "year": "лет",
+                    "century": "веков",
+                }[estimated]);
+
+                tooltip.innerHTML =
+                    `Доступно ${ (streams < 1 || hours < timeLeftInBroadcast)? 'во время этого потока': `в ${ comify(streams) } ручьях` } (${ comify(timeEstimated) } ${ estimated })`;
+                break;
+
+            case 'en':
+            default:
+                // Available during this stream (30 minutes)
+                // Available in 33 more streams (3 weeks)
+
+                tooltip.innerHTML =
+                    `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+                break;
+        }
     };
     Timers.rewards_calculator = 100;
 
@@ -1782,7 +1882,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.recover_chat = () => {
-        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
+        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
 
         if(defined(chat))
             return;
@@ -1919,7 +2019,7 @@ let Chat__CUSTOM_CSS,
 
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
-    let banned = STREAMER?.veto || !!$('[class*="banned"]', true).length;
+    let banned = STREAMER?.veto || !!$('[class*="banned"i]', true).length;
 
     if([banned].contains(true)) {
         WARN('[NON_FATAL] Child container unavailable. Reason:', { banned });
@@ -1935,7 +2035,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         // The main controller is ready
         && parseBool(top.MAIN_CONTROLLER_READY)
         // The welcome message exists
-        && defined($(`[data-a-target*="welcome"]`))
+        && defined($(`[data-a-target*="welcome"i]`))
         && (false
             // There is a message container
             || defined($('[data-test-selector$="message-container"i]'))

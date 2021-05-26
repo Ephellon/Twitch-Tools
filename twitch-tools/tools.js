@@ -27,10 +27,14 @@ let Settings = {},
     PostOffice = new Map(),
     // These won't change (often)
     USERNAME,
+    LANGUAGE,
     THEME,
     SPECIAL_MODE,
     NORMAL_MODE,
     NORMALIZED_PATHNAME;
+
+// Set the user's language (vaguely)
+LANGUAGE = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
 // Populate the username field by quickly showing the menu
 if(defined(UserMenuToggleButton)) {
@@ -898,7 +902,7 @@ class Balloon {
     }
 
     addButton({ left = false, icon = 'play', onclick = ($=>$), attributes = {} }) {
-        let parent = this.header.closest('div[class*="header"]');
+        let parent = this.header.closest('div[class*="header"i]');
         let uuid = UUID.from(onclick.toString()).value,
             existing = $(`[uuid="${ uuid }"i]`, false, parent);
 
@@ -1161,7 +1165,7 @@ class ChatFooter {
         if(defined(existing))
             return existing;
 
-        let parent = $('[data-a-target="chat-scroller"]'),
+        let parent = $('[data-a-target="chat-scroller"i]'),
             footer =
             f('div#tt-chat-footer.tw-absolute.tw-border-radius-medium.tw-bottom-0.tw-c-text-overlay.tw-mg-b-1',
                 {
@@ -1239,7 +1243,7 @@ class Card {
 
         let f = furnish;
 
-        let container = $('[data-a-target*="card"i] [class*="card-layer"]'),
+        let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
             card = f(`div.tw-absolute.tw-border-radius-large.viewer-card-layer__draggable[data-a-target="viewer-card-positioner"]`, { style: styling }),
             uuid = UUID.from([title, subtitle].join('\n')).value;
 
@@ -1979,7 +1983,7 @@ function parseBool(value = null) {
             return false;
 
         default:
-            return (["bigint", "number"].contains(typeof value)? !isNaN(value): true);
+            return (["bigint", "number"].contains(typeof value)? !Number.isNaN(value): true);
     }
 }
 
@@ -2028,7 +2032,7 @@ async function GetQuality() {
     let current = qualities.find(({ input }) => input.checked);
 
     if(!defined(current)) {
-        let { videoHeight = 0 } = $('[data-a-target="video-player"] video') ?? ({});
+        let { videoHeight = 0 } = $('[data-a-target="video-player"i] video') ?? ({});
 
         if((videoHeight |= 0) < 1)
             return /* Is the streamer even live? */;
@@ -2128,6 +2132,90 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         buttons.settings.click();
 
     return { __old__: current, __new__: desired };
+}
+
+// Get the video volume
+    // GetVolume() -> Number#Float
+function GetVolume() {
+    let video = $('[data-a-target="video-player"i] video'),
+        slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
+
+    return video.volume;
+}
+
+// Change the video volume
+    // SetVolume([volume:number#Float]) -> undefined
+function SetVolume(volume = 0.5) {
+    let video = $('[data-a-target="video-player"i] video'),
+        slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
+
+    video.volume = slider.value = (+volume).toFixed(2);
+}
+
+// Get the view mode
+    // GetViewMode() -> string={ "fullscreen" | "fullwidth" | "theatre" | "default" }
+function GetViewMode() {
+    let mode = 'default';
+
+    if(false
+        || defined($(`button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`))
+    )
+        mode = 'theatre';
+
+    if(false
+        || defined($(`button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`))
+    )
+        mode = 'fullwidth';
+
+    if(false
+        || (true
+                && defined($(`button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`))
+                && defined($(`button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`))
+            )
+        || defined($(`button[data-a-target*="fullscreen"i][aria-label*="exit"i]`))
+    )
+        mode = 'fullscreen';
+
+    return mode;
+}
+
+// Change the view mode
+    // SetViewMode(mode:string={ "fullscreen" | "fullwidth" | "theatre" | "default" }) -> undefined
+function SetViewMode(mode) {
+    let buttons = [];
+
+    switch(mode) {
+        case 'fullscreen':
+            buttons.push(
+                `button[data-a-target*="theatre-mode"i]:not([aria-label*="exit"i])`,
+                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
+            );
+            break;
+
+        case 'fullwidth':
+            buttons.push(
+                `button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`,
+                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
+            );
+            break;
+
+        case 'theatre':
+            buttons.push(
+                `button[data-a-target*="theatre-mode"i]:not([aria-label*="exit"i])`,
+                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
+            );
+            break;
+
+        case 'default':
+            buttons.push(
+                `button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`,
+                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
+            );
+            break;
+    }
+
+    for(let button of buttons)
+        $(button)?.click?.();
 }
 
 // Returns if an item is of an object class
@@ -2480,7 +2568,7 @@ async function update() {
                     live: true,
                     href: $('a', false, element)?.href,
                     icon: $('img', false, element)?.src,
-                    name: $('[class$="text"]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                    name: $('[class$="text"i]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
                 };
 
                 if(!defined(streamer.name))
@@ -2564,10 +2652,10 @@ let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace(
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*', 'view_mode'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
-    NORMALIZED_FEATURES = ['away_mode', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
+    NORMALIZED_FEATURES = ['away_mode*', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
 
     // Features that need to be refreshed when changed
     REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'native_twitch_reply', '*placement'].map(AsteriskFn);
@@ -2626,7 +2714,7 @@ let Initialize = async(START_OVER = false) => {
     let GLOBAL_TWITCH_API = (top.GLOBAL_TWITCH_API ??= {}),
         GLOBAL_EVENT_LISTENERS = (top.GLOBAL_EVENT_LISTENERS ??= {});
 
-    SPECIAL_MODE = defined($('[data-test-selector="exit-button"]'));
+    SPECIAL_MODE = defined($('[data-test-selector="exit-button"i]'));
     NORMAL_MODE = !SPECIAL_MODE;
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
@@ -2913,7 +3001,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get veto() {
-            return !!$('[class*="banned"]', true).length;
+            return !!$('[class*="banned"i]', true).length;
         },
 
         follow() {
@@ -2971,7 +3059,7 @@ let Initialize = async(START_OVER = false) => {
                     live: true,
                     href: $('a', false, element)?.href,
                     icon: $('img', false, element)?.src,
-                    name: $('[class$="text"]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                    name: $('[class$="text"i]', false, element)?.innerText?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
                 })
             ),
     ].filter(uniqueChannels);
@@ -2982,7 +3070,7 @@ let Initialize = async(START_OVER = false) => {
         let element;
 
         // Is the nav open?
-        let open = defined($('[data-a-target="side-nav-search-input"]')),
+        let open = defined($('[data-a-target="side-nav-search-input"i]')),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
         let SIDE_PANEL_CHILDREN = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true),
@@ -2997,7 +3085,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Click "show more" as many times as possible
         show_more:
-        while(defined(element = $('#sideNav [data-a-target$="show-more-button"]')))
+        while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
         // Collect all channels
@@ -3136,7 +3224,7 @@ let Initialize = async(START_OVER = false) => {
         // Click "show less" as many times as possible
         show_less:
         while(
-            defined(element = $('[data-a-target="side-nav-show-less-button"]'))
+            defined(element = $('[data-a-target$="show-less-button"i]'))
             // Only close sections if they don't contain any live channels
             // floor(last-dead-channel-index / panel-size) > floor(first-dead-channel-index / panel-size)
                 // [live] ... [dead] ... [dead]
@@ -3476,7 +3564,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"]')?.click();
+        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i]')?.click();
     };
     Timers.auto_accept_mature = -1000;
 
@@ -3705,13 +3793,15 @@ let Initialize = async(START_OVER = false) => {
      */
     let AwayModeButton,
         AwayModeEnabled = false,
-        SetupQuality = false;
+        InitialQuality,
+        InitialVolume,
+        InitialViewMode;
 
     Handlers.away_mode = async() => {
         let button = $('#away-mode'),
-            quality = (Handlers.away_mode.quality ??= await GetQuality());
+            currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
-        if(defined(button) || !defined(quality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
+        if(defined(button) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
             return;
 
         await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
@@ -3727,7 +3817,7 @@ let Initialize = async(START_OVER = false) => {
             switch(placement) {
                 // Option 1 "over" - video overlay, play button area
                 case 'over':
-                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"][class*="right-control-group"i] > :last-child', false, parent);
+                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child', false, parent);
                     parent = sibling?.parentElement;
                     before = 'first';
                     extra = ({ container }) => {
@@ -3738,7 +3828,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Option 2 "under" - quick actions, follow/notify/subscribe area
                 case 'under':
-                    sibling = $('[data-test-selector="live-notifications-toggle"]');
+                    sibling = $('[data-test-selector="live-notifications-toggle"i]');
                     parent = sibling?.parentElement;
                     before = 'last';
                     break;
@@ -3786,9 +3876,23 @@ let Initialize = async(START_OVER = false) => {
             };
         }
 
-        // Change the quality when loaded
-        if(!SetupQuality)
-            SetupQuality = SetQuality(['auto','low'][+enabled]) && true;
+        // Enable lurking when loaded
+        if(!defined(InitialQuality)) {
+            InitialQuality = (Handlers.away_mode.quality ??= await GetQuality());
+            InitialVolume = (Handlers.away_mode.volume ??= GetVolume());
+            InitialViewMode = (Handlers.away_mode.viewMode ??= GetViewMode());
+
+            if(parseBool(Settings.away_mode__volume_control))
+                SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
+
+            if(parseBool(Settings.away_mode__hide_chat))
+                ([
+                    () => SetViewMode(InitialViewMode),
+                    () => SetViewMode('fullwidth'),
+                ][+enabled])();
+
+            SetQuality(['auto','low'][+enabled]);
+        }
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
@@ -3797,13 +3901,24 @@ let Initialize = async(START_OVER = false) => {
         button.icon.setAttribute('width', '20px');
 
         button.container.onclick ??= event => {
-            let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled'));
+            let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled')),
+                { container, background, tooltip } = AwayModeButton;
 
-            AwayModeButton.container.setAttribute('tt-away-mode-enabled', enabled);
-            AwayModeButton.background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
-            AwayModeButton.tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
+            container.setAttribute('tt-away-mode-enabled', enabled);
+            background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
+            tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
+
+            if(parseBool(Settings.away_mode__volume_control))
+                SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
+
+            if(parseBool(Settings.away_mode__hide_chat))
+                ([
+                    () => SetViewMode(InitialViewMode),
+                    () => SetViewMode('fullwidth'),
+                ][+enabled])();
 
             SetQuality(['auto','low'][+enabled]);
+
             SaveCache({ AwayModeEnabled: enabled });
         };
 
@@ -3845,6 +3960,45 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     // /chat.js
+
+    /*** Claim Loot
+     *       _____ _       _             _                 _
+     *      / ____| |     (_)           | |               | |
+     *     | |    | | __ _ _ _ __ ___   | |     ___   ___ | |_
+     *     | |    | |/ _` | | '_ ` _ \  | |    / _ \ / _ \| __|
+     *     | |____| | (_| | | | | | | | | |___| (_) | (_) | |_
+     *      \_____|_|\__,_|_|_| |_| |_| |______\___/ \___/ \__|
+     *
+     *
+     */
+    Handlers.claim_loot = () => {
+        let prime_loots_button = $('[data-a-target^="prime-offers"i]');
+
+        prime_loots_button.click();
+
+        // Give the loots time to load
+        let waiter = setInterval(() => {
+            let stop = $('[href*="gaming.amazon.com"]', true).length;
+
+            if(!stop) return;
+
+            clearInterval(waiter);
+
+            $('button[data-a-target^="prime-claim"i]', true).map(button => button.click());
+            $('[class*="prime-offer"i][class*="dismiss"i] button', true).map(button => button.click());
+
+            // Give the loots time to be clicked
+            setTimeout(() => prime_loots_button.click(), 1000 * stop);
+        }, 100);
+    };
+    Timers.claim_loot = -5_000;
+
+    __ClaimPrime__:
+    if(parseBool(Settings.claim_loot)) {
+        REMARK("Claiming Prime Gaming Loot...");
+
+        RegisterJob('claim_loot');
+    }
 
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
      *      ______ _          _     _         _      _              _    _      _
@@ -4641,7 +4795,7 @@ let Initialize = async(START_OVER = false) => {
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
-        } else if(!defined($('[role="group"i][aria-label*="followed"i] a[class*="side-nav-card"]'))) {
+        } else if(!defined($('[role="group"i][aria-label*="followed"i] a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -4811,7 +4965,7 @@ let Initialize = async(START_OVER = false) => {
      *                     |_|                                   |___/
      */
     Handlers.prevent_hosting = async() => {
-        let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"]')),
+        let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"i]')),
             next = await GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
             host = (STREAMER.name ?? ''),
@@ -5012,28 +5166,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    Handlers.view_mode = () => {
-        let buttons = [];
-
-        switch(Settings.view_mode) {
-            case 'fullscreen':
-                buttons.push(
-                    `button[data-a-target^="player-theatre"][data-a-target$="button"i]`,
-                    `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
-                );
-                break;
-
-            case 'theatre':
-                buttons.push(
-                    `button[data-a-target^="player-theatre"][data-a-target$="button"i]`,
-                    `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
-                );
-                break;
-        }
-
-        for(let button of buttons)
-            $(button)?.click?.();
-    };
+    Handlers.view_mode = (mode = Settings.view_mode) => SetViewMode(mode);
     Timers.view_mode = -2_500;
 
     __ViewMode__:
@@ -5319,10 +5452,10 @@ let Initialize = async(START_OVER = false) => {
         COUNTING_POINTS = setInterval(() => {
             let points_receipt = $('#tt-points-receipt'),
                 balance = $('[data-test-selector="balance-string"i]'),
-                exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"] ~ p *:not(:empty)'),
+                exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
                 exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
-            let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"]', true);
+            let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
 
             if(!defined(chat)) {
                 let framedData = PostOffice.get('points_receipt_placement');
@@ -5399,7 +5532,7 @@ let Initialize = async(START_OVER = false) => {
                     break;
             }
 
-            RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } earned / ${ comify(abs(EXACT_POINTS_SPENT)) } spent`;
+            RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } &uarr; | ${ comify(abs(EXACT_POINTS_SPENT)) } &darr;`;
             points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1).replace(/\.0+/, '') }`;
         }, 100);
     };
@@ -5443,7 +5576,7 @@ let Initialize = async(START_OVER = false) => {
 
             LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
                 let [amount, fiat, face, earnedAll] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|'),
-                    allRewards = $('[data-test-selector="cost"]', true);
+                    allRewards = $('[data-test-selector="cost"i]', true);
 
                 amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
@@ -5480,7 +5613,7 @@ let Initialize = async(START_OVER = false) => {
         LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
             let [amount, fiat, face, earnedAll] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
-                allRewards = $('[data-test-selector="cost"]', true);
+                allRewards = $('[data-test-selector="cost"i]', true);
 
             earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
 
@@ -5551,7 +5684,7 @@ let Initialize = async(START_OVER = false) => {
             // Option 1 "over" - video overlay, volume control area
             case 'over':
                 container = live_time.closest(`*:not(${ classes(live_time) })`);
-                parent = $('[data-a-target="player-controls"i] [class*="player-controls"][class*="left-control-group"i]');
+                parent = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="left-control-group"i]');
                 color = 'white';
                 break;
 
@@ -5931,7 +6064,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             || defined($('[data-test-selector$="message-container"i]'))
             // There is an ongoing search
             || (true
-                && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"]', true))
+                && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true))
                 && defined($('[data-a-target^="threads-box-"i]'))
             )
             // The page is a channel viewing page
@@ -6239,6 +6372,7 @@ CUSTOM_CSS.innerHTML =
 
     width: 100%;
 }
+[tt-auto-claim-bonus-channel-points-enabled="false"i] { filter: grayscale(1) }
 
 ::-webkit-scrollbar {
     width: .6rem;

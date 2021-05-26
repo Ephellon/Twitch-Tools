@@ -12,6 +12,14 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2)
+- Added German, Spanish, Portuguese, and Russian translations
+    - Only Spanish is available for the Settings page
+    - Adjusted most language-dependent clues (tooltips)
+- Added extra settings to Away Mode (lurking)
+- Added the Prime Loot option
+- Added `GetVolume` `SetVolume` `GetViewMode` `SetViewMode`
+
 > [3.1.5.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.5)
 - Fixed Tooltips (font)
 - Quality of life changes

@@ -1,0 +1,464 @@
+{ "[[SOURCE]]": "ROOT->ES->EN", "LANG_PACK_READY": false,
+
+	"header:automation": ["Automation"],
+	"auto-join": [
+		"Automatic Union",
+		"When presented with a warning that the transmission is intended for an", "adult audience", "proceed automatically",
+		"This will also be joined to", null, "automatically"
+	],
+
+	"away-mode": [
+		"Away Mode",
+		"Adds a button to toggle the", "monitoring",
+		"You can also use the keyboard shortcut", null, ""
+	],
+    	"away-mode:hide-chat": ["Hide Chat", "Keep the chat hidden while", "monitoring"],
+    	"away-mode:volume": ["Volume to monitor", "Set the volume to", "when at", "monitoring"],
+    	"away-mode:schedule": ["Calendar", "Select days"],
+
+	"auto-claim-bonuses": [
+		"Claim Bonus",
+		"When the button appears", "button appears, click on it automatically"
+	],
+
+	"first-in-line": [
+		"First in Line",
+		"When a channel is live, go to the stream automatically",
+		null, "add a queue service to Twitch™"
+	],
+    	"first-in-line:disabled": [
+    		"Disabled",
+    		"Do not use this function"
+    	],
+    	"first-in-line:notification": [
+    		"Notification",
+    		"When you receive a notification from a live channel, go to its transmission after"
+    	],
+    	"first-in-line:appearance": [
+    		"Appearance",
+    		"When a channel is displayed in your Channels followed, go to its transmission after"
+    	],
+    	"first-in-line:smart-notifications": [
+    		"Automatic",
+    		"Go to all transmissions automatically after"
+    	],
+
+	"auto-follow": [
+		"Automatic Tracking",
+		"While watching a channel that you do not follow, follow it automatically"
+	],
+    	"auto-follow:none": [
+    		"Disabled",
+    		"Do not use this function"
+    	],
+    	"auto-follow:raids": [
+    		"Surprises",
+    		"When participating in a surprise, follow the channel that is being surprised"
+    	],
+    	"auto-follow:time": [
+    		"Audience",
+    		"After watching",
+    		"of content, follow the channel"
+    	],
+    	"auto-follow:all": [
+    		"Automatic",
+    		"Follows all channels automatically"
+    	],
+
+	"kill-extensions": [
+		"Kill Extensions",
+		"Do not allow Twitch™ extensions to be displayed in the stream"
+	],
+
+	"next-channel-preference": [
+		"Next Channel Preference",
+		"How to decide the next channel when", null, "is empty",
+		"This is only activated when the current transmission is switched off"
+	],
+    	"next-channel-preference:options": [
+    		"Go to a random channel",
+    		"Go with the least amount of viewers",
+    		"Go with the most viewers",
+    		"Go with the least amount of channel points",
+    		"Go with the most channel points"
+    	],
+
+	"prevent-hosting": [
+		"Avoid the Host",
+		"Prevent some or all channels from being hosted by accessing the",
+		"Next Channel"
+	],
+    	"prevent-hosting:options": [
+    		"Allow all channels to host",
+    		"Prevent all channels from hosting",
+    		"Prevent un-followed channels from being hosted"
+    	],
+
+	"prevent-raiding": [
+		"Avoid Surprises",
+		"Prevent some or all channels from having surprises by going to", "Next Channel"
+	],
+    	"prevent-raiding:options": [
+    		"Allow all channels to surprise",
+    		"Only participate in surprises to accumulate channel points",
+    		"Avoid all surprises on all channels",
+    		"Prevent un-followed channels from being surprised"
+    	],
+
+	"claim-loot": [
+		null,
+		"Automatically claim and discard", null, "when the page loads"
+	],
+
+	"stay-live": [
+		"Stay Alive",
+		"Once the current transmission ends, go to", "Next Channel"
+	],
+
+	"view-mode": [
+		"View Mode",
+		"When the page has finished loading, change the view to"
+	],
+    	"view-mode:options": [
+    		"Nothing (do not change)",
+    		"Default mode",
+    		"Theater mode",
+    		"Full width mode",
+    		"Full screen mode"
+    	],
+
+
+
+
+
+	"header:chat-and-messaging": ["Chat and Messaging"],
+	"bttv-emotes": [
+		"Emoticons BetterTTV",
+		"Use BetterTTV emoticons",
+		"This may cause instability when loading emoticons"
+	],
+    	"bttv-emotes:channel-specific-emotes": [
+    		"Channel Specific Emoticons",
+    		"Load emoticons", null, "channel specific"
+    	],
+
+    	"bttv-emotes:emote-location": [
+    		"Emoticon Location",
+    		"Use these emoticons of", null, ""
+    	],
+        	"bttv-emotes:emote-location:options": [
+        		"Most popular (Trending)",
+        		"Most shared (Shared)",
+        		"Most used (First)",
+        		"Most universal (Global)"
+        	],
+
+    	"bttv-emotes:extra-emotes": [
+    		"Extra Emoticons",
+    		"Add emoticons of", null, "with the words"
+    	],
+
+    	"bttv-emotes:library-size": [
+    		"Catalog Size",
+    		"Load up to"
+    	],
+
+	"filter-messages": [
+		"Filter messages",
+		"Deletes messages/rules in all channels",
+		"See", null, "for help"
+	],
+    	"filter-messages:options": [
+    		"Filter Rules",
+    		"Channel Rules",
+    		"Badges",
+    		"User",
+    		"Emoticons",
+    		"Text",
+    		null,
+    		"Start", "adding", "some rules"
+    	],
+
+	"highlight-mentions": [
+		"Highlight mentions",
+		"When someone mentions you (", "@username", "), highlight the message to make it stand out"
+	],
+    	"highlight-mentions:options": [
+    		"General Highlighting",
+    		"When someone sends a general mention (", null, "@chat", "@all", "), highlight the message by displaying a pop-up window"
+    	],
+
+	"native-reply": [
+		"Native Response",
+		"Try to show native Twitch™ responses on all channels"
+	],
+
+	"prevent-spam": [
+		"Prevent spam",
+		"Hide repetitive messages in the chat"
+	],
+    	"prevent-spam:options": [
+    		"Message History",
+    		"Prevent spam", "will check", "lines backwards to detect", "plagiarism",
+
+    		"Minimum Word Length",
+    		"Prevent Spam", "will ignore messages if there are no words longer than", "characters",
+
+    		"Maximum Occurrences",
+    		"Prevent Spam", "will mark messages as", "repetitive", "after a word appears", "or more times"
+    	],
+
+	"recover-chat": [
+		"Recover Chat",
+		"If", null, "does not load (or is suddenly destroyed), try to recover it"
+	],
+
+	"highlight-mentions-popup": [
+		"Show pop-up windows",
+		"When someone mentions you (", "@username", "), make the message stand out by displaying a popup window"
+	],
+
+	"simplify-chat": [
+		"Simplify Chat",
+		"Apply dual tones to make chat easier to read"
+	],
+    	"simplify-chat:options": [
+    		"Monotone Usernames",
+    		"Keep user name colors uniform",
+
+    		"Chat Font",
+    		"Show chat in the following font",
+
+    		"Reverse Emoticons",
+    		"Convert emoticons back to text and display the emoticon (as", "tooltip", ") only when", "hover the cursor over", "the text"
+    	],
+
+	"whisper-audio": [
+		"Audio Whisper",
+		"When someone sends you a whisper, it plays a notification sound"
+	],
+    	"whisper-audio:options": [
+    		"Notification sound",
+    		"This sound", "is licensed under the Creative Commons Attribution", "Learn more"
+    	],
+
+
+
+
+
+	"header:currencies": ["Coins"],
+	"convert-bits": [
+		"Convert Bits",
+		"When presented with", "shows the actual amount in", null, "representing"
+	],
+
+	"channel-points-receipt": [
+		"Channel Points Receipt",
+		"How should the receipt show the collection of", ""
+	],
+    	"channel-points-receipt:options": [
+    		"Displays the exact amount collected",
+    		"Round to the nearest 100",
+    		"Round to the nearest 50",
+    		"Round to the nearest 25"
+    	],
+
+	"rewards-calculator": [
+		"Rewards Calculator",
+		"Calculates how long a transmission must be watched to redeem rewards from", ""
+	],
+
+
+
+
+
+	"header:customization": ["Customization"],
+	"placement:away-mode": [
+		"Away Mode",
+		"Where the button should be displayed", "Away Mode", ""
+	],
+    	"placement:away-mode:options": [
+    		"Not shown",
+    		"Above the video",
+    		"Below the video"
+    	],
+
+	"placement:points-receipt": [
+		"Receipt of Points",
+		"Where should the text of the", "Points Receipt", ""
+	],
+    	"placement:points-receipt:options": [
+    		"Not shown",
+    		"Below the video"
+    	],
+
+	"placement:point-watcher": [
+		"Point Watcher",
+		"Where should the text of", "Point Watcher", ""
+	],
+    	"placement:point-watcher:options": [
+    		"Not shown",
+    		"In the pop-up description"
+    	],
+
+	"placement:watch-time": [
+		"Display Time",
+		"Where should the", "Display Time", ""
+	],
+    	"placement:watch-time:options": [
+    		"Not shown",
+    		"Above the video",
+    		"Below the video"
+    	],
+
+
+
+
+
+	"header:video-recovery": ["Video Recovery"],
+	"keep-popout": [
+		"Keep Popup Window",
+		"When switching to another page, prevent the extension from destroying the small video (pop-up window) of the transmission"
+	],
+
+	"recover-ads": [
+		"Recovering Ads",
+		"When an advertisement does not play (\"freezes\"), try to retrieve it"
+	],
+
+	"recover-frames": [
+		"Recover Image",
+		"When the video does not play (loses frames for more than", "15 seconds", "), reload the web page"
+	],
+
+	"recover-pages": [
+		"Retrieve Pages",
+		"If the web page is not displayed, try to retrieve it"
+	],
+
+	"recover-stream": [
+		"Recovering Video Stream",
+		"When the stream does not play (\"freezes\"), try to recover it"
+	],
+
+	"recover-video": [
+		"Retrieve Video",
+		"When the video does not download (black screen), reload the web page"
+	],
+
+
+
+
+
+	"header:developer-features": ["Features for Developers"],
+	"@console": [
+		"Display console messages",
+		"Enable the extension to display messages on the console"
+	],
+    	"@console.log": [
+    		"Allow logs",
+    		"Displays messages from", null, ""
+    	],
+    	"@console.warn": [
+    		"Allow warnings",
+    		"Displays messages from", null, ""
+    	],
+    	"@console.error": [
+    		"Allow errors",
+    		"Displays messages from", null, ""
+    	],
+    	"@console.remark": [
+    		"Allow comments",
+    		"Displays messages from", null, ""
+    	],
+
+	"@stats": [
+		"Show Statistics",
+		"Allow the extension to display statistics"
+	],
+
+	"@experimental": [
+		"Experimental Functions",
+		"Let the extension display and use experimental functions",
+		"May cause data loss"
+	],
+
+	"@fine-details": [
+		"Use Fine Details",
+		"Allow the extension to use Twitch™ API data to enhance your experience",
+		"This will not collect any data. It will use the data that Twitch™ has collected"
+	],
+
+	"@default": [
+		"Show Defaults",
+		"Show",
+		"Show defaults"
+	],
+
+
+
+
+
+	"header:experimental-features": ["Experimental Functions"],
+	"@@auto-focus": [
+		"Automatic Focus",
+		"Automatically control the", "Up Next", "&", "Away Mode", "according to the transmission activity", "This", "will not", "will stop the one-minute timer"
+	],
+    	"@@auto-focus:options:detection-level": [
+    		"Detection Level",
+    		"How much activity should activate the", "autofocus", "",
+
+    		"High Activity - FPS / IRL / Pace",
+    		"Modest Activity - Action / Adventure / Platforming",
+    		"Seasonal Activity - Horror / Puzzle / Trivia",
+    		"Low Activity - Talk Only / Simulation / Strategy / Strategy"
+    	],
+
+    	"@@auto-focus:options:polling-interval": [
+    		"Probing Interval",
+    		"How often should you", "probe", "the video",
+
+    		"Every second - CPU intensive, excellent detection",
+    		"Every 3 seconds - CPU compatible, good detection",
+    		"Every 5 seconds - CPU compatible, fair detection",
+    		"Every 10 seconds - CPU compatible, poor detection"
+    	],
+
+    	"@@auto-focus:options:image-type": [
+    		"Image Type",
+    		"What type of image should be used for the", "polling", "",
+
+    		"JPG - CPU friendly, good detection",
+    		"PNG - CPU intensive, excellent detection",
+    		"WebP - CPU friendly, excellent detection"
+    	],
+
+	"@@convert-emotes": [
+		"Convert Emoticons",
+		"When presented with Twitch™ emoticons, select them to use (no subscription required)",
+		"This only works for the current stream you are watching",
+		"This", "does not", "saves/unlocks the emoticon"
+	],
+
+	"@@soft-unban": [
+		"Slight Revocation",
+		"Re-enable chat for channels where it has been blocked",
+		"This only allows you to see the chat"
+	],
+    	"@@soft-unban:options:fade-messages": [
+    		"Fade Messages",
+    		"Messages will be visible during", null
+    	],
+
+    	"@@soft-unban:options:keep-bots": [
+    		"Maintain Robots",
+    		"Show Robot Messages"
+    	],
+
+    	"@@soft-unban:options:prevent-clips": [
+    		"Avoid Sharing",
+    		"Hide Twitch™ video hyperlinks"
+    	],
+
+    "$": "[[ END OF FILE ]]"
+}

@@ -263,7 +263,7 @@ details .summary {
     padding: 0.1rem;
 }
 
-.radio {
+.radio, .checkbox {
     display: block;
     flex-direction: column;
 
@@ -277,7 +277,7 @@ details .summary {
     transform: scale(.95);
 }
 
-.radio > input {
+.radio > input, .checkbox > input {
     border: none;
     clip: rect(0 0 0 0);
     color: var(--text-light);
@@ -292,7 +292,7 @@ details .summary {
     width: .1rem;
 }
 
-.radio > label {
+.radio > label, .checkbox > label {
     /* background-color: var(--grey); */
     /* border-radius: 1rem / 50%; */
     color: var(--white-faded);
@@ -306,18 +306,18 @@ details .summary {
     transition: background-color .1s ease;
 }
 
-.radio > label > h1, .radio > label > h2, .radio > label > h3, .radio > label > h4, .radio > label > h5, .radio > label > h6 {
+.radio > label > h1, .radio > label > h2, .radio > label > h3, .radio > label > h4, .radio > label > h5, .radio > label > h6,
+.checkbox > label > h1, .checkbox > label > h2, .checkbox > label > h3, .checkbox > label > h4, .checkbox > label > h5, .checkbox > label > h6 {
     color: var(--white);
 }
 
-.radio > label::before {
+.radio > label:first-of-type::before, .checkbox > label:first-of-type::before {
     background-clip: padding-box;
     border: 2px solid var(--white);
     border-radius: 50%;
     box-sizing: border-box;
     content: '';
 
-    transform: translate3d(-50%, -50%, 0) rotate(-45deg);
     transition:
         box-shadow .1s ease-in,
         background .1s ease-in;
@@ -332,33 +332,47 @@ details .summary {
     width: 1.6rem;
 }
 
-.radio > input:checked + label::before {
+.checkbox > label:first-of-type::before {
+    border-radius: .25rem;
+
+    transform: none;
+
+    top: .7rem;
+}
+
+.radio > input:checked + label:first-of-type::before, .checkbox > input:checked + label:first-of-type::before {
     border-color: var(--purple) !important;
 }
 
-/* .radio > label::after {
-    background-color: var(--background-dark-lit);
-    border-radius: 50%;
-    content: '';
-    display: block;
-
-    --position: absolute;
-    --left: -0.4rem;
-    position: fixed;
-    right: 1.2rem;
-    top: 50%;
-
-    transition: background .1s ease;
-    transform: translate3d(0,-50%,0);
-
-    height: .8rem;
-    width: .8rem;
-} */
-
 /* ...::after */
-.radio > input:checked + label::before {
+.radio > input:checked + label:first-of-type::before, .checkbox > input:checked + label:first-of-type::before {
     background-color: var(--purple);
     border: 0;
+}
+
+/* For secondary "dropdown" labels */
+input ~ label[for$=":checked"] {
+    display: flex;
+}
+
+input ~ label[for$=":checked"] > *:not(:last-child) {
+    display: block;
+
+    margin: 0 1rem 0 0;
+}
+
+input ~ label[for$=":checked"] h1,
+input ~ label[for$=":checked"] h2,
+input ~ label[for$=":checked"] h3,
+input ~ label[for$=":checked"] h4,
+input ~ label[for$=":checked"] h5,
+input ~ label[for$=":checked"] h6
+{
+    padding: 0;
+}
+
+input:not(:checked) ~ label[for$=":checked"] {
+    display: none;
 }
 
 [disabled] {
@@ -433,7 +447,7 @@ summary:not([subtitle])::before {
     height: 1rem;
 }
 
-details[open] summary::before {
+details[open] > summary::before {
     transform: rotate(0);
 }
 
@@ -487,7 +501,7 @@ details *:not(label) > h1, details *:not(label) > h2, details *:not(label) > h3,
     display: none;
 }
 
-select {
+select, .select {
     align-items: center;
     cursor: pointer;
     display: inline-block;
@@ -512,12 +526,46 @@ select {
     vertical-align: middle;
 }
 
-option:checked {
+option:checked, .option.checked {
     display: none;
 }
 
-option:not(:checked) {
+option:not(:checked), .option:not(.checked) {
     background-color: var(--background-dark-lit);
+}
+
+.select.multiple {
+    text-align: right;
+
+    overflow: auto;
+    max-width: 150%;
+
+    width: -webkit-fill-available;
+}
+
+.select.multiple > .option.checked {
+    background-color: #0000;
+    outline: none;
+
+    -webkit-tap-highlight-color: #0000;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.select.multiple > .option.checked::before {
+    border-bottom: 2px solid var(--text-light);
+    border-left: 2px solid var(--text-light);
+    content: '';
+    display: flex;
+    transform: translate3d(-50%, -50%, 0) rotate(-45deg);
+
+    position: absolute;
+    left: 0;
+    top: calc(50% - .15rem);
+
+    height: .3rem;
+    width: .7rem;
 }
 
 button, [type="button"] {
@@ -568,8 +616,9 @@ button button {
     margin: -5px -10px -5px 10px;
 }
 
-bubble, [type="bubble"] {
+[bubble]::after {
     align-items: center;
+    content: attr(bubble);
     display: inline-block;
     justify-content: center;
     text-transform: uppercase;
@@ -802,7 +851,7 @@ code[fill], [code][fill], [type^="code"i][fill] {
     display: none !important;
 }
 
-textarea, input[type="text"i], input[type="number"i] {
+textarea, input[type="text"i], input[type="number"i], input[type="date"i], input[type="time"i], [unit]::after {
     appearance: none;
     background-clip: padding-box;
     background-color: var(--grey);
@@ -828,7 +877,7 @@ textarea, input[type="text"i], input[type="number"i] {
     width: 100%;
 }
 
-textarea:focus, input[type="text"i]:focus, input[type="number"i]:focus {
+textarea:focus, input[type="text"i]:focus, input[type="number"i]:focus, input[type="date"i]:focus, input[type="time"i]:focus {
     background-color: var(--black);
     border-color: var(--purple);
 
@@ -840,7 +889,8 @@ textarea::placeholder, input::placeholder, textarea::-webkit-input-placeholder, 
     font-size: 100%;
 }
 
-input[type="number"i] {
+input[type="number"i], input[type="date"i], input[type="time"i], [unit]::after {
+    color: var(--text-light);
     display: inline;
     text-align: center;
 
@@ -862,6 +912,64 @@ input[type="number"]::-webkit-inner-spin-button {
 
     height: 1.5rem;
     width: 1rem; */
+}
+
+input[type="text"i]:not(:valid), input[type="number"i]:not(:valid), input[type="date"i]:not(:valid), input[type="time"i]:not(:valid) {
+    border-color: var(--yellow) !important;
+}
+
+input[type="date"i]:not(:valid)::-webkit-datetime-edit, input[type="time"i]:not(:valid)::-webkit-datetime-edit {
+    display: none;
+}
+
+input[type="date"i]:valid::-webkit-calendar-picker-indicator, input[type="time"i]:valid::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+
+    margin: 0;
+    padding: 0;
+
+    position: absolute;
+    right: 0;
+    top: 0;
+
+    width: 20%;
+}
+
+input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="time"i]:not(:valid)::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+
+    margin: 0;
+    padding: 0;
+
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+
+    height: 1.5rem;
+    width: 1.5rem;
+}
+
+/* Inputs with units */
+[unit] > input {
+    border-right: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+
+    margin-right: 0;
+    padding-right: 0;
+    vertical-align: middle;
+}
+
+[unit]::after {
+    content: attr(unit);
+    display: inline;
+    opacity: 0.5;
+
+    border: 0;
+    margin-left: 0;
+    vertical-align: middle;
+
+    height: 2rem;
 }
 
 /* Glyphs */
@@ -1020,9 +1128,9 @@ section[save] {
     transition: background-color .5s;
 }
 
-.save::before {
+/* .save::before {
     content: 'Save All';
-}
+} */
 
 .save:hover {
     background-color: var(--purple-highlighted);
@@ -1030,6 +1138,7 @@ section[save] {
 
 .save.spin {
     background-color: var(--purple-dark) !important;
+    color: #0000 !important;
 }
 
 [attention] .save, [alert] .save {
@@ -1130,7 +1239,7 @@ body.popup {
     line-height: 1rem;
 }
 
-.popup input[type="number"] {
+.popup input[type="number"], .popup input[type="date"i], .popup input[type="time"i] {
     height: 1rem;
     width: 4rem;
 }

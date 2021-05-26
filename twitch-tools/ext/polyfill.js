@@ -135,8 +135,8 @@ Number.prototype.floorToNearest ??= function floorToNearest(number) {
 };
 
 // Returns a properly formatted string depending on the number given
-    // String..properSuffix([numberOfItems:number])
-String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
+    // String..properSuffix([numberOfItems:number[, tail:string]])
+String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail = "s") {
     numberOfItems = parseFloat(numberOfItems) | 0;
 
     let suffix,
@@ -165,12 +165,12 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0) {
         EndsWith_Vowel_Y: {
             let { $_ } = RegExp;
 
-            string = $_ + "s";
+            string = $_ + tail;
         }
         // Ends with anything else
         else
         EndsWith_Normal: {
-            string += "s";
+            string += tail;
         }
     }
 
