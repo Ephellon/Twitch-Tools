@@ -69,6 +69,12 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(Enabled)
             ChannelPoints?.click?.();
 
+        let BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
+            height: '2rem',
+            width: '2rem',
+            style: `vertical-align: middle; margin-left: 1rem; background-color: #00ad96; fill: #000; border: 0; border-radius: .25rem;`
+        });
+
         let parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
             tooltip = $('#tt-auto-claim-bonuses [role="tooltip"i]');
 
@@ -109,11 +115,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                 text: textContainer,
                 icon: $('svg, img', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `&uarr; ${ STREAMER.fiat ?? 'Bonuses' }`, { top: -10 }),
+                tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`, { top: -10 }),
             };
 
             button.tooltip.id = new UUID().toString();
-            button.text.innerHTML = '&uarr;';
+            button.text.innerHTML = '+' + BonusChannelPointsSVG;
             button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', true);
 
             button.icon ??= $('svg, img', false, container);
@@ -140,23 +146,29 @@ let Chat__Initialize = async(START_OVER = false) => {
             let enabled = button.container.getAttribute('tt-auto-claim-bonus-channel-points-enabled') !== 'true';
 
             button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', enabled);
-            button.text.innerHTML = ['&darr;','&uarr;'][+enabled];
-            button.tooltip.innerHTML = `&${ ['d','u'][+enabled] }arr; ${ STREAMER.fiat ?? 'Bonuses' }`;
+            button.text.innerHTML = ['','+'][+enabled] + BonusChannelPointsSVG;
+            button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
 
             button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
         };
 
         button.container.onmouseenter ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+            button.icon?.setAttribute('hover', true);
         };
 
         button.container.onmouseleave ??= event => {
-            button.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+            button.icon?.setAttribute('hover', false);
         };
 
         // Make sure the button is all the way to the left
         for(let max = 10; max > 0 && defined(button.container.previousElementSibling); --max)
             button.container.parentElement.insertBefore(button.container, button.container.previousElementSibling);
+
+        // Adjust the text size
+        button.text?.classList?.add('text');
+
+        // Make the tooltip easier to manage
+        button.tooltip.classList.add('img-container');
     };
     Timers.auto_claim_bonuses = 5_000;
 
@@ -1478,7 +1490,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         markAsSpam(element, 'plagiarism', message);
 
                     // The message contains repetitive (more than X instances) words/phrases
-                    else if(RegExp(`(.{${ minLen },})${ "(?:(?:.+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
+                    if(RegExp(`(.{${ minLen },})${ "(?:(?:.+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
                         markAsSpam(element, 'repetitive', message);
 
                     return message;
@@ -2304,7 +2316,11 @@ Chat__CUSTOM_CSS.innerHTML =
     font-size: 100%!important;
 }
 
-.tt-tooltip-wrapper--show .tt-tooltip {
+.tt-tooltip-wrapper[show], img ~ .tt-tooltip {
+    display: none;
+}
+
+.tt-tooltip-wrapper[show="true"i] {
     display: block;
 }
 

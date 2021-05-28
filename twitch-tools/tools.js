@@ -1124,8 +1124,8 @@ class Tooltip {
                             }
                         })()
                     },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tt-tooltip-wrapper--show' },
-                        furnish('div', { style: `display: block; width: ${ offset.width }px; height: ${ offset.height }px;` }),
+                    furnish('div.tw-inline-flex.tw-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
+                        furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
                 )
@@ -1137,7 +1137,7 @@ class Tooltip {
         parent.addEventListener('mouseleave', event => {
             $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
 
-            tooltip?.setAttribute('style', 'display:none');
+            tooltip?.closest('[show]')?.setAttribute('show', false);
         });
 
         Tooltip.#TOOLTIPS.set(parent, tooltip);
@@ -1262,8 +1262,7 @@ class Card {
                 f('div.emote-card__banner.tw-align-center.tw-align-items-center.tw-c-background-alt.tw-flex.tw-flex-grow-2.tw-flex-row.tw-full-width.tw-justify-content-start.tw-pd-l-1.tw-pd-y-1.tw-relative', {},
                     f('div.tw-inline-flex.viewer-card-drag-cancel', {},
                         f('div.tw-inline.tw-relative.tt-tooltip__container[data-a-target="emote-name"]', {},
-                            iconElement,
-                            new Tooltip(iconElement, icon.alt)
+                            iconElement
                         )
                     ),
                     f('div.emote-card__display-name.tw-align-items-center.tw-align-left.tw-ellipsis.tw-mg-1', {},
@@ -1329,6 +1328,7 @@ class Card {
 
         this.body = card;
         this.icon = iconElement;
+        this.icon.tooltip = new Tooltip(iconElement, icon.alt);
         this.uuid = uuid;
         this.footer = footer;
         this.container = container;
@@ -4329,7 +4329,7 @@ let Initialize = async(START_OVER = false) => {
 
             $('div#root > *').append(
                 furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tw-inline-flex tw-relative tt-tooltip-wrapper--show' },
+                    furnish('div.tw-inline-flex.tw-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                         furnish('div', { style: 'width: 30px; height: 30px;' }),
                         tooltip
                     )
@@ -4342,7 +4342,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_BALLOON.icon.onmouseleave = event => {
             $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
 
-            FIRST_IN_LINE_BALLOON.tooltip.setAttribute('style', 'display:none');
+            FIRST_IN_LINE_BALLOON.tooltip?.closest('[show]')?.setAttribute('show', false);
         };
 
         FIRST_IN_LINE_SORTING_HANDLER = new Sortable(FIRST_IN_LINE_BALLOON.body, {
@@ -5733,7 +5733,7 @@ let Initialize = async(START_OVER = false) => {
 
                 watch_time.innerHTML = ConvertTime(time * 1000, 'clock');
 
-                WATCH_TIME_TOOLTIP.innerHTML = comify(time).replace(/\.[\d,]*$/, '') + " second".pluralSuffix(time);
+                WATCH_TIME_TOOLTIP.innerHTML = comify(time).replace(/\.[\d,]*$/, '') + 's';
 
                 SaveCache({ WatchTime: time });
             }, 1000);
@@ -6372,7 +6372,17 @@ CUSTOM_CSS.innerHTML =
 
     width: 100%;
 }
-[tt-auto-claim-bonus-channel-points-enabled="false"i] { filter: grayscale(1) }
+
+[role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }
+
+[tt-auto-claim-bonus-channel-points-enabled="false"i] { --filter: grayscale(1) }
+
+[tt-auto-claim-bonus-channel-points-enabled] .text { font-size: 2rem; transition: all 0.3s }
+[tt-auto-claim-bonus-channel-points-enabled="false"i] .text { margin-right: -4rem }
+
+[tt-auto-claim-bonus-channel-points-enabled] svg, [tt-auto-claim-bonus-channel-points-enabled] img { transition: transform 300ms ease 0s }
+[tt-auto-claim-bonus-channel-points-enabled] svg[hover="true"i], [tt-auto-claim-bonus-channel-points-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+[tt-auto-claim-bonus-channel-points-enabled="false"i] svg, [tt-auto-claim-bonus-channel-points-enabled="false"i] img { padding-left: 0.5rem }
 
 ::-webkit-scrollbar {
     width: .6rem;
@@ -6414,7 +6424,7 @@ CUSTOM_CSS.innerHTML =
 
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-[tt-earned-all="true"i] { color: gold }
+[tt-earned-all="true"i] { color: #00aced; font-weight: bold }
 
 /*[class*="tw-number-badge"i] {
     background-color: var(--color-background-pill-notification);
@@ -6449,7 +6459,11 @@ CUSTOM_CSS.innerHTML =
     font-size: 100%!important;
 }
 
-.tt-tooltip-wrapper--show .tt-tooltip {
+.tt-tooltip-wrapper[show], img ~ .tt-tooltip {
+    display: none;
+}
+
+.tt-tooltip-wrapper[show="true"i] {
     display: block;
 }
 

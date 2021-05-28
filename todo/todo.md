@@ -5,13 +5,33 @@
     * Not sure what to add...
 2. Instance (tab) data separation?
     * Simply separate each tab's data for certain things, e.g. "Up Next"
+3. "Predictive Raiding"
+    * Uses the streamers' `dailyBroadcastTime` to predict when they're stream will end
+        * OR - listen for notifications/channel-popups; then save a timer (`{streamsCounted}:{totalSecondsCountedLive}`) for how long the channel lives
+    * Heads to the stream 5 min before it **should** end
+    * Only applies to streams that have a `raidsLastWeek` >= 4
+4. "Away Mode Lurking Schedule"
+    * Automatically enables &/ disables Away Mode at user defined times
+5. "Reverse Emotes"
+    * Sets all emotes back to their text and displays the image in a tooltip
 
-- Clean up SVGs and loading
-- Provide more concise and informative console messages
+- Make initial loading actions less intrusive
+    - [] "Prime Loot" open/close action
+    - [] "Convert Emotes" open/close action
+    - [] "BetterTTV Emotes" open/close action
+- [] Clean up SVGs & IMGs
+- [] Provide more concise and informative console messages
+- [] Add more translations
 
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.2.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1)
+- Adjusted the "Auto Claim" toggle button to describe its function pictorially
+- Styling adjustments to Settings page (popup)
+- Quality of life changes
+    - Adjusted the "collected all points" color to accommodate the psychopaths using light mode
+
 > [3.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2)
 - Added German, Spanish, Portuguese, and Russian translations
     - Only Spanish is available for the Settings page
@@ -314,7 +334,7 @@
 ----
 
 # TO-DID (Fixed Issues)
-> [2.9.](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9.)*
+> [2.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9)*
 1. Some elements don't register (like SVG animations)
     * Fixed? 2.9
 2. The Up Next timer resets when clicking a channel from the side-panel

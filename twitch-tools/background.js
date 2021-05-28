@@ -107,7 +107,7 @@ Container.browserAction.setBadgeBackgroundColor({ color: '#9147ff' });
 
 Storage.onChanged.addListener(changes => {
     // Use this to set the badge text when there's an update available
-        // if installed from Chrome, wait for an auto-update
+        // if installed from Chrome, update the badge text, and wait for an auto-update
         // if installed from GitHub, update the badge text
     let installedFromWebstore = (Runtime.id === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
@@ -119,12 +119,12 @@ Storage.onChanged.addListener(changes => {
         switch(key) {
             case 'chromeUpdateAvailable':
                 if(newValue === true && installedFromWebstore)
-                    Container.browserAction.setBadgeText({ text: '\u21d1' });
+                    Container.browserAction.setBadgeText({ text: '\u2191' });
                 break TopScope;
 
             case 'githubUpdateAvailable':
                 if(newValue === true && !installedFromWebstore)
-                    Container.browserAction.setBadgeText({ text: '\u21d1' });
+                    Container.browserAction.setBadgeText({ text: '\u2191' });
                 break TopScope;
 
             default: continue;

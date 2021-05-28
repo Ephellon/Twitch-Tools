@@ -1244,6 +1244,10 @@ body.popup {
     width: 4rem;
 }
 
+.popup [unit]::after {
+    padding: .1rem .5rem;
+}
+
 .popup #filter_rules {
     /* height: 9rem; */
 }
