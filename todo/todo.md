@@ -16,16 +16,26 @@
     * Sets all emotes back to their text and displays the image in a tooltip
 
 - Make initial loading actions less intrusive
-    - [] "Prime Loot" open/close action
-    - [] "Convert Emotes" open/close action
-    - [] "BetterTTV Emotes" open/close action
-- [] Clean up SVGs & IMGs
-- [] Provide more concise and informative console messages
-- [] Add more translations
+    - [x] "Prime Loot" open/close action
+    - [x] "Convert Emotes" open/close action
+    - [x] "BetterTTV Emotes" open/close action
+- [ ] Clean up SVGs & IMGs
+- [ ] Provide more concise and informative console messages
+- [ ] Add more translations
+- ~~Listen for "on-subscribe" events to update the Channel Points Multiplier?~~
+    * Too invasive. Does not match importance in proportion
 
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.2.1.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1.1)
+- Added the "User Language Preference" features
+    - Applicable settings will update in real time to language changes
+- Quality of life changes
+    - Adjusted the "auto claim" button
+        - Made it easier to toggle (CSS)
+        - Fixed tooltip issue for channels with the default Channel Point icon
+
 > [3.2.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1)
 - Adjusted the "Auto Claim" toggle button to describe its function pictorially
 - Styling adjustments to Settings page (popup)

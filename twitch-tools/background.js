@@ -22,24 +22,24 @@ else if(chrome && chrome.extension)
 Container = window[BrowserNamespace];
 
 switch(BrowserNamespace) {
-    case 'browser':
+    case 'browser': {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
-        break;
+    } break;
 
     case 'chrome':
-    default:
+    default: {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
-        break;
+    } break;
 }
 
 let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
@@ -58,24 +58,25 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
         switch(reason) {
             // Has the extension just been installed?
             // If so, open the settings page
-            case INSTALL:
+            case INSTALL: {
                 Container.tabs.create({ url: 'settings.html' });
-                break;
+            } break;
 
             // Has the extension been updated?
             // If so, but the version hasn't changed, change the build number
-            case UPDATE:
+            case UPDATE: {
                 Storage.get(['buildVersion'], ({ buildVersion }) => {
                     let [version, build] = (buildVersion ?? "").split('#');
 
                     Storage.set({ buildVersion: `${ Manifest.version }#${ (Manifest.version == version? (build | 0) + 1: 0) }` });
                 });
-                break;
+
+                // Most settings will reload Twitch pages when needed
+                for(let tab of tabs)
+                    Container.tabs.reload(tab.id);
+            } break;
 
         }
-
-        for(let tab of tabs)
-            Container.tabs.reload(tab.id);
 
         // Update the badge text when there's an update available
         Container.browserAction.setBadgeText({ text: '' });
@@ -117,17 +118,17 @@ Storage.onChanged.addListener(changes => {
             { oldValue, newValue } = change;
 
         switch(key) {
-            case 'chromeUpdateAvailable':
+            case 'chromeUpdateAvailable': {
                 if(newValue === true && installedFromWebstore)
                     Container.browserAction.setBadgeText({ text: '\u2191' });
-                break TopScope;
+            } break TopScope;
 
-            case 'githubUpdateAvailable':
+            case 'githubUpdateAvailable': {
                 if(newValue === true && !installedFromWebstore)
                     Container.browserAction.setBadgeText({ text: '\u2191' });
-                break TopScope;
+            } break TopScope;
 
-            default: continue;
+            default: continue TopScope;
         }
     }
 });

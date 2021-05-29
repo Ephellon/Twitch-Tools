@@ -28,14 +28,11 @@ let Chat__Initialize = async(START_OVER = false) => {
     let {
         USERNAME,
         LANGUAGE,
-        STREAMER,
-        STREAMERS,
-        ALL_CHANNELS,
-        CHANNELS,
-        PATHNAME,
         THEME,
-        SEARCH,
-        NOTIFICATIONS,
+
+        PATHNAME,
+        STREAMER,
+
         GLOBAL_EVENT_LISTENERS,
     } = top;
 
@@ -70,9 +67,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             ChannelPoints?.click?.();
 
         let BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
+            id: 'tt-auto-claim-indicator',
             height: '2rem',
             width: '2rem',
-            style: `vertical-align: middle; margin-left: 1rem; background-color: #00ad96; fill: #000; border: 0; border-radius: .25rem;`
+            style: `vertical-align: middle; margin-left: 0.5rem; background-color: #00ad96; fill: #000; border: 0; border-radius: .25rem;`
         });
 
         let parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
@@ -115,7 +113,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 text: textContainer,
                 icon: $('svg, img', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`, { top: -10 }),
+                tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / hr`, { top: -10 }),
             };
 
             button.tooltip.id = new UUID().toString();
@@ -128,6 +126,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 button.icon.outerHTML = Glyphs.channelpoints;
 
             button.icon = $('svg, img', false, container);
+            button.icon.setAttribute('style', `height: 2rem; width: 2rem; margin-top: .25rem; margin-left: .25rem;`);
         } else {
             let container = button,
                 textContainer = $('[class*="animate"i]', false, container);
@@ -147,9 +146,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', enabled);
             button.text.innerHTML = ['','+'][+enabled] + BonusChannelPointsSVG;
-            button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
-
-            button.icon?.setAttribute('fill', `var(--color-${ ['red','accent'][+enabled] })`);
+            button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / hr`;
         };
 
         button.container.onmouseenter ??= event => {
@@ -202,6 +199,11 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                                                                |___/
      */
     let EmoteSearch = {},
+        EmoteDragCommand;
+
+    Handlers.emote_searching = () => {
+        EmoteSearch.input = $('.emote-picker [type="search"i]');
+
         EmoteDragCommand = (lang => {
             switch(lang) {
                 case 'de':
@@ -220,10 +222,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 default:
                     return 'Drag to use';
             }
-        })(LANGUAGE);
-
-    Handlers.emote_searching = () => {
-        EmoteSearch.input = $('.emote-picker [type="search"i]');
+        })(top.LANGUAGE);
 
         if(defined(EmoteSearch.input?.value))
             if(EmoteSearch.input.value != EmoteSearch.value)
@@ -234,7 +233,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Timers.emote_searching = 250;
 
     __EmoteSearching__:
-    if(parseBool(Settings.convert_emotes) || parseBool(Settings.bttv_emotes)) {
+    if([Settings.convert_emotes, Settings.bttv_emotes].map(parseBool).contains(true)) {
         Object.defineProperties(EmoteSearch, {
             onquery: {
                 set(callback) {
@@ -811,7 +810,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(!defined(chat_emote_scroll)) {
                 chat_emote_button.click();
-                return setTimeout(CollectEmotes, 1000);
+                return setTimeout(CollectEmotes, 250);
             }
 
             // Set the ID to display the "Hold on..." message
@@ -838,13 +837,13 @@ let Chat__Initialize = async(START_OVER = false) => {
                     chat_emote_scroll.scrollTo(0, 0);
                     chat_emote_button.click();
                 }, 2_500);
-            }, 500);
+            }, 250);
         }
 
         if(defined(chat_emote_button))
             CollectEmotes();
         else
-            setTimeout(CollectEmotes, 1000);
+            setTimeout(CollectEmotes, 250);
 
         REMARK("Adding emote event listener...");
 
@@ -1101,13 +1100,13 @@ let Chat__Initialize = async(START_OVER = false) => {
             return;
 
         let title = $('h4', false, card),
-            name = title.textContent.toLowerCase(),
+            name = title.textContent,
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
             { filter_rules } = Settings;
 
         if(type == 'user') {
             /* Filter users */
-            if(filter_rules && filter_rules.split(',').contains(`@${ name }`))
+            if(filter_rules && filter_rules.split(',').contains(`@${ name.toLowerCase() }`))
                 return /* Already filtering messages from this person */;
 
             let filter = furnish('div#tt-filter-rule-user', {
@@ -1739,8 +1738,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         timeEstimated = ceil(timeEstimated);
 
-        switch(LANGUAGE) {
-            case 'de':
+        switch(top.LANGUAGE) {
+            case 'de': {
                 // In diesem Strom verfügbar (30 Minuten)
                 // Erhältlich in 33 mehr Streams (3 Wochen)
 
@@ -1756,9 +1755,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 tooltip.innerHTML =
                     `${ (streams < 1 || hours < timeLeftInBroadcast)? 'In diesem Strom': `Erhältlich in ${ comify(streams) } mehr` } ${ "Stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated })`;
-                break;
+            } break;
 
-            case 'es':
+            case 'es': {
                 // Disponible durante este flujo (30 minutos)
                 // Disponible en 33 arroyos más (3 semanas)
 
@@ -1774,9 +1773,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 tooltip.innerHTML =
                     `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este flujo': `en ${ comify(streams) } arroyos más` } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
-                break;
+            } break;
 
-            case 'pt':
+            case 'pt': {
                 // Disponível durante este fluxo (30 minutos)
                 // Disponível em 33 mais fluxos (3 semanas)
 
@@ -1792,9 +1791,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 tooltip.innerHTML =
                     `Disponível ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este': `en ${ comify(streams) } mais` } ${ "fluxo" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
-                break;
+            } break;
 
-            case 'ru':
+            case 'ru': {
                 // Доступно во время этого потока (30 минут)
                 // Доступно в 33 ручьях (3 недели)
 
@@ -1810,16 +1809,16 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 tooltip.innerHTML =
                     `Доступно ${ (streams < 1 || hours < timeLeftInBroadcast)? 'во время этого потока': `в ${ comify(streams) } ручьях` } (${ comify(timeEstimated) } ${ estimated })`;
-                break;
+            } break;
 
             case 'en':
-            default:
+            default: {
                 // Available during this stream (30 minutes)
                 // Available in 33 more streams (3 weeks)
 
                 tooltip.innerHTML =
                     `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
-                break;
+            } break;
         }
     };
     Timers.rewards_calculator = 100;
@@ -2317,11 +2316,11 @@ Chat__CUSTOM_CSS.innerHTML =
 }
 
 .tt-tooltip-wrapper[show], img ~ .tt-tooltip {
-    display: none;
+    display: none !important;
 }
 
 .tt-tooltip-wrapper[show="true"i] {
-    display: block;
+    display: block !important;
 }
 
 .tt-tooltip {
@@ -2473,7 +2472,7 @@ Chat__CUSTOM_CSS.innerHTML =
             switch(Settings.onInstalledReason) {
                 // Is this the first time the extension has run?
                 // If so, then point out what's been changed
-                case INSTALL:
+                case INSTALL: {
                     setTimeout(() => {
                         for(let element of $('#tt-auto-claim-bonuses', true))
                             element.classList.add('tt-first-run');
@@ -2483,7 +2482,7 @@ Chat__CUSTOM_CSS.innerHTML =
                                 .forEach(element => element.classList.remove('tt-first-run'));
                         }, 30_000);
                     }, 5_000);
-                    break;
+                } break;
             }
 
             Storage.set({ onInstalledReason: null });

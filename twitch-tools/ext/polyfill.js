@@ -50,16 +50,16 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     switch(returnType) {
         case 'img':
         case 'element':
-        case 'HTMLImageElement':
+        case 'HTMLImageElement': {
             data = document.createElement('img');
 
             data.src = canvasData;
-            break;
+        } break;
 
         case 'json':
-        case 'object':
+        case 'object': {
             data = { type: imageType, height, width, data };
-            break;
+        } break;
 
         default: break;
     }
@@ -84,24 +84,24 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
     let system = {};
 
     switch(format.toLowerCase()) {
-        case 'imperial':
+        case 'imperial': {
             system.large = 'thous m b tr quadr qunit sext sept oct non'
                 .split(' ')
                 .map((suffix, index) => ' ' + suffix + ['and', 'illion'][+!!index]);
             system.small = system.large.map(suffix => suffix + 'ths');
-            break;
+        } break;
 
         // Common US shorthands (used on Twitch)
-        case 'readable':
+        case 'readable': {
             system.large = 'KMBTQ';
             system.small = '';
-            break;
+        } break;
 
         case 'metric':
-        default:
+        default: {
             system.large = 'kMGTPEZY';
             system.small = 'mμnpfazy';
-            break;
+        } break;
     }
 
     if(number > 1) {

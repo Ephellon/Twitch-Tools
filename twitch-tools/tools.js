@@ -33,9 +33,6 @@ let Settings = {},
     NORMAL_MODE,
     NORMALIZED_PATHNAME;
 
-// Set the user's language (vaguely)
-LANGUAGE = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
-
 // Populate the username field by quickly showing the menu
 if(defined(UserMenuToggleButton)) {
     UserMenuToggleButton.click();
@@ -54,24 +51,24 @@ else if(defined(chrome?.extension))
 Container = top[BrowserNamespace];
 
 switch(BrowserNamespace) {
-    case 'browser':
+    case 'browser': {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
-        break;
+    } break;
 
     case 'chrome':
-    default:
+    default: {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
 
         Storage = Storage.sync ?? Storage.local;
-        break;
+    } break;
 }
 
 let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
@@ -1619,14 +1616,14 @@ function GetChat(lines = 30, keepEmotes = false) {
                 let string;
 
                 switch(element.dataset.testSelector) {
-                    case 'emote-button':
+                    case 'emote-button': {
                         if(keepEmotes)
                             string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
-                        break;
+                    } break;
 
-                    default:
+                    default: {
                         string = element.innerText;
-                        break;
+                    } break;
                 }
 
                 return string;
@@ -1884,7 +1881,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
     let joining_symbol = ' ';
 
     switch(format) {
-        case 'natural':
+        case 'natural': {
             for(let [name, value] of times)
                 if(milliseconds >= value) {
                     let amount = (milliseconds / value) | 0;
@@ -1898,12 +1895,12 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
                 time.splice(-1, 0, 'and');
 
             result = time;
-            break;
+        } break;
 
         case 'clock':
             format = '!hour:!minute:!second';
 
-        default:
+        default: {
             joining_symbol = '';
 
             for(let [name, value] of times)
@@ -1927,7 +1924,7 @@ function ConvertTime(milliseconds = 0, format = 'natural') {
 
                     return $1;
                 })
-            break;
+        } break;
     }
 
     return result.join(joining_symbol);
@@ -2185,33 +2182,33 @@ function SetViewMode(mode) {
     let buttons = [];
 
     switch(mode) {
-        case 'fullscreen':
+        case 'fullscreen': {
             buttons.push(
                 `button[data-a-target*="theatre-mode"i]:not([aria-label*="exit"i])`,
                 `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
             );
-            break;
+        } break;
 
-        case 'fullwidth':
+        case 'fullwidth': {
             buttons.push(
                 `button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`,
                 `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
             );
-            break;
+        } break;
 
-        case 'theatre':
+        case 'theatre': {
             buttons.push(
                 `button[data-a-target*="theatre-mode"i]:not([aria-label*="exit"i])`,
                 `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
             );
-            break;
+        } break;
 
-        case 'default':
+        case 'default': {
             buttons.push(
                 `button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`,
                 `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
             );
-            break;
+        } break;
     }
 
     for(let button of buttons)
@@ -2374,22 +2371,26 @@ try {
                     REMARK(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
 
                 switch(key) {
-                    case 'filter_rules':
+                    case 'filter_rules': {
                         RestartJob('filter_messages', 'modify');
-                        break;
+                    } break;
 
-                    case 'away_mode_placement':
+                    case 'away_mode_placement': {
                         RestartJob('away_mode', 'modify');
-                        break;
+                    } break;
 
-                    case 'watch_time_placement':
+                    case 'user_language_preference': {
+                        top.LANGUAGE = LANGUAGE = newValue;
+                    } break;
+
+                    case 'watch_time_placement': {
                         RestartJob('watch_time_placement', 'modify');
                         RestartJob('points_receipt_placement', 'dependent');
-                        break;
+                    } break;
 
-                    case 'whisper_audio_sound':
+                    case 'whisper_audio_sound': {
                         RestartJob('whisper_audio', 'modify');
-                        break;
+                    } break;
 
                     default: break;
                 }
@@ -2787,29 +2788,29 @@ let Initialize = async(START_OVER = false) => {
         next_channel:
         switch(Settings.next_channel_preference) {
             // The most popular channel (most amoutn of current viewers)
-            case 'popular':
+            case 'popular': {
                 next = online[0];
-                break;
+            } break;
 
             // The least popular channel (least amount of current viewers)
-            case 'unpopular':
+            case 'unpopular': {
                 next = online[online.length - 1];
-                break;
+            } break;
 
             // Most watched channel (most channel points)
-            case 'rich':
+            case 'rich': {
                 next = STREAMERS.find(channel => channel.name === mostWatched);
-                break;
+            } break;
 
             // Least watched channel (least channel points)
-            case 'poor':
+            case 'poor': {
                 next = STREAMERS.find(channel => channel.name === leastWatched);
-                break;
+            } break;
 
             // A random channel
-            default:
+            default: {
                 next = online[(Math.random() * online.length)|0];
-                break;
+            } break;
         }
 
         return next;
@@ -3816,7 +3817,7 @@ let Initialize = async(START_OVER = false) => {
 
             switch(placement) {
                 // Option 1 "over" - video overlay, play button area
-                case 'over':
+                case 'over': {
                     sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child', false, parent);
                     parent = sibling?.parentElement;
                     before = 'first';
@@ -3824,14 +3825,14 @@ let Initialize = async(START_OVER = false) => {
                         // Remove the old tooltip
                         container.querySelector('[role="tooltip"i]')?.remove();
                     };
-                    break;
+                } break;
 
                 // Option 2 "under" - quick actions, follow/notify/subscribe area
-                case 'under':
+                case 'under': {
                     sibling = $('[data-test-selector="live-notifications-toggle"i]');
                     parent = sibling?.parentElement;
                     before = 'last';
-                    break;
+                } break;
 
                 default: return;
             }
@@ -3988,7 +3989,7 @@ let Initialize = async(START_OVER = false) => {
             $('[class*="prime-offer"i][class*="dismiss"i] button', true).map(button => button.click());
 
             // Give the loots time to be clicked
-            setTimeout(() => prime_loots_button.click(), 1000 * stop);
+            setTimeout(() => prime_loots_button.click(), 100 * stop);
         }, 100);
     };
     Timers.claim_loot = -5_000;
@@ -4818,19 +4819,19 @@ let Initialize = async(START_OVER = false) => {
         installation_viewer:
         switch(ON_INSTALLED_REASON ||= Settings.onInstalledReason) {
             case CHROME_UPDATE:
-            case SHARED_MODULE_UPDATE:
+            case SHARED_MODULE_UPDATE: {
                 // Not used. Ignore
-                break;
+            } break;
 
-            case INSTALL:
+            case INSTALL: {
                 // Ignore all current streamers; otherwise this will register them all
                 new_names = [];
-                break;
+            } break;
 
             case UPDATE:
-            default:
+            default: {
                 // Should function normally
-                break;
+            } break;
         }
 
         creating_new_events:
@@ -5511,25 +5512,25 @@ let Initialize = async(START_OVER = false) => {
                 { abs } = Math;
 
             switch(Settings.channelpoints_receipt_display) {
-                case "round100":
+                case "round100": {
                     // Round to nearest hundred
                     receipt = receipt.floorToNearest(100);
-                    break;
+                } break;
 
-                case "round50":
+                case "round50": {
                     // Round to nearest fifty (half)
                     receipt = receipt.floorToNearest(50);
-                    break;
+                } break;
 
-                case "round25":
+                case "round25": {
                     // Round to nearest twenty-five (quarter)
                     receipt = receipt.floorToNearest(25);
-                    break;
+                } break;
 
                 case "null":
-                default:
+                default: {
                     // Do nothing...
-                    break;
+                } break;
             }
 
             RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } &uarr; | ${ comify(abs(EXACT_POINTS_SPENT)) } &darr;`;
@@ -5682,20 +5683,20 @@ let Initialize = async(START_OVER = false) => {
 
         switch(placement) {
             // Option 1 "over" - video overlay, volume control area
-            case 'over':
+            case 'over': {
                 container = live_time.closest(`*:not(${ classes(live_time) })`);
                 parent = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="left-control-group"i]');
                 color = 'white';
-                break;
+            } break;
 
             // Option 2 "under" - under quick actions, live count/live time area
-            case 'under':
+            case 'under': {
                 container = live_time.closest(`*:not(${ classes(live_time) })`);
                 parent = container.closest(`*:not(${ classes(container) })`);
                 extra = ({ live_time }) => {
                     live_time.setAttribute('style', 'color: var(--color-text-live)');
                 };
-                break;
+            } break;
 
             default: return;
         }
@@ -6079,6 +6080,12 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
         Settings = await GetSettings();
 
+        // Set the usre's language
+        let [documentLanguage] = (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
+
+        top.LANGUAGE = LANGUAGE = Settings.user_language_preference ?? documentLanguage;
+
+        // Give the storage 1s to perform any "catch-up"
         setTimeout(Initialize, 1000);
         clearInterval(PAGE_CHECKER);
 
@@ -6228,14 +6235,14 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                             let string;
 
                                             switch(element.dataset.aTarget) {
-                                                case 'emote-name':
+                                                case 'emote-name': {
                                                     if(keepEmotes)
                                                         string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
-                                                    break;
+                                                } break;
 
-                                                default:
+                                                default: {
                                                     string = element.innerText;
-                                                    break;
+                                                } break;
                                             }
 
                                             return string;
@@ -6377,12 +6384,12 @@ CUSTOM_CSS.innerHTML =
 
 [tt-auto-claim-bonus-channel-points-enabled="false"i] { --filter: grayscale(1) }
 
-[tt-auto-claim-bonus-channel-points-enabled] .text { font-size: 2rem; transition: all 0.3s }
+[tt-auto-claim-bonus-channel-points-enabled] .text, [tt-auto-claim-bonus-channel-points-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
 [tt-auto-claim-bonus-channel-points-enabled="false"i] .text { margin-right: -4rem }
+[tt-auto-claim-bonus-channel-points-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
 
-[tt-auto-claim-bonus-channel-points-enabled] svg, [tt-auto-claim-bonus-channel-points-enabled] img { transition: transform 300ms ease 0s }
+[tt-auto-claim-bonus-channel-points-enabled] svg, [tt-auto-claim-bonus-channel-points-enabled] img { transition: transform .3s ease 0s }
 [tt-auto-claim-bonus-channel-points-enabled] svg[hover="true"i], [tt-auto-claim-bonus-channel-points-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
-[tt-auto-claim-bonus-channel-points-enabled="false"i] svg, [tt-auto-claim-bonus-channel-points-enabled="false"i] img { padding-left: 0.5rem }
 
 ::-webkit-scrollbar {
     width: .6rem;
@@ -6460,11 +6467,11 @@ CUSTOM_CSS.innerHTML =
 }
 
 .tt-tooltip-wrapper[show], img ~ .tt-tooltip {
-    display: none;
+    display: none !important;
 }
 
 .tt-tooltip-wrapper[show="true"i] {
-    display: block;
+    display: block !important;
 }
 
 .tt-tooltip {
@@ -6616,7 +6623,7 @@ CUSTOM_CSS.innerHTML =
             switch(Settings.onInstalledReason) {
                 // Is this the first time the extension has run?
                 // If so, then point out what's been changed
-                case INSTALL:
+                case INSTALL: {
                     setTimeout(() => {
                         for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
                             element.classList.add('tt-first-run');
@@ -6626,7 +6633,7 @@ CUSTOM_CSS.innerHTML =
                                 .forEach(element => element.classList.remove('tt-first-run'));
                         }, 30_000);
                     }, 10_000);
-                    break;
+                } break;
             }
 
             Storage.set({ onInstalledReason: null });

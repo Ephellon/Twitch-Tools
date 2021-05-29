@@ -24,22 +24,22 @@ else if(chrome && chrome.extension)
 Container = window[BrowserNamespace];
 
 switch(BrowserNamespace) {
-    case 'browser':
+    case 'browser': {
         Runtime = Container.runtime;
         Storage = Container.storage;
         Manifest = Runtime.getManifest();
 
         Storage = Storage.sync || Storage.local;
-        break;
+    } break;
 
     case 'chrome':
-    default:
+    default:{
         Runtime = Container.extension;
         Storage = Container.storage;
         Manifest = Container.runtime.getManifest();
 
         Storage = Storage.sync || Storage.local;
-        break;
+    } break;
 }
 
 let // These are option names. Anything else will be removed
@@ -176,6 +176,8 @@ let // These are option names. Anything else will be removed
         'display_of_video',
         // Enable emperimental features
         'experimental_mode',
+        // User Defined Settings
+        'user_language_preference',
     ];
 
 // https://stackoverflow.com/a/2117523/4211612
@@ -500,7 +502,23 @@ function parseURL(url) {
 
             return s;
         })(data[i++] || e),
-        hash:            (data[i++] || e)
+        hash:            (data[i++] || e),
+
+        pushToSearch(parameters, overwrite = false) {
+            if(typeof url == 'string')
+                url = parseURL(url);
+
+            let { origin, pathname, hash, searchParameters } = url;
+
+            if(overwrite)
+                searchParameters = Object.entries({ ...searchParameters, ...parameters });
+            else
+                searchParameters = [searchParameters, parameters].map(Object.entries).flat();
+
+            searchParameters = '?' + searchParameters.map(parameter => parameter.join('=')).join('&');
+
+            return parseURL(origin + pathname + searchParameters + hash);
+        },
     };
 };
 
@@ -523,29 +541,29 @@ function RedoFilterRulesElement(rules) {
 
         let filterType;
         switch(true) {
-            case /^\/[\w+\-]+/.test(rule):
+            case /^\/[\w+\-]+/.test(rule): {
                 filterType = 'channel';
-                break;
+            } break;
 
-            case /^@[\w+\-]+$/.test(rule):
+            case /^@[\w+\-]+$/.test(rule): {
                 filterType = 'user';
-                break;
+            } break;
 
-            case /^<[^>]+>$/.test(rule):
+            case /^<[^>]+>$/.test(rule): {
                 filterType = 'badge';
-                break;
+            } break;
 
-            case /^:[\w\-]+:$/.test(rule):
+            case /^:[\w\-]+:$/.test(rule):{
                 filterType = 'emote';
-                break;
+            } break;
 
-            case /^[\w]+$/.test(rule):
+            case /^[\w]+$/.test(rule): {
                 filterType = 'text';
-                break;
+            } break;
 
-            default:
+            default:{
                 filterType = 'regexp';
-                break;
+            } break;
         }
 
         if(defined($(`#filter_rules [filter-type="${ filterType }"i] [filter-id="${ fID }"i]`)))
@@ -609,7 +627,7 @@ async function SaveSettings() {
     // Edit settings before exporting them (if needed)
     for(let id of using)
         switch(id) {
-            case 'filter_rules':
+            case 'filter_rules': {
                 let rules = [],
                     input = extractValue($('#filter_rules-input'));
 
@@ -623,20 +641,26 @@ async function SaveSettings() {
                 settings.filter_rules = rules.sort().join(',');
 
                 RedoFilterRulesElement(settings.filter_rules);
-                break;
+            } break;
 
-            case 'away_mode__volume':
+            case 'away_mode__volume': {
                 let volume = extractValue($('#away_mode__volume'));
 
                 settings.away_mode__volume = parseFloat(volume) / 100;
-                break;
+            } break;
 
-            default:
+            case 'user_language_preference': {
+                let preferred = extractValue($('#user_language_preference'));
+
+                settings.user_language_preference = preferred;
+            } break;
+
+            default:{
                 settings[id] = extractValue($(`#${ id }`));
-                break;
+            } break;
         }
 
-    return await Storage.set(settings);
+    return await Storage.set(SETTINGS = settings);
 }
 
 async function LoadSettings() {
@@ -659,32 +683,40 @@ async function LoadSettings() {
         using = elements.map(element => element.id);
 
     return await Storage.get(null, settings => {
-        SETTINGS ??= settings;
+        SETTINGS = settings;
 
         for(let id of using) {
             let element = $(`#${ id }`);
 
             switch(id) {
-                case 'filter_rules':
+                case 'filter_rules': {
                     let rules = settings[id];
 
                     RedoFilterRulesElement(rules);
-                    break;
+                } break;
 
-                case 'away_mode__volume':
+                case 'away_mode__volume': {
                     let volume = settings[id];
 
                     assignValue(element, volume * 100);
-                    break;
+                } break;
 
-                default:
+                case 'user_language_preference': {
+                    let preferred = settings[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
+
+                    TranslatePageTo(preferred);
+
+                    assignValue(element, preferred);
+                } break;
+
+                default: {
                     let selected = $('[selected]', false, element);
 
                     if(defined(selected))
                         selected.removeAttribute('selected');
 
                     assignValue(element, settings[id]);
-                    break;
+                } break;
             }
         }
     });
@@ -752,6 +784,15 @@ $('#whisper_audio_sound', true).map(element => element.onchange = async event =>
 
     test_sound.play();
     test_sound.onended = event => test_sound.remove();
+});
+
+$('#user_language_preference', true).map(element => element.onchange = async event => {
+    let { currentTarget } = event,
+        preferred = currentTarget.value;
+
+    TranslatePageTo(preferred);
+
+    await Storage.set({ ...SETTINGS, user_language_preference: preferred });
 });
 
 $('#save, .save', true).map(element => element.onclick = async event => {
@@ -966,13 +1007,7 @@ $('[new]', true).map(element => {
         element.removeAttribute('new');
 });
 
-document.body.onload = async() => {
-    let url = parseURL(location.href),
-        search = url.searchParameters;
-
-    // Translate the user's page to their preferred language
-    let [language] = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-');
-
+async function TranslatePageTo(language = 'en') {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
             console.log(`Translations to "${ language.toUpperCase() }" are not available`);
@@ -1034,6 +1069,18 @@ document.body.onload = async() => {
                 lastTrID = translation_id;
             }
         })
+}
+
+document.body.onload = async() => {
+    let url = parseURL(location.href),
+        search = url.searchParameters;
+
+    /* Things needed before loading the page... */
+    await(async function() {
+        await Storage.get(['user_language_preference'], ({ user_language_preference }) => TranslatePageTo(user_language_preference));
+    })()
+
+    /* Continue loading/parsing the page */
         .then(async() => {
             /* Continue loading the page after translations have been made/skipped */
 
