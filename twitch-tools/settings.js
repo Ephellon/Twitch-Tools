@@ -173,7 +173,7 @@ let // These are option names. Anything else will be removed
             'display_in_console__error',
             'display_in_console__remark',
         // Display stats
-        'display_of_video',
+        'show_stats',
         // Enable emperimental features
         'experimental_mode',
         // User Defined Settings
@@ -522,7 +522,8 @@ function parseURL(url) {
     };
 };
 
-let SETTINGS;
+let SETTINGS,
+    INITIAL_LOAD = true;
 
 function RedoFilterRulesElement(rules) {
     if(!defined(rules))
@@ -584,6 +585,7 @@ function RedoFilterRulesElement(rules) {
             currentTarget.remove();
         };
         E.setAttribute('up-tooltip', `Edit rule`);
+        E.setAttribute('tr-skip', true);
         E.append(R);
 
         // "Remove" button
@@ -685,6 +687,7 @@ async function LoadSettings() {
     return await Storage.get(null, settings => {
         SETTINGS = settings;
 
+        loading:
         for(let id of using) {
             let element = $(`#${ id }`);
 
@@ -702,6 +705,8 @@ async function LoadSettings() {
                 } break;
 
                 case 'user_language_preference': {
+                    if(INITIAL_LOAD) continue loading;
+
                     let preferred = settings[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
                     TranslatePageTo(preferred);
@@ -1017,7 +1022,7 @@ async function TranslatePageTo(language = 'en') {
         .then(text => text.json?.())
         .then(json => {
             if(json?.LANG_PACK_READY !== true)
-                return /* Translation package isn't ready */;
+                return console.log(`Translations to "${ language.toUpperCase() }" are not finalized`);
 
             let lastTrID,
                 placement = {};
@@ -1034,14 +1039,14 @@ async function TranslatePageTo(language = 'en') {
 
                 let nodes = [...element.childNodes]
                     .filter(node => !!~[ELEMENT_NODE, TEXT_NODE].indexOf(node.nodeType))
-                    .filter(node => (node.textContent ?? "").trim().length > 1)
+                    .filter(node => /^[^\s\.\!\?]/i.test((node.textContent ?? "").trim()))
                     .map(node => {
                         let { attributes, nodeType } = node;
 
                         if(!!~[TEXT_NODE].indexOf(nodeType))
                             return node;
 
-                        if(!defined(attributes) || ('tr-id' in attributes))
+                        if(!defined(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
                             return;
 
                         return node;
@@ -1193,5 +1198,10 @@ document.body.onload = async() => {
                     });
                 });
             }, 1000);
+        })
+
+    /* Things needed after loading the page... */
+        .then(() => {
+            INITIAL_LOAD = false;
         });
 };

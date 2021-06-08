@@ -409,31 +409,31 @@
 	],
 		"@@auto-focus:options:detection-level": [
 			"Detectieniveau",
-			"Hoeveel activiteit moet de", "autofocus", "",
+			"Hoeveel activiteit moet de", "autofocus",
 
-			"Hoge activiteit - FPS / IRL / Tempo",
-			"Bescheiden Activiteit - Actie / Avontuur / Platforming",
-			"Seizoensgebonden Activiteit - Horror / Puzzel / Trivia",
-			"Lage activiteit - Alleen praten / Simulatie / Strategie / Strategie"
+			"Hoge activiteit — FPS / IRL / Tempo",
+			"Bescheiden Activiteit — Actie / Avontuur / Platforming",
+			"Seizoensgebonden Activiteit — Horror / Puzzel / Trivia",
+			"Lage activiteit — Alleen praten / Simulatie / Strategie / Strategie"
 		],
 
 		"@@auto-focus:options:polling-interval": [
 			"Sondeer interval",
-			"Hoe vaak moet u", "sonderen", "de video",
+			"Hoe vaak moet u", "sonderen de video",
 
-			"Elke seconde - CPU-intensief, uitstekende detectie",
-			"Elke 3 seconden - CPU-compatibel, goede detectie",
-			"Elke 5 seconden - CPU-compatibel, redelijke detectie",
-			"Elke 10 seconden - CPU-compatibel, slechte detectie"
+			"Elke seconde — CPU-intensief, uitstekende detectie",
+			"Elke 3 seconden — CPU-compatibel, goede detectie",
+			"Elke 5 seconden — CPU-compatibel, redelijke detectie",
+			"Elke 10 seconden — CPU-compatibel, slechte detectie"
 		],
 
 		"@@auto-focus:options:image-type": [
 			"Afbeeldingstype",
-			"Welk type afbeelding moet worden gebruikt voor de", "peiling", "",
+			"Welk type afbeelding moet worden gebruikt voor de", "peiling",
 
-			"JPG - CPU-vriendelijk, goede detectie",
-			"PNG - CPU-intensief, uitstekende detectie",
-			"WebP - CPU-vriendelijk, uitstekende detectie"
+			"JPG — CPU-vriendelijk, goede detectie",
+			"PNG — CPU-intensief, uitstekende detectie",
+			"WebP — CPU-vriendelijk, uitstekende detectie"
 		],
 
 	"@@convert-emotes": [

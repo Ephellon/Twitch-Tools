@@ -1860,8 +1860,8 @@ function getOffset(element) {
 }
 
 // Convert milliseconds into a human-readable string
-    // ConvertTime([milliseconds:number[, format:string]]) -> String
-function ConvertTime(milliseconds = 0, format = 'natural') {
+    // toTimeString([milliseconds:number[, format:string]]) -> String
+function toTimeString(milliseconds = 0, format = 'natural') {
     let second = 1000,
         minute = 60 * second,
         hour   = 60 * minute,
@@ -2059,7 +2059,7 @@ async function GetQuality() {
 }
 
 // Change the video quality
-    // SetQuality([quality:string[, backup:string]]) -> Object#{ __old__:Object={ input:Element, label:Element }, __new__:Object={ input:Element, label:Element } }
+    // SetQuality([quality:string[, backup:string]]) -> Object#{ oldValue:Object={ input:Element, label:Element }, newValue:Object={ input:Element, label:Element } }
 async function SetQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
@@ -2108,10 +2108,10 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     let current = qualities.find(({ input }) => input.checked),
         desired;
 
-    if(/(auto|high|low|source)/i.test(quality))
+    if(/auto|high|low|source/i.test(quality))
         desired = qualities[RegExp.$1];
     else
-        desired = qualities.find(({ label }) => textOf(label).indexOf(quality.toLowerCase())) ?? null;
+        desired = qualities.find(({ label }) => !!~textOf(label).indexOf(quality.toLowerCase())) ?? null;
 
     if(!defined(desired))
         /* The desired quality does not exist */
@@ -2128,16 +2128,28 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     if(defined(buttons.options))
         buttons.settings.click();
 
-    return { __old__: current, __new__: desired };
+    return new Promise((resolve, reject) => {
+        let checker = setInterval(() => {
+            isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
+            video = $('video', true)[+isAdvert],
+            computed = (video.videoHeight | 0) + 'p';
+
+            if(desired !== computed) {
+                clearInterval(checker);
+
+                resolve({ oldValue: current ?? computed, newValue: desired });
+            }
+        }, 100);
+    });
 }
 
 // Get the video volume
-    // GetVolume() -> Number#Float
-function GetVolume() {
+    // GetVolume([fromVideoElement:boolean]) -> Number#Float
+function GetVolume(fromVideoElement = true) {
     let video = $('[data-a-target="video-player"i] video'),
         slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
 
-    return video.volume;
+    return parseFloat(fromVideoElement? video.volume: slider.value);
 }
 
 // Change the video volume
@@ -2146,7 +2158,7 @@ function SetVolume(volume = 0.5) {
     let video = $('[data-a-target="video-player"i] video'),
         slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
 
-    video.volume = slider.value = (+volume).toFixed(2);
+    video.volume = slider.value = parseFloat(volume);
 }
 
 // Get the view mode
@@ -2327,7 +2339,7 @@ try {
 
         // If the last fetch was more than 30 days ago, remove the data...
         if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
-            WARN(`\tThe last fetch for "${ RegExp.$1 }" was ${ ConvertTime(lastFetch) } ago. Marking as "expired"`);
+            WARN(`\tThe last fetch for "${ RegExp.$1 }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
 
             StorageSpace.removeItem(key);
         }
@@ -3603,7 +3615,7 @@ let Initialize = async(START_OVER = false) => {
             CAPTURE_HISTORY.shift();
 
         CAPTURE_INTERVAL = setInterval(() => {
-            let isAdvert = $('video', true).length > 1,
+            let isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
                 video = $('video', true)[+isAdvert];
 
             if(!defined(video))
@@ -3644,7 +3656,7 @@ let Initialize = async(START_OVER = false) => {
                             stop = +new Date;
 
                         DisplayingAutoFocusDetails:
-                        if(Settings.display_of_video) {
+                        if(Settings.show_stats) {
                             let parent = $('.chat-list--default');
                             // #twilight-sticky-header-root
 
@@ -3802,12 +3814,18 @@ let Initialize = async(START_OVER = false) => {
         let button = $('#away-mode'),
             currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
-        if(defined(button) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
+        /** Return (don't activate) if
+         * a) The toggle-button already exists
+         * b) There is an advertisement playing
+         * c) There are no quality controls
+         * d) The page is a search
+         */
+        if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
             return;
 
         await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
-        let enabled = AwayModeEnabled || (quality.low && !(quality.auto || quality.high || quality.source));
+        let enabled = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
         if(!defined(button)) {
             let sibling, parent, before,
@@ -3901,7 +3919,7 @@ let Initialize = async(START_OVER = false) => {
         button.icon.setAttribute('height', '20px');
         button.icon.setAttribute('width', '20px');
 
-        button.container.onclick ??= event => {
+        button.container.onclick ??= async event => {
             let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled')),
                 { container, background, tooltip } = AwayModeButton;
 
@@ -3909,16 +3927,17 @@ let Initialize = async(START_OVER = false) => {
             background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
             tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
-            if(parseBool(Settings.away_mode__volume_control))
-                SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
+            await SetQuality(['auto','low'][+enabled])
+                .then(() => {
+                    if(parseBool(Settings.away_mode__volume_control))
+                        SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
 
-            if(parseBool(Settings.away_mode__hide_chat))
-                ([
-                    () => SetViewMode(InitialViewMode),
-                    () => SetViewMode('fullwidth'),
-                ][+enabled])();
-
-            SetQuality(['auto','low'][+enabled]);
+                    if(parseBool(Settings.away_mode__hide_chat))
+                        ([
+                            () => SetViewMode(InitialViewMode),
+                            () => SetViewMode('fullwidth'),
+                        ][+enabled])();
+                });
 
             SaveCache({ AwayModeEnabled: enabled });
         };
@@ -3939,7 +3958,7 @@ let Initialize = async(START_OVER = false) => {
 
         AwayModeButton = button;
     };
-    Timers.away_mode = 2_500;
+    Timers.away_mode = 500;
 
     Unhandlers.away_mode = () => {
         $('#away-mode')?.remove();
@@ -4055,7 +4074,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        LOG(`Waiting ${ ConvertTime(FIRST_IN_LINE_TIMER | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
+        LOG(`Waiting ${ toTimeString(FIRST_IN_LINE_TIMER | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
@@ -4069,9 +4088,9 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(STARTED_TIMERS.WARNING)) {
                 STARTED_TIMERS.WARNING = true;
 
-                LOG('Heading to stream in', ConvertTime(FIRST_IN_LINE_TIMER | 0), FIRST_IN_LINE_HREF, new Date);
+                LOG('Heading to stream in', toTimeString(FIRST_IN_LINE_TIMER | 0), FIRST_IN_LINE_HREF, new Date);
 
-                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ ConvertTime(FIRST_IN_LINE_TIMER) }\t`, {
+                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(FIRST_IN_LINE_TIMER) }\t`, {
                     icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
                     href: FIRST_IN_LINE_HREF,
 
@@ -4114,7 +4133,7 @@ let Initialize = async(START_OVER = false) => {
                     if(defined(popup?.elements))
                         popup.elements.message.innerHTML
                             = popup.elements.message.innerHTML
-                                .replace(/\t([^\t]+?)\t/i, ['\t', ConvertTime(FIRST_IN_LINE_TIMER, '!minute:!second'), '\t'].join(''));
+                                .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(FIRST_IN_LINE_TIMER, '!minute:!second'), '\t'].join(''));
 
                     if(FIRST_IN_LINE_TIMER < 1000) {
                         popup.remove();
@@ -4375,7 +4394,7 @@ let Initialize = async(START_OVER = false) => {
                     );
 
                     REDO_FIRST_IN_LINE_QUEUE(channel.href);
-                    LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: toTimeString(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 }
 
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
@@ -4488,7 +4507,7 @@ let Initialize = async(START_OVER = false) => {
                                     container.setAttribute('live', live);
                                 }
 
-                                subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
+                                subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: toTimeString(time, 'clock');
                             }, 1000);
                         },
                     })
@@ -4677,7 +4696,7 @@ let Initialize = async(START_OVER = false) => {
                                 container.setAttribute('live', live);
                             }
 
-                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: ConvertTime(time, 'clock');
+                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: toTimeString(time, 'clock');
                         }, 1000);
                     },
                 })
@@ -4685,7 +4704,7 @@ let Initialize = async(START_OVER = false) => {
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(href);
-                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: ConvertTime(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: toTimeString(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
                     let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
 
@@ -5695,6 +5714,13 @@ let Initialize = async(START_OVER = false) => {
                 parent = container.closest(`*:not(${ classes(container) })`);
                 extra = ({ live_time }) => {
                     live_time.setAttribute('style', 'color: var(--color-text-live)');
+
+                    if(parseBool(Settings.show_stats))
+                        live_time.tooltipAnimation = setInterval(() => {
+                            live_time.tooltip ??= new Tooltip(live_time, '');
+
+                            live_time.tooltip.innerHTML = ((STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100).toFixed(3).slice(0, 5) + '%';
+                        }, 100);
                 };
             } break;
 
@@ -5732,9 +5758,10 @@ let Initialize = async(START_OVER = false) => {
 
                 watch_time.setAttribute('time', ++time);
 
-                watch_time.innerHTML = ConvertTime(time * 1000, 'clock');
+                watch_time.innerHTML = toTimeString(time * 1000, 'clock');
 
-                WATCH_TIME_TOOLTIP.innerHTML = comify(time).replace(/\.[\d,]*$/, '') + 's';
+                if(parseBool(Settings.show_stats))
+                    WATCH_TIME_TOOLTIP.innerHTML = comify(time).replace(/\.[\d,]*$/, '') + 's';
 
                 SaveCache({ WatchTime: time });
             }, 1000);
@@ -5746,7 +5773,12 @@ let Initialize = async(START_OVER = false) => {
         clearInterval(WATCH_TIME_INTERVAL);
 
         $('#tt-watch-time')?.parentElement?.remove();
-        $('.live-time')?.removeAttribute('style');
+
+        let live_time = $('.live-time');
+
+        live_time?.removeAttribute('style');
+        live_time?.tooltip?.remove?.();
+        clearInterval(live_time?.tooltipAnimation);
 
         if(UnregisterJob.__reason__ == 'modify')
             return;
@@ -5792,7 +5824,7 @@ let Initialize = async(START_OVER = false) => {
 
         let { paused } = video,
             isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = $('video', true).length > 1,
+            isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
             { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
 
         // Time that's passed since creation. Should constantly increase
@@ -5807,9 +5839,21 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
-        if(CREATION_TIME != creationTime && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
-            if(SECONDS_PAUSED_UNSAFELY> 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
+        if(creationTime !== CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
+            if(SECONDS_PAUSED_UNSAFELY > 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
                 WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
+
+            if(SECONDS_PAUSED_UNSAFELY > 5 && !(SECONDS_PAUSED_UNSAFELY % 3)) {
+                WARN(`Attempting to pause/play the video`);
+
+                let state = $('button[data-a-player-state]')?.getAttribute('data-a-player-state')?.toLowerCase?.();
+
+                if(state == "playing") {
+                    $('button[data-a-player-state]').click();
+
+                    setTimeout(() => $('button[data-a-player-state]').click(), 1000);
+                }
+            }
 
             // Try constantly overwriting to see if the video plays
             // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
@@ -5863,7 +5907,7 @@ let Initialize = async(START_OVER = false) => {
 
         let { paused } = video,
             isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = $('video', true).length > 1;
+            isAdvert = defined($('[data-a-target*="ad-countdown"i]'));
 
         // Leave the video alone
             // if the video isn't paused

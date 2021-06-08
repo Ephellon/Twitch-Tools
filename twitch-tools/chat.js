@@ -296,7 +296,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let BTTV_EMOTES = (top.BTTV_EMOTES ??= new Map),
         BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map),
         BTTV_LOADED_INDEX = 0,
-        BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ?? 30),
+        BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30),
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
                 existing = $(`img.bttv[alt="${ name }"]`);
@@ -541,7 +541,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         REMARK("Loading BTTV emotes...");
 
         // Use 85% of available space to load "required" emotes
-        BTTV_MAX_EMOTES = Math.round(parseInt(Settings.bttv_emotes_maximum ?? 30) * 0.85);
+        BTTV_MAX_EMOTES = Math.round(parseInt(Settings.bttv_emotes_maximum) * 0.85);
 
         // Load streamer specific emotes
         if(parseBool(Settings.bttv_emotes_channel))
@@ -550,7 +550,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         LOAD_BTTV_EMOTES()
             .then(async() => {
                 // Allow the remaing 15% to be filled with extra emotes
-                BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ?? 30);
+                BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum);
 
                 // Load extra emotes
                 for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
@@ -1489,7 +1489,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         markAsSpam(element, 'plagiarism', message);
 
                     // The message contains repetitive (more than X instances) words/phrases
-                    if(RegExp(`(.{${ minLen },})${ "(?:(?:.+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
+                    if(RegExp(`([^]{${ minLen },})${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
                         markAsSpam(element, 'repetitive', message);
 
                     return message;

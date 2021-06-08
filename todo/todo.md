@@ -28,6 +28,13 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.2.1.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1.2)
+- Finalized the English (`en`) language package
+- Adjusted other language packs
+- Fixed ad-detection for `tools.js`
+- Adjusted Video Recovery console messages
+- Added more sub-features to Show Statistics (`display_of_video` &rarr; `show_stats`)
+
 > [3.2.1.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1.1)
 - Added the "User Language Preference" features
     - Applicable settings will update in real time to language changes

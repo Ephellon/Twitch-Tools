@@ -412,29 +412,29 @@
 	],
     	"@@auto-focus:options:detection-level": [
     		"Nível de Detecção",
-    		"Quanta actividade deve o", "autofocus", "",
+    		"Quanta actividade deve o", "autofocus",
 
-    		"Alta Actividade - FPS / IRL / Pace",
-    		"Actividade Modesta - Acção / Aventura / Plataforma",
-    		"Actividade Sazonal - Horror / Enigma / Trivialidades",
-    		"Baixa Actividade - Apenas Conversação / Simulação / Estratégia / Estratégia"
+    		"Alta Actividade — FPS / IRL / Pace",
+    		"Actividade Modesta — Acção / Aventura / Plataforma",
+    		"Actividade Sazonal — Horror / Enigma / Trivialidades",
+    		"Baixa Actividade — Apenas Conversação / Simulação / Estratégia / Estratégia"
     	],
     	"@@auto-focus:options:polling-interval": [
     		"Intervalo de votação",
-    		"Com que frequência deve", "sonda", "o vídeo",
+    		"Com que frequência deve", "sonda o vídeo",
 
-    		"A cada segundo - CPU intensiva, excelente detecção",
-    		"De 3 em 3 segundos - fácil de detectar, boa detecção",
-    		"A cada 5 segundos - CPU compatível, detecção justa",
-    		"A cada 10 segundos - CPU compatível, má detecção"
+    		"A cada segundo — CPU intensiva, excelente detecção",
+    		"De 3 em 3 segundos — fácil de detectar, boa detecção",
+    		"A cada 5 segundos — CPU compatível, detecção justa",
+    		"A cada 10 segundos — CPU compatível, má detecção"
     	],
     	"@@auto-focus:options:image-type": [
     		"Tipo de imagem",
-    		"Que tipo de imagem deve ser utilizado para o", "sondagem", "",
+    		"Que tipo de imagem deve ser utilizado para o", "sondagem",
 
-    		"JPG - Amigo do CPU, boa detecção",
-    		"PNG - CPU intensive, excelente detecção",
-    		"WebP - Amigo da CPU, excelente detecção"
+    		"JPG — Amigo do CPU, boa detecção",
+    		"PNG — CPU intensive, excelente detecção",
+    		"WebP — Amigo da CPU, excelente detecção"
     	],
 
 	"@@convert-emotes": [

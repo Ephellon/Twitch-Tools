@@ -88,19 +88,24 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 let UnloadedTabs = new Set();
 
 let TabWatcherInterval = setInterval(() => {
-    Container.tabs.query({
-        url: "*://www.twitch.tv/*",
-        status: "unloaded",
-    }, tabs => {
-        if(!defined(tabs))
+    try {
+        Container.tabs.query({
+            url: "*://www.twitch.tv/*",
+            status: "unloaded",
+        }, tabs => {
+            if(!defined(tabs))
             return;
 
-        for(let tab of tabs)
+            for(let tab of tabs)
             if(UnloadedTabs.has(tab.id))
-                Container.tabs.reload(tab.id);
+            Container.tabs.reload(tab.id);
             else
-                UnloadedTabs.add(tab.id);
-    });
+            UnloadedTabs.add(tab.id);
+        });
+    } catch(error) {
+        // Suppress query errors...
+        // console.warn(error);
+    }
 }, 1000);
 
 // Update the badge text when there's an update available

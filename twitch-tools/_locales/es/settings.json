@@ -8,7 +8,7 @@
 
         "smart-notifications": ["Notificaciones Inteligentes"],
 
-        "title": ["Twitch Tools - Configuración"],
+        "title": ["Twitch Tools — Configuración"],
         "about": ["Acerca de Twitch Tools"],
         "version": ["Versión"],
         "support": ["Ayuda"],
@@ -426,31 +426,31 @@
     ],
         "@@auto-focus:options:detection-level": [
             "Nivel de Deteccion",
-            "¿Cuánta actividad debería activar el", "enfoque automático", "",
+            "¿Cuánta actividad debería activar el", "enfoque automático",
 
-            "Alta Actividad - FPS / IRL / Ritmo",
-            "Actividad Modesta - Acción / Aventura / Plataformas",
-            "Actividad Estacional - Terror / Rompecabezas / Trivia",
-            "Baja Actividad - Solo Charla / Simulación / Estrategia"
+            "Alta Actividad — FPS / IRL / Ritmo",
+            "Actividad Modesta — Acción / Aventura / Plataformas",
+            "Actividad Estacional — Terror / Rompecabezas / Trivia",
+            "Baja Actividad — Solo Charla / Simulación / Estrategia"
         ],
 
         "@@auto-focus:options:polling-interval": [
             "Intervalo de Sondear",
-            "¿Con qué frecuencia se debe", "sondear", "el video",
+            "¿Con qué frecuencia se debe", "sondear el video",
 
-            "Cada segundo - uso intensivo de la CPU, excelente detección",
-            "Cada 3 segundos - compatible con la CPU, buena detección",
-            "Cada 5 segundos - compatible con la CPU, detección justa",
-            "Cada 10 segundos - compatible con la CPU, detección deficiente"
+            "Cada segundo — uso intensivo de la CPU, excelente detección",
+            "Cada 3 segundos — compatible con la CPU, buena detección",
+            "Cada 5 segundos — compatible con la CPU, detección justa",
+            "Cada 10 segundos — compatible con la CPU, detección deficiente"
         ],
 
         "@@auto-focus:options:image-type": [
             "Tipo de Imagen",
-            "¿Qué tipo de imagen se debe utilizar para el", "sondeo", "",
+            "¿Qué tipo de imagen se debe utilizar para el", "sondeo",
 
-            "JPG - compatible con la CPU, buena detección",
-            "PNG - uso intensivo de la CPU, excelente detección",
-            "WebP - compatible con la CPU, excelente detección"
+            "JPG — compatible con la CPU, buena detección",
+            "PNG — uso intensivo de la CPU, excelente detección",
+            "WebP — compatible con la CPU, excelente detección"
         ],
 
     "@@convert-emotes": [

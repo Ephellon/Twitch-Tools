@@ -1,208 +1,229 @@
-{ "[[SOURCE]]": "ROOT->ES->EN", "LANG_PACK_READY": false,
+{ "[[SOURCE]]": "ROOT", "LANG_PACK_READY": true,
+
+	"?": {
+        "save": ["Save"],
+        "extras": ["Extras"],
+        "options": ["Options"],
+        "en|dis": ["Enable at", "Disable at"],
+
+        "smart-notifications": ["Smart Notifications"],
+
+        "title": ["Twitch Tools — Settings"],
+        "about": ["About Twitch Tools"],
+        "version": ["Version"],
+        "support": ["Support"],
+
+        "day-of-week": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "footer": ["This extension is in no way affiliated with, nor endorsed by Amazon™, Twitch™, NightDev (LLC), either party's partners, affiliates, or subsidiaries"]
+    },
+
+
+
+
 
 	"header:automation": ["Automation"],
 	"auto-join": [
-		"Automatic Union",
-		"When presented with a warning that the transmission is intended for an", "adult audience", "proceed automatically",
-		"This will also be joined to", null, "automatically"
+		"Auto-Join",
+		"When presented with a warning that the stream is intended for", "mature audiences", "proceed automatically",
+		"This will also join", "Watch Parties", "automatically"
 	],
 
 	"away-mode": [
 		"Away Mode",
-		"Adds a button to toggle the", "monitoring",
-		"You can also use the keyboard shortcut", null, ""
+		"Adds a button to toggle", "lurking",
+		"The keyboard shortcut", null, "can also be used"
 	],
-    	"away-mode:hide-chat": ["Hide Chat", "Keep the chat hidden while", "monitoring"],
-    	"away-mode:volume": ["Volume to monitor", "Set the volume to", "when at", "monitoring"],
-    	"away-mode:schedule": ["Calendar", "Select days"],
+    	"away-mode:hide-chat": ["Hide Chat", "Keep chat hidden while", "lurking"],
+    	"away-mode:volume": ["Lurking Volume", "Set the volume to", "when", "lurking"],
+    	"away-mode:schedule": ["Schedule", "Select Times"],
 
 	"auto-claim-bonuses": [
-		"Claim Bonus",
-		"When the button appears", "button appears, click on it automatically"
+		"Claim Bonuses",
+		"When the", "button appears, click it automatically"
 	],
 
 	"first-in-line": [
-		"First in Line",
-		"When a channel is live, go to the stream automatically",
-		null, "add a queue service to Twitch™"
+		"First in Line / Up Next",
+		"When a channel goes live, head to its stream automatically",
+		"Up Next", "adds a queueing service to Twitch™"
 	],
     	"first-in-line:disabled": [
     		"Disabled",
-    		"Do not use this function"
+    		"Do not use this feature"
     	],
     	"first-in-line:notification": [
     		"Notification",
-    		"When you receive a notification from a live channel, go to its transmission after"
+    		"When you receive a notification for a channel going live, go to its stream after"
     	],
     	"first-in-line:appearance": [
     		"Appearance",
-    		"When a channel is displayed in your Channels followed, go to its transmission after"
+    		"When a channel appears in your Followed Channels, go to its stream after"
     	],
     	"first-in-line:smart-notifications": [
     		"Automatic",
-    		"Go to all transmissions automatically after"
+    		"Go to all streams automatically after"
     	],
 
 	"auto-follow": [
-		"Automatic Tracking",
-		"While watching a channel that you do not follow, follow it automatically"
+		"Follows",
+		"While watching a channel that isn't followed, follow it automatically"
 	],
     	"auto-follow:none": [
     		"Disabled",
-    		"Do not use this function"
+    		"Do not use this feature"
     	],
     	"auto-follow:raids": [
-    		"Surprises",
-    		"When participating in a surprise, follow the channel that is being surprised"
+    		"Raids",
+    		"When participating in a raid, follow the channel being raided"
     	],
     	"auto-follow:time": [
-    		"Audience",
+    		"Viewership",
     		"After watching",
     		"of content, follow the channel"
     	],
     	"auto-follow:all": [
     		"Automatic",
-    		"Follows all channels automatically"
+    		"Follow all channels automatically"
     	],
 
 	"kill-extensions": [
 		"Kill Extensions",
-		"Do not allow Twitch™ extensions to be displayed in the stream"
+		"Do not allow Twitch™ extensions to display over the stream"
 	],
 
 	"next-channel-preference": [
-		"Next Channel Preference",
-		"How to decide the next channel when", null, "is empty",
-		"This is only activated when the current transmission is switched off"
+		"Next Channel",
+		"How should the next channel be chosen when", "Up Next", "is empty",
+		"This only activates when the current stream goes offline"
 	],
     	"next-channel-preference:options": [
     		"Go to a random channel",
-    		"Go with the least amount of viewers",
+    		"Go with the least viewers",
     		"Go with the most viewers",
-    		"Go with the least amount of channel points",
+    		"Go with the least channel points",
     		"Go with the most channel points"
     	],
 
 	"prevent-hosting": [
-		"Avoid the Host",
-		"Prevent some or all channels from being hosted by accessing the",
+		"Prevent Hosting",
+		"Prevent certain or all channels from hosting by going to the",
 		"Next Channel"
 	],
     	"prevent-hosting:options": [
     		"Allow all channels to host",
     		"Prevent all channels from hosting",
-    		"Prevent un-followed channels from being hosted"
+    		"Prevent unfollowed channels from being hosted"
     	],
 
 	"prevent-raiding": [
-		"Avoid Surprises",
-		"Prevent some or all channels from having surprises by going to", "Next Channel"
+		"Prevent Raiding",
+		"Prevent certain or all channels from raiding by going to the", "Next Channel"
 	],
     	"prevent-raiding:options": [
-    		"Allow all channels to surprise",
-    		"Only participate in surprises to accumulate channel points",
-    		"Avoid all surprises on all channels",
-    		"Prevent un-followed channels from being surprised"
+    		"Allow all channels to raid",
+    		"Only raid to collect channel points",
+    		"Prevent all channels from raiding",
+    		"Prevent unfollowed channels from being raided"
     	],
 
 	"claim-loot": [
-		null,
-		"Automatically claim and discard", null, "when the page loads"
+		"Prime Loot",
+		"Automatically claim and dismiss", "Prime Gaming Loot", "offers when the page loads"
 	],
 
 	"stay-live": [
-		"Stay Alive",
-		"Once the current transmission ends, go to", "Next Channel"
+		"Stay Live",
+		"After the current stream ends, go to the", "Next Channel"
 	],
 
 	"view-mode": [
 		"View Mode",
-		"When the page has finished loading, change the view to"
+		"When the page is done loading, change the view to"
 	],
     	"view-mode:options": [
     		"Nothing (do not change)",
-    		"Default mode",
-    		"Theater mode",
-    		"Full width mode",
-    		"Full screen mode"
+    		"Default Mode (banner + chat)",
+    		"Theatre Mode (chat)",
+    		"Fullwidth Mode (banner)",
+    		"Fullscreen Mode"
     	],
 
 
 
 
 
-	"header:chat-and-messaging": ["Chat and Messaging"],
+	"header:chat-and-messaging": ["Chat & Messaging"],
 	"bttv-emotes": [
-		"Emoticons BetterTTV",
-		"Use BetterTTV emoticons",
-		"This may cause instability when loading emoticons"
+		"BetterTTV emotes",
+		"Use BetterTTV emotes",
+		"This may cause instability while loading emotes"
 	],
     	"bttv-emotes:channel-specific-emotes": [
-    		"Channel Specific Emoticons",
-    		"Load emoticons", null, "channel specific"
+    		"Channel Specific Emotes",
+    		"Load channel specific", "BetterTTV", "emotes"
     	],
 
     	"bttv-emotes:emote-location": [
-    		"Emoticon Location",
-    		"Use these emoticons of", null, ""
+    		"Emote Location",
+    		"Load these", "BetterTTV", "emotes"
     	],
         	"bttv-emotes:emote-location:options": [
         		"Most popular (Trending)",
         		"Most shared (Shared)",
-        		"Most used (First)",
+        		"Most used (Top)",
         		"Most universal (Global)"
         	],
 
     	"bttv-emotes:extra-emotes": [
-    		"Extra Emoticons",
-    		"Add emoticons of", null, "with the words"
+    		"Extra Emotes",
+    		"Add", "BetterTTV", "emotes with the words"
     	],
 
     	"bttv-emotes:library-size": [
-    		"Catalog Size",
+    		"Library Size",
     		"Load up to"
     	],
 
 	"filter-messages": [
 		"Filter messages",
-		"Deletes messages/rules in all channels",
-		"See", null, "for help"
+		"Remvoes messages/rules across all channels",
+		"Please see", "Twitch Tools Wiki — Filter Messages", "for assistance"
 	],
     	"filter-messages:options": [
     		"Filter Rules",
     		"Channel Rules",
     		"Badges",
-    		"User",
-    		"Emoticons",
+    		"Users",
+    		"Emotes",
     		"Text",
     		null,
-    		"Start", "adding", "some rules"
+    		"Get started by", "adding", "some rules"
     	],
 
 	"highlight-mentions": [
 		"Highlight mentions",
-		"When someone mentions you (", "@username", "), highlight the message to make it stand out"
+		"When someone mentions you (", "@username", "), make the message stand out by highlighting it"
 	],
     	"highlight-mentions:options": [
     		"General Highlighting",
-    		"When someone sends a general mention (", null, "@chat", "@all", "), highlight the message by displaying a pop-up window"
+    		"When someone sends a general mention (", "@all", "@chat", "@everyone", "), make the message stand out by highlighting it"
     	],
 
 	"native-reply": [
-		"Native Response",
-		"Try to show native Twitch™ responses on all channels"
+		"Native Reply",
+		"Attempt to display native Twitch™ replies on all channels"
 	],
 
 	"prevent-spam": [
 		"Prevent spam",
-		"Hide repetitive messages in the chat"
+		"Hide repetitive messages in chat"
 	],
     	"prevent-spam:options": [
     		"Message History",
-    		"Prevent spam", "will check", "lines backwards to detect", "plagiarism",
+    		"Prevent spam", "will look back", "lines backwards to detect", "plagiarism",
 
     		"Minimum Word Length",
-    		"Prevent Spam", "will ignore messages if there are no words longer than", "characters",
+    		"Prevent Spam", "will ignore messages if there aren't any words longer than", "characters",
 
     		"Maximum Occurrences",
     		"Prevent Spam", "will mark messages as", "repetitive", "after a word appears", "or more times"
@@ -210,12 +231,12 @@
 
 	"recover-chat": [
 		"Recover Chat",
-		"If", null, "does not load (or is suddenly destroyed), try to recover it"
+		"If the", "Stream Chat", "is not loaded (or suddenly destroyed), attempt to recover it"
 	],
 
 	"highlight-mentions-popup": [
-		"Show pop-up windows",
-		"When someone mentions you (", "@username", "), make the message stand out by displaying a popup window"
+		"Show pop-ups",
+		"When someone mentions you (", "@username", "), make the message stand out by showing a pop-up"
 	],
 
 	"simplify-chat": [
@@ -224,40 +245,40 @@
 	],
     	"simplify-chat:options": [
     		"Monotone Usernames",
-    		"Keep user name colors uniform",
+    		"Keep username colors uniform",
 
     		"Chat Font",
-    		"Show chat in the following font",
+    		"Display chat in the following font",
 
-    		"Reverse Emoticons",
-    		"Convert emoticons back to text and display the emoticon (as", "tooltip", ") only when", "hover the cursor over", "the text"
+    		"Reverse Emotes",
+    		"Convert emotes back into their text, and display the emote (as a", "tooltip", ") only when", "hovering", "the text"
     	],
 
 	"whisper-audio": [
 		"Audio Whisper",
-		"When someone sends you a whisper, it plays a notification sound"
+		"When someone sends you a whisper, play a notification sound"
 	],
     	"whisper-audio:options": [
-    		"Notification sound",
-    		"This sound", "is licensed under the Creative Commons Attribution", "Learn more"
+    		"Notification Sound",
+    		"This sound", "is licensed under the Creative Commons Attribution license", "Learn more"
     	],
 
 
 
 
 
-	"header:currencies": ["Coins"],
+	"header:currencies": ["Currencies"],
 	"convert-bits": [
 		"Convert Bits",
-		"When presented with", "shows the actual amount in", null, "representing"
+		"When presented with", "show the true", "USD", "amount they represent"
 	],
 
 	"channel-points-receipt": [
 		"Channel Points Receipt",
-		"How should the receipt show the collection of", ""
+		"How should the receipt display", "collection"
 	],
     	"channel-points-receipt:options": [
-    		"Displays the exact amount collected",
+    		"Display the exact amount collected",
     		"Round to the nearest 100",
     		"Round to the nearest 50",
     		"Round to the nearest 25"
@@ -265,7 +286,7 @@
 
 	"rewards-calculator": [
 		"Rewards Calculator",
-		"Calculates how long a transmission must be watched to redeem rewards from", ""
+		"Estimates how long a stream needs to be watched to redeem", "rewards"
 	],
 
 
@@ -275,40 +296,40 @@
 	"header:customization": ["Customization"],
 	"placement:away-mode": [
 		"Away Mode",
-		"Where the button should be displayed", "Away Mode", ""
+		"Where should the", "Away Mode", "button be displayed"
 	],
     	"placement:away-mode:options": [
-    		"Not shown",
-    		"Above the video",
-    		"Below the video"
+    		"Do not display",
+    		"Over the video",
+    		"Under the video"
     	],
 
 	"placement:points-receipt": [
-		"Receipt of Points",
-		"Where should the text of the", "Points Receipt", ""
+		"Points Receipt",
+		"Where should the", "Points Receipt", "text be displayed"
 	],
     	"placement:points-receipt:options": [
-    		"Not shown",
-    		"Below the video"
+    		"Do not display",
+    		"Under the video"
     	],
 
 	"placement:point-watcher": [
 		"Point Watcher",
-		"Where should the text of", "Point Watcher", ""
+		"Where should the", "Point Watcher", "text be displayed"
 	],
     	"placement:point-watcher:options": [
-    		"Not shown",
-    		"In the pop-up description"
+    		"Do not display",
+    		"On the tooltip"
     	],
 
 	"placement:watch-time": [
-		"Display Time",
-		"Where should the", "Display Time", ""
+		"Watch Time",
+		"Where should the", "Watch Time", "be displayed"
 	],
     	"placement:watch-time:options": [
-    		"Not shown",
-    		"Above the video",
-    		"Below the video"
+    		"Do not display",
+    		"Over the video",
+    		"Under the video"
     	],
 
 
@@ -317,147 +338,148 @@
 
 	"header:video-recovery": ["Video Recovery"],
 	"keep-popout": [
-		"Keep Popup Window",
-		"When switching to another page, prevent the extension from destroying the small video (pop-up window) of the transmission"
+		"Keep Pop-out",
+		"When moving to another page, prevent the extension from destroying the small video (pop-out) of the stream"
 	],
 
 	"recover-ads": [
 		"Recovering Ads",
-		"When an advertisement does not play (\"freezes\"), try to retrieve it"
+		"When an advertisement fails to play (\"freezes\"), attempt to recover it"
 	],
 
 	"recover-frames": [
 		"Recover Image",
-		"When the video does not play (loses frames for more than", "15 seconds", "), reload the web page"
+		"When the video fails to play (drops frames for longer than", "15 seconds", "), reload the webpage"
 	],
 
 	"recover-pages": [
-		"Retrieve Pages",
-		"If the web page is not displayed, try to retrieve it"
+		"Recover Pages",
+		"If the webpage fails to display, attempt to recover it"
 	],
 
 	"recover-stream": [
-		"Recovering Video Stream",
-		"When the stream does not play (\"freezes\"), try to recover it"
+		"Recover Stream",
+		"When the stream fails to play (\"freezes\"), attempt to recover it"
 	],
 
 	"recover-video": [
-		"Retrieve Video",
-		"When the video does not download (black screen), reload the web page"
+		"Recover Video",
+		"When the video fails to download (black screen), reload the webpage"
 	],
 
 
 
 
 
-	"header:developer-features": ["Features for Developers"],
+	"header:developer-features": ["Developer Features"],
 	"@console": [
 		"Display console messages",
-		"Enable the extension to display messages on the console"
+		"Allow the extension to display messages in the console"
 	],
     	"@console.log": [
     		"Allow logs",
-    		"Displays messages from", null, ""
+    		"Display", null, "messages"
     	],
     	"@console.warn": [
     		"Allow warnings",
-    		"Displays messages from", null, ""
+    		"Display", null, "messages"
     	],
     	"@console.error": [
     		"Allow errors",
-    		"Displays messages from", null, ""
+    		"Display", null, "messages"
     	],
     	"@console.remark": [
-    		"Allow comments",
-    		"Displays messages from", null, ""
+    		"Allow remarks",
+    		"Display", null, "messages"
     	],
 
 	"@stats": [
-		"Show Statistics",
+		"Display Statistics",
 		"Allow the extension to display statistics"
 	],
 
 	"@experimental": [
-		"Experimental Functions",
-		"Let the extension display and use experimental functions",
+		"Experimental Features",
+		"Allow the extension display, and use experimental features",
 		"May cause data loss"
 	],
 
 	"@fine-details": [
 		"Use Fine Details",
 		"Allow the extension to use Twitch™ API data to enhance your experience",
-		"This will not collect any data. It will use the data that Twitch™ has collected"
+		"This will not collect any data. It will use the data Twitch™ has collected"
 	],
 
 	"@default": [
-		"Show Defaults",
+		"Show Default Values",
 		"Show",
-		"Show defaults"
+		"Show the default values"
 	],
 
 
 
 
 
-	"header:experimental-features": ["Experimental Functions"],
+	"header:experimental-features": ["Experimental Features"],
 	"@@auto-focus": [
-		"Automatic Focus",
-		"Automatically control the", "Up Next", "&", "Away Mode", "according to the transmission activity", "This", "will not", "will stop the one-minute timer"
+		"Auto-Focus",
+		"Automatically adjust", "Up Next", "and", "Away Mode", "based upon stream activity",
+		"This will", "not", "stop the one minute timer"
 	],
     	"@@auto-focus:options:detection-level": [
     		"Detection Level",
-    		"How much activity should activate the", "autofocus", "",
+    		"How much activity should activate", "Auto-Focus",
 
-    		"High Activity - FPS / IRL / Pace",
-    		"Modest Activity - Action / Adventure / Platforming",
-    		"Seasonal Activity - Horror / Puzzle / Trivia",
-    		"Low Activity - Talk Only / Simulation / Strategy / Strategy"
+    		"High activity — FPS / IRL / Rhythm",
+    		"Modest activity — Action / Adventure / Platformer",
+    		"Seasonal activity — Horror / Puzzle / Trivia",
+    		"Low activity — Just Chatting / Simulation / Strategy"
     	],
 
     	"@@auto-focus:options:polling-interval": [
-    		"Probing Interval",
-    		"How often should you", "probe", "the video",
+    		"Polling Interval",
+    		"How often should the stream be", "polled",
 
-    		"Every second - CPU intensive, excellent detection",
-    		"Every 3 seconds - CPU compatible, good detection",
-    		"Every 5 seconds - CPU compatible, fair detection",
-    		"Every 10 seconds - CPU compatible, poor detection"
+    		"Every second — CPU intensive, great detection",
+    		"Every 3 seconds — CPU friendly, good detection",
+    		"Every 5 seconds — CPU friendly, fair detection",
+    		"Every 10 seconds — CPU friendly, poor detection"
     	],
 
     	"@@auto-focus:options:image-type": [
     		"Image Type",
-    		"What type of image should be used for the", "polling", "",
+    		"What image type should be used for", "polling",
 
-    		"JPG - CPU friendly, good detection",
-    		"PNG - CPU intensive, excellent detection",
-    		"WebP - CPU friendly, excellent detection"
+    		"JPG — CPU friendly, good detection",
+    		"PNG — CPU intensive, great detection",
+    		"WebP — CPU friendly, great detection"
     	],
 
 	"@@convert-emotes": [
-		"Convert Emoticons",
-		"When presented with Twitch™ emoticons, select them to use (no subscription required)",
-		"This only works for the current stream you are watching",
-		"This", "does not", "saves/unlocks the emoticon"
+		"Convert emotes",
+		"When presented with Twitch™ emotes, collect them for usage (without requiring a subscription)",
+		"This only works for the current stream you are viewing",
+		"This does", "not", "save/unlock the emote"
 	],
 
 	"@@soft-unban": [
-		"Slight Revocation",
-		"Re-enable chat for channels where it has been blocked",
-		"This only allows you to see the chat"
+		"Soft Unban",
+		"Re-enable chat for channels you've been banned from",
+		"This only allows viewing the chat"
 	],
     	"@@soft-unban:options:fade-messages": [
     		"Fade Messages",
-    		"Messages will be visible during", null
+    		"Messages will be visible for", null
     	],
 
     	"@@soft-unban:options:keep-bots": [
-    		"Maintain Robots",
-    		"Show Robot Messages"
+    		"Keep Bots",
+    		"Display bot messages"
     	],
 
     	"@@soft-unban:options:prevent-clips": [
-    		"Avoid Sharing",
-    		"Hide Twitch™ video hyperlinks"
+    		"Prevent Clips",
+    		"Hide Twitch™ clips"
     	],
 
     "$": "[[ END OF FILE ]]"
