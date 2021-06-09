@@ -28,6 +28,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.2.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.2)
+- Fixed Away Mode (video quality)
+
 > [3.2.1.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1.2)
 - Finalized the English (`en`) language package
 - Adjusted other language packs

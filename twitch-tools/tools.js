@@ -2108,7 +2108,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     let current = qualities.find(({ input }) => input.checked),
         desired;
 
-    if(/auto|high|low|source/i.test(quality))
+    if(/(auto|high|low|source)/i.test(quality))
         desired = qualities[RegExp.$1];
     else
         desired = qualities.find(({ label }) => !!~textOf(label).indexOf(quality.toLowerCase())) ?? null;
@@ -2137,7 +2137,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
             if(desired !== computed) {
                 clearInterval(checker);
 
-                resolve({ oldValue: current ?? computed, newValue: desired });
+                resolve({ oldValue: current, newValue: desired ?? computed });
             }
         }, 100);
     });
