@@ -523,6 +523,7 @@ function parseURL(url) {
 };
 
 let SETTINGS,
+    TRANSLATED = false,
     INITIAL_LOAD = true;
 
 function RedoFilterRulesElement(rules) {
@@ -705,7 +706,7 @@ async function LoadSettings() {
                 } break;
 
                 case 'user_language_preference': {
-                    if(INITIAL_LOAD) continue loading;
+                    if(TRANSLATED) continue loading;
 
                     let preferred = settings[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
@@ -864,11 +865,17 @@ $('[set]', true).map(async(element) => {
 
         // Only refresh if the data is older than 1h
         // The data has expired ->
-        if(!FETCHED_DATA.wasFetched && (versionRetrivalDate + 3_600_000) < +new Date) {
+        __FetchingUpdates__:
+        if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
             let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
             await fetch(githubURL)
-                .then(response => response.json())
+                .then(response => {
+                    if(FETCHED_DATA.wasFetched)
+                        throw 'Data was already fetched';
+
+                    return response.json();
+                })
                 .then(metadata => properties.version.github = metadata.tag_name)
                 .then(version => Storage.set({ githubVersion: version }))
                 .catch(async error => {
@@ -889,7 +896,12 @@ $('[set]', true).map(async(element) => {
                 let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
 
                 await fetch(chromeURL, { mode: 'cors' })
-                    .then(response => response.text())
+                    .then(response => {
+                        if(FETCHED_DATA.wasFetched)
+                            throw 'Data was already fetched';
+
+                        return response.text();
+                    })
                     .then(html => {
                         let DOM = new DOMParser(),
                             doc = DOM.parseFromString(html, 'text/html');
@@ -897,12 +909,61 @@ $('[set]', true).map(async(element) => {
                         if(!defined(doc.body))
                             throw 'Data could not be loaded';
 
-                        let metadata = JSON.parse(`{${
-                            $('hr ~ div div > span', true, doc)
-                                .filter((span, index) => index % 2 == 0)
-                                .map(span => `"${span.innerText.replace(':','').toLowerCase()}":"${span.nextElementSibling.innerText}"`)
-                                .join(',')
-                        }}`);
+                        let [, merchant,, extensionName, extensionID] = parseURL(decodeURIComponent(parseURL(chromeURL).searchParameters.url)).pathname.split('/');
+
+                        let metadata = { merchant, extensionName, extensionID };
+
+                        $('noscript hr ~ div div > span', true, doc)
+                            .filter((span, index) => index % 2 == 0)
+                            .map(span => {
+                                let key = span.innerText.replace(':','').toLowerCase(),
+                                    value = span.nextElementSibling.innerText;
+
+                                    switch(key) {
+                                        case 'languages': {
+                                            value = parseFloat(value.replace(/\D+/g, ''));
+                                        } break;
+
+                                        case 'updated': {
+                                            value = new Date(value).toISOString();
+                                        } break;
+                                    }
+
+                                return metadata[key] = value;
+                            });
+
+                        $('[itemprop]', true, doc)
+                            .map(element => {
+                                let key = element.getAttribute('itemprop'),
+                                    value = element.content ?? element.href ?? element.value ?? element.innerText;
+
+                                    switch(key) {
+                                        case 'applicationCategory':
+                                        case 'availability':{
+                                            value = parseURL(value).pathname.slice(1).replace(/(?!^)([A-Z])/g, ($0, $1, $$, $_) => '_' + $1).toUpperCase();
+                                        } break;
+
+                                        case 'interactionCount':{
+                                            let obj = {};
+
+                                            for(let pair of value.split(' ')) {
+                                                let [k, v] = pair.split(':');
+
+                                                k = k.replace(/^([A-Z])(_*[a-z])/, ($0, $1, $2, $$, $_) => $1.toLowerCase() + $2);
+
+                                                obj[k] = /^[\d\.\,]+\+?$/.test(v)? parseFloat(v.replace(/[\,\.]/g, '')): v;
+                                            }
+
+                                            value = obj;
+                                        } break;
+
+                                        case 'price':{
+                                            value = parseFloat(value);
+                                        } break;
+                                    }
+
+                                return metadata[key] = value;
+                            });
 
                         console.log({ metadata });
 
@@ -924,10 +985,12 @@ $('[set]', true).map(async(element) => {
                     });
             }
 
-            FETCHED_DATA.wasFetched = true;
-            versionRetrivalDate = +new Date;
+            if(FETCHED_DATA.wasFetched === false) {
+                FETCHED_DATA.wasFetched = true;
+                versionRetrivalDate = +new Date;
 
-            Storage.set({ versionRetrivalDate });
+                Storage.set({ versionRetrivalDate });
+            }
         }
         // The data hasn't expired yet
         else {
@@ -1076,14 +1139,59 @@ async function TranslatePageTo(language = 'en') {
         })
 }
 
+// Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) -> Promise
+let awaitOn = async(callback, ms = 100) =>
+    new Promise((resolve, reject) => {
+        let interval = setInterval(async() => {
+            let value = callback();
+
+            if(defined(value)) {
+                clearInterval(interval);
+                resolve(value);
+            }
+        }, ms);
+    });
+
 document.body.onload = async() => {
     let url = parseURL(location.href),
         search = url.searchParameters;
 
-    /* Things needed before loading the page... */
-    await(async function() {
-        await Storage.get(['user_language_preference'], ({ user_language_preference }) => TranslatePageTo(user_language_preference));
+    /* The extension was just installed (most likely the first run) */
+    await(async() => {
+        if(!defined(search.installed))
+            return;
+
+        let onmousedown = event => event.currentTarget.classList.add('chosen'),
+            onmouseup = event => event.currentTarget.closest('.language-select')?.remove();
+
+        return awaitOn(() => {
+            let languageOptions = $('.language-select');
+
+            if(!defined(languageOptions))
+                document.body.append(
+                    furnish('div.language-select', {},
+                        furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English`),
+                        furnish('button.language-option', { value: 'de', onmousedown, onmouseup }, `Deutsch`),
+                        furnish('button.language-option', { value: 'es', onmousedown, onmouseup }, `espa\u00f1ol (Espa\u00f1a)`),
+                        furnish('button.language-option', { value: 'pt', onmousedown, onmouseup }, `portugu\u00eas (Brasil)`),
+                        furnish('button.language-option', { value: 'ru', onmousedown, onmouseup }, `\u0440\u0443\u0441\u0441\u043a\u0438\u0439`),
+                    )
+                );
+
+            return $('.language-option.chosen')?.value;
+        });
     })()
+
+    /* Things needed before loading the page... */
+        .then(async language => {
+            if(defined(language))
+                await Storage.set({ user_language_preference: language });
+
+            await Storage.get(['user_language_preference'], ({ user_language_preference }) => TranslatePageTo(user_language_preference));
+
+            TRANSLATED = true;
+        })
 
     /* Continue loading/parsing the page */
         .then(async() => {

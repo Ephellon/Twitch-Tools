@@ -28,6 +28,11 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> 3.3(https://github.com/Ephellon/Twitch-Tools/releases/tag/3.3)
+- Added initial language picker to Settings page
+- Finalized all language packs (also created "Help Translate" issue template)
+- Added automatic (tag) detection option to `auto_focus`
+
 > [3.2.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.2)
 - Fixed Away Mode (video quality)
 

@@ -1,4 +1,4 @@
-{ "[[SOURCE]]": "ROOT->ES->EN->RU", "LANG_PACK_READY": false,
+{ "[[SOURCE]]": "ROOT->ES->EN->RU", "LANG_PACK_READY": true,
 
 	"header:automation": ["Автоматизация"],
 	"auto-join": [
@@ -409,6 +409,7 @@
     		"Уровень обнаружения",
     		"При какой активности должна активироваться", "автофокус",
 
+			"Автоматический",
     		"Высокая активность — FPS / IRL / Темп",
     		"Умеренная активность — Action / Adventure / Platforming",
     		"Сезонная активность — Horror / Puzzle / Trivia",

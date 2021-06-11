@@ -59,7 +59,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
             // Has the extension just been installed?
             // If so, open the settings page
             case INSTALL: {
-                Container.tabs.create({ url: 'settings.html' });
+                Container.tabs.create({ url: `settings.html?installed=${ reason }` });
             } break;
 
             // Has the extension been updated?

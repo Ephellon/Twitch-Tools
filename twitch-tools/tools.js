@@ -2158,7 +2158,11 @@ function SetVolume(volume = 0.5) {
     let video = $('[data-a-target="video-player"i] video'),
         slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
 
-    video.volume = slider.value = parseFloat(volume);
+    if(defined(video))
+        video.volume = parseFloat(volume);
+
+    if(defined(slider))
+        slider.value = parseFloat(volume);
 }
 
 // Get the view mode
@@ -3256,8 +3260,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Load the streamer's data from Twitch as a backup...
     let __Profile__ = NORMALIZED_PATHNAME.replace(/\/([^\/]+?)(?:\/.*)?$/, '$1'),
-        __Profile_Image__ = url => parseURL(url).pathname?.replace(__Profile_Image_Size__, ''),
-        __Profile_Image_Size__ = /-profile.+?$/i;
+        __Profile_Image__ = url => parseURL(url).pathname?.replace(/-profile.+?$/i, '');
 
     await new Search(__Profile__)
         .then(({ data }) => data.filter(streamer => __Profile_Image__(STREAMER.icon) === __Profile_Image__(streamer.thumbnail_url) ))
@@ -3369,7 +3372,7 @@ let Initialize = async(START_OVER = false) => {
                                 let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
                                     today = new Date;
 
-                                let toDoW = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
+                                let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
 
                                 let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
 
@@ -3415,7 +3418,7 @@ let Initialize = async(START_OVER = false) => {
                                             avgH = Math.round(avgH / length);
                                             avgM = (avgM / length).floorToNearest(15);
 
-                                            data.dailyStartTimes[day] = data.dailyStartTimes[toDoW(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                            data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
                                         });
                                 }
 
@@ -3434,7 +3437,7 @@ let Initialize = async(START_OVER = false) => {
                                             avgH = Math.round(avgH / length);
                                             avgM = (avgM / length).floorToNearest(15);
 
-                                            data.dailyStopTimes[day] = data.dailyStopTimes[toDoW(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                            data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
                                         });
                                 }
 
@@ -3446,7 +3449,7 @@ let Initialize = async(START_OVER = false) => {
                                 data.usualStartTime = data.dailyStartTimes[today.getDay()];
                                 data.usualStopTime = data.dailyStopTimes[today.getDay()];
 
-                                data.daysStreaming = toDoW(...daysWithStreams);
+                                data.daysStreaming = getWeekDays(...daysWithStreams);
                                 data.activeDaysPerWeek = data.daysStreaming.length;
 
                                 REMARK(`Details about "${ STREAMER.name }"`, data);
@@ -3602,6 +3605,98 @@ let Initialize = async(START_OVER = false) => {
         STALLED_FRAMES,
         POSITIVE_TREND;
 
+    // Estimated level of screen activity
+        // See https://www.twitch.tv/directory/all/tags
+    function scoreTagActivity(...tags) {
+        let score = 0;
+
+        tags = tags.map(tag => tag.split(/\W/)[0].toLowerCase());
+
+        scoring:
+        for(let tag of tags)
+            switch(tag) {
+                case 'action':
+                case 'adventure':
+                case 'fps':
+                case 'pinball':
+                case 'platformer':
+                case 'shoot':
+                case 'shooter':
+                case 'sports':
+                case 'wrestling': {
+                    score += 20;
+                } continue scoring;
+
+                case '4x':
+                case 'bmx':
+                case 'cosplay':
+                case 'drag':
+                case 'driving':
+                case 'e3':
+                case 'esports':
+                case 'fashion':
+                case 'fighting':
+                case 'game':
+                case 'irl':
+                case 'mmo':
+                case 'moba':
+                case 'party':
+                case 'point':
+                case 'rhythm':
+                case 'roguelike':
+                case 'vr':
+                case 'vtuber': {
+                    score += 15;
+                } continue scoring;
+
+                case '100':
+                case '12':
+                case 'achievement':
+                case 'anime':
+                case 'arcade':
+                case 'athletics':
+                case 'autobattler':
+                case 'automotive':
+                case 'baking':
+                case 'brickbuilding':
+                case 'creative':
+                case 'farming':
+                case 'flight':
+                case 'horror':
+                case 'mobile':
+                case 'mystery':
+                case 'rpg':
+                case 'rts':
+                case 'survival': {
+                    score += 10;
+                } continue scoring;
+
+                case 'animals':
+                case 'animation':
+                case 'art':
+                case 'card':
+                case 'dj':
+                case 'drones':
+                case 'fantasy':
+                case 'gambling':
+                case 'indie':
+                case 'metroidvania':
+                case 'open':
+                case 'puzzle':
+                case 'simulation':
+                case 'stealth':
+                case 'unboxing': {
+                    score += 5;
+                } continue scoring;
+
+                default: {
+                    ++score;
+                } continue scoring;
+            };
+
+        return score;
+    }
+
     Handlers.auto_focus = () => {
         let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold),
             pollInterval = parseInt(Settings.auto_focus_poll_interval),
@@ -3632,7 +3727,7 @@ let Initialize = async(START_OVER = false) => {
                     .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 0, green: 255, blue: 255 } })
                     .onComplete(async data => {
                         let { analysisTime, misMatchPercentage } = data,
-                            threshold = detectionThreshold,
+                            threshold = detectionThreshold || scoreTagActivity(...STREAMER.tags),
                             totalTime = 0,
                             bias = [];
 
@@ -3767,7 +3862,7 @@ let Initialize = async(START_OVER = false) => {
                         else if(STALLED_FRAMES > 0)
                             --STALLED_FRAMES;
 
-                        if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL / 2)) {
+                        if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL * .75)) {
                             WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's -> ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
 
                             POLL_INTERVAL *= 1.1;
@@ -5712,6 +5807,7 @@ let Initialize = async(START_OVER = false) => {
             case 'under': {
                 container = live_time.closest(`*:not(${ classes(live_time) })`);
                 parent = container.closest(`*:not(${ classes(container) })`);
+
                 extra = ({ live_time }) => {
                     live_time.setAttribute('style', 'color: var(--color-text-live)');
 

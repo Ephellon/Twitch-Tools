@@ -1,4 +1,4 @@
-{ "[[SOURCE]]": "ROOT->ES->PT", "LANG_PACK_READY": false,
+{ "[[SOURCE]]": "ROOT->ES->PT", "LANG_PACK_READY": true,
 
 	"header:automation": ["Automação"],
 	"auto-join": [
@@ -414,6 +414,7 @@
     		"Nível de Detecção",
     		"Quanta actividade deve o", "autofocus",
 
+			"Automático",
     		"Alta Actividade — FPS / IRL / Pace",
     		"Actividade Modesta — Acção / Aventura / Plataforma",
     		"Actividade Sazonal — Horror / Enigma / Trivialidades",

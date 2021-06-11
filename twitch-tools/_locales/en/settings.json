@@ -430,6 +430,7 @@
     		"Detection Level",
     		"How much activity should activate", "Auto-Focus",
 
+			"Automatic",
     		"High activity — FPS / IRL / Rhythm",
     		"Modest activity — Action / Adventure / Platformer",
     		"Seasonal activity — Horror / Puzzle / Trivia",
