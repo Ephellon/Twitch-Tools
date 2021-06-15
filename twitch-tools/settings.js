@@ -706,13 +706,13 @@ async function LoadSettings() {
                 } break;
 
                 case 'user_language_preference': {
-                    if(TRANSLATED) continue loading;
-
                     let preferred = settings[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
-                    TranslatePageTo(preferred);
-
                     assignValue(element, preferred);
+
+                    if(TRANSLATED) continue loading;
+
+                    TranslatePageTo(preferred);
                 } break;
 
                 default: {
@@ -729,7 +729,23 @@ async function LoadSettings() {
 }
 
 function compareVersions(oldVersion = '', newVersion = '', returnType) {
-    if(!oldVersion.length || !newVersion.length)
+    if(/[<=>]/.test(oldVersion)) {
+        let [oV, rT, nV] = oldVersion.split(/([<=>])/).map(s => s.trim()).filter(s => s?.length);
+
+        oldVersion = oV;
+        returnType = rT;
+        newVersion = nV;
+    }
+
+    if(/[<=>]/.test(newVersion)) {
+        let nV = returnType,
+            rT = newVersion;
+
+        returnType = rT;
+        newVersion = nV;
+    }
+
+    if(!oldVersion?.length || !newVersion?.length)
         throw 'Unable to compare empty versions.';
 
     oldVersion = oldVersion.split('.');
@@ -754,7 +770,7 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
     switch(returnType?.toLowerCase()) {
         case 'arrow':
-            return ['\u2193', '\u2022', '\u2191'][diff + 1];
+            return ['\u2191', '\u2022', '\u2193'][diff + 1];
 
         case 'symbol':
             return ['<', '=', '>'][diff + 1];
@@ -764,6 +780,15 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
         case 'update':
             return ['there is an update available', 'the installed version is the latest', 'the installed version is pre-built'][diff + 1];
+
+        case '<':
+            return diff < 0;
+
+        case '=':
+            return diff == 0;
+
+        case '>':
+            return diff > 0;
     }
 
     return diff;
@@ -885,7 +910,7 @@ $('[set]', true).map(async(element) => {
                     });
                 })
                 .finally(() => {
-                    let githubUpdateAvailable = compareVersions(properties.version.installed, properties.version.github) < 0;
+                    let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`);
 
                     FETCHED_DATA = { ...FETCHED_DATA, ...properties };
                     Storage.set({ githubUpdateAvailable });
@@ -978,7 +1003,7 @@ $('[set]', true).map(async(element) => {
                         });
                     })
                     .finally(() => {
-                        let chromeUpdateAvailable = compareVersions(properties.version.installed, properties.version.chrome) < 0;
+                        let chromeUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.chrome }`);
 
                         FETCHED_DATA = { ...FETCHED_DATA, ...properties };
                         Storage.set({ chromeUpdateAvailable });
@@ -1005,7 +1030,7 @@ $('[set]', true).map(async(element) => {
             build |= 0;
 
             if(build > 0) {
-                properties.version.installed += (compareVersions(properties.version.installed, properties.version.github) > 0? ` build ${ build }`: '');
+                properties.version.installed += (compareVersions(`${ properties.version.installed } > ${ properties.version.github }`)? ` build ${ build }`: '');
                 properties.context.id = UUID.from(properties.version.installed, true).value;
             }
         }
@@ -1071,7 +1096,7 @@ $('[new]', true).map(element => {
     let { version } = Manifest,
         conception = element.getAttribute('new');
 
-    if(compareVersions(version, conception) > 0)
+    if(compareVersions(`${ version } > ${ conception }`))
         element.removeAttribute('new');
 });
 

@@ -73,6 +73,17 @@ switch(BrowserNamespace) {
 
 let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
+/*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
+ *       _____      _                  __                      _       _ _ __
+ *      / ____|    | |                / /                     (_)     (_) |\ \
+ *     | (___   ___| |_ _   _ _ __   | | _ __  _ __ ___        _ _ __  _| |_| |
+ *      \___ \ / _ \ __| | | | '_ \  | || '_ \| '__/ _ \______| | '_ \| | __| |
+ *      ____) |  __/ |_| |_| | |_) | | || |_) | | |  __/______| | | | | | |_| |
+ *     |_____/ \___|\__|\__,_| .__/  | || .__/|_|  \___|      |_|_| |_|_|\__| |
+ *                           | |      \_\ |                                /_/
+ *                           |_|        |_|
+ */
+
 // Logs messages (green)
     // LOG([...messages]) -> undefined
 let LOG = (...messages) => {
@@ -2257,22 +2268,63 @@ function comify(number) {
         .replace(/^,+|,+$/g, '')
 };
 
-let DefaultFill = ({
-    dark: '#ffffff',
-    light: '#0e0e10',
-})[THEME];
-
 // Import the glyphs
 let { Glyphs } = top;
 
 // Returns ordinal numbers
     // nth(n:number) -> string
-let nth = n => (n + '')
-    .replace(/(1[123])$/, '$1th')
-    .replace(/1$/, '1st')
-    .replace(/2$/, '2nd')
-    .replace(/3$/, '3rd')
-    .replace(/(\d)$/, '$1th');
+let nth = n => {
+    n += '';
+
+    switch(top.LANGUAGE) {
+        case 'de': {
+            // 1. 2. 3. 4. ... 11. 12. 13. ... 21. 22. 23.
+
+            n = n
+                .replace(/(\d)$/, '$1.')
+            + ' Reihe';
+        } break;
+
+        case 'es': {
+            // 1° 2° 3° 4° ... 11° 12° 13° ... 21° 22° 23°
+
+            n = n
+                .replace(/(\d)$/, '$1°')
+            + ' en línea';
+        } break;
+
+        case 'pt': {
+            // 1° 2° 3° 4° ... 11° 12° 13° ... 21° 22° 23°
+
+            n = n
+                .replace(/(\d)$/, '$1°')
+            + ' na linha';
+        } break;
+
+        case 'ru': {
+            // 1-й 2-й 3-й 4-й ... 11-й 12-й 13-й ... 21-й 22-й 23-й
+
+            n = n
+                .replace(/(\d)$/, '$1-й')
+            + ' в строке';
+        } break;
+
+        case 'en':
+        default: {
+            // 1st 2nd 3rd 4th ... 11th 12th 13th ... 21st 22nd 23rd
+
+            n = n
+                .replace(/(1[123])$/, '$1th')
+                .replace(/1$/, '1st')
+                .replace(/2$/, '2nd')
+                .replace(/3$/, '3rd')
+                .replace(/(\d)$/, '$1th')
+            + ' in line';
+        } break;
+    }
+
+    return n;
+}
 
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object#Channel, index:number, channels:array) -> boolean
@@ -2282,6 +2334,17 @@ let uniqueChannels = (channel, index, channels) =>
 // Returns whether or not a channel is live (used with `Array..filter`)
     // isLive(channel:object#Channel) -> boolean
 let isLive = channel => channel?.live;
+
+/*** Setup (pre-init) #MARK:globals #MARK:variables
+ *       _____      _                  __                      _       _ _ __
+ *      / ____|    | |                / /                     (_)     (_) |\ \
+ *     | (___   ___| |_ _   _ _ __   | | _ __  _ __ ___        _ _ __  _| |_| |
+ *      \___ \ / _ \ __| | | | '_ \  | || '_ \| '__/ _ \______| | '_ \| | __| |
+ *      ____) |  __/ |_| |_| | |_) | | || |_) | | |  __/______| | | | | | |_| |
+ *     |_____/ \___|\__|\__,_| .__/  | || .__/|_|  \___|      |_|_| |_|_|\__| |
+ *                           | |      \_\ |                                /_/
+ *                           |_|        |_|
+ */
 
 // Update common variables
 let PATHNAME = top.location.pathname,
@@ -2325,9 +2388,11 @@ try {
 
     // Automatic garbage collection...
     REMARK(`Removing expired cache data...`);
+
+    purging:
     for(let key in StorageSpace) {
         if(!/^ext\.twitch-tools\/data\/(\w+)?/i.test(key))
-            continue;
+            continue purging;
 
         let data = JSON.parse(StorageSpace[key]),
             { dataRetrievedAt } = data;
@@ -2336,14 +2401,14 @@ try {
         if(+dataRetrievedAt < 0) {
             StorageSpace.removeItem(key);
 
-            continue;
+            continue purging;
         }
 
         let lastFetch = Math.abs(dataRetrievedAt - +new Date);
 
         // If the last fetch was more than 30 days ago, remove the data...
         if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
-            WARN(`\tThe last fetch for "${ RegExp.$1 }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
+            WARN(`\tThe last fetch for "${ key }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
 
             StorageSpace.removeItem(key);
         }
@@ -2677,7 +2742,7 @@ let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace(
     // Features that need to be refreshed when changed
     REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'native_twitch_reply', '*placement'].map(AsteriskFn);
 
-/*** Initialization
+/*** Initialization #MARK:initializer
 *      _____       _ _   _       _ _          _   _
 *     |_   _|     (_) | (_)     | (_)        | | (_)
 *       | |  _ __  _| |_ _  __ _| |_ ______ _| |_ _  ___  _ __
@@ -3000,6 +3065,22 @@ let Initialize = async(START_OVER = false) => {
             });
 
             return tags ?? LIVE_CACHE.get('tags');
+        },
+
+        get mark() {
+            let tags = [];
+
+            $('.tw-tag', true).map(element => {
+                let name = element.textContent.toLowerCase(),
+                    { href } = element.closest('a[href]');
+
+                tags.push(name);
+                tags[name] = href;
+
+                return name;
+            });
+
+            return scoreTagActivity(...tags);
         },
 
         get team() {
@@ -3334,18 +3415,32 @@ let Initialize = async(START_OVER = false) => {
 
                     /** Get Twitch analytics data
                      * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
-                     * averageGamesPerStream:number - the average number of games played (per stream)
+                     * actualStartTime:Date         - the time (date) when the stream started
                      * dailyBroadcastTime:number    - the average number of hours streamed (per day)
-                     * followersPerHour:number      - the average number of followers gained (per hour)
-                     * followersPerStream:number    - the average number of followers gained (per stream)
-                     * followersToDate:number       - the total number of followers
-                     * hoursWatchedDaily:number     - the average number of hours watched (per day)
-                     * totalGamesStreamed:number    - the number of games streamed
-                     * viewsPerHour:number          - the average number of views (per hour)
-                     * viewsPerStream:number        - the average number of views (per stream)
-                     * viewsToDate:number           - the total number of views
+                     * dailyStartTimes:array~string - an array of usual start times for the stream (strings are formatted as 24h time strings)
+                     * dailyStopTimes:array~string  - an array of usual stop times for the stream (strings are formatted as 24h time strings)
+                     * dataRetrievedAt:Date         - when was the data last retrieved (successfully)
+                     * dataRetrievedOK:boolean      - was the data retrieval successful
+                     * daysStreaming:array~string   - abbreviated names of days the stream is normally live
+                     * projectedLastCall:Date       - the assumed last time to activate First in Line according to the user's settings
+                     * projectedWindDownPeriod:Date - the assumed "dying down" period before the stream ends (90% of the stream will have passed)
+                     * projectedStopTime:Date       - the assumed time (date) when the stream will end
+                     * usualStartTime:string        - the normal start time for the stream on the current day (formatted as 24h time string)
+                     * usualStopTime:string         - the normal stop time for the stream on the current day (formatted as 24h time string)
+
+                        activeDaysPerWeek: 6
+                        actualStartTime: "2021-06-11T20:49:47.997Z"
+                        dailyBroadcastTime: 18566233
+                        dailyStartTimes: (6) ["15:45", "15:45", "14:45", "14:45", "14:45", "15:45", Mon: "15:45", Tue: "15:45", Wed: "14:45", …]
+                        dailyStopTimes: (6) ["20:45", "20:45", "19:45", "19:45", "19:45", "20:45", Mon: "20:45", Tue: "20:45", Wed: "19:45", …]
+                        dataRetrievedAt: 1623458262999
+                        dataRetrievedOK: true
+                        daysStreaming: (6) ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                        projectedStopTime: "2021-06-12T01:59:14.230Z"
+                        usualStartTime: "14:45"
+                        usualStopTime: "19:45"
                      */
-                    // First, attempt to retrieve the cached data (no older than 12h)
+                    // First, attempt to retrieve the cached data (no older than 4h)
                     try {
                         await LoadCache(`data/${ STREAMER.name }`, cache => {
                             let data = cache[`data/${ STREAMER.name }`],
@@ -3354,10 +3449,10 @@ let Initialize = async(START_OVER = false) => {
                             dataRetrievedAt ||= 0;
                             dataRetrievedOK ||= false;
 
-                            // Only refresh every 12h
+                            // Only refresh every 4h
                             if(!parseBool(dataRetrievedOK))
                                 throw "The data wasn't saved correctly";
-                            else if((dataRetrievedAt + (12 * 60 * 60 * 1000)) < +new Date)
+                            else if((dataRetrievedAt + (4 * 60 * 60 * 1000)) < +new Date)
                                 throw "The data likely expired";
                             else
                                 STREAMER.data = data;
@@ -3422,28 +3517,25 @@ let Initialize = async(START_OVER = false) => {
                                         });
                                 }
 
-                                // Set the daily stop time
-                                avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= []).push([h, m]));
-
-                                for(let day in dlyStopTime) {
-                                    let avgH = 0, avgM = 0;
-
-                                    dlyStopTime[day]
-                                        .map(([h, m]) => { avgH += h; avgM += m })
-                                        .filter((v, i, a) => !i)
-                                        .map(() => {
-                                            let { length } = dlyStopTime[day];
-
-                                            avgH = Math.round(avgH / length);
-                                            avgM = (avgM / length).floorToNearest(15);
-
-                                            data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
-                                        });
-                                }
-
                                 // Set the average stream length
                                 avgStreamSpan.map(t => data.dailyBroadcastTime += t);
                                 data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
+
+                                // Set the daily stop time
+                                avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
+
+                                for(let day in dlyStartTime) {
+                                    let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
+
+                                    data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
+                                        data.dailyStartTimes[day]
+                                            .split(':')
+                                            .map(parseFloat)
+                                            .map((v, i) => ([H, M][i] + v) % [24, 60][i])
+                                            .map((v, i) => !!i? v.floorToNearest(15): v)
+                                            .map(t => ('00' + t).slice(-2))
+                                            .join(':');
+                                }
 
                                 // Set today's start/stop times
                                 data.usualStartTime = data.dailyStartTimes[today.getDay()];
@@ -3451,6 +3543,22 @@ let Initialize = async(START_OVER = false) => {
 
                                 data.daysStreaming = getWeekDays(...daysWithStreams);
                                 data.activeDaysPerWeek = data.daysStreaming.length;
+
+                                data.actualStartTime = new Date(+new Date - STREAMER.time);
+                                data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
+                                data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
+                                data.projectedLastCall = new Date(+data.projectedStopTime - (
+                                    (
+                                        parseBool(Settings.first_in_line)?
+                                            Settings.first_in_line_time_minutes:
+                                        parseBool(Settings.first_in_line_plus)?
+                                            Settings.first_in_line_plus_time_minutes:
+                                        parseBool(Settings.first_in_line_all)?
+                                            Settings.first_in_line_all_time_minutes:
+                                        15
+                                    )
+                                    * 60_000
+                                ));
 
                                 REMARK(`Details about "${ STREAMER.name }"`, data);
 
@@ -3698,7 +3806,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.auto_focus = () => {
-        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold),
+        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold) || scoreTagActivity(...STREAMER.tags),
             pollInterval = parseInt(Settings.auto_focus_poll_interval),
             imageType = Settings.auto_focus_poll_image_type,
             detectedTrend = '&bull;';
@@ -3727,23 +3835,22 @@ let Initialize = async(START_OVER = false) => {
                     .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 0, green: 255, blue: 255 } })
                     .onComplete(async data => {
                         let { analysisTime, misMatchPercentage } = data,
-                            threshold = detectionThreshold || scoreTagActivity(...STREAMER.tags),
+                            trend = (misMatchPercentage > detectionThreshold? 'up': 'down'),
+                            threshold = detectionThreshold,
                             totalTime = 0,
                             bias = [];
 
                         analysisTime = parseInt(analysisTime);
                         misMatchPercentage = parseFloat(misMatchPercentage);
 
+                        CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
+
                         for(let [misMatchPercentage, analysisTime, trend] of CAPTURE_HISTORY) {
                             threshold += parseFloat(misMatchPercentage);
                             totalTime += analysisTime;
                             bias.push(trend);
                         }
-                        threshold /= CAPTURE_HISTORY.length || 1;
-
-                        let trend = misMatchPercentage > detectionThreshold? 'up': 'down';
-
-                        CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
+                        threshold /= CAPTURE_HISTORY.length;
 
                         /* Display capture stats */
                         let diffImg = $('img#tt-auto-focus-differences'),
@@ -3765,11 +3872,10 @@ let Initialize = async(START_OVER = false) => {
                             width = parseInt(width * .25);
 
                             if(!defined(diffImg)) {
-                                diffImg = furnish('img#tt-auto-focus-differences', { style: `position: absolute; z-index: 3; width: ${ width }px; /* top: 20px; */` });
-                                diffDat = furnish('span#tt-auto-focus-stats', { style: `position: absolute; z-index: 6; width: ${ width }px; height: 20px; background: #000; overflow: hidden; font-family: monospace; font-size: 10px;` });
+                                diffDat = furnish('span#tt-auto-focus-stats', { style: `background: var(--color-background-tooltip); color: var(--color-text-tooltip); position: absolute; z-index: 6; width: 100%; height: 2rem; overflow: hidden; font-family: monospace; font-size: 1rem; text-align: center; padding: 0;` });
+                                diffImg = furnish('img#tt-auto-focus-differences', { style: `position: absolute; z-index: 3; width: 100%; transition: all 0.5s;` });
 
-                                parent.append(diffImg);
-                                parent.append(diffDat);
+                                parent.append(diffDat, diffImg);
                             }
 
                             diffImg.src = data.getImageDataUrl?.();
@@ -3777,8 +3883,8 @@ let Initialize = async(START_OVER = false) => {
                             let size = diffImg.src.length,
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
-                            diffDat.title = `Frame Number / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`;
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
+                            diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { direction: 'left' });
                         } else {
                             diffImg?.remove();
                             diffDat?.remove();
@@ -3789,7 +3895,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(bias.length > 30 && FIRST_IN_LINE_TIMER > 60_000) {
                             // Positive activity trend; disable Away Mode, pause Up Next
-                            if(!POSITIVE_TREND && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
+                            if((!defined(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
 
                                 // Pause Up Next
@@ -3822,7 +3928,7 @@ let Initialize = async(START_OVER = false) => {
                                 LOG('Positive trend detected: ' + changes.join(', '));
                             }
                             // Negative activity trend; enable Away Mode, resume Up Next
-                            else if(POSITIVE_TREND && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
+                            else if((!defined(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
                                 POSITIVE_TREND = false;
 
                                 // Resume Up Next
@@ -3868,7 +3974,7 @@ let Initialize = async(START_OVER = false) => {
                             POLL_INTERVAL *= 1.1;
                             STALLED_FRAMES = 0;
 
-                            RestartJob('auto_focus');
+                            RestartJob('auto_focus', 'modify');
                         }
                     })
             }, 100);
@@ -3877,8 +3983,10 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_focus = -1_000;
 
     Unhandlers.auto_focus = () => {
-        $('#tt-auto-focus-differences, #tt-auto-focus-stats', true)
-            .forEach(element => element.remove());
+        if(RestartJob.__reason__ !== 'modify')
+            $('#tt-auto-focus-differences, #tt-auto-focus-stats', true)
+                .forEach(element => element.remove());
+
         clearInterval(CAPTURE_INTERVAL);
     };
 
@@ -4602,7 +4710,7 @@ let Initialize = async(START_OVER = false) => {
                                     container.setAttribute('live', live);
                                 }
 
-                                subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: toTimeString(time, 'clock');
+                                subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
                             }, 1000);
                         },
                     })
@@ -4635,6 +4743,9 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.first_in_line = (ActionableNotification) => {
         let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
+
+        // The Up Next empty status
+        $('[up-next--body]')?.setAttribute?.('empty', !ALL_FIRST_IN_LINE_JOBS.length);
 
         for(let notification of [ActionableNotification, ...notifications].filter(defined)) {
             let action = (
@@ -4791,7 +4902,7 @@ let Initialize = async(START_OVER = false) => {
                                 container.setAttribute('live', live);
                             }
 
-                            subheader.innerHTML = index > 0? `${ nth(index + 1) } in line`: toTimeString(time, 'clock');
+                            subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
                         }, 1000);
                     },
                 })
@@ -5809,13 +5920,14 @@ let Initialize = async(START_OVER = false) => {
                 parent = container.closest(`*:not(${ classes(container) })`);
 
                 extra = ({ live_time }) => {
-                    live_time.setAttribute('style', 'color: var(--color-text-live)');
+                    live_time.setAttribute('style', 'color:var(--color-text-live)');
 
                     if(parseBool(Settings.show_stats))
                         live_time.tooltipAnimation = setInterval(() => {
                             live_time.tooltip ??= new Tooltip(live_time, '');
 
                             live_time.tooltip.innerHTML = ((STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100).toFixed(3).slice(0, 5) + '%';
+                            live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, #f888 ${ live_time.tooltip.innerHTML }, #0000 0), var(--color-background-tooltip)`);
                         }, 100);
                 };
             } break;
@@ -6507,17 +6619,12 @@ CUSTOM_CSS.innerHTML =
     background-color: #387aff;
     border-radius: 0.5rem;
 }
-[up-next--body] > div[class]:first-child:only-child::after {
-    content: 'Drag-and-drop channels here to queue them\\A They can be rearranged by dragging them';
-    text-align: center;
-    white-space: break-spaces;
 
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translateX(-50%);
-
-    width: 100%;
+[up-next--body][empty="true"i] {
+    background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
+    background-repeat: no-repeat;
+    background-size: 35rem;
+    background-position-y: 3.25rem;
 }
 
 [role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }
@@ -6554,6 +6661,11 @@ CUSTOM_CSS.innerHTML =
     background: transparent;
 }
 
+#tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
+    opacity: 0.7;
+    margin-top: -100%;
+}
+
 .tt-emote-captured [data-test-selector="badge-button-icon"i],
 .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
     left: 0;
@@ -6572,17 +6684,6 @@ CUSTOM_CSS.innerHTML =
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
 [tt-earned-all="true"i] { color: #00aced; font-weight: bold }
-
-/*[class*="tw-number-badge"i] {
-    background-color: var(--color-background-pill-notification);
-    border-radius: var(--border-radius-rounded);
-    color: var(--color-text-overlay);
-    pointer-events: none;
-
-    position: relative;
-
-    padding: 0px 0.4725em;
-}*/
 
 /* Tooltips */
 .tooltip-layer {
@@ -6637,19 +6738,30 @@ CUSTOM_CSS.innerHTML =
 }
 
 .tt-tooltip::before {
-    height: calc(100% + 12px);
     left: -6px;
     top: -6px;
-    width: calc(100% + 12px);
     z-index: -1;
+
+    height: calc(100% + 12px);
+    width: calc(100% + 12px);
 }
 
 .tt-tooltip::after {
     background-color: var(--color-background-tooltip);
-    height: 6px;
+
     transform: rotate(45deg);
-    width: 6px;
     z-index: -1;
+
+    height: 6px;
+    width: 6px;
+}
+
+.tw-root--theme-dark .tt-tooltip::after {
+    mix-blend-mode: color-burn;
+}
+
+.tw-root--theme-light .tt-tooltip::after {
+    mix-blend-mode: color-dodge;
 }
 
 /* Directionally aligned tooltips */

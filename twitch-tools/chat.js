@@ -2227,31 +2227,6 @@ Chat__CUSTOM_CSS.innerHTML =
     --width: 100%;
 }
 #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
-.tt-first-run {
-    border: 1px solid var(--color-blue);
-    border-radius: 3px;
-
-    transition: border 1s;
-}
-[animationID] a { cursor: grab }
-[animationID] a:active { cursor: grabbing }
-[tt-hidden] { display: none }
-[up-next--body] {
-    background-color: #387aff;
-    border-radius: 0.5rem;
-}
-[up-next--body] > div[class]:first-child:only-child::after {
-    content: 'Drag-and-drop channels here to queue them\\A They can be rearranged by dragging them';
-    text-align: center;
-    white-space: break-spaces;
-
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translateX(-50%);
-
-    width: 100%;
-}
 
 ::-webkit-scrollbar {
     width: .6rem;

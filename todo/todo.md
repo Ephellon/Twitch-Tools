@@ -28,6 +28,13 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [3.3.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.3.1)
+- Added the Up Next tutorial image; removed English text
+- Adjusted live-time tooltip appearance (apart of `show_stats`)
+- Adjusted Auto-Focus logic and appearance
+- Fixed preferred language loading for the Settings
+- Added translations to `nth`
+
 > [3.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.3)
 - Added initial language picker to Settings page
 - Finalized all language packs (also created "Help Translate" issue template)

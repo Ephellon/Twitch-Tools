@@ -117,7 +117,7 @@ Storage.onChanged.addListener(changes => {
         // if installed from GitHub, update the badge text
     let installedFromWebstore = (Runtime.id === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
-    TopScope:
+    updater:
     for(let key in changes) {
         let change = changes[key],
             { oldValue, newValue } = change;
@@ -126,14 +126,14 @@ Storage.onChanged.addListener(changes => {
             case 'chromeUpdateAvailable': {
                 if(newValue === true && installedFromWebstore)
                     Container.browserAction.setBadgeText({ text: '\u2191' });
-            } break TopScope;
+            } break updater;
 
             case 'githubUpdateAvailable': {
                 if(newValue === true && !installedFromWebstore)
                     Container.browserAction.setBadgeText({ text: '\u2191' });
-            } break TopScope;
+            } break updater;
 
-            default: continue TopScope;
+            default: continue updater;
         }
     }
 });
