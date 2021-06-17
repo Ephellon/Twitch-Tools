@@ -8,8 +8,9 @@
 
         "smart-notifications": ["Notificaciones Inteligentes"],
 
-        "title": ["Twitch Tools — Configuración"],
-        "about": ["Acerca de Twitch Tools"],
+        "title": ["TTV Tools — Configuración"],
+        "about": ["Acerca de TTV Tools"],
+		"language": ["Idioma"],
         "version": ["Versión"],
         "support": ["Ayuda"],
 

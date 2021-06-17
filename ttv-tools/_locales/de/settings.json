@@ -1,5 +1,27 @@
 { "[[SOURCE]]": "ROOT->ES->EN->DE", "LANG_PACK_READY": true,
 
+	"?": {
+        "save": ["Speichern"],
+        "extras": ["Extras"],
+        "options": ["Optionen"],
+        "en|dis": ["Aktivieren um", "Deaktivieren um"],
+
+        "smart-notifications": ["Intelligente Benachrichtigung"],
+
+        "title": ["TTV Tools — Einstellungen"],
+        "about": ["Über TTV-Tools"],
+		"language": ["Sprache"],
+        "version": ["Über TTV-Tools"],
+        "support": ["Unterstützung"],
+
+        "day-of-week": ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+        "footer": ["Diese Erweiterung ist in keiner Weise mit Amazon™, Twitch™, NightDev (LLC), den Partnern, verbundenen Unternehmen oder Tochtergesellschaften einer der Parteien verbunden oder wird von diesen unterstützt"]
+    },
+
+
+
+
+
 	"header:automation": ["Automatisering"],
 	"auto-join": [
 		"Automatische Unie",

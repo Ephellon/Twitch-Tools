@@ -1,4 +1,4 @@
-# Twitch Tools - To-Do List
+# TTV Tools - To-Do List
 
 ### TO-DO (Known Issues)
 1. Accessibility options?
@@ -28,6 +28,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.0](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0)
+- Re-named project to "TTV Tools"
+- Added last translations to language packs
+
 > [3.3.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.3.1)
 - Added the Up Next tutorial image; removed English text
 - Adjusted live-time tooltip appearance (apart of `show_stats`)

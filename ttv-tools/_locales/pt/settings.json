@@ -1,5 +1,27 @@
 { "[[SOURCE]]": "ROOT->ES->PT", "LANG_PACK_READY": true,
 
+	"?": {
+        "save": ["Salve"],
+        "extras": ["Extras"],
+        "options": ["Opções"],
+        "en|dis": ["Ativar em", "Desativar em"],
+
+        "smart-notifications": ["Notificações inteligentes"],
+
+        "title": ["TTV Tools — Configurações"],
+        "about": ["Sobre TTV Tools"],
+		"language": ["Língua"],
+        "version": ["Versão"],
+        "support": ["Apoiar"],
+
+        "day-of-week": ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
+        "footer": ["Esta extensão não é de forma alguma afiliada ou endossada pela Amazon™, Twitch™, NightDev (LLC), parceiros, afiliados ou subsidiárias de qualquer uma das partes"]
+    },
+
+
+
+
+
 	"header:automation": ["Automação"],
 	"auto-join": [
 		"Ligação automática",

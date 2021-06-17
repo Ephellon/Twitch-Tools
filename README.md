@@ -1,4 +1,4 @@
-# Twitch-Tools
+# TTV Tools
 
 An extension that gives you a set of tools to control your Twitch&trade; experience.
 

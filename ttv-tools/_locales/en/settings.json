@@ -8,8 +8,9 @@
 
         "smart-notifications": ["Smart Notifications"],
 
-        "title": ["Twitch Tools — Settings"],
-        "about": ["About Twitch Tools"],
+        "title": ["TTV Tools — Settings"],
+        "about": ["About TTV Tools"],
+		"language": ["Language"],
         "version": ["Version"],
         "support": ["Support"],
 
@@ -187,7 +188,7 @@
 	"filter-messages": [
 		"Filter messages",
 		"Remvoes messages/rules across all channels",
-		"Please see", "Twitch Tools Wiki — Filter Messages", "for assistance"
+		"Please see", "TTV Tools Wiki — Filter Messages", "for assistance"
 	],
     	"filter-messages:options": [
     		"Filter Rules",

@@ -61,7 +61,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 ?? $('[data-test-selector="community-points-summary"i] button[class*="--success"i]')
                 ?? $('[class*="bonus"i]')?.closest?.('button')
             ),
-            Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-bonus-channel-points-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
+            Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
         if(Enabled)
             ChannelPoints?.click?.();
@@ -118,7 +118,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             button.tooltip.id = new UUID().toString();
             button.text.innerHTML = '+' + BonusChannelPointsSVG;
-            button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', true);
+            button.container.setAttribute('tt-auto-claim-enabled', true);
 
             button.icon ??= $('svg, img', false, container);
 
@@ -142,9 +142,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         }
 
         button.container.onclick ??= event => {
-            let enabled = button.container.getAttribute('tt-auto-claim-bonus-channel-points-enabled') !== 'true';
+            let enabled = button.container.getAttribute('tt-auto-claim-enabled') !== 'true';
 
-            button.container.setAttribute('tt-auto-claim-bonus-channel-points-enabled', enabled);
+            button.container.setAttribute('tt-auto-claim-enabled', enabled);
             button.text.innerHTML = ['','+'][+enabled] + BonusChannelPointsSVG;
             button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / hr`;
         };

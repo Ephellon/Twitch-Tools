@@ -5839,7 +5839,8 @@ let Initialize = async(START_OVER = false) => {
         LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
             let [amount, fiat, face, earnedAll] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
-                allRewards = $('[data-test-selector="cost"i]', true);
+                allRewards = $('[data-test-selector="cost"i]', true),
+                upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
             earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
 
@@ -5857,6 +5858,8 @@ let Initialize = async(START_OVER = false) => {
 
             target.append(icon);
             target.append(text);
+
+            target.closest('[role="dialog"i]').setAttribute('tt-in-up-next', upNext);
         });
     };
     Timers.point_watcher_placement = 250;
@@ -6629,14 +6632,14 @@ CUSTOM_CSS.innerHTML =
 
 [role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }
 
-[tt-auto-claim-bonus-channel-points-enabled="false"i] { --filter: grayscale(1) }
+[tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
 
-[tt-auto-claim-bonus-channel-points-enabled] .text, [tt-auto-claim-bonus-channel-points-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
-[tt-auto-claim-bonus-channel-points-enabled="false"i] .text { margin-right: -4rem }
-[tt-auto-claim-bonus-channel-points-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
+[tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
+[tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
+[tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
 
-[tt-auto-claim-bonus-channel-points-enabled] svg, [tt-auto-claim-bonus-channel-points-enabled] img { transition: transform .3s ease 0s }
-[tt-auto-claim-bonus-channel-points-enabled] svg[hover="true"i], [tt-auto-claim-bonus-channel-points-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+[tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
+[tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
 
 ::-webkit-scrollbar {
     width: .6rem;
@@ -6683,7 +6686,8 @@ CUSTOM_CSS.innerHTML =
 
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-[tt-earned-all="true"i] { color: #00aced; font-weight: bold }
+[tt-earned-all="true"i] { color: #387aff; font-weight: bold }
+[tt-in-up-next="true"i] { box-shadow: #387aff88 0 4px 8px, #387aff88 0 0 4px !important }
 
 /* Tooltips */
 .tooltip-layer {

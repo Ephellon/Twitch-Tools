@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "3.3.1",
+    "version": "4.0",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -72,7 +72,7 @@
             "48": "48.g.png",
             "96": "96.g.png"
         },
-        "default_title": "Twitch Tools",
+        "default_title": "TTV Tools",
         "default_popup": "settings.html?popup=1"
     },
 
