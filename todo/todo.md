@@ -28,9 +28,14 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.0.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0.1)
+- Fixed Pointer Watcher Placement error
+
 > [4.0](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0)
 - Re-named project to "TTV Tools"
 - Added last translations to language packs
+
+----
 
 > [3.3.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.3.1)
 - Added the Up Next tutorial image; removed English text

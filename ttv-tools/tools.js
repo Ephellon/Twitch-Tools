@@ -1972,7 +1972,7 @@ function parseCoin(amount = '') {
 }
 
 // Convert boolean values
-    // parseBool(*:value) -> Boolean
+    // parseBool(value:*) -> Boolean
 function parseBool(value = null) {
     switch(value) {
         case "undefined":
@@ -5801,7 +5801,7 @@ let Initialize = async(START_OVER = false) => {
             pointWatcherCounter = 0;
 
             LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
-                let [amount, fiat, face, earnedAll] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|'),
+                let [amount, fiat, face, earnedAll] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = $('[data-test-selector="cost"i]', true);
 
                 amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
