@@ -28,6 +28,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.0.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0.2)
+- Fixed Pointer Watcher Placement error
+
 > [4.0.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0.1)
 - Fixed Pointer Watcher Placement error
 

@@ -5800,8 +5800,8 @@ let Initialize = async(START_OVER = false) => {
         if(++pointWatcherCounter % 600) {
             pointWatcherCounter = 0;
 
-            LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
-                let [amount, fiat, face, earnedAll] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
+            LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
+                let [amount, fiat, face, earnedAll] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = $('[data-test-selector="cost"i]', true);
 
                 amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
