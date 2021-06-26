@@ -2096,15 +2096,15 @@ async function SetQuality(quality = 'auto', backup = 'source') {
                 throw error;
             };
     })()
-    .then(() => {
-        let { quality } = buttons;
+        .then(() => {
+            let { quality } = buttons;
 
-        if(quality)
-            quality.click();
-    })
-    .catch(error => {
-        throw error;
-    });
+            if(quality)
+                quality.click();
+        })
+        .catch(error => {
+            throw error;
+        });
 
     let qualities = $('[data-a-target$="-quality-option"i] input[type="radio"i]', true)
         .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
@@ -3835,15 +3835,12 @@ let Initialize = async(START_OVER = false) => {
                     .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 0, green: 255, blue: 255 } })
                     .onComplete(async data => {
                         let { analysisTime, misMatchPercentage } = data,
-                            trend = (misMatchPercentage > detectionThreshold? 'up': 'down'),
-                            threshold = detectionThreshold,
+                            threshold = 0,
                             totalTime = 0,
                             bias = [];
 
                         analysisTime = parseInt(analysisTime);
                         misMatchPercentage = parseFloat(misMatchPercentage);
-
-                        CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
 
                         for(let [misMatchPercentage, analysisTime, trend] of CAPTURE_HISTORY) {
                             threshold += parseFloat(misMatchPercentage);
@@ -3851,6 +3848,10 @@ let Initialize = async(START_OVER = false) => {
                             bias.push(trend);
                         }
                         threshold /= CAPTURE_HISTORY.length;
+
+                        let trend = (misMatchPercentage > (parseBool(Settings.auto_focus_detection_threshold)? detectionThreshold: threshold)? 'up': 'down');
+
+                        CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
 
                         /* Display capture stats */
                         let diffImg = $('img#tt-auto-focus-differences'),
@@ -4039,7 +4040,7 @@ let Initialize = async(START_OVER = false) => {
             switch(placement) {
                 // Option 1 "over" - video overlay, play button area
                 case 'over': {
-                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child', false, parent);
+                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child', false);
                     parent = sibling?.parentElement;
                     before = 'first';
                     extra = ({ container }) => {
@@ -4050,7 +4051,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Option 2 "under" - quick actions, follow/notify/subscribe area
                 case 'under': {
-                    sibling = $('[data-test-selector="live-notifications-toggle"i]');
+                    sibling = $('[data-test-selector="live-notifications-toggle"i]') ?? $('[data-target="channel-header-right"i] [style] div div:not([style])');
                     parent = sibling?.parentElement;
                     before = 'last';
                 } break;
@@ -4059,15 +4060,20 @@ let Initialize = async(START_OVER = false) => {
             }
 
             if(!defined(parent) || !defined(sibling))
-                return;
+                return WARN('Unable to create the Away Mode button');
 
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
+            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
-            if(['over'].contains(placement))
+            if(['over'].contains(placement)) {
                 container.firstElementChild.classList.remove('tw-mg-l-1');
+            } else if(['under'].contains(placement)) {
+                $('span', false, container)?.remove();
+                $('[style]', false, container)?.setAttribute('style', 'opacity: 1; transform: translateX(15%) translateZ(0px);')
+            }
+
             extra({ container, sibling, parent, before, placement });
 
             button = {
@@ -4075,7 +4081,7 @@ let Initialize = async(START_OVER = false) => {
                 container,
                 icon: $('svg', false, container),
                 get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+                background: $('button', false, container),
                 tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { direction: 'up', left: +5 }),
             };
 
@@ -4094,7 +4100,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 tooltip: Tooltip.get(container),
                 get offset() { return getOffset(container) },
-                background: $('button[data-a-target="away-mode-toggle"i]', false, container),
+                background: $('button', false, container),
             };
         }
 
@@ -4104,16 +4110,17 @@ let Initialize = async(START_OVER = false) => {
             InitialVolume = (Handlers.away_mode.volume ??= GetVolume());
             InitialViewMode = (Handlers.away_mode.viewMode ??= GetViewMode());
 
-            if(parseBool(Settings.away_mode__volume_control))
-                SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
+            await SetQuality(['auto','low'][+enabled])
+                .then(() => {
+                    if(parseBool(Settings.away_mode__volume_control))
+                        SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
 
-            if(parseBool(Settings.away_mode__hide_chat))
-                ([
-                    () => SetViewMode(InitialViewMode),
-                    () => SetViewMode('fullwidth'),
-                ][+enabled])();
-
-            SetQuality(['auto','low'][+enabled]);
+                    if(parseBool(Settings.away_mode__hide_chat))
+                        ([
+                            () => SetViewMode(InitialViewMode),
+                            () => SetViewMode('fullwidth'),
+                        ][+enabled])();
+                });
         }
 
         // if(init === true) ->

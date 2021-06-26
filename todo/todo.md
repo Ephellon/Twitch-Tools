@@ -28,6 +28,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.0.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0.3)
+- Adjusted Auto-Focus logic
+- Fixed Away Mode (Twitch update)
+
 > [4.0.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0.2)
 - Fixed Pointer Watcher Placement error
 
