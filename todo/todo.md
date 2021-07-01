@@ -28,6 +28,13 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1)
+- Improved `String..pluralSuffix`
+- Adjusted dynamic tooltip styling
+- Added tooltips to stream tags (apart of `show_stats`)
+- Added Highlight phrases
+- Adjusted Whisper Audio to include: mentions, phrases, and whispers
+
 > [4.0.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.0.3)
 - Adjusted Auto-Focus logic
 - Fixed Away Mode (Twitch update)

@@ -95,6 +95,10 @@ let // These are option names. Anything else will be removed
             'highlight_mentions_extra',
         // Show Pop-ups
         'highlight_mentions_popup',
+        // Highlight phrases
+        'highlight_phrases',
+            // phrase Rules
+            'phrase_rules',
         // Filter Messages
         'filter_messages',
             'filter_rules',
@@ -108,6 +112,11 @@ let // These are option names. Anything else will be removed
         'convert_emotes',
         // Native Twitch Replies
         'native_twitch_reply',
+        // Notification Sounds
+        'mention_audio',
+        'phrase_audio',
+        'whisper_audio',
+        'whisper_audio_sound',
         // Prevent spam
         'prevent_spam',
             'prevent_spam_look_back',
@@ -125,9 +134,6 @@ let // These are option names. Anything else will be removed
             'soft_unban_keep_bots',
             'soft_unban_prevent_clipping',
             'soft_unban_fade_old_messages',
-        // Whisper Audio
-        'whisper_audio',
-            'whisper_audio_sound',
 
         /* Currencies */
         // Convert Bits
@@ -381,152 +387,11 @@ let Glyphs = {
     chrome: '<svg width="100%" height="100%" version="1.1" viewbox="0 0 190 190" x="0px" y="0px"><circle fill="#FFF" cx="85.314" cy="85.713" r="83.805"/><path fill-opacity=".1" d="M138.644 100.95c0-29.454-23.877-53.331-53.33-53.331-29.454 0-53.331 23.877-53.331 53.331H47.22c0-21.039 17.055-38.094 38.093-38.094s38.093 17.055 38.093 38.094"/><circle fill-opacity=".1" cx="89.123" cy="96.379" r="28.951"/><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-149.309" y1="-72.211" x2="-149.309" y2="-71.45" gradientTransform="matrix(82 0 0 82 12328.615 5975.868)"><stop offset="0" stop-color="#81b4e0"/><stop offset="1" stop-color="#0c5a94"/></linearGradient><circle fill="url(#a)" cx="85.314" cy="85.712" r="31.236"/><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-114.66" y1="591.553" x2="-114.66" y2="660.884" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#f06b59"/><stop offset="1" stop-color="#df2227"/></linearGradient><path fill="url(#b)" d="M161.5 47.619C140.525 5.419 89.312-11.788 47.111 9.186a85.315 85.315 0 0 0-32.65 28.529l34.284 59.426c-6.313-20.068 4.837-41.456 24.905-47.77a38.128 38.128 0 0 1 10.902-1.752"/><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="-181.879" y1="737.534" x2="-146.834" y2="679.634" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#388b41"/><stop offset="1" stop-color="#4cb749"/></linearGradient><path fill="url(#c)" d="M14.461 37.716c-26.24 39.145-15.78 92.148 23.363 118.39a85.33 85.33 0 0 0 40.633 14.175l35.809-60.948c-13.39 16.229-37.397 18.529-53.625 5.141a38.096 38.096 0 0 1-11.896-17.33"/><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="-64.479" y1="743.693" x2="-101.81" y2="653.794" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#e4b022"/><stop offset=".3" stop-color="#fcd209"/></linearGradient><path fill="url(#d)" d="M78.457 170.28c46.991 3.552 87.965-31.662 91.519-78.653a85.312 85.312 0 0 0-8.477-44.007H84.552c21.036.097 38.014 17.23 37.917 38.269a38.099 38.099 0 0 1-8.205 23.443"/><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="-170.276" y1="686.026" x2="-170.276" y2="625.078" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#e)" d="M14.461 37.716l34.284 59.426a38.093 38.093 0 0 1 1.523-25.904L15.984 35.43"/><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="-86.149" y1="705.707" x2="-128.05" y2="748.37" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#f)" d="M78.457 170.28l35.809-60.948a38.105 38.105 0 0 1-22.095 12.951L76.933 170.28"/><linearGradient id="chrome-logo-gradient" gradientUnits="userSpaceOnUse" x1="-86.757" y1="717.981" x2="-80.662" y2="657.797" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#chrome-logo-gradient)" d="M161.5 47.619H84.552a38.094 38.094 0 0 1 29.712 14.476l48.759-12.189"/></svg>',
 };
 
-// Create elements
-    // furnish(tagname:string[, attributes:object[, ...children]]) -> Element
-function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
-    let u = v => v && v.length,
-        R = RegExp,
-        name = TAGNAME,
-        attributes = ATTRIBUTES,
-        children = CHILDREN;
-
-    if( !u(name) )
-        throw TypeError(`TAGNAME cannot be ${ (name === '')? 'empty': name }`);
-
-    let options = attributes.is === true? { is: true }: null;
-
-    delete attributes.is;
-
-    name = name.split(/([#\.][^#\.\[\]]+)/).filter( u );
-
-    if(name.length <= 1)
-        name = name[0].split(/^([^\[\]]+)(\[.+\])/).filter( u );
-
-    if(name.length > 1)
-        for(let n = name, i = 1, l = n.length, t, v; i < l; i++)
-            if((v = n[i].slice(1, n[i].length)) && (t = n[i][0]) == '#')
-                attributes.id = v;
-            else if(t == '.')
-                attributes.classList = [].slice.call(attributes.classList ?? []).concat(v);
-            else if(/\[(.+)\]/.test(n[i]))
-                R.$1.split('][').forEach(N => attributes[(N = N.replace(/\s*=\s*(?:("?)([^]*)\1)?/, '=$2').split('=', 2))[0]] = N[1] || '');
-    name = name[0];
-
-    let element = document.createElement(name, options);
-
-    if(attributes.classList instanceof Array)
-        attributes.classList = attributes.classList.join(' ');
-
-    Object.entries(attributes).forEach(
-        ([name, value]) => (/^(on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
-            (/^on/.test(name))?
-                element.addEventListener(name.replace(/^on/, ''), value):
-            element[name] = value:
-        element.setAttribute(name, value)
-    );
-
-    children
-        .filter( defined )
-        .forEach(
-            child =>
-                child instanceof Element?
-                    element.append(child):
-                child instanceof Node?
-                    element.append(child):
-                element.append(
-                    document.createTextNode(child)
-                )
-        );
-
-    return element;
-}
-
-// Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) -> Object#{ left:number, top:number }
-function getOffset(element) {
-    let bounds = element.getBoundingClientRect(),
-        { height, width } = bounds;
-
-    return {
-        height, width,
-
-        left:   bounds.left + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        top:    bounds.top  + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
-
-        right:  bounds.right  + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        bottom: bounds.bottom + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
-    };
-}
-
-// Parse a URL
-    // parseURL(url:string) -> Object
-function parseURL(url) {
-    if(!defined(url))
-        return {};
-
-    url = url.toString();
-
-    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
-        i    = 0,
-        e    = "";
-
-    data = data || e;
-
-    return {
-        href:            (data[i++] ?? e),
-        origin:          (data[i++] ?? e) + (data[i + 4] ?? e),
-        protocol:        (data[i++] ?? e),
-        scheme:          (data[i++] ?? e),
-        username:        (data[i++] ?? e),
-        password:        (data[i++] ?? e),
-        host:            (data[i++] ?? e),
-        domainPath:      (data[i]   ?? e).split('.').reverse(),
-        hostname:        (data[i++] ?? e),
-        port:            (data[i++] ?? e),
-        pathname:        (data[i++] ?? e),
-        search:          (data[i]   ?? e),
-        searchParameters: (sd => {
-            parsing:
-            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
-                c = d[i].split('=');
-                n = c[0] || e;
-
-                p = c.slice(1, c.length).join('=');
-
-                s[n] = (s[n] != undefined)?
-                    s[n] instanceof Array?
-                s[n].concat(p):
-                    [s[n], p]:
-                p;
-            }
-
-            return s;
-        })(data[i++] || e),
-        hash:            (data[i++] || e),
-
-        pushToSearch(parameters, overwrite = false) {
-            if(typeof url == 'string')
-                url = parseURL(url);
-
-            let { origin, pathname, hash, searchParameters } = url;
-
-            if(overwrite)
-                searchParameters = Object.entries({ ...searchParameters, ...parameters });
-            else
-                searchParameters = [searchParameters, parameters].map(Object.entries).flat();
-
-            searchParameters = '?' + searchParameters.map(parameter => parameter.join('=')).join('&');
-
-            return parseURL(origin + pathname + searchParameters + hash);
-        },
-    };
-};
-
 let SETTINGS,
     TRANSLATED = false,
     INITIAL_LOAD = true;
 
-function RedoFilterRulesElement(rules) {
+function RedoRuleElements(rules, ruleType) {
     if(!defined(rules))
         return;
 
@@ -539,47 +404,47 @@ function RedoFilterRulesElement(rules) {
         let E = document.createElement('button'),
             R = document.createElement('button');
 
-        let fID = UUID.from(rule).value;
+        let ruleID = UUID.from(rule).value;
 
-        let filterType;
+        let itemType;
         switch(true) {
             case /^\/[\w+\-]+/.test(rule): {
-                filterType = 'channel';
+                itemType = 'channel';
             } break;
 
             case /^@[\w+\-]+$/.test(rule): {
-                filterType = 'user';
+                itemType = 'user';
             } break;
 
             case /^<[^>]+>$/.test(rule): {
-                filterType = 'badge';
+                itemType = 'badge';
             } break;
 
             case /^:[\w\-]+:$/.test(rule):{
-                filterType = 'emote';
+                itemType = 'emote';
             } break;
 
             case /^[\w]+$/.test(rule): {
-                filterType = 'text';
+                itemType = 'text';
             } break;
 
             default:{
-                filterType = 'regexp';
+                itemType = 'regexp';
             } break;
         }
 
-        if(defined($(`#filter_rules [filter-type="${ filterType }"i] [filter-id="${ fID }"i]`)))
+        if(defined($(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i] [${ ruleType }-id="${ ruleID }"i]`)))
             continue;
 
         // "Edit" button
         E.innerHTML = `<code fill>${ encodeHTML(rule) }</code>`;
         E.classList.add('edit');
-        E.setAttribute('filter-id', fID);
+        E.setAttribute(`${ ruleType }-id`, ruleID);
 
         E.onclick = event => {
             let { currentTarget } = event,
                 { innerText } = currentTarget,
-                input = $('#filter_rules-input');
+                input = $(`#${ ruleType }_rules-input`);
 
             input.value = [...input.value.split(','), innerText].filter(v => v?.trim()?.length).join(',');
 
@@ -590,7 +455,7 @@ function RedoFilterRulesElement(rules) {
         E.append(R);
 
         // "Remove" button
-        R.id = fID;
+        R.id = ruleID;
         R.innerHTML = Glyphs.modify('trash', { fill: 'white', height: '20px', width: '20px' });
         R.classList.add('remove');
 
@@ -598,15 +463,15 @@ function RedoFilterRulesElement(rules) {
             let { currentTarget } = event,
                 { id } = currentTarget;
 
-            $(`[filter-id="${ id }"]`)?.remove();
+            $(`[${ ruleType }-id="${ id }"]`)?.remove();
 
             event.stopPropagation();
         };
         R.setAttribute('up-tooltip', `Remove rule`);
 
-        $(`#filter_rules [filter-type="${ filterType }"i]`).setAttribute('not-empty', true);
-        $(`#filter_rules [filter-type="${ filterType }"i]`)?.append(E);
-        $('#filter_rules-input').value = "";
+        $(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i]`).setAttribute('not-empty', true);
+        $(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i]`)?.append(E);
+        $(`#${ ruleType }_rules-input`).value = "";
     }
 }
 
@@ -639,11 +504,27 @@ async function SaveSettings() {
 
                 for(let rule of $('#filter_rules code', true))
                     rules.push(rule.innerText);
-                rules = [...new Set(rules)].filter(value => value);
+                rules = [...new Set(rules)].filter(parseBool);
 
                 settings.filter_rules = rules.sort().join(',');
 
-                RedoFilterRulesElement(settings.filter_rules);
+                RedoRuleElements(settings.filter_rules, 'filter');
+            } break;
+
+            case 'phrase_rules': {
+                let rules = [],
+                    input = extractValue($('#phrase_rules-input'));
+
+                if(input)
+                    rules = [...input.split(',')];
+
+                for(let rule of $('#phrase_rules code', true))
+                    rules.push(rule.innerText);
+                rules = [...new Set(rules)].filter(parseBool);
+
+                settings.phrase_rules = rules.sort().join(',');
+
+                RedoRuleElements(settings.phrase_rules, 'phrase');
             } break;
 
             case 'away_mode__volume': {
@@ -696,7 +577,13 @@ async function LoadSettings() {
                 case 'filter_rules': {
                     let rules = settings[id];
 
-                    RedoFilterRulesElement(rules);
+                    RedoRuleElements(rules, 'filter');
+                } break;
+
+                case 'phrase_rules': {
+                    let rules = settings[id];
+
+                    RedoRuleElements(rules, 'phrase');
                 } break;
 
                 case 'away_mode__volume': {
@@ -794,8 +681,10 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     return diff;
 }
 
-$('#whisper_audio_sound', true).map(element => element.onchange = async event => {
-    let [selected] = event.currentTarget.selectedOptions;
+$('#whisper_audio_sound', true).map(element => element.onchange = async event => setTimeout(() => $('#whisper_audio_sound-test')?.click(), 10));
+
+$('#whisper_audio_sound-test', true).map(button => button.onclick = async event => {
+    let [selected] = $('#whisper_audio_sound').selectedOptions;
     let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
 
     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
@@ -834,6 +723,8 @@ $('#save, .save', true).map(element => element.onclick = async event => {
     await SaveSettings()
         .catch(error => {
             currentTarget.setAttribute('style', 'background-color:var(--red)');
+
+            console.warn(error);
         })
         .then(() => {
             setTimeout(() => {
@@ -1126,12 +1017,12 @@ async function TranslatePageTo(language = 'en') {
                     );
 
                 let nodes = [...element.childNodes]
-                    .filter(node => !!~[ELEMENT_NODE, TEXT_NODE].indexOf(node.nodeType))
+                    .filter(node => [ELEMENT_NODE, TEXT_NODE].contains(node.nodeType))
                     .filter(node => /^[^\s\.\!\?]/i.test((node.textContent ?? "").trim()))
                     .map(node => {
                         let { attributes, nodeType } = node;
 
-                        if(!!~[TEXT_NODE].indexOf(nodeType))
+                        if([TEXT_NODE].contains(nodeType))
                             return node;
 
                         if(!defined(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))

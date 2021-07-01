@@ -215,10 +215,46 @@
     		"Quando alguém envia uma menção geral (", null, "@chat", "@all", "), destacar a mensagem através de uma janela pop-up"
     	],
 
+	"highlight-phrases": [
+		"Frases em destaque",
+		"Quando alguém enviar uma mensagem usando qualquer uma das frases a seguir, destaque a mensagem destacando-o",
+		"Para obter mais informações, consulte o", "TTV Tools Wiki - Phrase Highlighting", ""
+	],
+		"highlight-phrases:options": [
+    		"Regras de filtragem",
+    		"Regras do Canal",
+    		"Crachás",
+    		"Utilizadores",
+    		"Emoticons",
+    		"Texto",
+    		null,
+    		"Início", "acrescentando", "algumas regras"
+    	],
+
 	"native-reply": [
 		"Resposta nativa",
 		"Tente mostrar respostas nativas Twitch™ em todos os canais"
 	],
+
+	"notification-sounds": [
+		"Sons de Notificação",
+		"Quando uma (ou mais) das seguintes condições forem atendidas, toque um tom de notificação"
+	],
+		"notification-sounds:include-mentions": [
+			"Menções",
+			"Quando alguém mencionar seu", "@nomedeusuário", "toque o", "som de notificação"
+		],
+		"notification-sounds:include-phrases": [
+			"Frases",
+			"Quando alguém está usando uma frase de", "Frases em destaque", "toque o", "som de notificação"
+		],
+		"notification-sounds:include-whispers": [
+			"Sussurro",
+			"Quando alguém lhe envia um sussurro, toque o", "som de notificação"
+		],
+		"notification-sounds:options": [
+			"Som de Notificação"
+		],
 
 	"prevent-spam": [
 		"Prevenir o spam",
@@ -259,16 +295,6 @@
     		"Emoticons invertidos",
     		"Converter os emoticons de volta ao texto e exibir o emoticon (como", "ponta de ferramenta", ") apenas quando", "pairar sobre", "o texto"
     	],
-
-	"whisper-audio": [
-		"Sussurro de áudio",
-		"Quando alguém lhe envia um sussurro, toque um som de notificação"
-	],
-    	"whisper-audio:options": [
-    		"Som de notificação",
-    		"Este som", "é licenciado sob a Atribuição Creative Commons", "Saiba mais"
-    	],
-
 
 
 

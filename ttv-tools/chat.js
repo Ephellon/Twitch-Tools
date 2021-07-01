@@ -936,18 +936,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         RegisterJob('convert_emotes');
     }
 
-    /*** Filter Messages
-     *      ______ _ _ _              __  __
-     *     |  ____(_) | |            |  \/  |
-     *     | |__   _| | |_ ___ _ __  | \  / | ___  ___ ___  __ _  __ _  ___  ___
-     *     |  __| | | | __/ _ \ '__| | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \/ __|
-     *     | |    | | | ||  __/ |    | |  | |  __/\__ \__ \ (_| | (_| |  __/\__ \
-     *     |_|    |_|_|\__\___|_|    |_|  |_|\___||___/___/\__,_|\__, |\___||___/
-     *                                                            __/ |
-     *                                                           |___/
-     */
-    let UPDATED_FILTER = () => {
-        let rules = Settings.filter_rules;
+    // Update rules
+        // UPDATE_RULES(ruleType:string={ "filter" "phrase" })
+    let UPDATE_RULES = (ruleType) => {
+        let rules = Settings[`${ ruleType }_rules`];
 
         let channel = [], user = [], badge = [], emote = [], text = [];
 
@@ -978,7 +970,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     channel.push({ name, text, user, badge, emote });
                 }
                 // @username
-                else if(/^@[\w\-]+$/.test(rule)) {
+                else if(/^@[\w\-]+$/.test(rule) && !['@everyone', '@chat', '@all'].contains(rule.toLowerCase())) {
                     let { $_ } = RegExp;
 
                     user.push($_.replace(/^@/, ''));
@@ -1012,11 +1004,21 @@ let Chat__Initialize = async(START_OVER = false) => {
         }
     };
 
+    /*** Filter Messages
+     *      ______ _ _ _              __  __
+     *     |  ____(_) | |            |  \/  |
+     *     | |__   _| | |_ ___ _ __  | \  / | ___  ___ ___  __ _  __ _  ___  ___
+     *     |  __| | | | __/ _ \ '__| | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \/ __|
+     *     | |    | | | ||  __/ |    | |  | |  __/\__ \__ \ (_| | (_| |  __/\__ \
+     *     |_|    |_|_|\__\___|_|    |_|  |_|\___||___/___/\__,_|\__, |\___||___/
+     *                                                            __/ |
+     *                                                           |___/
+     */
     let MESSAGE_FILTER;
 
     Handlers.filter_messages = () => {
         MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
-            let Filter = UPDATED_FILTER();
+            let Filter = UPDATE_RULES('filter');
 
             censoring:
             for(let line of chat) {
@@ -1077,7 +1079,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __FilterMessages__:
     if(parseBool(Settings.filter_messages)) {
-        REMARK("Adding message filter event listener...");
+        REMARK("Adding message filtering...");
 
         RegisterJob('filter_messages');
     }
@@ -1094,13 +1096,13 @@ let Chat__Initialize = async(START_OVER = false) => {
      */
     Handlers.easy_filter = () => {
         let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
-            existing = $('#tt-filter-rule-user, #tt-filter-rule-emote');
+            existing = $('#tt-filter-rule--user, #tt-filter-rule--emote');
 
         if(!defined(card) || defined(existing))
             return;
 
-        let title = $('h4', false, card),
-            name = title.textContent,
+        let title = $('h1,h2,h3,h4,h5,h6', false, card),
+            name = $('*', false, title)?.textContent,
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
             { filter_rules } = Settings;
 
@@ -1109,7 +1111,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(filter_rules && filter_rules.split(',').contains(`@${ name.toLowerCase() }`))
                 return /* Already filtering messages from this person */;
 
-            let filter = furnish('div#tt-filter-rule-user', {
+            let filter = furnish('div#tt-filter-rule--user', {
                 title: `Filter all messages from @${ name }`,
                 style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal',
                 username: name,
@@ -1141,7 +1143,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(filter_rules && filter_rules.split(',').contains(`:${ name }:`))
                 return /* Already filtering this emote */;
 
-            let filter = furnish('div#tt-filter-rule-emote', {
+            let filter = furnish('div#tt-filter-rule--emote', {
                 title: 'Filter this emote',
                 style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal; text-decoration:line-through;',
                 emote: `:${ name }:`,
@@ -1177,6 +1179,209 @@ let Chat__Initialize = async(START_OVER = false) => {
         RegisterJob('easy_filter');
     }
 
+    /*** Highlight Phrases
+     *      _    _ _       _     _ _       _     _     _____  _
+     *     | |  | (_)     | |   | (_)     | |   | |   |  __ \| |
+     *     | |__| |_  __ _| |__ | |_  __ _| |__ | |_  | |__) | |__  _ __ __ _ ___  ___  ___
+     *     |  __  | |/ _` | '_ \| | |/ _` | '_ \| __| |  ___/| '_ \| '__/ _` / __|/ _ \/ __|
+     *     | |  | | | (_| | | | | | | (_| | | | | |_  | |    | | | | | | (_| \__ \  __/\__ \
+     *     |_|  |_|_|\__, |_| |_|_|_|\__, |_| |_|\__| |_|    |_| |_|_|  \__,_|___/\___||___/
+     *                __/ |           __/ |
+     *               |___/           |___/
+     */
+    let PHRASE_HIGHLIGHTER;
+
+    Handlers.highlight_phrases = () => {
+        PHRASE_HIGHLIGHTER ??= GetChat.onnewmessage = chat => {
+            let Phrases = UPDATE_RULES('phrase');
+
+            highlighting:
+            for(let line of chat) {
+                let { message, mentions, author, badges, emotes, element } = line,
+                    reason;
+
+                let censor = parseBool(false
+                    // Phrase of users on all channels
+                    || (Phrases.user.test(author)? reason = 'user': false)
+                    // Phrase of badges on all channels
+                    || (Phrases.badge.test(badges)? reason = 'badge': false)
+                    // Phrase of emotes on all channels
+                    || (Phrases.emote.test(emotes)? reason = 'emote': false)
+                    // Phrase of messges (RegExp) on all channels
+                    || (Phrases.text.test(message)? reason = 'text': false)
+                    // Phrase of messages/users on specific a channel
+                    || Phrases.channel.map(({ name, text, user, badge, emote }) => {
+                        if(!defined(STREAMER))
+                            return;
+
+                        let channel = STREAMER.name?.toLowerCase();
+
+                        return parseBool(false
+                            || channel == name.toLowerCase()
+                        ) && parseBool(false
+                            || (('@' + author) == user? reason = 'channel user': false)
+                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                            || (!!~emotes.findIndex(glyph => !!~glyph.indexOf(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                            || (text?.test?.(message)? reason = 'channel text': false)
+                        )
+                    }).contains(true)
+                );
+
+                if(!censor)
+                    continue highlighting;
+
+                LOG(`Highlighting message because the ${ reason } matches`, line);
+
+                let highlight = element.getAttribute('tt-light') === 'true';
+
+                if(highlight)
+                    return;
+
+                element.setAttribute('tt-light', true);
+            }
+        };
+
+        if(defined(PHRASE_HIGHLIGHTER))
+            PHRASE_HIGHLIGHTER(GetChat(250, true));
+    };
+    Timers.highlight_phrases = -2500;
+
+    Unhandlers.highlight_phrases = () => {
+        let highlight = $('[tt-light]', true);
+
+        highlight.map(element => element.removeAttribute('tt-light'));
+    };
+
+    __HighlightPhrases__:
+    if(parseBool(Settings.highlight_phrases)) {
+        REMARK("Adding phrase highlighting...");
+
+        RegisterJob('highlight_phrases');
+    }
+
+    /*** Easy Highlighter - NOT A SETTING. This is a helper for "Highlight Phrases"
+     *      ______                  _    _ _       _     _ _       _     _
+     *     |  ____|                | |  | (_)     | |   | (_)     | |   | |
+     *     | |__   __ _ ___ _   _  | |__| |_  __ _| |__ | |_  __ _| |__ | |_ ___ _ __
+     *     |  __| / _` / __| | | | |  __  | |/ _` | '_ \| | |/ _` | '_ \| __/ _ \ '__|
+     *     | |___| (_| \__ \ |_| | | |  | | | (_| | | | | | | (_| | | | | ||  __/ |
+     *     |______\__,_|___/\__, | |_|  |_|_|\__, |_| |_|_|_|\__, |_| |_|\__\___|_|
+     *                       __/ |            __/ |           __/ |
+     *                      |___/            |___/           |___/
+     */
+    Handlers.easy_highlighter = () => {
+        let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
+            existing = $('#tt-highlight-rule--user, #tt-highlight-rule--emote');
+
+        if(!defined(card) || defined(existing))
+            return;
+
+        let title = $('h1,h2,h3,h4,h5,h6', false, card),
+            name = $('*', false, title)?.textContent,
+            type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
+            { pharse_rules } = Settings;
+
+        if(type == 'user') {
+            /* Highlight users */
+            if(pharse_rules && pharse_rules.split(',').contains(`@${ name.toLowerCase() }`))
+                return /* Already highlighting messages from this person */;
+
+            let phrase = furnish('div#tt-highlight-rule--user', {
+                title: `Highlight all messages from @${ name }`,
+                style: 'cursor:pointer; fill:var(--color-green); font-size:1.1rem; font-weight:normal',
+                username: name,
+
+                onclick: event => {
+                    let { currentTarget } = event,
+                        username = currentTarget.getAttribute('username'),
+                        { pharse_rules } = Settings;
+
+                    pharse_rules = (pharse_rules || '').split(',');
+                    pharse_rules.push(`@${ username }`);
+                    pharse_rules = pharse_rules.join(',');
+
+                    currentTarget.remove();
+
+                    Storage.set({ pharse_rules });
+                },
+
+                innerHTML: `${ Glyphs.star } Highlight messages from @${ name }`,
+            });
+
+            let svg = $('svg', false, phrase);
+
+            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+
+            title.append(phrase);
+        } else if(type == 'emote') {
+            /* Highlight emotes */
+            if(pharse_rules && pharse_rules.split(',').contains(`:${ name }:`))
+                return /* Already highlighting this emote */;
+
+            let phrase = furnish('div#tt-highlight-rule--emote', {
+                title: 'Highlight this emote',
+                style: 'cursor:pointer; fill:var(--color-green); font-size:1.1rem; font-weight:normal;',
+                emote: `:${ name }:`,
+
+                onclick: event => {
+                    let { currentTarget } = event,
+                        emote = currentTarget.getAttribute('emote'),
+                        { pharse_rules } = Settings;
+
+                    pharse_rules = (pharse_rules || '').split(',');
+                    pharse_rules.push(emote);
+                    pharse_rules = pharse_rules.join(',');
+
+                    currentTarget.remove();
+
+                    Storage.set({ pharse_rules });
+                },
+
+                innerHTML: `${ Glyphs.star } ${ name }`,
+            });
+
+            let svg = $('svg', false, phrase);
+
+            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+
+            title.append(phrase);
+        }
+    };
+    Timers.easy_highlighter = 500;
+
+    __EasyHighlighter__:
+    if(parseBool(Settings.highlight_phrases)) {
+        RegisterJob('easy_highlighter');
+    }
+
+    /*** Easy Helper Card Resizer - NOT A SETTING. This is a helper for "Filter Messages" and "Highlight Phrases" that adjusts the card height for hidden children
+     *      ______                  _    _      _                    _____              _   _____           _
+     *     |  ____|                | |  | |    | |                  / ____|            | | |  __ \         (_)
+     *     | |__   __ _ ___ _   _  | |__| | ___| |_ __   ___ _ __  | |     __ _ _ __ __| | | |__) |___  ___ _ _______ _ __
+     *     |  __| / _` / __| | | | |  __  |/ _ \ | '_ \ / _ \ '__| | |    / _` | '__/ _` | |  _  // _ \/ __| |_  / _ \ '__|
+     *     | |___| (_| \__ \ |_| | | |  | |  __/ | |_) |  __/ |    | |___| (_| | | | (_| | | | \ \  __/\__ \ |/ /  __/ |
+     *     |______\__,_|___/\__, | |_|  |_|\___|_| .__/ \___|_|     \_____\__,_|_|  \__,_| |_|  \_\___||___/_/___\___|_|
+     *                       __/ |               | |
+     *                      |___/                |_|
+     */
+    Handlers.easy_helper_card_resizer = () => {
+        let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]');
+
+        if(!defined(card))
+            return;
+
+        let title = $('h1,h2,h3,h4,h5,h6', false, card),
+            { length } = title.children;
+
+        title.setAttribute('style', `height: ${ (length - 1) * 3 + 1 }rem`);
+    };
+    Timers.easy_helper_card_resizer = 250;
+
+    __EasyHelperCardResizer__:
+    if(parseBool(Settings.filter_messages) || parseBool(Settings.highlight_phrases)) {
+        RegisterJob('easy_helper_card_resizer');
+    }
+
     /*** Message Highlighter
      *      __  __                                  _    _ _       _     _ _       _     _
      *     |  \/  |                                | |  | (_)     | |   | (_)     | |   | |
@@ -1204,7 +1409,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     // LOG('Highlighting message:', { author, message });
 
-                    line.element.setAttribute('style', 'background-color: var(--color-background-button-primary-active)');
+                    line.element.setAttribute('style', 'background-color: var(--color-opac-p-11)');
                 }
         })(GetChat());
     };
@@ -2228,6 +2433,9 @@ Chat__CUSTOM_CSS.innerHTML =
 }
 #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
+[tt-hidden] { display: none }
+[tt-light] { background-color: var(--color-opac-p-7) }
+
 ::-webkit-scrollbar {
     width: .6rem;
 }
@@ -2269,6 +2477,10 @@ Chat__CUSTOM_CSS.innerHTML =
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
 /* Tooltips */
+.tw-dialog-layer [data-popper-escaped] {
+    width: max-content;
+}
+
 .tooltip-layer {
     pointer-events: none;
     position: fixed;

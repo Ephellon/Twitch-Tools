@@ -8,6 +8,266 @@
  *                    __/ |          _/ |
  *                   |___/          |__/
  */
+/***
+ *      ______                _   _
+ *     |  ____|              | | (_)
+ *     | |__ _   _ _ __   ___| |_ _  ___  _ __  ___
+ *     |  __| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+ *     | |  | |_| | | | | (__| |_| | (_) | | | \__ \
+ *     |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+ *
+ *
+ */
+// Parse a URL
+    // parseURL(url:string) -> Object
+function parseURL(url) {
+    if(!defined(url))
+        return {};
+
+    url = url.toString();
+
+    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
+        i    = 0,
+        e    = "";
+
+    data = data || e;
+
+    return {
+        href:            (data[i++] ?? e),
+        origin:          (data[i++] ?? e) + (data[i + 4] ?? e),
+        protocol:        (data[i++] ?? e),
+        scheme:          (data[i++] ?? e),
+        username:        (data[i++] ?? e),
+        password:        (data[i++] ?? e),
+        host:            (data[i++] ?? e),
+        domainPath:      (data[i]   ?? e).split('.').reverse(),
+        hostname:        (data[i++] ?? e),
+        port:            (data[i++] ?? e),
+        pathname:        (data[i++] ?? e),
+        search:          (data[i]   ?? e),
+        searchParameters: (sd => {
+            parsing:
+            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
+                c = d[i].split('=');
+                n = c[0] || e;
+
+                p = c.slice(1, c.length).join('=');
+
+                s[n] = (s[n] != undefined)?
+                    s[n] instanceof Array?
+                s[n].concat(p):
+                    [s[n], p]:
+                p;
+            }
+
+            return s;
+        })(data[i++] || e),
+        hash:            (data[i++] || e),
+
+        pushToSearch(parameters, overwrite = false) {
+            if(typeof url == 'string')
+                url = parseURL(url);
+
+            let { origin, pathname, hash, searchParameters } = url;
+
+            if(overwrite)
+                searchParameters = Object.entries({ ...searchParameters, ...parameters });
+            else
+                searchParameters = [searchParameters, parameters].map(Object.entries).flat();
+
+            searchParameters = '?' + searchParameters.map(parameter => parameter.join('=')).join('&');
+
+            return parseURL(origin + pathname + searchParameters + hash);
+        },
+    };
+};
+
+// Create elements
+    // furnish(tagname:string[, attributes:object[, ...children]]) -> Element
+function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
+    let u = v => v && v.length,
+        R = RegExp,
+        name = TAGNAME,
+        attributes = ATTRIBUTES,
+        children = CHILDREN;
+
+    if( !u(name) )
+        throw TypeError(`TAGNAME cannot be ${ (name === '')? 'unknown': name }`);
+
+    let options = attributes.is === true? { is: true }: null;
+
+    delete attributes.is;
+
+    name = name.split(/([#\.][^#\.\[\]]+)/).filter( u );
+
+    if(name.length <= 1)
+        name = name[0].split(/^([^\[\]]+)(\[.+\])/).filter( u );
+
+    if(name.length > 1)
+        for(let n = name, i = 1, l = n.length, t, v; i < l; i++)
+            if((v = n[i].slice(1, n[i].length)) && (t = n[i][0]) == '#')
+                attributes.id = v;
+            else if(t == '.')
+                attributes.classList = [].slice.call(attributes.classList ?? []).concat(v);
+            else if(/\[(.+)\]/.test(n[i]))
+                R.$1.split('][').forEach(N => attributes[(N = N.replace(/\s*=\s*(?:("?)([^]*)\1)?/, '=$2').split('=', 2))[0]] = N[1] || '');
+    name = name[0];
+
+    let element = document.createElement(name, options);
+
+    if(attributes.classList instanceof Array)
+        attributes.classList = attributes.classList.join(' ');
+
+    Object.entries(attributes).forEach(
+        ([name, value]) => (/^(on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
+            (/^on/.test(name))?
+                element.addEventListener(name.replace(/^on/, ''), value):
+            element[name] = value:
+        element.setAttribute(name, value)
+    );
+
+    children
+        .filter( defined )
+        .forEach( child => element.append(child) );
+
+    return element;
+}
+
+// Gets the X and Y offset (in pixels)
+    // getOffset(element:Element) -> Object={ left:number, top:number }
+function getOffset(element) {
+    let bounds = element.getBoundingClientRect(),
+        { height, width } = bounds;
+
+    return {
+        height, width,
+
+        left:   bounds.left + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
+        top:    bounds.top  + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+
+        right:  bounds.right  + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
+        bottom: bounds.bottom + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+    };
+}
+
+// Convert milliseconds into a human-readable string
+    // toTimeString([milliseconds:number[, format:string]]) -> String
+function toTimeString(milliseconds = 0, format = 'natural') {
+    let second = 1000,
+        minute = 60 * second,
+        hour   = 60 * minute,
+        day    = 24 * hour,
+        year   = 365 * day;
+
+    let time = [],
+        times = [
+            ['year'  ,   year],
+            ['day'   ,    day],
+            ['hour'  ,   hour],
+            ['minute', minute],
+            ['second', second],
+        ],
+        result;
+
+    let joining_symbol = ' ';
+
+    switch(format) {
+        case 'natural': {
+            for(let [name, value] of times)
+                if(milliseconds >= value) {
+                    let amount = (milliseconds / value) | 0;
+
+                    time.push(`${ amount } ${ name.pluralSuffix(amount) }`);
+
+                    milliseconds -= amount * value;
+                }
+
+            if(time.length > 1)
+                time.splice(-1, 0, 'and');
+
+            result = time;
+        } break;
+
+        case 'clock':
+            format = '!hour:!minute:!second';
+
+        default: {
+            joining_symbol = '';
+
+            for(let [name, value] of times)
+                if(milliseconds >= value) {
+                    let amount = (milliseconds / value) | 0;
+
+                    time.push(time[name] = (amount + '').padStart(2, '00'));
+
+                    milliseconds -= amount * value;
+                }
+
+            times.push(['millisecond', milliseconds]);
+
+            result = format.split(/\!(year|day|hour|minute|(?:milli)?second)s?\b/g)
+                .map($1 => {
+                    for(let [name, value] of times)
+                        if($1 == 'millisecond')
+                            return milliseconds;
+                        else if($1 == name)
+                            return time[name] ?? '00';
+
+                    return $1;
+                })
+        } break;
+    }
+
+    return result.join(joining_symbol);
+}
+
+// Convert a time-formatted string into its corresponding millisecond value
+    // parseTime([time:string]) -> Number
+function parseTime(time = '') {
+    let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
+        ms = 0;
+
+    for(let unit of time.split(':').reverse())
+        ms += parseInt(unit) * units.splice(0,1)[0];
+
+    return ms;
+}
+
+// Convert boolean values
+    // parseBool(value:*) -> Boolean
+function parseBool(value = null) {
+    switch(value) {
+        case "undefined":
+        case undefined:
+        case "false":
+        case "null":
+        case false:
+        case null:
+        case "[]":
+        case "{}":
+        case "0":
+        case "":
+        case []:
+        case {}:
+        case 0:
+            return false;
+
+        default:
+            return (["bigint", "number"].contains(typeof value)? !Number.isNaN(value): true);
+    }
+}
+
+/***
+ *      _____           _        _
+ *     |  __ \         | |      | |
+ *     | |__) | __ ___ | |_ ___ | |_ _   _ _ __   ___  ___
+ *     |  ___/ '__/ _ \| __/ _ \| __| | | | '_ \ / _ \/ __|
+ *     | |   | | | (_) | || (_) | |_| |_| | |_) |  __/\__ \
+ *     |_|   |_|  \___/ \__\___/ \__|\__, | .__/ \___||___/
+ *                                    __/ | |
+ *                                   |___/|_|
+ */
+
 // Finds the last index using the same format as `Array..findIndex`
     // Array..findLastIndex(predicate:function[, thisArg:object]) -> number#Integer
 Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = null) {
@@ -170,7 +430,456 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
         // Ends with anything else
         else
         EndsWith_Normal: {
-            string += tail;
+            let pattern = (
+                /^[A-Z][a-z]+$/.test(string)?
+                    'capped':
+                /^[A-Z]+$/.test(string)?
+                    'upper':
+                /^[a-z]+$/.test(string)?
+                    'lower':
+                ''
+            ) + (
+                /^[a-z]\.[a-z\.]+$/i.test(string)?
+                    '-dotted':
+                /^[a-z]\-[a-z\-]+$/i.test(string)?
+                    '-dashed':
+                ''
+            );
+
+            function toFormat(string, patterns) {
+                patterns = patterns.split('-');
+
+                for(let pattern of patterns)
+                    switch(pattern) {
+                        case 'capped': {
+                            string = string[0].toUpperCase() + string.slice(1, string.length).toLowerCase();
+                        } break;
+
+                        case 'upper': {
+                            string = string.toUpperCase();
+                        } break;
+
+                        case 'lower': {
+                            string = string.toLowerCase();
+                        } break;
+
+                        case 'dotted': {
+                            string = string.split('').join('.');
+                        } break;
+
+                        case 'dashed': {
+                            string = string.split('').join('-');
+                        } break;
+                    }
+
+                return string;
+            }
+
+            switch(string.toLowerCase().trim()) {
+                // alumnus / alumni
+                case 'alumnus': {
+                    string = toFormat('alumni', pattern);
+                } break;
+
+                case 'alumni': {
+                    // "alumni" is plural of "alumnus"
+                } break;
+
+                // appendix / appendicies
+                case 'appendix': {
+                    string = toFormat('appendicies', pattern);
+                } break;
+
+                case 'appendicies': {
+                    // "appendicies" is plural of "appendix"
+                } break;
+
+                // ax | axe | axis / axes
+                case 'ax':
+                case 'axe':
+                case 'axis': {
+                    string = toFormat('axes', pattern);
+                } break;
+
+                case 'axes': {
+                    // "axes" is plural of "ax", "axe", and "axis"
+                } break;
+
+                // bacterium / bacteria
+                case 'bacterium': {
+                    string = toFormat('bacteria', pattern);
+                } break;
+
+                case 'bacteria': {
+                    // "bacteria" is plural of "bacterium"
+                } break;
+
+                // cactus / cacti
+                case 'cactus': {
+                    string = toFormat('cacti', pattern);
+                } break;
+
+                case 'cacti': {
+                    // "cacti" is plural of "cactus"
+                } break;
+
+                // calf / calves
+                case 'calf': {
+                    string = toFormat('calves', pattern);
+                } break;
+
+                case 'calves': {
+                    // "calves" is plural of "calf"
+                } break;
+
+                // cello / celli
+                case 'cello': {
+                    string = toFormat('celli', pattern);
+                } break;
+
+                case 'celli': {
+                    // "celli" is plural of "cello"
+                } break;
+
+                // child / children
+                case 'child': {
+                    string = toFormat('children', pattern);
+                } break;
+
+                case 'children': {
+                    // "children" is plural of "child"
+                } break;
+
+                // curriculum / curricula
+                case 'curriculum': {
+                    string = toFormat('curricula', pattern);
+                } break;
+
+                case 'curricula': {
+                    // "curricula" is plural of "curriculum"
+                } break;
+
+                // datum / data
+                case 'datum': {
+                    string = toFormat('data', pattern);
+                } break;
+
+                case 'data': {
+                    // "data" is plural of "datum"
+                } break;
+
+                // die / dice
+                case 'die': {
+                    string = toFormat('dice', pattern);
+                } break;
+
+                case 'dice': {
+                    // "dice" is plural of "die"
+                } break;
+
+                // focus / foci
+                case 'focus': {
+                    string = toFormat('foci', pattern);
+                } break;
+
+                case 'foci': {
+                    // "foci" is plural of "focus"
+                } break;
+
+                // foot / feet
+                case 'foot': {
+                    string = toFormat('feet', pattern);
+                } break;
+
+                case 'feet': {
+                    // "feet" is plural of "foot"
+                } break;
+
+                // fez / fezzes
+                case 'fez': {
+                    string = toFormat('fezzes', pattern);
+                } break;
+
+                case 'fezzes': {
+                    // "fezzes" is plural of "fez"
+                } break;
+
+                // fungus / fungi
+                case 'fungus': {
+                    string = toFormat('fungi', pattern);
+                } break;
+
+                case 'fungi': {
+                    // "fungi" is plural of "fungus"
+                } break;
+
+                // gas / gasses
+                case 'gas': {
+                    string = toFormat('gasses', pattern);
+                } break;
+
+                case 'gasses': {
+                    // "gasses" is plural of "gas"
+                } break;
+
+                // goose / geese
+                case 'goose': {
+                    string = toFormat('geese', pattern);
+                } break;
+
+                case 'geese': {
+                    // "geese" is plural of "goose"
+                } break;
+
+                // hero / heroes
+                case 'hero': {
+                    string = toFormat('heroes', pattern);
+                } break;
+
+                case 'heroes': {
+                    // "heroes" is plural of "hero"
+                } break;
+
+                // hippopotamus / hippopotami
+                case 'hippopotamus': {
+                    string = toFormat('hippopotami', pattern);
+                } break;
+
+                case 'hippopotami': {
+                    // "hippopotami" is plural of "hippopotamus"
+                } break;
+
+                // index / indices
+                case 'index': {
+                    string = toFormat('indices', pattern);
+                } break;
+
+                case 'indices': {
+                    // "indices" is plural of "index"
+                } break;
+
+                // knife / knives
+                case 'knife': {
+                    string = toFormat('knives', pattern);
+                } break;
+
+                case 'knives': {
+                    // "knives" is plural of "knife"
+                } break;
+
+                // leaf / leaves
+                case 'leaf': {
+                    string = toFormat('leaves', pattern);
+                } break;
+
+                case 'leaves': {
+                    // "leaves" is plural of "leaf"
+                } break;
+
+                // life / lives
+                case 'life': {
+                    string = toFormat('lives', pattern);
+                } break;
+
+                case 'lives': {
+                    // "lives" is plural of "life"
+                } break;
+
+                // man / men
+                case 'man': {
+                    string = toFormat('men', pattern);
+                } break;
+
+                case 'men': {
+                    // "men" is plural of "man"
+                } break;
+
+                // memorandum / memoranda
+                case 'memorandum': {
+                    string = toFormat('memoranda', pattern);
+                } break;
+
+                case 'memoranda': {
+                    // "memoranda" is plural of "memorandum"
+                } break;
+
+                // mouse / mice
+                case 'mouse': {
+                    string = toFormat('mice', pattern);
+                } break;
+
+                case 'mice': {
+                    // "mice" is plural of "mouse"
+                } break;
+
+                // nucleus / nuclei
+                case 'nucleus': {
+                    string = toFormat('nuclei', pattern);
+                } break;
+
+                case 'nuclei': {
+                    // "nuclei" is plural of "nucleus"
+                } break;
+
+                // octopus / octopi
+                case 'octopus': {
+                    string = toFormat('octopi', pattern);
+                } break;
+
+                case 'octopi': {
+                    // "octopi" is plural of "octopus"
+                } break;
+
+                // ox / oxen
+                case 'ox': {
+                    string = toFormat('oxen', pattern);
+                } break;
+
+                case 'oxen': {
+                    // "oxen" is plural of "ox"
+                } break;
+
+                // person / people
+                case 'person': {
+                    string = toFormat('people', pattern);
+                } break;
+
+                case 'people': {
+                    // "people" is plural of "person"
+                } break;
+
+                // potato / potatoes
+                case 'potato': {
+                    string = toFormat('potatoes', pattern);
+                } break;
+
+                case 'potatoes': {
+                    // "potatoes" is plural of "potato"
+                } break;
+
+                // radius / radii
+                case 'radius': {
+                    string = toFormat('radii', pattern);
+                } break;
+
+                case 'radii': {
+                    // "radii" is plural of "radius"
+                } break;
+
+                // stratum / strata
+                case 'stratum': {
+                    string = toFormat('strata', pattern);
+                } break;
+
+                case 'strata': {
+                    // "strata" is plural of "stratum"
+                } break;
+
+                // tomato / tomatoes
+                case 'tomato': {
+                    string = toFormat('tomatoes', pattern);
+                } break;
+
+                case 'tomatoes': {
+                    // "tomatoes" is plural of "tomato"
+                } break;
+
+                // tooth / teeth
+                case 'tooth': {
+                    string = toFormat('teeth', pattern);
+                } break;
+
+                case 'teeth': {
+                    // "teeth" is plural of "tooth"
+                } break;
+
+                // torpedo / torpedoes
+                case 'torpedo': {
+                    string = toFormat('torpedoes', pattern);
+                } break;
+
+                case 'torpedoes': {
+                    // "torpedoes" is plural of "torpedo"
+                } break;
+
+                // veto / vetoes
+                case 'veto': {
+                    string = toFormat('vetoes', pattern);
+                } break;
+
+                case 'vetoes': {
+                    // "vetoes" is plural of "veto"
+                } break;
+
+                // vortex / vortices
+                case 'vortex': {
+                    string = toFormat('vortices', pattern);
+                } break;
+
+                case 'vortices': {
+                    // "vortices" is plural of "vortex"
+                } break;
+
+                // wife / wives
+                case 'wife': {
+                    string = toFormat('wives', pattern);
+                } break;
+
+                case 'wives': {
+                    // "wives" is plural of "wife"
+                } break;
+
+                // wolf / wolves
+                case 'wolf': {
+                    string = toFormat('wolves', pattern);
+                } break;
+
+                case 'wolves': {
+                    // "wolves" is plural of "wolf"
+                } break;
+
+                // woman / women
+                case 'woman': {
+                    string = toFormat('women', pattern);
+                } break;
+
+                case 'women': {
+                    // "women" is plural of "woman"
+                } break;
+
+                // No change
+                case 'aircraft':
+                case 'buffalo':
+                case 'deer':
+                case 'fish':
+                case 'hovercraft':
+                case 'moose':
+                case 'series':
+                case 'sheep':
+                case 'shrimp':
+                case 'spacecraft':
+                case 'species':
+                case 'swine':
+                case 'trout':
+                case 'watercraft': {
+                    // these words are already pluralized
+                } break;
+
+                // "Normal" operations
+                default: {
+                    // "lunch" -> "lunches"
+                    if(/([cs]h|[sxz])$/i.test(string))
+                        string += toFormat('es', pattern);
+                    // "ellipsis" -> "ellipses"
+                    else if(/(is)$/i.test(string))
+                        string = string.replace(RegExp.$1, toFormat('es', pattern));
+                    // "criterion" -> "criteria"
+                    else if(/(on)$/i.test(string))
+                        string = string.replace(RegExp.$1, toFormat('a', pattern));
+                    else
+                        string += toFormat('s', pattern);
+                } break;
+            }
         }
     }
 

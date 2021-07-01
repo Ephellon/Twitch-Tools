@@ -212,10 +212,48 @@
 			"Wanneer iemand een algemene vermelding stuurt (", null, "@chat", "@all", "), markeert u het bericht door een pop-upvenster weer te geven"
 		],
 
+	"highlight-phrases": [
+		"Phrasen hervorheben",
+		"Wenn jemand eine Nachricht mit einem der folgenden Sätze sendet, heben Sie die Nachricht hervor, indem Sie sie hervorheben",
+		"Weitere Informationen finden Sie im", "TTV Tools Wiki — Hervorheben von Phrasen", ""
+	],
+		"highlight-phrases:options": [
+			"Filter Regels",
+			"Kanaal Regels",
+			"Badges",
+			"Gebruiker",
+			"Emoticons",
+			"Tekst",
+			null,
+			"Start",
+			"toevoegen",
+			"enkele regels"
+		],
+
 	"native-reply": [
 		"Native Reactie",
 		"Probeer native Twitch™-reacties te tonen op alle kanalen"
 	],
+
+	"notification-sounds": [
+		"Benachrichtigungstöne",
+		"Wenn eine (oder mehrere) der folgenden Bedingungen erfüllt sind, spielen Sie einen Benachrichtigungston ab"
+	],
+		"notification-sounds:include-mentions": [
+			"Erwähnungen",
+			"Wenn jemand Ihren", "@Benutzernamen", "erwähnt, spielen Sie den", "Benachrichtigungston ab"
+		],
+		"notification-sounds:include-phrases": [
+			"Phrasen",
+			"Wenn jemand eine Phrase aus", "Highlight-Phrasen", "verwendet, spielen Sie den", "Benachrichtigungston ab"
+		],
+		"notification-sounds:include-whispers": [
+			"Flüstern",
+			"Wenn Ihnen jemand ein Flüstern sendet, spielen Sie den", "Benachrichtigungston ab"
+		],
+		"notification-sounds:options": [
+			"Benachrichtigungstöne"
+		],
 
 	"prevent-spam": [
 		"Voorkom spam",
@@ -255,15 +293,6 @@
 
 			"Emoticons omkeren",
 			"Converteer emoticons terug naar tekst en toon de emoticon (als", "tooltip", ") alleen wanneer", "de cursor over", "de tekst"
-		],
-
-	"whisper-audio": [
-		"Audio Fluister",
-		"Wanneer iemand je een fluistering stuurt, speelt het een notificatie geluid af"
-	],
-		"whisper-audio:options": [
-			"Meldingsgeluid",
-			"Dit geluid", "is gelicenseerd onder de Creative Commons Naamsvermelding", "Meer informatie"
 		],
 
 

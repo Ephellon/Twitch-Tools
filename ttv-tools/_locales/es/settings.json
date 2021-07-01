@@ -208,10 +208,46 @@
             "Cuando alguien envíe una mención general (", null, "@chat", "@todos", "), resalte el mensaje mostrando una ventana emergente"
         ],
 
+    "highlight-phrases": [
+		"Destacar frases",
+		"Cuando alguien envía un mensaje usando cualquiera de las siguientes frases, resalte el mensaje resaltándolo",
+		"Para obtener más información, consulte la", "Wiki de TTV Tools - Resaltado de frases", ""
+	],
+		"highlight-phrases:options": [
+            "Reglas de Filtro",
+            "Reglas del Canal",
+            "Insignias",
+            "Usuarios",
+            "Emoticones",
+            "Texto",
+            null,
+            "Comience", "agregando", "algunas reglas"
+        ],
+
     "native-reply": [
         "Respuesta Nativa",
         "Intente mostrar las respuestas nativas de Twitch™ en todos los canales"
     ],
+
+    "notification-sounds": [
+		"Sonidos de notificación",
+		"Cuando se cumple una (o más) de las siguientes condiciones, reproduce un tono de notificación"
+	],
+		"notification-sounds:include-mentions": [
+			"Menciones",
+			"Cuando alguien mencione tu", "@nombredeusuario", "reproduce el", "sonido de notificación"
+		],
+		"notification-sounds:include-phrases": [
+			"Frases",
+			"Cuando alguien esté usando una frase de", "Frases destacadas", "reproduzca el", "sonido de notificación"
+		],
+		"notification-sounds:include-whispers": [
+			"Susurro",
+			"Cuando alguien te envíe un susurro, reproduce el", "sonido de notificación"
+		],
+		"notification-sounds:options": [
+			"Sonido de notificación"
+		],
 
     "prevent-spam": [
         "Prevenir spam",
@@ -251,15 +287,6 @@
 
             "Emoticones Inversos",
             "Convierta los emoticones nuevamente en texto y muestre el emoticón (como", "información sobre herramientas", ") solo cuando", "pase el cursor sobre", "el texto"
-        ],
-
-    "whisper-audio": [
-        "Audio de Susurro",
-        "Cuando alguien te envíe un susurro, reproduce un sonido de notificación"
-    ],
-        "whisper-audio:options": [
-            "Sonido de notificación",
-            "Este sonido", "tiene la licencia Creative Commons Attribution", "Saber más"
         ],
 
 

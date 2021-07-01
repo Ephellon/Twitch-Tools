@@ -187,7 +187,7 @@
 
 	"filter-messages": [
 		"Filter messages",
-		"Remvoes messages/rules across all channels",
+		"Removes messages/rules across all channels",
 		"Please see", "TTV Tools Wiki — Filter Messages", "for assistance"
 	],
     	"filter-messages:options": [
@@ -210,10 +210,46 @@
     		"When someone sends a general mention (", "@all", "@chat", "@everyone", "), make the message stand out by highlighting it"
     	],
 
+	"highlight-phrases": [
+		"Highlight phrases",
+		"When someone sends a message using any of the following phrases, make the message stand out by highlighting it",
+		"Please see", "TTV Tools Wiki — Highlight Phrases", "for assistance"
+	],
+		"highlight-phrases:options": [
+    		"Filter Rules",
+    		"Channel Rules",
+    		"Badges",
+    		"Users",
+    		"Emotes",
+    		"Text",
+    		null,
+    		"Get started by", "adding", "some rules"
+    	],
+
 	"native-reply": [
 		"Native Reply",
 		"Attempt to display native Twitch™ replies on all channels"
 	],
+
+	"notification-sounds": [
+		"Notification Sounds",
+		"When one (or more) of the following conditions are met, play a notification sound"
+	],
+		"notification-sounds:include-mentions": [
+			"Mentions",
+			"When someone mentions your", "@username", "play the", "notification sound"
+		],
+		"notification-sounds:include-phrases": [
+			"Phrases",
+			"When someone is using a phrase from", "Highlight Phrases", "play the", "notification sound"
+		],
+		"notification-sounds:include-whispers": [
+			"Whispers",
+			"When someone sends you a whisper, play the", "notification sound"
+		],
+		"notification-sounds:options": [
+			"Notification Sound"
+		],
 
 	"prevent-spam": [
 		"Prevent spam",
@@ -253,15 +289,6 @@
 
     		"Reverse Emotes",
     		"Convert emotes back into their text, and display the emote (as a", "tooltip", ") only when", "hovering", "the text"
-    	],
-
-	"whisper-audio": [
-		"Audio Whisper",
-		"When someone sends you a whisper, play a notification sound"
-	],
-    	"whisper-audio:options": [
-    		"Notification Sound",
-    		"This sound", "is licensed under the Creative Commons Attribution license", "Learn more"
     	],
 
 
@@ -344,12 +371,12 @@
 	],
 
 	"recover-ads": [
-		"Recovering Ads",
+		"Recover Ads",
 		"When an advertisement fails to play (\"freezes\"), attempt to recover it"
 	],
 
 	"recover-frames": [
-		"Recover Image",
+		"Recover Frames",
 		"When the video fails to play (drops frames for longer than", "15 seconds", "), reload the webpage"
 	],
 

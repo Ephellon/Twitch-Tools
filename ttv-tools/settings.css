@@ -201,6 +201,7 @@ section, footer {
 
     padding: 2rem;
 
+    min-height: 10rem;
     width: 100%;
 }
 
@@ -1090,16 +1091,19 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 /* Et Al */
-#filter_rules {
+#filter_rules,
+#phrase_rules {
     /* height: 3rem; */
     overflow: auto;
 }
 
-#filter_rules h2:only-child, #filter_rules [filter-type]:not([not-empty]), #filter_rules > [filter-type][not-empty] ~ *:last-child {
+#filter_rules h2:only-child, #filter_rules [filter-type]:not([not-empty]), #filter_rules > [filter-type][not-empty] ~ *:last-child,
+#phrase_rules h2:only-child, #phrase_rules [phrase-type]:not([not-empty]), #phrase_rules > [phrase-type][not-empty] ~ *:last-child {
     display: none;
 }
 
-[filter-type]:not(:last-child) {
+[filter-type]:not(:last-child),
+[phrase-type]:not(:last-child) {
     padding-bottom: .5rem;
 }
 
@@ -1275,7 +1279,7 @@ body.popup {
     padding: .1rem .5rem;
 }
 
-.popup #filter_rules {
+.popup #filter_rules, .popup #phrase_rules {
     /* height: 9rem; */
 }
 

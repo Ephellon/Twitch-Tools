@@ -1738,221 +1738,6 @@ function RemoveFromTopSearch(keys, reload = true) {
     search;
 }
 
-// Parse a URL
-    // parseURL(url:string) -> Object
-function parseURL(url) {
-    if(!defined(url))
-        return {};
-
-    url = url.toString();
-
-    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
-        i    = 0,
-        e    = "";
-
-    data = data || e;
-
-    return {
-        href:            (data[i++] ?? e),
-        origin:          (data[i++] ?? e) + (data[i + 4] ?? e),
-        protocol:        (data[i++] ?? e),
-        scheme:          (data[i++] ?? e),
-        username:        (data[i++] ?? e),
-        password:        (data[i++] ?? e),
-        host:            (data[i++] ?? e),
-        domainPath:      (data[i]   ?? e).split('.').reverse(),
-        hostname:        (data[i++] ?? e),
-        port:            (data[i++] ?? e),
-        pathname:        (data[i++] ?? e),
-        search:          (data[i]   ?? e),
-        searchParameters: (sd => {
-            parsing:
-            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
-                c = d[i].split('=');
-                n = c[0] || e;
-
-                p = c.slice(1, c.length).join('=');
-
-                s[n] = (s[n] != undefined)?
-                    s[n] instanceof Array?
-                s[n].concat(p):
-                    [s[n], p]:
-                p;
-            }
-
-            return s;
-        })(data[i++] || e),
-        hash:            (data[i++] || e),
-
-        pushToSearch(parameters, overwrite = false) {
-            if(typeof url == 'string')
-                url = parseURL(url);
-
-            let { origin, pathname, hash, searchParameters } = url;
-
-            if(overwrite)
-                searchParameters = Object.entries({ ...searchParameters, ...parameters });
-            else
-                searchParameters = [searchParameters, parameters].map(Object.entries).flat();
-
-            searchParameters = '?' + searchParameters.map(parameter => parameter.join('=')).join('&');
-
-            return parseURL(origin + pathname + searchParameters + hash);
-        },
-    };
-};
-
-// Create elements
-    // furnish(tagname:string[, attributes:object[, ...children]]) -> Element
-function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
-    let u = v => v && v.length,
-        R = RegExp,
-        name = TAGNAME,
-        attributes = ATTRIBUTES,
-        children = CHILDREN;
-
-    if( !u(name) )
-        throw TypeError(`TAGNAME cannot be ${ (name === '')? 'unknown': name }`);
-
-    let options = attributes.is === true? { is: true }: null;
-
-    delete attributes.is;
-
-    name = name.split(/([#\.][^#\.\[\]]+)/).filter( u );
-
-    if(name.length <= 1)
-        name = name[0].split(/^([^\[\]]+)(\[.+\])/).filter( u );
-
-    if(name.length > 1)
-        for(let n = name, i = 1, l = n.length, t, v; i < l; i++)
-            if((v = n[i].slice(1, n[i].length)) && (t = n[i][0]) == '#')
-                attributes.id = v;
-            else if(t == '.')
-                attributes.classList = [].slice.call(attributes.classList ?? []).concat(v);
-            else if(/\[(.+)\]/.test(n[i]))
-                R.$1.split('][').forEach(N => attributes[(N = N.replace(/\s*=\s*(?:("?)([^]*)\1)?/, '=$2').split('=', 2))[0]] = N[1] || '');
-    name = name[0];
-
-    let element = document.createElement(name, options);
-
-    if(attributes.classList instanceof Array)
-        attributes.classList = attributes.classList.join(' ');
-
-    Object.entries(attributes).forEach(
-        ([name, value]) => (/^(on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
-            (/^on/.test(name))?
-                element.addEventListener(name.replace(/^on/, ''), value):
-            element[name] = value:
-        element.setAttribute(name, value)
-    );
-
-    children
-        .filter( defined )
-        .forEach( child => element.append(child) );
-
-    return element;
-}
-
-// Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) -> Object={ left:number, top:number }
-function getOffset(element) {
-    let bounds = element.getBoundingClientRect(),
-        { height, width } = bounds;
-
-    return {
-        height, width,
-
-        left:   bounds.left + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        top:    bounds.top  + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
-
-        right:  bounds.right  + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        bottom: bounds.bottom + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
-    };
-}
-
-// Convert milliseconds into a human-readable string
-    // toTimeString([milliseconds:number[, format:string]]) -> String
-function toTimeString(milliseconds = 0, format = 'natural') {
-    let second = 1000,
-        minute = 60 * second,
-        hour   = 60 * minute,
-        day    = 24 * hour,
-        year   = 365 * day;
-
-    let time = [],
-        times = [
-            ['year'  ,   year],
-            ['day'   ,    day],
-            ['hour'  ,   hour],
-            ['minute', minute],
-            ['second', second],
-        ],
-        result;
-
-    let joining_symbol = ' ';
-
-    switch(format) {
-        case 'natural': {
-            for(let [name, value] of times)
-                if(milliseconds >= value) {
-                    let amount = (milliseconds / value) | 0;
-
-                    time.push(`${ amount } ${ name.pluralSuffix(amount) }`);
-
-                    milliseconds -= amount * value;
-                }
-
-            if(time.length > 1)
-                time.splice(-1, 0, 'and');
-
-            result = time;
-        } break;
-
-        case 'clock':
-            format = '!hour:!minute:!second';
-
-        default: {
-            joining_symbol = '';
-
-            for(let [name, value] of times)
-                if(milliseconds >= value) {
-                    let amount = (milliseconds / value) | 0;
-
-                    time.push(time[name] = (amount + '').padStart(2, '00'));
-
-                    milliseconds -= amount * value;
-                }
-
-            times.push(['millisecond', milliseconds]);
-
-            result = format.split(/\!(year|day|hour|minute|(?:milli)?second)s?\b/g)
-                .map($1 => {
-                    for(let [name, value] of times)
-                        if($1 == 'millisecond')
-                            return milliseconds;
-                        else if($1 == name)
-                            return time[name] ?? '00';
-
-                    return $1;
-                })
-        } break;
-    }
-
-    return result.join(joining_symbol);
-}
-
-// Convert a time-formatted string into its corresponding millisecond value
-    // parseTime([time:string]) -> Number
-function parseTime(time = '') {
-    let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
-        ms = 0;
-
-    for(let unit of time.split(':').reverse())
-        ms += parseInt(unit) * units.splice(0,1)[0];
-
-    return ms;
-}
-
 // Convert an SI number into a number
     // parseCoin(amount:string) -> Number
 function parseCoin(amount = '') {
@@ -1969,30 +1754,6 @@ function parseCoin(amount = '') {
             points = parseFloat(COIN) * (1e3 ** index);
 
     return points;
-}
-
-// Convert boolean values
-    // parseBool(value:*) -> Boolean
-function parseBool(value = null) {
-    switch(value) {
-        case "undefined":
-        case undefined:
-        case "false":
-        case "null":
-        case false:
-        case null:
-        case "[]":
-        case "{}":
-        case "0":
-        case "":
-        case []:
-        case {}:
-        case 0:
-            return false;
-
-        default:
-            return (["bigint", "number"].contains(typeof value)? !Number.isNaN(value): true);
-    }
 }
 
 // Get the video quality
@@ -2456,6 +2217,10 @@ try {
                         RestartJob('filter_messages', 'modify');
                     } break;
 
+                    case 'phrase_rules': {
+                        RestartJob('highlight_phrases', 'modify');
+                    } break;
+
                     case 'away_mode_placement': {
                         RestartJob('away_mode', 'modify');
                     } break;
@@ -2470,6 +2235,8 @@ try {
                     } break;
 
                     case 'whisper_audio_sound': {
+                        RestartJob('mention_audio', 'modify');
+                        RestartJob('phrase_audio', 'modify');
                         RestartJob('whisper_audio', 'modify');
                     } break;
 
@@ -2740,7 +2507,7 @@ let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace(
     NORMALIZED_FEATURES = ['away_mode*', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
 
     // Features that need to be refreshed when changed
-    REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'native_twitch_reply', '*placement'].map(AsteriskFn);
+    REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'highlight_phrases', 'native_twitch_reply', '*placement'].map(AsteriskFn);
 
 /*** Initialization #MARK:initializer
 *      _____       _ _   _       _ _          _   _
@@ -3073,6 +2840,12 @@ let Initialize = async(START_OVER = false) => {
             $('.tw-tag', true).map(element => {
                 let name = element.textContent.toLowerCase(),
                     { href } = element.closest('a[href]');
+
+                if(parseBool(Settings.show_stats)) {
+                    let score = scoreTagActivity(name);
+
+                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { direction: 'up' });
+                }
 
                 tags.push(name);
                 tags[name] = href;
@@ -3787,6 +3560,7 @@ let Initialize = async(START_OVER = false) => {
                 case 'drones':
                 case 'fantasy':
                 case 'gambling':
+                case 'hype': // hype trains are a special occasion
                 case 'indie':
                 case 'metroidvania':
                 case 'open':
@@ -3806,7 +3580,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.auto_focus = () => {
-        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold) || scoreTagActivity(...STREAMER.tags),
+        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold) || STREAMER.mark,
             pollInterval = parseInt(Settings.auto_focus_poll_interval),
             imageType = Settings.auto_focus_poll_image_type,
             detectedTrend = '&bull;';
@@ -4080,8 +3854,8 @@ let Initialize = async(START_OVER = false) => {
                 enabled,
                 container,
                 icon: $('svg', false, container),
-                get offset() { return getOffset(container) },
                 background: $('button', false, container),
+                get offset() { return getOffset(container) },
                 tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { direction: 'up', left: +5 }),
             };
 
@@ -5525,24 +5299,21 @@ let Initialize = async(START_OVER = false) => {
      */
     // /chat.js
 
-    /*** Whisper Audio
-     *     __          ___     _                                         _ _
-     *     \ \        / / |   (_)                         /\            | (_)
-     *      \ \  /\  / /| |__  _ ___ _ __   ___ _ __     /  \  _   _  __| |_  ___
-     *       \ \/  \/ / | '_ \| / __| '_ \ / _ \ '__|   / /\ \| | | |/ _` | |/ _ \
-     *        \  /\  /  | | | | \__ \ |_) |  __/ |     / ____ \ |_| | (_| | | (_) |
-     *         \/  \/   |_| |_|_|___/ .__/ \___|_|    /_/    \_\__,_|\__,_|_|\___/
-     *                              | |
-     *                              |_|
+    /*** Notification Sounds
+     *      _   _       _   _  __ _           _   _                _____                       _
+     *     | \ | |     | | (_)/ _(_)         | | (_)              / ____|                     | |
+     *     |  \| | ___ | |_ _| |_ _  ___ __ _| |_ _  ___  _ __   | (___   ___  _   _ _ __   __| |___
+     *     | . ` |/ _ \| __| |  _| |/ __/ _` | __| |/ _ \| '_ \   \___ \ / _ \| | | | '_ \ / _` / __|
+     *     | |\  | (_) | |_| | | | | (_| (_| | |_| | (_) | | | |  ____) | (_) | |_| | | | | (_| \__ \
+     *     |_| \_|\___/ \__|_|_| |_|\___\__,_|\__|_|\___/|_| |_| |_____/ \___/ \__,_|_| |_|\__,_|___/
+     *
+     *
      */
-    let NOTIFIED = 0,
-        NOTIFICATION_SOUND,
-        NOTIFICATION_EVENT;
-
-    Handlers.whisper_audio = () => {
-        // Manufacture the <AUDIO/>
-        NOTIFICATION_SOUND ??= furnish('audio#tt-notification-sound',
-            {
+    let NOTIFIED = { mention: 0, phrase: 0, whisper: 0 },
+        NOTIFICATION_EVENTS = {},
+        NOTIFICATION_SOUND = (null
+            ?? $('audio#tt-notification-sound')
+            ?? furnish('audio#tt-notification-sound', {
                 style: 'display:none',
 
                 innerHTML: [
@@ -5556,10 +5327,80 @@ let Initialize = async(START_OVER = false) => {
 
                         return furnish('source', { src, type }).outerHTML;
                     }).join('')
-            });
+            })
+        );
 
+    /*** Mention Audio
+     *      __  __            _   _                                 _ _
+     *     |  \/  |          | | (_)                 /\            | (_)
+     *     | \  / | ___ _ __ | |_ _  ___  _ __      /  \  _   _  __| |_  ___
+     *     | |\/| |/ _ \ '_ \| __| |/ _ \| '_ \    / /\ \| | | |/ _` | |/ _ \
+     *     | |  | |  __/ | | | |_| | (_) | | | |  / ____ \ |_| | (_| | | (_) |
+     *     |_|  |_|\___|_| |_|\__|_|\___/|_| |_| /_/    \_\__,_|\__,_|_|\___/
+     *
+     *
+     */
+    Handlers.mention_audio = () => {
         // Play sound on new message
-        NOTIFICATION_EVENT ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
+        NOTIFICATION_EVENTS.onmention ??= GetChat.onnewmessage = lines => {
+            for(let { mentions } of lines)
+                if(mentions.contains(USERNAME) && !NOTIFICATION_SOUND?.playing)
+                    NOTIFICATION_SOUND?.play();
+        };
+    };
+    Timers.mention_audio = 1000;
+
+    Unhandlers.mention_audio = () => {
+        NOTIFICATION_SOUND?.pause();
+    };
+
+    __NotificationSounds_Mentions__:
+    if(parseBool(Settings.mention_audio)) {
+        RegisterJob('mention_audio');
+    }
+
+    /*** Phrase Audio
+     *      _____  _                                            _ _
+     *     |  __ \| |                            /\            | (_)
+     *     | |__) | |__  _ __ __ _ ___  ___     /  \  _   _  __| |_  ___
+     *     |  ___/| '_ \| '__/ _` / __|/ _ \   / /\ \| | | |/ _` | |/ _ \
+     *     | |    | | | | | | (_| \__ \  __/  / ____ \ |_| | (_| | | (_) |
+     *     |_|    |_| |_|_|  \__,_|___/\___| /_/    \_\__,_|\__,_|_|\___/
+     *
+     *
+     */
+    Handlers.phrase_audio = () => {
+        // Play sound on new message
+        NOTIFICATION_EVENTS.onphrase ??= GetChat.onnewmessage = lines => {
+            for(let { element } of lines)
+                if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
+                    NOTIFICATION_SOUND?.play();
+        };
+    };
+    Timers.phrase_audio = 1000;
+
+    Unhandlers.phrase_audio = () => {
+        NOTIFICATION_SOUND?.pause();
+    };
+
+    __NotificationSounds_Phrases__:
+    if(parseBool(Settings.phrase_audio)) {
+        RegisterJob('phrase_audio');
+    }
+
+    /*** Whisper Audio
+     *     __          ___     _                                         _ _
+     *     \ \        / / |   (_)                         /\            | (_)
+     *      \ \  /\  / /| |__  _ ___ _ __   ___ _ __     /  \  _   _  __| |_  ___
+     *       \ \/  \/ / | '_ \| / __| '_ \ / _ \ '__|   / /\ \| | | |/ _` | |/ _ \
+     *        \  /\  /  | | | | \__ \ |_) |  __/ |     / ____ \ |_| | (_| | | (_) |
+     *         \/  \/   |_| |_|_|___/ .__/ \___|_|    /_/    \_\__,_|\__,_|_|\___/
+     *                              | |
+     *                              |_|
+     */
+    Handlers.whisper_audio = () => {
+        // Play sound on new message
+        NOTIFICATION_EVENTS.onwhisper ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
             LOG('Got a new whisper', { unread, highlighted, message });
 
             if(!unread && !highlighted && !message)
@@ -5575,21 +5416,20 @@ let Initialize = async(START_OVER = false) => {
             unread = parseInt(pill?.innerText) | 0;
 
         if(!defined(pill))
-            return NOTIFIED = 0;
-        if(NOTIFIED >= unread)
+            return NOTIFIED.whisper = 0;
+        if(NOTIFIED.whisper >= unread)
             return;
-        NOTIFIED = unread;
+        NOTIFIED.whisper = unread;
 
         NOTIFICATION_SOUND?.play();
     };
     Timers.whisper_audio = 1000;
 
     Unhandlers.whisper_audio = () => {
-        NOTIFICATION_SOUND?.remove();
-        NOTIFICATION_SOUND = null;
+        NOTIFICATION_SOUND?.pause();
     };
 
-    __NotificationSounds__:
+    __NotificationSounds_Whispers__:
     if(parseBool(Settings.whisper_audio)) {
         RegisterJob('whisper_audio');
     }
@@ -5853,7 +5693,7 @@ let Initialize = async(START_OVER = false) => {
 
             let text = furnish('span.tt-point-amount', {
                     'tt-earned-all': earnedAll,
-                    innerHTML: amount,
+                    innerHTML: amount.toLocaleString(),
                 }),
                 icon = face?.length?
                     furnish('span.tt-point-face', {
@@ -6207,7 +6047,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let RECOVERING_VIDEO = false;
 
-    Handlers.recover_video = () => {
+    Handlers.recover_video = async() => {
         let errorMessage = $('[data-a-target="player-overlay-content-gate"i]');
 
         if(!defined(errorMessage))
@@ -6220,7 +6060,7 @@ let Initialize = async(START_OVER = false) => {
         errorMessage = errorMessage.textContent;
 
         if(/subscribe/i.test(errorMessage)) {
-            let next = GetNextStreamer();
+            let next = await GetNextStreamer();
 
             // Subscriber only, etc.
             if(defined(next))
@@ -6287,14 +6127,14 @@ let Initialize = async(START_OVER = false) => {
      *                                                       __/ |
      *                                                      |___/
      */
-    Handlers.recover_pages = () => {
+    Handlers.recover_pages = async() => {
         let error = $('[data-a-target="core-error-message"i]');
 
         if(!defined(error))
             return;
 
         let message = error.innerText,
-            next = GetNextStreamer();
+            next = await GetNextStreamer();
 
         ERROR(message);
 
@@ -6622,14 +6462,17 @@ CUSTOM_CSS.innerHTML =
 
     transition: border 1s;
 }
+
 [animationID] a { cursor: grab }
 [animationID] a:active { cursor: grabbing }
+
 [tt-hidden] { display: none }
+[tt-light] { background-color: var(--color-opac-p-7) }
+
 [up-next--body] {
     background-color: #387aff;
     border-radius: 0.5rem;
 }
-
 [up-next--body][empty="true"i] {
     background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
     background-repeat: no-repeat;
@@ -6697,6 +6540,11 @@ CUSTOM_CSS.innerHTML =
 [tt-in-up-next="true"i] { box-shadow: #387aff88 0 4px 8px, #387aff88 0 0 4px !important }
 
 /* Tooltips */
+.tw-dialog-layer [data-popper-escaped] {
+    max-width: 25rem;
+    width: max-content;
+}
+
 .tooltip-layer {
     pointer-events: none;
     position: fixed;

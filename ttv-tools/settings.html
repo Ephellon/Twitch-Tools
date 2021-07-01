@@ -508,7 +508,7 @@
                                 <div class='summary'>
                                     <p tr-id>
                                         Add <b>BetterTTV</b> emotes with the words:
-                                        <input id='bttv_emotes_extras' type='text' value="" left-tooltip='Case insensitive &bull; Comma separated' placeholder='monka,flex,pls'/>
+                                        <input id='bttv_emotes_extras' type='text' value='' left-tooltip='Case insensitive &bull; Comma separated' placeholder='monka,flex,pls'/>
                                     </p>
                                 </div>
                             </div>
@@ -543,7 +543,7 @@
                         Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Filter-Messages'>TTV Tools Wiki &mdash; Filter Messages</a> for assistance.
                     </p>
                     <p>
-                        <input id='filter_rules-input' type='text' value="" left-tooltip='Case insensitive &bull; Comma separated' placeholder='<badge> @user :emote: text reg.exp?'/>
+                        <input id='filter_rules-input' type='text' value='' left-tooltip='Case insensitive &bull; Comma separated' placeholder='<badge> @user :emote: text reg.exp?'/>
                     </p>
                     <details>
                         <summary tr-id='filter-messages:options' subtitle='View, or remove rules'>Filter Rules</summary>
@@ -579,7 +579,7 @@
                         <label for='highlight_mentions'></label>
                     </div>
                     <p tr-id>
-                        When someone mentions you (<code purple>@username</code>), make the message stand out by highlighting it.
+                        When someone mentions you <code purple>@username</code>, make the message stand out by highlighting it.
                     </p>
                     <details>
                         <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Highlight Mentions&quot;'>Extras</summary>
@@ -591,8 +591,50 @@
                                     <label for='highlight_mentions_extra'></label>
                                 </div>
                                 <p tr-id>
-                                    When someone sends a general mention (<code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>), make the message stand out by highlighting it.
+                                    When someone sends a general mention <code purple>@all</code> <code purple>@chat</code> <code purple>@everyone</code>, make the message stand out by highlighting it.
                                 </p>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Highlight phrases -->
+            <section new='4.1'>
+                <div class='title' tr-id='highlight-phrases'><span gold glyph='thread'></span> Highlight phrases</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='highlight_phrases' type='checkbox'/>
+                        <label for='highlight_phrases'></label>
+                    </div>
+                    <p tr-id>
+                        When someone sends a message with one of the following phrases, make the message stand out by highlighting it.
+                    </p>
+                    <p tr-id>
+                        Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Highlight-Phrases'>TTV Tools Wiki &mdash; Highlight Phrases</a> for assistance.
+                    </p>
+                    <p>
+                        <input id='phrase_rules-input' type='text' value='' left-tooltip='Case insensitive &bull; Comma separated' placeholder='<badge> @user :emote: text reg.exp?'/>
+                    </p>
+                    <details>
+                        <summary tr-id='highlight-phrases:options' subtitle='View, or remove rules'>Phrase Rules</summary>
+                        <div id='phrase_rules' type='list'>
+                            <div phrase-type='channel' tr-id><h2>Channel Rules</h2></div>
+
+                            <div phrase-type='badge' tr-id><h2>Badges</h2></div>
+
+                            <div phrase-type='user' tr-id><h2>Users</h2></div>
+
+                            <div phrase-type='emote' tr-id><h2>Emotes</h2></div>
+
+                            <div phrase-type='text' tr-id><h2>Text</h2></div>
+
+                            <div phrase-type='regexp' tr-id><h2>RegExp</h2></div>
+
+                            <div>
+                                <h3 tr-id>
+                                    Get started by <a href='#phrase_rules-input' target='_self'>adding</a> some rules.
+                                </h3>
                             </div>
                         </div>
                     </details>
@@ -610,6 +652,90 @@
                     <p tr-id>
                         Attempt to display native Twitch&trade; replies on all channels.
                     </p>
+                </div>
+            </section>
+
+            <!-- Notification Sounds -->
+            <section new='4.1'>
+                <div class='title' tr-id='notification-sounds'><span small gold glyph='stream'></span> Notification Sounds</div>
+                <div class='summary'>
+                    <p tr-id>
+                        When one (or more) of the following conditions are met, play a notification sound.
+                    </p>
+
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Notification Sounds&quot;'>Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id='notification-sounds:include-mentions'>Mentions</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='mention_audio' type='checkbox'/>
+                                        <label for='mention_audio'></label>
+                                    </div>
+                                    <p tr-id>
+                                        When someone mentions you <code purple>@username</code>, play the <b>notification sound</b>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='notification-sounds:include-phrases'>Phrases</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='phrase_audio' type='checkbox'/>
+                                        <label for='phrase_audio'></label>
+                                    </div>
+                                    <p tr-id>
+                                        When someone uses a phrase from <b>Highlight Phrases</b>, play the <b>notification sound</b>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='notification-sounds:include-whispers'>Whispers</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='whisper_audio' type='checkbox'/>
+                                        <label for='whisper_audio'></label>
+                                    </div>
+                                    <p tr-id>
+                                        When someone sends you a whisper, play the <b>notification sound</b>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div text-only>
+                                <div class='title' tr-id='notification-sounds:options'>Notification Sound</div>
+                                <div class='summary'>
+                                    <select id='whisper_audio_sound'>
+                                        <option value='beyond-doubt-2-581'>Beyond doubt 2</option>
+                                        <option value='consequence-544'>Consequence</option>
+                                        <option value='definite-555'>Definite</option>
+                                        <option value='goes-without-saying-608' selected>Goes without saying</option>
+                                        <option value='point-blank-589'>Point blank</option>
+                                        <option value='slow-spring-board-570'>Slow spring board</option>
+                                        <option value='to-the-point-568'>To the point</option>
+                                    </select>
+
+                                    <button id='whisper_audio_sound-test'>
+                                        <span small white glyph='play'></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <p>
+                                <div class='cc-container'>
+                                    <div class='cc-svg'><span black glyph='cc'></span></div>
+                                    <p class='cc-text' tr-id>
+                                        <a id='sound-href' href='https://notificationsounds.com/notification-sounds/goes-without-saying-608' rel='nofollow'>This sound</a> is licensed under the Creative Commons Attribution license.
+                                        <a id='sound-license' href='https://creativecommons.org/licenses/by/4.0/legalcode' rel='nofollow'>Find out more</a>
+                                    </p>
+                                </div>
+                            </p>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -681,7 +807,7 @@
                         <label for='highlight_mentions_popup'></label>
                     </div>
                     <p tr-id>
-                        When someone mentions you (<code purple>@username</code>), make the message stand out by showing a pop-up.
+                        When someone mentions you <code purple>@username</code>, make the message stand out by showing a pop-up.
                     </p>
                 </div>
             </section>
@@ -745,48 +871,6 @@
                                     </p>
                                 </div>
                             </div>
-                        </div>
-                    </details>
-                </div>
-            </section>
-
-            <!-- Whisper Audio -->
-            <section new='3.1'>
-                <div class='title' tr-id='whisper-audio'><span small gold glyph='stream'></span> Whisper Audio</div>
-                <div class='summary'>
-                    <div class='toggle'>
-                        <input id='whisper_audio' type='checkbox'/>
-                        <label for='whisper_audio'></label>
-                    </div>
-                    <p tr-id>
-                        When someone sends you a whisper, play a notification sound.
-                    </p>
-                    <details>
-                        <summary tr-id='options' subtitle='Adjust options for &quot;Whisper Audio&quot;'>Options</summary>
-                        <div>
-                            <div text-only>
-                                <div class='title' tr-id='whisper-audio:options'>Notification Sound</div>
-                                <div class='summary'>
-                                    <select id='whisper_audio_sound'>
-                                        <option value='beyond-doubt-2-581'>Beyond doubt 2</option>
-                                        <option value='consequence-544'>Consequence</option>
-                                        <option value='definite-555'>Definite</option>
-                                        <option value='goes-without-saying-608' selected>Goes without saying</option>
-                                        <option value='point-blank-589'>Point blank</option>
-                                        <option value='slow-spring-board-570'>Slow spring board</option>
-                                        <option value='to-the-point-568'>To the point</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p>
-                                <div class='cc-container'>
-                                    <div class='cc-svg'><span black glyph='cc'></span></div>
-                                    <p class='cc-text' tr-id>
-                                        <a id='sound-href' href='https://notificationsounds.com/notification-sounds/goes-without-saying-608' rel='nofollow'>This sound</a> is licensed under the Creative Commons Attribution license.
-                                        <a id='sound-license' href='https://creativecommons.org/licenses/by/4.0/legalcode' rel='nofollow'>Find out more</a>
-                                    </p>
-                                </div>
-                            </p>
                         </div>
                     </details>
                 </div>
@@ -1425,6 +1509,7 @@
 
         <button id='save' class='ripple'></button>
 
+        <script src='ext/polyfill.js'></script>
         <script src='ext/glyphs.js'></script>
         <script src='settings.js'></script>
 
