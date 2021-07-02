@@ -28,6 +28,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.1)
+- Fixed translation error for the Creative Commons License notice
+
 > [4.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1)
 - Improved `String..pluralSuffix`
 - Adjusted dynamic tooltip styling

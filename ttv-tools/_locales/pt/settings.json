@@ -14,6 +14,8 @@
         "version": ["Versão"],
         "support": ["Apoiar"],
 
+		"cc-sound-notice": ["Este som", "é licenciado sob a Atribuição Creative Commons", "Saiba mais"],
+
         "day-of-week": ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"],
         "footer": ["Esta extensão não é de forma alguma afiliada ou endossada pela Amazon™, Twitch™, NightDev (LLC), parceiros, afiliados ou subsidiárias de qualquer uma das partes"]
     },

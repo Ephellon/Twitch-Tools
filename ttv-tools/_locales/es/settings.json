@@ -14,6 +14,8 @@
         "version": ["Versión"],
         "support": ["Ayuda"],
 
+        "cc-sound-notice": ["Este sonido", "tiene la licencia Creative Commons Attribution", "Saber más"],
+
         "day-of-week": ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"],
         "footer": ["Esta extensión no está afiliada ni respaldada de ninguna manera por Amazon™, Twitch™, NightDev (LLC), los socios, afiliados o subsidiarias de cualquiera de las partes"]
     },

@@ -14,6 +14,8 @@
         "version": ["Über TTV-Tools"],
         "support": ["Unterstützung"],
 
+		"cc-sound-notice": ["Dit geluid", "is gelicenseerd onder de Creative Commons Naamsvermelding", "Meer informatie"],
+
         "day-of-week": ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
         "footer": ["Diese Erweiterung ist in keiner Weise mit Amazon™, Twitch™, NightDev (LLC), den Partnern, verbundenen Unternehmen oder Tochtergesellschaften einer der Parteien verbunden oder wird von diesen unterstützt"]
     },
