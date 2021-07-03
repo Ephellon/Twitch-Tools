@@ -1102,9 +1102,11 @@ let Chat__Initialize = async(START_OVER = false) => {
             return;
 
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
-            name = $('*', false, title)?.textContent,
+            [name] = title.childNodes,
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
             { filter_rules } = Settings;
+
+        name = name?.textContent;
 
         if(type == 'user') {
             /* Filter users */
@@ -1277,9 +1279,11 @@ let Chat__Initialize = async(START_OVER = false) => {
             return;
 
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
-            name = $('*', false, title)?.textContent,
+            [name] = title.childNodes,
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
             { phrase_rules } = Settings;
+
+        name = name?.textContent;
 
         if(type == 'user') {
             /* Highlight users */
@@ -1410,7 +1414,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     // LOG('Highlighting message:', { author, message });
 
-                    line.element.setAttribute('style', 'background-color: var(--color-opac-p-11)');
+                    line.element.setAttribute('style', 'background-color: var(--color-opac-p-8)');
                 }
         })(GetChat());
     };
@@ -2435,7 +2439,7 @@ Chat__CUSTOM_CSS.innerHTML =
 #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
 [tt-hidden] { display: none }
-[tt-light] { background-color: var(--color-opac-p-7) }
+[tt-light] { background-color: var(--color-opac-w-4) }
 
 ::-webkit-scrollbar {
     width: .6rem;

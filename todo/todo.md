@@ -28,6 +28,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.3)
+- Fixed Easy Highlighter (emotes)
+- Adjusted `comify` to include different locales
+
 > [4.1.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.2)
 - Fixed Easy Highlighter
 

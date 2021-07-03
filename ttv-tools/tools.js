@@ -2011,23 +2011,15 @@ function isObj(object, ...or) {
 }
 
 // Returns a number formatted with commas
-function comify(number) {
+function comify(number, locale = top.LANGUAGE) {
     let [,decimalPlaces] = (number + '').split('.', 2);
 
-    decimalPlaces ||= "";
+    decimalPlaces = (decimalPlaces?.length ?? 0) - 1;
 
-    number = parseFloat(number).toFixed(decimalPlaces.length);
+    let [whole, fractional] = parseFloat(number).toLocaleString(locale).split(/(\D\d+?)$/, 2);
 
-    return (number + '')
-        .split('')
-        .reverse()
-        .join('')
-        .replace(/(\d{3})/g, '$1,')
-        .split('')
-        .reverse()
-        .join('')
-        .replace(/^,+|,+$/g, '')
-};
+    return whole + (fractional ?? "").padEnd(decimalPlaces, '0');
+}
 
 // Import the glyphs
 let { Glyphs } = top;
@@ -2609,7 +2601,7 @@ let Initialize = async(START_OVER = false) => {
             mostWatched = null,
             mostPoints = 0,
             leastWatched = null,
-            leastPoints = 1_000_000_000;
+            leastPoints = 1_000_000_000_000_000;
 
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
             for(let channel in ChannelPoints) {
@@ -5800,8 +5792,10 @@ let Initialize = async(START_OVER = false) => {
                         live_time.tooltipAnimation = setInterval(() => {
                             live_time.tooltip ??= new Tooltip(live_time, '');
 
-                            live_time.tooltip.innerHTML = ((STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100).toFixed(3).slice(0, 5) + '%';
-                            live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, #f888 ${ live_time.tooltip.innerHTML }, #0000 0), var(--color-background-tooltip)`);
+                            let percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100;
+
+                            live_time.tooltip.innerHTML = comify(percentage).slice(0, 5) + '%';
+                            live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, #f888 ${ percentage.toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
                         }, 100);
                 };
             } break;
@@ -5843,7 +5837,7 @@ let Initialize = async(START_OVER = false) => {
                 watch_time.innerHTML = toTimeString(time * 1000, 'clock');
 
                 if(parseBool(Settings.show_stats))
-                    WATCH_TIME_TOOLTIP.innerHTML = comify(time).replace(/\.[\d,]*$/, '') + 's';
+                    WATCH_TIME_TOOLTIP.innerHTML = comify(time) + 's';
 
                 SaveCache({ WatchTime: time });
             }, 1000);
@@ -6491,7 +6485,7 @@ CUSTOM_CSS.innerHTML =
 [animationID] a:active { cursor: grabbing }
 
 [tt-hidden] { display: none }
-[tt-light] { background-color: var(--color-opac-p-7) }
+[tt-light] { background-color: var(--color-opac-w-4) }
 
 [up-next--body] {
     background-color: #387aff;
