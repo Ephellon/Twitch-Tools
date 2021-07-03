@@ -28,6 +28,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.2)
+- Fixed Easy Highlighter
+
 > [4.1.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.1)
 - Fixed translation error for the Creative Commons License notice
 

@@ -1108,7 +1108,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(type == 'user') {
             /* Filter users */
-            if(filter_rules && filter_rules.split(',').contains(`@${ name.toLowerCase() }`))
+            if(filter_rules && filter_rules.split(',').contains(`@${ name }`))
                 return /* Already filtering messages from this person */;
 
             let filter = furnish('div#tt-filter-rule--user', {
@@ -1279,11 +1279,11 @@ let Chat__Initialize = async(START_OVER = false) => {
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
             name = $('*', false, title)?.textContent,
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
-            { pharse_rules } = Settings;
+            { phrase_rules } = Settings;
 
         if(type == 'user') {
             /* Highlight users */
-            if(pharse_rules && pharse_rules.split(',').contains(`@${ name.toLowerCase() }`))
+            if(phrase_rules && phrase_rules.split(',').contains(`@${ name }`))
                 return /* Already highlighting messages from this person */;
 
             let phrase = furnish('div#tt-highlight-rule--user', {
@@ -1294,15 +1294,15 @@ let Chat__Initialize = async(START_OVER = false) => {
                 onclick: event => {
                     let { currentTarget } = event,
                         username = currentTarget.getAttribute('username'),
-                        { pharse_rules } = Settings;
+                        { phrase_rules } = Settings;
 
-                    pharse_rules = (pharse_rules || '').split(',');
-                    pharse_rules.push(`@${ username }`);
-                    pharse_rules = pharse_rules.join(',');
+                    phrase_rules = (phrase_rules || '').split(',');
+                    phrase_rules.push(`@${ username }`);
+                    phrase_rules = phrase_rules.join(',');
 
-                    currentTarget.remove();
+                    currentTarget.setAttribute('tt-hidden', true);
 
-                    Storage.set({ pharse_rules });
+                    Storage.set({ phrase_rules });
                 },
 
                 innerHTML: `${ Glyphs.star } Highlight messages from @${ name }`,
@@ -1315,7 +1315,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             title.append(phrase);
         } else if(type == 'emote') {
             /* Highlight emotes */
-            if(pharse_rules && pharse_rules.split(',').contains(`:${ name }:`))
+            if(phrase_rules && phrase_rules.split(',').contains(`:${ name }:`))
                 return /* Already highlighting this emote */;
 
             let phrase = furnish('div#tt-highlight-rule--emote', {
@@ -1326,15 +1326,15 @@ let Chat__Initialize = async(START_OVER = false) => {
                 onclick: event => {
                     let { currentTarget } = event,
                         emote = currentTarget.getAttribute('emote'),
-                        { pharse_rules } = Settings;
+                        { phrase_rules } = Settings;
 
-                    pharse_rules = (pharse_rules || '').split(',');
-                    pharse_rules.push(emote);
-                    pharse_rules = pharse_rules.join(',');
+                    phrase_rules = (phrase_rules || '').split(',');
+                    phrase_rules.push(emote);
+                    phrase_rules = phrase_rules.join(',');
 
                     currentTarget.remove();
 
-                    Storage.set({ pharse_rules });
+                    Storage.set({ phrase_rules });
                 },
 
                 innerHTML: `${ Glyphs.star } ${ name }`,
@@ -1373,7 +1373,8 @@ let Chat__Initialize = async(START_OVER = false) => {
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
             { length } = title.children;
 
-        title.setAttribute('style', `height: ${ (length - 1) * 3 + 1 }rem`);
+        if(length > 2)
+            title.setAttribute('style', `height: ${ 3 * (length - 1) + 1 }rem`);
     };
     Timers.easy_helper_card_resizer = 250;
 
