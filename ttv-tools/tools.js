@@ -6485,7 +6485,13 @@ CUSTOM_CSS.innerHTML =
 [animationID] a:active { cursor: grabbing }
 
 [tt-hidden] { display: none }
-[tt-light] { background-color: var(--color-opac-w-4) }
+.tw-root--theme-dark [tt-light], .tw-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
+.tw-root--theme-light [tt-light], .tw-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+
+.chat-line__message[style] a {
+    color: var(--color-text-alt);
+    text-decoration: underline;
+}
 
 [up-next--body] {
     background-color: #387aff;
@@ -6558,7 +6564,7 @@ CUSTOM_CSS.innerHTML =
 [tt-in-up-next="true"i] { box-shadow: #387aff88 0 4px 8px, #387aff88 0 0 4px !important }
 
 /* Tooltips */
-.tw-dialog-layer [data-popper-escaped] {
+.tw-dialog-layer [data-popper-escaped="true"i] {
     max-width: 25rem;
     width: max-content;
 }

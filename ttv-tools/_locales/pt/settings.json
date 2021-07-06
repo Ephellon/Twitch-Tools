@@ -196,7 +196,7 @@
 		"Ver", null, "para ajuda"
 	],
     	"filter-messages:options": [
-    		"Regras de filtragem",
+    		"Regras",
     		"Regras do Canal",
     		"Crachás",
     		"Utilizadores",
@@ -223,7 +223,7 @@
 		"Para obter mais informações, consulte o", "TTV Tools Wiki - Phrase Highlighting", ""
 	],
 		"highlight-phrases:options": [
-    		"Regras de filtragem",
+    		"Regras",
     		"Regras do Canal",
     		"Crachás",
     		"Utilizadores",

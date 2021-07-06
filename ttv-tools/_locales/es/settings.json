@@ -191,7 +191,7 @@
         "Consulte Wiki de", null, "para obtener ayuda"
     ],
         "filter-messages:options": [
-            "Reglas de Filtro",
+            "Reglas",
             "Reglas del Canal",
             "Insignias",
             "Usuarios",
@@ -216,7 +216,7 @@
 		"Para obtener más información, consulte la", "Wiki de TTV Tools - Resaltado de frases", ""
 	],
 		"highlight-phrases:options": [
-            "Reglas de Filtro",
+            "Reglas",
             "Reglas del Canal",
             "Insignias",
             "Usuarios",

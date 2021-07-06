@@ -193,7 +193,7 @@
 		"Zie", null, "voor hulp"
 	],
 		"filter-messages:options": [
-			"Filter Regels",
+			"Regels",
 			"Kanaal Regels",
 			"Badges",
 			"Gebruiker",
@@ -220,7 +220,7 @@
 		"Weitere Informationen finden Sie im", "TTV Tools Wiki — Hervorheben von Phrasen", ""
 	],
 		"highlight-phrases:options": [
-			"Filter Regels",
+			"Regels",
 			"Kanaal Regels",
 			"Badges",
 			"Gebruiker",

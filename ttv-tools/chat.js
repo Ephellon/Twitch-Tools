@@ -2439,7 +2439,13 @@ Chat__CUSTOM_CSS.innerHTML =
 #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
 [tt-hidden] { display: none }
-[tt-light] { background-color: var(--color-opac-w-4) }
+.tw-root--theme-dark [tt-light], .tw-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
+.tw-root--theme-light [tt-light], .tw-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+
+.chat-line__message[style] a {
+    color: var(--color-text-alt);
+    text-decoration: underline;
+}
 
 ::-webkit-scrollbar {
     width: .6rem;
@@ -2482,7 +2488,7 @@ Chat__CUSTOM_CSS.innerHTML =
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
 /* Tooltips */
-.tw-dialog-layer [data-popper-escaped] {
+.tw-dialog-layer [data-popper-escaped="true"i] {
     width: max-content;
 }
 

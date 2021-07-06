@@ -193,7 +193,7 @@
 		"Please see", "TTV Tools Wiki — Filter Messages", "for assistance"
 	],
     	"filter-messages:options": [
-    		"Filter Rules",
+    		"Rules",
     		"Channel Rules",
     		"Badges",
     		"Users",
@@ -218,7 +218,7 @@
 		"Please see", "TTV Tools Wiki — Highlight Phrases", "for assistance"
 	],
 		"highlight-phrases:options": [
-    		"Filter Rules",
+    		"Rules",
     		"Channel Rules",
     		"Badges",
     		"Users",
