@@ -28,6 +28,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.5)
+- Fixed Stay Alive logic
+
 > [4.1.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.4)
 - Fixed some styling issues
 

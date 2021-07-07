@@ -2785,7 +2785,7 @@ let Initialize = async(START_OVER = false) => {
         get live() {
             return SPECIAL_MODE
                 || (true
-                    && defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommendations"i]`))
+                    && defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommend"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "")
                 )
         },
@@ -5103,8 +5103,7 @@ let Initialize = async(START_OVER = false) => {
     let ClearIntent;
 
     Handlers.stay_live = async() => {
-        let online = STREAMERS.filter(isLive),
-            next = await GetNextStreamer(),
+        let next = await GetNextStreamer(),
             { pathname } = top.location;
 
         let Paths = [USERNAME, '$', '[up]/', 'directory', 'downloads?', 'friends?', 'inventory', 'jobs?', 'moderator', 'search', 'settings', 'subscriptions?', 'team', 'turbo', 'user', 'videos?', 'wallet', 'watchparty'];
@@ -5130,7 +5129,7 @@ let Initialize = async(START_OVER = false) => {
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
                 break IsLive;
 
-            if(online.length) {
+            if(defined(next)) {
                 WARN(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch?.({ from: STREAMER?.name })?.href );
