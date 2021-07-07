@@ -2596,7 +2596,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
-    async function GetNextStreamer() {
+    top.GetNextStreamer ??= async function GetNextStreamer() {
         let online = STREAMERS.filter(isLive),
             mostWatched = null,
             mostPoints = 0,
@@ -2604,7 +2604,13 @@ let Initialize = async(START_OVER = false) => {
             leastPoints = 1_000_000_000_000_000;
 
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+            filtering:
             for(let channel in ChannelPoints) {
+                let [streamer] = online.filter(({ name }) => name == channel);
+
+                if(!defined(streamer))
+                    continue filtering;
+
                 let [amount, fiat, face, earnedAll] = ChannelPoints[channel].split('|');
 
                 amount = parseCoin(amount);

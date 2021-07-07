@@ -28,6 +28,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.6)
+- Fixed Stay Alive logic
+- Fixed BTTV emote loading (initial rewrite)
+
 > [4.1.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.5)
 - Fixed Stay Alive logic
 

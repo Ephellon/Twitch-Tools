@@ -570,62 +570,63 @@ let Chat__Initialize = async(START_OVER = false) => {
                     BTTVEmotes.push({ name, src });
 
                 container.append(...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE));
-            });
+            })
+            .then(() => {
+                REMARK("Adding BTTV emote event listener...");
 
-        REMARK("Adding BTTV emote event listener...");
+                // Run the bttv-emote changer on pre-populated messages
+                (GetChat.onnewmessage = chat => {
+                    let regexp;
 
-        // Run the bttv-emote changer on pre-populated messages
-        (GetChat.onnewmessage = chat => {
-            let regexp;
+                    for(let line of chat) {
+                        // Replace BTTV emotes for the last 30 chat messages
+                        if(Queue.bttv_emotes.contains(line.uuid))
+                            continue;
+                        if(Queue.bttv_emotes.length >= 30)
+                            Queue.bttv_emotes = [];
+                        Queue.bttv_emotes.push(line.uuid);
 
-            for(let line of chat) {
-                // Replace BTTV emotes for the last 30 chat messages
-                if(Queue.bttv_emotes.contains(line.uuid))
-                    continue;
-                if(Queue.bttv_emotes.length >= 30)
-                    Queue.bttv_emotes = [];
-                Queue.bttv_emotes.push(line.uuid);
+                        for(let [name, src] of BTTV_EMOTES)
+                            if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
+                                let alt = name,
+                                    owner = BTTV_OWNERS.get(alt),
+                                    own = owner?.displayName ?? 'Anonymous',
+                                    pid = owner?.providerId;
 
-                for(let [name, src] of BTTV_EMOTES)
-                    if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
-                        let alt = name,
-                            owner = BTTV_OWNERS.get(alt),
-                            own = owner?.displayName ?? 'Anonymous',
-                            pid = owner?.providerId;
+                                let f = furnish;
+                                let img =
+                                f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
+                                    f('span', { 'data-a-target': 'emote-name' },
+                                        f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
+                                            f('img.bttv.chat-image.chat-line__message--emote', {
+                                                alt, src,
+                                            })
+                                        )
+                                    )
+                                );
 
-                        let f = furnish;
-                        let img =
-                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                            f('span', { 'data-a-target': 'emote-name' },
-                                f('div.class.chat-image__container.tw-align-center.tw-inline-block', {},
-                                    f('img.bttv.chat-image.chat-line__message--emote', {
-                                        alt, src,
-                                    })
-                                )
-                            )
-                        );
+                                let { element } = line;
 
-                        let { element } = line;
+                                alt = alt.replace(/\s+/g, '_');
 
-                        alt = alt.replace(/\s+/g, '_');
+                                $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
+                                    let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, 'data-bttv-owner-id': pid, innerHTML: img.innerHTML }),
+                                        converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
-                        $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, 'data-bttv-owner-id': pid, innerHTML: img.innerHTML }),
-                                converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
+                                    converted.push(alt);
 
-                            converted.push(alt);
+                                    let tte = fragment.getAttribute('data-tt-emote') ?? '';
 
-                            let tte = fragment.getAttribute('data-tt-emote') ?? '';
+                                    fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
+                                    fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
+                                    fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
 
-                            fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
-                            fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
-                            fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
-
-                            REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
-                        });
+                                    REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                                });
+                            }
                     }
-            }
-        })(GetChat());
+                })(GetChat());
+            });
 
         REMARK("Adding BTTV emote search listener...");
 
