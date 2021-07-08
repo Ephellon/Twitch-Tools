@@ -1797,6 +1797,8 @@ let Chat__Initialize = async(START_OVER = false) => {
         let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
             bits_alp_regexp = /([\d,]+) +bits/i;
 
+        let _0 = /(\D\d)$/;
+
         if(defined(dropdown))
             $('h5:not([tt-true-usd-amount])', true, dropdown).map(header => {
                 let bits = parseInt(header.textContent.replace(/\D+/g, '')),
@@ -1804,7 +1806,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 usd = (bits * .01).toFixed(2);
 
-                header.textContent += ` ($${ comify(usd) })`;
+                header.textContent += ` ($${ comify(usd).replace(_0, '$10') })`;
 
                 header.setAttribute('tt-true-usd-amount', usd);
             });
@@ -1821,7 +1823,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     counter.setAttribute('tt-true-usd-amount', usd);
 
-                    return `${ $0 } ($${ comify(usd) })`;
+                    return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
         }
 
@@ -1837,7 +1839,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     cheer.setAttribute('tt-true-usd-amount', usd);
 
-                    return `${ $0 } ($${ comify(usd) })`;
+                    return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
         }
 
@@ -1853,7 +1855,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     train.setAttribute('tt-true-usd-amount', usd);
 
-                    return `${ $0 } ($${ comify(usd) })`;
+                    return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
         }
     };

@@ -734,7 +734,7 @@ class Balloon {
                         f('div.tw-border-radius-large.tw-c-background-base.tw-c-text-inherit.tw-elevation-4', {},
                             (C = f(`div#tt-balloon-container-${ U }.tw-flex.tw-flex-column`,
                                 {
-                                    style: 'min-height:20rem; min-width:40rem;',
+                                    style: 'min-height:22rem; max-height: 90vh; min-width:40rem; overflow-y: auto;',
                                     role: 'dialog',
                                 },
                                 // Header
@@ -2012,13 +2012,7 @@ function isObj(object, ...or) {
 
 // Returns a number formatted with commas
 function comify(number, locale = top.LANGUAGE) {
-    let [,decimalPlaces] = (number + '').split('.', 2);
-
-    decimalPlaces = (decimalPlaces?.length ?? 0) - 1;
-
-    let [whole, fractional] = parseFloat(number).toLocaleString(locale).split(/(\D\d+?)$/, 2);
-
-    return whole + (fractional ?? "").padEnd(decimalPlaces, '0');
+    return parseFloat(number).toLocaleString(locale);
 }
 
 // Import the glyphs
@@ -2596,12 +2590,12 @@ let Initialize = async(START_OVER = false) => {
 
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
-    top.GetNextStreamer ??= async function GetNextStreamer() {
+    async function GetNextStreamer() {
         let online = STREAMERS.filter(isLive),
             mostWatched = null,
             mostPoints = 0,
             leastWatched = null,
-            leastPoints = 1_000_000_000_000_000;
+            leastPoints = +Infinity;
 
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
             filtering:
@@ -5035,8 +5029,8 @@ let Initialize = async(START_OVER = false) => {
             raiding = defined($('[data-test-selector="raid-banner"i]')),
             next = await GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
-            from = STREAMER.name,
-            [to] = raid_banner.filter(name => name.toLowerCase() != from.toLowerCase());
+            from = (raided? null: STREAMER.name),
+            [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.toLowerCase() != from.toLowerCase()));
 
         let method = Settings.prevent_raiding ?? "none";
 
@@ -5672,7 +5666,7 @@ let Initialize = async(START_OVER = false) => {
                 let [amount, fiat, face, earnedAll] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = $('[data-test-selector="cost"i]', true);
 
-                amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? amount ?? 'Unavailable');
+                amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? '\u1f6ab');
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? '');
                 earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
@@ -6506,7 +6500,7 @@ CUSTOM_CSS.innerHTML =
     background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
     background-repeat: no-repeat;
     background-size: 35rem;
-    background-position-y: 3.25rem;
+    background-position-y: 4.25rem;
 }
 
 [role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }

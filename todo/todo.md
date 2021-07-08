@@ -28,6 +28,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.7](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.7)
+- Fixed Convert Bits
+- Up Next is now scrollable
+
 > [4.1.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.6)
 - Fixed Stay Alive logic
 - Fixed BTTV emote loading (initial rewrite)
