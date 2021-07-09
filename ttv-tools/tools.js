@@ -1290,7 +1290,7 @@ class Card {
                         f('span.tw-button-icon__icon', {},
                             f('div[style="width: 2rem; height: 2rem;"]', {},
                                 f('div.tw-icon', {},
-                                    f('div.tw-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }) })
+                                    f('div.tw-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
                                 )
                             )
                         )
@@ -1312,11 +1312,13 @@ class Card {
                                 f('div.tw-align-items-center.tw-flex.tw-mg-r-1', {},
                                     f('a.tw-link [rel="noopener noreferrer" target="_blank"]', { href: footer.href },
                                         f('div.tw-flex', {
-                                            innerHTML: ""
-                                                + Glyphs.modify('video', { height: '20px', width: '20px' })
-                                                + f('div.tw-mg-l-05', {},
+                                            innerHTML: `${
+                                                Glyphs.modify('video', { height: '20px', width: '20px' })
+                                            }${
+                                                f('div.tw-mg-l-05', {},
                                                     f('p.tw-c-text-link.tw-font-size-5.tw-strong', {}, footer.name)
                                                 ).outerHTML
+                                            }`
                                         })
                                     )
                                 ),
@@ -2590,12 +2592,18 @@ let Initialize = async(START_OVER = false) => {
 
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
-    async function GetNextStreamer() {
+    top.GetNextStreamer ??= async function GetNextStreamer() {
         let online = STREAMERS.filter(isLive),
             mostWatched = null,
             mostPoints = 0,
+            mostLeft = 0,
+            mostProgress = 0,
+            furthestFromCompletion = null,
             leastWatched = null,
-            leastPoints = +Infinity;
+            leastPoints = +Infinity,
+            leastLeft = +Infinity,
+            leastProgress = 0,
+            closestToCompletion = null;
 
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
             filtering:
@@ -2605,16 +2613,48 @@ let Initialize = async(START_OVER = false) => {
                 if(!defined(streamer))
                     continue filtering;
 
-                let [amount, fiat, face, earnedAll] = ChannelPoints[channel].split('|');
+                let [amount, fiat, face, notEarned] = ChannelPoints[channel].split('|');
 
                 amount = parseCoin(amount);
 
+                wealth:
+                // this channel has the most points
                 if(amount > mostPoints) {
                     mostWatched = channel;
                     mostPoints = amount;
-                } else if(amount < leastPoints) {
+                }
+                // this channel has the least points
+                else if(amount < leastPoints) {
                     leastWatched = channel;
                     leastPoints = amount;
+                }
+
+                progress:
+                // this channel is the furthest from having all rewards & challenges
+                if(notEarned >= mostLeft) {
+                    // furthest and richest
+                    if(notEarned == mostLeft && amount > mostProgress) {
+                        furthestFromCompletion = channel;
+                        mostProgress = amount;
+
+                        continue filtering;
+                    }
+
+                    furthestFromCompletion = channel;
+                    mostLeft = notEarned;
+                }
+                // this channel is the closest to having all rewards & challenges; but not completed
+                else if(notEarned <= leastLeft && notEarned > 0) {
+                    // closest and poorest
+                    if(notEarned == leastLeft && amount < leastProgress) {
+                        closestToCompletion = channel;
+                        leastProgress = amount;
+
+                        continue filtering;
+                    }
+
+                    closestToCompletion = channel;
+                    leastLeft = notEarned;
                 }
             }
         });
@@ -2645,6 +2685,16 @@ let Initialize = async(START_OVER = false) => {
             // Least watched channel (least channel points)
             case 'poor': {
                 next = STREAMERS.find(channel => channel.name === leastWatched);
+            } break;
+
+            // Most un-earned Rewards & Challenges
+            case 'furthest': {
+                next = STREAMERS.find(channel => channel.name === furthestFromCompletion);
+            } break;
+
+            // Least un-earned Rewards & Challenges
+            case 'closest': {
+                next = STREAMERS.find(channel => channel.name === closestToCompletion);
             } break;
 
             // A random channel
@@ -3820,6 +3870,17 @@ let Initialize = async(START_OVER = false) => {
                     sibling = $('[data-test-selector="live-notifications-toggle"i]') ?? $('[data-target="channel-header-right"i] [style] div div:not([style])');
                     parent = sibling?.parentElement;
                     before = 'last';
+                    extra = ({ container }) => {
+                        // Remove extra classes
+                        let classes = $('button', false, container)?.closest('div')?.classList ?? [];
+
+                        [...classes].map(value => {
+                            if(/[-_]/.test(value))
+                                return;
+
+                            classes.remove(value);
+                        });
+                    };
                 } break;
 
                 default: return;
@@ -3828,7 +3889,7 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(parent) || !defined(sibling))
                 return WARN('Unable to create the Away Mode button');
 
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
+            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
@@ -3855,7 +3916,7 @@ let Initialize = async(START_OVER = false) => {
             button.container.setAttribute('tt-away-mode-enabled', enabled);
 
             button.icon ??= $('svg', false, container);
-            button.icon.outerHTML = Glyphs.eye;
+            button.icon.outerHTML = Glyphs.modify('eye', { height: '20px', width: '20px' }).toString();
             button.icon = $('svg', false, container);
         } else {
             let container = $('#away-mode');
@@ -3892,8 +3953,8 @@ let Initialize = async(START_OVER = false) => {
         // if(init === true) ->
         // Don't use above, event listeners won't work
         button.background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
-        button.icon.setAttribute('height', '20px');
-        button.icon.setAttribute('width', '20px');
+        // button.icon.setAttribute('height', '20px');
+        // button.icon.setAttribute('width', '20px');
 
         button.container.onclick ??= async event => {
             let enabled = !parseBool(AwayModeButton.container.getAttribute('tt-away-mode-enabled')),
@@ -5659,21 +5720,27 @@ let Initialize = async(START_OVER = false) => {
         let richTooltip = $('[class*="channel-tooltip"i]');
 
         // Update the points (every minute)
-        if(++pointWatcherCounter % 600) {
+        if(++pointWatcherCounter % 240) {
             pointWatcherCounter = 0;
 
             LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
-                let [amount, fiat, face, earnedAll] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
+                let [amount, fiat, face, notEarned] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = $('[data-test-selector="cost"i]', true);
 
-                amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? '\u1f6ab');
+                amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? '&#128683;');
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? '');
-                earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
+                notEarned = (
+                    (allRewards?.length)?
+                        allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length:
+                    (notEarned > -Infinity)?
+                        notEarned:
+                    -1
+                );
 
                 face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
-                ChannelPoints[STREAMER.name] = [amount, fiat, face, earnedAll].join('|');
+                ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned].join('|');
 
                 SaveCache({ ChannelPoints });
             });
@@ -5699,15 +5766,21 @@ let Initialize = async(START_OVER = false) => {
 
         // Update the display
         LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
-            let [amount, fiat, face, earnedAll] = (ChannelPoints[name] ?? 0).toString().split('|'),
+            let [amount, fiat, face, notEarned] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                 allRewards = $('[data-test-selector="cost"i]', true),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
-            earnedAll = parseBool(allRewards.length? !allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length: earnedAll);
+            notEarned = (
+                (allRewards?.length)?
+                    allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length:
+                (notEarned > -Infinity)?
+                    notEarned:
+                -1
+            );
 
             let text = furnish('span.tt-point-amount', {
-                    'tt-earned-all': earnedAll,
+                    'tt-earned-all': notEarned == 0,
                     innerHTML: amount.toLocaleString(),
                 }),
                 icon = face?.length?
@@ -5791,9 +5864,10 @@ let Initialize = async(START_OVER = false) => {
                         live_time.tooltipAnimation = setInterval(() => {
                             live_time.tooltip ??= new Tooltip(live_time, '');
 
-                            let percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100;
+                            let percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100,
+                                timeLeft = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time;
 
-                            live_time.tooltip.innerHTML = comify(percentage).slice(0, 5) + '%';
+                            live_time.tooltip.innerHTML = (timeLeft < 0? '+': '') + toTimeString(Math.abs(timeLeft), 'clock');
                             live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, #f888 ${ percentage.toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
                         }, 100);
                 };

@@ -103,7 +103,9 @@
             "Ir con la menor cantidad de espectadores",
             "Ir con la mayor cantidad de espectadores",
             "Ir con la menor cantidad de puntos de canal",
-            "Ir con la mayor cantidad de puntos de canal"
+            "Ir con la mayor cantidad de puntos de canal",
+            "Vaya con el más cercano a tener todas las recompensas de puntos de canal",
+            "Vaya con lo más lejos de tener todas las recompensas de puntos de canal"
         ],
 
     "prevent-hosting": [

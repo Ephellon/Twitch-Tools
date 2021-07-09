@@ -29,6 +29,11 @@
 
 # ACCOMPLISHED (Notable Changes)
 > [4.1.7](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.7)
+- Fixed "Disabled" icon for rich tooltips
+- Adjusted the Live Time tooltip (easier to understand)
+- Added more options for "Next Channel"
+
+> [4.1.7](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.7)
 - Fixed Convert Bits
 - Up Next is now scrollable
 

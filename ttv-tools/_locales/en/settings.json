@@ -104,7 +104,9 @@
     		"Go with the least viewers",
     		"Go with the most viewers",
     		"Go with the least channel points",
-    		"Go with the most channel points"
+    		"Go with the most channel points",
+			"Go with the closest to having all channel point rewards",
+			"Go with the furthest from having all channel point rewards"
     	],
 
 	"prevent-hosting": [
