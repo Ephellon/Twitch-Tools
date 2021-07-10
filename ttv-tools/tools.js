@@ -2592,7 +2592,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
-    top.GetNextStreamer ??= async function GetNextStreamer() {
+    async function GetNextStreamer() {
         let online = STREAMERS.filter(isLive),
             mostWatched = null,
             mostPoints = 0,
@@ -2663,7 +2663,8 @@ let Initialize = async(START_OVER = false) => {
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
             return ALL_CHANNELS.find(channel => !!~channel.href.indexOf(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
 
-        let next;
+        let next,
+            { random, round } = Math;
 
         next_channel:
         switch(Settings.next_channel_preference) {
@@ -2699,8 +2700,16 @@ let Initialize = async(START_OVER = false) => {
 
             // A random channel
             default: {
-                next = online[(Math.random() * online.length)|0];
+                next = online[round(random() * online.length)];
             } break;
+        }
+
+        // There isn't a channel that fits the criteria
+        if(parseBool(Settings.stay_live) && !defined(next) && online.length) {
+            // WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired`);
+
+            next = online.sort(() => random() >= 0.5? +1: -1);
+            next = next[round(random() * next.length)];
         }
 
         return next;

@@ -28,6 +28,9 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.1.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.9)
+- Adjusted "Next Channel" logic
+
 > [4.1.8](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.8)
 - Fixed "Disabled" icon for rich tooltips
 - Adjusted the Live Time tooltip (easier to understand)
