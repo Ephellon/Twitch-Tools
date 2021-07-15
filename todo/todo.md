@@ -28,6 +28,13 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.2.0](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0)
+- Removed `CRX` package
+- Fixed edge-case where streamer data wouldn't be passed to `chat.js`
+- Added Stream Preview
+- Fixed Keep Popout
+- Added Accent Color
+
 > [4.1.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.1.9)
 - Adjusted "Next Channel" logic
 

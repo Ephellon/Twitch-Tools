@@ -364,6 +364,27 @@
     		"Under the video"
     	],
 
+	"accent-color": [
+		"Accent Color",
+		"What should the accent color be"
+	],
+		"color:blue": ["Blue"],
+		"color:purple": ["Purple"],
+		"color:red": ["Red"],
+
+	"stream-preview": [
+		"Stream Preview",
+		"Display a live preview of streams when hovering over them"
+	],
+		"stream-preview:extras": [
+			"Preview Size",
+			"Adjust the size of the preview"
+		],
+		"stream-preview:options": [
+			"Normal (×1)",
+			"Large (×2)"
+		],
+
 
 
 

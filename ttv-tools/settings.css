@@ -91,6 +91,7 @@
 
     /* Shadow/Borders */
     --default-shadow-border: 0 1px 2px;
+    --default-border-size: 2px;
 
     --black-border: var(--default-shadow-border) var(--black);
     --blue-border: var(--default-shadow-border) var(--blue);
@@ -168,7 +169,7 @@ html, body {
 
 .live {
     background-color: var(--live-red);
-    border: 2px solid var(--background-dark);
+    border: var(default-border-size) solid var(--background-dark);
     border-radius: .5rem;
     color: var(--white);
     display: inline-block;
@@ -341,7 +342,7 @@ details .summary {
 
 .radio > label:first-of-type::before, .checkbox > label:first-of-type::before {
     background-clip: padding-box;
-    border: 2px solid var(--white);
+    border: var(default-border-size) solid var(--white);
     border-radius: 50%;
     box-sizing: border-box;
     content: '';
@@ -883,7 +884,7 @@ textarea, input[type="text"i], input[type="number"i], input[type="date"i], input
     appearance: none;
     background-clip: padding-box;
     background-color: var(--grey);
-    border: 2px solid var(--grey);
+    border: var(--default-border-size) solid var(--grey);
     border-radius: 3px;
     color: var(--white);
     display: block;
@@ -891,10 +892,7 @@ textarea, input[type="text"i], input[type="number"i], input[type="date"i], input
     line-height: 1;
     text-overflow: ellipsis;
 
-    transition:
-        box-shadow .1s ease-in,
-        border .1s ease-in,
-        background-color .1s ease-in;
+    transition: all .1s ease-in;
 
     overflow-x: hidden;
     resize: none;
@@ -989,6 +987,7 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 [unit]::after {
+    /* background-color: #8882; */
     content: attr(unit);
     display: inline;
     opacity: 0.5;
@@ -998,6 +997,20 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     vertical-align: middle;
 
     height: 2rem;
+}
+
+[unit]::after {
+    border: var(--default-border-size) solid var(--grey);
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
+    padding: calc(.5rem - var(--default-border-size));
+}
+
+[unit][focus="true"i]::after {
+    border-color: var(--purple);
+    opacity: 1;
 }
 
 /* Glyphs */
@@ -1276,7 +1289,7 @@ body.popup {
 }
 
 .popup [unit]::after {
-    padding: .1rem .5rem;
+    padding: calc(.1rem - var(--default-border-size)) calc(.5rem - var(--default-border-size));
 }
 
 .popup #filter_rules, .popup #phrase_rules {

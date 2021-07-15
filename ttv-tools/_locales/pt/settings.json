@@ -368,6 +368,27 @@
     		"Abaixo do vídeo"
     	],
 
+	"accent-color": [
+		"Cor de destaque",
+		"Qual deve ser a cor de destaque"
+	],
+		"color:blue": ["Azul"],
+		"color:purple": ["Roxo"],
+		"color:red": ["Vermelho"],
+
+	"stream-preview": [
+		"Visualização da Transmissão",
+		"Exiba uma visualização ao vivo das transmissões ao passar o mouse sobre elas"
+	],
+		"stream-preview:extras": [
+			"Tamanho da Visualização",
+			"Ajuste o tamanho da visualização"
+		],
+		"stream-preview:options": [
+			"Normal (×1)",
+			"Grande (×2)"
+		],
+
 
 
 

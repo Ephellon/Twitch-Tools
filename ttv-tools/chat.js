@@ -1790,9 +1790,9 @@ let Chat__Initialize = async(START_OVER = false) => {
      */
     Handlers.convert_bits = () => {
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('[class*="bits-count"i]:not([tt-true-usd-amount])', true),
-            bits_cheer = $('[class*="cheer-amount"i]:not([tt-true-usd-amount])', true),
-            hype_trains = $('[class*="community-highlight-stack"i] p:not([tt-true-usd-amount])', true);
+            bits_counter = $('[class*="bits-count"i]:not([tt-tusda])', true),
+            bits_cheer = $('[class*="cheer-amount"i]:not([tt-tusda])', true),
+            hype_trains = $('[class*="community-highlight-stack"i] p:not([tt-tusda])', true);
 
         let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
             bits_alp_regexp = /([\d,]+) +bits/i;
@@ -1800,7 +1800,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let _0 = /(\D\d)$/;
 
         if(defined(dropdown))
-            $('h5:not([tt-true-usd-amount])', true, dropdown).map(header => {
+            $('h5:not([tt-tusda])', true, dropdown).map(header => {
                 let bits = parseInt(header.textContent.replace(/\D+/g, '')),
                     usd;
 
@@ -1808,7 +1808,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 header.textContent += ` ($${ comify(usd).replace(_0, '$10') })`;
 
-                header.setAttribute('tt-true-usd-amount', usd);
+                header.setAttribute('tt-tusda', usd);
             });
 
         for(let counter of bits_counter) {
@@ -1821,7 +1821,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     usd = (bits * .01).toFixed(2);
 
-                    counter.setAttribute('tt-true-usd-amount', usd);
+                    counter.setAttribute('tt-tusda', usd);
 
                     return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
@@ -1837,7 +1837,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     usd = (bits * .01).toFixed(2);
 
-                    cheer.setAttribute('tt-true-usd-amount', usd);
+                    cheer.setAttribute('tt-tusda', usd);
 
                     return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
@@ -1853,7 +1853,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     usd = (bits * .01).toFixed(2);
 
-                    train.setAttribute('tt-true-usd-amount', usd);
+                    train.setAttribute('tt-tusda', usd);
 
                     return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
@@ -2112,7 +2112,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             return;
 
         // Add an iframe...
-        let { name } = STREAMER,
+        let [,name] = ([,STREAMER?.name] ?? top.location.pathname.split(/\W/, 2)),
             input = $('.chat-input'),
             iframe = furnish(`iframe#tt-popup-container.stream-chat.tw-c-text-base.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-full-height.tw-relative[src="/popout/${name}/chat"][role="tt-log"]`),
             container = $('.chat-shell .stream-chat', false, top.document);
@@ -2141,16 +2141,16 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
      *                                                                        __/ |
      *                                                                       |___/
      */
-     /*** Soft Unban | tmarenko @ GitHub | https://github.com/tmarenko/twitch_chat_antiban
-      *       _____        __ _     _    _       _
-      *      / ____|      / _| |   | |  | |     | |
-      *     | (___   ___ | |_| |_  | |  | |_ __ | |__   __ _ _ __
-      *      \___ \ / _ \|  _| __| | |  | | '_ \| '_ \ / _` | '_ \
-      *      ____) | (_) | | | |_  | |__| | | | | |_) | (_| | | | |
-      *     |_____/ \___/|_|  \__|  \____/|_| |_|_.__/ \__,_|_| |_|
-      *
-      *
-      */
+    /*** Soft Unban | tmarenko @ GitHub | https://github.com/tmarenko/twitch_chat_antiban
+     *       _____        __ _     _    _       _
+     *      / ____|      / _| |   | |  | |     | |
+     *     | (___   ___ | |_| |_  | |  | |_ __ | |__   __ _ _ __
+     *      \___ \ / _ \|  _| __| | |  | | '_ \| '_ \ / _` | '_ \
+     *      ____) | (_) | | | |_  | |__| | | | | |_) | (_| | | | |
+     *     |_____/ \___/|_|  \__|  \____/|_| |_|_.__/ \__,_|_| |_|
+     *
+     *
+     */
     Handlers.soft_unban = () => {
         if(!STREAMER?.veto)
             return;
@@ -2159,7 +2159,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
         let f = furnish;
 
-        let { name, fiat } = STREAMER,
+        let { name, fiat } = (STREAMER ?? { name: top.location.pathname.split(/\W/, 2)[1], fiat: 'Channel Points' }),
             url = parseURL(`https://nightdev.com/hosted/obschat/`).pushToSearch({
                 theme: `bttv_${ THEME }`,
                 channel: name,
@@ -2391,11 +2391,11 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             // Do NOT soft-reset ("turn off, turn on") these settings
             // They will be destroyed, including any data they are using
-            let NON_VOLATILE = [].map(AsteriskFn);
+            let VOLATILE = top.VOLATILE ?? [].map(AsteriskFn);
 
             DestroyingJobs:
             for(let job in Jobs)
-                if(!!~NON_VOLATILE.findIndex(name => name.test(job)))
+                if(!!~VOLATILE.findIndex(name => name.test(job)))
                     continue DestroyingJobs;
                 else
                     RestartJob(job);
@@ -2403,7 +2403,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             Reinitialize:
             if(NORMAL_MODE) {
                 if(Settings.keep_popout) {
-                    Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE, 500);
+                    Chat__PAGE_CHECKER ??= setInterval(Chat__WAIT_FOR_PAGE, 500);
 
                     break Reinitialize;
                 }

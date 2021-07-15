@@ -975,6 +975,22 @@
                 </div>
             </section>
 
+            <!-- Accent Color -->
+            <section new='4.2.0'>
+                <div class='title' tr-id='accent-color'><span small glyph='latest'></span> Accent Color</div>
+                <div class='summary'>
+                    <p tr-id>
+                        What should the accent color be?
+                    </p>
+
+                    <select id='accent_color'>
+                        <option value='blue/12' selected tr-id='color:blue'>Blue</option>
+                        <option value='twitch-purple/12' tr-id='color:purple'>Purple</option>
+                        <option value='red/15' tr-id='color:red'>Red</option>
+                    </select>
+                </div>
+            </section>
+
             <!-- Points Receipt Placement -->
             <section>
                 <div class='title' tr-id='placement:points-receipt'><span small glyph='latest'></span> Points Receipt</div>
@@ -1002,6 +1018,37 @@
                         <option value='null' selected tr-id='placement:point-watcher:options'>Do not display</option>
                         <option value='on' tr-id>On the tooltip</option>
                     </select>
+                </div>
+            </section>
+
+            <!-- Stream Preview -->
+            <section new='4.2.0'>
+                <div class='title' tr-id='stream-preview'><span small glyph='latest'></span> Stream Preview</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='stream_preview' type='checkbox'/>
+                        <label for='stream_preview'></label>
+                    </div>
+                    <p tr-id>
+                        Display a live preview of streams when hovering over them.
+                    </p>
+                    <details>
+                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Stream Preview&quot;'>Extras</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id='stream-preview:extras'>Preview Size</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Adjust the size of the preview.
+                                    </p>
+                                    <select id='stream_preview_scale'>
+                                        <option value='1' selected tr-id='stream-preview:options'>Normal (&times;1)</option>
+                                        <option value='2' tr-id>Large (&times;2)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 

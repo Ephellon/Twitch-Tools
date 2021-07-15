@@ -368,6 +368,27 @@
 			"Onder de video"
 		],
 
+	"accent-color": [
+		"Akzentfarbe",
+		"Wie soll die Akzentfarbe sein"
+	],
+		"color:blue": ["Blau"],
+		"color:purple": ["Lila"],
+		"color:red": ["Rot"],
+
+	"stream-preview": [
+		"Stream-Vorschau",
+		"Zeigen Sie eine Live-Vorschau von Streams an, wenn Sie mit der Maus darüber fahren"
+	],
+		"stream-preview:extras": [
+			"Vorschaugröße",
+			"Passen Sie die Größe der Vorschau an"
+		],
+		"stream-preview:options": [
+			"Normal (×1)",
+			"Groß (×2)"
+		],
+
 
 
 

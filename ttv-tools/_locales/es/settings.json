@@ -362,6 +362,27 @@
             "Debajo del video"
         ],
 
+	"accent-color": [
+		"Color de acento",
+		"¿Cuál debería ser el color de acento"
+	],
+		"color:blue": ["Azul"],
+		"color:purple": ["Morado"],
+		"color:red": ["Rojo"],
+
+	"stream-preview": [
+		"Vista Previa de la Transmisión",
+		"Muestre una vista previa en vivo de las transmisiones al pasar el mouse sobre ellas"
+	],
+		"stream-preview:extras": [
+			"Tamaño de la Vista Previa",
+			"Ajusta el tamaño de la vista previa"
+		],
+		"stream-preview:options": [
+			"Normal (×1)",
+			"Grande (×2)"
+		],
+
 
 
 

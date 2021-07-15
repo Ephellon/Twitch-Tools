@@ -152,6 +152,11 @@ let // These are option names. Anything else will be removed
         'points_receipt_placement',
         // Point Watcher Text placement
         'point_watcher_placement',
+        // Stream Preview
+        'stream_preview',
+            'stream_preview_scale',
+        // Accent Color
+        'accent_color',
 
         /* Data-Collection Features */
         // Fine Details
@@ -254,7 +259,7 @@ class UUID {
             l = hash.length,
             i = 0;
 
-        hash = hash.map(n => hash[n & 255] ^ hash[n | 170] ^ hash[n ^ 85] ^ hash[-~n] ^ n);
+        hash = hash.map((n, i, a) => a[n & 255] ^ a[n | 170] ^ a[n ^ 85] ^ a[-~n] ^ n + i);
 
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
 
@@ -1220,6 +1225,12 @@ document.body.onload = async() => {
                         if(checked)
                             $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
                     });
+                });
+
+                // All unit targets
+                $('[unit] input', true).map(input => {
+                    input.onfocus = event => event.currentTarget.closest('[unit]').setAttribute('focus', true);
+                    input.onblur = event => event.currentTarget.closest('[unit]').setAttribute('focus', false);
                 });
             }, 1000);
         })

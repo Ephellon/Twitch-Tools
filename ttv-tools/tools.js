@@ -369,7 +369,7 @@ class UUID {
             l = hash.length,
             i = 0;
 
-        hash = hash.map(n => hash[n & 255] ^ hash[n | 170] ^ hash[n ^ 85] ^ hash[-~n] ^ n);
+        hash = hash.map((n, i, a) => a[n & 255] ^ a[n | 170] ^ a[n ^ 85] ^ a[-~n] ^ n + i);
 
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
 
@@ -483,12 +483,14 @@ class Popup {
             else if(/\b(target|to)\b/i.test(n))
                 H = options[n] ?? H;
 
+        let [accent] = (Settings.accent_color ?? 'blue/12').split('/');
+
         let p =
         f('div#tt-popup.tw-absolute.tw-mg-t-5', { uuid, style: 'z-index:9; bottom:10rem; right:1rem' },
             f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
                 f('div', {},
                     f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
-                            style: 'background-color:#387aff!important;'
+                            style: `background-color:var(--color-${ accent })!important;`
                         },
                         f('a', { href: H, target: R, style: 'text-decoration:none' },
                             f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
@@ -2201,16 +2203,16 @@ try {
                     REMARK(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
 
                 switch(key) {
+                    case 'away_mode_placement': {
+                        RestartJob('away_mode', 'modify');
+                    } break;
+
                     case 'filter_rules': {
                         RestartJob('filter_messages', 'modify');
                     } break;
 
                     case 'phrase_rules': {
                         RestartJob('highlight_phrases', 'modify');
-                    } break;
-
-                    case 'away_mode_placement': {
-                        RestartJob('away_mode', 'modify');
                     } break;
 
                     case 'user_language_preference': {
@@ -2272,6 +2274,11 @@ try {
 async function update() {
     // The location
     top.PATHNAME = PATHNAME = top.location.pathname;
+
+    NORMALIZED_PATHNAME = PATHNAME
+        // Remove common "modes"
+        .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
+        .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
     // The theme
     top.THEME = THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
@@ -2553,6 +2560,7 @@ let Initialize = async(START_OVER = false) => {
 
     SPECIAL_MODE = defined($('[data-test-selector="exit-button"i]'));
     NORMAL_MODE = !SPECIAL_MODE;
+
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
         .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
@@ -2833,9 +2841,13 @@ let Initialize = async(START_OVER = false) => {
             return game ?? LIVE_CACHE.get('game');
         },
 
-        href: parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href,
+        get href() {
+            return parseURL($(`a[href$="${ NORMALIZED_PATHNAME }"i]`)?.href).href
+        },
 
-        icon: $('img', false, $(`a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]`))?.src,
+        get icon() {
+            return $('img', false, $(`a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]`))?.src
+        },
 
         get like() {
             return defined($('[data-a-target="unfollow-button"i]'))
@@ -2849,7 +2861,9 @@ let Initialize = async(START_OVER = false) => {
                 )
         },
 
-        name: $(`.channel-info-content a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name'),
+        get name() {
+            return $(`.channel-info-content a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name')
+        },
 
         get paid() {
             return defined($('[data-a-target="subscribed-button"i]'))
@@ -3896,7 +3910,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             if(!defined(parent) || !defined(sibling))
-                return WARN('Unable to create the Away Mode button');
+                return /* WARN('Unable to create the Away Mode button') */;
 
             container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
@@ -3959,9 +3973,11 @@ let Initialize = async(START_OVER = false) => {
                 });
         }
 
+        let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
+
         // if(init === true) ->
         // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
+        button.background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
         // button.icon.setAttribute('height', '20px');
         // button.icon.setAttribute('width', '20px');
 
@@ -3970,7 +3986,7 @@ let Initialize = async(START_OVER = false) => {
                 { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
-            background?.setAttribute('style', `background:${ ['#387aff', 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
+            background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
             tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
             await SetQuality(['auto','low'][+enabled])
@@ -3996,6 +4012,7 @@ let Initialize = async(START_OVER = false) => {
             AwayModeButton.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
         };
 
+        // Alt + A
         if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
                 if(altKey && key == 'a')
@@ -4140,7 +4157,7 @@ let Initialize = async(START_OVER = false) => {
                     icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
                     href: FIRST_IN_LINE_HREF,
 
-                    onclick: event => {
+                    onmousedown: event => {
                         let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
                             uuid = existing?.getAttribute('uuid');
 
@@ -4232,344 +4249,350 @@ let Initialize = async(START_OVER = false) => {
         }, 1000);
     }
 
-    if(NORMAL_MODE) {
-        FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
+    let FIRST_IN_LINE_BALLOON__INSURANCE =
+    setInterval(() => {
+        if(NORMAL_MODE && !defined(FIRST_IN_LINE_BALLOON)) {
+            FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
 
-        // Up Next Boost Button
-        let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
-            attributes: {
-                id: 'up-next-boost'
-            },
+            // Up Next Boost Button
+            let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
+                attributes: {
+                    id: 'up-next-boost'
+                },
 
-            icon: 'latest',
-            onclick: event => {
-                let { currentTarget } = event,
-                    speeding = currentTarget.getAttribute('speeding') == 'true';
+                icon: 'latest',
+                onclick: event => {
+                    let { currentTarget } = event,
+                        speeding = currentTarget.getAttribute('speeding') == 'true';
 
-                speeding = !speeding;
+                    speeding = !speeding;
 
-                currentTarget.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+speeding] }`);
-                currentTarget.setAttribute('speeding', FIRST_IN_LINE_BOOST = speeding);
+                    currentTarget.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+speeding] }`);
+                    currentTarget.setAttribute('speeding', FIRST_IN_LINE_BOOST = speeding);
 
-                currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
+                    currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
 
-                $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +speeding }px solid var(--color-yellow)`);
+                    $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +speeding }px solid var(--color-yellow)`);
 
-                let oneMin = 60_000,
-                    fiveMin = 5 * oneMin,
-                    tenMin = 10 * oneMin;
+                    let oneMin = 60_000,
+                        fiveMin = 5 * oneMin,
+                        tenMin = 10 * oneMin;
 
-                FIRST_IN_LINE_TIMER =
-                    // If the streamer hasn't been on for longer than 10mins, wait until then
-                    STREAMER.time < tenMin?
-                        fiveMin + (tenMin - STREAMER.time):
-                    // Streamer has been live longer than 10mins
-                    (
-                        // Boost is enabled
-                        FIRST_IN_LINE_BOOST?
-                            (
-                                // Boost is enabled and the time left on "Up Next" is less than 5mins
-                                (FIRST_IN_LINE_TIMER ?? fiveMin) < fiveMin?
-                                    FIRST_IN_LINE_TIMER:
-                                // ... greater than 5mins
-                                fiveMin
-                            ):
-                        // Boost is disabled
-                        FIRST_IN_LINE_WAIT_TIME * oneMin
-                    );
+                    FIRST_IN_LINE_TIMER =
+                        // If the streamer hasn't been on for longer than 10mins, wait until then
+                        STREAMER.time < tenMin?
+                            fiveMin + (tenMin - STREAMER.time):
+                        // Streamer has been live longer than 10mins
+                        (
+                            // Boost is enabled
+                            FIRST_IN_LINE_BOOST?
+                                (
+                                    // Boost is enabled and the time left on "Up Next" is less than 5mins
+                                    (FIRST_IN_LINE_TIMER ?? fiveMin) < fiveMin?
+                                        FIRST_IN_LINE_TIMER:
+                                    // ... greater than 5mins
+                                    fiveMin
+                                ):
+                            // Boost is disabled
+                            FIRST_IN_LINE_WAIT_TIME * oneMin
+                        );
 
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                $('[up-next--body] [time]', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
+                    $('[up-next--body] [time]', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
 
-                SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_WAIT_TIME });
-            },
-        });
+                    SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_WAIT_TIME });
+                },
+            });
 
-        // Pause Button
-        let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
-            attributes: {
-                id: 'up-next-control'
-            },
+            // Pause Button
+            let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
+                attributes: {
+                    id: 'up-next-control'
+                },
 
-            icon: 'pause',
-            onclick: event => {
-                let { currentTarget } = event,
-                    paused = currentTarget.getAttribute('paused') == 'true';
+                icon: 'pause',
+                onclick: event => {
+                    let { currentTarget } = event,
+                        paused = currentTarget.getAttribute('paused') == 'true';
 
-                paused = !paused;
+                    paused = !paused;
 
-                currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
-                currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
+                    currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
+                    currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
 
-                currentTarget.tooltip.innerHTML = `${ ['Pause','Continue'][+paused] } the timer`;
-            },
-        });
+                    currentTarget.tooltip.innerHTML = `${ ['Pause','Continue'][+paused] } the timer`;
+                },
+            });
 
-        // Help Button
-        let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
-            attributes: {
-                id: 'up-next-help'
-            },
+            // Help Button
+            let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
+                attributes: {
+                    id: 'up-next-help'
+                },
 
-            icon: 'help',
-            left: true,
-        });
-        first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel in the blue area to queue it');
+                icon: 'help',
+                left: true,
+            }),
+                [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/'),
+                [colorName] = accent.split('-').reverse();
 
-        // Load cache
-        LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
-            ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
-            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
-            FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
+            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, `Drop a channel in the ${ colorName } area to queue it`);
 
-            REMARK(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
+            // Load cache
+            LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
+                ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+                FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
+                FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
 
-            if(FIRST_IN_LINE_BOOST) {
-                let fiveMin = 300_000;
+                REMARK(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
 
-                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_TIMER < fiveMin? FIRST_IN_LINE_TIMER: fiveMin;
+                if(FIRST_IN_LINE_BOOST) {
+                    let fiveMin = 300_000;
 
-                setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', fiveMin)), 5_000);
+                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_TIMER < fiveMin? FIRST_IN_LINE_TIMER: fiveMin;
 
-                SaveCache({ FIRST_IN_LINE_TIMER });
-            }
+                    setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', fiveMin)), 5_000);
 
-            // Up Next Boost
-            first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
-            first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+FIRST_IN_LINE_BOOST | 0] }`);
-            first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][+FIRST_IN_LINE_BOOST | 0] } Boost`);
-
-            $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +FIRST_IN_LINE_BOOST | 0 }px solid var(--color-yellow)`);
-
-            // Pause
-            first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
-        });
-    }
-
-    if(defined(FIRST_IN_LINE_BALLOON)) {
-        // FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
-
-        FIRST_IN_LINE_BALLOON.body.ondragover = event => {
-            event.preventDefault();
-            // event.dataTransfer.dropEffect = 'move';
-        };
-
-        FIRST_IN_LINE_BALLOON.body.ondrop = async event => {
-            event.preventDefault();
-
-            let streamer,
-                // Did the event originate from within the ballon?
-                from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
-
-            try {
-                streamer = JSON.parse(event.dataTransfer.getData('application/tt-streamer'));
-            } catch(error) {
-                /* error suppression for sorting-related drops */;
-                if(!from_container)
-                    return ERROR(error);
-            }
-
-            if(from_container) {
-                // Most likely a sorting event
-            } else {
-                let { href } = streamer;
-
-                LOG('Adding to Up Next:', { href, streamer });
-
-                // Jobs are unknown. Restart timer
-                if(ALL_FIRST_IN_LINE_JOBS.length < 1)
-                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-
-                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
-
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
-
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-            }
-        };
-
-        FIRST_IN_LINE_BALLOON.icon.onmouseenter = event => {
-            let { container, tooltip, title } = FIRST_IN_LINE_BALLOON,
-                offset = getOffset(container);
-
-            $('div#root > *').append(
-                furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
-                    furnish('div.tw-inline-flex.tw-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
-                        furnish('div', { style: 'width: 30px; height: 30px;' }),
-                        tooltip
-                    )
-                )
-            );
-
-            tooltip.setAttribute('style', 'display:block');
-        };
-
-        FIRST_IN_LINE_BALLOON.icon.onmouseleave = event => {
-            $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
-
-            FIRST_IN_LINE_BALLOON.tooltip?.closest('[show]')?.setAttribute('show', false);
-        };
-
-        FIRST_IN_LINE_SORTING_HANDLER = new Sortable(FIRST_IN_LINE_BALLOON.body, {
-            animation: 150,
-            draggable: '[name]',
-
-            filter: '.tt-static',
-
-            onUpdate: ({ oldIndex, newIndex }) => {
-                // LOG('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
-
-                let [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
-                ALL_FIRST_IN_LINE_JOBS.splice(--newIndex, 0, moved);
-
-                // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
-                // LOG('Moved', { oldIndex, newIndex, moved });
-
-                let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
-
-                if(!defined(channel))
-                    return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
-
-                if([oldIndex, newIndex].contains(0)) {
-                    LOG('New First in Line event:', channel);
-
-                    FIRST_IN_LINE_TIMER = parseInt(
-                        $(`[name="${ channel.name }"i]`).getAttribute('time')
-                        ?? FIRST_IN_LINE_WAIT_TIME * 60_000
-                    );
-
-                    REDO_FIRST_IN_LINE_QUEUE(channel.href);
-                    LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: toTimeString(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    SaveCache({ FIRST_IN_LINE_TIMER });
                 }
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
-            },
-        });
+                // Up Next Boost
+                first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
+                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+FIRST_IN_LINE_BOOST | 0] }`);
+                first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][+FIRST_IN_LINE_BOOST | 0] } Boost`);
 
-        if(Settings.first_in_line_none)
-            FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
-        else
-            FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
-                for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
-                    let href = ALL_FIRST_IN_LINE_JOBS[index],
-                        channel = ALL_CHANNELS.find(channel => parseURL(channel.href).href === href);
+                $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +FIRST_IN_LINE_BOOST | 0 }px solid var(--color-yellow)`);
 
-                    if(!defined(href) || !defined(channel)) {
-                        ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                // Pause
+                first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
+            });
+        }
 
-                        ++fails;
+        if(defined(FIRST_IN_LINE_BALLOON)) {
+            // FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
 
-                        continue;
+            FIRST_IN_LINE_BALLOON.body.ondragover ??= event => {
+                event.preventDefault();
+                // event.dataTransfer.dropEffect = 'move';
+            };
+
+            FIRST_IN_LINE_BALLOON.body.ondrop ??= async event => {
+                event.preventDefault();
+
+                let streamer,
+                    // Did the event originate from within the ballon?
+                    from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
+
+                try {
+                    streamer = JSON.parse(event.dataTransfer.getData('application/tt-streamer'));
+                } catch(error) {
+                    /* error suppression for sorting-related drops */;
+                    if(!from_container)
+                        return ERROR(error);
+                }
+
+                if(from_container) {
+                    // Most likely a sorting event
+                } else {
+                    let { href } = streamer;
+
+                    LOG('Adding to Up Next:', { href, streamer });
+
+                    // Jobs are unknown. Restart timer
+                    if(ALL_FIRST_IN_LINE_JOBS.length < 1)
+                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
+
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                }
+            };
+
+            FIRST_IN_LINE_BALLOON.icon.onmouseenter ??= event => {
+                let { container, tooltip, title } = FIRST_IN_LINE_BALLOON,
+                    offset = getOffset(container);
+
+                $('div#root > *').append(
+                    furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
+                        furnish('div.tw-inline-flex.tw-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
+                            furnish('div', { style: 'width: 30px; height: 30px;' }),
+                            tooltip
+                        )
+                    )
+                );
+
+                tooltip.setAttribute('style', 'display:block');
+            };
+
+            FIRST_IN_LINE_BALLOON.icon.onmouseleave ??= event => {
+                $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
+
+                FIRST_IN_LINE_BALLOON.tooltip?.closest('[show]')?.setAttribute('show', false);
+            };
+
+            FIRST_IN_LINE_SORTING_HANDLER ??= new Sortable(FIRST_IN_LINE_BALLOON.body, {
+                animation: 150,
+                draggable: '[name]',
+
+                filter: '.tt-static',
+
+                onUpdate: ({ oldIndex, newIndex }) => {
+                    // LOG('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
+
+                    let [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
+                    ALL_FIRST_IN_LINE_JOBS.splice(--newIndex, 0, moved);
+
+                    // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
+                    // LOG('Moved', { oldIndex, newIndex, moved });
+
+                    let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
+
+                    if(!defined(channel))
+                        return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
+
+                    if([oldIndex, newIndex].contains(0)) {
+                        LOG('New First in Line event:', channel);
+
+                        FIRST_IN_LINE_TIMER = parseInt(
+                            $(`[name="${ channel.name }"i]`).getAttribute('time')
+                            ?? FIRST_IN_LINE_WAIT_TIME * 60_000
+                        );
+
+                        REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                        LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: toTimeString(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                     }
 
-                    let { live, name } = channel;
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                },
+            });
 
-                    let [balloon] = FIRST_IN_LINE_BALLOON?.add({
-                        href,
-                        src: channel.icon,
-                        message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
-                        subheader: `Coming up next`,
-                        onremove: event => {
-                            let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                                [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+            if(Settings.first_in_line_none)
+                FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
+            else
+                FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
+                    for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
+                        let href = ALL_FIRST_IN_LINE_JOBS[index],
+                            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).href === href);
 
-                            LOG('Removed First in Line event:', removed, 'Was it canceled?', event.canceled);
+                        if(!defined(href) || !defined(channel)) {
+                            ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
-                            if(event.canceled)
-                                DO_NOT_AUTO_ADD.push(removed);
+                            ++fails;
 
-                            if(index > 0) {
-                                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
-                            } else {
-                                LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+                            continue;
+                        }
 
-                                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+                        let { live, name } = channel;
 
-                                FIRST_IN_LINE_HREF = undefined;
-                                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
-                            }
-                        },
+                        let [balloon] = FIRST_IN_LINE_BALLOON?.add({
+                            href,
+                            src: channel.icon,
+                            message: `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`,
+                            subheader: `Coming up next`,
+                            onremove: event => {
+                                let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
+                                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                        attributes: {
-                            name,
-                            live,
-                            index,
-                            time: (index < 1? FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000),
+                                LOG('Removed First in Line event:', removed, 'Was it canceled?', event.canceled);
 
-                            style: (live? '': 'opacity: 0.3!important'),
-                        },
+                                if(event.canceled)
+                                    DO_NOT_AUTO_ADD.push(removed);
 
-                        animate: container => {
-                            let subheader = $('.tt-balloon-subheader', false, container);
+                                if(index > 0) {
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                                } else {
+                                    LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
 
-                            return setInterval(() => {
-                                if(FIRST_IN_LINE_PAUSED)
-                                    return /* First in Line is paused */;
+                                    [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                                let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
-                                    { name, live } = channel;
-
-                                let time = parseInt(container.getAttribute('time')),
-                                    intervalID = parseInt(container.getAttribute('animationID')),
-                                    index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
-
-                                if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
-                                    FIRST_IN_LINE_TIMER = time;
-
-                                    WARN('Creating job to avoid [Job Listing] mitigation event', channel);
-
-                                    return REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                                    FIRST_IN_LINE_HREF = undefined;
+                                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
                                 }
+                            },
 
-                                if(time < 0)
-                                    setTimeout(() => {
-                                        LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
-                                        // Mitigate 0 time bug?
+                            attributes: {
+                                name,
+                                live,
+                                index,
+                                time: (index < 1? FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000),
 
-                                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                                        SaveCache({ FIRST_IN_LINE_TIMER });
+                                style: (live? '': 'opacity: 0.3!important'),
+                            },
 
-                                        open($('a', false, container)?.href ?? '?', '_self');
-                                        return clearInterval(intervalID);
-                                    }, 5000);
+                            animate: container => {
+                                let subheader = $('.tt-balloon-subheader', false, container);
 
-                                container.setAttribute('time', time - (index > 0? 0: 1000));
+                                return setInterval(() => {
+                                    if(FIRST_IN_LINE_PAUSED)
+                                        return /* First in Line is paused */;
 
-                                if(container.getAttribute('index') != index)
-                                    container.setAttribute('index', index);
+                                    let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                                        { name, live } = channel;
 
-                                let theme = { light: 'w', dark: 'b' }[THEME];
+                                    let time = parseInt(container.getAttribute('time')),
+                                        intervalID = parseInt(container.getAttribute('animationID')),
+                                        index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
-                                $('a', false, container)
-                                    .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
+                                    if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                                        FIRST_IN_LINE_TIMER = time;
 
-                                if(container.getAttribute('live') != (live + '')) {
-                                    $('.tt-balloon-message', false, container).innerHTML =
-                                        `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`;
-                                    container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
-                                    container.setAttribute('live', live);
-                                }
+                                        WARN('Creating job to avoid [Job Listing] mitigation event', channel);
 
-                                subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
-                            }, 1000);
-                        },
-                    })
-                        ?? [];
-                }
+                                        return REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                                    }
 
-                FIRST_IN_LINE_BALLOON.counter.setAttribute('length', [...new Set([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF])].filter(defined).length);
-            }, 1000);
+                                    if(time < 0)
+                                        setTimeout(() => {
+                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                            // Mitigate 0 time bug?
 
-        STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
-            LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+                                            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                                            SaveCache({ FIRST_IN_LINE_TIMER });
 
-            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-            SaveCache({ FIRST_IN_LINE_TIMER });
-        };
-    }
+                                            open($('a', false, container)?.href ?? '?', '_self');
+                                            return clearInterval(intervalID);
+                                        }, 5000);
+
+                                    container.setAttribute('time', time - (index > 0? 0: 1000));
+
+                                    if(container.getAttribute('index') != index)
+                                        container.setAttribute('index', index);
+
+                                    let theme = { light: 'w', dark: 'b' }[THEME];
+
+                                    $('a', false, container)
+                                        .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
+
+                                    if(container.getAttribute('live') != (live + '')) {
+                                        $('.tt-balloon-message', false, container).innerHTML =
+                                            `${ name } <span style="display:${ live? 'none': 'inline-block' }">is ${ live? '': 'not ' }live</span>`;
+                                        container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
+                                        container.setAttribute('live', live);
+                                    }
+
+                                    subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
+                                }, 1000);
+                            },
+                        })
+                            ?? [];
+                    }
+
+                    FIRST_IN_LINE_BALLOON.counter.setAttribute('length', [...new Set([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF])].filter(defined).length);
+                }, 1000);
+
+            STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
+                LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+
+                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                SaveCache({ FIRST_IN_LINE_TIMER });
+            };
+        }
+    }, 1000);
 
     /*** First in Line
      *      ______ _          _     _         _      _
@@ -4614,7 +4637,7 @@ let Initialize = async(START_OVER = false) => {
             if(!/([^]+? +)(go(?:ing)?|is|went) +live\b/i.test(innerText))
                 continue;
 
-            LOG('Recieved an actionable notification:', innerText, new Date);
+            LOG('Received an actionable notification:', innerText, new Date);
 
             if(defined(FIRST_IN_LINE_HREF)) {
                 if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
@@ -5210,7 +5233,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // After 30 seconds, remove the intent
-            ClearIntent ??= setTimeout(() => RemoveCache('UserIntent'), 30_000);
+            ClearIntent ??= setTimeout(RemoveCache, 30_000, 'UserIntent');
         } else if(/\/search\b/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
 
@@ -5765,7 +5788,16 @@ let Initialize = async(START_OVER = false) => {
             footer = footers[footers.length - 1],
             target = footer?.lastElementChild;
 
-        if(!defined(target))
+        if(!defined(subtitle)) {
+            let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true),
+                rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
+
+            title = rTitle;
+            subtitle = rSubtitle;
+            target = rTarget;
+        }
+
+        if(!defined(title) || !defined(target))
             return;
 
         let [name, game] = title.innerText.split(/[^\w\s]/);
@@ -5803,7 +5835,7 @@ let Initialize = async(START_OVER = false) => {
             target.append(icon);
             target.append(text);
 
-            target.closest('[role="dialog"i]').setAttribute('tt-in-up-next', upNext);
+            target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
         });
     };
     Timers.point_watcher_placement = 250;
@@ -5821,6 +5853,87 @@ let Initialize = async(START_OVER = false) => {
             balanceButton.click();
             setTimeout(() => balanceButton.click(), 300);
         }
+    }
+
+    // Stream Preview
+    let STREAM_PREVIEW;
+
+    Handlers.stream_preview = async() => {
+        let richTooltip = $('[class*="channel-tooltip"i]');
+
+        if(!defined(richTooltip))
+            return STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
+
+        let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip);
+
+        if(!defined(subtitle)) {
+            let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true);
+
+            title = rTitle;
+            subtitle = rSubtitle;
+        }
+
+        if(!defined(title))
+            return;
+
+        let [name] = title.innerText.split(/[^\w\s]/);
+
+        name = name?.trim()?.toLowerCase();
+
+        // There is already a preview of the hovered tooltip
+        if([STREAMER?.name, STREAM_PREVIEW?.name].map(name => name?.toLowerCase()).contains(name))
+            return;
+
+        let { top, left, height, width } = getOffset(richTooltip),
+            [body, video] = $('body, video', true).map(getOffset);
+
+        STREAM_PREVIEW?.element?.remove();
+
+        let scale = parseFloat(Settings.stream_preview_scale) || 1;
+
+        STREAM_PREVIEW = {
+            name,
+            element:
+                furnish('div.tt-stream-preview.invisible', {
+                        style: (
+                            (top < body.height * (0.7 / scale))?
+                                `top: calc(${ top + height }px + (2rem * ${ scale }));`:
+                            `top: calc(${ top - height }px - (10rem * ${ scale }));`
+                        ) + `left: calc(${ video.left }px - 5rem); height: calc(150px * ${ scale }); width: calc(300px * ${ scale });`,
+                    },
+                    furnish('div.tt-stream-preview--poster', {
+                        style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
+                    }),
+                    furnish(`iframe.tt-stream-preview--iframe`, {
+                        allow: 'autoplay',
+                        src: `https://player.twitch.tv/?channel=${ name }&parent=twitch.tv&muted=true&controls=false&quality=720p`,
+
+                        height: '100%',
+                        width: '100%',
+                    })
+                )
+        };
+
+        document.body.append(STREAM_PREVIEW.element);
+
+        setTimeout(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'), 100);
+        $('.tt-stream-preview--iframe', false, STREAM_PREVIEW?.element ?? [])?.addEventListener('load', async event => {
+            $('.tt-stream-preview--poster')?.classList?.add('invisible');
+        });
+    };
+    Timers.stream_preview = 100;
+
+    Unhandlers.stream_preview = () => {
+        STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
+    };
+
+    __StreamPreview__:
+    if(parseBool(Settings.stream_preview)) {
+        REMARK('Adding Stream previews...');
+
+        top.onlocationchange = Unhandlers.stream_preview;
+
+        RegisterJob('stream_preview');
     }
 
     /*** Watch Time Placement
@@ -6303,6 +6416,11 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                             PATHNAME = top.location.pathname;
 
+                            NORMALIZED_PATHNAME = PATHNAME
+                                // Remove common "modes"
+                                .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
+                                .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
+
                             for(let [name, func] of __ONLOCATIONCHANGE__)
                                 func(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
                         }
@@ -6510,11 +6628,11 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
             // Do NOT soft-reset ("turn off, turn on") these settings
             // They will be destroyed, including any data they are using
-            let NON_VOLATILE = ['first_in_line*'].map(AsteriskFn);
+            let VOLATILE = top.VOLATILE = ['first_in_line*'].map(AsteriskFn);
 
             DestroyingJobs:
             for(let job in Jobs)
-                if(!!~NON_VOLATILE.findIndex(name => name.test(job)))
+                if(!!~VOLATILE.findIndex(name => name.test(job)))
                     continue DestroyingJobs;
                 else
                     RestartJob(job);
@@ -6522,7 +6640,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             Reinitialize:
             if(NORMAL_MODE) {
                 if(Settings.keep_popout) {
-                    PAGE_CHECKER = setInterval(WAIT_FOR_PAGE, 500);
+                    PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
 
                     break Reinitialize;
                 }
@@ -6534,6 +6652,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
         // Add custom styling
         CustomCSSInitializer: {
             CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
+
+            let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
 
 CUSTOM_CSS.innerHTML =
 `
@@ -6576,8 +6696,9 @@ CUSTOM_CSS.innerHTML =
 }
 
 [up-next--body] {
-    background-color: #387aff;
+    background-color: var(--color-${ accent });
     border-radius: 0.5rem;
+    color: var(--color-hinted-grey-${ compliment });
 }
 [up-next--body][empty="true"i] {
     background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
@@ -6642,8 +6763,8 @@ CUSTOM_CSS.innerHTML =
 
 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-[tt-earned-all="true"i] { color: #387aff; font-weight: bold }
-[tt-in-up-next="true"i] { box-shadow: #387aff88 0 4px 8px, #387aff88 0 0 4px !important }
+[tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
+[tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
 
 /* Tooltips */
 .tw-dialog-layer [data-popper-escaped="true"i] {
@@ -6828,6 +6949,53 @@ CUSTOM_CSS.innerHTML =
     left: 0;
     margin-left: -3px;
     top: 6px;
+}
+
+/* Stream Preview */
+.tt-stream-preview {
+    border-radius: 0.6rem;
+    box-shadow: #000 0 4px 8px, #000 0 0 4px;
+    display: block;
+    visibility: visible;
+
+    transition: all 0.5s ease-in;
+
+    position: fixed;
+    margin-left: 7rem;
+    z-index: 9;
+
+    height: 9rem;
+    width: 16rem;
+}
+
+.tt-stream-preview--poster {
+    background-color: #0008;
+    background-size: cover;
+    border-radius: inherit;
+    display: block;
+
+    transition: all 1.5s ease-in;
+
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    left: 0;
+    top: 0;
+    z-index: 99;
+
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.tt-stream-preview--iframe {
+    display: block;
+    border-radius: inherit;
+    opacity: 1;
+    visibility: inherit;
+}
+
+.invisible {
+    opacity: 0;
 }
 `;
 
