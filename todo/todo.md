@@ -28,6 +28,10 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.2.0.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0.1)
+- Adjusted Point Watcher logic
+- Added option to mute Stream Previews
+
 > [4.2.0](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0)
 - Removed `CRX` package
 - Fixed edge-case where streamer data wouldn't be passed to `chat.js`

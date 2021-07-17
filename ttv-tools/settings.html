@@ -1036,15 +1036,28 @@
                         <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Stream Preview&quot;'>Extras</summary>
                         <div>
                             <div text-only>
-                                <div class='title' tr-id='stream-preview:extras'>Preview Size</div>
+                                <div class='title' tr-id='stream-preview:size'>Preview Size</div>
                                 <div class='summary'>
                                     <p tr-id>
                                         Adjust the size of the preview.
                                     </p>
                                     <select id='stream_preview_scale'>
-                                        <option value='1' selected tr-id='stream-preview:options'>Normal (&times;1)</option>
+                                        <option value='1' selected tr-id='stream-preview:size-options'>Normal (&times;1)</option>
                                         <option value='2' tr-id>Large (&times;2)</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='stream-preview:sound'>Preview Sound</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Adjust the sound of the preview.
+                                    </p>
+                                    <div class='toggle'>
+                                        <input id='stream_preview_sound' type='checkbox'/>
+                                        <label for='stream_preview_sound'></label>
+                                    </div>
                                 </div>
                             </div>
                         </div>

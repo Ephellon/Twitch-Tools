@@ -155,6 +155,7 @@ let // These are option names. Anything else will be removed
         // Stream Preview
         'stream_preview',
             'stream_preview_scale',
+            'stream_preview_sound',
         // Accent Color
         'accent_color',
 

@@ -5746,7 +5746,8 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let pointWatcherCounter = 0,
-        balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button');
+        balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button'),
+        hasPointsEnabled = false;
 
     Handlers.point_watcher_placement = () => {
         let richTooltip = $('[class*="channel-tooltip"i]');
@@ -5757,9 +5758,12 @@ let Initialize = async(START_OVER = false) => {
 
             LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
                 let [amount, fiat, face, notEarned] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
-                    allRewards = $('[data-test-selector="cost"i]', true);
+                    allRewards = $('[data-test-selector="cost"i]', true),
+                    balance = $('[data-test-selector="balance-string"i]');
 
-                amount = ($('[data-test-selector="balance-string"i]')?.innerText ?? '&#128683;');
+                hasPointsEnabled ||= defined(balance);
+
+                amount = (balance?.innerText ?? (hasPointsEnabled? amount: '&#128683;'));
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? '');
                 notEarned = (
@@ -5889,7 +5893,9 @@ let Initialize = async(START_OVER = false) => {
 
         STREAM_PREVIEW?.element?.remove();
 
-        let scale = parseFloat(Settings.stream_preview_scale) || 1;
+        let scale = parseFloat(Settings.stream_preview_scale) || 1,
+            muted = !parseBool(Settings.stream_preview_sound),
+            quality = scale > 1? 'auto': '720p';
 
         STREAM_PREVIEW = {
             name,
@@ -5906,7 +5912,7 @@ let Initialize = async(START_OVER = false) => {
                     }),
                     furnish(`iframe.tt-stream-preview--iframe`, {
                         allow: 'autoplay',
-                        src: `https://player.twitch.tv/?channel=${ name }&parent=twitch.tv&muted=true&controls=false&quality=720p`,
+                        src: `https://player.twitch.tv/?channel=${ name }&parent=twitch.tv&muted=${ muted }&controls=false&quality=${ quality }`,
 
                         height: '100%',
                         width: '100%',
