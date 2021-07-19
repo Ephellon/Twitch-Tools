@@ -203,6 +203,19 @@
             "Comience", "agregando", "algunas reglas"
         ],
 
+	"filter-messages:bullets-options": [
+		"Boletines",
+
+		"Sorpresas",
+		"Ocultar todos los boletines relacionados con sorpresas",
+
+		"Puntos de Canal",
+		"Ocultar todos los boletines relacionados con puntos de canal",
+
+		"Suscripciones",
+		"Ocultar todos los boletines relacionados con la suscripción"
+	],
+
     "highlight-mentions": [
         "Destacar menciones",
         "Cuando alguien te mencione (", "@nombredeusuario", "), resalta el mensaje para resaltarlo"
@@ -374,14 +387,18 @@
 		"Vista Previa de la Transmisión",
 		"Muestre una vista previa en vivo de las transmisiones al pasar el mouse sobre ellas"
 	],
-		"stream-preview:extras": [
+		"stream-preview:size": [
 			"Tamaño de la Vista Previa",
 			"Ajusta el tamaño de la vista previa"
 		],
-		"stream-preview:options": [
+		"stream-preview:size-options": [
 			"Normal (×1)",
 			"Grande (×2)"
 		],
+        "stream-preview:sound": [
+            "Sonido de Vista Previa",
+            "Ajusta el sonido de la vista previa"
+        ],
 
 
 

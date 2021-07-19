@@ -28,6 +28,13 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.2.0.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0.2)
+- Fixed Settings styling
+- Added `GetChat.defer` to run after completed events
+- Fixed Dual Toning for Simplify Chat
+- Fixed panel-opening logic
+- Added Filter Bulletins to Filter Messages
+
 > [4.2.0.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0.1)
 - Adjusted Point Watcher logic
 - Added option to mute Stream Previews

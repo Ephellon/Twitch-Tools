@@ -90,22 +90,19 @@
     --normal-shadow: 0 1px 2px var(--black);
 
     /* Shadow/Borders */
-    --default-shadow-border: 0 1px 2px;
-    --default-border-size: 2px;
-
-    --black-border: var(--default-shadow-border) var(--black);
-    --blue-border: var(--default-shadow-border) var(--blue);
-    --green-border: var(--default-shadow-border) var(--green);
-    --grey-border: var(--default-shadow-border) var(--grey);
+    --black-border: 0 1px 2px var(--black);
+    --blue-border: 0 1px 2px var(--blue);
+    --green-border: 0 1px 2px var(--green);
+    --grey-border: 0 1px 2px var(--grey);
     --gray-border: var(--grey-border);
 
-    --baby-blue-border: var(--default-shadow-border) var(--baby-blue);
-    --baby-pink-border: var(--default-shadow-border) var(--baby-pink);
-    --purple-border: var(--default-shadow-border) var(--purple);
-    --red-border: var(--default-shadow-border) var(--red);
-    --gold-border: var(--default-shadow-border) var(--gold);
-    --yellow-border: var(--default-shadow-border) var(--yellow);
-    --white-border: var(--default-shadow-border) var(--white);
+    --baby-blue-border: 0 1px 2px var(--baby-blue);
+    --baby-pink-border: 0 1px 2px var(--baby-pink);
+    --purple-border: 0 1px 2px var(--purple);
+    --red-border: 0 1px 2px var(--red);
+    --gold-border: 0 1px 2px var(--gold);
+    --yellow-border: 0 1px 2px var(--yellow);
+    --white-border: 0 1px 2px var(--white);
 }
 
 *::-webkit-scrollbar {
@@ -169,7 +166,7 @@ html, body {
 
 .live {
     background-color: var(--live-red);
-    border: var(default-border-size) solid var(--background-dark);
+    border: 2px solid var(--background-dark);
     border-radius: .5rem;
     color: var(--white);
     display: inline-block;
@@ -342,7 +339,7 @@ details .summary {
 
 .radio > label:first-of-type::before, .checkbox > label:first-of-type::before {
     background-clip: padding-box;
-    border: var(default-border-size) solid var(--white);
+    border: 2px solid var(--white);
     border-radius: 50%;
     box-sizing: border-box;
     content: '';
@@ -884,7 +881,7 @@ textarea, input[type="text"i], input[type="number"i], input[type="date"i], input
     appearance: none;
     background-clip: padding-box;
     background-color: var(--grey);
-    border: var(--default-border-size) solid var(--grey);
+    border: 2px solid var(--grey);
     border-radius: 3px;
     color: var(--white);
     display: block;
@@ -1000,12 +997,12 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 [unit]::after {
-    border: var(--default-border-size) solid var(--grey);
+    border: 2px solid var(--grey);
     border-left: 0;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 
-    padding: calc(.5rem - var(--default-border-size));
+    padding: calc(.5rem - 2px);
 }
 
 [unit][focus="true"i]::after {
@@ -1289,7 +1286,7 @@ body.popup {
 }
 
 .popup [unit]::after {
-    padding: calc(.1rem - var(--default-border-size)) calc(.5rem - var(--default-border-size));
+    padding: calc(.1rem - 2px) calc(.5rem - 2px);
 }
 
 .popup #filter_rules, .popup #phrase_rules {

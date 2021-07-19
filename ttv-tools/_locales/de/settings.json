@@ -207,6 +207,19 @@
 			"enkele regels"
 		],
 
+	"filter-messages:bullets-options": [
+		"Bulletins",
+
+		"Überraschungen",
+		"Blenden Sie alle Mitteilungen zu Überraschungen aus",
+
+		"Kanalpunkte",
+		"Alle Bulletins zu Kanalpunkten ausblenden",
+
+		"Abonnements",
+		"Alle abonnementbezogenen Bulletins ausblenden"
+	],
+
 	"highlight-mentions": [
 		"Markeer vermeldingen",
 		"Wanneer iemand u vermeldt (", "@gebruikersnaam", "), markeer het bericht om het te laten opvallen"
@@ -380,13 +393,17 @@
 		"Stream-Vorschau",
 		"Zeigen Sie eine Live-Vorschau von Streams an, wenn Sie mit der Maus darüber fahren"
 	],
-		"stream-preview:extras": [
+		"stream-preview:size": [
 			"Vorschaugröße",
 			"Passen Sie die Größe der Vorschau an"
 		],
-		"stream-preview:options": [
+		"stream-preview:size-options": [
 			"Normal (×1)",
 			"Groß (×2)"
+		],
+		"stream-preview:sound": [
+			"Vorschauton",
+			"Passen Sie den Ton der Vorschau an"
 		],
 
 

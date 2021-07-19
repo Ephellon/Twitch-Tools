@@ -1541,9 +1541,9 @@ async function RemoveCache(keys, callback = () => {}) {
         callback();
 }
 
-// Create an object of the current chat
-    // GetChat([lines:number[, keepEmotes:boolean]]) -> Object { style, author, emotes, message, mentions, element, uuid, highlighted }
-function GetChat(lines = 30, keepEmotes = false) {
+// Create an array of the current chat
+    // GetChat([lines:number[, keepEmotes:boolean]]) -> [...Object { style, author, emotes, message, mentions, element, uuid, highlighted }]
+function GetChat(lines = 250, keepEmotes = false) {
     let chat = $('[data-test-selector$="message-container"i] [data-a-target="chat-line-message"i]', true).slice(-lines),
         emotes = {},
         results = [];
@@ -1610,11 +1610,11 @@ function GetChat(lines = 30, keepEmotes = false) {
     results.bullets = [];
 
     for(let bullet of bullets) {
-        let message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, bullet),
+        let message = $('*', true, bullet),
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.innerText.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             subject = (text =>
                 /\braid/i.test(text)?                'raid': // Incoming raid
-                /\bredeem/i.test(text)?              'cash': // Redeeming (spending) channel points
+                /\bredeem/i.test(text)?              'coin': // Redeeming (spending) channel points
                 /\bcontinu/i.test(text)?             'keep': // Continuing a gifted subscription
                 /\bgift/i.test(text)?                'gift': // Gifting a subscription
                 /\b(re)?subs|\bconvert/i.test(text)? 'dues': // New subscription, continued subscription, or converted subscription
@@ -1670,6 +1670,43 @@ function GetChat(lines = 30, keepEmotes = false) {
 
 // Listener for new chat messages
 Object.defineProperties(GetChat, {
+    defer: {
+        value: {
+            set onnewmessage(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(GetChat.__deferredEvents__.__onnewmessage__.has(name))
+                    return GetChat.__deferredEvents__.__onnewmessage__.get(name);
+
+                // REMARK('Adding deferred [on new message] event listener', { [name]: callback });
+
+                GetChat.__deferredEvents__.__onnewmessage__.set(name, callback);
+
+                return callback;
+            },
+
+            get onnewmessage() {
+                return GetChat.__deferredEvents__.__onnewmessage__.size;
+            },
+
+            set onwhisper(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(GetChat.__deferredEvents__.__onwhisper__.has(name))
+                    return GetChat.__onwhisper__.get(name);
+
+                // REMARK('Adding deferred [on new whisper] event listener', { [name]: callback });
+
+                return GetChat.__deferredEvents__.__onwhisper__.set(name, callback);
+            },
+
+            get onwhisper() {
+                return GetChat.__deferredEvents__.__onwhisper__.size;
+            },
+        },
+    },
+    __deferredEvents__: { value: { __onnewmessage__: new Map(), __onwhisper__: new Map() } },
+
     onnewmessage: {
         set(callback) {
             let name = callback.name || UUID.from(callback.toString()).value;
@@ -2177,7 +2214,7 @@ try {
             let change = changes[key],
                 { oldValue, newValue } = change;
 
-            let name = key.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase());
+            let name = key.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ');
 
             if(newValue === false) {
 
@@ -3009,12 +3046,6 @@ let Initialize = async(START_OVER = false) => {
         let open = defined($('[data-a-target="side-nav-search-input"i]')),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
-        let SIDE_PANEL_CHILDREN = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true),
-            GET_PANEL_SIZE = (last = false) =>
-                (SIDE_PANEL_CHILDREN = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true))
-                    [`find${last?'Last':''}Index`](e => $('[class*="--offline"i]', false, e)),
-            SIDE_PANEL_SIZE = SIDE_PANEL_CHILDREN.length;
-
         // Open the Side Nav
         if(!open) // Only open it if it isn't already
             sidenav?.click();
@@ -3023,6 +3054,8 @@ let Initialize = async(START_OVER = false) => {
         show_more:
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
+
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -3159,13 +3192,16 @@ let Initialize = async(START_OVER = false) => {
 
         // Click "show less" as many times as possible
         show_less:
-        while(
-            defined(element = $('[data-a-target$="show-less-button"i]'))
-            // Only close sections if they don't contain any live channels
-            // floor(last-dead-channel-index / panel-size) > floor(first-dead-channel-index / panel-size)
-                // [live] ... [dead] ... [dead]
-                // ^ keep     ^ stop?    ^ kill
-            && ((GET_PANEL_SIZE(true) - GET_PANEL_SIZE()) / SIDE_PANEL_SIZE) | 0
+        while(defined(element = $('[data-a-target$="show-less-button"i]')))
+            element.click();
+
+        let PANEL_SIZE = 0;
+
+        // Only re-open sections if they contain live channels
+        show_more_again:
+        while(true
+            && defined(element = $('#sideNav [data-a-target$="show-more-button"i]'))
+            && (++PANEL_SIZE * 12) < ALL_LIVE_SIDE_PANEL_CHANNELS.length
         )
             element.click();
 
@@ -3497,10 +3533,6 @@ let Initialize = async(START_OVER = false) => {
     // Keep a copy of all messages
     // REMARK("Keeping a log of all original messages");
     // Messages.set(STREAMER.name, new Set);
-    //
-    // GetChat(250).forEach(line => Messages.get(STREAMER.name).add(line));
-    // GetChat.onnewmessage = chat =>
-    //     chat.forEach(line => line.deleted? null: Messages.get(STREAMER.name).add(line));
 
     update();
     setInterval(update, 100);
@@ -5903,7 +5935,9 @@ let Initialize = async(START_OVER = false) => {
                 furnish('div.tt-stream-preview.invisible', {
                         style: (
                             (top < body.height * (0.7 / scale))?
+                                // Below tooltip
                                 `top: calc(${ top + height }px + (2rem * ${ scale }));`:
+                            // Above tooltip
                             `top: calc(${ top - height }px - (10rem * ${ scale }));`
                         ) + `left: calc(${ video.left }px - 5rem); height: calc(150px * ${ scale }); width: calc(300px * ${ scale });`,
                     },
@@ -6514,6 +6548,11 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                     for(let [name, callback] of GetChat.__onnewmessage__)
                         callback(results);
+
+                    setTimeout(async(results) => {
+                        for(let [name, callback] of GetChat.__deferredEvents__.__onnewmessage__)
+                            await callback(results);
+                    }, 50, results);
                 });
 
             if(!defined(chat))
@@ -6543,9 +6582,9 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                             )
                                 continue;
 
-                            for(let [name, callback] of GetChat.__onwhisper__)
+                            async function parse(callback, { node, highlighted, newmessage }) {
                                 if(highlighted) {
-                                    callback({ highlighted });
+                                    await callback({ highlighted });
                                 } else if(newmessage) {
                                     let keepEmotes = true;
 
@@ -6583,7 +6622,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                                     let uuid = UUID.from([author, new Date, message].join(':')).value;
 
-                                    callback({
+                                    await callback({
                                         raw,
                                         uuid,
                                         style,
@@ -6593,6 +6632,15 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                         element: node,
                                     });
                                 }
+                            }
+
+                            for(let [name, callback] of GetChat.__onwhisper__)
+                                parse(callback, { node, highlighted, newmessage });
+
+                            setTimeout(async({ node, highlighted, newmessage }) => {
+                                for(let [name, callback] of GetChat.__deferredEvents__.__onwhisper__)
+                                    await parse(callback, { node, highlighted, newmessage });
+                            }, 50, { node, highlighted, newmessage });
                         }
                     }
                 }),
@@ -6692,7 +6740,7 @@ CUSTOM_CSS.innerHTML =
 [animationID] a { cursor: grab }
 [animationID] a:active { cursor: grabbing }
 
-[tt-hidden] { display: none }
+[tt-hidden-message], [tt-hidden-bulletin] { display: none }
 .tw-root--theme-dark [tt-light], .tw-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
 .tw-root--theme-light [tt-light], .tw-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
 

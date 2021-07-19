@@ -102,6 +102,9 @@ let // These are option names. Anything else will be removed
         // Filter Messages
         'filter_messages',
             'filter_rules',
+        'filter_messages__bullets_coin',
+        'filter_messages__bullets_raid',
+        'filter_messages__bullets_subs',
         // BetterTTV Emotes
         'bttv_emotes',
             'bttv_emotes_maximum',
@@ -1050,6 +1053,8 @@ async function TranslatePageTo(language = 'en') {
 
                     if(translation?.length < 1)
                         node.textContent = node.textContent.trim();
+
+                    node.textContent = node.textContent.replace(/\([\s]+/g, '(').replace(/[\s,:;]+\)/g, ')');
 
                     placement[translation_id] = (placement[translation_id] + 1 < translations.length)?
                         placement[translation_id] + 1:

@@ -159,7 +159,7 @@
 
 	"header:chat-and-messaging": ["Chat & Messaging"],
 	"bttv-emotes": [
-		"BetterTTV emotes",
+		"BetterTTV Emotes",
 		"Use BetterTTV emotes",
 		"This may cause instability while loading emotes"
 	],
@@ -190,7 +190,7 @@
     	],
 
 	"filter-messages": [
-		"Filter messages",
+		"Filter Messages",
 		"Removes messages/rules across all channels",
 		"Please see", "TTV Tools Wiki — Filter Messages", "for assistance"
 	],
@@ -205,8 +205,21 @@
     		"Get started by", "adding", "some rules"
     	],
 
+	"filter-messages:bullets-options": [
+		"Bulletins",
+
+		"Raids",
+		"Hide all raid related bulletins",
+
+		"Channel Points",
+		"Hide all channel point related bulletins",
+
+		"Subscriptions",
+		"Hide all subscription related bulletins"
+	],
+
 	"highlight-mentions": [
-		"Highlight mentions",
+		"Highlight Mentions",
 		"When someone mentions you (", "@username", "), make the message stand out by highlighting it"
 	],
     	"highlight-mentions:options": [
@@ -215,7 +228,7 @@
     	],
 
 	"highlight-phrases": [
-		"Highlight phrases",
+		"Highlight Phrases",
 		"When someone sends a message using any of the following phrases, make the message stand out by highlighting it",
 		"Please see", "TTV Tools Wiki — Highlight Phrases", "for assistance"
 	],
@@ -241,7 +254,7 @@
 	],
 		"notification-sounds:include-mentions": [
 			"Mentions",
-			"When someone mentions your", "@username", "play the", "notification sound"
+			"When someone mentions you (", "@username", ") play the", "notification sound"
 		],
 		"notification-sounds:include-phrases": [
 			"Phrases",
@@ -256,7 +269,7 @@
 		],
 
 	"prevent-spam": [
-		"Prevent spam",
+		"Prevent Spam",
 		"Hide repetitive messages in chat"
 	],
     	"prevent-spam:options": [
@@ -276,7 +289,7 @@
 	],
 
 	"highlight-mentions-popup": [
-		"Show pop-ups",
+		"Show Pop-ups",
 		"When someone mentions you (", "@username", "), make the message stand out by showing a pop-up"
 	],
 
@@ -376,13 +389,17 @@
 		"Stream Preview",
 		"Display a live preview of streams when hovering over them"
 	],
-		"stream-preview:extras": [
+		"stream-preview:size": [
 			"Preview Size",
 			"Adjust the size of the preview"
 		],
-		"stream-preview:options": [
+		"stream-preview:size-options": [
 			"Normal (×1)",
 			"Large (×2)"
+		],
+		"stream-preview:sound": [
+			"Preview Sound",
+			"Adjust the sound of the preview"
 		],
 
 

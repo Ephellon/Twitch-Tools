@@ -1056,14 +1056,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(!censor)
                     continue censoring;
 
-                LOG(`Censoring message because the ${ reason } matches`, line);
-
-                let hidden = element.getAttribute('tt-hidden') === 'true';
+                let hidden = element.getAttribute('tt-hidden-message') === 'true';
 
                 if(hidden || mentions.contains(USERNAME))
                     return;
 
-                element.setAttribute('tt-hidden', true);
+                LOG(`Censoring message because the ${ reason } matches`, line);
+
+                element.setAttribute('tt-hidden-message', true);
             }
         };
 
@@ -1073,9 +1073,9 @@ let Chat__Initialize = async(START_OVER = false) => {
     Timers.filter_messages = -2500;
 
     Unhandlers.filter_messages = () => {
-        let hidden = $('[tt-hidden]', true);
+        let hidden = $('[tt-hidden-message]', true);
 
-        hidden.map(element => element.removeAttribute('tt-hidden'));
+        hidden.map(element => element.removeAttribute('tt-hidden-message'));
     };
 
     __FilterMessages__:
@@ -1180,6 +1180,57 @@ let Chat__Initialize = async(START_OVER = false) => {
     __EasyFilter__:
     if(parseBool(Settings.filter_messages)) {
         RegisterJob('easy_filter');
+    }
+
+    // Filter Bulletins
+    let BULLETIN_FILTER;
+
+    Handlers.filter_bulletins = () => {
+        BULLETIN_FILTER ??= GetChat.onnewmessage = () => {
+            let { bullets } = GetChat(),
+                censor = false;
+
+            censoring:
+            for(let bullet of bullets) {
+                let { element, mentions, message, subject } = bullet,
+                    reason;
+
+                let censor = parseBool(false
+                    || (['coin'].contains(subject) && parseBool(Settings.filter_messages__bullets_coin)? reason = 'channel points': false)
+                    || (['raid'].contains(subject) && parseBool(Settings.filter_messages__bullets_raid)? reason = 'raid(s)': false)
+                    || (['dues', 'gift', 'keep'].contains(subject) && parseBool(Settings.filter_messages__bullets_subs)? reason = 'subscription(s)': false)
+                );
+
+                if(!censor)
+                    continue censoring;
+
+                let hidden = element.getAttribute('tt-hidden-bulletin') === 'true';
+
+                if(hidden || mentions.contains(USERNAME))
+                    return;
+
+                LOG(`Censoring bulletin because its subject is "${ reason }"`, bullet);
+
+                element.setAttribute('tt-hidden-bulletin', true);
+            }
+        };
+
+        if(defined(BULLETIN_FILTER))
+            BULLETIN_FILTER(GetChat(250, true));
+    };
+    Timers.filter_bulletins = -2500;
+
+    Unhandlers.filter_bulletins = () => {
+        let hidden = $('[tt-hidden-bulletin]', true);
+
+        hidden.map(element => element.removeAttribute('tt-hidden-bulletin'));
+    };
+
+    __FilterBulletins__:
+    if(parseBool(Settings.filter_messages__bullets_coin) || parseBool(Settings.filter_messages__bullets_raid) || parseBool(Settings.filter_messages__bullets_subs)) {
+        REMARK("Adding bulletin filtering...");
+
+        RegisterJob('filter_bulletins');
     }
 
     /*** Highlight Phrases
@@ -1305,7 +1356,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     phrase_rules.push(`@${ username }`);
                     phrase_rules = phrase_rules.join(',');
 
-                    currentTarget.setAttribute('tt-hidden', true);
+                    currentTarget.setAttribute('tt-hidden-message', true);
 
                     Storage.set({ phrase_rules });
                 },
@@ -1745,10 +1796,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(parseBool(Settings.simplify_chat_font))
             AddCustomCSSBlock('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
 
-        (GetChat.onnewmessage = chat => {
+        (GetChat.defer.onnewmessage = chat => {
             chat.filter(line => !line.deleted)
                 .forEach(({ element }) => {
-                    let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden'));
+                    let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
 
                     if(keep)
                         element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
@@ -2441,7 +2492,7 @@ Chat__CUSTOM_CSS.innerHTML =
 }
 #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
-[tt-hidden] { display: none }
+[tt-hidden-message], [tt-hidden-bulletin] { display: none }
 .tw-root--theme-dark [tt-light], .tw-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
 .tw-root--theme-light [tt-light], .tw-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
 

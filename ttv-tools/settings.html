@@ -461,7 +461,7 @@
         <article>
             <!-- BetterTTV Emotes -->
             <section>
-                <div class='title' tr-id='bttv-emotes'><span small gold glyph='emotes'></span> BetterTTV emotes</div>
+                <div class='title' tr-id='bttv-emotes'><span small gold glyph='emotes'></span> BetterTTV Emotes</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='bttv_emotes' type='checkbox'/>
@@ -531,8 +531,8 @@
             <!-- [[Convert Emotes]] -->
 
             <!-- Filter Messages -->
-            <section>
-                <div class='title' tr-id='filter-messages'><span small glyph='mod'></span> Filter messages</div>
+            <section new='4.2.1'>
+                <div class='title' tr-id='filter-messages'><span small glyph='mod'></span> Filter Messages</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='filter_messages' type='checkbox' checked/>
@@ -569,12 +569,56 @@
                             </div>
                         </div>
                     </details>
+
+                    <details>
+                        <summary tr-id='filter-messages:bullets-options' subtitle='Control the display of bulletins (highlighted messages)'>Bulletins</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id><span small purple glyph='raid'></span> Raids</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='filter_messages__bullets_raid' type='checkbox'/>
+                                        <label for='filter_messages__bullets_raid'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Hide all raid related bulletins.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id><span small purple glyph='channelpoints'></span> Channel Points</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='filter_messages__bullets_coin' type='checkbox'/>
+                                        <label for='filter_messages__bullets_coin'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Hide all channel point related bulletins.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id><span small gold glyph='gift'></span> Subscriptions</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='filter_messages__bullets_subs' type='checkbox'/>
+                                        <label for='filter_messages__bullets_subs'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Hide all subscription related bulletins.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
             <!-- Highlight Mentions -->
             <section>
-                <div class='title' tr-id='highlight-mentions'><span gold glyph='thread'></span> Highlight mentions</div>
+                <div class='title' tr-id='highlight-mentions'><span gold glyph='thread'></span> Highlight Mentions</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='highlight_mentions' type='checkbox' checked/>
@@ -603,7 +647,7 @@
 
             <!-- Highlight phrases -->
             <section new='4.1'>
-                <div class='title' tr-id='highlight-phrases'><span gold glyph='thread'></span> Highlight phrases</div>
+                <div class='title' tr-id='highlight-phrases'><span gold glyph='star'></span> Highlight Phrases</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='highlight_phrases' type='checkbox'/>
@@ -659,7 +703,7 @@
 
             <!-- Notification Sounds -->
             <section new='4.1'>
-                <div class='title' tr-id='notification-sounds'><span small gold glyph='stream'></span> Notification Sounds</div>
+                <div class='title' tr-id='notification-sounds'><span small gold glyph='music'></span> Notification Sounds</div>
                 <div class='summary'>
                     <p tr-id>
                         When one (or more) of the following conditions are met, play a notification sound.
@@ -743,7 +787,7 @@
 
             <!-- Prevent Spam -->
             <section>
-                <div class='title' tr-id='prevent-spam'><span small glyph='mod'></span> Prevent spam</div>
+                <div class='title' tr-id='prevent-spam'><span small glyph='mod'></span> Prevent Spam</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='prevent_spam' type='checkbox' checked/>
@@ -802,7 +846,7 @@
 
             <!-- Show Pop-ups -->
             <section>
-                <div class='title' tr-id='highlight-mentions-popup'><span gold glyph='thread'></span> Show pop-ups</div>
+                <div class='title' tr-id='highlight-mentions-popup'><span gold glyph='thread'></span> Show Pop-ups</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='highlight_mentions_popup' type='checkbox' checked/>
