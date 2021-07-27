@@ -389,9 +389,29 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 };
 
 // Floors a number to the nearest X
-    // Number..floorToNearest(number)
+    // Number..floorToNearest(number) -> Number
 Number.prototype.floorToNearest ??= function floorToNearest(number) {
     return this - (this % number);
+};
+
+// Clamps (keeps) a number between two points
+    // Number..clamp(min:number[, max:number]) -> Number
+Number.prototype.clamp ??= function clamp(min, max) {
+    if(Number.isNaN(min))
+        throw TypeError('[min] must be a number');
+
+    if(Number.isNaN(max))
+        max = ((min < 0)? min - 1: min + 1);
+
+    // Keep everything in order
+    if(min > max) {
+        let tmp = min;
+        min = max;
+        max = tmp;
+    }
+
+    // clamp.js - https://www.webtips.dev/webtips/javascript/how-to-clamp-numbers-in-javascript
+    return Math.min(Math.max(this, min), max);
 };
 
 // Returns a properly formatted string depending on the number given

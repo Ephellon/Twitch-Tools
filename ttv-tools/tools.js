@@ -486,46 +486,46 @@ class Popup {
         let [accent] = (Settings.accent_color ?? 'blue/12').split('/');
 
         let p =
-        f('div#tt-popup.tw-absolute.tw-mg-t-5', { uuid, style: 'z-index:9; bottom:10rem; right:1rem' },
-            f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease', { 'data-a-target': 'tw-animation-target' },
+        f('div#tt-popup.tt-absolute.tt-mg-t-5', { uuid, style: 'z-index:9; bottom:10rem; right:1rem' },
+            f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease', { 'data-a-target': 'tt-animation-target' },
                 f('div', {},
-                    f('div.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-small.tw-border-t.tw-c-background-base.tw-elevation-2.tw-flex.tw-flex-nowrap.tw-mg-b-1', {
+                    f('div.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-small.tt-border-t.tt-c-background-base.tt-elevation-2.tt-flex.tt-flex-nowrap.tt-mg-b-1', {
                             style: `background-color:var(--color-${ accent })!important;`
                         },
                         f('a', { href: H, target: R, style: 'text-decoration:none' },
-                            f('div.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {},
-                                f('div.tw-flex.tw-flex-nowrap.tw-pd-l-1.tw-pd-y-1', {},
+                            f('div.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive', {},
+                                f('div.tt-flex.tt-flex-nowrap.tt-pd-l-1.tt-pd-y-1', {},
                                     f('div', {},
                                         f('div', { style: 'height:4rem; width:4rem' },
-                                            G = f('img.tw-border-radius-rounded.tw-full-height.tw-full-width.tw-image', {
+                                            G = f('img.tt-border-radius-rounded.tt-full-height.tt-full-width.tt-image', {
                                                 src: I,
                                                 sizeinpixels: 40,
-                                                borderradius: 'tw-border-radius-rounded',
+                                                borderradius: 'tt-border-radius-rounded',
                                             })
                                         )
                                     ),
-                                    f('div.tw-flex.tw-flex-column.tw-flex-nowrap.tw-overflow-hidden.tw-pd-x-1', {},
-                                        f('div.tw-full-height.tw-overflow-hidden', {},
-                                            f('span.tw-c-text-alt', {},
+                                    f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-overflow-hidden.tt-pd-x-1', {},
+                                        f('div.tt-full-height.tt-overflow-hidden', {},
+                                            f('span.tt-c-text-alt', {},
                                                 f('div', {},
                                                     S = f('p', {}, subject)
                                                 )
                                             )
                                         ),
-                                        f('div.tw-flex-shrink-0.tw-mg-t-05', {},
-                                            M = f('div.tw-c-text-alt', {}, message)
+                                        f('div.tt-flex-shrink-0.tt-mg-t-05', {},
+                                            M = f('div.tt-c-text-alt', {}, message)
                                         )
                                     )
                                 )
                             )
                         ),
                         // Notification counter
-                        f('div#tt-notification-counter--popup.tw-absolute.tw-font-size-7.tw-right-0.tw-top-0', { style: 'visibility:hidden' },
-                            f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
-                                    'data-a-target': 'tw-animation-target'
+                        f('div#tt-notification-counter--popup.tt-absolute.tt-font-size-7.tt-right-0.tt-top-0', { style: 'visibility:hidden' },
+                            f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in', {
+                                    'data-a-target': 'tt-animation-target'
                                 },
-                                f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
-                                    f('div#tt-notification-counter-output--popup.tw-c-text-overlay.tw-number-badge__badge.tw-relative', {
+                                f('div.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
+                                    f('div#tt-notification-counter-output--popup.tt-c-text-overlay.tt-number-badge__badge.tt-relative', {
                                         'interval-id': setInterval(() => {
                                             let { length } = Queue.popups,
                                                 counter = $('#tt-notification-counter--popup'),
@@ -550,24 +550,24 @@ class Popup {
                             )
                         ),
                         // Confirmation/Decline buttons
-                        f('div.tw-align-content-stretch.tw-border-l.tw-flex.tw-flex-column.tw-flex-grow-0.tw-flex-shrink-0', {},
+                        f('div.tt-align-content-stretch.tt-border-l.tt-flex.tt-flex-column.tt-flex-grow-0.tt-flex-shrink-0', {},
                             // Confirm
-                            f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
-                                T = f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
+                            f('div.tt-align-content-stretch.tt-border-b.tt-flex.tt-flex-grow-1', {},
+                                T = f('button.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive', {
                                         onclick: A,
                                     },
-                                    f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
-                                        f('p.tw-c-text-alt', {}, N)
+                                    f('div.tt-align-items-center.tt-flex.tt-flex-grow-1.tt-full-height.tt-justify-content-center.tt-pd-05', {},
+                                        f('p.tt-c-text-alt', {}, N)
                                     )
                                 )
                             ),
                             // Decline
-                            f('div.tw-align-content-stretch.tw-border-b.tw-flex.tw-flex-grow-1', {},
-                                W = f('button.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive', {
+                            f('div.tt-align-content-stretch.tt-border-b.tt-flex.tt-flex-grow-1', {},
+                                W = f('button.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive', {
                                         onclick: C,
                                     },
-                                    f('div.tw-align-items-center.tw-flex.tw-flex-grow-1.tw-full-height.tw-justify-content-center.tw-pd-05', {},
-                                        f('p.tw-c-text-alt', {}, D)
+                                    f('div.tt-align-items-center.tt-flex.tt-flex-grow-1.tt-full-height.tt-justify-content-center.tt-pd-05', {},
+                                        f('p.tt-c-text-alt', {}, D)
                                     )
                                 )
                             )
@@ -655,9 +655,9 @@ class Balloon {
         }
 
         let p =
-        f('div.tw-align-self-center.tw-flex-grow-0.tw-flex-nowrap.tw-flex-shrink-0.tw-mg-x-05', {},
+        f('div.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', {},
             f('div', {},
-                f('div.tw-relative', {},
+                f('div.tt-relative', {},
                     // Navigation Icon
                     N = f('div',
                         {
@@ -665,8 +665,8 @@ class Balloon {
 
                             'data-test-selector': 'toggle-balloon-wrapper__mouse-enter-detector',
                         },
-                        f('div.tw-inline-flex.tw-relative', {},
-                            f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-core-button.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                        f('div.tt-inline-flex.tt-relative', {},
+                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                 {
                                     'connected-to': U,
 
@@ -694,12 +694,12 @@ class Balloon {
                                 ),
 
                                 // Notification counter
-                                F = f(`div#tt-notification-counter--${ U }.tw-absolute.tw-right-0.tw-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
-                                    f('div.tw-animation.tw-animation--animate.tw-animation--bounce-in.tw-animation--duration-medium.tw-animation--fill-mode-both.tw-animation--timing-ease-in', {
-                                            'data-a-target': 'tw-animation-target'
+                                F = f(`div#tt-notification-counter--${ U }.tt-absolute.tt-right-0.tt-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
+                                    f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in', {
+                                            'data-a-target': 'tt-animation-target'
                                         },
-                                        f('div.tw-c-background-base.tw-inline-flex.tw-number-badge.tw-relative', {},
-                                            f(`div#tt-notification-counter-output--${ U }.tw-c-text-overlay.tw-number-badge__badge.tw-relative`, {
+                                        f('div.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
+                                            f(`div#tt-notification-counter-output--${ U }.tt-c-text-overlay.tt-number-badge__badge.tt-relative`, {
                                                 'interval-id': setInterval(() => {
                                                     let counter = $(`#tt-notification-counter--${ uuid }`),
                                                         output = $(`#tt-notification-counter-output--${ uuid }`),
@@ -727,24 +727,24 @@ class Balloon {
                         )
                     ),
                     // Balloon
-                    f(`div#tt-balloon-${ U }.tw-absolute.tw-balloon.tw-right-0.tw-balloon--down.tw-balloon--right.tw-balloon-lg.tw-block`,
+                    f(`div#tt-balloon-${ U }.tt-absolute.tt-balloon.tt-right-0.tt-balloon--down.tt-balloon--right.tt-balloon-lg.tt-block`,
                         {
                             style: 'display:none!important',
                             display: 'none',
                             role: 'dialog',
                         },
-                        f('div.tw-border-radius-large.tw-c-background-base.tw-c-text-inherit.tw-elevation-4', {},
-                            (C = f(`div#tt-balloon-container-${ U }.tw-flex.tw-flex-column`,
+                        f('div.tt-border-radius-large.tt-c-background-base.tt-c-text-inherit.tt-elevation-4', {},
+                            (C = f(`div#tt-balloon-container-${ U }.tt-flex.tt-flex-column`,
                                 {
                                     style: 'min-height:22rem; max-height: 90vh; min-width:40rem; overflow-y: auto;',
                                     role: 'dialog',
                                 },
                                 // Header
-                                f('div.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-c-text-base.tw-elevation-1.tw-flex.tw-flex-shrink-0.tw-pd-x-1.tw-pd-y-05.tw-popover-header', {},
-                                    f('div.tw-align-items-center.tw-flex.tw-flex-column.tw-flex-grow-1.tw-justify-content-center', {},
-                                        (H = f(`h5#tt-balloon-header-${ U }.tw-align-center.tw-c-text-alt.tw-semibold`, { style: 'margin-left:4rem!important' }, title))
+                                f('div.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', {},
+                                    f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center', {},
+                                        (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important' }, title))
                                     ),
-                                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
+                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
                                         {
                                             style: 'padding:0.5rem!important; height:3rem!important; width:3rem!important',
                                             innerHTML: Glyphs.x,
@@ -782,16 +782,16 @@ class Balloon {
                                                 {
                                                     style: 'overflow: hidden; width:100%;',
                                                 },
-                                                f('div.tw-align-items-center.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-overflow-hidden',
+                                                f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden',
                                                     { 'data-test-selector': 'center-window__content' },
-                                                    f('div.persistent-notification.tw-relative',
+                                                    f('div.persistent-notification.tt-relative',
                                                         {
                                                             style: 'width:100%',
 
                                                             'data-test-selector': 'persistent-notification',
                                                         },
-                                                        f('div.persistent-notification__unread.tw-border-b.tw-flex.tw-flex-nowrap', {},
-                                                            f('a.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive',
+                                                        f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                                            f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive',
                                                                 {
                                                                     'data-test-selector': 'persistent-notification__click',
                                                                     'connected-to': `${ U }--${ guid }`,
@@ -811,37 +811,37 @@ class Balloon {
                                                                         }
                                                                     },
                                                                 },
-                                                                f('div.presistent-notification__area.tw-flex.tw-flex-nowrap.tw-pd-b-1.tw-pd-l-1.tw-pd-r-3.tw-pd-t-1', {},
+                                                                f('div.presistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                                                     // Avatar
                                                                     f('div', {},
-                                                                        f('div.tw-border-radius-rounded.tw-card-img.tw-card-img--size-4.tw-flex-shrink-0.tw-overflow-hidden', {},
-                                                                            f('div.tw-aspect.tw-aspect--align-top', {},
-                                                                                f('img.tt-balloon-avatar.tw-image', { src })
+                                                                        f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
+                                                                            f('div.tt-aspect.tt-aspect--align-top', {},
+                                                                                f('img.tt-balloon-avatar.tt-image', { src })
                                                                             )
                                                                         )
                                                                     ),
                                                                     // Message body
-                                                                    f('div.tw-flex.tw-flex-column.tw-flex-nowrap.tw-mg-x-1', {},
-                                                                        f('div.persistent-notification__body.tw-overflow-hidden',
+                                                                    f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
+                                                                        f('div.persistent-notification__body.tt-overflow-hidden',
                                                                             {
                                                                                 'data-test-selector': 'persistent-notification__body'
                                                                             },
-                                                                            f('span.tw-c-text-alt', {},
+                                                                            f('span.tt-c-text-alt', {},
                                                                                 f('p.tt-balloon-message', { innerHTML: message })
                                                                             )
                                                                         ),
                                                                         // Subheader
-                                                                        f('div.tw-align-items-center.tw-flex.tw-flex-shrink-0.tw-mg-t-05', {},
-                                                                            f('div.tw-mg-l-05', {},
-                                                                                f('span.tt-balloon-subheader.tw-c-text-alt', { innerHTML: subheader })
+                                                                        f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
+                                                                            f('div.tt-mg-l-05', {},
+                                                                                f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
                                                                             )
                                                                         )
                                                                     )
                                                                 )
                                                             ),
-                                                            f('div.persistent-notification__delete.tw-absolute.tw-pd-l-1.tw-pd-r-05.tw-pd-t-1', {},
-                                                                f('div.tw-align-items-start.tw-flex.tw-flex-nowrap', {},
-                                                                    f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-small.tw-border-bottom-right-radius-small.tw-border-top-left-radius-small.tw-border-top-right-radius-small.tw-button-icon.tw-button-icon--small.tw-core-button.tw-core-button--small.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                                                            f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1.tt-pd-r-05.tt-pd-t-1', {},
+                                                                f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                                         {
                                                                             'data-test-selector': 'persistent-notification__delete',
                                                                             'connected-to': `${ U }--${ guid }`,
@@ -859,7 +859,7 @@ class Balloon {
                                                                                 }
                                                                             },
                                                                         },
-                                                                        f('span.tw-button-icon__icon', {},
+                                                                        f('span.tt-button-icon__icon', {},
                                                                             f('div',
                                                                                 {
                                                                                     style: 'height:1.6rem; width:1.6rem',
@@ -919,7 +919,7 @@ class Balloon {
         if(defined(existing))
             return existing;
 
-        let button = furnish('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-medium.tw-border-bottom-right-radius-medium.tw-border-top-left-radius-medium.tw-border-top-right-radius-medium.tw-button-icon.tw-button-icon--secondary.tw-core-button.tw-flex.tw-flex-column.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-justify-content-center.tw-mg-l-05.tw-overflow-hidden.tw-popover-header__icon-slot--right.tw-relative',
+        let button = furnish('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
             {
                 ...attributes,
 
@@ -969,16 +969,16 @@ class Balloon {
                         {
                             style: 'overflow: hidden; width:100%;',
                         },
-                        f('div.tw-align-items-center.tw-flex.tw-flex-column.tw-flex-grow-1.tw-flex-nowrap.tw-overflow-hidden',
+                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden',
                             { 'data-test-selector': 'center-window__content' },
-                            f('div.persistent-notification.tw-relative',
+                            f('div.persistent-notification.tt-relative',
                                 {
                                     style: 'width:100%',
 
                                     'data-test-selector': 'persistent-notification',
                                 },
-                                f('div.persistent-notification__unread.tw-border-b.tw-flex.tw-flex-nowrap', {},
-                                    f('a.tw-block.tw-full-width.tw-interactable.tw-interactable--alpha.tw-interactable--hover-enabled.tw-interactive',
+                                f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                    f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive',
                                         {
                                             'data-test-selector': 'persistent-notification__click',
                                             'connected-to': `${ uuid }--${ guid }`,
@@ -998,37 +998,37 @@ class Balloon {
                                                 }
                                             },
                                         },
-                                        f('div.presistent-notification__area.tw-flex.tw-flex-nowrap.tw-pd-b-1.tw-pd-l-1.tw-pd-r-3.tw-pd-t-1', {},
+                                        f('div.presistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                             // Avatar
                                             f('div', {},
-                                                f('div.tw-border-radius-rounded.tw-card-img.tw-card-img--size-4.tw-flex-shrink-0.tw-overflow-hidden', {},
-                                                    f('div.tw-aspect.tw-aspect--align-top', {},
-                                                        f('img.tt-balloon-avatar.tw-image', { src })
+                                                f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
+                                                    f('div.tt-aspect.tt-aspect--align-top', {},
+                                                        f('img.tt-balloon-avatar.tt-image', { src })
                                                     )
                                                 )
                                             ),
                                             // Message body
-                                            f('div.tw-flex.tw-flex-column.tw-flex-nowrap.tw-mg-x-1', {},
-                                                f('div.persistent-notification__body.tw-overflow-hidden',
+                                            f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
+                                                f('div.persistent-notification__body.tt-overflow-hidden',
                                                     {
                                                         'data-test-selector': 'persistent-notification__body'
                                                     },
-                                                    f('span.tw-c-text-alt', {},
+                                                    f('span.tt-c-text-alt', {},
                                                         f('p.tt-balloon-message', { innerHTML: message })
                                                     )
                                                 ),
                                                 // Subheader
-                                                f('div.tw-align-items-center.tw-flex.tw-flex-shrink-0.tw-mg-t-05', {},
-                                                    f('div.tw-mg-l-05', {},
-                                                        f('span.tt-balloon-subheader.tw-c-text-alt', { innerHTML: subheader })
+                                                f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
+                                                    f('div.tt-mg-l-05', {},
+                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
                                                     )
                                                 )
                                             )
                                         )
                                     ),
-                                    f('div.persistent-notification__delete.tw-absolute.tw-pd-l-1.tw-pd-r-05.tw-pd-t-1', {},
-                                        f('div.tw-align-items-start.tw-flex.tw-flex-nowrap', {},
-                                            f('button.tw-align-items-center.tw-align-middle.tw-border-bottom-left-radius-small.tw-border-bottom-right-radius-small.tw-border-top-left-radius-small.tw-border-top-right-radius-small.tw-button-icon.tw-button-icon--small.tw-core-button.tw-core-button--small.tw-inline-flex.tw-interactive.tw-justify-content-center.tw-overflow-hidden.tw-relative',
+                                    f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1.tt-pd-r-05.tt-pd-t-1', {},
+                                        f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                 {
                                                     'data-test-selector': 'persistent-notification__delete',
                                                     'connected-to': `${ uuid }--${ guid }`,
@@ -1046,7 +1046,7 @@ class Balloon {
                                                         }
                                                     },
                                                 },
-                                                f('span.tw-button-icon__icon', {},
+                                                f('span.tt-button-icon__icon', {},
                                                     f('div',
                                                         {
                                                             style: 'height:1.6rem; width:1.6rem',
@@ -1134,7 +1134,7 @@ class Tooltip {
                             }
                         })()
                     },
-                    furnish('div.tw-inline-flex.tw-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
+                    furnish('div.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
@@ -1177,7 +1177,7 @@ class ChatFooter {
 
         let parent = $('[data-a-target="chat-scroller"i]'),
             footer =
-            f('div#tt-chat-footer.tw-absolute.tw-border-radius-medium.tw-bottom-0.tw-c-text-overlay.tw-mg-b-1',
+            f('div#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-c-text-overlay.tt-mg-b-1',
                 {
                     uuid,
 
@@ -1191,9 +1191,9 @@ class ChatFooter {
                     `
                 },
 
-                f('button.tw-align-items-center tw-align-middle tw-border-bottom-left-radius-medium tw-border-bottom-right-radius-medium tw-border-top-left-radius-medium tw-border-top-right-radius-medium tw-core-button tw-core-button--overlay tw-core-button--text tw-inline-flex tw-interactive tw-justify-content-center tw-overflow-hidden tw-relative', { style: 'padding: 0.5rem 1rem;', ...options },
-                    f('div.tw-align-items-center.tw-core-button-label.tw-flex.tw-flex-grow-0', {},
-                        f('div.tw-flex-grow-0', {
+                f('button.tt-align-items-center tt-align-middle tt-border-bottom-left-radius-medium tt-border-bottom-right-radius-medium tt-border-top-left-radius-medium tt-border-top-right-radius-medium tt-core-button tt-core-button--overlay tt-core-button--text tt-inline-flex tt-interactive tt-justify-content-center tt-overflow-hidden tt-relative', { style: 'padding: 0.5rem 1rem;', ...options },
+                    f('div.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0', {},
+                        f('div.tt-flex-grow-0', {
                             innerHTML: title
                         })
                     )
@@ -1254,7 +1254,7 @@ class Card {
         let f = furnish;
 
         let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-            card = f(`div.tw-absolute.tw-border-radius-large.viewer-card-layer__draggable[data-a-target="viewer-card-positioner"]`, { style: styling }),
+            card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[data-a-target="viewer-card-positioner"]`, { style: styling }),
             uuid = UUID.from([title, subtitle].join('\n')).value;
 
         icon ??= { src: Extension.getURL('profile.png'), alt: 'Profile' };
@@ -1265,34 +1265,34 @@ class Card {
         [...container.children].forEach(child => child.remove());
 
         // Furnish the card
-        let iconElement = f('img.emote-card__big-emote.tw-image[data-test-selector="big-emote"]', { ...icon });
+        let iconElement = f('img.emote-card__big-emote.tt-image[data-test-selector="big-emote"]', { ...icon });
 
         card.append(
-            f('div.emote-card.tw-border-b.tw-border-l.tw-border-r.tw-border-radius-large.tw-border-t.tw-elevation-1 [data-a-target="emote-card"]', {},
-                f('div.emote-card__banner.tw-align-center.tw-align-items-center.tw-c-background-alt.tw-flex.tw-flex-grow-2.tw-flex-row.tw-full-width.tw-justify-content-start.tw-pd-l-1.tw-pd-y-1.tw-relative', {},
-                    f('div.tw-inline-flex.viewer-card-drag-cancel', {},
-                        f('div.tw-inline.tw-relative.tt-tooltip__container[data-a-target="emote-name"]', {},
+            f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1 [data-a-target="emote-card"]', {},
+                f('div.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
+                    f('div.tt-inline-flex.viewer-card-drag-cancel', {},
+                        f('div.tt-inline.tt-relative.tt-tooltip__container[data-a-target="emote-name"]', {},
                             iconElement
                         )
                     ),
-                    f('div.emote-card__display-name.tw-align-items-center.tw-align-left.tw-ellipsis.tw-mg-1', {},
-                        f('h4.tw-c-text-base.tw-ellipsis.tw-strong[data-test-selector="emote-code-header"]', {}, title),
-                        f('p.tw-c-text-alt-2.tw-ellipsis.tw-font-size-6[data-test-selector="emote-type-copy"]', {}, subtitle)
+                    f('div.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1', {},
+                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong[data-test-selector="emote-code-header"]', {}, title),
+                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6[data-test-selector="emote-type-copy"]', {}, subtitle)
                     )
                 )
             ),
-            f('div.tw-absolute.tw-mg-r-05.tw-mg-t-05.tw-right-0.tw-top-0[data-a-target="viewer-card-close-button"]',
+            f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[data-a-target="viewer-card-close-button"]',
                 {
                     onmouseup: event => {
                         $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                     },
                 },
-                f('div.tw-inline-flex.viewer-card-drag-cancel', {},
-                    f('button.tw-button-icon.tw-button-icon--secondary.tw-core-button[aria-label="Hide"][data-test-selector="close-viewer-card"]', {},
-                        f('span.tw-button-icon__icon', {},
+                f('div.tt-inline-flex.viewer-card-drag-cancel', {},
+                    f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[aria-label="Hide"][data-test-selector="close-viewer-card"]', {},
+                        f('span.tt-button-icon__icon', {},
                             f('div[style="width: 2rem; height: 2rem;"]', {},
-                                f('div.tw-icon', {},
-                                    f('div.tw-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
+                                f('div.tt-icon', {},
+                                    f('div.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
                                 )
                             )
                         )
@@ -1307,27 +1307,27 @@ class Card {
         // Add the optional footer
         if(footer?.href?.length)
             $('div', false, card).append(
-                f('div.emote-card__content.tw-c-background-base.tw-full-width.tw-inline-flex.tw-pd-1.viewer-card-drag-cancel', {},
+                f('div.emote-card__content.tt-c-background-base.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
                     f('div', {},
-                        f('div.tw-align-items-center.tw-align-self-start.tw-mg-b-05', {},
-                            f('div.tw-align-items-center.tw-flex', {},
-                                f('div.tw-align-items-center.tw-flex.tw-mg-r-1', {},
-                                    f('a.tw-link [rel="noopener noreferrer" target="_blank"]', { href: footer.href },
-                                        f('div.tw-flex', {
+                        f('div.tt-align-items-center.tt-align-self-start.tt-mg-b-05', {},
+                            f('div.tt-align-items-center.tt-flex', {},
+                                f('div.tt-align-items-center.tt-flex.tt-mg-r-1', {},
+                                    f('a.tt-link [rel="noopener noreferrer" target="_blank"]', { href: footer.href },
+                                        f('div.tt-flex', {
                                             innerHTML: `${
                                                 Glyphs.modify('video', { height: '20px', width: '20px' })
                                             }${
-                                                f('div.tw-mg-l-05', {},
-                                                    f('p.tw-c-text-link.tw-font-size-5.tw-strong', {}, footer.name)
+                                                f('div.tt-mg-l-05', {},
+                                                    f('p.tt-c-text-link.tt-font-size-5.tt-strong', {}, footer.name)
                                                 ).outerHTML
                                             }`
                                         })
                                     )
                                 ),
-                                f('div.tw-align-items-center.tw-flex', {},
+                                f('div.tt-align-items-center.tt-flex', {},
                                     f(`div[tt-live-status-indicator="${ parseBool(footer.live) }"]`),
-                                    f('div.tw-flex.tw-mg-l-05', {},
-                                        f('p.tw-c-text-base.tw-font-size-6', { style: 'text-transform:uppercase' },
+                                    f('div.tt-flex.tt-mg-l-05', {},
+                                        f('p.tt-c-text-base.tt-font-size-6', { style: 'text-transform:uppercase' },
                                             ['offline', 'live'][+footer.live]
                                         )
                                     )
@@ -1605,7 +1605,7 @@ function GetChat(lines = 250, keepEmotes = false) {
         });
     }
 
-    let bullets = $('[role="log"i] .tw-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i]', true).slice(-lines);
+    let bullets = $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i]', true).slice(-lines);
 
     results.bullets = [];
 
@@ -2496,14 +2496,10 @@ function UnregisterJob(JobName, JobReason = 'default') {
     else
         clearInterval(CurrentJob);
 
-    let unhandler = Unhandlers[JobName];
+    Unhandlers?.[JobName]?.();
 
-    if(defined(unhandler))
-        unhandler();
-
-    // Both accomplish the same thing
-    Jobs[JobName] = undefined;
-    delete Jobs[JobName];
+    // Remove the job
+    Jobs[JobName] = null;
 }
 Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).value);
 
@@ -2527,8 +2523,9 @@ function RestartJob(JobName, JobReason = 'default') {
 Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
 
-// Settings have been saved
+// Convert strings to RegExps
 let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i'),
+
     // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
@@ -2642,12 +2639,12 @@ let Initialize = async(START_OVER = false) => {
             mostWatched = null,
             mostPoints = 0,
             mostLeft = 0,
-            mostProgress = 0,
+            mostProgressNeeded = 0,
             furthestFromCompletion = null,
             leastWatched = null,
             leastPoints = +Infinity,
             leastLeft = +Infinity,
-            leastProgress = 0,
+            leastProgressNeeded = 0,
             closestToCompletion = null;
 
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
@@ -2658,9 +2655,11 @@ let Initialize = async(START_OVER = false) => {
                 if(!defined(streamer))
                     continue filtering;
 
-                let [amount, fiat, face, notEarned] = ChannelPoints[channel].split('|');
+                let [amount, fiat, face, notEarned, pointsToEarnNext] = ChannelPoints[channel].split('|');
 
                 amount = parseCoin(amount);
+                notEarned = parseFloat(notEarned);
+                pointsToEarnNext = parseFloat(pointsToEarnNext);
 
                 wealth:
                 // this channel has the most points
@@ -2677,10 +2676,10 @@ let Initialize = async(START_OVER = false) => {
                 progress:
                 // this channel is the furthest from having all rewards & challenges
                 if(notEarned >= mostLeft) {
-                    // furthest and richest
-                    if(notEarned == mostLeft && amount > mostProgress) {
+                    // Pick the channel that needs the most points to reach the closest goal
+                    if(notEarned == mostLeft && pointsToEarnNext > mostProgressNeeded) {
                         furthestFromCompletion = channel;
-                        mostProgress = amount;
+                        mostProgressNeeded = pointsToEarnNext;
 
                         continue filtering;
                     }
@@ -2690,10 +2689,10 @@ let Initialize = async(START_OVER = false) => {
                 }
                 // this channel is the closest to having all rewards & challenges; but not completed
                 else if(notEarned <= leastLeft && notEarned > 0) {
-                    // closest and poorest
-                    if(notEarned == leastLeft && amount < leastProgress) {
+                    // Pick the channel that needs the least points to reach the closest goal
+                    if(notEarned == leastLeft && pointsToEarnNext < leastProgressNeeded) {
                         closestToCompletion = channel;
-                        leastProgress = amount;
+                        leastProgressNeeded = pointsToEarnNext;
 
                         continue filtering;
                     }
@@ -2923,7 +2922,7 @@ let Initialize = async(START_OVER = false) => {
         get tags() {
             let tags = [];
 
-            $('.tw-tag', true).map(element => {
+            $('.tt-tag', true).map(element => {
                 let name = element.textContent.toLowerCase(),
                     { href } = element.closest('a[href]');
 
@@ -2939,7 +2938,7 @@ let Initialize = async(START_OVER = false) => {
         get mark() {
             let tags = [];
 
-            $('.tw-tag', true).map(element => {
+            $('.tt-tag', true).map(element => {
                 let name = element.textContent.toLowerCase(),
                     { href } = element.closest('a[href]');
 
@@ -3950,7 +3949,7 @@ let Initialize = async(START_OVER = false) => {
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
             if(['over'].contains(placement)) {
-                container.firstElementChild.classList.remove('tw-mg-l-1');
+                container.firstElementChild.classList.remove('tt-mg-l-1');
             } else if(['under'].contains(placement)) {
                 $('span', false, container)?.remove();
                 $('[style]', false, container)?.setAttribute('style', 'opacity: 1; transform: translateX(15%) translateZ(0px);')
@@ -4449,7 +4448,7 @@ let Initialize = async(START_OVER = false) => {
 
                 $('div#root > *').append(
                     furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
-                        furnish('div.tw-inline-flex.tw-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
+                        furnish('div.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                             furnish('div', { style: 'width: 30px; height: 30px;' }),
                             tooltip
                         )
@@ -5789,7 +5788,7 @@ let Initialize = async(START_OVER = false) => {
             pointWatcherCounter = 0;
 
             LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
-                let [amount, fiat, face, notEarned] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
+                let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = $('[data-test-selector="cost"i]', true),
                     balance = $('[data-test-selector="balance-string"i]');
 
@@ -5805,10 +5804,21 @@ let Initialize = async(START_OVER = false) => {
                         notEarned:
                     -1
                 );
+                pointsToEarnNext = (
+                    (allRewards?.length)?
+                        allRewards
+                            .map(amount => (parseCoin(amount?.innerText) > STREAMER.coin? parseCoin(amount?.innerText) - STREAMER.coin: 0))
+                            .sort((x, y) => (x > y? -1: +1))
+                            .filter(x => x > 0)
+                            .pop():
+                    (notEarned > -Infinity)?
+                        pointsToEarnNext:
+                    0
+                );
 
                 face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
 
-                ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned].join('|');
+                ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
                 SaveCache({ ChannelPoints });
             });
@@ -5843,7 +5853,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Update the display
         LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
-            let [amount, fiat, face, notEarned] = (ChannelPoints[name] ?? 0).toString().split('|'),
+            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                 allRewards = $('[data-test-selector="cost"i]', true),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
@@ -5854,6 +5864,17 @@ let Initialize = async(START_OVER = false) => {
                 (notEarned > -Infinity)?
                     notEarned:
                 -1
+            );
+            pointsToEarnNext = (
+                (allRewards?.length)?
+                    allRewards
+                        .map(amount => (parseCoin(amount?.innerText) > STREAMER.coin? parseCoin(amount?.innerText) - STREAMER.coin: 0))
+                        .sort((x, y) => (x > y? -1: +1))
+                        .filter(x => x > 0)
+                        .pop():
+                (notEarned > -Infinity)?
+                    pointsToEarnNext:
+                0
             );
 
             let text = furnish('span.tt-point-amount', {
@@ -5910,7 +5931,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(!defined(title))
-            return;
+            return STREAM_PREVIEW?.element?.remove();
 
         let [name] = title.innerText.split(/[^\w\s]/);
 
@@ -5961,7 +5982,7 @@ let Initialize = async(START_OVER = false) => {
             $('.tt-stream-preview--poster')?.classList?.add('invisible');
         });
     };
-    Timers.stream_preview = 100;
+    Timers.stream_preview = 250;
 
     Unhandlers.stream_preview = () => {
         STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
@@ -6026,11 +6047,11 @@ let Initialize = async(START_OVER = false) => {
                         live_time.tooltipAnimation = setInterval(() => {
                             live_time.tooltip ??= new Tooltip(live_time, '');
 
-                            let percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)) * 100,
+                            let percentage = (STREAMER.time / (STREAMER.data?.dailyBroadcastTime ?? 16_200_000)).clamp(0, 1),
                                 timeLeft = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time;
 
                             live_time.tooltip.innerHTML = (timeLeft < 0? '+': '') + toTimeString(Math.abs(timeLeft), 'clock');
-                            live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, #f888 ${ percentage.toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
+                            live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, hsla(${ (120 * percentage) | 0 }, 100%, 50%, 0.5) ${ (100 * percentage).toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
                         }, 100);
                 };
             } break;
@@ -6711,7 +6732,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
 CUSTOM_CSS.innerHTML =
 `
-#tt-auto-claim-bonuses .tw-z-above, [plagiarism], [repetitive] { display: none }
+#tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
 #tt-hidden-emote-container::after {
     content: 'Collecting emotes...\\A Do not close this window';
     text-align: center;
@@ -6740,9 +6761,9 @@ CUSTOM_CSS.innerHTML =
 [animationID] a { cursor: grab }
 [animationID] a:active { cursor: grabbing }
 
-[tt-hidden-message], [tt-hidden-bulletin] { display: none }
-.tw-root--theme-dark [tt-light], .tw-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
-.tw-root--theme-light [tt-light], .tw-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+[tt-hidden-message="true"i], [tt-hidden-bulletin="true"i] { display: none }
+.tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
+.tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
 
 .chat-line__message[style] a {
     color: var(--color-text-alt);
@@ -6821,7 +6842,7 @@ CUSTOM_CSS.innerHTML =
 [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
 
 /* Tooltips */
-.tw-dialog-layer [data-popper-escaped="true"i] {
+.tt-dialog-layer [data-popper-escaped="true"i] {
     max-width: 25rem;
     width: max-content;
 }
@@ -6896,11 +6917,11 @@ CUSTOM_CSS.innerHTML =
     width: 6px;
 }
 
-.tw-root--theme-dark .tt-tooltip::after {
+.tt-root--theme-dark .tt-tooltip::after {
     mix-blend-mode: color-burn;
 }
 
-.tw-root--theme-light .tt-tooltip::after {
+.tt-root--theme-light .tt-tooltip::after {
     mix-blend-mode: color-dodge;
 }
 

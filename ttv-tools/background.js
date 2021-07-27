@@ -94,13 +94,13 @@ let TabWatcherInterval = setInterval(() => {
             status: "unloaded",
         }, tabs => {
             if(!defined(tabs))
-            return;
+                return;
 
             for(let tab of tabs)
-            if(UnloadedTabs.has(tab.id))
-            Container.tabs.reload(tab.id);
-            else
-            UnloadedTabs.add(tab.id);
+                if(UnloadedTabs.has(tab.id))
+                    Container.tabs.reload(tab.id);
+                else
+                    UnloadedTabs.add(tab.id);
         });
     } catch(error) {
         // Suppress query errors...

@@ -28,7 +28,12 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
-> [4.2.0.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0.2)
+> [4.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.3)
+- Adjusted Up Next logic
+- Fixed Filter Bulletins logic
+- Fixed styling, and other issues due to Twitch update
+
+> [4.2.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.1)
 - Fixed Settings styling
 - Added `GetChat.defer` to run after completed events
 - Fixed Dual Toning for Simplify Chat
