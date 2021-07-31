@@ -352,6 +352,7 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
         } break;
 
         // Common US shorthands (used on Twitch)
+        case 'natural':
         case 'readable': {
             system.large = 'KMBTQ';
             system.small = '';
@@ -366,14 +367,14 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 
     if(number > 1) {
         for(let index = 0, units = system.large; index < units.length; ++index)
-            if(number >= 1000) {
-                number /= 1000;
+            if(number >= 1e3) {
+                number /= 1e3;
                 suffix = units[index];
             }
     } else if(number < 1 && number > 0) {
         for(let index = 0, units = system.small; index < units.length; ++index) {
             if(number < 1) {
-                number *= 1000;
+                number *= 1e3;
                 suffix = units[index];
             }
         }
@@ -406,6 +407,7 @@ Number.prototype.clamp ??= function clamp(min, max) {
     // Keep everything in order
     if(min > max) {
         let tmp = min;
+
         min = max;
         max = tmp;
     }

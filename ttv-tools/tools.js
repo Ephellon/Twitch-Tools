@@ -1081,7 +1081,7 @@ class Balloon {
 
 // Creates a Twitch-style tooltip
     // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) -> Element~Tooltip
-        // fineTuning:object = { left:number=pixels, top:number=pixels, direction:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
+        // fineTuning:object = { left:number=pixels, top:number=pixels, from:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
     // Tooltip.get(parent:Element) -> Element~Tooltip
 class Tooltip {
     static #TOOLTIPS = new Map()
@@ -1092,14 +1092,14 @@ class Tooltip {
         fineTuning.top |= 0;
         fineTuning.left |= 0;
 
-        fineTuning.direction ??= '';
+        fineTuning.from ??= '';
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
         if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
+        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text }),
             uuid = UUID.from(text).value;
 
         tooltip.id = uuid;
@@ -1110,13 +1110,13 @@ class Tooltip {
                 screen = getOffset(document.body),
                 fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
 
-            let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
+            let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             $('div#root > *').append(
                 furnish('div.tt-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
-                            switch(direction) {
+                            switch(from) {
                                 // case 'up':
                                 //     return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
 
@@ -2922,7 +2922,7 @@ let Initialize = async(START_OVER = false) => {
         get tags() {
             let tags = [];
 
-            $('.tt-tag', true).map(element => {
+            $('.tw-tag', true).map(element => {
                 let name = element.textContent.toLowerCase(),
                     { href } = element.closest('a[href]');
 
@@ -2938,14 +2938,14 @@ let Initialize = async(START_OVER = false) => {
         get mark() {
             let tags = [];
 
-            $('.tt-tag', true).map(element => {
+            $('.tw-tag', true).map(element => {
                 let name = element.textContent.toLowerCase(),
                     { href } = element.closest('a[href]');
 
                 if(parseBool(Settings.show_stats)) {
                     let score = scoreTagActivity(name);
 
-                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { direction: 'up' });
+                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'up' });
                 }
 
                 tags.push(name);
@@ -3559,7 +3559,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.auto_accept_mature = () => {
         $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i]')?.click();
     };
-    Timers.auto_accept_mature = -1000;
+    Timers.auto_accept_mature = -1_000;
 
     __AutoMatureAccept__:
     if(parseBool(Settings.auto_accept_mature)) {
@@ -3755,7 +3755,7 @@ let Initialize = async(START_OVER = false) => {
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
                             diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
-                            diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { direction: 'left' });
+                            diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { from: 'left' });
                         } else {
                             diffImg?.remove();
                             diffDat?.remove();
@@ -3879,6 +3879,7 @@ let Initialize = async(START_OVER = false) => {
      *                           |___/
      */
     let AwayModeButton,
+        AwayModeStatus = false,
         AwayModeEnabled = false,
         InitialQuality,
         InitialVolume,
@@ -3899,7 +3900,7 @@ let Initialize = async(START_OVER = false) => {
 
         await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
-        let enabled = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
+        let enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
         if(!defined(button)) {
             let sibling, parent, before,
@@ -3963,7 +3964,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 background: $('button', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { direction: 'up', left: +5 }),
+                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { from: 'up', left: +5 }),
             };
 
             button.tooltip.id = new UUID().toString().replace(/-/g, '');
@@ -4032,7 +4033,7 @@ let Initialize = async(START_OVER = false) => {
                         ][+enabled])();
                 });
 
-            SaveCache({ AwayModeEnabled: enabled });
+            SaveCache({ AwayModeEnabled: (AwayModeStatus = enabled) });
         };
 
         button.container.onmouseenter ??= event => {
@@ -4173,9 +4174,8 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
                 return /* First in Line is paused */;
-            // Don't act until 1min is left
             if(FIRST_IN_LINE_TIMER > 60_000)
-                return;
+                return /* There's more than 1 minute left */;
 
             let existing = Popup.get(`Up Next \u2014 ${ name }`);
 
@@ -4264,7 +4264,7 @@ let Initialize = async(START_OVER = false) => {
                 SaveCache({ FIRST_IN_LINE_TIMER });
             // Don't act until 1sec is left
             if(FIRST_IN_LINE_TIMER > 1000)
-                return FIRST_IN_LINE_TIMER -= 1000;
+                return FIRST_IN_LINE_TIMER -= 1_000;
 
             /* After above is `false` */
 
@@ -4831,7 +4831,7 @@ let Initialize = async(START_OVER = false) => {
         if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
             filb?.click?.();
     };
-    Timers.first_in_line = 1000;
+    Timers.first_in_line = 1_000;
 
     Unhandlers.first_in_line = () => {
         if(defined(FIRST_IN_LINE_JOB))
@@ -4979,7 +4979,7 @@ let Initialize = async(START_OVER = false) => {
 
         SaveCache({ OLD_STREAMERS });
     };
-    Timers.first_in_line_plus = 1000;
+    Timers.first_in_line_plus = 1_000;
 
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
@@ -5011,7 +5011,7 @@ let Initialize = async(START_OVER = false) => {
         if(!like && raid)
             follow();
     };
-    Timers.auto_follow_raids = 1000;
+    Timers.auto_follow_raids = 1_000;
 
     __AutoFollowRaid__:
     if(parseBool(Settings.auto_follow_raids) || parseBool(Settings.auto_follow_all)) {
@@ -5038,7 +5038,7 @@ let Initialize = async(START_OVER = false) => {
             AUTO_FOLLOW_EVENT ??= setTimeout(follow, mins * 60_000);
         }
     };
-    Timers.auto_follow_time = 1000;
+    Timers.auto_follow_time = 1_000;
 
     __AutoFollowTime__:
     if(parseBool(Settings.auto_follow_time) || parseBool(Settings.auto_follow_all)) {
@@ -5061,7 +5061,7 @@ let Initialize = async(START_OVER = false) => {
         for(let view of extension_views)
             view.setAttribute('style', 'display:none!important');
     };
-    Timers.kill_extensions = 5000;
+    Timers.kill_extensions = 5_000;
 
     Unhandlers.kill_extensions = () => {
         let extension_views = $('[class^="extension-view"i]', true);
@@ -5487,7 +5487,7 @@ let Initialize = async(START_OVER = false) => {
                     NOTIFICATION_SOUND?.play();
         };
     };
-    Timers.mention_audio = 1000;
+    Timers.mention_audio = 1_000;
 
     Unhandlers.mention_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -5516,7 +5516,7 @@ let Initialize = async(START_OVER = false) => {
                     NOTIFICATION_SOUND?.play();
         };
     };
-    Timers.phrase_audio = 1000;
+    Timers.phrase_audio = 1_000;
 
     Unhandlers.phrase_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -5562,7 +5562,7 @@ let Initialize = async(START_OVER = false) => {
 
         NOTIFICATION_SOUND?.play();
     };
-    Timers.whisper_audio = 1000;
+    Timers.whisper_audio = 1_000;
 
     Unhandlers.whisper_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -5745,10 +5745,10 @@ let Initialize = async(START_OVER = false) => {
             }
 
             RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } &uarr; | ${ comify(abs(EXACT_POINTS_SPENT)) } &darr;`;
-            points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1).replace(/\.0+/, '') }`;
+            points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural').replace(/\.0+/, '') }`;
         }, 100);
     };
-    Timers.points_receipt_placement = -2500;
+    Timers.points_receipt_placement = -2_500;
 
     Unhandlers.points_receipt_placement = () => {
         clearInterval(COUNTING_POINTS);
@@ -5916,10 +5916,14 @@ let Initialize = async(START_OVER = false) => {
     let STREAM_PREVIEW;
 
     Handlers.stream_preview = async() => {
-        let richTooltip = $('[class*="channel-tooltip"i]');
+        let richTooltip = $('[class*="channel-tooltip"i]:not([class*="offline"i])');
 
-        if(!defined(richTooltip))
+        if(!defined(richTooltip)) {
+            if(parseBool(Settings.stream_preview_sound))
+                SetVolume(parseBool(Settings.away_mode__volume_control) && AwayModeStatus? Settings.away_mode__volume: InitialVolume ?? 1);
+
             return STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
+        }
 
         let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip);
 
@@ -5964,6 +5968,9 @@ let Initialize = async(START_OVER = false) => {
                     },
                     furnish('div.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
+                        onerror: event => {
+
+                        },
                     }),
                     furnish(`iframe.tt-stream-preview--iframe`, {
                         allow: 'autoplay',
@@ -5971,6 +5978,18 @@ let Initialize = async(START_OVER = false) => {
 
                         height: '100%',
                         width: '100%',
+
+                        onload: event => {
+                            $('.tt-stream-preview--poster')?.classList?.add('invisible');
+
+                            if(!parseBool(Settings.stream_preview_sound))
+                                return;
+
+                            if(!defined(InitialVolume))
+                                InitialVolume = GetVolume();
+
+                            SetVolume(0);
+                        },
                     })
                 )
         };
@@ -5978,9 +5997,6 @@ let Initialize = async(START_OVER = false) => {
         document.body.append(STREAM_PREVIEW.element);
 
         setTimeout(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'), 100);
-        $('.tt-stream-preview--iframe', false, STREAM_PREVIEW?.element ?? [])?.addEventListener('load', async event => {
-            $('.tt-stream-preview--poster')?.classList?.add('invisible');
-        });
     };
     Timers.stream_preview = 250;
 
@@ -6099,7 +6115,7 @@ let Initialize = async(START_OVER = false) => {
             }, 1000);
         }).then(() => SaveCache({ Watching: NORMALIZED_PATHNAME }));
     };
-    Timers.watch_time_placement = -1000;
+    Timers.watch_time_placement = -1_000;
 
     Unhandlers.watch_time_placement = () => {
         clearInterval(WATCH_TIME_INTERVAL);
@@ -6210,7 +6226,7 @@ let Initialize = async(START_OVER = false) => {
         if(SECONDS_PAUSED_UNSAFELY > 15)
             location.reload();
     };
-    Timers.recover_frames = 1000;
+    Timers.recover_frames = 1_000;
 
     __RecoverFrames__:
     if(parseBool(Settings.recover_frames)) {
@@ -6295,7 +6311,7 @@ let Initialize = async(START_OVER = false) => {
             }, 5000);
         }
     };
-    Timers.recover_stream = 2500;
+    Timers.recover_stream = 2_500;
 
     __RecoverStream__:
     if(parseBool(Settings.recover_stream)) {
@@ -6730,349 +6746,114 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
             let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
 
-CUSTOM_CSS.innerHTML =
-`
-#tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
-#tt-hidden-emote-container::after {
-    content: 'Collecting emotes...\\A Do not close this window';
-    text-align: center;
-    white-space: break-spaces;
+            CUSTOM_CSS.innerHTML =
+            `
+            .tt-first-run {
+                border: 1px solid var(--color-blue);
+                border-radius: 3px;
 
-    --background: #000e;
-    --text-align: center;
+                transition: border 1s;
+            }
 
-    position: absolute;
-    --padding-top: 100%;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+            [animationID] a { cursor: grab }
+            [animationID] a:active { cursor: grabbing }
 
-    --height: 100%;
-    --width: 100%;
-}
-#tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
-.tt-first-run {
-    border: 1px solid var(--color-blue);
-    border-radius: 3px;
+            .tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
+            .tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
 
-    transition: border 1s;
-}
+            [up-next--body] {
+                background-color: var(--color-${ accent });
+                border-radius: 0.5rem;
+                color: var(--color-hinted-grey-${ compliment });
+            }
+            [up-next--body][empty="true"i] {
+                background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
+                background-repeat: no-repeat;
+                background-size: 35rem;
+                background-position-y: 4.25rem;
+            }
 
-[animationID] a { cursor: grab }
-[animationID] a:active { cursor: grabbing }
+            [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
 
-[tt-hidden-message="true"i], [tt-hidden-bulletin="true"i] { display: none }
-.tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
-.tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+            [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
+            [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
+            [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
 
-.chat-line__message[style] a {
-    color: var(--color-text-alt);
-    text-decoration: underline;
-}
+            [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
+            [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
 
-[up-next--body] {
-    background-color: var(--color-${ accent });
-    border-radius: 0.5rem;
-    color: var(--color-hinted-grey-${ compliment });
-}
-[up-next--body][empty="true"i] {
-    background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
-    background-repeat: no-repeat;
-    background-size: 35rem;
-    background-position-y: 4.25rem;
-}
+            #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
+                opacity: 0.7;
+                margin-top: -100%;
+            }
 
-[role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }
+            .tt-emote-captured [data-test-selector="badge-button-icon"i],
+            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                left: 0;
+                top: 0;
+            }
 
-[tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
+            [tt-live-status-indicator] {
+                background-color: var(--color-hinted-grey-6);
+                border-radius: var(--border-radius-rounded);
+                width: 0.8rem;
+                height: 0.8rem;
+                display: inline-block;
+                position: relative;
+            }
 
-[tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
-[tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
-[tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
+            [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-[tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
-[tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+            [tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
+            [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
 
-::-webkit-scrollbar {
-    width: .6rem;
-}
-::-webkit-scrollbar-button {
-    background: transparent;
-    display: none;
-    visibility: hidden;
+            /* Stream Preview */
+            .tt-stream-preview {
+                border-radius: 0.6rem;
+                box-shadow: #000 0 4px 8px, #000 0 0 4px;
+                display: block;
+                visibility: visible;
 
-    height: 0;
-    width: 0;
-}
-::-webkit-scrollbar-thumb {
-    background: #0008;
-    border: 1px solid #fff4;
-    border-radius: .5rem;
-}
-::-webkit-scrollbar-track {
-    background: #0000;
-}
-::-webkit-scrollbar-corner {
-    background: transparent;
-}
+                transition: all 0.5s ease-in;
 
-#tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
-    opacity: 0.7;
-    margin-top: -100%;
-}
+                position: fixed;
+                margin-left: 7rem;
+                z-index: 9;
 
-.tt-emote-captured [data-test-selector="badge-button-icon"i],
-.tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-    left: 0;
-    top: 0;
-}
+                height: 9rem;
+                width: 16rem;
+            }
 
-[tt-live-status-indicator] {
-    background-color: var(--color-hinted-grey-6);
-    border-radius: var(--border-radius-rounded);
-    width: 0.8rem;
-    height: 0.8rem;
-    display: inline-block;
-    position: relative;
-}
+            .tt-stream-preview--poster {
+                background-color: #0008;
+                background-size: cover;
+                border-radius: inherit;
+                display: block;
 
-[tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+                transition: all 1.5s ease-in;
 
-[tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
-[tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
+                position: absolute;
+                margin: 0;
+                padding: 0;
+                left: 0;
+                top: 0;
+                z-index: 99;
 
-/* Tooltips */
-.tt-dialog-layer [data-popper-escaped="true"i] {
-    max-width: 25rem;
-    width: max-content;
-}
+                height: 100% !important;
+                width: 100% !important;
+            }
 
-.tooltip-layer {
-    pointer-events: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 999;
-}
+            .tt-stream-preview--iframe {
+                display: block;
+                border-radius: inherit;
+                opacity: 1;
+                visibility: inherit;
+            }
 
-.tt-relative {
-    position: relative !important;
-}
-
-.tt-inline-flex {
-    display: inline-flex !important;
-}
-
-.tooltip-layer code {
-    background-color: var(--color-background-tooltip)!important;
-    font-size: 100%!important;
-}
-
-.tt-tooltip-wrapper[show], img ~ .tt-tooltip {
-    display: none !important;
-}
-
-.tt-tooltip-wrapper[show="true"i] {
-    display: block !important;
-}
-
-.tt-tooltip {
-    background-color: var(--color-background-tooltip);
-    border-radius: .4rem;
-    color: var(--color-text-tooltip);
-    font-family: inherit;
-    font-size: 100%;
-    font-weight: 600;
-    line-height: 1.2;
-    padding: .5rem;
-    pointer-events: none;
-    position: absolute;
-    text-align: left;
-    user-select: none;
-    white-space: nowrap;
-    z-index: 9999;
-}
-
-.tt-tooltip::after, .tt-tooltip::before {
-    content: '';
-    position: absolute;
-}
-
-.tt-tooltip::before {
-    left: -6px;
-    top: -6px;
-    z-index: -1;
-
-    height: calc(100% + 12px);
-    width: calc(100% + 12px);
-}
-
-.tt-tooltip::after {
-    background-color: var(--color-background-tooltip);
-
-    transform: rotate(45deg);
-    z-index: -1;
-
-    height: 6px;
-    width: 6px;
-}
-
-.tt-root--theme-dark .tt-tooltip::after {
-    mix-blend-mode: color-burn;
-}
-
-.tt-root--theme-light .tt-tooltip::after {
-    mix-blend-mode: color-dodge;
-}
-
-/* Directionally aligned tooltips */
-/* Center */
-.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
-    left: 50%;
-    margin-left: -3px;
-}
-
-.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
-    margin-top: -3px;
-    top: 50%;
-}
-
-/* Left */
-/* ??? */
-
-/* Right */
-.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
-    left: auto;
-    right: 0;
-}
-
-.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
-    left: 100%;
-    margin-left: -12px;
-    top: 100%;
-}
-
-/* Up (over) tooltip */
-.tt-tooltip--up {
-    bottom: 100%;
-    left: 0;
-    margin-bottom: 6px;
-    top: auto;
-}
-
-.tt-tooltip--up::after {
-    border-radius: 0 0 .4rem;
-    height: 6px;
-    left: 6px;
-    margin-top: -3px;
-    top: 100%;
-    z-index: -1;
-}
-
-/* Down (under) tooltip */
-.tt-tooltip--down {
-    left: 0;
-    margin-top: 6px;
-    top: 100%;
-}
-
-.tt-tooltip--down::after {
-    border-radius: .4rem 0 0;
-    height: 6px;
-    left: 6px;
-    top: -3px;
-    transform: rotate(45deg);
-    width: 6px;
-    z-index: -1;
-}
-
-/* Left tooltip */
-.tt-tooltip--left {
-    left: auto;
-    margin-right: 6px;
-    right: 100%;
-    top: 0;
-}
-
-.tt-tooltip--left::after {
-    border-radius: 0 .4rem 0 0;
-    left: 100%;
-    margin-left: -3px;
-    right: -3px;
-    top: 6px;
-}
-
-/* Right tooltip */
-.tt-tooltip--right {
-    left: 100%;
-    margin-left: 6px;
-    top: 0;
-}
-
-.tt-tooltip--right::after {
-    border-radius: 0 0 0 .4rem;
-    left: 0;
-    margin-left: -3px;
-    top: 6px;
-}
-
-/* Stream Preview */
-.tt-stream-preview {
-    border-radius: 0.6rem;
-    box-shadow: #000 0 4px 8px, #000 0 0 4px;
-    display: block;
-    visibility: visible;
-
-    transition: all 0.5s ease-in;
-
-    position: fixed;
-    margin-left: 7rem;
-    z-index: 9;
-
-    height: 9rem;
-    width: 16rem;
-}
-
-.tt-stream-preview--poster {
-    background-color: #0008;
-    background-size: cover;
-    border-radius: inherit;
-    display: block;
-
-    transition: all 1.5s ease-in;
-
-    position: absolute;
-    margin: 0;
-    padding: 0;
-    left: 0;
-    top: 0;
-    z-index: 99;
-
-    height: 100% !important;
-    width: 100% !important;
-}
-
-.tt-stream-preview--iframe {
-    display: block;
-    border-radius: inherit;
-    opacity: 1;
-    visibility: inherit;
-}
-
-.invisible {
-    opacity: 0;
-}
-`;
+            .invisible {
+                opacity: 0;
+            }
+            `;
 
             CUSTOM_CSS?.remove();
             $('body').append(CUSTOM_CSS);

@@ -28,6 +28,11 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.3.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.3.1)
+- Moved some styling to `extras.css`
+- Added logic to fade audio from the main video to the preview and vice versa
+- Removed job restarting for the BTTV Emote populator (caused major CPU issues)
+
 > [4.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.3)
 - Adjusted Up Next logic
 - Fixed Filter Bulletins logic

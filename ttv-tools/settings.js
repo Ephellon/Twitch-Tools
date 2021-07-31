@@ -852,6 +852,8 @@ $('[set]', true).map(async(element) => {
                                         case 'updated': {
                                             value = new Date(value).toISOString();
                                         } break;
+
+                                        default: return;
                                     }
 
                                 return metadata[key] = value;
@@ -885,6 +887,8 @@ $('[set]', true).map(async(element) => {
                                         case 'price':{
                                             value = parseFloat(value);
                                         } break;
+
+                                        default: return;
                                     }
 
                                 return metadata[key] = value;
@@ -954,19 +958,42 @@ $('[set]', true).map(async(element) => {
         }
 
         // Continue with the data...
-        let expressions = element.getAttribute('set').split(';');
+        let expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
 
         for(let expression of expressions) {
-            let [attribute, property] = expression.split(':'),
-                value;
+            // Literal (x=y) v. Metaphorical (x:y)
+            if(/^([\w\-]+)=/.test(expression)) {
+                let [attribute, property] = expression.split('='),
+                    value;
 
-            property = property.split('.');
+                property = property.split('.');
 
-            // Traverse the property path...
-            for(value = properties; property.length;)
-                value = value[property.splice(0,1)[0]];
+                // Traverse the property path...
+                for(value = properties; property.length;) {
+                    let [key] = property.splice(0, 1);
 
-            element.setAttribute(attribute, value);
+                    value = value[key];
+                }
+
+                element.setAttribute(attribute, value);
+            } else if(/^([\w\-]+):/.test(expression)) {
+                let [attribute, property] = expression.split(':'),
+                    value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
+                        let prop = $1.split('.'),
+                            val;
+
+                        // Traverse the property path...
+                        for(val = properties; prop.length;) {
+                            let [key] = prop.splice(0, 1);
+
+                            val = val[key];
+                        }
+
+                        return val;
+                    });
+
+                element.setAttribute(attribute, value);
+            }
         }
     });
 });

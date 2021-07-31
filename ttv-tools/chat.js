@@ -490,7 +490,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
         if(!defined(parent))
-            return RestartJob('bttv_emotes');
+            return;
 
         // Put all BTTV emotes into the emote-picker list
         let BTTVEmotes = [];
@@ -582,9 +582,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                         // Replace BTTV emotes for the last 30 chat messages
                         if(Queue.bttv_emotes.contains(line.uuid))
                             continue;
-                        if(Queue.bttv_emotes.length >= 30)
-                            Queue.bttv_emotes = [];
+
                         Queue.bttv_emotes.push(line.uuid);
+                        Queue.bttv_emotes = Queue.bttv_emotes.slice(-30);
 
                         for(let [name, src] of BTTV_EMOTES)
                             if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
@@ -1070,7 +1070,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(MESSAGE_FILTER))
             MESSAGE_FILTER(GetChat(250, true));
     };
-    Timers.filter_messages = -2500;
+    Timers.filter_messages = -2_500;
 
     Unhandlers.filter_messages = () => {
         let hidden = $('[tt-hidden-message]', true);
@@ -1227,7 +1227,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(BULLETIN_FILTER))
             BULLETIN_FILTER(GetChat(250, true));
     };
-    Timers.filter_bulletins = -2500;
+    Timers.filter_bulletins = -2_500;
 
     Unhandlers.filter_bulletins = () => {
         let hidden = $('[tt-hidden-bulletin]', true);
@@ -1307,7 +1307,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(PHRASE_HIGHLIGHTER))
             PHRASE_HIGHLIGHTER(GetChat(250, true));
     };
-    Timers.highlight_phrases = -2500;
+    Timers.highlight_phrases = -2_500;
 
     Unhandlers.highlight_phrases = () => {
         let highlight = $('[tt-light]', true);
@@ -1700,7 +1700,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
     };
-    Timers.native_twitch_reply = 1000;
+    Timers.native_twitch_reply = 1_000;
 
     __NativeTwitchReply__:
     if(parseBool(Settings.native_twitch_reply)) {
@@ -1775,7 +1775,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             })
         })(GetChat());
     };
-    Timers.prevent_spam = -1000;
+    Timers.prevent_spam = -1_000;
 
     __PreventSpam__:
     if(parseBool(Settings.prevent_spam)) {
@@ -1919,7 +1919,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 });
         }
     };
-    Timers.convert_bits = 1000;
+    Timers.convert_bits = 1_000;
 
     __ConvertBits__:
     if(parseBool(Settings.convert_bits)) {
@@ -2138,7 +2138,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         top.postMessage({ points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, top.location.origin);
     };
-    Timers.points_receipt_placement_framed_helper = 1000;
+    Timers.points_receipt_placement_framed_helper = 1_000;
 
     __PointsReceiptPlacement__:
     if(parseBool(Settings.points_receipt_placement)) {
@@ -2477,252 +2477,46 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         CustomCSSInitializer: {
             Chat__CUSTOM_CSS = $('#tt-custom-chat-css') ?? furnish('style#tt-custom-chat-css', {});
 
-Chat__CUSTOM_CSS.innerHTML =
-`
-/* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
+            Chat__CUSTOM_CSS.innerHTML =
+            `
+            /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
-#tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
-#tt-hidden-emote-container::after {
-    content: 'Collecting emotes...\\A Do not close this window';
-    text-align: center;
-    white-space: break-spaces;
+            #tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
+            #tt-hidden-emote-container::after {
+                content: 'Collecting emotes...\\A Do not close this window';
+                text-align: center;
+                white-space: break-spaces;
 
-    --background: #000e;
-    --text-align: center;
+                --background: #000e;
+                --text-align: center;
 
-    position: absolute;
-    --padding-top: 100%;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+                position: absolute;
+                --padding-top: 100%;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
 
-    --height: 100%;
-    --width: 100%;
-}
-#tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
+                --height: 100%;
+                --width: 100%;
+            }
+            #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
-[tt-hidden-message="true"i], [tt-hidden-bulletin="true"i] { display: none }
-.tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
-.tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+            [tt-hidden-message="true"i], [tt-hidden-bulletin="true"i] { display: none }
 
-.chat-line__message[style] a {
-    color: var(--color-text-alt);
-    text-decoration: underline;
-}
+            .tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
+            .tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
 
-::-webkit-scrollbar {
-    width: .6rem;
-}
-::-webkit-scrollbar-button {
-    background: transparent;
-    display: none;
-    visibility: hidden;
+            .chat-line__message[style] a {
+                color: var(--color-text-alt);
+                text-decoration: underline;
+            }
 
-    height: 0;
-    width: 0;
-}
-::-webkit-scrollbar-thumb {
-    background: #0008;
-    border: 1px solid #fff4;
-    border-radius: .5rem;
-}
-::-webkit-scrollbar-track {
-    background: #0000;
-}
-::-webkit-scrollbar-corner {
-    background: transparent;
-}
-
-.tt-emote-captured [data-test-selector="badge-button-icon"i],
-.tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-    left: 0;
-    top: 0;
-}
-
-[tt-live-status-indicator] {
-    background-color: var(--color-hinted-grey-6);
-    border-radius: var(--border-radius-rounded);
-    width: 0.8rem;
-    height: 0.8rem;
-    display: inline-block;
-    position: relative;
-}
-
-[tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
-
-/* Tooltips */
-.tt-dialog-layer [data-popper-escaped="true"i] {
-    width: max-content;
-}
-
-.tooltip-layer {
-    pointer-events: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 999;
-}
-
-.tt-relative {
-    position: relative !important;
-}
-
-.tt-inline-flex {
-    display: inline-flex !important;
-}
-
-.tooltip-layer code {
-    background-color: var(--color-background-tooltip)!important;
-    font-size: 100%!important;
-}
-
-.tt-tooltip-wrapper[show], img ~ .tt-tooltip {
-    display: none !important;
-}
-
-.tt-tooltip-wrapper[show="true"i] {
-    display: block !important;
-}
-
-.tt-tooltip {
-    background-color: var(--color-background-tooltip);
-    border-radius: .4rem;
-    color: var(--color-text-tooltip);
-    font-family: inherit;
-    font-size: 100%;
-    font-weight: 600;
-    line-height: 1.2;
-    padding: .5rem;
-    pointer-events: none;
-    position: absolute;
-    text-align: left;
-    user-select: none;
-    white-space: nowrap;
-    z-index: 9999;
-}
-
-.tt-tooltip::after, .tt-tooltip::before {
-    content: '';
-    position: absolute;
-}
-
-.tt-tooltip::before {
-    height: calc(100% + 12px);
-    left: -6px;
-    top: -6px;
-    width: calc(100% + 12px);
-    z-index: -1;
-}
-
-.tt-tooltip::after {
-    background-color: var(--color-background-tooltip);
-    height: 6px;
-    transform: rotate(45deg);
-    width: 6px;
-    z-index: -1;
-}
-
-/* Directionally aligned tooltips */
-/* Center */
-.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
-    left: 50%;
-    margin-left: -3px;
-}
-
-.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
-    margin-top: -3px;
-    top: 50%;
-}
-
-/* Left */
-/* ??? */
-
-/* Right */
-.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
-    left: auto;
-    right: 0;
-}
-
-.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
-    left: 100%;
-    margin-left: -12px;
-    top: 100%;
-}
-
-/* Up (over) tooltip */
-.tt-tooltip--up {
-    bottom: 100%;
-    left: 0;
-    margin-bottom: 6px;
-    top: auto;
-}
-
-.tt-tooltip--up::after {
-    border-radius: 0 0 .4rem;
-    height: 6px;
-    left: 6px;
-    margin-top: -3px;
-    top: 100%;
-    z-index: -1;
-}
-
-/* Down (under) tooltip */
-.tt-tooltip--down {
-    left: 0;
-    margin-top: 6px;
-    top: 100%;
-}
-
-.tt-tooltip--down::after {
-    border-radius: .4rem 0 0;
-    height: 6px;
-    left: 6px;
-    top: -3px;
-    transform: rotate(45deg);
-    width: 6px;
-    z-index: -1;
-}
-
-/* Left tooltip */
-.tt-tooltip--left {
-    left: auto;
-    margin-right: 6px;
-    right: 100%;
-    top: 0;
-}
-
-.tt-tooltip--left::after {
-    border-radius: 0 .4rem 0 0;
-    left: 100%;
-    margin-left: -3px;
-    right: -3px;
-    top: 6px;
-}
-
-/* Right tooltip */
-.tt-tooltip--right {
-    left: 100%;
-    margin-left: 6px;
-    top: 0;
-}
-
-.tt-tooltip--right::after {
-    border-radius: 0 0 0 .4rem;
-    left: 0;
-    margin-left: -3px;
-    top: 6px;
-}
-`;
+            .tt-emote-captured [data-test-selector="badge-button-icon"i],
+            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                left: 0;
+                top: 0;
+            }
+            `;
 
             Chat__CUSTOM_CSS?.remove();
             $('body').append(Chat__CUSTOM_CSS);

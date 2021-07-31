@@ -1,0 +1,213 @@
+/* Globals */
+button[class*="tt-"i]:hover { background-color: #fff3 }
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: .6rem;
+}
+::-webkit-scrollbar-button {
+    background: transparent;
+    display: none;
+    visibility: hidden;
+
+    height: 0;
+    width: 0;
+}
+::-webkit-scrollbar-thumb {
+    background: #0008;
+    border: 1px solid #fff4;
+    border-radius: .5rem;
+}
+::-webkit-scrollbar-track {
+    background: #0000;
+}
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Tooltips */
+[role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }
+
+.tt-dialog-layer [data-popper-escaped="true"i] {
+    max-width: 25rem;
+    width: max-content;
+}
+
+.tooltip-layer {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+}
+
+.tt-relative {
+    position: relative !important;
+}
+
+.tt-inline-flex {
+    display: inline-flex !important;
+}
+
+.tooltip-layer code {
+    background-color: var(--color-background-tooltip)!important;
+    font-size: 100%!important;
+}
+
+.tt-tooltip-wrapper[show], img ~ .tt-tooltip {
+    display: none !important;
+}
+
+.tt-tooltip-wrapper[show="true"i] {
+    display: block !important;
+}
+
+.tt-tooltip {
+    background-color: var(--color-background-tooltip);
+    border-radius: .4rem;
+    color: var(--color-text-tooltip);
+    font-family: inherit;
+    font-size: 100%;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: .5rem;
+    pointer-events: none;
+    position: absolute;
+    text-align: left;
+    user-select: none;
+    white-space: nowrap;
+    z-index: 9999;
+}
+
+.tt-tooltip::after, .tt-tooltip::before {
+    content: '';
+    position: absolute;
+}
+
+.tt-tooltip::before {
+    left: -6px;
+    top: -6px;
+    z-index: -1;
+
+    height: calc(100% + 12px);
+    width: calc(100% + 12px);
+}
+
+.tt-tooltip::after {
+    background-color: var(--color-background-tooltip);
+
+    transform: rotate(45deg);
+    z-index: -1;
+
+    height: 6px;
+    width: 6px;
+}
+
+.tt-root--theme-dark .tt-tooltip::after {
+    mix-blend-mode: color-burn;
+}
+
+.tt-root--theme-light .tt-tooltip::after {
+    mix-blend-mode: color-dodge;
+}
+
+/* Directionally aligned tooltips */
+/* Center */
+.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
+    left: 50%;
+    margin-left: -3px;
+}
+
+.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
+    margin-top: -3px;
+    top: 50%;
+}
+
+/* Left */
+/* ??? */
+
+/* Right */
+.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
+    left: auto;
+    right: 0;
+}
+
+.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
+    left: 100%;
+    margin-left: -12px;
+    top: 100%;
+}
+
+/* Up (over) tooltip */
+.tt-tooltip--up {
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 6px;
+    top: auto;
+}
+
+.tt-tooltip--up::after {
+    border-radius: 0 0 .4rem;
+    height: 6px;
+    left: 6px;
+    margin-top: -3px;
+    top: 100%;
+    z-index: -1;
+}
+
+/* Down (under) tooltip */
+.tt-tooltip--down {
+    left: 0;
+    margin-top: 6px;
+    top: 100%;
+}
+
+.tt-tooltip--down::after {
+    border-radius: .4rem 0 0;
+    height: 6px;
+    left: 6px;
+    top: -3px;
+    transform: rotate(45deg);
+    width: 6px;
+    z-index: -1;
+}
+
+/* Left tooltip */
+.tt-tooltip--left {
+    left: auto;
+    margin-right: 6px;
+    right: 100%;
+    top: 0;
+}
+
+.tt-tooltip--left::after {
+    border-radius: 0 .4rem 0 0;
+    left: 100%;
+    margin-left: -3px;
+    right: -3px;
+    top: 6px;
+}
+
+/* Right tooltip */
+.tt-tooltip--right {
+    left: 100%;
+    margin-left: 6px;
+    top: 0;
+}
+
+.tt-tooltip--right::after {
+    border-radius: 0 0 0 .4rem;
+    left: 0;
+    margin-left: -3px;
+    top: 6px;
+}
