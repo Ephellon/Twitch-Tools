@@ -36,6 +36,22 @@ let Chat__Initialize = async(START_OVER = false) => {
         GLOBAL_EVENT_LISTENERS,
     } = top;
 
+    // Time how long jobs take to complete properly
+    let STOP_WATCHES = new Map,
+        JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
+            let { abs } = Math;
+
+            let start = STOP_WATCHES.get(JobName),
+                stop = +new Date,
+                span = abs(start - stop),
+                max = abs(JobTime) * 1.1;
+
+            if(span > max)
+                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
+                    .toNativeStack();
+        },
+        START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
+
     /*** Automation
      *                    _                        _   _
      *         /\        | |                      | | (_)
@@ -57,6 +73,8 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_claim_bonuses = () => {
+        START__STOP_WATCH('auto_claim_bonuses');
+
         let ChannelPoints = (null
                 ?? $('[data-test-selector="community-points-summary"i] button[class*="--success"i]')
                 ?? $('[class*="bonus"i]')?.closest?.('button')
@@ -89,7 +107,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(!defined(parent) || !defined(heading)) {
                 // setTimeout(Chat__Initialize, 5000);
-                return;
+                return JUDGE__STOP_WATCH('auto_claim_bonuses');
             }
 
             container.innerHTML = parent.outerHTML;
@@ -166,6 +184,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Make the tooltip easier to manage
         button.tooltip.classList.add('img-container');
+
+        JUDGE__STOP_WATCH('auto_claim_bonuses');
     };
     Timers.auto_claim_bonuses = 5_000;
 
@@ -228,7 +248,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(EmoteSearch.input.value != EmoteSearch.value)
                 if((EmoteSearch.value = EmoteSearch.input.value)?.length >= 3)
                     for(let [name, callback] of EmoteSearch.__onquery__)
-                        callback(EmoteSearch.value);
+                        setTimeout(() => {
+                            if(EmoteSearch.value == EmoteSearch.input.value)
+                                callback(EmoteSearch.value);
+                        }, 100);
     };
     Timers.emote_searching = 250;
 
@@ -482,15 +505,17 @@ let Chat__Initialize = async(START_OVER = false) => {
         };
 
     Handlers.bttv_emotes = () => {
+        START__STOP_WATCH('bttv_emotes');
+
         let BTTVEmoteSection = $('#tt-bttv-emotes');
 
         if(defined(BTTVEmoteSection))
-            return;
+            return JUDGE__STOP_WATCH('bttv_emotes');
 
         let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
         if(!defined(parent))
-            return;
+            return JUDGE__STOP_WATCH('bttv_emotes');
 
         // Put all BTTV emotes into the emote-picker list
         let BTTVEmotes = [];
@@ -533,6 +558,8 @@ let Chat__Initialize = async(START_OVER = false) => {
         );
 
         parent.insertBefore(BTTVEmoteSection, parent.firstChild);
+
+        JUDGE__STOP_WATCH('bttv_emotes');
     };
     Timers.bttv_emotes = 2_500;
 
@@ -579,12 +606,12 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let regexp;
 
                     for(let line of chat) {
-                        // Replace BTTV emotes for the last 30 chat messages
+                        // Replace BTTV emotes for the last 15 chat messages
                         if(Queue.bttv_emotes.contains(line.uuid))
                             continue;
 
                         Queue.bttv_emotes.push(line.uuid);
-                        Queue.bttv_emotes = Queue.bttv_emotes.slice(-30);
+                        Queue.bttv_emotes = Queue.bttv_emotes.slice(-15);
 
                         for(let [name, src] of BTTV_EMOTES)
                             if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
@@ -1018,6 +1045,8 @@ let Chat__Initialize = async(START_OVER = false) => {
     let MESSAGE_FILTER;
 
     Handlers.filter_messages = () => {
+        START__STOP_WATCH('filter_messages');
+
         MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
             let Filter = UPDATE_RULES('filter');
 
@@ -1069,6 +1098,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(defined(MESSAGE_FILTER))
             MESSAGE_FILTER(GetChat(250, true));
+
+        JUDGE__STOP_WATCH('filter_messages');
     };
     Timers.filter_messages = -2_500;
 
@@ -1195,6 +1226,8 @@ let Chat__Initialize = async(START_OVER = false) => {
     let BULLETIN_FILTER;
 
     Handlers.filter_bulletins = () => {
+        START__STOP_WATCH('filter_bulletins');
+
         BULLETIN_FILTER ??= GetChat.onnewmessage = () => {
             let { bullets } = GetChat(),
                 censor = false;
@@ -1226,6 +1259,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(defined(BULLETIN_FILTER))
             BULLETIN_FILTER(GetChat(250, true));
+
+        JUDGE__STOP_WATCH('filter_bulletins');
     };
     Timers.filter_bulletins = -2_500;
 
@@ -1255,6 +1290,8 @@ let Chat__Initialize = async(START_OVER = false) => {
     let PHRASE_HIGHLIGHTER;
 
     Handlers.highlight_phrases = () => {
+        START__STOP_WATCH('highlight_phrases');
+
         PHRASE_HIGHLIGHTER ??= GetChat.onnewmessage = chat => {
             let Phrases = UPDATE_RULES('phrase');
 
@@ -1306,6 +1343,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(defined(PHRASE_HIGHLIGHTER))
             PHRASE_HIGHLIGHTER(GetChat(250, true));
+
+        JUDGE__STOP_WATCH('highlight_phrases');
     };
     Timers.highlight_phrases = -2_500;
 
@@ -1551,8 +1590,10 @@ let Chat__Initialize = async(START_OVER = false) => {
     let NATIVE_REPLY_POLYFILL;
 
     Handlers.native_twitch_reply = () => {
+        START__STOP_WATCH('native_twitch_reply');
+
         if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
-            return;
+            return JUDGE__STOP_WATCH('native_twitch_reply');
 
         if(!defined(GLOBAL_EVENT_LISTENERS.ENTER))
             $('[data-a-target="chat-input"i]')?.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
@@ -1699,6 +1740,8 @@ let Chat__Initialize = async(START_OVER = false) => {
         GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
         GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
+
+        JUDGE__STOP_WATCH('native_twitch_reply');
     };
     Timers.native_twitch_reply = 1_000;
 
@@ -1722,6 +1765,8 @@ let Chat__Initialize = async(START_OVER = false) => {
     let SPAM = [];
 
     Handlers.prevent_spam = () => {
+        START__STOP_WATCH('prevent_spam');
+
         (GetChat.onnewmessage = chat => {
             chat.forEach(async line => {
                 let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
@@ -1774,6 +1819,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                 });
             })
         })(GetChat());
+
+        JUDGE__STOP_WATCH('prevent_spam');
     };
     Timers.prevent_spam = -1_000;
 
@@ -1849,6 +1896,8 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.convert_bits = () => {
+        START__STOP_WATCH('convert_bits');
+
         let dropdown = $('[class*="bits-buy"i]'),
             bits_counter = $('[class*="bits-count"i]:not([tt-tusda])', true),
             bits_cheer = $('[class*="cheer-amount"i]:not([tt-tusda])', true),
@@ -1918,6 +1967,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                     return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
                 });
         }
+
+        JUDGE__STOP_WATCH('convert_bits');
     };
     Timers.convert_bits = 1_000;
 
@@ -1942,6 +1993,8 @@ let Chat__Initialize = async(START_OVER = false) => {
         REWARDS_CALCULATOR_TOOLTIP;
 
     Handlers.rewards_calculator = () => {
+        START__STOP_WATCH('rewards_calculator');
+
         __GetMultiplierAmount__:
         if(!defined(CHANNEL_POINTS_MULTIPLIER)) {
             let button = $('[data-test-selector="community-points-summary"i] button');
@@ -1964,7 +2017,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.parentElement;
 
         if(!defined(container))
-            return REWARDS_CALCULATOR_TOOLTIP = null;
+            return JUDGE__STOP_WATCH('rewards_calculator'), REWARDS_CALCULATOR_TOOLTIP = null;
 
         // Average broadcast time is 4.5h
         // Average number of streamed days is 5 (Mon - Fri)
@@ -2093,8 +2146,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                     `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
             } break;
         }
+
+        JUDGE__STOP_WATCH('rewards_calculator');
     };
-    Timers.rewards_calculator = 100;
+    Timers.rewards_calculator = 250;
 
     __RewardsCalculator__:
     if(parseBool(Settings.rewards_calculator)) {
@@ -2166,6 +2221,8 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.recover_chat = () => {
+        START__STOP_WATCH('recover_chat');
+
         let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
 
         if(defined(chat))
@@ -2178,6 +2235,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             container = $('.chat-shell .stream-chat', false, top.document);
 
         container?.parentElement?.replaceChild?.(iframe, container);
+
+        JUDGE__STOP_WATCH('recover_chat');
     };
     Timers.recover_chat = 500;
 
@@ -2351,7 +2410,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 PATHNAME = top.location.pathname;
 
                                 for(let [name, func] of __ONLOCATIONCHANGE__)
-                                    func(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
+                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
                             }
                         });
                     });
@@ -2451,7 +2510,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             // Do NOT soft-reset ("turn off, turn on") these settings
             // They will be destroyed, including any data they are using
-            let VOLATILE = top.VOLATILE ?? [].map(AsteriskFn);
+            let VOLATILE = top?.VOLATILE ?? [].map(AsteriskFn);
 
             DestroyingJobs:
             for(let job in Jobs)

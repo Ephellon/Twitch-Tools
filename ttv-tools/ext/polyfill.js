@@ -907,3 +907,289 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
 
     return string;
 };
+
+/***
+ *      __  __ _              _ _
+ *     |  \/  (_)            | | |
+ *     | \  / |_ ___  ___ ___| | | __ _ _ __   ___  ___  _   _ ___
+ *     | |\/| | / __|/ __/ _ \ | |/ _` | '_ \ / _ \/ _ \| | | / __|
+ *     | |  | | \__ \ (_|  __/ | | (_| | | | |  __/ (_) | |_| \__ \
+ *     |_|  |_|_|___/\___\___|_|_|\__,_|_| |_|\___|\___/ \__,_|___/
+ *
+ *
+ */
+// Returns if an item is of an object class
+    // isObj([object:*[, ...or:Function=Constructor]]) -> Boolean
+function isObj(object, ...or) {
+    return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
+        .find(constructor => object?.constructor === constructor || object instanceof constructor);
+}
+
+// Returns a number formatted with commas
+function comify(number, locale = top.LANGUAGE) {
+    return parseFloat(number).toLocaleString(locale);
+}
+
+// https://stackoverflow.com/a/19176790/4211612
+// Returns the assumed operating system
+function GetOS() {
+    let { userAgent } = top.navigator;
+    let OSs = {
+        'NT 10.0': 'Win 10',
+        'NT 6.3': 'Win 8.1',
+        'NT 6.2': 'Win 8',
+        'NT 6.1': 'Win 7',
+        'NT 6.0': 'Win Vista',
+        'NT 5.1': 'Win XP',
+        'NT 5.0': 'Win 2000',
+        'Mac': 'Mac',
+        'X11': 'UNIX',
+        'Linux': 'Linux',
+    };
+
+    for(let OS in OSs)
+        if(!!~userAgent.indexOf(OS))
+            return OSs[OS].replace(/^Win/, 'Windows');
+
+    return 'unknown';
+}
+
+// Logs messages (green)
+    // LOG([...messages]) -> undefined
+function LOG(...messages) {
+    let CSS = `
+        background-color: #00332b;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #065;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [LOG] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+
+    return ({
+        toNativeStack() {
+            console.log(...messages);
+        }
+    });
+};
+
+// Logs warnings (yellow)
+    // WARN([...messages]) -> undefined
+function WARN(...messages) {
+    let CSS = `
+        background-color: #332b00;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #650;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u26a0 [WARNING] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u26a0 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+
+    return ({
+        toNativeStack() {
+            console.warn(...messages);
+        }
+    });
+};
+
+// Logs errors (red)
+    // ERROR([...messages]) -> undefined
+function ERROR(...messages) {
+    let CSS = `
+        background-color: #290000;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #5c0000;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u2298 [ERROR] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u2298 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+
+    return ({
+        toNativeStack() {
+            console.error(...messages);
+        }
+    });
+};
+
+// Logs comments (blue)
+    // LOG([...messages]) -> undefined
+function REMARK(...messages) {
+    let CSS = `
+        background-color: #002b55;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #057;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [COMMENT] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/* == 'o'*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+
+    return ({
+        toNativeStack() {
+            console.log(...messages);
+        }
+    });
+};

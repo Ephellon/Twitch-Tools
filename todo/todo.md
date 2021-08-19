@@ -6,10 +6,10 @@
 2. Instance (tab) data separation?
     * Simply separate each tab's data for certain things, e.g. "Up Next"
 3. "Predictive Raiding"
-    * Uses the streamers' `dailyBroadcastTime` to predict when they're stream will end
+    * Uses the streamers' `dailyBroadcastTime` to predict when their stream will end
         * OR - listen for notifications/channel-popups; then save a timer (`{streamsCounted}:{totalSecondsCountedLive}`) for how long the channel lives
-    * Heads to the stream 5 min before it **should** end
-    * Only applies to streams that have a `raidsLastWeek` >= 4
+    * Heads to the stream 5min before it **should** end
+    * Only applies to streams that have a `raidsLastWeek` >= 3
 4. "Away Mode Lurking Schedule"
     * Automatically enables &/ disables Away Mode at user defined times
 5. "Reverse Emotes"
@@ -28,6 +28,13 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.4)
+- Fixed version updating mechanic
+- Added update availability notice for the Chrome version; uses the GitHub version
+- Added `/core.js` to house shared functionality
+- Added ability for "Auto Join" to work for framed pages (Stream previews)
+- Added volume-control release logic (the user can change the volume without turning "Away Mode" off)
+
 > [4.3.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.3.1)
 - Moved some styling to `extras.css`
 - Added logic to fade audio from the main video to the preview and vice versa

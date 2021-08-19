@@ -48,7 +48,7 @@ let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstall
 // reason:string - install | update | chrome_update | shared_module_update
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
-        url: "*://www.twitch.tv/*",
+        url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
     }, tabs => {
         if(!defined(tabs))
             return;

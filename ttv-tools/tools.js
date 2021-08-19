@@ -8,21 +8,8 @@
  *                             _/ |
  *                            |__/
  */
-let $ = (selector, multiple = false, container = document) => multiple? [...container?.querySelectorAll(selector)]: container?.querySelector(selector);
-let unknown = value => (value === undefined || value === null),
-    defined = value => !unknown(value);
-
-let Settings = {},
-    UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
-    Jobs = {},
+let UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
     Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
-    Timers = {},
-    Handlers = {
-        __reasons__: new Map(),
-    },
-    Unhandlers = {
-        __reasons__: new Map(),
-    },
     Messages = new Map(),
     PostOffice = new Map(),
     // These won't change (often)
@@ -41,38 +28,6 @@ if(defined(UserMenuToggleButton)) {
     UserMenuToggleButton.click();
 }
 
-let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
-
-if(defined(browser?.runtime))
-    BrowserNamespace = 'browser';
-else if(defined(chrome?.extension))
-    BrowserNamespace = 'chrome';
-
-Container = top[BrowserNamespace];
-
-switch(BrowserNamespace) {
-    case 'browser': {
-        Runtime = Container.runtime;
-        Storage = Container.storage;
-        Extension = Container.extension;
-        Manifest = Runtime.getManifest();
-
-        Storage = Storage.sync ?? Storage.local;
-    } break;
-
-    case 'chrome':
-    default: {
-        Runtime = Container.runtime;
-        Storage = Container.storage;
-        Extension = Container.extension;
-        Manifest = Runtime.getManifest();
-
-        Storage = Storage.sync ?? Storage.local;
-    } break;
-}
-
-let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
-
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
  *       _____      _                  __                      _       _ _ __
  *      / ____|    | |                / /                     (_)     (_) |\ \
@@ -83,343 +38,6 @@ let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstall
  *                           | |      \_\ |                                /_/
  *                           |_|        |_|
  */
-
-// Logs messages (green)
-    // LOG([...messages]) -> undefined
-let LOG = (...messages) => {
-    let CSS = `
-        background-color: #00332b;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #065;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u22b3 [LOG] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u22b3 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// Logs warnings (yellow)
-    // WARN([...messages]) -> undefined
-let WARN = (...messages) => {
-    let CSS = `
-        background-color: #332b00;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #650;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u26a0 [WARNING] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u26a0 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// Logs errors (red)
-    // ERROR([...messages]) -> undefined
-let ERROR = (...messages) => {
-    let CSS = `
-        background-color: #290000;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #5c0000;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u2298 [ERROR] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u2298 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// Logs comments (blue)
-    // LOG([...messages]) -> undefined
-let REMARK = (...messages) => {
-    let CSS = `
-        background-color: #002b55;
-        border-bottom: 1px solid #0000;
-        border-top: 1px solid #057;
-        box-sizing: border-box;
-        clear: right;
-        color: #f5f5f5;
-        display: block !important;
-        line-height: 2;
-        user-select: text;
-
-        flex-basis: 1;
-        flex-shrink: 1;
-
-        margin: 0;
-        overflow-wrap: break-word;
-        padding: 0 6px;
-        position: fixed;
-        z-index: -1;
-
-        min-height: 0;
-        min-width: 100%;
-        height: 100%;
-        width: 100%;
-    `;
-
-    console.group(`%c\u22b3 [COMMENT] \u2014 ${ Manifest?.name }`, CSS);
-
-    for(let message of messages) {
-        let type = 'c';
-
-        if(!isObj(message, Boolean, Number, Promise))
-            try {
-                message = message.toString();
-            } catch(error) {
-                /* Can't convert to string */
-            }
-        else
-            type = 'o';
-
-        (type/* == 'o'*/)?
-            console.log(message):
-        console.log(
-            `%${ type }\u22b3 ${ message } `,
-            CSS
-        );
-    }
-
-    console.groupEnd();
-};
-
-// https://stackoverflow.com/a/2117523/4211612
-// https://gist.github.com/jed/982883
-// Creates a random UUID
-    // new UUID() -> Object
-    // UUID.from(string:string) -> Object
-    // UUID.ergo(string;string) -> Promise#String
-    // UUID.BWT(string:string) -> String
-    // UUID.prototype.toString() -> String
-class UUID {
-    static #BWT_SEED = new UUID()
-
-    constructor() {
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ top.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
-
-        this.native = this.value = native;
-
-        this[Symbol.toPrimitive] = type => {
-            switch(type) {
-                case 'boolean':
-                    return true;
-
-                case 'bigint':
-                case 'number':
-                    return NaN;
-
-                case 'default':
-                case 'string':
-                case 'object':
-                case 'symbol':
-                default:
-                    return native;
-            }
-        };
-
-        return this;
-	}
-
-    toString() {
-        return this.native;
-    }
-
-    /* BWT Sorting Algorithm */
-    static BWT(string = '') {
-        if(/^[\x32]*$/.test(string))
-            return '';
-
-        let _a = `\u0001${ string }`,
-            _b = `\u0001${ string }\u0001${ string }`,
-            p_ = [];
-
-        for(let i = 0; i < _a.length; i++)
-            p_.push(_b.slice(i, _a.length + i));
-
-        p_ = p_.sort();
-
-        return p_.map(P => P.slice(-1)[0]).join('');
-    }
-
-    static from(key = '') {
-        key = (key ?? '').toString();
-
-        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
-            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key=${ Manifest.version }`;
-
-        let hash = Uint8Array.from(btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
-            l = hash.length,
-            i = 0;
-
-        hash = hash.map((n, i, a) => a[n & 255] ^ a[n | 170] ^ a[n ^ 85] ^ a[-~n] ^ n + i);
-
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
-
-        this.native = this.value = native;
-
-        this[Symbol.toPrimitive] = type => {
-            switch(type) {
-                case 'boolean':
-                    return true;
-
-                case 'bigint':
-                case 'number':
-                    return NaN;
-
-                case 'default':
-                case 'string':
-                case 'object':
-                case 'symbol':
-                default:
-                    return native;
-            }
-        };
-
-        this.toString = () => this.native;
-
-        return this;
-    }
-
-    static async ergo(key = '') {
-        key = (key ?? '').toString();
-
-        // Privatize (pre-hash) the message a bit
-        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
-            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key=${ Manifest.version }`;
-
-        key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>'));
-
-        // Digest the message
-        // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
-        const UTF8String = new TextEncoder().encode(key);                     // encode as (utf-8) Uint8Array
-        const hashBuffer = await crypto.subtle.digest('SHA-256', UTF8String); // hash the message
-        const hashString =
-            [...new Uint8Array(hashBuffer)]                                   // convert buffer to byte array
-                .map(b => b.toString(16).padStart(2, '0')).join('')           // convert bytes to hex string
-                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');        // format the string into a large UUID string
-
-        return hashString;
-    }
-}
 
 // Displays a popup
     // new Popup(subject:string, message:string[, options:object]) -> Object
@@ -1454,93 +1072,6 @@ function GetSettings() {
     });
 }
 
-let StorageSpace = localStorage || sessionStorage;
-
-// Saves data to the page's storage
-    // SaveCache(keys:object[, callback:function]) -> undefined
-async function SaveCache(keys = {}, callback = () => {}) {
-    let set = (key, value) => StorageSpace.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
-
-    for(let key in keys)
-        set(key, JSON.stringify(keys[key]));
-
-    if(typeof callback == 'function')
-        callback();
-}
-
-// Loads data from the page's storage
-    // LoadCache(keys:string|array|object[, callback:function]) -> undefined
-async function LoadCache(keys = null, callback = () => {}) {
-    let results = {},
-        get = key => {
-            let value =
-                // New save name
-                StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
-                // Old save name
-                // if (value === undefined)
-                //     value = StorageSpace.getItem(key);
-
-            try {
-                value = JSON.parse(value);
-            } catch(error) {
-                value = value;
-            }
-
-            return value;
-        };
-
-    if(keys === null) {
-        keys = {};
-
-        for(let key in StorageSpace)
-            keys[key] = null;
-    }
-
-    switch(keys.constructor) {
-        case String:
-            results[keys] = get(keys);
-            break;
-
-        case Array:
-            for(let key of keys)
-                results[key] = get(key);
-            break;
-
-        case Object:
-            for(let key in keys)
-                results[key] = get(key) ?? keys[key];
-            break;
-
-        default: return;
-    }
-
-    if(typeof callback == 'function')
-        callback(results);
-}
-
-// Removes data from the page's storage
-    // RemoveCache(keys:string|array[, callback:function])
-async function RemoveCache(keys, callback = () => {}) {
-    let remove = key => StorageSpace.removeItem(`ext.twitch-tools/${ encodeURI(key) }`);
-
-    if(!defined(keys))
-        return;
-
-    switch(keys.constructor) {
-        case String:
-            remove(keys);
-            break;
-
-        case Array:
-            for(let key of keys)
-                remove(key);
-            break;
-    }
-
-    if(typeof callback == 'function')
-        callback();
-}
-
 // Create an array of the current chat
     // GetChat([lines:number[, keepEmotes:boolean]]) -> [...Object { style, author, emotes, message, mentions, element, uuid, highlighted }]
 function GetChat(lines = 250, keepEmotes = false) {
@@ -1965,6 +1496,26 @@ function GetVolume(fromVideoElement = true) {
     return parseFloat(fromVideoElement? video.volume: slider.value);
 }
 
+Object.defineProperties(GetVolume, {
+    onchange: {
+        set(callback) {
+            let name = callback.name || UUID.from(callback.toString()).value;
+
+            if(GetVolume.__onchange__.has(name))
+                return GetVolume.__onchange__.get(name);
+
+            // REMARK('Adding [on change] event listener', { [name]: callback });
+
+            return GetVolume.__onchange__.set(name, callback);
+        },
+
+        get() {
+            return GetVolume.__onchange__.size;
+        },
+    },
+    __onchange__: { value: new Map() },
+});
+
 // Change the video volume
     // SetVolume([volume:number#Float]) -> undefined
 function SetVolume(volume = 0.5) {
@@ -2042,18 +1593,6 @@ function SetViewMode(mode) {
 
     for(let button of buttons)
         $(button)?.click?.();
-}
-
-// Returns if an item is of an object class
-    // isObj([object:*[, ...or:Function=Constructor]]) -> Boolean
-function isObj(object, ...or) {
-    return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
-        .find(constructor => object?.constructor === constructor || object instanceof constructor);
-}
-
-// Returns a number formatted with commas
-function comify(number, locale = top.LANGUAGE) {
-    return parseFloat(number).toLocaleString(locale);
 }
 
 // Import the glyphs
@@ -2303,7 +1842,7 @@ try {
             PostOffice.set(target, data[target]);
     });
 } catch(error) {
-    // Most likely in aa child frame...
+    // Most likely in a child frame...
     // REMARK("Moving to chat child frame...");
     WARN(error);
 }
@@ -2473,60 +2012,7 @@ async function update() {
     top.ALL_CHANNELS = ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 }
 
-// Registers a job
-    // RegisterJob(JobName:string) -> Number=IntervalID
-function RegisterJob(JobName, JobReason = 'default') {
-    RegisterJob.__reason__ = JobReason;
-
-    return Jobs[JobName] ??= Timers[JobName] > 0?
-        setInterval(Handlers[JobName], Timers[JobName]):
-    -setTimeout(Handlers[JobName], -Timers[JobName]);
-}
-Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
-
-// Unregisters a job
-    // UnregisterJob(JobName:string) -> undefined
-function UnregisterJob(JobName, JobReason = 'default') {
-    UnregisterJob.__reason__ = JobReason;
-
-    let CurrentJob = Jobs[JobName];
-
-    if(CurrentJob < 0)
-        clearTimeout(-CurrentJob);
-    else
-        clearInterval(CurrentJob);
-
-    Unhandlers?.[JobName]?.();
-
-    // Remove the job
-    Jobs[JobName] = null;
-}
-Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).value);
-
-// Restarts (unregisters, then registers) a job
-    // RestartJob(JobName:string) -> undefined
-function RestartJob(JobName, JobReason = 'default') {
-    RestartJob.__reason__ = JobReason;
-
-    new Promise((resolve, reject) => {
-        try {
-            UnregisterJob(JobName, JobReason);
-
-            resolve();
-        } catch(error) {
-            reject(error);
-        }
-    }).then(() => {
-        RegisterJob(JobName, JobReason);
-    });
-}
-Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
-Unhandlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);
-
-// Convert strings to RegExps
-let AsteriskFn = feature => RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i'),
-
-    // Features that require the experimental flag
+let // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
@@ -2586,6 +2072,22 @@ let Initialize = async(START_OVER = false) => {
 
     if(!parseBool(Settings.display_in_console__remark))
         REMARK = ($=>$);
+
+    // Time how long jobs take to complete properly
+    let STOP_WATCHES = new Map,
+        JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
+            let { abs } = Math;
+
+            let start = STOP_WATCHES.get(JobName),
+                stop = +new Date,
+                span = abs(start - stop),
+                max = abs(JobTime) * 1.1;
+
+            if(span > max)
+                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
+                    .toNativeStack();
+        },
+        START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
 
     // Initialize all settings/features //
 
@@ -2750,7 +2252,7 @@ let Initialize = async(START_OVER = false) => {
 
         // There isn't a channel that fits the criteria
         if(parseBool(Settings.stay_live) && !defined(next) && online.length) {
-            // WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired`);
+            WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired`);
 
             next = online.sort(() => random() >= 0.5? +1: -1);
             next = next[round(random() * next.length)];
@@ -3883,9 +3385,12 @@ let Initialize = async(START_OVER = false) => {
         AwayModeEnabled = false,
         InitialQuality,
         InitialVolume,
-        InitialViewMode;
+        InitialViewMode,
+        MAINTAIN_VOLUME_CONTROL = true;
 
     Handlers.away_mode = async() => {
+        START__STOP_WATCH('away_mode');
+
         let button = $('#away-mode'),
             currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
@@ -3896,7 +3401,7 @@ let Initialize = async(START_OVER = false) => {
          * d) The page is a search
          */
         if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
-            return;
+            return JUDGE__STOP_WATCH('away_mode');
 
         await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
@@ -3931,18 +3436,18 @@ let Initialize = async(START_OVER = false) => {
 
                         [...classes].map(value => {
                             if(/[-_]/.test(value))
-                                return;
+                                return JUDGE__STOP_WATCH('away_mode');
 
                             classes.remove(value);
                         });
                     };
                 } break;
 
-                default: return;
+                default: return JUDGE__STOP_WATCH('away_mode');
             }
 
             if(!defined(parent) || !defined(sibling))
-                return /* WARN('Unable to create the Away Mode button') */;
+                return JUDGE__STOP_WATCH('away_mode') /* WARN('Unable to create the Away Mode button') */;
 
             container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
@@ -4021,6 +3526,9 @@ let Initialize = async(START_OVER = false) => {
             background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
             tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
 
+            // Return control when Away Mode is engaged
+            MAINTAIN_VOLUME_CONTROL = true;
+
             await SetQuality(['auto','low'][+enabled])
                 .then(() => {
                     if(parseBool(Settings.away_mode__volume_control))
@@ -4044,7 +3552,7 @@ let Initialize = async(START_OVER = false) => {
             AwayModeButton.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
         };
 
-        // Alt + A
+        // Alt + A | Opt + A
         if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
                 if(altKey && key == 'a')
@@ -4052,8 +3560,10 @@ let Initialize = async(START_OVER = false) => {
             });
 
         AwayModeButton = button;
+
+        JUDGE__STOP_WATCH('away_mode');
     };
-    Timers.away_mode = 500;
+    Timers.away_mode = 1_000;
 
     Unhandlers.away_mode = () => {
         $('#away-mode')?.remove();
@@ -4062,6 +3572,18 @@ let Initialize = async(START_OVER = false) => {
     __AwayMode__:
     if(parseBool(Settings.away_mode)) {
         RegisterJob('away_mode');
+
+        // Maintain the volume until the user changes it
+        GetVolume.onchange = volume => {
+            if(!MAINTAIN_VOLUME_CONTROL)
+                return;
+
+            WARN('[Away Mode] is releasing volume control due to user interaction...');
+
+            MAINTAIN_VOLUME_CONTROL = false;
+
+            SetVolume(volume);
+        };
     }
 
     /*** Auto-claim Channel Points
@@ -4312,7 +3834,13 @@ let Initialize = async(START_OVER = false) => {
                     FIRST_IN_LINE_TIMER =
                         // If the streamer hasn't been on for longer than 10mins, wait until then
                         STREAMER.time < tenMin?
-                            fiveMin + (tenMin - STREAMER.time):
+                            (
+                                // Boost is enabled
+                                FIRST_IN_LINE_BOOST?
+                                    fiveMin + (tenMin - STREAMER.time):
+                                // Boost is disabled
+                                FIRST_IN_LINE_WAIT_TIME * oneMin
+                            ):
                         // Streamer has been live longer than 10mins
                         (
                             // Boost is enabled
@@ -4385,7 +3913,8 @@ let Initialize = async(START_OVER = false) => {
 
                     setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', fiveMin)), 5_000);
 
-                    SaveCache({ FIRST_IN_LINE_TIMER });
+                    if(FIRST_IN_LINE_TIMER % 5 === 0)
+                        SaveCache({ FIRST_IN_LINE_TIMER });
                 }
 
                 // Up Next Boost
@@ -4487,8 +4016,8 @@ let Initialize = async(START_OVER = false) => {
                     if([oldIndex, newIndex].contains(0)) {
                         LOG('New First in Line event:', channel);
 
-                        FIRST_IN_LINE_TIMER = parseInt(
-                            $(`[name="${ channel.name }"i]`).getAttribute('time')
+                        FIRST_IN_LINE_TIMER = parseInt(null
+                            ?? $(`[name="${ channel.name }"i]`).getAttribute('time')
                             ?? FIRST_IN_LINE_WAIT_TIME * 60_000
                         );
 
@@ -4559,8 +4088,10 @@ let Initialize = async(START_OVER = false) => {
                                 let subheader = $('.tt-balloon-subheader', false, container);
 
                                 return setInterval(() => {
+                                    START__STOP_WATCH('up_next_balloon__subheader_timer_animation');
+
                                     if(FIRST_IN_LINE_PAUSED)
-                                        return /* First in Line is paused */;
+                                        return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000) /* First in Line is paused */;
 
                                     let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                         { name, live } = channel;
@@ -4574,7 +4105,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         WARN('Creating job to avoid [Job Listing] mitigation event', channel);
 
-                                        return REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                                        return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(channel.href);
                                     }
 
                                     if(time < 0)
@@ -4583,7 +4114,9 @@ let Initialize = async(START_OVER = false) => {
                                             // Mitigate 0 time bug?
 
                                             FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                                            SaveCache({ FIRST_IN_LINE_TIMER });
+
+                                            if(FIRST_IN_LINE_TIMER % 5 === 0)
+                                                SaveCache({ FIRST_IN_LINE_TIMER });
 
                                             open($('a', false, container)?.href ?? '?', '_self');
                                             return clearInterval(intervalID);
@@ -4607,6 +4140,8 @@ let Initialize = async(START_OVER = false) => {
                                     }
 
                                     subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
+
+                                    JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000);
                                 }, 1000);
                             },
                         })
@@ -4639,12 +4174,14 @@ let Initialize = async(START_OVER = false) => {
         STARTED_TIMERS = {};
 
     Handlers.first_in_line = (ActionableNotification) => {
-        let notifications = $('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true);
+        START__STOP_WATCH('first_in_line');
+
+        let notifications = [...$('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true), ActionableNotification].filter(defined);
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !ALL_FIRST_IN_LINE_JOBS.length);
 
-        for(let notification of [ActionableNotification, ...notifications].filter(defined)) {
+        for(let notification of notifications) {
             let action = (
                 notification instanceof Element?
                     $('a[href^="/"]', false, notification):
@@ -4752,8 +4289,10 @@ let Initialize = async(START_OVER = false) => {
                         let subheader = $('.tt-balloon-subheader', false, container);
 
                         return setInterval(() => {
+                            START__STOP_WATCH('first_in_line__job_watcher');
+
                             if(FIRST_IN_LINE_PAUSED)
-                                return /* First in Line is paused */;
+                                return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000) /* First in Line is paused */;
 
                             let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                 { name, live } = channel;
@@ -4767,7 +4306,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 WARN('Creating job to avoid [First in Line] mitigation event', channel);
 
-                                return REDO_FIRST_IN_LINE_QUEUE(channel.href);
+                                return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(channel.href);
                             }
 
                             if(time < 0)
@@ -4800,6 +4339,8 @@ let Initialize = async(START_OVER = false) => {
                             }
 
                             subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
+
+                            JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000);
                         }, 1000);
                     },
                 })
@@ -4830,6 +4371,8 @@ let Initialize = async(START_OVER = false) => {
 
         if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
             filb?.click?.();
+
+        JUDGE__STOP_WATCH('first_in_line');
     };
     Timers.first_in_line = 1_000;
 
@@ -4859,6 +4402,21 @@ let Initialize = async(START_OVER = false) => {
 
         RegisterJob('first_in_line');
 
+        // Restart the timer if the user navigates away from the page
+        top.onlocationchange = ({ from, to }) => {
+            if(from == to)
+                return;
+
+            REMARK('Resetting timer. Location change detected:', { from, to });
+
+            let watchTime = parseFloat($('#tt-watch-time')?.getAttribute('time') ?? 0),
+                userTimer = FIRST_IN_LINE_WAIT_TIME * 60_000;
+
+            // If the user clicks on a channel, reset the timer
+            if(!ReservedTwitchPathnames.test(to))
+                FIRST_IN_LINE_TIMER = userTimer;
+        };
+
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
@@ -4866,11 +4424,11 @@ let Initialize = async(START_OVER = false) => {
 
             if(!defined(channel)) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
-                    [killed]  = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                    [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS });
 
-                WARN(`The First in Line job for "${ href }" no longer exists`, killed);
+                WARN(`The First in Line job for "${ channel?.name ?? killed }" no longer exists`, killed);
 
                 break __FirstInLine__;
             } else {
@@ -4900,6 +4458,8 @@ let Initialize = async(START_OVER = false) => {
     });
 
     Handlers.first_in_line_plus = () => {
+        START__STOP_WATCH('first_in_line_plus');
+
         let streamers = [...new Set([...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name))].sort();
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
@@ -4913,7 +4473,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names);
+            WARN('Twitch failed to add these channels correctly:', bad_names).toNativeStack();
 
             BAD_STREAMERS = "";
 
@@ -4928,14 +4488,14 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(OLD_STREAMERS == NEW_STREAMERS)
-            return SaveCache({ OLD_STREAMERS });
+            return JUDGE__STOP_WATCH('first_in_line_plus'), SaveCache({ OLD_STREAMERS });
 
         new_names = new_names
             .filter(name => !old_names.contains(name))
             .filter(name => !bad_names.contains(name));
 
         if(new_names.length < 1)
-            return SaveCache({ OLD_STREAMERS });
+            return JUDGE__STOP_WATCH('first_in_line_plus'), SaveCache({ OLD_STREAMERS });
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
@@ -4978,6 +4538,8 @@ let Initialize = async(START_OVER = false) => {
         OLD_STREAMERS = NEW_STREAMERS;
 
         SaveCache({ OLD_STREAMERS });
+
+        JUDGE__STOP_WATCH('first_in_line_plus');
     };
     Timers.first_in_line_plus = 1_000;
 
@@ -4999,8 +4561,10 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_follow_raids = () => {
+        START__STOP_WATCH('auto_follow_raids');
+
         if(!defined(STREAMER))
-            return;
+            return JUDGE__STOP_WATCH('auto_follow_raids');
 
         let url = parseURL(top.location),
             data = url.searchParameters;
@@ -5010,6 +4574,8 @@ let Initialize = async(START_OVER = false) => {
 
         if(!like && raid)
             follow();
+
+        JUDGE__STOP_WATCH('auto_follow_raids');
     };
     Timers.auto_follow_raids = 1_000;
 
@@ -5020,6 +4586,8 @@ let Initialize = async(START_OVER = false) => {
 
     let AUTO_FOLLOW_EVENT;
     Handlers.auto_follow_time = async() => {
+        START__STOP_WATCH('auto_follow_time');
+
         let { like, follow } = STREAMER,
             mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
@@ -5037,6 +4605,8 @@ let Initialize = async(START_OVER = false) => {
 
             AUTO_FOLLOW_EVENT ??= setTimeout(follow, mins * 60_000);
         }
+
+        JUDGE__STOP_WATCH('auto_follow_time');
     };
     Timers.auto_follow_time = 1_000;
 
@@ -5056,10 +4626,14 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.kill_extensions = () => {
+        START__STOP_WATCH('kill_extensions');
+
         let extension_views = $('[class^="extension-view"i]', true);
 
         for(let view of extension_views)
             view.setAttribute('style', 'display:none!important');
+
+        JUDGE__STOP_WATCH('kill_extensions');
     };
     Timers.kill_extensions = 5_000;
 
@@ -5088,6 +4662,8 @@ let Initialize = async(START_OVER = false) => {
      *                     |_|                                   |___/
      */
     Handlers.prevent_hosting = async() => {
+        START__STOP_WATCH('prevent_hosting');
+
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"i]')),
             next = await GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
@@ -5123,6 +4699,8 @@ let Initialize = async(START_OVER = false) => {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
             }
         }
+
+        JUDGE__STOP_WATCH('prevent_hosting');
     };
     Timers.prevent_hosting = 5_000;
 
@@ -5144,8 +4722,10 @@ let Initialize = async(START_OVER = false) => {
     let CONTINUE_RAIDING = false;
 
     Handlers.prevent_raiding = async() => {
+        START__STOP_WATCH('prevent_raiding');
+
         if(CONTINUE_RAIDING)
-            return;
+            return JUDGE__STOP_WATCH('prevent_raiding');
 
         let url = parseURL(top.location),
             data = url.searchParameters,
@@ -5206,6 +4786,8 @@ let Initialize = async(START_OVER = false) => {
             // Leave the raided channel after 2mins to ensure points were collected
             CONTINUE_RAIDING = !!setTimeout(leaveStream, 120_000 * +["greed"].contains(method));
         }
+
+        JUDGE__STOP_WATCH('prevent_raiding');
     };
     Timers.prevent_raiding = 15_000;
 
@@ -5224,30 +4806,30 @@ let Initialize = async(START_OVER = false) => {
      *                       __/ |
      *                      |___/
      */
-    let ClearIntent;
+    let ClearIntent,
+        TwitchPathnames = [USERNAME, '$', '[up]/', 'directory', 'downloads?', 'friends?', 'inventory', 'jobs?', 'moderator', 'search', 'settings', 'subscriptions?', 'team', 'turbo', 'user', 'videos?', 'wallet', 'watchparty'],
+        ReservedTwitchPathnames = RegExp(`/(${ TwitchPathnames.join('|') })`, 'i');
 
     Handlers.stay_live = async() => {
+        START__STOP_WATCH('stay_live');
+
         let next = await GetNextStreamer(),
             { pathname } = top.location;
-
-        let Paths = [USERNAME, '$', '[up]/', 'directory', 'downloads?', 'friends?', 'inventory', 'jobs?', 'moderator', 'search', 'settings', 'subscriptions?', 'team', 'turbo', 'user', 'videos?', 'wallet', 'watchparty'];
 
         try {
             await LoadCache('UserIntent', async({ UserIntent }) => {
                 if(parseBool(UserIntent))
-                    Paths.push(UserIntent);
+                    TwitchPathnames.push(UserIntent);
 
                 RemoveCache('UserIntent');
             });
         } catch(error) {
-            return RemoveCache('UserIntent');
+            return JUDGE__STOP_WATCH('stay_live'), RemoveCache('UserIntent');
         }
-
-        let ReservedTwitchPaths = RegExp(`/(${ Paths.join('|') })`, 'i');
 
         IsLive:
         if(!STREAMER.live) {
-            if(ReservedTwitchPaths.test(pathname))
+            if(ReservedTwitchPathnames.test(pathname))
                 break IsLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
@@ -5270,6 +4852,8 @@ let Initialize = async(START_OVER = false) => {
 
             SaveCache({ UserIntent: term });
         }
+
+        JUDGE__STOP_WATCH('stay_live');
     };
     Timers.stay_live = 7_000;
 
@@ -5480,12 +5064,16 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.mention_audio = () => {
+        START__STOP_WATCH('mention_audio');
+
         // Play sound on new message
         NOTIFICATION_EVENTS.onmention ??= GetChat.onnewmessage = lines => {
             for(let { mentions } of lines)
                 if(mentions.contains(USERNAME) && !NOTIFICATION_SOUND?.playing)
                     NOTIFICATION_SOUND?.play();
         };
+
+        JUDGE__STOP_WATCH('mention_audio');
     };
     Timers.mention_audio = 1_000;
 
@@ -5509,12 +5097,16 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.phrase_audio = () => {
+        START__STOP_WATCH('phrase_audio');
+
         // Play sound on new message
         NOTIFICATION_EVENTS.onphrase ??= GetChat.onnewmessage = lines => {
             for(let { element } of lines)
                 if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
                     NOTIFICATION_SOUND?.play();
         };
+
+        JUDGE__STOP_WATCH('phrase_audio');
     };
     Timers.phrase_audio = 1_000;
 
@@ -5538,6 +5130,8 @@ let Initialize = async(START_OVER = false) => {
      *                              |_|
      */
     Handlers.whisper_audio = () => {
+        START__STOP_WATCH('whisper_audio');
+
         // Play sound on new message
         NOTIFICATION_EVENTS.onwhisper ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
             LOG('Got a new whisper', { unread, highlighted, message });
@@ -5555,12 +5149,14 @@ let Initialize = async(START_OVER = false) => {
             unread = parseInt(pill?.innerText) | 0;
 
         if(!defined(pill))
-            return NOTIFIED.whisper = 0;
+            return JUDGE__STOP_WATCH('whisper_audio'), NOTIFIED.whisper = 0;
         if(NOTIFIED.whisper >= unread)
-            return;
+            return JUDGE__STOP_WATCH('whisper_audio');
         NOTIFIED.whisper = unread;
 
         NOTIFICATION_SOUND?.play();
+
+        JUDGE__STOP_WATCH('whisper_audio');
     };
     Timers.whisper_audio = 1_000;
 
@@ -5636,15 +5232,17 @@ let Initialize = async(START_OVER = false) => {
         OBSERVED_COLLECTION_ANIMATIONS = new Map();
 
     Handlers.points_receipt_placement = () => {
+        START__STOP_WATCH('points_receipt_placement');
+
         let placement;
 
         if((placement = Settings.points_receipt_placement ??= "null") == "null")
-            return;
+            return JUDGE__STOP_WATCH('points_receipt_placement');
 
         let live_time = $('.live-time');
 
         if(!defined(live_time))
-            return;
+            return JUDGE__STOP_WATCH('points_receipt_placement');
 
         let classes = element => [...element.classList].map(label => '.' + label).join('');
 
@@ -5747,6 +5345,8 @@ let Initialize = async(START_OVER = false) => {
             RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } &uarr; | ${ comify(abs(EXACT_POINTS_SPENT)) } &darr;`;
             points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural').replace(/\.0+/, '') }`;
         }, 100);
+
+        JUDGE__STOP_WATCH('points_receipt_placement');
     };
     Timers.points_receipt_placement = -2_500;
 
@@ -5781,6 +5381,8 @@ let Initialize = async(START_OVER = false) => {
         hasPointsEnabled = false;
 
     Handlers.point_watcher_placement = () => {
+        START__STOP_WATCH('point_watcher_placement');
+
         let richTooltip = $('[class*="channel-tooltip"i]');
 
         // Update the points (every minute)
@@ -5825,7 +5427,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(!defined(richTooltip))
-            return;
+            return JUDGE__STOP_WATCH('point_watcher_placement');
 
         // Remove the old face and values...
         $('.tt-point-amount, .tt-point-face', true).map(element => element?.remove());
@@ -5844,7 +5446,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(!defined(title) || !defined(target))
-            return;
+            return JUDGE__STOP_WATCH('point_watcher_placement');
 
         let [name, game] = title.innerText.split(/[^\w\s]/);
 
@@ -5894,6 +5496,8 @@ let Initialize = async(START_OVER = false) => {
 
             target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
         });
+
+        JUDGE__STOP_WATCH('point_watcher_placement');
     };
     Timers.point_watcher_placement = 250;
 
@@ -5916,13 +5520,15 @@ let Initialize = async(START_OVER = false) => {
     let STREAM_PREVIEW;
 
     Handlers.stream_preview = async() => {
+        START__STOP_WATCH('stream_preview');
+
         let richTooltip = $('[class*="channel-tooltip"i]:not([class*="offline"i])');
 
         if(!defined(richTooltip)) {
-            if(parseBool(Settings.stream_preview_sound))
+            if(parseBool(Settings.stream_preview_sound) && MAINTAIN_VOLUME_CONTROL)
                 SetVolume(parseBool(Settings.away_mode__volume_control) && AwayModeStatus? Settings.away_mode__volume: InitialVolume ?? 1);
 
-            return STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
+            return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
         }
 
         let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip);
@@ -5935,7 +5541,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(!defined(title))
-            return STREAM_PREVIEW?.element?.remove();
+            return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW?.element?.remove();
 
         let [name] = title.innerText.split(/[^\w\s]/);
 
@@ -5943,7 +5549,7 @@ let Initialize = async(START_OVER = false) => {
 
         // There is already a preview of the hovered tooltip
         if([STREAMER?.name, STREAM_PREVIEW?.name].map(name => name?.toLowerCase()).contains(name))
-            return;
+            return JUDGE__STOP_WATCH('stream_preview');
 
         let { top, left, height, width } = getOffset(richTooltip),
             [body, video] = $('body, video', true).map(getOffset);
@@ -5988,7 +5594,27 @@ let Initialize = async(START_OVER = false) => {
                             if(!defined(InitialVolume))
                                 InitialVolume = GetVolume();
 
-                            SetVolume(0);
+                            let hasAudio = element =>
+                                parseBool(null
+                                    ?? element?.webkitAudioDecodedByteCount
+                                    ?? element?.audioTracks?.length
+                                );
+
+                            let audioChecker =
+                            setInterval(() => {
+                                let doc = $('.tt-stream-preview--iframe')?.contentDocument;
+
+                                if(!defined(doc))
+                                    return;
+
+                                let playingAudio = hasAudio($('video', false, doc));
+
+                                if(!playingAudio)
+                                    return;
+
+                                SetVolume(0);
+                                clearInterval(audioChecker);
+                            }, 100);
                         },
                     })
                 )
@@ -5997,6 +5623,8 @@ let Initialize = async(START_OVER = false) => {
         document.body.append(STREAM_PREVIEW.element);
 
         setTimeout(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'), 100);
+
+        JUDGE__STOP_WATCH('stream_preview');
     };
     Timers.stream_preview = 250;
 
@@ -6165,10 +5793,12 @@ let Initialize = async(START_OVER = false) => {
         PAGE_HAS_FOCUS = document.visibilityState === "visible";
 
     Handlers.recover_frames = () => {
+        START__STOP_WATCH('recover_frames');
+
         let video = $('video');
 
         if(!defined(video))
-            return;
+            return JUDGE__STOP_WATCH('recover_frames');
 
         let { paused } = video,
             isTrusted = defined($('button[data-a-player-state="paused"i]')),
@@ -6184,7 +5814,7 @@ let Initialize = async(START_OVER = false) => {
         // if the page isn't in focus, ignore this setting
         // if the video is paused by the user (trusted) move on
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
-            return;
+            return JUDGE__STOP_WATCH('recover_frames');
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
         if(creationTime !== CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
@@ -6225,6 +5855,8 @@ let Initialize = async(START_OVER = false) => {
 
         if(SECONDS_PAUSED_UNSAFELY > 15)
             location.reload();
+
+        JUDGE__STOP_WATCH('recover_frames');
     };
     Timers.recover_frames = 1_000;
 
@@ -6250,8 +5882,10 @@ let Initialize = async(START_OVER = false) => {
     let VIDEO_PLAYER_TIMEOUT = -1;
 
     Handlers.recover_stream = (video = $('video')) => {
+        START__STOP_WATCH('recover_stream');
+
         if(!defined(video))
-            return;
+            return JUDGE__STOP_WATCH('recover_stream');
 
         let { paused } = video,
             isTrusted = defined($('button[data-a-player-state="paused"i]')),
@@ -6263,7 +5897,7 @@ let Initialize = async(START_OVER = false) => {
             // if the video is an ad AND auto-play ads is disabled
             // if the player event-timeout has been set
         if(!paused || isTrusted || (isAdvert && !parseBool(Settings.recover_ads)) || VIDEO_PLAYER_TIMEOUT > -1)
-            return;
+            return JUDGE__STOP_WATCH('recover_stream');
 
         // Wait before trying to press play again
         VIDEO_PLAYER_TIMEOUT = setTimeout(() => VIDEO_PLAYER_TIMEOUT = -1, 1000);
@@ -6310,6 +5944,8 @@ let Initialize = async(START_OVER = false) => {
                 control.setAttribute('attempts', --attempts);
             }, 5000);
         }
+
+        JUDGE__STOP_WATCH('recover_stream');
     };
     Timers.recover_stream = 2_500;
 
@@ -6338,13 +5974,15 @@ let Initialize = async(START_OVER = false) => {
     let RECOVERING_VIDEO = false;
 
     Handlers.recover_video = async() => {
+        START__STOP_WATCH('recover_video');
+
         let errorMessage = $('[data-a-target="player-overlay-content-gate"i]');
 
         if(!defined(errorMessage))
-            return;
+            return JUDGE__STOP_WATCH('recover_video');
 
         if(RECOVERING_VIDEO)
-            return;
+            return JUDGE__STOP_WATCH('recover_video');
         RECOVERING_VIDEO = true;
 
         errorMessage = errorMessage.textContent;
@@ -6361,6 +5999,8 @@ let Initialize = async(START_OVER = false) => {
             // Failed to play video at...
             PushToTopSearch({ 'tt-ftpva': (+new Date).toString(36) });
         }
+
+        JUDGE__STOP_WATCH('recover_video');
     };
     Timers.recover_video = 5_000;
 
@@ -6418,10 +6058,12 @@ let Initialize = async(START_OVER = false) => {
      *                                                      |___/
      */
     Handlers.recover_pages = async() => {
+        START__STOP_WATCH('recover_pages');
+
         let error = $('[data-a-target="core-error-message"i]');
 
         if(!defined(error))
-            return;
+            return JUDGE__STOP_WATCH('recover_pages');
 
         let message = error.innerText,
             next = await GetNextStreamer();
@@ -6432,6 +6074,8 @@ let Initialize = async(START_OVER = false) => {
             open(next.href, '_self');
         else
             location.reload();
+
+        JUDGE__STOP_WATCH('recover_pages');
     };
     Timers.recover_pages = 5_000;
 
@@ -6499,7 +6143,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                 .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
                             for(let [name, func] of __ONLOCATIONCHANGE__)
-                                func(new CustomEvent('locationchange', { detail: { from: OLD_HREF, to: PATHNAME }}));
+                                func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
                         }
                     });
                 });
@@ -6712,6 +6356,31 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                 pill_observer.observe(pill, { childList: true });
         }
 
+        // Observe the volume changes
+        VolumeObserver: {
+            let target = $('[data-a-target^="player-volume"i] + * [style]'),
+                observer = new MutationObserver(mutations => {
+                    mutations.map(mutation => {
+                        let { style = '' } = mutation.target?.attributes,
+                            css = {};
+
+                        for(let rule of style.value.split(';')) {
+                            let [name, value] = rule.split(':', 2);
+
+                            if(name?.length)
+                                css[ name.trim() ] = value?.trim();
+                        }
+
+                        let volume = parseFloat(css?.width ?? 50) / 100;
+
+                        for(let [name, callback] of GetVolume.__onchange__)
+                            callback(volume);
+                    });
+                });
+
+            observer.observe(target, { attributes: true, childList: false, subtree: false });
+        }
+
         top.onlocationchange = () => {
             WARN("[Parent] Re-initializing...");
 
@@ -6806,6 +6475,11 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
             [tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
             [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
+
+            /* Rich Tooltips */
+            [role] [data-popper-escaped] [role] {
+                width: max-content;
+            }
 
             /* Stream Preview */
             .tt-stream-preview {

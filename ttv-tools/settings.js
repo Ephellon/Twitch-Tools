@@ -224,7 +224,7 @@ class UUID {
                 case 'object':
                 case 'symbol':
                 default:
-                    return native;
+                    return this.native;
             }
         };
 
@@ -814,6 +814,11 @@ $('[set]', true).map(async(element) => {
 
                     FETCHED_DATA = { ...FETCHED_DATA, ...properties };
                     Storage.set({ githubUpdateAvailable });
+
+                    // Only applies to versions installed from the Chrome Web Store
+                    __ChromeOnly__:
+                    if(installedFromWebstore)
+                        Storage.set({ chromeUpdateAvailable: githubUpdateAvailable });
                 });
 
             // Unauthorized? See paragraph 4.4.2 of https://developer.chrome.com/docs/webstore/terms/#use
@@ -878,7 +883,7 @@ $('[set]', true).map(async(element) => {
 
                                                 k = k.replace(/^([A-Z])(_*[a-z])/, ($0, $1, $2, $$, $_) => $1.toLowerCase() + $2);
 
-                                                obj[k] = /^[\d\.\,]+\+?$/.test(v)? parseFloat(v.replace(/[\,\.]/g, '')): v;
+                                                obj[k] = /^[\d\., ]+\+?$/.test(v)? parseFloat(v.replace(/[\., ]/g, '')): v;
                                             }
 
                                             value = obj;
@@ -888,7 +893,7 @@ $('[set]', true).map(async(element) => {
                                             value = parseFloat(value);
                                         } break;
 
-                                        default: return;
+                                        default: break;
                                     }
 
                                 return metadata[key] = value;
@@ -1025,6 +1030,36 @@ $('[new]', true).map(element => {
 
     if(compareVersions(`${ version } > ${ conception }`))
         element.removeAttribute('new');
+});
+
+// Any keys that need "translating"
+$('[id^="key:"i]', true).map(element => {
+    let OS = GetOS();
+
+    // if(!!~OS.indexOf('Windows')) return;
+
+    let keys = element.innerText.split(/(\W+)/).filter(string => !!string.length);
+
+    keys = keys.map(key => {
+        switch(OS) {
+            /** MacOS Keys
+             * Command (Cmd)        ⌘
+             * Option/Alt (Opt/Alt) ⌥
+             * Caps Lock            ⇪
+             * Control (Ctrl)       ^
+             * Shift                ⇧
+             */
+            case 'Mac': {
+                if(key == 'Win') key = '\u2318';
+                if(key == 'Alt') key = '\u2325';
+                if(key == 'Shift') key = '\u21e7';
+            } break;
+        };
+
+        return key;
+    });
+
+    element.innerText = keys.join('');
 });
 
 async function TranslatePageTo(language = 'en') {

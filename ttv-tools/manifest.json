@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "4.3.1",
+    "version": "4.4",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -21,6 +21,22 @@
     "content_scripts": [
         {
             "matches": [
+                "https://player.twitch.tv/*",
+                "http://player.twitch.tv/*"
+            ],
+
+            "all_frames": true,
+            "run_at": "document_end",
+            "js": [
+                "ext/polyfill.js",
+                "ext/glyphs.js",
+                "core.js",
+                "player.js"
+            ]
+        },
+
+        {
+            "matches": [
                 "https://www.twitch.tv/popout/*",
                 "http://www.twitch.tv/popout/*"
             ],
@@ -32,9 +48,11 @@
                 "ext/resemble.js",
                 "ext/sortable.js",
                 "ext/glyphs.js",
+                "core.js",
                 "chat.js"
             ]
         },
+
         {
             "matches": [
                 "https://www.twitch.tv/*",
@@ -48,6 +66,7 @@
                 "ext/resemble.js",
                 "ext/sortable.js",
                 "ext/glyphs.js",
+                "core.js",
                 "tools.js",
                 "chat.js"
             ],
@@ -81,6 +100,7 @@
     },
 
     "permissions": [
+        "*://player.twitch.tv/*",
         "*://www.twitch.tv/*",
         "*://twitch.tv/*",
 
