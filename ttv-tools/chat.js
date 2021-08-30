@@ -1246,9 +1246,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(!censor)
                     continue censoring;
 
-                let hidden = element.getAttribute('tt-hidden-bulletin') === 'true';
-
-                if(hidden || mentions.contains(USERNAME))
+                if(mentions.contains(USERNAME))
                     return;
 
                 LOG(`Censoring bulletin because its subject is "${ reason }"`, bullet);
@@ -1801,7 +1799,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         return "";
 
                     // The same message is already posted (within X lines)
-                    if( defined([...SPAM].slice(-lookBack).find(text => text == message)) )
+                    if( [...SPAM].slice(-lookBack).contains(message) )
                         markAsSpam(element, 'plagiarism', message);
 
                     // The message contains repetitive (more than X instances) words/phrases

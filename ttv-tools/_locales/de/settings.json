@@ -140,6 +140,9 @@
 		"Blijf in leven",
 		"Zodra de huidige transmissie eindigt, gaat u naar", "Volgende kanaal"
 	],
+		"stay-live:vod-is-offline": [
+			"Behandeln Sie", "VOD", "-Streams als Offline-Streams"
+		],
 
 	"view-mode": [
 		"Weergavemodus",

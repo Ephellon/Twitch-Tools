@@ -140,6 +140,9 @@
 		"Stay Live",
 		"After the current stream ends, go to the", "Next Channel"
 	],
+		"stay-live:vod-is-offline": [
+			"Treat", "VOD", "streams as offline streams"
+		],
 
 	"view-mode": [
 		"View Mode",

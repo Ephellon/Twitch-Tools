@@ -411,7 +411,7 @@
             </section>
 
             <!-- Stay Live -->
-            <section>
+            <section new='4.5'>
                 <div class='title' tr-id='stay-live'><span small glyph='stream'></span> Stay Live</div>
                 <div class='summary'>
                     <div class='toggle'>
@@ -421,6 +421,23 @@
                     <p tr-id>
                         After the current stream ends, go to the <b>Next Channel</b>.
                     </p>
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Stay Live&quot;'>Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title'><span class='offline'>Rerun</span> &rarr; <span class='offline'>Offline</span></div>
+                                <div class='summary'>
+                                    <div class='toggle' right-tooltip='Requires &quot;Stay Live&quot;'>
+                                        <input id='stay_live__ignore_channel_reruns' type='checkbox' requires='#stay_live'/>
+                                        <label for='stay_live__ignore_channel_reruns'></label>
+                                    </div>
+                                    <p tr-id='stay-live:vod-is-offline'>
+                                        Treat <a href='https://help.twitch.tv/s/article/video-on-demand' top-tooltip='Video on Demand'>VOD</a> streams as offline streams.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 

@@ -138,6 +138,9 @@
         "Mantente Vivo",
         "Una vez que finalice la transmisión actual, vaya al", "Siguiente Canal"
     ],
+		"stay-live:vod-is-offline": [
+			"Trate las transmisiones de", "VOD", "como transmisiones sin conexión"
+		],
 
     "view-mode": [
         "Modo de Vista",

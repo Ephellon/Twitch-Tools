@@ -143,6 +143,9 @@
 		"Permanecer Vivo",
 		"Uma vez terminada a emissão actual, vá para", "Canal seguinte"
 	],
+		"stay-live:vod-is-offline": [
+			"Trate os fluxos de", "VOD", "como fluxos offline"
+		],
 
 	"view-mode": [
 		"Modo Ver",

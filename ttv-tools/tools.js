@@ -1520,13 +1520,17 @@ Object.defineProperties(GetVolume, {
     // SetVolume([volume:number#Float]) -> undefined
 function SetVolume(volume = 0.5) {
     let video = $('[data-a-target="video-player"i] video'),
-        slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
+        thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
+        slider = $('[data-a-target^="player-volume"i] + * [style]');
 
     if(defined(video))
         video.volume = parseFloat(volume);
 
+    if(defined(thumb))
+        thumb.value = parseFloat(volume);
+
     if(defined(slider))
-        slider.value = parseFloat(volume);
+        slider.setAttribute('style', `width: ${ 100 * parseFloat(volume) }%`);
 }
 
 // Get the view mode
@@ -2214,7 +2218,7 @@ let Initialize = async(START_OVER = false) => {
 
         next_channel:
         switch(Settings.next_channel_preference) {
-            // The most popular channel (most amoutn of current viewers)
+            // The most popular channel (most amount of current viewers)
             case 'popular': {
                 next = online[0];
             } break;
@@ -2394,13 +2398,13 @@ let Initialize = async(START_OVER = false) => {
         get live() {
             return SPECIAL_MODE
                 || (true
-                    && defined($(`a[href$="${ NORMALIZED_PATHNAME }"i] [class*="status-text"i]`)) && !defined($(`[class*="offline-recommend"i]`))
+                    && defined($('[status] [class*="status-text"i]')) && !defined($(`[class*="offline-recommend"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "")
                 )
         },
 
         get name() {
-            return $(`.channel-info-content a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name')
+            return $(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name')
         },
 
         get paid() {
@@ -2413,6 +2417,10 @@ let Initialize = async(START_OVER = false) => {
 
         get poll() {
             return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) || 0
+        },
+
+        get redo() {
+            return /^rerun$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "");
         },
 
         get sole() {
@@ -3089,7 +3097,7 @@ let Initialize = async(START_OVER = false) => {
     function scoreTagActivity(...tags) {
         let score = 0;
 
-        tags = tags.map(tag => tag.split(/\W/)[0].toLowerCase());
+        tags = tags.map(tag => tag.split(/\W/).reverse().pop().toLowerCase());
 
         scoring:
         for(let tag of tags)
@@ -3574,8 +3582,8 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('away_mode');
 
         // Maintain the volume until the user changes it
-        GetVolume.onchange = volume => {
-            if(!MAINTAIN_VOLUME_CONTROL)
+        GetVolume.onchange = (volume, { isTrusted = false }) => {
+            if(!MAINTAIN_VOLUME_CONTROL || !isTrusted)
                 return;
 
             WARN('[Away Mode] is releasing volume control due to user interaction...');
@@ -4827,13 +4835,20 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('stay_live'), RemoveCache('UserIntent');
         }
 
-        IsLive:
-        if(!STREAMER.live) {
+        IsntLive:
+        if(
+            parseBool(Settings.stay_live__ignore_channel_reruns)?
+                (true
+                    && STREAMER.live
+                    && STREAMER.redo
+                ):
+            !STREAMER.live
+        ) {
             if(ReservedTwitchPathnames.test(pathname))
-                break IsLive;
+                break IsntLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
-                break IsLive;
+                break IsntLive;
 
             if(defined(next)) {
                 WARN(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
@@ -5569,13 +5584,13 @@ let Initialize = async(START_OVER = false) => {
                                 // Below tooltip
                                 `top: calc(${ top + height }px + (2rem * ${ scale }));`:
                             // Above tooltip
-                            `top: calc(${ top - height }px - (10rem * ${ scale }));`
-                        ) + `left: calc(${ video.left }px - 5rem); height: calc(150px * ${ scale }); width: calc(300px * ${ scale });`,
+                            `top: calc(${ top - height }px - (14rem * ${ scale }));`
+                        ) + `left: calc(${ video.left }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.5rem * ${ scale });`,
                     },
                     furnish('div.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
                         onerror: event => {
-
+                            // Do something if the stream's live preview poster doesn't load...
                         },
                     }),
                     furnish(`iframe.tt-stream-preview--iframe`, {
@@ -6358,10 +6373,18 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
         // Observe the volume changes
         VolumeObserver: {
+            $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget }) => {
+                $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
+            });
+
+            $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget }) => {
+                $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
+            });
+
             let target = $('[data-a-target^="player-volume"i] + * [style]'),
                 observer = new MutationObserver(mutations => {
                     mutations.map(mutation => {
-                        let { style = '' } = mutation.target?.attributes,
+                        let { style = '', isTrusted = false } = mutation.target?.attributes,
                             css = {};
 
                         for(let rule of style.value.split(';')) {
@@ -6374,9 +6397,12 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                         let volume = parseFloat(css?.width ?? 50) / 100;
 
                         for(let [name, callback] of GetVolume.__onchange__)
-                            callback(volume);
+                            callback(volume, { isTrusted: parseBool(isTrusted) });
                     });
                 });
+
+            if(!defined(target))
+                break VolumeObserver;
 
             observer.observe(target, { attributes: true, childList: false, subtree: false });
         }

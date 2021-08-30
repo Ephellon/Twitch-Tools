@@ -28,6 +28,11 @@
 ----
 
 # ACCOMPLISHED (Notable Changes)
+> [4.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.5)
+- Updated settings' version pulling functionality
+- Adjusted volume control release mechanic
+- Added the "Ignore VODs" sub-option to Stay Live
+
 > [4.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.4)
 - Fixed version updating mechanic
 - Added update availability notice for the Chrome version; uses the GitHub version

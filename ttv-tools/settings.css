@@ -164,10 +164,10 @@ html, body {
     width: 100%;
 }
 
-.live {
+.live, .offline {
     background-color: var(--live-red);
     border: 2px solid var(--background-dark);
-    border-radius: .5rem;
+    border-radius: 4px;
     color: var(--white);
     display: inline-block;
     font-family: var(--live-font);
@@ -176,6 +176,10 @@ html, body {
     text-transform: uppercase;
 
     padding: .1rem .3rem;
+}
+
+.offline {
+    background-color: #8883;
 }
 
 header {
@@ -1008,6 +1012,10 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 [unit][focus="true"i]::after {
     border-color: var(--purple);
     opacity: 1;
+}
+
+[unit][valid="false"i]::after {
+    border-color: var(--yellow);
 }
 
 /* Glyphs */

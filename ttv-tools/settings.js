@@ -60,6 +60,7 @@ let // These are option names. Anything else will be removed
         'auto_follow_all',
         // Keep Watching
         'stay_live',
+            'stay_live__ignore_channel_reruns',
             // Up Next Preference
             'next_channel_preference',
         // First in Line
@@ -497,7 +498,7 @@ async function SaveSettings() {
         }[element.type]];
     };
 
-    let elements = $(usable_settings.map(name => '#' + name).join(', '), true),
+    let elements = $(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', '), true),
         using = elements.map(element => element.id),
         settings = {};
 
@@ -729,13 +730,28 @@ $('#save, .save', true).map(element => element.onclick = async event => {
 
     currentTarget.classList.add('spin');
 
-    await SaveSettings()
+    await(async() => {
+        return awaitOn(() => {
+            let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
+
+            if(!defined(invalid))
+                return true;
+
+            let { top, left } = getOffset(invalid),
+                valid = invalid.checkValidity();
+
+            invalid.scrollTo({ top, left });
+
+            return [,true][+valid];
+        });
+    })()
+        .then(SaveSettings)
         .catch(error => {
             currentTarget.setAttribute('style', 'background-color:var(--red)');
 
-            console.warn(error);
+            WARN(error);
         })
-        .then(() => {
+        .finally(() => {
             setTimeout(() => {
                 currentTarget.removeAttribute('style');
                 currentTarget.classList.remove('spin');
@@ -763,9 +779,7 @@ $('[glyph]', true).map(element => {
 // Getting the version information
 let FETCHED_DATA = { wasFetched: false };
 
-$('[set]', true).map(async(element) => {
-    let installedFromWebstore = (location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
-
+(async function(installedFromWebstore) {
     let properties = {
         context: {
             id: UUID.from(Manifest.version, true).value,
@@ -779,9 +793,7 @@ $('[set]', true).map(async(element) => {
             github: 'Learn more',
             chrome: 'Learn more',
         },
-        this: Object.fromEntries([...element.attributes].map(({ name, value }) => [name, value])),
         Glyphs,
-        ...FETCHED_DATA,
     };
 
     await Storage.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
@@ -801,7 +813,11 @@ $('[set]', true).map(async(element) => {
 
                     return response.json();
                 })
-                .then(metadata => properties.version.github = metadata.tag_name)
+                .then(metadata => {
+                    LOG({ ['GitHub']: metadata });
+
+                    return properties.version.github = metadata.tag_name;
+                })
                 .then(version => Storage.set({ githubVersion: version }))
                 .catch(async error => {
                     await Storage.get(['githubVersion'], ({ githubVersion }) => {
@@ -821,103 +837,7 @@ $('[set]', true).map(async(element) => {
                         Storage.set({ chromeUpdateAvailable: githubUpdateAvailable });
                 });
 
-            // Unauthorized? See paragraph 4.4.2 of https://developer.chrome.com/docs/webstore/terms/#use
-            __GitHubOnly__: {
-                let chromeURL = `https://api.allorigins.win/raw?url=${ encodeURIComponent('https://chrome.google.com/webstore/detail/twitch-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd') }`;
-
-                await fetch(chromeURL, { mode: 'cors' })
-                    .then(response => {
-                        if(FETCHED_DATA.wasFetched)
-                            throw 'Data was already fetched';
-
-                        return response.text();
-                    })
-                    .then(html => {
-                        let DOM = new DOMParser(),
-                            doc = DOM.parseFromString(html, 'text/html');
-
-                        if(!defined(doc.body))
-                            throw 'Data could not be loaded';
-
-                        let [, merchant,, extensionName, extensionID] = parseURL(decodeURIComponent(parseURL(chromeURL).searchParameters.url)).pathname.split('/');
-
-                        let metadata = { merchant, extensionName, extensionID };
-
-                        $('noscript hr ~ div div > span', true, doc)
-                            .filter((span, index) => index % 2 == 0)
-                            .map(span => {
-                                let key = span.innerText.replace(':','').toLowerCase(),
-                                    value = span.nextElementSibling.innerText;
-
-                                    switch(key) {
-                                        case 'languages': {
-                                            value = parseFloat(value.replace(/\D+/g, ''));
-                                        } break;
-
-                                        case 'updated': {
-                                            value = new Date(value).toISOString();
-                                        } break;
-
-                                        default: return;
-                                    }
-
-                                return metadata[key] = value;
-                            });
-
-                        $('[itemprop]', true, doc)
-                            .map(element => {
-                                let key = element.getAttribute('itemprop'),
-                                    value = element.content ?? element.href ?? element.value ?? element.innerText;
-
-                                    switch(key) {
-                                        case 'applicationCategory':
-                                        case 'availability':{
-                                            value = parseURL(value).pathname.slice(1).replace(/(?!^)([A-Z])/g, ($0, $1, $$, $_) => '_' + $1).toUpperCase();
-                                        } break;
-
-                                        case 'interactionCount':{
-                                            let obj = {};
-
-                                            for(let pair of value.split(' ')) {
-                                                let [k, v] = pair.split(':');
-
-                                                k = k.replace(/^([A-Z])(_*[a-z])/, ($0, $1, $2, $$, $_) => $1.toLowerCase() + $2);
-
-                                                obj[k] = /^[\d\., ]+\+?$/.test(v)? parseFloat(v.replace(/[\., ]/g, '')): v;
-                                            }
-
-                                            value = obj;
-                                        } break;
-
-                                        case 'price':{
-                                            value = parseFloat(value);
-                                        } break;
-
-                                        default: break;
-                                    }
-
-                                return metadata[key] = value;
-                            });
-
-                        console.log({ metadata });
-
-                        return metadata;
-                    })
-                    .then(metadata => properties.version.chrome = metadata.version)
-                    .then(version => Storage.set({ chromeVersion: version }))
-                    .catch(async error => {
-                        await Storage.get(['chromeVersion'], ({ chromeVersion }) => {
-                            if(defined(chromeVersion))
-                                properties.version.chrome = chromeVersion;
-                        });
-                    })
-                    .finally(() => {
-                        let chromeUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.chrome }`);
-
-                        FETCHED_DATA = { ...FETCHED_DATA, ...properties };
-                        Storage.set({ chromeUpdateAvailable });
-                    });
-            }
+            // GitHub-only logic - get Chrome version information
 
             if(FETCHED_DATA.wasFetched === false) {
                 FETCHED_DATA.wasFetched = true;
@@ -962,30 +882,34 @@ $('[set]', true).map(async(element) => {
                 .toUpperCase();
         }
 
-        // Continue with the data...
-        let expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
+        // Modify all [set] elements
+        $('[set]', true).map(async(element) => {
+            properties.this = Object.fromEntries([...element.attributes].map(({ name, value }) => [name, value]));
 
-        for(let expression of expressions) {
-            // Literal (x=y) v. Metaphorical (x:y)
-            if(/^([\w\-]+)=/.test(expression)) {
-                let [attribute, property] = expression.split('='),
+            // Continue with the data...
+            let expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
+
+            for(let expression of expressions) {
+                // Literal (x=y) v. Metaphorical (x:y)
+                if(/^([\w\-]+)=/.test(expression)) {
+                    let [attribute, property] = expression.split('='),
                     value;
 
-                property = property.split('.');
+                    property = property.split('.');
 
-                // Traverse the property path...
-                for(value = properties; property.length;) {
-                    let [key] = property.splice(0, 1);
+                    // Traverse the property path...
+                    for(value = properties; property.length;) {
+                        let [key] = property.splice(0, 1);
 
-                    value = value[key];
-                }
+                        value = value[key];
+                    }
 
-                element.setAttribute(attribute, value);
-            } else if(/^([\w\-]+):/.test(expression)) {
-                let [attribute, property] = expression.split(':'),
+                    element.setAttribute(attribute, value);
+                } else if(/^([\w\-]+):/.test(expression)) {
+                    let [attribute, property] = expression.split(':'),
                     value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
                         let prop = $1.split('.'),
-                            val;
+                        val;
 
                         // Traverse the property path...
                         for(val = properties; prop.length;) {
@@ -997,11 +921,13 @@ $('[set]', true).map(async(element) => {
                         return val;
                     });
 
-                element.setAttribute(attribute, value);
+                    element.setAttribute(attribute, value);
+                }
             }
-        }
+        });
     });
-});
+})(location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
+
 
 // All anchors with the [continue-search] attribute
 $('a[continue-search]', true).map(a => {
@@ -1065,14 +991,14 @@ $('[id^="key:"i]', true).map(element => {
 async function TranslatePageTo(language = 'en') {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
-            console.log(`Translations to "${ language.toUpperCase() }" are not available`);
+            WARN(`Translations to "${ language.toUpperCase() }" are not available`);
 
             return { json() { return null } };
         })
         .then(text => text.json?.())
         .then(json => {
             if(json?.LANG_PACK_READY !== true)
-                return console.log(`Translations to "${ language.toUpperCase() }" are not finalized`);
+                return WARN(`Translations to "${ language.toUpperCase() }" are not finalized`);
 
             let lastTrID,
                 placement = {};
@@ -1116,7 +1042,10 @@ async function TranslatePageTo(language = 'en') {
                     if(translation?.length < 1)
                         node.textContent = node.textContent.trim();
 
-                    node.textContent = node.textContent.replace(/\([\s]+/g, '(').replace(/[\s,:;]+\)/g, ')');
+                    node.textContent = node.textContent
+                        .replace(/\([\s]+/g, '(')
+                        .replace(/[\s,:;]+\)/g, ')')
+                        .replace(/\s+(-\w)/g, '$1');
 
                     placement[translation_id] = (placement[translation_id] + 1 < translations.length)?
                         placement[translation_id] + 1:
@@ -1297,8 +1226,10 @@ document.body.onload = async() => {
 
                 // All unit targets
                 $('[unit] input', true).map(input => {
-                    input.onfocus = event => event.currentTarget.closest('[unit]').setAttribute('focus', true);
-                    input.onblur = event => event.currentTarget.closest('[unit]').setAttribute('focus', false);
+                    input.onfocus = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', true);
+                    input.onblur = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', false);
+
+                    input.oninput = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('valid', currentTarget.checkValidity());
                 });
             }, 1000);
         })
