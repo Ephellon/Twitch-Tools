@@ -1,6 +1,7 @@
-# TTV Tools - To-Do List
+# TTV Tools &mdash; To-Do List
 
-### TO-DO (Known Issues)
+> # TO-DO &mdash; Known Issues
+
 1. Accessibility options?
     * Not sure what to add...
 2. Instance (tab) data separation?
@@ -9,25 +10,32 @@
     * Uses the streamers' `dailyBroadcastTime` to predict when their stream will end
         * OR - listen for notifications/channel-popups; then save a timer (`{streamsCounted}:{totalSecondsCountedLive}`) for how long the channel lives
     * Heads to the stream 5min before it **should** end
-    * Only applies to streams that have a `raidsLastWeek` >= 3
+    * Only applies to streams that have a `raidsLastWeek` &ge; 3
 4. "Away Mode Lurking Schedule"
     * Automatically enables &/ disables Away Mode at user defined times
 5. "Reverse Emotes"
     * Sets all emotes back to their text and displays the image in a tooltip
+6. Change First in Line's clock logic
+    <!-- HIGH IMPORTANCE -->
 
 - Make initial loading actions less intrusive
     - [x] "Prime Loot" open/close action
     - [x] "Convert Emotes" open/close action
     - [x] "BetterTTV Emotes" open/close action
 - [ ] Clean up SVGs & IMGs
-- [ ] Provide more concise and informative console messages
+- [x] Provide more concise and informative console messages
 - [ ] Add more translations
 - ~~Listen for "on-subscribe" events to update the Channel Points Multiplier?~~
     * Too invasive. Does not match importance in proportion
 
 ----
 
-# ACCOMPLISHED (Notable Changes)
+> # DONE &mdash; Notable Changes
+
+> [4.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.6)
+- Adjusted Recover Video logic
+- Adjusted Simplify Chat reloading mechanic
+
 > [4.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.5)
 - Updated settings' version pulling functionality
 - Adjusted volume control release mechanic
@@ -460,7 +468,8 @@
 
 ----
 
-# TO-DID (Fixed Issues)
+> # FIXED &mdash; Fixed Issues
+
 > [2.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9)*
 1. Some elements don't register (like SVG animations)
     * Fixed? 2.9
@@ -486,9 +495,9 @@
     * Only when both First in Line features are enabled
     * Fixed: added code to ignore canceled jobs
         * Old "First in Line" Flow Chart:
-            * `Twitch Notification` -> FirstInLine Event -> `User cancels event` -> FirstInLinePlus Event
+            * `Twitch Notification` &rarr; FirstInLine Event &rarr; `User cancels event` &rarr; FirstInLinePlus Event
         * New "First in Line" Flow Chart:
-            * `Twitch Notification` -> FirstInLine Event -> `User cancels event` -> Interrupt @FirstInLine Event
+            * `Twitch Notification` &rarr; FirstInLine Event &rarr; `User cancels event` &rarr; Interrupt @FirstInLine Event
 
 > [2.8.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.8.2)
 1. If Up Next is set to off, the dead page will continue to reload
@@ -507,9 +516,20 @@
 6. Channels appearing but not counted in First in Line+
     * Fixed. Used `streamers` instead of `STREAMERS`
 7. Added the ability for the extension to resolve crashed pages
-    * O.K. Added an interval job to `background.js`
+    * OK. Added an interval job to `background.js`
 8. Remove unused settings' names from `settings.js`
     * Done.
+
+> [2.6.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6.3)
+1. Fixed First in Line+
+
+> [2.6.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6.2)
+1. Fixed onnewmessage event setter
+
+> [2.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6)
+1. Fixed Native Chat Replies
+2. Changed the usable namespace for saving settings
+3. Added the "Watch Time" feature
 
 > [2.5.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.5.1)
 1. New channels that give a notification before appearing count as dead until the page reloads
@@ -519,14 +539,3 @@
     - See above note
 3. The chat popups don't propagate
     - Fixed.
-
-> [2.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6)
-1. Fixed Native Chat Replies
-2. Changed the usable namespace for saving settings
-3. Added the "Watch Time" feature
-
-> [2.6.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6.2)
-1. Fixed onnewmessage event setter
-
-> [2.6.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6.3)
-1. Fixed First in Line+

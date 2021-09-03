@@ -2020,7 +2020,7 @@ let // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'simplify*', 'soft_unban*', 'view_mode'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode*', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
@@ -3757,12 +3757,14 @@ let Initialize = async(START_OVER = false) => {
                     if(defined(popup?.elements))
                         popup.elements.message.innerHTML
                             = popup.elements.message.innerHTML
+                                // `FIRST_IN_LINE_TIMER` -> `(+new Date) - FIRST_IN_LINE_START_TIME` || `FIRST_IN_LINE_DUE_DATE - (+new Date)`
                                 .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(FIRST_IN_LINE_TIMER, '!minute:!second'), '\t'].join(''));
 
                     if(FIRST_IN_LINE_TIMER < 1000) {
                         popup.remove();
                         clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
                     }
+                    // Change this to a "due date" instead of counter
                 }, 1000);
             }
         }, 1000);
@@ -5585,7 +5587,7 @@ let Initialize = async(START_OVER = false) => {
                                 `top: calc(${ top + height }px + (2rem * ${ scale }));`:
                             // Above tooltip
                             `top: calc(${ top - height }px - (14rem * ${ scale }));`
-                        ) + `left: calc(${ video.left }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.5rem * ${ scale });`,
+                        ) + `left: calc(${ video.left }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
                     },
                     furnish('div.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
@@ -6002,7 +6004,7 @@ let Initialize = async(START_OVER = false) => {
 
         errorMessage = errorMessage.textContent;
 
-        if(/subscribe/i.test(errorMessage)) {
+        if(/subscribe|mature/i.test(errorMessage)) {
             let next = await GetNextStreamer();
 
             // Subscriber only, etc.
