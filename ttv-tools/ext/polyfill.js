@@ -169,7 +169,10 @@ function toTimeString(milliseconds = 0, format = 'natural') {
         ],
         result;
 
-    let joining_symbol = ' ';
+    let joining_symbol = ' ',
+        sign = (milliseconds < 0? '-': '');
+
+    milliseconds = Math.abs(milliseconds);
 
     switch(format) {
         case 'natural': {
@@ -218,7 +221,7 @@ function toTimeString(milliseconds = 0, format = 'natural') {
         } break;
     }
 
-    return result.join(joining_symbol);
+    return sign + result.join(joining_symbol);
 }
 
 // Convert a time-formatted string into its corresponding millisecond value
@@ -415,6 +418,25 @@ Number.prototype.clamp ??= function clamp(min, max) {
     // clamp.js - https://www.webtips.dev/webtips/javascript/how-to-clamp-numbers-in-javascript
     return Math.min(Math.max(this, min), max);
 };
+
+// Adds all Math prototypes to Numbers
+    // Math... -> Number...
+Number.prototype.Math = (parent => {
+    let methods = Object.getOwnPropertyNames(parent);
+
+    for(let method of methods) {
+        let func = parent[method];
+
+        if(typeof func != 'function')
+            continue;
+
+        Number.prototype[method] = function(...args) {
+            return func(this, ...args);
+        };
+    }
+
+    return parent;
+})(Math);
 
 // Returns a properly formatted string depending on the number given
     // String..properSuffix([numberOfItems:number[, tail:string]])

@@ -1476,7 +1476,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         let checker = setInterval(() => {
             isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
             video = $('video', true)[+isAdvert],
-            computed = (video.videoHeight | 0) + 'p';
+            computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
                 clearInterval(checker);
@@ -1812,11 +1812,6 @@ try {
 
                     default: break;
                 }
-
-                // Adjust the timer to compensate for lost time
-                // new-time-left = (old-wait-time - old-time-left) + (new-wait-time - old-wait-time)
-                // if(/(\w+)_time_minutes$/i.test(key))
-                //     FIRST_IN_LINE_TIMER = (FIRST_IN_LINE_WAIT_TIME - FIRST_IN_LINE_TIMER) + ((parseInt(settings[RegExp.$1] === true? newValue: 0) | 0) - FIRST_IN_LINE_WAIT_TIME);
             }
 
             reload ||= !!~[...EXPERIMENTAL_FEATURES, ...SENSITIVE_FEATURES].findIndex(feature => feature.test(key));
@@ -3274,7 +3269,7 @@ let Initialize = async(START_OVER = false) => {
                         /* Alter other settings according to the trend */
                         let changes = [];
 
-                        if(bias.length > 30 && FIRST_IN_LINE_TIMER > 60_000) {
+                        if(bias.length > 30 && GET_DUE_DATE() > 60_000) {
                             // Positive activity trend; disable Away Mode, pause Up Next
                             if((!defined(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
@@ -3661,6 +3656,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
         FIRST_IN_LINE_PAUSED,               // The pause-state
         FIRST_IN_LINE_BALLOON,              // The balloon controller
+        FIRST_IN_LINE_DUE_DATE,             // The due date of the next job
         ALL_FIRST_IN_LINE_JOBS,             // All First in Line jobs
         FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
         FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
@@ -3683,13 +3679,14 @@ let Initialize = async(START_OVER = false) => {
 
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
-    function REDO_FIRST_IN_LINE_QUEUE(href) {
-        if(!defined(href) || FIRST_IN_LINE_HREF === href)
+    function REDO_FIRST_IN_LINE_QUEUE(url) {
+        if(!defined(url) || FIRST_IN_LINE_HREF === url)
             return;
 
-        href = parseURL(href).href;
+        url = parseURL(url);
 
-        let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname == parseURL(href).pathname);
+        let { href } = url,
+            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname == url.pathname);
 
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -3699,12 +3696,12 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        LOG(`Waiting ${ toTimeString(FIRST_IN_LINE_TIMER | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
+        LOG(`Waiting ${ toTimeString(GET_DUE_DATE() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
                 return /* First in Line is paused */;
-            if(FIRST_IN_LINE_TIMER > 60_000)
+            if(GET_DUE_DATE() > 60_000)
                 return /* There's more than 1 minute left */;
 
             let existing = Popup.get(`Up Next \u2014 ${ name }`);
@@ -3712,19 +3709,19 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(STARTED_TIMERS.WARNING)) {
                 STARTED_TIMERS.WARNING = true;
 
-                LOG('Heading to stream in', toTimeString(FIRST_IN_LINE_TIMER | 0), FIRST_IN_LINE_HREF, new Date);
+                LOG('Heading to stream in', toTimeString(GET_DUE_DATE() | 0), FIRST_IN_LINE_HREF, new Date);
 
-                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(FIRST_IN_LINE_TIMER) }\t`, {
+                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(GET_DUE_DATE()) }\t`, {
                     icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
                     href: FIRST_IN_LINE_HREF,
 
-                    onmousedown: event => {
+                    onmouseup: event => {
                         let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
                             uuid = existing?.getAttribute('uuid');
 
                         Popup.remove(uuid);
 
-                        SaveCache({ FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000 });
+                        SaveCache({ FIRST_IN_LINE_DUE_DATE: NEW_DUE_DATE() });
                     },
 
                     Hide: event => {
@@ -3757,14 +3754,12 @@ let Initialize = async(START_OVER = false) => {
                     if(defined(popup?.elements))
                         popup.elements.message.innerHTML
                             = popup.elements.message.innerHTML
-                                // `FIRST_IN_LINE_TIMER` -> `(+new Date) - FIRST_IN_LINE_START_TIME` || `FIRST_IN_LINE_DUE_DATE - (+new Date)`
-                                .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(FIRST_IN_LINE_TIMER, '!minute:!second'), '\t'].join(''));
+                                .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_DUE_DATE(), '!minute:!second'), '\t'].join(''));
 
-                    if(FIRST_IN_LINE_TIMER < 1000) {
+                    if(GET_DUE_DATE() < 1000) {
                         popup.remove();
                         clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
                     }
-                    // Change this to a "due date" instead of counter
                 }, 1000);
             }
         }, 1000);
@@ -3782,26 +3777,24 @@ let Initialize = async(START_OVER = false) => {
                     channelID = UUID.from(pathname).value;
 
                 ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined);
-                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
 
                 return REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
             }
 
+            // The timer is paused
             if(FIRST_IN_LINE_PAUSED)
-                return /* First in Line is paused */;
-            // Save the current wait time (every 1sec)
-            if((FIRST_IN_LINE_TIMER % 1000) === 0)
-                SaveCache({ FIRST_IN_LINE_TIMER });
+                return FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
             // Don't act until 1sec is left
-            if(FIRST_IN_LINE_TIMER > 1000)
-                return FIRST_IN_LINE_TIMER -= 1_000;
+            if(GET_DUE_DATE() > 1000)
+                return;
 
             /* After above is `false` */
 
-            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-            SaveCache({ FIRST_IN_LINE_TIMER });
+            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+            SaveCache({ FIRST_IN_LINE_DUE_DATE });
 
             LOG('Heading to stream now [Job Interval]', FIRST_IN_LINE_HREF);
 
@@ -3810,6 +3803,20 @@ let Initialize = async(START_OVER = false) => {
 
             FIRST_IN_LINE_HREF = undefined;
         }, 1000);
+    }
+
+    function NEW_DUE_DATE(offset) {
+        return (+new Date) + (null
+            ?? offset
+            ?? FIRST_IN_LINE_WAIT_TIME * 60_000
+        );
+    }
+
+    function GET_DUE_DATE() {
+        let now = (+new Date),
+            due = FIRST_IN_LINE_DUE_DATE;
+
+        return (due - now);
     }
 
     let FIRST_IN_LINE_BALLOON__INSURANCE =
@@ -3841,7 +3848,7 @@ let Initialize = async(START_OVER = false) => {
                         fiveMin = 5 * oneMin,
                         tenMin = 10 * oneMin;
 
-                    FIRST_IN_LINE_TIMER =
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(
                         // If the streamer hasn't been on for longer than 10mins, wait until then
                         STREAMER.time < tenMin?
                             (
@@ -3857,20 +3864,18 @@ let Initialize = async(START_OVER = false) => {
                             FIRST_IN_LINE_BOOST?
                                 (
                                     // Boost is enabled and the time left on "Up Next" is less than 5mins
-                                    (FIRST_IN_LINE_TIMER ?? fiveMin) < fiveMin?
-                                        FIRST_IN_LINE_TIMER:
-                                    // ... greater than 5mins
-                                    fiveMin
+                                    Math.min(GET_DUE_DATE(), fiveMin)
                                 ):
                             // Boost is disabled
                             FIRST_IN_LINE_WAIT_TIME * oneMin
-                        );
+                        )
+                    );
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                    $('[up-next--body] [time]', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
+                    $('[up-next--body] [time]', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000));
 
-                    SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_WAIT_TIME });
+                    SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
                 },
             });
 
@@ -3909,22 +3914,21 @@ let Initialize = async(START_OVER = false) => {
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, `Drop a channel in the ${ colorName } area to queue it`);
 
             // Load cache
-            LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
+            LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
                 ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
-                FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
+                FIRST_IN_LINE_DUE_DATE = cache.FIRST_IN_LINE_DUE_DATE ?? NEW_DUE_DATE();
 
                 REMARK(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
 
                 if(FIRST_IN_LINE_BOOST) {
                     let fiveMin = 300_000;
 
-                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_TIMER < fiveMin? FIRST_IN_LINE_TIMER: fiveMin;
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_DUE_DATE(), fiveMin));
 
-                    setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', fiveMin)), 5_000);
+                    setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)), 5_000);
 
-                    if(FIRST_IN_LINE_TIMER % 5 === 0)
-                        SaveCache({ FIRST_IN_LINE_TIMER });
+                    SaveCache({ FIRST_IN_LINE_DUE_DATE });
                 }
 
                 // Up Next Boost
@@ -3971,11 +3975,11 @@ let Initialize = async(START_OVER = false) => {
 
                     // Jobs are unknown. Restart timer
                     if(ALL_FIRST_IN_LINE_JOBS.length < 1)
-                        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                     ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
 
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                 }
@@ -4024,18 +4028,17 @@ let Initialize = async(START_OVER = false) => {
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
 
                     if([oldIndex, newIndex].contains(0)) {
-                        LOG('New First in Line event:', channel);
+                        let time = FIRST_IN_LINE_TIMER = parseInt($(`[name="${ channel.name }"i]`).getAttribute('time'));
 
-                        FIRST_IN_LINE_TIMER = parseInt(null
-                            ?? $(`[name="${ channel.name }"i]`).getAttribute('time')
-                            ?? FIRST_IN_LINE_WAIT_TIME * 60_000
-                        );
+                        LOG('New First in Line event:', { ...channel, time  });
+
+                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                         REDO_FIRST_IN_LINE_QUEUE(channel.href);
-                        LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_TIMER: toTimeString(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                        LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                     }
 
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 },
             });
 
@@ -4073,15 +4076,16 @@ let Initialize = async(START_OVER = false) => {
                                     DO_NOT_AUTO_ADD.push(removed);
 
                                 if(index > 0) {
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                                 } else {
-                                    LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+                                    LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
 
                                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                                     FIRST_IN_LINE_HREF = undefined;
-                                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                                 }
                             },
 
@@ -4089,7 +4093,7 @@ let Initialize = async(START_OVER = false) => {
                                 name,
                                 live,
                                 index,
-                                time: (index < 1? FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000),
+                                time: (index < 1? GET_DUE_DATE(): FIRST_IN_LINE_WAIT_TIME * 60_000),
 
                                 style: (live? '': 'opacity: 0.3!important'),
                             },
@@ -4111,7 +4115,7 @@ let Initialize = async(START_OVER = false) => {
                                         index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
                                     if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
-                                        FIRST_IN_LINE_TIMER = time;
+                                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                         WARN('Creating job to avoid [Job Listing] mitigation event', channel);
 
@@ -4120,19 +4124,18 @@ let Initialize = async(START_OVER = false) => {
 
                                     if(time < 0)
                                         setTimeout(() => {
-                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
-                                            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+                                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                                            if(FIRST_IN_LINE_TIMER % 5 === 0)
-                                                SaveCache({ FIRST_IN_LINE_TIMER });
+                                            SaveCache({ FIRST_IN_LINE_DUE_DATE });
 
                                             open($('a', false, container)?.href ?? '?', '_self');
                                             return clearInterval(intervalID);
                                         }, 5000);
 
-                                    container.setAttribute('time', time - (index > 0? 0: 1000));
+                                    container.setAttribute('time', FIRST_IN_LINE_TIMER = time - (index > 0? 0: 1000));
 
                                     if(container.getAttribute('index') != index)
                                         container.setAttribute('index', index);
@@ -4164,8 +4167,8 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
                 LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
-                FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                SaveCache({ FIRST_IN_LINE_TIMER });
+                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                SaveCache({ FIRST_IN_LINE_DUE_DATE });
             };
         }
     }, 1000);
@@ -4274,15 +4277,15 @@ let Initialize = async(START_OVER = false) => {
                             DO_NOT_AUTO_ADD.push(removed);
 
                         if(index > 0) {
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                         } else {
-                            LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_TIMER });
+                            LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
 
                             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                             FIRST_IN_LINE_HREF = undefined;
-                            FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                         }
                     },
 
@@ -4290,7 +4293,7 @@ let Initialize = async(START_OVER = false) => {
                         name,
                         live,
                         index,
-                        time: (index < 1? FIRST_IN_LINE_TIMER: FIRST_IN_LINE_WAIT_TIME * 60_000),
+                        time: (index < 1? GET_DUE_DATE(): FIRST_IN_LINE_WAIT_TIME * 60_000),
 
                         style: (live? '': 'opacity: 0.3!important'),
                     },
@@ -4312,7 +4315,7 @@ let Initialize = async(START_OVER = false) => {
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
                             if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
-                                FIRST_IN_LINE_TIMER = time;
+                                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                 WARN('Creating job to avoid [First in Line] mitigation event', channel);
 
@@ -4321,17 +4324,17 @@ let Initialize = async(START_OVER = false) => {
 
                             if(time < 0)
                                 setTimeout(() => {
-                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_TIMER, FIRST_IN_LINE_HREF }, new Date);
+                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
-                                    FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
-                                    SaveCache({ FIRST_IN_LINE_TIMER });
+                                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                                    SaveCache({ FIRST_IN_LINE_DUE_DATE });
 
                                     open($('a', false, container)?.href ?? '?', '_self');
                                     return clearInterval(intervalID);
                                 }, 5000);
 
-                            container.setAttribute('time', time - (index > 0? 0: 1000));
+                            container.setAttribute('time', FIRST_IN_LINE_TIMER = time - (index > 0? 0: 1000));
 
                             if(container.getAttribute('index') != index)
                                 container.setAttribute('index', index);
@@ -4358,7 +4361,7 @@ let Initialize = async(START_OVER = false) => {
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(href);
-                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_TIMER: toTimeString(FIRST_IN_LINE_TIMER, 'clock'), FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
                     let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
 
@@ -4397,17 +4400,17 @@ let Initialize = async(START_OVER = false) => {
             FIRST_IN_LINE_HREF = '?';
 
         ALL_FIRST_IN_LINE_JOBS = [];
-        FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000;
+        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_TIMER });
+        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
     };
 
     __FirstInLine__:
     if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
-        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_TIMER', 'FIRST_IN_LINE_BOOST'], cache => {
+        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
-            FIRST_IN_LINE_TIMER = cache.FIRST_IN_LINE_TIMER ?? FIRST_IN_LINE_WAIT_TIME * 60_000;
+            FIRST_IN_LINE_DUE_DATE = cache.FIRST_IN_LINE_DUE_DATE ?? NEW_DUE_DATE();
         });
 
         RegisterJob('first_in_line');
@@ -4419,12 +4422,11 @@ let Initialize = async(START_OVER = false) => {
 
             REMARK('Resetting timer. Location change detected:', { from, to });
 
-            let watchTime = parseFloat($('#tt-watch-time')?.getAttribute('time') ?? 0),
-                userTimer = FIRST_IN_LINE_WAIT_TIME * 60_000;
+            let watchTime = parseFloat($('#tt-watch-time')?.getAttribute('time') ?? 0);
 
             // If the user clicks on a channel, reset the timer
             if(!ReservedTwitchPathnames.test(to))
-                FIRST_IN_LINE_TIMER = userTimer;
+                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
         };
 
         // Controls what's listed under the Up Next balloon

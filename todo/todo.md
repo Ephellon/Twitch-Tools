@@ -1,6 +1,6 @@
 # TTV Tools &mdash; To-Do List
 
-> # TO-DO &mdash; Known Issues
+# TO-DO &mdash; Known Issues
 
 1. Accessibility options?
     * Not sure what to add...
@@ -30,11 +30,13 @@
 
 ----
 
-> # DONE &mdash; Notable Changes
+# DONE &mdash; Notable Changes
 
 > [4.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.6)
 - Adjusted Recover Video logic
 - Adjusted Simplify Chat reloading mechanic
+- Adjusted First in Line timer logic
+    + Should make freezing less impactful
 
 > [4.5](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.5)
 - Updated settings' version pulling functionality
@@ -468,7 +470,7 @@
 
 ----
 
-> # FIXED &mdash; Fixed Issues
+# FIXED &mdash; Fixed Issues
 
 > [2.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9)*
 1. Some elements don't register (like SVG animations)
