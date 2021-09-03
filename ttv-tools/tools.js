@@ -3686,7 +3686,7 @@ let Initialize = async(START_OVER = false) => {
         url = parseURL(url);
 
         let { href } = url,
-            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname == url.pathname);
+            channel = [...ALL_CHANNELS, STREAMER].find(channel => parseURL(channel.href).pathname == url.pathname);
 
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -3712,7 +3712,7 @@ let Initialize = async(START_OVER = false) => {
                 LOG('Heading to stream in', toTimeString(GET_DUE_DATE() | 0), FIRST_IN_LINE_HREF, new Date);
 
                 let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(GET_DUE_DATE()) }\t`, {
-                    icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
+                    icon: [...ALL_CHANNELS, STREAMER].find(channel => channel.href === href)?.icon,
                     href: FIRST_IN_LINE_HREF,
 
                     onmouseup: event => {
@@ -3766,7 +3766,7 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
-            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF);
+            let channel = [...ALL_CHANNELS, STREAMER].find(channel => channel.href == FIRST_IN_LINE_HREF);
 
             if(!defined(channel)) {
                 LOG('Removing dead channel', FIRST_IN_LINE_HREF);
@@ -3849,31 +3849,31 @@ let Initialize = async(START_OVER = false) => {
                         tenMin = 10 * oneMin;
 
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(
-                        // If the streamer hasn't been on for longer than 10mins, wait until then
-                        STREAMER.time < tenMin?
+                        FIRST_IN_LINE_TIMER = (
+                            // If the streamer hasn't been on for longer than 10mins, wait until then
+                            STREAMER.time < tenMin?
+                                (
+                                    // Boost is enabled
+                                    FIRST_IN_LINE_BOOST?
+                                        fiveMin + (tenMin - STREAMER.time):
+                                    // Boost is disabled
+                                    FIRST_IN_LINE_WAIT_TIME * oneMin
+                                ):
+                            // Streamer has been live longer than 10mins
                             (
                                 // Boost is enabled
                                 FIRST_IN_LINE_BOOST?
-                                    fiveMin + (tenMin - STREAMER.time):
+                                    // Boost is enabled
+                                    Math.min(GET_DUE_DATE(), fiveMin):
                                 // Boost is disabled
                                 FIRST_IN_LINE_WAIT_TIME * oneMin
-                            ):
-                        // Streamer has been live longer than 10mins
-                        (
-                            // Boost is enabled
-                            FIRST_IN_LINE_BOOST?
-                                (
-                                    // Boost is enabled and the time left on "Up Next" is less than 5mins
-                                    Math.min(GET_DUE_DATE(), fiveMin)
-                                ):
-                            // Boost is disabled
-                            FIRST_IN_LINE_WAIT_TIME * oneMin
+                            )
                         )
                     );
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                    $('[up-next--body] [time]', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = FIRST_IN_LINE_WAIT_TIME * 60_000));
+                    $(`[up-next--body] [time]`, true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
 
                     SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
                 },
@@ -4022,7 +4022,7 @@ let Initialize = async(START_OVER = false) => {
                     // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                     // LOG('Moved', { oldIndex, newIndex, moved });
 
-                    let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
+                    let channel = [...ALL_CHANNELS, STREAMER].find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
 
                     if(!defined(channel))
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
@@ -4048,7 +4048,7 @@ let Initialize = async(START_OVER = false) => {
                 FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
                     for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
-                            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).href === href);
+                            channel = [...ALL_CHANNELS, STREAMER].find(channel => parseURL(channel.href).href === href);
 
                         if(!defined(href) || !defined(channel)) {
                             ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
@@ -4107,7 +4107,7 @@ let Initialize = async(START_OVER = false) => {
                                     if(FIRST_IN_LINE_PAUSED)
                                         return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000) /* First in Line is paused */;
 
-                                    let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                                    let channel = ([...ALL_CHANNELS, STREAMER].find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                         { name, live } = channel;
 
                                     let time = parseInt(container.getAttribute('time')),
@@ -4252,7 +4252,7 @@ let Initialize = async(START_OVER = false) => {
             AddBalloon: {
                 update();
 
-                let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).href === href);
+                let channel = [...ALL_CHANNELS, STREAMER].find(channel => parseURL(channel.href).href === href);
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href);
 
                 if(!defined(channel))
@@ -4307,7 +4307,7 @@ let Initialize = async(START_OVER = false) => {
                             if(FIRST_IN_LINE_PAUSED)
                                 return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000) /* First in Line is paused */;
 
-                            let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                            let channel = ([...ALL_CHANNELS, STREAMER].find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                 { name, live } = channel;
 
                             let time = parseInt(container.getAttribute('time')),
@@ -4432,7 +4432,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+                channel = [...ALL_CHANNELS, STREAMER].filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
             if(!defined(channel)) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),

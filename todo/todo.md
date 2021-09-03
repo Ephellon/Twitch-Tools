@@ -32,6 +32,9 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.6.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.6.1)
+- Fixed Up Next boost
+
 > [4.6](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.6)
 - Adjusted Recover Video logic
 - Adjusted Simplify Chat reloading mechanic
