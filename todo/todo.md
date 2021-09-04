@@ -15,8 +15,10 @@
     * Automatically enables &/ disables Away Mode at user defined times
 5. "Reverse Emotes"
     * Sets all emotes back to their text and displays the image in a tooltip
-6. Change First in Line's clock logic
-    <!-- HIGH IMPORTANCE -->
+6. Add the option to keep Up Next purely unique
+    * Maybe the user wants to create a repeating queue
+7. Add the "Sync Activity across devices" option
+    * If a channel is already being watched on a different machine, go to a different, unique channel
 
 - Make initial loading actions less intrusive
     - [x] "Prime Loot" open/close action
@@ -31,6 +33,12 @@
 ----
 
 # DONE &mdash; Notable Changes
+
+> [4.7](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.7)
+- Added job reconstruction logic
+    + Should be able to re-add non-followed channels
+- Adjusted the way the Up Next count is calculated
+- Adjusted the Stream Preview positioning logic
 
 > [4.6.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.6.1)
 - Fixed Up Next boost

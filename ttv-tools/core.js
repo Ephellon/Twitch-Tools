@@ -146,6 +146,21 @@ function defined(value) {
     return !unknown(value);
 }
 
+// Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) -> Promise
+async function awaitOn(callback, ms = 100) {
+    return new Promise((resolve, reject) => {
+        let interval = setInterval(async() => {
+            let value = callback();
+
+            if(defined(value)) {
+                clearInterval(interval);
+                resolve(value);
+            }
+        }, ms);
+    });
+}
+
 // The following facilitates communication between pages
 // Get the current settings
    // GetSettings() -> Object

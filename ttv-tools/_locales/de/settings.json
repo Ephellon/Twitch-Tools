@@ -402,7 +402,8 @@
 		],
 		"stream-preview:size-options": [
 			"Normal (×1)",
-			"Groß (×2)"
+			"Groß (×2)",
+			"Extra groß (×3)"
 		],
 		"stream-preview:sound": [
 			"Vorschauton",

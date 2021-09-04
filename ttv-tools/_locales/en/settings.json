@@ -398,7 +398,8 @@
 		],
 		"stream-preview:size-options": [
 			"Normal (×1)",
-			"Large (×2)"
+			"Large (×2)",
+			"Extra-Large (×3)"
 		],
 		"stream-preview:sound": [
 			"Preview Sound",

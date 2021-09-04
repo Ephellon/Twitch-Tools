@@ -730,21 +730,19 @@ $('#save, .save', true).map(element => element.onclick = async event => {
 
     currentTarget.classList.add('spin');
 
-    await(async() => {
-        return awaitOn(() => {
-            let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
+    awaitOn(() => {
+        let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
 
-            if(!defined(invalid))
-                return true;
+        if(!defined(invalid))
+            return true;
 
-            let { top, left } = getOffset(invalid),
-                valid = invalid.checkValidity();
+        let { top, left } = getOffset(invalid),
+            valid = invalid.checkValidity();
 
-            invalid.scrollTo({ top, left });
+        invalid.scrollTo({ top, left });
 
-            return [,true][+valid];
-        });
-    })()
+        return [,true][+valid];
+    })
         .then(SaveSettings)
         .catch(error => {
             currentTarget.setAttribute('style', 'background-color:var(--red)');

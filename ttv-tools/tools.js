@@ -13,6 +13,7 @@ let UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
     Messages = new Map(),
     PostOffice = new Map(),
     // These won't change (often)
+    ACTIVITY,
     USERNAME,
     LANGUAGE,
     THEME,
@@ -23,6 +24,7 @@ let UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
 // Populate the username field by quickly showing the menu
 if(defined(UserMenuToggleButton)) {
     UserMenuToggleButton.click();
+    ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText ?? '';
     USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]').innerText;
     THEME = top.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
     UserMenuToggleButton.click();
@@ -1599,6 +1601,24 @@ function SetViewMode(mode) {
         $(button)?.click?.();
 }
 
+// Get the current user activity
+    // GetActivity() -> Promise <String | null>
+async function GetActivity() {
+    return awaitOn(() => {
+        let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
+
+        if(open) {
+            ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText;
+        } else {
+            UserMenuToggleButton?.click();
+            ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText;
+            UserMenuToggleButton?.click();
+        }
+
+        return ACTIVITY;
+    });
+}
+
 // Import the glyphs
 let { Glyphs } = top;
 
@@ -1645,11 +1665,10 @@ let nth = n => {
             // 1st 2nd 3rd 4th ... 11th 12th 13th ... 21st 22nd 23rd
 
             n = n
-                .replace(/(1[123])$/, '$1th')
+                .replace(/(0|1[123]|[4-9])$/, '$1th')
                 .replace(/1$/, '1st')
                 .replace(/2$/, '2nd')
                 .replace(/3$/, '3rd')
-                .replace(/(\d)$/, '$1th')
             + ' in line';
         } break;
     }
@@ -1687,6 +1706,7 @@ let PATHNAME = top.location.pathname,
     CHANNELS,
     // The currently searched-for channels (excluding STREAMER)
     SEARCH,
+    SEARCH_CACHE = new Map(),
     // Visible, actionable notifications
     NOTIFICATIONS,
     // All of the above
@@ -1865,6 +1885,7 @@ async function update() {
         ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let channel = {
+                    from: 'SEARCH',
                     href: element.href,
                     icon: $('img', false, element)?.src,
                     get live() {
@@ -1893,6 +1914,8 @@ async function update() {
                     event.dataTransfer.dropEffect = 'move';
                 };
 
+                SEARCH_CACHE.set(channel.name, { ...channel });
+
                 return channel;
             }),
     ].filter(uniqueChannels);
@@ -1904,6 +1927,7 @@ async function update() {
         ...$(`#sideNav .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
+                    from: 'CHANNELS',
                     href: element.href,
                     icon: $('img', false, element)?.src,
                     get live() {
@@ -1944,6 +1968,7 @@ async function update() {
         ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
+                    from: 'STREAMERS',
                     href: element.href,
                     icon: $('img', false, element)?.src,
                     get live() {
@@ -2271,6 +2296,7 @@ let Initialize = async(START_OVER = false) => {
         ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])`, true)
             .map(element => {
                 let channel = {
+                    from: 'SEARCH',
                     href: element.href,
                     icon: $('img', false, element)?.src,
                     get live() {
@@ -2298,6 +2324,8 @@ let Initialize = async(START_OVER = false) => {
                     event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
+
+                SEARCH_CACHE.set(channel.name, { ...channel });
 
                 return channel;
             }),
@@ -2366,6 +2394,10 @@ let Initialize = async(START_OVER = false) => {
             return icon?.alt ?? 'Channel Points';
         },
 
+        get from() {
+            return 'STREAMER';
+        },
+
         get game() {
             let element = $('[data-a-target$="game-link"i], [data-a-target$="game-name"i]'),
                 name = element?.innerText,
@@ -2394,7 +2426,7 @@ let Initialize = async(START_OVER = false) => {
             return SPECIAL_MODE
                 || (true
                     && defined($('[status] [class*="status-text"i]')) && !defined($(`[class*="offline-recommend"i]`))
-                    && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.innerText?.trim() ?? "")
+                    && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`)?.innerText?.trim() ?? "")
                 )
         },
 
@@ -2573,6 +2605,7 @@ let Initialize = async(START_OVER = false) => {
             ...$(`#sideNav .side-nav-section a`, true)
                 .map(element => {
                     let streamer = {
+                        from: 'ALL_CHANNELS',
                         href: element.href,
                         icon: $('img', false, element)?.src,
                         get live() {
@@ -2619,6 +2652,7 @@ let Initialize = async(START_OVER = false) => {
             ...$(`#sideNav .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
+                        from: 'CHANNELS',
                         href: element.href,
                         icon: $('img', false, element)?.src,
                         get live() {
@@ -2662,6 +2696,7 @@ let Initialize = async(START_OVER = false) => {
             ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
+                        from: 'STREAMERS',
                         href: element.href,
                         icon: $('img', false, element)?.src,
                         get live() {
@@ -3269,7 +3304,7 @@ let Initialize = async(START_OVER = false) => {
                         /* Alter other settings according to the trend */
                         let changes = [];
 
-                        if(bias.length > 30 && GET_DUE_DATE() > 60_000) {
+                        if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Away Mode, pause Up Next
                             if((!defined(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
@@ -3686,7 +3721,7 @@ let Initialize = async(START_OVER = false) => {
         url = parseURL(url);
 
         let { href } = url,
-            channel = [...ALL_CHANNELS, STREAMER].find(channel => parseURL(channel.href).pathname == url.pathname);
+            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname == url.pathname);
 
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -3696,12 +3731,12 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        LOG(`Waiting ${ toTimeString(GET_DUE_DATE() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
+        LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             if(FIRST_IN_LINE_PAUSED)
                 return /* First in Line is paused */;
-            if(GET_DUE_DATE() > 60_000)
+            if(GET_TIME_REMAINING() > 60_000)
                 return /* There's more than 1 minute left */;
 
             let existing = Popup.get(`Up Next \u2014 ${ name }`);
@@ -3709,10 +3744,14 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(STARTED_TIMERS.WARNING)) {
                 STARTED_TIMERS.WARNING = true;
 
-                LOG('Heading to stream in', toTimeString(GET_DUE_DATE() | 0), FIRST_IN_LINE_HREF, new Date);
+                let timeRemaining = GET_TIME_REMAINING();
 
-                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(GET_DUE_DATE()) }\t`, {
-                    icon: [...ALL_CHANNELS, STREAMER].find(channel => channel.href === href)?.icon,
+                timeRemaining = timeRemaining < 0? 0: timeRemaining;
+
+                LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
+
+                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(timeRemaining) }\t`, {
+                    icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
                     href: FIRST_IN_LINE_HREF,
 
                     onmouseup: event => {
@@ -3754,9 +3793,9 @@ let Initialize = async(START_OVER = false) => {
                     if(defined(popup?.elements))
                         popup.elements.message.innerHTML
                             = popup.elements.message.innerHTML
-                                .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_DUE_DATE(), '!minute:!second'), '\t'].join(''));
+                                .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_TIME_REMAINING(), '!minute:!second'), '\t'].join(''));
 
-                    if(GET_DUE_DATE() < 1000) {
+                    if(GET_TIME_REMAINING() < 1000) {
                         popup.remove();
                         clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
                     }
@@ -3766,29 +3805,55 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
-            let channel = [...ALL_CHANNELS, STREAMER].find(channel => channel.href == FIRST_IN_LINE_HREF);
+            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF);
 
             if(!defined(channel)) {
-                LOG('Removing dead channel', FIRST_IN_LINE_HREF);
+                LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
 
-                update();
-
-                let { pathname } = parseURL(FIRST_IN_LINE_HREF),
+                let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
                     channelID = UUID.from(pathname).value;
 
-                ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined);
-                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                let name = pathname.slice(1).toLowerCase();
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                new Search(name)
+                    .then(({ data = [] }) => {
+                        let found;
 
-                return REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                        for(let channel of data)
+                            if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)){
+                                let restored = ({
+                                    from: 'SEARCH',
+                                    href,
+                                    icon: channel.thumbnail_url,
+                                    live: channel.is_live,
+                                    name: channel.display_name,
+                                });
+
+                                ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                                ALL_FIRST_IN_LINE_JOBS[index] = restored;
+                            }
+
+                        if(found)
+                            return true;
+                        throw `Unable to restore "${ name }"`;
+                    })
+                    .catch(error => {
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined);
+                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+
+                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+
+                        WARN(error, killed);
+                    });
             }
 
             // The timer is paused
             if(FIRST_IN_LINE_PAUSED)
                 return FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
             // Don't act until 1sec is left
-            if(GET_DUE_DATE() > 1000)
+            if(GET_TIME_REMAINING() > 1000)
                 return;
 
             /* After above is `false` */
@@ -3812,7 +3877,7 @@ let Initialize = async(START_OVER = false) => {
         );
     }
 
-    function GET_DUE_DATE() {
+    function GET_TIME_REMAINING() {
         let now = (+new Date),
             due = FIRST_IN_LINE_DUE_DATE;
 
@@ -3864,7 +3929,7 @@ let Initialize = async(START_OVER = false) => {
                                 // Boost is enabled
                                 FIRST_IN_LINE_BOOST?
                                     // Boost is enabled
-                                    Math.min(GET_DUE_DATE(), fiveMin):
+                                    Math.min(GET_TIME_REMAINING(), fiveMin):
                                 // Boost is disabled
                                 FIRST_IN_LINE_WAIT_TIME * oneMin
                             )
@@ -3924,7 +3989,7 @@ let Initialize = async(START_OVER = false) => {
                 if(FIRST_IN_LINE_BOOST) {
                     let fiveMin = 300_000;
 
-                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_DUE_DATE(), fiveMin));
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_TIME_REMAINING(), fiveMin));
 
                     setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)), 5_000);
 
@@ -3972,6 +4037,32 @@ let Initialize = async(START_OVER = false) => {
                     let { href } = streamer;
 
                     LOG('Adding to Up Next:', { href, streamer });
+
+                    if(!defined(streamer?.icon)) {
+                        let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
+
+                        new Search(name)
+                            .then(({ data = [] }) => {
+                                let found;
+
+                                for(let channel of data)
+                                    if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
+                                        streamer = ({
+                                            from: 'SEARCH',
+                                            href,
+                                            icon: channel.thumbnail_url,
+                                            live: channel.is_live,
+                                            name: channel.display_name,
+                                        });
+
+                                        ALL_CHANNELS = [...ALL_CHANNELS, streamer];
+                                    }
+
+                                if(found)
+                                    return true;
+                                throw `Unable to find "${ name }"`;
+                            });
+                    }
 
                     // Jobs are unknown. Restart timer
                     if(ALL_FIRST_IN_LINE_JOBS.length < 1)
@@ -4022,7 +4113,7 @@ let Initialize = async(START_OVER = false) => {
                     // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                     // LOG('Moved', { oldIndex, newIndex, moved });
 
-                    let channel = [...ALL_CHANNELS, STREAMER].find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
+                    let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
 
                     if(!defined(channel))
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
@@ -4048,16 +4139,10 @@ let Initialize = async(START_OVER = false) => {
                 FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
                     for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
-                            channel = [...ALL_CHANNELS, STREAMER].find(channel => parseURL(channel.href).href === href);
+                            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
-                        if(!defined(href) || !defined(channel)) {
-                            ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS });
-
-                            ++fails;
-
+                        if(!defined(href) || !defined(channel))
                             continue;
-                        }
 
                         let { live, name } = channel;
 
@@ -4093,7 +4178,7 @@ let Initialize = async(START_OVER = false) => {
                                 name,
                                 live,
                                 index,
-                                time: (index < 1? GET_DUE_DATE(): FIRST_IN_LINE_WAIT_TIME * 60_000),
+                                time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
 
                                 style: (live? '': 'opacity: 0.3!important'),
                             },
@@ -4107,8 +4192,10 @@ let Initialize = async(START_OVER = false) => {
                                     if(FIRST_IN_LINE_PAUSED)
                                         return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000) /* First in Line is paused */;
 
-                                    let channel = ([...ALL_CHANNELS, STREAMER].find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                                    let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                         { name, live } = channel;
+
+                                    live ||= SEARCH_CACHE.get(name)?.live;
 
                                     let time = parseInt(container.getAttribute('time')),
                                         intervalID = parseInt(container.getAttribute('animationID')),
@@ -4161,7 +4248,7 @@ let Initialize = async(START_OVER = false) => {
                             ?? [];
                     }
 
-                    FIRST_IN_LINE_BALLOON.counter.setAttribute('length', [...new Set([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF])].filter(defined).length);
+                    FIRST_IN_LINE_BALLOON.counter.setAttribute('length', $(`[up-next--body] [time]`, true).length);
                 }, 1000);
 
             STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
@@ -4252,7 +4339,7 @@ let Initialize = async(START_OVER = false) => {
             AddBalloon: {
                 update();
 
-                let channel = [...ALL_CHANNELS, STREAMER].find(channel => parseURL(channel.href).href === href);
+                let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href);
 
                 if(!defined(channel))
@@ -4293,7 +4380,7 @@ let Initialize = async(START_OVER = false) => {
                         name,
                         live,
                         index,
-                        time: (index < 1? GET_DUE_DATE(): FIRST_IN_LINE_WAIT_TIME * 60_000),
+                        time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
 
                         style: (live? '': 'opacity: 0.3!important'),
                     },
@@ -4307,8 +4394,10 @@ let Initialize = async(START_OVER = false) => {
                             if(FIRST_IN_LINE_PAUSED)
                                 return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000) /* First in Line is paused */;
 
-                            let channel = ([...ALL_CHANNELS, STREAMER].find(channel => channel.name == container.getAttribute('name')) ?? {}),
+                            let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                 { name, live } = channel;
+
+                            live ||= SEARCH_CACHE.get(name)?.live;
 
                             let time = parseInt(container.getAttribute('time')),
                                 intervalID = parseInt(container.getAttribute('animationID')),
@@ -4432,22 +4521,61 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                channel = [...ALL_CHANNELS, STREAMER].filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+                first = ALL_FIRST_IN_LINE_JOBS[0] == STREAMER.href,
+                channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
-            if(!defined(channel)) {
+            if(!defined(channel) && !first) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
-                    [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                    dead = ALL_FIRST_IN_LINE_JOBS[index];
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                LOG('Restoring dead channel (initializer)...', dead);
 
-                WARN(`The First in Line job for "${ channel?.name ?? killed }" no longer exists`, killed);
+                let { pathname } = parseURL(dead),
+                    channelID = UUID.from(pathname).value;
+
+                let name = pathname.slice(1).toLowerCase();
+
+                new Search(name)
+                    .then(({ data = [] }) => {
+                        let found;
+
+                        for(let channel of data)
+                            if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
+                                let restored = ({
+                                    from: 'SEARCH',
+                                    href,
+                                    icon: channel.thumbnail_url,
+                                    live: channel.is_live,
+                                    name: channel.display_name,
+                                });
+
+                                ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                                ALL_FIRST_IN_LINE_JOBS[index] = restored;
+                            }
+
+                        if(found)
+                            return true;
+                        throw `Unable to restore "${ name }"`;
+                    })
+                    .catch(error => {
+                        let [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+
+                        WARN(error, killed);
+                    });
 
                 break __FirstInLine__;
-            } else {
+            } else if(!first) {
                 Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
 
                 WARN('Forcing queue update for', href);
                 REDO_FIRST_IN_LINE_QUEUE(href);
+            } else if(first) {
+                let [popped] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                WARN('Removed duplicate job', popped);
             }
         }
     }
@@ -5570,7 +5698,7 @@ let Initialize = async(START_OVER = false) => {
         if([STREAMER?.name, STREAM_PREVIEW?.name].map(name => name?.toLowerCase()).contains(name))
             return JUDGE__STOP_WATCH('stream_preview');
 
-        let { top, left, height, width } = getOffset(richTooltip),
+        let { top, left, bottom, right, height, width } = getOffset(richTooltip),
             [body, video] = $('body, video', true).map(getOffset);
 
         STREAM_PREVIEW?.element?.remove();
@@ -5584,11 +5712,11 @@ let Initialize = async(START_OVER = false) => {
             element:
                 furnish('div.tt-stream-preview.invisible', {
                         style: (
-                            (top < body.height * (0.7 / scale))?
+                            (top < body.height / 2)?
                                 // Below tooltip
-                                `top: calc(${ top + height }px + (2rem * ${ scale }));`:
+                                `--below: tooltip; top: calc(${ bottom + height }px);`:
                             // Above tooltip
-                            `top: calc(${ top - height }px - (14rem * ${ scale }));`
+                            `--above: tooltip; top: calc(${ top - height }px - (15rem * ${ scale }));`
                         ) + `left: calc(${ video.left }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
                     },
                     furnish('div.tt-stream-preview--poster', {
