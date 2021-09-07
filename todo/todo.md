@@ -34,6 +34,9 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.8](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.8)
+- Added the Up Next - One Instance option
+
 > [4.7](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.7)
 - Added job reconstruction logic
     + Should be able to re-add non-followed channels

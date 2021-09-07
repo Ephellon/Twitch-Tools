@@ -67,6 +67,10 @@
             "Ir a todas las transmisiones automáticamente después"
         ],
 
+	"up-next:extras": [
+		"Solo la primera pestaña para cargar", "Up Next", "puede usarla"
+	],
+
     "auto-follow": [
         "Seguimiento Automático",
         "Mientras mira un canal que no sigue, sígalo automáticamente"

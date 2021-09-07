@@ -123,17 +123,72 @@ Storage.onChanged.addListener(changes => {
             { oldValue, newValue } = change;
 
         switch(key) {
-            case 'chromeUpdateAvailable': {
-                if(newValue === true && installedFromWebstore)
-                    Container.browserAction.setBadgeText({ text: '\u2191' });
-            } break updater;
-
+            case 'chromeUpdateAvailable':
             case 'githubUpdateAvailable': {
-                if(newValue === true && !installedFromWebstore)
+                if(newValue === true)
                     Container.browserAction.setBadgeText({ text: '\u2191' });
             } break updater;
 
             default: continue updater;
         }
     }
+});
+
+// Set the Up Next owner
+let UP_NEXT_OWNER = null;
+
+Runtime.onMessage.addListener((request, sender, respond) => {
+    let refresh,
+        returningData;
+
+    switch(request.action) {
+        case 'CLAIM_UP_NEXT': {
+            refresh = UP_NEXT_OWNER == null;
+
+            Container.tabs.query({
+                url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
+            }, tabs => {
+                if(!defined(tabs))
+                    return;
+
+                // An owner already exists and is active...
+                let owner = null,
+                    ownerAlive = false;
+
+                for(let tab of tabs) {
+                    ownerAlive ||= tab.id == UP_NEXT_OWNER;
+
+                    owner = (ownerAlive? owner ?? tab.id: owner);
+                }
+
+                if(ownerAlive) {
+                    respond({ owner: owner == sender.tab.id });
+                } else {
+                    UP_NEXT_OWNER = sender.tab.id;
+
+                    respond({ owner: true });
+                }
+            });
+        } break;
+
+        case 'WAIVE_UP_NEXT': {
+            refresh = UP_NEXT_OWNER != null;
+
+            UP_NEXT_OWNER = null;
+        } break;
+    }
+
+    if(refresh)
+        Container.tabs.query({
+            url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
+        }, tabs => {
+            if(!defined(tabs))
+                return;
+
+            // Reload Twitch pages
+            for(let tab of tabs)
+                Container.tabs.reload(tab.id);
+        });
+
+    return true;
 });

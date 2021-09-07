@@ -1777,7 +1777,7 @@ try {
             let change = changes[key],
                 { oldValue, newValue } = change;
 
-            let name = key.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ');
+            let name = key.replace(/(^|_)([a-z])/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, ' -');
 
             if(newValue === false) {
 
@@ -2040,7 +2040,7 @@ let // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'view_mode'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next*', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode*', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
@@ -3699,6 +3699,8 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
+    let UP_NEXT_ALLOW_THIS_TAB = true;      // Allow this tab to use Up Next
+
     let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
     // First in Line wait time
@@ -3796,7 +3798,7 @@ let Initialize = async(START_OVER = false) => {
                                 .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_TIME_REMAINING(), '!minute:!second'), '\t'].join(''));
 
                     if(GET_TIME_REMAINING() < 1000) {
-                        popup.remove();
+                        popup?.remove();
                         clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
                     }
                 }, 1000);
@@ -3871,6 +3873,9 @@ let Initialize = async(START_OVER = false) => {
     }
 
     function NEW_DUE_DATE(offset) {
+        if(!UP_NEXT_ALLOW_THIS_TAB)
+            return (+new Date) + 24 * 3_600_000;
+
         return (+new Date) + (null
             ?? offset
             ?? FIRST_IN_LINE_WAIT_TIME * 60_000
@@ -3878,11 +3883,23 @@ let Initialize = async(START_OVER = false) => {
     }
 
     function GET_TIME_REMAINING() {
+        if(!UP_NEXT_ALLOW_THIS_TAB)
+            return 24 * 3_600_000;
+
         let now = (+new Date),
             due = FIRST_IN_LINE_DUE_DATE;
 
         return (due - now);
     }
+
+    if(Settings.up_next__one_instance)
+        Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => {
+            UP_NEXT_ALLOW_THIS_TAB = owner;
+
+            LOG('This tab is the Up Next owner', owner);
+        });
+    else
+        Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
 
     let FIRST_IN_LINE_BALLOON__INSURANCE =
     setInterval(() => {
@@ -4013,11 +4030,15 @@ let Initialize = async(START_OVER = false) => {
 
             FIRST_IN_LINE_BALLOON.body.ondragover ??= event => {
                 event.preventDefault();
-                // event.dataTransfer.dropEffect = 'move';
+
+                event.dataTransfer.dropEffect = (UP_NEXT_ALLOW_THIS_TAB? 'move': 'none');
             };
 
             FIRST_IN_LINE_BALLOON.body.ondrop ??= async event => {
                 event.preventDefault();
+
+                if(!UP_NEXT_ALLOW_THIS_TAB)
+                    return;
 
                 let streamer,
                     // Did the event originate from within the ballon?
@@ -4137,6 +4158,9 @@ let Initialize = async(START_OVER = false) => {
                 FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
             else
                 FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
+                    // Set the opacity...
+                    FIRST_IN_LINE_BALLOON.container.setAttribute('style', `opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.5) }!important`);
+
                     for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
@@ -4222,7 +4246,7 @@ let Initialize = async(START_OVER = false) => {
                                             return clearInterval(intervalID);
                                         }, 5000);
 
-                                    container.setAttribute('time', FIRST_IN_LINE_TIMER = time - (index > 0? 0: 1000));
+                                    container.setAttribute('time', FIRST_IN_LINE_TIMER = GET_TIME_REMAINING() - (index > 0? 0: 1000));
 
                                     if(container.getAttribute('index') != index)
                                         container.setAttribute('index', index);
@@ -4327,11 +4351,13 @@ let Initialize = async(START_OVER = false) => {
             } else {
                 LOG('Pushing to First in Line (no contest):', href, new Date);
 
-                // Add the new job (and prevent duplicates)
-                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
+                // Add the new job...
+                ALL_FIRST_IN_LINE_JOBS = [href];
+                FIRST_IN_LINE_HREF = href;
+                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
 
                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
             }
@@ -4423,7 +4449,7 @@ let Initialize = async(START_OVER = false) => {
                                     return clearInterval(intervalID);
                                 }, 5000);
 
-                            container.setAttribute('time', FIRST_IN_LINE_TIMER = time - (index > 0? 0: 1000));
+                            container.setAttribute('time', FIRST_IN_LINE_TIMER = GET_TIME_REMAINING() - (index > 0? 0: 1000));
 
                             if(container.getAttribute('index') != index)
                                 container.setAttribute('index', index);
@@ -4510,8 +4536,6 @@ let Initialize = async(START_OVER = false) => {
                 return;
 
             REMARK('Resetting timer. Location change detected:', { from, to });
-
-            let watchTime = parseFloat($('#tt-watch-time')?.getAttribute('time') ?? 0);
 
             // If the user clicks on a channel, reset the timer
             if(!ReservedTwitchPathnames.test(to))
@@ -6588,6 +6612,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             .tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
             .tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
 
+            /* Up Next */
             [up-next--body] {
                 background-color: var(--color-${ accent });
                 border-radius: 0.5rem;
@@ -6637,6 +6662,11 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             /* Rich Tooltips */
             [role] [data-popper-escaped] [role] {
                 width: max-content;
+            }
+
+            /* Bits */
+            [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
+                max-width: 45rem;
             }
 
             /* Stream Preview */

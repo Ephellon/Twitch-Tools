@@ -1080,9 +1080,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).contains(true)
-                );
+                ),
+                    censoring = parseBool(element.getAttribute('tt-hidden-message'));
 
-                if(!censor)
+                if(censoring || !censor)
                     continue censoring;
 
                 let hidden = element.getAttribute('tt-hidden-message') === 'true';
@@ -1090,7 +1091,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(hidden || mentions.contains(USERNAME))
                     return;
 
-                LOG(`Censoring message because the ${ reason } matches`, line);
+                // LOG(`Censoring message because the ${ reason } matches`, line);
 
                 element.setAttribute('tt-hidden-message', censor);
             }
@@ -1241,15 +1242,16 @@ let Chat__Initialize = async(START_OVER = false) => {
                     || (['coin'].contains(subject) && parseBool(Settings.filter_messages__bullets_coin)? reason = 'channel points': false)
                     || (['raid'].contains(subject) && parseBool(Settings.filter_messages__bullets_raid)? reason = 'raid(s)': false)
                     || (['dues', 'gift', 'keep'].contains(subject) && parseBool(Settings.filter_messages__bullets_subs)? reason = 'subscription(s)': false)
-                );
+                ),
+                    censoring = parseBool(element.getAttribute('tt-hidden-bulletin'));
 
-                if(!censor)
+                if(censoring || !censor)
                     continue censoring;
 
                 if(mentions.contains(USERNAME))
                     return;
 
-                LOG(`Censoring bulletin because its subject is "${ reason }"`, bullet);
+                // LOG(`Censoring bulletin because its subject is "${ reason }"`, bullet);
 
                 element.setAttribute('tt-hidden-bulletin', censor);
             }

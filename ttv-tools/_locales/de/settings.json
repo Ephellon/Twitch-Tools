@@ -67,6 +67,10 @@
 			"Ga automatisch naar alle uitzendingen na"
 		],
 
+	"up-next:extras": [
+		"Nur der erste Tab, der", "Up Next", "geladen wird, darf ihn verwenden"
+	],
+
 	"auto-follow": [
 		"Automatisch volgen",
 		"Terwijl u kijkt naar een kanaal dat u niet volgt, volgt u het automatisch"

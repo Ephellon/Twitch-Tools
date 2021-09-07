@@ -71,6 +71,7 @@ let // These are option names. Anything else will be removed
             'first_in_line_plus_time_minutes',
         'first_in_line_all',
             'first_in_line_all_time_minutes',
+        'up_next__one_instance',
         // Prevent Raiding
         'prevent_raiding',
         // Prevent Hosting

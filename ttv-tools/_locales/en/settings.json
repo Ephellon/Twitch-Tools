@@ -67,6 +67,10 @@
     		"Go to all streams automatically after"
     	],
 
+	"up-next:extras": [
+		"Only the first tab to load", "Up Next", "is allowed to use it"
+	],
+
 	"auto-follow": [
 		"Follows",
 		"While watching a channel that isn't followed, follow it automatically"

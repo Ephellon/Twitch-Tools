@@ -70,6 +70,10 @@
     		"Ir automaticamente a todas as transmissões após"
     	],
 
+	"up-next:extras": [
+		"Apenas a primeira guia a carregar o", "Up Next", "tem permissão para usá-lo"
+	],
+
 	"auto-follow": [
 		"Rastreamento automático",
 		"Enquanto observa um canal que não segue, siga-o automaticamente"
