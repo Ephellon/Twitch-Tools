@@ -4352,7 +4352,7 @@ let Initialize = async(START_OVER = false) => {
                 LOG('Pushing to First in Line (no contest):', href, new Date);
 
                 // Add the new job...
-                ALL_FIRST_IN_LINE_JOBS = [href];
+                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
                 FIRST_IN_LINE_HREF = href;
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
@@ -4724,6 +4724,16 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
+    let STARTED_WATCHING = (+new Date);
+
+    LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
+        STARTED_WATCHING -= WatchTime;
+    });
+
+    function GET_WATCH_TIME() {
+        return (+new Date) - STARTED_WATCHING;
+    }
+
     Handlers.auto_follow_raids = () => {
         START__STOP_WATCH('auto_follow_raids');
 
@@ -4756,16 +4766,10 @@ let Initialize = async(START_OVER = false) => {
             mins = parseInt(Settings.auto_follow_time_minutes) | 0;
 
         if(!like) {
-            LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
-                let watch_time = $('#tt-watch-time'),
-                    secs = parseInt(watch_time?.getAttribute('time')) | 0;
+            let secs = GET_WATCH_TIME() / 1000;
 
-                if(!defined(watch_time))
-                    return;
-
-                if(secs > (mins * 60))
-                    follow();
-            });
+            if(secs > (mins * 60))
+                follow();
 
             AUTO_FOLLOW_EVENT ??= setTimeout(follow, mins * 60_000);
         }
@@ -5887,28 +5891,23 @@ let Initialize = async(START_OVER = false) => {
         extra({ parent, container, live_time, placement });
 
         LoadCache(['WatchTime', 'Watching'], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME }) => {
-            if(NORMALIZED_PATHNAME == Watching)
-                $('#tt-watch-time').setAttribute('time', WatchTime);
+            if(NORMALIZED_PATHNAME != Watching)
+                STARTED_WATCHING = (+new Date);
 
             WATCH_TIME_INTERVAL = setInterval(() => {
                 let watch_time = $('#tt-watch-time'),
-                    time = parseInt(watch_time?.getAttribute('time')) | 0;
+                    time = GET_WATCH_TIME();
 
                 if(!defined(watch_time)) {
                     clearInterval(WATCH_TIME_INTERVAL);
                     return RestartJob('watch_time_placement');
                 }
 
-                // Time got set incorrectly
-                if(parseTime($('.watch-time')?.innerText) > parseTime($('.live-time')?.innerText))
-                    time = 0;
-
-                watch_time.setAttribute('time', ++time);
-
-                watch_time.innerHTML = toTimeString(time * 1000, 'clock');
+                watch_time.setAttribute('time', time);
+                watch_time.innerHTML = toTimeString(time, 'clock');
 
                 if(parseBool(Settings.show_stats))
-                    WATCH_TIME_TOOLTIP.innerHTML = comify(time) + 's';
+                    WATCH_TIME_TOOLTIP.innerHTML = comify(parseInt(time / 1000)) + 's';
 
                 SaveCache({ WatchTime: time });
             }, 1000);

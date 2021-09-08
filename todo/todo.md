@@ -34,6 +34,11 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.9)
+- Adjusted Watch Time clock logic
+- Fixed Up Next - One Instance wording
+- Adjusted First in Line logic
+
 > [4.8](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.8)
 - Added the Up Next - One Instance option
 
