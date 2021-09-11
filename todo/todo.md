@@ -34,6 +34,11 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.10](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.10)
+- Fixed First in Line Boost logic (state saving)
+- Fixed First in Line timing logic
+- Fixed Stream Preview returning the volume to its initial value
+
 > [4.9](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.9)
 - Adjusted Watch Time clock logic
 - Fixed Up Next - One Instance wording

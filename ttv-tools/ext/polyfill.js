@@ -327,6 +327,8 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
         default: break;
     }
 
+    canvas?.remove();
+
     return data;
 };
 

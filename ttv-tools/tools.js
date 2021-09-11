@@ -431,7 +431,7 @@ class Balloon {
                                                                         }
                                                                     },
                                                                 },
-                                                                f('div.presistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                                                f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                                                     // Avatar
                                                                     f('div', {},
                                                                         f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
@@ -618,7 +618,7 @@ class Balloon {
                                                 }
                                             },
                                         },
-                                        f('div.presistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                        f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                             // Avatar
                                             f('div', {},
                                                 f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
@@ -1018,7 +1018,11 @@ class Search {
 
                 return json;
             })
-            .catch(WARN);
+            .catch(error => {
+                WARN(error);
+
+                return {};
+            });
     }
 }
 
@@ -3798,7 +3802,7 @@ let Initialize = async(START_OVER = false) => {
                                 .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_TIME_REMAINING(), '!minute:!second'), '\t'].join(''));
 
                     if(GET_TIME_REMAINING() < 1000) {
-                        popup?.remove();
+                        popup?.remove?.();
                         clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
                     }
                 }, 1000);
@@ -4139,6 +4143,8 @@ let Initialize = async(START_OVER = false) => {
                     if(!defined(channel))
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
 
+                    // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
+                        // To create a new due date, `NEW_DUE_DATE(time)` -> `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
                         let time = FIRST_IN_LINE_TIMER = parseInt($(`[name="${ channel.name }"i]`).getAttribute('time'));
 
@@ -4246,7 +4252,7 @@ let Initialize = async(START_OVER = false) => {
                                             return clearInterval(intervalID);
                                         }, 5000);
 
-                                    container.setAttribute('time', FIRST_IN_LINE_TIMER = GET_TIME_REMAINING() - (index > 0? 0: 1000));
+                                    container.setAttribute('time', GET_TIME_REMAINING() - (index > 0? 0: 1000));
 
                                     if(container.getAttribute('index') != index)
                                         container.setAttribute('index', index);
@@ -4420,6 +4426,8 @@ let Initialize = async(START_OVER = false) => {
                             if(FIRST_IN_LINE_PAUSED)
                                 return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000) /* First in Line is paused */;
 
+                            SaveCache({ FIRST_IN_LINE_BOOST });
+
                             let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                 { name, live } = channel;
 
@@ -4449,7 +4457,7 @@ let Initialize = async(START_OVER = false) => {
                                     return clearInterval(intervalID);
                                 }, 5000);
 
-                            container.setAttribute('time', FIRST_IN_LINE_TIMER = GET_TIME_REMAINING() - (index > 0? 0: 1000));
+                            container.setAttribute('time', GET_TIME_REMAINING() - (index > 0? 0: 1000));
 
                             if(container.getAttribute('index') != index)
                                 container.setAttribute('index', index);
@@ -4547,6 +4555,8 @@ let Initialize = async(START_OVER = false) => {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
                 first = ALL_FIRST_IN_LINE_JOBS[0] == STREAMER.href,
                 channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
+
+            FIRST_IN_LINE_HREF = href;
 
             if(!defined(channel) && !first) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -5702,6 +5712,8 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(richTooltip)) {
             if(parseBool(Settings.stream_preview_sound) && MAINTAIN_VOLUME_CONTROL)
                 SetVolume(parseBool(Settings.away_mode__volume_control) && AwayModeStatus? Settings.away_mode__volume: InitialVolume ?? 1);
+            else if(parseBool(Settings.stream_preview_sound))
+                SetVolume(InitialVolume);
 
             return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
         }
