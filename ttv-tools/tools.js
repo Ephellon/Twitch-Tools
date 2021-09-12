@@ -4569,7 +4569,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let name = pathname.slice(1).toLowerCase();
 
-                new Search(name)
+                (new Search(name) ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`)))
                     .then(({ data = [] }) => {
                         let found;
 

@@ -34,6 +34,9 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.10.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.10.1)
+- Fixed issue where the channel search would fail the extension altogether
+
 > [4.10](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.10)
 - Fixed First in Line Boost logic (state saving)
 - Fixed First in Line timing logic
