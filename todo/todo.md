@@ -19,6 +19,9 @@
     * Maybe the user wants to create a repeating queue
 7. Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
+8. Remove more language dependencies
+    * `parseCoin` is language dependent - it only reads "SI" units
+    * All bulletin filters are language dependent - they only recognize English
 
 - Make initial loading actions less intrusive
     - [x] "Prime Loot" open/close action
@@ -33,6 +36,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+
+> [4.11](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11)
+- Removed some language dependencies
 
 > [4.10.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.10.1)
 - Fixed issue where the channel search would fail the extension altogether

@@ -1542,24 +1542,29 @@ function SetVolume(volume = 0.5) {
 // Get the view mode
     // GetViewMode() -> string={ "fullscreen" | "fullwidth" | "theatre" | "default" }
 function GetViewMode() {
-    let mode = 'default';
+    let mode = 'default',
+        theatre = false,
+        fullwidth = false;
 
-    if(false
-        || defined($(`button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`))
+    if(theatre
+        ||= /theatre/i.test([...$(`[data-test-selector*="video-container"i]`).classList].join(' '))
     )
         mode = 'theatre';
 
-    if(false
-        || defined($(`button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`))
+    if(fullwidth
+        ||= defined($(`[data-a-target*="right-column"i][data-a-target*="chat-bar"i][data-a-target*="collapsed"i] button[data-a-target*="collapse"i]`))
     )
         mode = 'fullwidth';
 
+    let container = $(`button[data-a-target*="fullscreen"i]`).closest('div'),
+        classes = ['', ...container.classList].join('.');
+
     if(false
         || (true
-                && defined($(`button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`))
-                && defined($(`button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`))
+                && theatre
+                && fullwidth
             )
-        || defined($(`button[data-a-target*="fullscreen"i][aria-label*="exit"i]`))
+        || $(classes, true, container.parentElement).length <= 3
     )
         mode = 'fullscreen';
 
@@ -1568,36 +1573,34 @@ function GetViewMode() {
 
 // Change the view mode
     // SetViewMode(mode:string={ "fullscreen" | "fullwidth" | "theatre" | "default" }) -> undefined
-function SetViewMode(mode) {
-    let buttons = [];
+function SetViewMode(mode = 'default') {
+    let buttons = [],
+        toggles = {
+            theatre: {
+                off: `[data-test-selector*="video-container"i]:not([class*="theatre"i]) button[data-a-target*="theatre-mode"i]`,
+                on: `[data-test-selector*="video-container"i][class*="theatre"i] button[data-a-target*="theatre-mode"i]`,
+            },
+            chat: {
+                off: `[data-a-target*="right-column"i][data-a-target*="chat-bar"i]:not([data-a-target*="collapsed"i]) button[data-a-target*="collapse"i]`,
+                on: `[data-a-target*="right-column"i][data-a-target*="chat-bar"i][data-a-target*="collapsed"i] button[data-a-target*="collapse"i]`,
+            },
+        };
 
     switch(mode) {
         case 'fullscreen': {
-            buttons.push(
-                `button[data-a-target*="theatre-mode"i]:not([aria-label*="exit"i])`,
-                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
-            );
+            buttons.push(toggles.theatre.off, toggles.chat.off);
         } break;
 
         case 'fullwidth': {
-            buttons.push(
-                `button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`,
-                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="collapse"i]`
-            );
+            buttons.push(toggles.theatre.on, toggles.chat.off);
         } break;
 
         case 'theatre': {
-            buttons.push(
-                `button[data-a-target*="theatre-mode"i]:not([aria-label*="exit"i])`,
-                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
-            );
+            buttons.push(toggles.theatre.off, toggles.chat.on);
         } break;
 
         case 'default': {
-            buttons.push(
-                `button[data-a-target*="theatre-mode"i][aria-label*="exit"i]`,
-                `button[data-a-target*="right-column"i][data-a-target*="collapse"i][aria-label*="expand"i]`
-            );
+            buttons.push(toggles.theatre.on, toggles.chat.on);
         } break;
     }
 
@@ -1969,7 +1972,7 @@ async function update() {
     top.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`#sideNav .side-nav-section:nth-child(1) a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'STREAMERS',
@@ -1980,7 +1983,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section:nth-child(1) [href$="${ pathname }"]`);
 
                         if(!defined(parent))
                             return false;
@@ -2595,7 +2598,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label*="followed"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section:nth-child(1) a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -2697,7 +2700,7 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`#sideNav .side-nav-section[aria-label*="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`#sideNav .side-nav-section:nth-child(1) a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'STREAMERS',
@@ -2708,7 +2711,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label*="followed"i] [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section:nth-child(1) [href$="${ pathname }"]`);
 
                             if(!defined(parent))
                                 return false;
@@ -4631,7 +4634,7 @@ let Initialize = async(START_OVER = false) => {
         BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
 
-    Handlers.first_in_line_plus = () => {
+    Handlers.first_in_line_plus = () => { return;
         START__STOP_WATCH('first_in_line_plus');
 
         let streamers = [...new Set([...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name))].sort();
@@ -4652,7 +4655,7 @@ let Initialize = async(START_OVER = false) => {
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
-        } else if(!defined($('[role="group"i][aria-label*="followed"i] a[class*="side-nav-card"i]'))) {
+        } else if(!defined($('#sideNav .side-nav-section:nth-child(1) a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -6205,7 +6208,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], [role="group"i][aria-label*="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section:nth-child(1) [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget } = event;
 
@@ -6672,7 +6675,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
             /* Rich Tooltips */
             [role] [data-popper-escaped] [role] {
-                width: max-content;
+                width: fit-content;
             }
 
             /* Bits */
