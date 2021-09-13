@@ -3724,7 +3724,7 @@ let Initialize = async(START_OVER = false) => {
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
     function REDO_FIRST_IN_LINE_QUEUE(url) {
-        if(!defined(url) || FIRST_IN_LINE_HREF === url)
+        if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(unknown).length <= 0))
             return;
 
         url = parseURL(url);
@@ -3750,66 +3750,67 @@ let Initialize = async(START_OVER = false) => {
 
             let existing = Popup.get(`Up Next \u2014 ${ name }`);
 
-            if(!defined(STARTED_TIMERS.WARNING)) {
-                STARTED_TIMERS.WARNING = true;
+            if(defined(STARTED_TIMERS.WARNING))
+                return /* There is already a warning pending */;
 
-                let timeRemaining = GET_TIME_REMAINING();
+            STARTED_TIMERS.WARNING = true;
 
-                timeRemaining = timeRemaining < 0? 0: timeRemaining;
+            let timeRemaining = GET_TIME_REMAINING();
 
-                LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
+            timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
-                let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(timeRemaining) }\t`, {
-                    icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
-                    href: FIRST_IN_LINE_HREF,
+            LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
-                    onmouseup: event => {
-                        let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
-                            uuid = existing?.getAttribute('uuid');
+            let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(timeRemaining) }\t`, {
+                icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
+                href: FIRST_IN_LINE_HREF,
 
-                        Popup.remove(uuid);
+                onmouseup: event => {
+                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
+                        uuid = existing?.getAttribute('uuid');
 
-                        SaveCache({ FIRST_IN_LINE_DUE_DATE: NEW_DUE_DATE() });
-                    },
+                    Popup.remove(uuid);
 
-                    Hide: event => {
-                        let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
-                            uuid = existing?.getAttribute('uuid');
+                    SaveCache({ FIRST_IN_LINE_DUE_DATE: NEW_DUE_DATE() });
+                },
 
-                        Popup.remove(uuid);
-                    },
+                Hide: event => {
+                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
+                        uuid = existing?.getAttribute('uuid');
 
-                    Cancel: event => {
-                        let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
-                            uuid = existing?.getAttribute('uuid'),
-                            removal = $('button[connected-to][data-test-selector$="delete"i]'),
-                            [thisJob] = ALL_FIRST_IN_LINE_JOBS;
+                    Popup.remove(uuid);
+                },
 
-                        Popup.remove(uuid);
+                Cancel: event => {
+                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
+                        uuid = existing?.getAttribute('uuid'),
+                        removal = $('button[connected-to][data-test-selector$="delete"i]'),
+                        [thisJob] = ALL_FIRST_IN_LINE_JOBS;
 
-                        LOG('Canceled First in Line event', thisJob);
+                    Popup.remove(uuid);
 
-                        removal?.click?.();
+                    LOG('Canceled First in Line event', thisJob);
 
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-                    },
-                });
+                    removal?.click?.();
 
-                FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
-                    if(FIRST_IN_LINE_PAUSED)
-                        return /* First in Line is paused */;
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                },
+            });
 
-                    if(defined(popup?.elements))
-                        popup.elements.message.innerHTML
-                            = popup.elements.message.innerHTML
-                                .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_TIME_REMAINING(), '!minute:!second'), '\t'].join(''));
+            FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
+                if(FIRST_IN_LINE_PAUSED)
+                    return /* First in Line is paused */;
 
-                    if(GET_TIME_REMAINING() < 1000) {
-                        popup?.remove?.();
-                        clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
-                    }
-                }, 1000);
-            }
+                if(defined(popup?.elements))
+                    popup.elements.message.innerHTML
+                        = popup.elements.message.innerHTML
+                            .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_TIME_REMAINING(), '!minute:!second'), '\t'].join(''));
+
+                if(GET_TIME_REMAINING() < 1000) {
+                    popup?.remove?.();
+                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
+                }
+            }, 1000);
         }, 1000);
 
         FIRST_IN_LINE_JOB = setInterval(() => {
@@ -3860,7 +3861,7 @@ let Initialize = async(START_OVER = false) => {
 
             // The timer is paused
             if(FIRST_IN_LINE_PAUSED)
-                return FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+                return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(GET_TIME_REMAINING() + 1000) });
             // Don't act until 1sec is left
             if(GET_TIME_REMAINING() > 1000)
                 return;
@@ -4000,7 +4001,7 @@ let Initialize = async(START_OVER = false) => {
                 [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
-            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, `Drop a channel in the ${ colorName } area to queue it`);
+            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the ${ colorName } area to queue it`: `Up Next is disabled for this tab`));
 
             // Load cache
             LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
@@ -4008,7 +4009,7 @@ let Initialize = async(START_OVER = false) => {
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
                 FIRST_IN_LINE_DUE_DATE = cache.FIRST_IN_LINE_DUE_DATE ?? NEW_DUE_DATE();
 
-                REMARK(`Up Next Boost is ${ ['dis','en'][+FIRST_IN_LINE_BOOST | 0] }abled`);
+                REMARK(`Up Next Boost is ${ ['dis','en'][FIRST_IN_LINE_BOOST | 0] }abled`);
 
                 if(FIRST_IN_LINE_BOOST) {
                     let fiveMin = 300_000;
@@ -4022,10 +4023,10 @@ let Initialize = async(START_OVER = false) => {
 
                 // Up Next Boost
                 first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
-                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+FIRST_IN_LINE_BOOST | 0] }`);
-                first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][+FIRST_IN_LINE_BOOST | 0] } Boost`);
+                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][FIRST_IN_LINE_BOOST | 0] }`);
+                first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
 
-                $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +FIRST_IN_LINE_BOOST | 0 }px solid var(--color-yellow)`);
+                $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ (FIRST_IN_LINE_BOOST || !UP_NEXT_ALLOW_THIS_TAB) | 0 }px solid var(--color-${ ['yellow', 'red'][!UP_NEXT_ALLOW_THIS_TAB | 0] })`);
 
                 // Pause
                 first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
@@ -4033,7 +4034,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(defined(FIRST_IN_LINE_BALLOON)) {
-            // FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', 'Drag a channel here to queue it');
+            // FIRST_IN_LINE_BALLOON.header.closest('div').setAttribute('title', (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel here to queue it`: `Up Next is disabled for this tab`));
 
             FIRST_IN_LINE_BALLOON.body.ondragover ??= event => {
                 event.preventDefault();
@@ -4168,9 +4169,9 @@ let Initialize = async(START_OVER = false) => {
             else
                 FIRST_IN_LINE_LISTING_JOB = setInterval(() => {
                     // Set the opacity...
-                    FIRST_IN_LINE_BALLOON.container.setAttribute('style', `opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.5) }!important`);
+                    // FIRST_IN_LINE_BALLOON.container.setAttribute('style', `opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.75) }!important`);
 
-                    for(let index = 0, fails = 0; index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
+                    for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
@@ -4230,7 +4231,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     live ||= SEARCH_CACHE.get(name)?.live;
 
-                                    let time = parseInt(container.getAttribute('time')),
+                                    let time = GET_TIME_REMAINING(),
                                         intervalID = parseInt(container.getAttribute('animationID')),
                                         index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
@@ -4249,9 +4250,10 @@ let Initialize = async(START_OVER = false) => {
 
                                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                                            SaveCache({ FIRST_IN_LINE_DUE_DATE });
+                                            SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
+                                                open($('a', false, container)?.href ?? '?', '_self');
+                                            });
 
-                                            open($('a', false, container)?.href ?? '?', '_self');
                                             return clearInterval(intervalID);
                                         }, 5000);
 
@@ -4312,7 +4314,11 @@ let Initialize = async(START_OVER = false) => {
         let notifications = [...$('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true), ActionableNotification].filter(defined);
 
         // The Up Next empty status
-        $('[up-next--body]')?.setAttribute?.('empty', !ALL_FIRST_IN_LINE_JOBS.length);
+        $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
+        $('[up-next--body]')?.setAttribute?.('allowed', !!UP_NEXT_ALLOW_THIS_TAB);
+
+        if(!UP_NEXT_ALLOW_THIS_TAB)
+            return;
 
         for(let notification of notifications) {
             let action = (
@@ -4423,6 +4429,9 @@ let Initialize = async(START_OVER = false) => {
                     animate: container => {
                         let subheader = $('.tt-balloon-subheader', false, container);
 
+                        if(!UP_NEXT_ALLOW_THIS_TAB)
+                            return -1;
+
                         return setInterval(() => {
                             START__STOP_WATCH('first_in_line__job_watcher');
 
@@ -4436,7 +4445,7 @@ let Initialize = async(START_OVER = false) => {
 
                             live ||= SEARCH_CACHE.get(name)?.live;
 
-                            let time = parseInt(container.getAttribute('time')),
+                            let time = GET_TIME_REMAINING(),
                                 intervalID = parseInt(container.getAttribute('animationID')),
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
@@ -4454,9 +4463,10 @@ let Initialize = async(START_OVER = false) => {
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                                    SaveCache({ FIRST_IN_LINE_DUE_DATE });
+                                    SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
+                                        open($('a', false, container)?.href ?? '?', '_self');
+                                    });
 
-                                    open($('a', false, container)?.href ?? '?', '_self');
                                     return clearInterval(intervalID);
                                 }, 5000);
 
@@ -4572,7 +4582,10 @@ let Initialize = async(START_OVER = false) => {
 
                 let name = pathname.slice(1).toLowerCase();
 
-                (new Search(name) ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`)))
+                (null
+                    ?? new Search(name)
+                    ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
+                )
                     .then(({ data = [] }) => {
                         let found;
 
@@ -6632,11 +6645,21 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                 border-radius: 0.5rem;
                 color: var(--color-hinted-grey-${ compliment });
             }
+
             [up-next--body][empty="true"i] {
                 background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
                 background-repeat: no-repeat;
                 background-size: 35rem;
-                background-position-y: 4.25rem;
+                background-position: bottom left;
+                background-blend-mode: normal;
+            }
+
+            [up-next--body][allowed="false"i] {
+                background-image: url("${ Extension.getURL('256.png') }") !important;
+                background-repeat: repeat !important;
+                background-size: 5rem !important;
+                background-position: center center !important;
+                background-blend-mode: soft-light !important;
             }
 
             [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
@@ -6673,9 +6696,9 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             [tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
             [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
 
-            /* Rich Tooltips */
-            [role] [data-popper-escaped] [role] {
-                width: fit-content;
+            /* Rich tooltips */
+            [role] [data-popper-placement="right-start"i] [role] {
+                width: max-content;
             }
 
             /* Bits */

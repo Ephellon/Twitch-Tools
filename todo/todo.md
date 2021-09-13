@@ -17,6 +17,7 @@
     * Sets all emotes back to their text and displays the image in a tooltip
 6. Add the option to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
+    * Up Next does not currently allow duplicates
 7. Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
 8. Remove more language dependencies
@@ -36,6 +37,12 @@
 ----
 
 # DONE &mdash; Notable Changes
+
+> [4.11.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.1)
+- Fixed rich tooltip v. main menu width styling
+- Adjusted Up Next notification logic
+- Fixed Up Next pausing ability
+- Adjusted Up Next single instance logic
 
 > [4.11](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11)
 - Removed some language dependencies
