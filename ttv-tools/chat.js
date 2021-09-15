@@ -1075,8 +1075,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                            || (!!~emotes.findIndex(glyph => !!~glyph.indexOf(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                            || (badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                            || (emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).contains(true)
@@ -1320,8 +1320,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (!!~badges.findIndex(medal => !!~medal.indexOf(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                            || (!!~emotes.findIndex(glyph => !!~glyph.indexOf(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                            || (badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                            || (emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).contains(true)

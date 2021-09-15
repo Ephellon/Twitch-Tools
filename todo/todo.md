@@ -38,6 +38,10 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.11.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.2)
+- Fixed an edge-case issue where non-URLs would be saved to Up Next
+- Fixed Up Next issue - left unwanted return
+
 > [4.11.1](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.1)
 - Fixed rich tooltip v. main menu width styling
 - Adjusted Up Next notification logic

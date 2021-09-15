@@ -8,27 +8,32 @@
  *                             _/ |
  *                            |__/
  */
-let UserMenuToggleButton = $('[data-a-target="user-menu-toggle"i]'),
-    Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
+let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Messages = new Map(),
     PostOffice = new Map(),
+    UserMenuToggleButton,
     // These won't change (often)
     ACTIVITY,
     USERNAME,
     LANGUAGE,
     THEME,
+    LITERATURE,
     SPECIAL_MODE,
     NORMAL_MODE,
     NORMALIZED_PATHNAME;
 
 // Populate the username field by quickly showing the menu
-if(defined(UserMenuToggleButton)) {
-    UserMenuToggleButton.click();
-    ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText ?? '';
-    USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]').innerText;
-    THEME = top.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
-    UserMenuToggleButton.click();
-}
+awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
+    .then(() => {
+        UserMenuToggleButton.click();
+        ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText ?? '';
+        USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]').innerText;
+        THEME = top.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+
+        $('[data-a-target^="language"i]')?.click();
+        LITERATURE = top.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
+        UserMenuToggleButton.click();
+    });
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
  *       _____      _                  __                      _       _ _ __
@@ -1322,12 +1327,58 @@ function parseCoin(amount = '') {
     let points = 0,
         COIN, UNIT;
 
-    amount = (amount + "").replace(/([\d\.,]+)\s*([kMBT])?/i, ($0, $1, $2, $$, $_) => {
+    amount = (amount + "").replace(/([\d\.,]+)\s*([^\d\.]+)?/i, ($0, $1, $2 = '_', $$, $_) => {
         COIN = $1.replace(/,+/g, '');
         UNIT = ($2 ?? '').toUpperCase();
     });
 
-    for(let index = 0, units = ['', 'K', 'M', 'B', 'T']; index < units.length; index++)
+    function getUnits(lang) {
+        let booklet;
+
+        switch(lang.toLowerCase()) {
+            case 'bg': { booklet = '_ ХИЛ' } break;
+
+            case 'cs':
+            case 'sk': { booklet = '_ TIS' } break;
+
+            case 'da': { booklet = '_ T M' } break;
+
+            case 'el': { booklet = '_ ΧΙΛ' } break;
+
+            case 'fi': { booklet = '_ T' } break;
+
+            case 'hu': { booklet = '_ E' } break;
+
+            case 'ja': { booklet = '_ 万' } break;
+
+            case 'ko': { booklet = '_ 만' } break;
+
+            case 'pl': { booklet = '_ TYS' } break;
+
+            case 'pt': { booklet = '_ MIL' } break;
+
+            case 'ru': { booklet = '_ ТЫС' } break;
+
+            case 'sv': { booklet = '_ TN' } break;
+
+            case 'tr': { booklet = '_ B' } break;
+
+            case 'vi': { booklet = '_ N' } break;
+
+            case 'zh-cn': { booklet = '_ 万' } break;
+
+            case 'zh-tw': { booklet = '_ 萬' } break;
+
+            case 'en':
+            default: {
+                booklet = '_ K M B T';
+            } break;
+        }
+
+        return booklet.split(/\s+/);
+    };
+
+    for(let index = 0, units = getUnits(LITERATURE); index < units.length; index++)
         if(units[index] == UNIT)
             points = parseFloat(COIN) * (1e3 ** index);
 
@@ -1461,7 +1512,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     if(/(auto|high|low|source)/i.test(quality))
         desired = qualities[RegExp.$1];
     else
-        desired = qualities.find(({ label }) => !!~textOf(label).indexOf(quality.toLowerCase())) ?? null;
+        desired = qualities.find(({ label }) => textOf(label).contains(quality.toLowerCase())) ?? null;
 
     if(!defined(desired))
         /* The desired quality does not exist */
@@ -1623,6 +1674,25 @@ async function GetActivity() {
         }
 
         return ACTIVITY;
+    });
+}
+
+// Get the current page's language
+    // GetLanguage() -> Promise <String | null>
+async function GetLanguage() {
+    return awaitOn(() => {
+        let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
+
+        if(open) {
+            LITERATURE = top.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
+        } else {
+            UserMenuToggleButton?.click();
+            $('[data-a-target^="language"i]')?.click();
+            LITERATURE = top.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
+            UserMenuToggleButton?.click();
+        }
+
+        return LITERATURE;
     });
 }
 
@@ -2238,7 +2308,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
-            return ALL_CHANNELS.find(channel => !!~channel.href.indexOf(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
+            return ALL_CHANNELS.find(channel => channel.href.contains(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
 
         let next,
             { random, round } = Math;
@@ -2458,7 +2528,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get sole() {
-            let [channel_id] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => !!~src.indexOf('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
+            let [channel_id] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
 
             return parseInt(channel_id ?? LIVE_CACHE.get('sole')) || 0;
         },
@@ -3848,7 +3918,7 @@ let Initialize = async(START_OVER = false) => {
                         throw `Unable to restore "${ name }"`;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined).filter(url => typeof url === 'string' && url.length);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -4647,7 +4717,7 @@ let Initialize = async(START_OVER = false) => {
         BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
 
-    Handlers.first_in_line_plus = () => { return;
+    Handlers.first_in_line_plus = () => {
         START__STOP_WATCH('first_in_line_plus');
 
         let streamers = [...new Set([...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name))].sort();

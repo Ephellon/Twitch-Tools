@@ -440,6 +440,18 @@ Number.prototype.Math = (parent => {
     return parent;
 })(Math);
 
+// Determines if the string contains any of the value(s)
+    // String..contains(...values:any) -> boolean
+String.prototype.contains ??= function contains(...values) {
+    let has = false;
+
+    for(let value of values)
+        if(has ||= !!~this.indexOf(value))
+            break;
+
+    return has;
+};
+
 // Returns a properly formatted string depending on the number given
     // String..properSuffix([numberOfItems:number[, tail:string]])
 String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail = "s") {
@@ -972,7 +984,7 @@ function GetOS() {
     };
 
     for(let OS in OSs)
-        if(!!~userAgent.indexOf(OS))
+        if(userAgent.contains(OS))
             return OSs[OS].replace(/^Win/, 'Windows');
 
     return 'unknown';
