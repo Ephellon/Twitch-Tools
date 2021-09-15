@@ -39,6 +39,11 @@
 # DONE &mdash; Notable Changes
 
 > [4.11.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.2)
+- Adjusted `author` logic for Filter Messages - to include translated names `Username (Translated Username)`
+- Fixed Up Next Boost not loading to the page initially
+- Fixed a chat filtering bug
+
+> [4.11.2](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.2)
 - Fixed an edge-case issue where non-URLs would be saved to Up Next
 - Fixed Up Next issue - left unwanted return
 

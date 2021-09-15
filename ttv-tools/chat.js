@@ -1075,8 +1075,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                            || (emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                            || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                            || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).contains(true)
@@ -1139,7 +1139,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
             { filter_rules } = Settings;
 
-        name = name?.textContent;
+        name = name?.textContent?.replace(/[^]+?\((\w+)\)/, '$1');
 
         if(type == 'user') {
             /* Filter users */
@@ -1320,8 +1320,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                             || channel == name.toLowerCase()
                         ) && parseBool(false
                             || (('@' + author) == user? reason = 'channel user': false)
-                            || (badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                            || (emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                            || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                            || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
                             || (text?.test?.(message)? reason = 'channel text': false)
                         )
                     }).contains(true)
@@ -2436,7 +2436,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 let keepEmotes = true;
 
                                 let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
-                                    author = handle.toLowerCase(),
+                                    author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
                                     message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
                                     mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                     badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),

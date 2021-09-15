@@ -1092,7 +1092,7 @@ function GetChat(lines = 250, keepEmotes = false) {
 
     for(let line of chat) {
         let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
-            author = handle.toLowerCase(),
+            author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
             message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
             mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
@@ -3813,9 +3813,13 @@ let Initialize = async(START_OVER = false) => {
         LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
+            let timeRemaining = GET_TIME_REMAINING();
+
+            timeRemaining = timeRemaining < 0? 0: timeRemaining;
+
             if(FIRST_IN_LINE_PAUSED)
                 return /* First in Line is paused */;
-            if(GET_TIME_REMAINING() > 60_000)
+            if(timeRemaining > 60_000)
                 return /* There's more than 1 minute left */;
 
             let existing = Popup.get(`Up Next \u2014 ${ name }`);
@@ -3824,10 +3828,6 @@ let Initialize = async(START_OVER = false) => {
                 return /* There is already a warning pending */;
 
             STARTED_TIMERS.WARNING = true;
-
-            let timeRemaining = GET_TIME_REMAINING();
-
-            timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
             LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
@@ -3868,15 +3868,19 @@ let Initialize = async(START_OVER = false) => {
             });
 
             FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
+                let timeRemaining = GET_TIME_REMAINING();
+
+                timeRemaining = timeRemaining < 0? 0: timeRemaining;
+
                 if(FIRST_IN_LINE_PAUSED)
                     return /* First in Line is paused */;
 
                 if(defined(popup?.elements))
                     popup.elements.message.innerHTML
                         = popup.elements.message.innerHTML
-                            .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(GET_TIME_REMAINING(), '!minute:!second'), '\t'].join(''));
+                            .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(timeRemaining, '!minute:!second'), '\t'].join(''));
 
-                if(GET_TIME_REMAINING() < 1000) {
+                if(timeRemaining < 1000) {
                     popup?.remove?.();
                     clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
                 }
@@ -3885,7 +3889,11 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
-            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF);
+            // TO-NOTICE: this may cause reloading issues?
+            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF),
+                timeRemaining = GET_TIME_REMAINING();
+
+            timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
             if(!defined(channel)) {
                 LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
@@ -3918,7 +3926,7 @@ let Initialize = async(START_OVER = false) => {
                         throw `Unable to restore "${ name }"`;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href != FIRST_IN_LINE_HREF).filter(defined).filter(url => typeof url === 'string' && url.length);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(url => url?.length).filter(href => href != FIRST_IN_LINE_HREF);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -3931,9 +3939,9 @@ let Initialize = async(START_OVER = false) => {
 
             // The timer is paused
             if(FIRST_IN_LINE_PAUSED)
-                return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(GET_TIME_REMAINING() + 1000) });
+                return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
             // Don't act until 1sec is left
-            if(GET_TIME_REMAINING() > 1000)
+            if(timeRemaining > 1000)
                 return;
 
             /* After above is `false` */
@@ -3945,8 +3953,6 @@ let Initialize = async(START_OVER = false) => {
 
             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
             open(FIRST_IN_LINE_HREF, '_self');
-
-            FIRST_IN_LINE_HREF = undefined;
         }, 1000);
     }
 
@@ -4075,15 +4081,44 @@ let Initialize = async(START_OVER = false) => {
 
             // Load cache
             LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+                let oneMin = 60_000,
+                    fiveMin = 5 * oneMin,
+                    tenMin = 10 * oneMin;
+
                 ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
-                FIRST_IN_LINE_DUE_DATE = cache.FIRST_IN_LINE_DUE_DATE ?? NEW_DUE_DATE();
+                FIRST_IN_LINE_DUE_DATE = (null
+                    ?? cache.FIRST_IN_LINE_DUE_DATE
+                    ?? (
+                        NEW_DUE_DATE(
+                            FIRST_IN_LINE_TIMER = (
+                                // If the streamer hasn't been on for longer than 10mins, wait until then
+                                STREAMER.time < tenMin?
+                                    (
+                                        // Boost is enabled
+                                        FIRST_IN_LINE_BOOST?
+                                            fiveMin + (tenMin - STREAMER.time):
+                                        // Boost is disabled
+                                        FIRST_IN_LINE_WAIT_TIME * oneMin
+                                    ):
+                                // Streamer has been live longer than 10mins
+                                (
+                                    // Boost is enabled
+                                    FIRST_IN_LINE_BOOST?
+                                        // Boost is enabled
+                                        Math.min(GET_TIME_REMAINING(), fiveMin):
+                                    // Boost is disabled
+                                    FIRST_IN_LINE_WAIT_TIME * oneMin
+                                )
+                            )
+                        )
+                    )
+                );
 
                 REMARK(`Up Next Boost is ${ ['dis','en'][FIRST_IN_LINE_BOOST | 0] }abled`);
 
-                if(FIRST_IN_LINE_BOOST) {
-                    let fiveMin = 300_000;
 
+                if(FIRST_IN_LINE_BOOST) {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_TIME_REMAINING(), fiveMin));
 
                     setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)), 5_000);
@@ -4167,7 +4202,7 @@ let Initialize = async(START_OVER = false) => {
                     if(ALL_FIRST_IN_LINE_JOBS.length < 1)
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
 
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
 
@@ -4315,11 +4350,10 @@ let Initialize = async(START_OVER = false) => {
 
                                     if(time < 0)
                                         setTimeout(() => {
-                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS: [...new Set(ALL_FIRST_IN_LINE_JOBS)], FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
                                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-
                                             SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
                                                 open($('a', false, container)?.href ?? '?', '_self');
                                             });
@@ -4420,7 +4454,7 @@ let Initialize = async(START_OVER = false) => {
                 if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
                     LOG('Pushing to First in Line:', href, new Date);
 
-                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
@@ -4437,9 +4471,9 @@ let Initialize = async(START_OVER = false) => {
                 LOG('Pushing to First in Line (no contest):', href, new Date);
 
                 // Add the new job...
-                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])];
-                FIRST_IN_LINE_HREF = href;
+                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
                 // To wait, or not to wait
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -4529,7 +4563,7 @@ let Initialize = async(START_OVER = false) => {
 
                             if(time < 0)
                                 setTimeout(() => {
-                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS: [...ALL_FIRST_IN_LINE_JOBS], FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
@@ -4578,8 +4612,6 @@ let Initialize = async(START_OVER = false) => {
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
                     open(FIRST_IN_LINE_HREF, '_self');
-
-                    FIRST_IN_LINE_HREF = undefined;
                 }
             }
         }
@@ -4614,9 +4646,39 @@ let Initialize = async(START_OVER = false) => {
     __FirstInLine__:
     if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+            let oneMin = 60_000,
+                fiveMin = 5 * oneMin,
+                tenMin = 10 * oneMin;
+
             ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
-            FIRST_IN_LINE_DUE_DATE = cache.FIRST_IN_LINE_DUE_DATE ?? NEW_DUE_DATE();
+            FIRST_IN_LINE_DUE_DATE = (null
+                ?? cache.FIRST_IN_LINE_DUE_DATE
+                ?? (
+                    NEW_DUE_DATE(
+                        FIRST_IN_LINE_TIMER = (
+                            // If the streamer hasn't been on for longer than 10mins, wait until then
+                            STREAMER.time < tenMin?
+                                (
+                                    // Boost is enabled
+                                    FIRST_IN_LINE_BOOST?
+                                        fiveMin + (tenMin - STREAMER.time):
+                                    // Boost is disabled
+                                    FIRST_IN_LINE_WAIT_TIME * oneMin
+                                ):
+                            // Streamer has been live longer than 10mins
+                            (
+                                // Boost is enabled
+                                FIRST_IN_LINE_BOOST?
+                                    // Boost is enabled
+                                    Math.min(GET_TIME_REMAINING(), fiveMin):
+                                // Boost is disabled
+                                FIRST_IN_LINE_WAIT_TIME * oneMin
+                            )
+                        )
+                    )
+                )
+            );
         });
 
         RegisterJob('first_in_line');
@@ -4639,7 +4701,7 @@ let Initialize = async(START_OVER = false) => {
                 first = ALL_FIRST_IN_LINE_JOBS[0] == STREAMER.href,
                 channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
-            FIRST_IN_LINE_HREF = href;
+            REDO_FIRST_IN_LINE_QUEUE(href);
 
             if(!defined(channel) && !first) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -6437,7 +6499,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                             let keepEmotes = true;
 
                             let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
-                                author = handle.toLowerCase(),
+                                author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
                                 message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
                                 mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
                                 badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
@@ -6538,7 +6600,7 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
                                     let keepEmotes = true;
 
                                     let handle = $('[data-a-target="whisper-message-name"i]', false, node).innerText,
-                                        author = handle.toLowerCase(),
+                                        author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
                                         message = $('[data-test-selector="separator"i] ~ * > *', true, node),
                                         style = node.getAttribute('style');
 
