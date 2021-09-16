@@ -27,7 +27,7 @@ awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
     .then(() => {
         UserMenuToggleButton.click();
         ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText ?? '';
-        USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]').innerText;
+        USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]')?.innerText ?? null;
         THEME = top.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
 
         $('[data-a-target^="language"i]')?.click();
@@ -1335,7 +1335,7 @@ function parseCoin(amount = '') {
     function getUnits(lang) {
         let booklet;
 
-        switch(lang.toLowerCase()) {
+        switch(lang?.toLowerCase()) {
             case 'bg': { booklet = '_ ХИЛ' } break;
 
             case 'cs':
@@ -2042,7 +2042,7 @@ async function update() {
     top.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section:nth-child(1) a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'STREAMERS',
@@ -2053,7 +2053,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section:nth-child(1) [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) [href$="${ pathname }"]`);
 
                         if(!defined(parent))
                             return false;
@@ -2351,12 +2351,17 @@ let Initialize = async(START_OVER = false) => {
             } break;
         }
 
+        let cache = online.sort(() => random() >= 0.5? +1: -1);
+
+        cache = cache[round(random() * cache.length)];
+
         // There isn't a channel that fits the criteria
-        if(parseBool(Settings.stay_live) && !defined(next) && online.length) {
+        if(parseBool(Settings.stay_live) && !defined(next) && !defined(GetNextStreamer?.cachedStreamer) && online.length) {
             WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired`);
 
-            next = online.sort(() => random() >= 0.5? +1: -1);
-            next = next[round(random() * next.length)];
+            next ??= GetNextStreamer.cachedStreamer ??= cache;
+        } else if(parseBool(Settings.stay_live) && defined(next)) {
+            GetNextStreamer.cachedStreamer = null;
         }
 
         return next;
@@ -2668,7 +2673,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section:nth-child(1) a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -2770,7 +2775,7 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`#sideNav .side-nav-section:nth-child(1) a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'STREAMERS',
@@ -2781,7 +2786,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section:nth-child(1) [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) [href$="${ pathname }"]`);
 
                             if(!defined(parent))
                                 return false;
@@ -3946,13 +3951,12 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-            SaveCache({ FIRST_IN_LINE_DUE_DATE });
+            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
+                LOG('Heading to stream now [Job Interval]', FIRST_IN_LINE_HREF);
 
-            LOG('Heading to stream now [Job Interval]', FIRST_IN_LINE_HREF);
-
-            [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-            open(FIRST_IN_LINE_HREF, '_self');
+                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+                open(FIRST_IN_LINE_HREF, '_self');
+            });
         }, 1000);
     }
 
@@ -4353,8 +4357,7 @@ let Initialize = async(START_OVER = false) => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
-                                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                                            SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
+                                            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                                 open($('a', false, container)?.href ?? '?', '_self');
                                             });
 
@@ -4393,8 +4396,7 @@ let Initialize = async(START_OVER = false) => {
             STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
                 LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
-                FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                SaveCache({ FIRST_IN_LINE_DUE_DATE });
+                SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
             };
         }
     }, 1000);
@@ -4473,12 +4475,11 @@ let Initialize = async(START_OVER = false) => {
                 // Add the new job...
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
                 // To wait, or not to wait
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
-
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                });
             }
 
             AddBalloon: {
@@ -4800,7 +4801,7 @@ let Initialize = async(START_OVER = false) => {
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
-        } else if(!defined($('#sideNav .side-nav-section:nth-child(1) a[class*="side-nav-card"i]'))) {
+        } else if(!defined($('#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -6353,7 +6354,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section:nth-child(1) [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget } = event;
 
@@ -6424,6 +6425,8 @@ let CUSTOM_CSS,
 
 PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
     let ready = (true
+        // There is  avalid username
+        && defined(USERNAME)
         // The follow button exists
         && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
         && (false

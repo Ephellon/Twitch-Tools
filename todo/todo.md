@@ -38,6 +38,11 @@
 
 # DONE &mdash; Notable Changes
 
+> [4.11.4](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.4)
+- Added "cache next streamer" logic
+- Fixed Up Next adding unfollowed channels to Up Next
+- Added logic to detect if the user is logged out (don't run the extension...)
+
 > [4.11.3](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.3)
 - Adjusted `author` logic for Filter Messages - to include translated names `Username (Translated Username)`
 - Fixed Up Next Boost not loading to the page initially
