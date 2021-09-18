@@ -103,6 +103,7 @@
         "Esto solo se activa cuando la transmisión actual se desconecta"
     ],
         "next-channel-preference:options": [
+            "Discapacitado",
             "Ir a un canal aleatorio",
             "Ir con la menor cantidad de espectadores",
             "Ir con la mayor cantidad de espectadores",

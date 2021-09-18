@@ -106,6 +106,7 @@
 		"Isto só é activado quando a transmissão de corrente é desligada"
 	],
     	"next-channel-preference:options": [
+			"Deficientes",
     		"Ir para um canal aleatório",
     		"Vá com a menor quantidade de espectadores",
     		"Ir com o maior número de espectadores",

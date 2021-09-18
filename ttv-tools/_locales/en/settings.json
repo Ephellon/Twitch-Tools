@@ -104,6 +104,7 @@
 		"This only activates when the current stream goes offline"
 	],
     	"next-channel-preference:options": [
+			"Disabled",
     		"Go to a random channel",
     		"Go with the least viewers",
     		"Go with the most viewers",

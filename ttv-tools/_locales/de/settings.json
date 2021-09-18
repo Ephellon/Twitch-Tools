@@ -103,6 +103,7 @@
 		"Dit is alleen geactiveerd wanneer de huidige transmissie is uitgeschakeld"
 	],
 		"next-channel-preference:options": [
+			"Uitgeschakeld",
 			"Ga naar een willekeurig kanaal",
 			"Ga met het minste aantal kijkers",
 			"Ga met de meeste kijkers",

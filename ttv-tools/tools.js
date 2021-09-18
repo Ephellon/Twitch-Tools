@@ -1336,38 +1336,37 @@ function parseCoin(amount = '') {
         let booklet;
 
         switch(lang?.toLowerCase()) {
-            case 'bg': { booklet = '_ ХИЛ' } break;
+            case 'bg': { booklet = '_ ХИЛ МИЛ' } break;
 
             case 'cs':
             case 'sk': { booklet = '_ TIS' } break;
 
+            case 'fi':
             case 'da': { booklet = '_ T M' } break;
 
-            case 'el': { booklet = '_ ΧΙΛ' } break;
-
-            case 'fi': { booklet = '_ T' } break;
+            case 'el': { booklet = '_ ΧΙΛ ΕΚΑ' } break;
 
             case 'hu': { booklet = '_ E' } break;
 
-            case 'ja': { booklet = '_ 万' } break;
+            case 'ja': { booklet = '_ 千 百万' } break;
 
-            case 'ko': { booklet = '_ 만' } break;
+            case 'ko': { booklet = '_ 천 백만' } break;
 
-            case 'pl': { booklet = '_ TYS' } break;
+            case 'pl': { booklet = '_ TYS MIL' } break;
 
             case 'pt': { booklet = '_ MIL' } break;
 
-            case 'ru': { booklet = '_ ТЫС' } break;
+            case 'ru': { booklet = '_ ТЫС МИЛ' } break;
 
             case 'sv': { booklet = '_ TN' } break;
 
             case 'tr': { booklet = '_ B' } break;
 
-            case 'vi': { booklet = '_ N' } break;
+            case 'vi': { booklet = '_ N M' } break;
 
-            case 'zh-cn': { booklet = '_ 万' } break;
+            case 'zh-cn': { booklet = '_ 千 百万' } break;
 
-            case 'zh-tw': { booklet = '_ 萬' } break;
+            case 'zh-tw': { booklet = '_ 千 百萬' } break;
 
             case 'en':
             default: {
@@ -2343,6 +2342,11 @@ let Initialize = async(START_OVER = false) => {
             // Least un-earned Rewards & Challenges
             case 'closest': {
                 next = STREAMERS.find(channel => channel.name === closestToCompletion);
+            } break;
+
+            // Do not use this feature
+            case 'none': {
+                return null;
             } break;
 
             // A random channel
@@ -4206,6 +4210,7 @@ let Initialize = async(START_OVER = false) => {
                     if(ALL_FIRST_IN_LINE_JOBS.length < 1)
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
+                    // LOG('Accessing here... #1');
                     ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
 
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -4456,6 +4461,7 @@ let Initialize = async(START_OVER = false) => {
                 if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
                     LOG('Pushing to First in Line:', href, new Date);
 
+                    // LOG('Accessing here... #2');
                     ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
@@ -4473,6 +4479,7 @@ let Initialize = async(START_OVER = false) => {
                 LOG('Pushing to First in Line (no contest):', href, new Date);
 
                 // Add the new job...
+                // LOG('Accessing here... #3');
                 ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
@@ -4756,6 +4763,8 @@ let Initialize = async(START_OVER = false) => {
                 REDO_FIRST_IN_LINE_QUEUE(href);
             } else if(first) {
                 let [popped] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+
+                [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS });
                 WARN('Removed duplicate job', popped);
@@ -6425,7 +6434,7 @@ let CUSTOM_CSS,
 
 PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
     let ready = (true
-        // There is  avalid username
+        // There is a valid username
         && defined(USERNAME)
         // The follow button exists
         && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
