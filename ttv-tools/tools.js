@@ -1606,8 +1606,12 @@ function GetViewMode() {
     )
         mode = 'fullwidth';
 
-    let container = $(`button[data-a-target*="fullscreen"i]`).closest('div'),
-        classes = ['', ...container.classList].join('.');
+    let container = $(`button[data-a-target*="fullscreen"i]`)?.closest('div');
+
+    if(!defined(container))
+        return mode;
+
+    let classes = ['', ...container.classList].join('.');
 
     if(false
         || (true
@@ -3185,7 +3189,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.auto_accept_mature = () => {
         $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i]')?.click();
     };
-    Timers.auto_accept_mature = -1_000;
+    Timers.auto_accept_mature = 5_000;
 
     __AutoMatureAccept__:
     if(parseBool(Settings.auto_accept_mature)) {
@@ -3818,6 +3822,9 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
+
+        if(!ALL_FIRST_IN_LINE_JOBS.filter(defined).length)
+            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
         LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
 
@@ -4706,10 +4713,8 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = ALL_FIRST_IN_LINE_JOBS[0] == STREAMER.href,
+                first = !ALL_FIRST_IN_LINE_JOBS.filter(defined).indexOf(STREAMER.href),
                 channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
-
-            REDO_FIRST_IN_LINE_QUEUE(href);
 
             if(!defined(channel) && !first) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -4739,12 +4744,12 @@ let Initialize = async(START_OVER = false) => {
                                     name: channel.display_name,
                                 });
 
-                                ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                                ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(uniqueChannels);
                                 ALL_FIRST_IN_LINE_JOBS[index] = restored;
                             }
 
                         if(found)
-                            return true;
+                            REDO_FIRST_IN_LINE_QUEUE(href);
                         throw `Unable to restore "${ name }"`;
                     })
                     .catch(error => {
@@ -4757,10 +4762,12 @@ let Initialize = async(START_OVER = false) => {
 
                 break __FirstInLine__;
             } else if(!first) {
-                Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
+                // Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
 
-                WARN('Forcing queue update for', href);
-                REDO_FIRST_IN_LINE_QUEUE(href);
+                // WARN('Forcing queue update for', href);
+                // REDO_FIRST_IN_LINE_QUEUE(href);
+
+                LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for ${ href }`, new Date);
             } else if(first) {
                 let [popped] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
 
@@ -5033,6 +5040,8 @@ let Initialize = async(START_OVER = false) => {
                 open(next.href, '_self');
             } else {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
+
+                location.reload();
             }
         }
 
@@ -5116,6 +5125,8 @@ let Initialize = async(START_OVER = false) => {
                     open(next.href, '_self');
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
+
+                    location.reload();
                 }
             };
 
@@ -5903,7 +5914,8 @@ let Initialize = async(START_OVER = false) => {
 
         let scale = parseFloat(Settings.stream_preview_scale) || 1,
             muted = !parseBool(Settings.stream_preview_sound),
-            quality = scale > 1? 'auto': '720p';
+            quality = (scale > 1? 'auto': '720p'),
+            watchParty = defined($('[data-a-target^="watchparty"i][data-a-target*="overlay"i]'));
 
         STREAM_PREVIEW = {
             name,
@@ -5915,7 +5927,7 @@ let Initialize = async(START_OVER = false) => {
                                 `--below: tooltip; top: calc(${ bottom + height }px);`:
                             // Above tooltip
                             `--above: tooltip; top: calc(${ top - height }px - (15rem * ${ scale }));`
-                        ) + `left: calc(${ video.left }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
+                        ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width ?? 50: video.left) }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
                     },
                     furnish('div.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,

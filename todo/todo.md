@@ -23,6 +23,8 @@
     * ~~`parseCoin` is language dependent - it only reads "SI" units~~
         * Tentative fix `4.11.5`
     * All bulletin filters are language dependent - they only recognize English
+8. Add an "Auto-Spend" feature for Channel Points
+    * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
 
 - Make initial loading actions less intrusive
     - [x] "Prime Loot" open/close action
@@ -32,7 +34,7 @@
 - [x] Provide more concise and informative console messages
 - [ ] Add more translations
 - ~~Listen for "on-subscribe" events to update the Channel Points Multiplier?~~
-    * Too invasive. Does not match importance in proportion
+    * Too invasive. Does not match importance
 
 ----
 
@@ -40,6 +42,10 @@
 
 > [`4.11.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.5)
 - Added ability to disable the Next Channel feature
+- Fixed issue where Up Next would instantly go to channels
+- Changed Auto-Join to be cyclic
+- Fixed issue where reloading the page would reset First in Line events
+- Fixed issue where Watch Parties would skew the Stream Preview
 
 > [`4.11.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.4)
 - Added "cache next streamer" logic
