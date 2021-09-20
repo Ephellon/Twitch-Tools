@@ -40,12 +40,14 @@
 
 # DONE &mdash; Notable Changes
 
-> [`4.11.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.5)
-- Added ability to disable the Next Channel feature
+> [`4.11.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.6)
 - Fixed issue where Up Next would instantly go to channels
 - Changed Auto-Join to be cyclic
 - Fixed issue where reloading the page would reset First in Line events
 - Fixed issue where Watch Parties would skew the Stream Preview
+
+> [`4.11.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.5)
+- Added ability to disable the Next Channel feature
 
 > [`4.11.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.4)
 - Added "cache next streamer" logic
