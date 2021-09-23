@@ -25,20 +25,30 @@
     * All bulletin filters are language dependent - they only recognize English
 8. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
+9. Volume Control
+    * Present when moving slider, hovering a channel (stream preview), then attempting to move slider again
+10. Up Next doesn't go to all channels?
+    * Not sure how often this happens or why
+    * Most likely due to "Followed Channels" being labeled incorrectly
+    * Tentative fix `4.11.7`
 
 - Make initial loading actions less intrusive
     - [x] "Prime Loot" open/close action
     - [x] "Convert Emotes" open/close action
     - [x] "BetterTTV Emotes" open/close action
-- [ ] Clean up SVGs & IMGs
+- [x] Clean up SVGs & IMGs
 - [x] Provide more concise and informative console messages
-- [ ] Add more translations
+- [x] Add more translations
 - ~~Listen for "on-subscribe" events to update the Channel Points Multiplier?~~
     * Too invasive. Does not match importance
 
 ----
 
 # DONE &mdash; Notable Changes
+
+> [`4.11.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.7)
+- Fixed Highlight Phrases' CSS
+- Added side-panel labeling logic
 
 > [`4.11.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.6)
 - Fixed issue where Up Next would instantly go to channels

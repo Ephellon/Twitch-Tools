@@ -958,34 +958,7 @@ $('[new]', true).map(element => {
 });
 
 // Any keys that need "translating"
-$('[id^="key:"i]', true).map(element => {
-    let OS = GetOS();
-
-    // if(!!~OS.indexOf('Windows')) return;
-
-    let keys = element.innerText.split(/(\W+)/).filter(string => !!string.length);
-
-    keys = keys.map(key => {
-        switch(OS) {
-            /** MacOS Keys
-             * Command (Cmd)        ⌘
-             * Option/Alt (Opt/Alt) ⌥
-             * Caps Lock            ⇪
-             * Control (Ctrl)       ^
-             * Shift                ⇧
-             */
-            case 'Mac': {
-                if(key == 'Win') key = '\u2318';
-                if(key == 'Alt') key = '\u2325';
-                if(key == 'Shift') key = '\u21e7';
-            } break;
-        };
-
-        return key;
-    });
-
-    element.innerText = keys.join('');
-});
+$('[id^="key:"i]', true).map(element => element.innerText = GetMacro(element.innerText));
 
 async function TranslatePageTo(language = 'en') {
     await fetch(`/_locales/${ language }/settings.json`)

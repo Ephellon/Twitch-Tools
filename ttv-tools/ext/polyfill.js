@@ -332,6 +332,69 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     return data;
 };
 
+// Converts SVGs to images
+    // SVGtoImage(SVG:HTMLSVGElement|string[, imageType:string[, returnType:string]]) -> String#dataURL | Object | HTMLImageElement
+        // imageType = "image/jpeg" | "image/png" | "image/webp"
+        // returnType = "img" | "element" | "HTMLImageElement"
+            // -> HTMLImageElement
+        // returnType = "json" | "object"
+            // -> Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
+        // returnType = "dataURI" | "dataURL" | ...
+            // -> String#dataURL
+function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
+    if(typeof SVG == 'string' || SVG instanceof String)
+        SVG = (SVGtoImage.DOMParser ??= new DOMParser).parseFromString(SVG + '', 'text/xml')?.querySelector('svg');
+
+    let height, width;
+
+    try {
+        let offset = getOffset(SVG);
+
+        height = offset.height || SVG?.getAttribute('height');
+        width = offset.width || SVG?.getAttribute('width');
+    } catch(e) {
+        height = SVG?.height || SVG?.getAttribute('height');
+        width = SVG?.width || SVG?.getAttribute('width');
+    }
+
+    height = parseFloat(height);
+    width = parseFloat(width);
+
+    if(!(height | 0) || !(width | 0))
+        throw `Unable to make a canvas of size ${ width }x${ height }`;
+
+    let canvas = furnish('canvas', { height, width }),
+        context = canvas.getContext('2d');
+
+    let path = new Path2D($('path', false, SVG)?.getAttribute('d') ?? '');
+
+    context.stroke(path);
+
+    let canvasData = canvas.toDataURL(imageType),
+        data = canvasData;
+
+    switch(returnType) {
+        case 'img':
+        case 'element':
+        case 'HTMLImageElement': {
+            data = document.createElement('img');
+
+            data.src = canvasData;
+        } break;
+
+        case 'json':
+        case 'object': {
+            data = { type: imageType, height, width, data };
+        } break;
+
+        default: break;
+    }
+
+    canvas?.remove();
+
+    return data;
+};
+
 // Returns a number formatted using unit suffixes
     // Number..suffix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) -> string
         // decimalPlaces = true | false | *:number
@@ -489,49 +552,22 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
         else
         EndsWith_Normal: {
             let pattern = (
-                /^[A-Z][a-z]+$/.test(string)?
+                /^[A-Z][a-z]/.test(string)?
                     'capped':
-                /^[A-Z]+$/.test(string)?
+                /^[A-Z]/.test(string)?
                     'upper':
-                /^[a-z]+$/.test(string)?
+                /^[a-z]/.test(string)?
                     'lower':
                 ''
             ) + (
-                /^[a-z]\.[a-z\.]+$/i.test(string)?
+                /[a-z]\.[a-z\.]/i.test(string)?
                     '-dotted':
-                /^[a-z]\-[a-z\-]+$/i.test(string)?
+                /[a-z]\-[a-z\-]/i.test(string)?
                     '-dashed':
+                /[a-z]\s[a-z\-]/i.test(string)?
+                    '-spaced':
                 ''
             );
-
-            function toFormat(string, patterns) {
-                patterns = patterns.split('-');
-
-                for(let pattern of patterns)
-                    switch(pattern) {
-                        case 'capped': {
-                            string = string[0].toUpperCase() + string.slice(1, string.length).toLowerCase();
-                        } break;
-
-                        case 'upper': {
-                            string = string.toUpperCase();
-                        } break;
-
-                        case 'lower': {
-                            string = string.toLowerCase();
-                        } break;
-
-                        case 'dotted': {
-                            string = string.split('').join('.');
-                        } break;
-
-                        case 'dashed': {
-                            string = string.split('').join('-');
-                        } break;
-                    }
-
-                return string;
-            }
 
             switch(string.toLowerCase().trim()) {
                 // alumnus / alumni
@@ -966,6 +1002,41 @@ function comify(number, locale = top.LANGUAGE) {
     return parseFloat(number).toLocaleString(locale);
 }
 
+// Returns a string reformatted
+    // toFormat(string:string, pattern:string)
+function toFormat(string, patterns) {
+    patterns = patterns.split('-');
+
+    for(let pattern of patterns)
+        switch(pattern) {
+            case 'capped': {
+                string = string[0].toUpperCase() + string.slice(1, string.length).toLowerCase();
+            } break;
+
+            case 'upper': {
+                string = string.toUpperCase();
+            } break;
+
+            case 'lower': {
+                string = string.toLowerCase();
+            } break;
+
+            case 'dotted': {
+                string = string.split('').join('.');
+            } break;
+
+            case 'dashed': {
+                string = string.split('').join('-');
+            } break;
+
+            case 'spaced': {
+                string = string.split('').join(' ');
+            } break;
+        }
+
+    return string;
+}
+
 // https://stackoverflow.com/a/19176790/4211612
 // Returns the assumed operating system
 function GetOS() {
@@ -987,7 +1058,73 @@ function GetOS() {
         if(userAgent.contains(OS))
             return OSs[OS].replace(/^Win/, 'Windows');
 
-    return 'unknown';
+    return 'Unknown';
+}
+
+// Returns the assumed key combination
+    // GetMacro(keys:string) -> string
+function GetMacro(keys = '') {
+    keys = (keys ?? '').trim();
+
+    let pattern = (
+        /^[A-Z][a-z]/.test(keys)?
+            'capped':
+        /^[A-Z]/.test(keys)?
+            'upper':
+        /^[a-z]/.test(keys)?
+            'lower':
+        ''
+    ) + (
+        /[a-z]\.[a-z\.]/i.test(keys)?
+            '-dotted':
+        /[a-z]\-[a-z\-]/i.test(keys)?
+            '-dashed':
+        /[a-z]\s[a-z\-]/i.test(keys)?
+            '-spaced':
+        ''
+    );
+
+    return keys
+        .split(/(\W+)/)
+        .filter(string => !!string.length)
+        .map(key => {
+            switch(GetOS()) {
+                /** MacOS Keys
+                 * Command (Cmd)        ⌘
+                 * Option/Alt (Opt/Alt) ⌥
+                 * Caps Lock            ⇪
+                 * Control (Ctrl)       ^
+                 * Shift                ⇧
+                 */
+                case 'Mac': {
+                    key = (
+                        /^Win$/i.test(key)?
+                            '\u2318':
+                        /^Alt$/i.test(key)?
+                            '\u2325':
+                        /^Shift$/i.test(key)?
+                            '\u21e7':
+                        key
+                    );
+                } break;
+
+                // Windows Keys
+                case 'Windows': {
+                    key = (
+                        /^(Cmd|\u2318)$/i.test(key)?
+                            'Win':
+                        /^(Alt|\u2325)$/i.test(key)?
+                            'Alt':
+                        /^(Shift|\u21e7)$/i.test(key)?
+                            'Shift':
+                        key
+                    );
+                } break;
+            };
+
+            return toFormat(key, pattern);
+        })
+        .join('');
 }
 
 // Logs messages (green)

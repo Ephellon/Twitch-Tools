@@ -2045,7 +2045,7 @@ async function update() {
     top.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'STREAMERS',
@@ -2056,7 +2056,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] [href$="${ pathname }"]`);
 
                         if(!defined(parent))
                             return false;
@@ -2681,7 +2681,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -2783,7 +2783,7 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'STREAMERS',
@@ -2794,7 +2794,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] [href$="${ pathname }"]`);
 
                             if(!defined(parent))
                                 return false;
@@ -2920,8 +2920,8 @@ let Initialize = async(START_OVER = false) => {
                      * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
                      * actualStartTime:Date         - the time (date) when the stream started
                      * dailyBroadcastTime:number    - the average number of hours streamed (per day)
-                     * dailyStartTimes:array~string - an array of usual start times for the stream (strings are formatted as 24h time strings)
-                     * dailyStopTimes:array~string  - an array of usual stop times for the stream (strings are formatted as 24h time strings)
+                     * dailyStartTimes:array~string - an object of usual start times for the stream (strings are formatted as 24h time strings)
+                     * dailyStopTimes:array~string  - an object of usual stop times for the stream (strings are formatted as 24h time strings)
                      * dataRetrievedAt:Date         - when was the data last retrieved (successfully)
                      * dataRetrievedOK:boolean      - was the data retrieval successful
                      * daysStreaming:array~string   - abbreviated names of days the stream is normally live
@@ -2934,8 +2934,8 @@ let Initialize = async(START_OVER = false) => {
                         activeDaysPerWeek: 6
                         actualStartTime: "2021-06-11T20:49:47.997Z"
                         dailyBroadcastTime: 18566233
-                        dailyStartTimes: (6) ["15:45", "15:45", "14:45", "14:45", "14:45", "15:45", Mon: "15:45", Tue: "15:45", Wed: "14:45", …]
-                        dailyStopTimes: (6) ["20:45", "20:45", "19:45", "19:45", "19:45", "20:45", Mon: "20:45", Tue: "20:45", Wed: "19:45", …]
+                        dailyStartTimes: { 0: "15:45", 1: "15:45", 2: "14:45", 3: "14:45", 4: "14:45", 5: "15:45", Mon: "15:45", Tue: "15:45", Wed: "14:45", … }
+                        dailyStopTimes: { 0: "20:45", 1: "20:45", 2: "19:45", 3: "19:45", 4: "19:45", 5: "20:45", Mon: "20:45", Tue: "20:45", Wed: "19:45", … }
                         dataRetrievedAt: 1623458262999
                         dataRetrievedOK: true
                         daysStreaming: (6) ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -2963,8 +2963,23 @@ let Initialize = async(START_OVER = false) => {
                             REMARK(`Cached details about "${ STREAMER.name }"`, data);
                         });
                     } catch(exception) {
+                        let { name, sole } = STREAMER;
+
+                        if(!sole)
+                            await new Search(name)
+                                .then(({ data = [] }) => {
+                                    let found;
+
+                                    for(let channel of data)
+                                        if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
+                                            sole = channel.id;
+
+                                            break;
+                                        }
+                                });
+
                         // Proper CORS request to fetch the HTML data
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ STREAMER.sole }-${ STREAMER.name }/stream_time_values`)}`, { mode: 'cors' })
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'cors' })
                             .then(response => response.json())
                             .then(json => {
                                 let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
@@ -3597,7 +3612,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 background: $('button', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (alt+a)`, { from: 'up', left: +5 }),
+                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (${ GetMacro('alt+a') })`, { from: 'up', left: +5 }),
             };
 
             button.tooltip.id = new UUID().toString().replace(/-/g, '');
@@ -3652,7 +3667,7 @@ let Initialize = async(START_OVER = false) => {
 
             container.setAttribute('tt-away-mode-enabled', enabled);
             background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
-            tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (alt+a)`;
+            tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (${ GetMacro('alt+a') })`;
 
             // Return control when Away Mode is engaged
             MAINTAIN_VOLUME_CONTROL = true;
@@ -3924,7 +3939,7 @@ let Initialize = async(START_OVER = false) => {
                         let found;
 
                         for(let channel of data)
-                            if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)){
+                            if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
                                 let restored = ({
                                     from: 'SEARCH',
                                     href,
@@ -4092,7 +4107,7 @@ let Initialize = async(START_OVER = false) => {
                 [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
-            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the ${ colorName } area to queue it`: `Up Next is disabled for this tab`));
+            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--color-${ accent })">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`));
 
             // Load cache
             LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
@@ -4185,7 +4200,7 @@ let Initialize = async(START_OVER = false) => {
                 } else {
                     let { href } = streamer;
 
-                    LOG('Adding to Up Next:', { href, streamer });
+                    LOG('Adding to Up Next [ondrop]:', { href, streamer });
 
                     if(!defined(streamer?.icon)) {
                         let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
@@ -4464,7 +4479,7 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('Received an actionable notification:', innerText, new Date);
 
-            if(defined(FIRST_IN_LINE_HREF)) {
+            if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
                 if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
                     LOG('Pushing to First in Line:', href, new Date);
 
@@ -4812,12 +4827,12 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names).toNativeStack();
+            WARN('Twitch failed to add these channels correctly:', bad_names, { ...STREAMER, date: new Date }).toNativeStack();
 
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
-        } else if(!defined($('#sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) a[class*="side-nav-card"i]'))) {
+        } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -6375,7 +6390,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label]:nth-child(1):not(:nth-last-child(2)) [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-label^="fav"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget } = event;
 
@@ -6450,6 +6465,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
         && defined(USERNAME)
         // The follow button exists
         && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+        // There are channel buttons on the side
+        && $('#sideNav .side-nav-section[aria-label]', true)?.length
         && (false
             // There is a message container
             || defined($('[data-test-selector$="message-container"i]'))
@@ -6746,6 +6763,38 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             observer.observe(target, { attributes: true, childList: false, subtree: false });
         }
 
+        // Set the SVGs' section IDs
+        SectionLabeling: {
+            for(let container of $('#sideNav .side-nav-section[aria-label]', true)) {
+                let svg = $('svg', false, container);
+
+                comparing:
+                for(let glyph in Glyphs)
+                    if(Glyphs.__exclusionList__.contains(glyph))
+                        continue comparing;
+                    else
+                        resemble(SVGtoImage(svg))
+                            .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
+                            .ignoreColors()
+                            .scaleToSameSize()
+                            .onComplete(async data => {
+                                let { analysisTime, misMatchPercentage } = data;
+
+                                analysisTime = parseInt(analysisTime);
+                                misMatchPercentage = parseFloat(misMatchPercentage);
+
+                                let matchPercentage = 100 - misMatchPercentage;
+
+                                if(matchPercentage < 80 || container.getAttribute('tt-label')?.length)
+                                    return;
+
+                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+
+                                container.setAttribute('tt-label', glyph);
+                            });
+            }
+        }
+
         top.onlocationchange = () => {
             WARN("[Parent] Re-initializing...");
 
@@ -6792,8 +6841,8 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             [animationID] a { cursor: grab }
             [animationID] a:active { cursor: grabbing }
 
-            .tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
-            .tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
             /* Up Next */
             [up-next--body] {

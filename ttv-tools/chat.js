@@ -2562,8 +2562,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             [tt-hidden-message="true"i], [tt-hidden-bulletin="true"i] { display: none }
 
-            .tt-root--theme-dark [tt-light], .tt-root--theme-dark .chat-line__status { background-color: var(--color-opac-w-4) }
-            .tt-root--theme-light [tt-light], .tt-root--theme-light .chat-line__status { background-color: var(--color-opac-b-4) }
+            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
             .chat-line__message[style] a {
                 color: var(--color-text-alt);

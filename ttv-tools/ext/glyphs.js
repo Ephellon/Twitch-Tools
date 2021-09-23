@@ -106,6 +106,8 @@ top.Glyphs ??= {
 
     x: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>`,
 
+    __exclusionList__: ["__exclusionList__", "DOMParser", "modify", "utf8", "base64", "__base64__", "dataURI", "__dataURI__"],
+
     modify(glyph, attributes, element = 'svg') {
         let XMLParser = Glyphs.DOMParser ??= new DOMParser;
 
@@ -173,7 +175,7 @@ top.Glyphs ??= {
 
     get base64() {
         return (() => {
-            let exclusions = ["modify", "base64", "utf8", "__base64__"],
+            let exclusions = top.Glyphs.__exclusionList__,
                 __base64__ = top.Glyphs.__base64__ ?? {};
 
             for(let glyph in top.Glyphs)
@@ -183,6 +185,21 @@ top.Glyphs ??= {
                     __base64__[glyph] ??= btoa(top.Glyphs[glyph]);
 
             return top.Glyphs.__base64__ ??= __base64__;
+        })();
+    },
+
+    get dataURI() {
+        return (() => {
+            let exclusions = top.Glyphs.__exclusionList__,
+                __dataURI__ = top.Glyphs.__dataURI__ ?? {};
+
+            for(let glyph in top.Glyphs)
+                if(!!~exclusions.indexOf(glyph))
+                    continue;
+                else
+                    __dataURI__[glyph] ??= SVGtoImage(top.Glyphs[glyph]);
+
+            return top.Glyphs.__dataURI__ ??= __dataURI__;
         })();
     },
 };
