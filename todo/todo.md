@@ -53,7 +53,8 @@
 > [`4.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12)
 - Added Sync Settings (upload/download settings)
 - Fixed issue where clicking the next channel's popup didn't reset the timer
-- Enabled the Away Mode Schedule feature Fixed issue where the next channel would `blank`
+- Enabled the Away Mode Schedule feature
+- Fixed issue where the next channel would `blank`
 
 > [`4.11.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.7)
 - Fixed Highlight Phrases' CSS
