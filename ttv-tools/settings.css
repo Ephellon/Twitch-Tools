@@ -203,7 +203,7 @@ section, footer {
 
     padding: 2rem;
 
-    min-height: 10rem;
+    min-height: 10vh;
     width: 100%;
 }
 
@@ -254,7 +254,7 @@ footer {
     width: 13rem;
 }
 
-details .title {
+:is(details, .details) .title {
     display: inline-block;
     vertical-align: middle;
 
@@ -271,7 +271,7 @@ details .title {
     width: 100%;
 }
 
-details .summary {
+:is(details, .details) .summary {
     display: inline-block;
     vertical-align: middle;
 
@@ -307,7 +307,7 @@ details .summary {
     transform: scale(.95);
 }
 
-.radio > input, .checkbox > input {
+:is(.radio, .checkbox) > input {
     border: none;
     clip: rect(0 0 0 0);
     color: var(--text-light);
@@ -322,7 +322,7 @@ details .summary {
     width: .1rem;
 }
 
-.radio > label, .checkbox > label {
+:is(.radio, .checkbox) > label {
     /* background-color: var(--grey); */
     /* border-radius: 1rem / 50%; */
     color: var(--white-faded);
@@ -341,7 +341,7 @@ details .summary {
     color: var(--white);
 }
 
-.radio > label:first-of-type::before, .checkbox > label:first-of-type::before {
+:is(.radio, .checkbox) > label:first-of-type::before {
     background-clip: padding-box;
     border: 2px solid var(--white);
     border-radius: 50%;
@@ -370,14 +370,22 @@ details .summary {
     top: .7rem;
 }
 
-.radio > input:checked + label:first-of-type::before, .checkbox > input:checked + label:first-of-type::before {
+:is(.radio, .checkbox) > input:checked + label:first-of-type::before {
     border-color: var(--purple) !important;
 }
 
 /* ...::after */
-.radio > input:checked + label:first-of-type::before, .checkbox > input:checked + label:first-of-type::before {
+:is(.radio, .checkbox) > input:checked + label:first-of-type::before {
     background-color: var(--purple);
     border: 0;
+}
+
+.checkbox.left > input + label {
+    padding: 0 0 0 2.6rem;
+}
+
+.checkbox.left > input + label::before {
+    left: 0;
 }
 
 /* For secondary "dropdown" labels */
@@ -410,7 +418,7 @@ input:not(:checked) ~ label[for$=":checked"] {
 }
 
 [hidden] {
-    display: none;
+    display: none !important;
 }
 
 a {
@@ -436,7 +444,7 @@ h1, h2, h3, h4, h5, h6 {
     line-height: 1.25 !important;
 }
 
-details {
+details, .details {
     background-color: var(--background-dark);
     border: 1px solid var(--purple);
     border-radius: 3px;
@@ -497,7 +505,7 @@ summary:hover {
     background-color: var(--background-dark-lit-highlighted);
 }
 
-summary::after {
+summary::after, .subtitle {
     content: attr(subtitle);
     color: var(--white-faded);
     display: block;
@@ -619,24 +627,24 @@ button, [type="button"] {
     vertical-align: middle;
 }
 
-button.remove, input[type="button"].remove {
+.remove {
     background-color: var(--red);
 }
 
-button.edit, input[type="button"].edit {
+.edit {
     background-color: var(--grey);
 }
 
-button:hover, input[type="button"]:hover {
+:is(button, input[type="button"]):hover {
     background-color: var(--purple-highlighted);
 }
 
-button.remove:hover, input[type="button"].remove:hover  {
-    background-color: var(--red-highlighted);
+.remove:hover  {
+    background-color: var(--red-highlighted) !important;
 }
 
-button.edit:hover, input[type="button"].edit:hover  {
-    background-color: var(--grey-highlighted);
+.edit:hover  {
+    background-color: var(--grey-highlighted) !important;
 }
 
 button button {
@@ -785,23 +793,19 @@ code[fill], [code][fill], [type^="code"i][fill] {
     background-color: var(--purple) !important;
 }
 
-.toggle.attention > input:checked + label, .toggle.alert > input:checked + label,
-[attention] .toggle > input:checked + label, [alert] .toggle > input:checked + label {
+:is(.toggle.attention, .toggle.alert, [attention] .toggle, [alert] .toggle) > input:checked + label {
     background-color: var(--blue) !important;
 }
 
-.toggle.special > input:checked + label, .toggle.success > input:checked + label, .toggle.confirm > input:checked + label,
-[special] .toggle > input:checked + label, [success] .toggle > input:checked + label, [confirm] .toggle > input:checked + label {
+:is(.toggle.special, .toggle.success, .toggle.confirm, [special] .toggle, [success] .toggle, [confirm] .toggle) > input:checked + label {
     background-color: var(--green) !important;
 }
 
-.toggle.warning > input:checked + label, .toggle.caution > input:checked + label, .toggle.prompt > input:checked + label,
-[warning] .toggle > input:checked + label, [caution] .toggle > input:checked + label, [prompt] .toggle > input:checked + label {
+:is(.toggle.warning, .toggle.caution, .toggle.prompt, [warning] .toggle, [caution] .toggle, [prompt] .toggle) > input:checked + label {
     background-color: var(--yellow) !important;
 }
 
-.toggle.error > input:checked + label, .toggle.danger > input:checked + label,
-[error] .toggle > input:checked + label, [danger] .toggle > input:checked + label {
+:is(.toggle.error, .toggle.danger, [error] .toggle, [danger] .toggle) > input:checked + label {
     background-color: var(--red) !important;
 }
 
@@ -1064,6 +1068,22 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     width: 5rem;
 }
 
+[glyph][inverted] svg {
+    transform: rotate(180deg);
+}
+
+[glyph][clockwise] svg {
+    transform: rotate(90deg);
+}
+
+[glyph][counter-clockwise] svg {
+    transform: rotate(-90deg);
+}
+
+:is(h1, h2, h3, h4, h5, h6) svg {
+    vertical-align: text-bottom;
+}
+
 /* Colors & Positions */
 [left] { float: left }
 [right] { float: right }
@@ -1115,9 +1135,14 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     overflow: auto;
 }
 
-#filter_rules h2:only-child, #filter_rules [filter-type]:not([not-empty]), #filter_rules > [filter-type][not-empty] ~ *:last-child,
-#phrase_rules h2:only-child, #phrase_rules [phrase-type]:not([not-empty]), #phrase_rules > [phrase-type][not-empty] ~ *:last-child {
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) h2:only-child,
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [day-of-week]):not([not-empty]),
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [day-of-week])[not-empty] ~ *:last-child {
     display: none;
+}
+
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [day-of-week])[not-empty] ~ [hr] {
+    border-top: 1px solid var(--white-faded);
 }
 
 [filter-type]:not(:last-child),
@@ -1185,7 +1210,7 @@ section[save] {
     background-color: var(--purple-highlighted);
 }
 
-.save.spin {
+.spin {
     background-color: var(--purple-dark) !important;
     color: #0000 !important;
 }
@@ -1239,7 +1264,7 @@ section[save] {
 }
 
 /* New/Beta sections */
-section[new]::before, section[beta]::before {
+section:is([new], [beta])::before {
     background-color: var(--baby-blue);
     border-radius: 100rem;
     color: var(--white);
@@ -1259,7 +1284,12 @@ section[new]::before, section[beta]::before {
 }
 
 section[beta]::before {
+    background-color: var(--baby-pink);
     content: "BETA";
+}
+
+section[soon]::before {
+    content: "Coming soon";
 }
 
 /* Version button */
@@ -1405,22 +1435,22 @@ body.popup {
 
 /* Directionally aligned tooltips */
 /* Center */
-.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-center{
     left: 50%;
     transform: translateX(-50%);
 }
 
-.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-center::after {
     left: 50%;
     margin-left: -3px;
 }
 
-.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
+:is(.tt-tooltip--left, .tt-tooltip--right).tt-tooltip--align-center{
     top: 50%;
     transform: translateY(-50%);
 }
 
-.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
+:is(.tt-tooltip--left, .tt-tooltip--right).tt-tooltip--align-center::after {
     margin-top: -3px;
     top: 50%;
 }
@@ -1429,12 +1459,12 @@ body.popup {
 /* ??? */
 
 /* Right */
-.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-right {
     left: auto;
     right: 0;
 }
 
-.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-right::after {
     left: 100%;
     margin-left: -12px;
     top: 100%;
@@ -1502,4 +1532,40 @@ body.popup {
     left: 0;
     margin-left: -3px;
     top: 6px;
+}
+
+/* Modals (popups) */
+.tt-modal-wrapper {
+    background: #000a;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 99999;
+
+    border: 0;
+    margin: 0;
+    padding: 10vh 5vw;
+
+    height: 100vh;
+    width: 100vw;
+}
+
+.tt-modal-body {
+    background: var(--background-dark);
+    border-radius: 0.3rem;
+
+    padding: 1rem;
+}
+
+.tt-modal-content {
+    border: 0;
+}
+
+.tt-modal-content select[type]:first-child {
+    margin-left: 0;
+}
+
+[pad-bottom] {
+    padding-bottom: 2rem;
 }

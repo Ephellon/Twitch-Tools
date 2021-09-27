@@ -4,7 +4,18 @@
         "save": ["Save"],
         "extras": ["Extras"],
         "options": ["Options"],
-        "en|dis": ["Enable at", "Disable at"],
+        "en|dis": ["Disable", "Enable"],
+		"new": ["New"],
+		"ok": ["Continue"],
+		"nk": ["Cancel"],
+
+		"minute": ["%d minute%s"],
+		"hour": ["%d hour%s"],
+		"day": ["%d day%s"],
+		"week": ["%d week%s"],
+		"month": ["%d month%s"],
+		"year": ["%d year%s"],
+		"@@century": ["%d century%s"],
 
         "smart-notifications": ["Smart Notifications"],
 
@@ -39,6 +50,13 @@
     	"away-mode:hide-chat": ["Hide Chat", "Keep chat hidden while", "lurking"],
     	"away-mode:volume": ["Lurking Volume", "Set the volume to", "when", "lurking"],
     	"away-mode:schedule": ["Schedule", "Select Times"],
+			"away-mode:schedule:options": ["Times"],
+			"away-mode:schedule:create": ["Create a new schedule"],
+			"away-mode:schedule:create:frequency": ["Frequency", "Every"],
+			"away-mode:schedule:create:functionality": ["Functionality", "at", "for"],
+			"away-mode:schedule:create:hour": ["%%"],
+			"away-mode:schedule:create:notice": ["Times will be saved in your current timezone", null],
+			"away-mode:schedule:create:add-more": ["Add another schedule"],
 
 	"auto-claim-bonuses": [
 		"Claim Bonuses",
@@ -415,6 +433,19 @@
 
 
 
+	"header:networking": ["Networking"],
+		"networking:sync-settings": [
+			"Export Settings",
+			"If you want to", "download settings", "enter the", "Upload ID"
+		],
+		"networking:sync-settings:upload": ["Upload"],
+		"networking:sync-settings:download": ["Download"],
+		"networking:sync-settings:copy": ["Copy"],
+
+
+
+
+
 	"header:video-recovery": ["Video Recovery"],
 	"keep-popout": [
 		"Keep Pop-out",
@@ -542,6 +573,17 @@
 		"This does", "not", "save/unlock the emote"
 	],
 
+	"@@predictive-raiding": [
+		"Predictive Raiding",
+
+		"Go to", "certain channels", "in anticipation of a raid",
+		"This takes at least one week to properly adjust"
+	],
+		"@@predictive-raiding:options:leave-before": [
+			"Leave Before",
+			"Head to the channel", "before the stream ends"
+		],
+
 	"@@soft-unban": [
 		"Soft Unban",
 		"Re-enable chat for channels you've been banned from",
@@ -551,12 +593,10 @@
     		"Fade Messages",
     		"Messages will be visible for", null
     	],
-
     	"@@soft-unban:options:keep-bots": [
     		"Keep Bots",
     		"Display bot messages"
     	],
-
     	"@@soft-unban:options:prevent-clips": [
     		"Prevent Clips",
     		"Hide Twitch™ clips"

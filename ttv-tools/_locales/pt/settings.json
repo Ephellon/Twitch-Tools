@@ -4,7 +4,18 @@
         "save": ["Salve"],
         "extras": ["Extras"],
         "options": ["Opções"],
-        "en|dis": ["Ativar em", "Desativar em"],
+        "en|dis": ["Desativar", "Ativar"],
+		"new": ["Novo"],
+		"ok": ["Prosseguir"],
+		"nk": ["Cancelar"],
+
+		"minute": ["%d minuto%s"],
+		"hour": ["%d hora%s"],
+		"day": ["%d dia%s"],
+		"week": ["%d semana%s"],
+		"month": ["%d mese%s"],
+		"year": ["%d ano%s"],
+		"century": ["%d século%s"],
 
         "smart-notifications": ["Notificações inteligentes"],
 
@@ -42,6 +53,13 @@
     	"away-mode:hide-chat": ["Hide Chat", "Mantenha o chat escondido enquanto", "monitorização"],
     	"away-mode:volume": ["Volume a monitorizar", "Definir o volume para", "quando em", "monitorização"],
     	"away-mode:schedule": ["Calendário", "Seleccionar dias"],
+			"away-mode:schedule:options": ["Horários"],
+			"away-mode:schedule:create": ["Criar uma nova programação"],
+			"away-mode:schedule:create:frequency": ["Frequência", "A cada"],
+			"away-mode:schedule:create:functionality": ["Funcionalidade", "em", "por"],
+			"away-mode:schedule:create:hour": ["%d:00"],
+			"away-mode:schedule:create:notice": ["Os horários serão salvos no seu fuso horário atual", null],
+			"away-mode:schedule:create:add-more": ["Adicionar outra programação"],
 
 	"auto-claim-bonuses": [
 		"Bónus de reclamações",
@@ -419,6 +437,19 @@
 
 
 
+	"header:networking": ["Networking"],
+		"networking:sync-settings": [
+			"Exportar configurações",
+			"Se você deseja fazer o", "download das configurações", "insira o", "ID de Upload"
+		],
+		"networking:sync-settings:upload": ["Upload"],
+		"networking:sync-settings:download": ["Baixar"],
+		"networking:sync-settings:copy": ["Copiar"],
+
+
+
+
+
 	"header:video-recovery": ["Recuperação de vídeo"],
 	"keep-popout": [
 		"Manter Janela Popup",
@@ -543,6 +574,17 @@
 		"Isto só funciona para o fluxo actual que está a ver",
 		"Isto", "não", "guarda/desbloqueia o emoticon"
 	],
+
+	"@@predictive-raiding": [
+		"Surpresas Preditivas",
+
+		"vá para", "canais específicos", "antes de uma surpresa",
+		"Isso leva pelo menos uma semana para se ajustar corretamente"
+	],
+		"@@predictive-raiding:options:leave-before": [
+			"Sair antes",
+			"vá para o canal", "antes do fim da transmissão"
+		],
 
 	"@@soft-unban": [
 		"Ligeira Revogação",

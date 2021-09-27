@@ -4,7 +4,18 @@
         "save": ["Speichern"],
         "extras": ["Extras"],
         "options": ["Optionen"],
-        "en|dis": ["Aktivieren um", "Deaktivieren um"],
+        "en|dis": ["Deaktivieren","Aktivieren"],
+		"new": ["Neu"],
+		"ok": ["Weitermachen"],
+		"nk": ["Stornieren"],
+
+		"minute": ["%d minuten%s"],
+		"hour": ["%d stunden%s"],
+		"day": ["%d tage%s"],
+		"week": ["%d wochen%s"],
+		"month": ["%d monate%s"],
+		"year": ["%d jahre%s"],
+		"century": ["%d jahrhunderte%s"],
 
         "smart-notifications": ["Intelligente Benachrichtigung"],
 
@@ -39,6 +50,13 @@
 		"away-mode:hide-chat": ["Chat verbergen", "Houd de chat verborgen terwijl", "bewaking"],
 		"away-mode:volume": ["Volume tijdens het monitoren", "Stel het volume in op", "tidjens op", "bewaking"],
 		"away-mode:schedule": ["Kalender", "Kies dagen"],
+			"away-mode:schedule:options": ["Zeiten"],
+			"away-mode:schedule:create": ["Erstellen Sie einen neuen Zeitplan"],
+			"away-mode:schedule:create:frequency": ["Frequenz", "Jeden"],
+			"away-mode:schedule:create:functionality": ["Funktionalität", "bei", "für"],
+			"away-mode:schedule:create:hour": ["%d:00"],
+			"away-mode:schedule:create:notice": ["Die Zeiten werden in Ihrer aktuellen Zeitzone", null, "gespeichert."],
+			"away-mode:schedule:create:add-more": ["Einen weiteren Zeitplan hinzufügen"],
 
 	"auto-claim-bonuses": [
 		"Claim Bonus",
@@ -80,7 +98,7 @@
 			"Gebruik deze functie niet"
 		],
 		"auto-follow:raids": [
-			"Surprises",
+			"Überraschungen",
 			"Als je meedoet aan een verrassing, volg dan het kanaal dat verrast wordt"
 		],
 		"auto-follow:time": [
@@ -419,6 +437,19 @@
 
 
 
+	"header:networking": ["Networking"],
+		"networking:sync-settings": [
+			"Exporteinstellungen",
+			"Wenn Sie Einstellungen", "herunterladen möchten", "geben Sie die", "Upload-ID"
+		],
+		"networking:sync-settings:upload": ["Hochladen"],
+		"networking:sync-settings:download": ["Herunterladen"],
+		"networking:sync-settings:copy": ["Kopieren"],
+
+
+
+
+
 	"header:video-recovery": ["Video herstel"],
 	"keep-popout": [
 		"Pop-up venster behouden",
@@ -545,6 +576,17 @@
 		"Dit werkt alleen voor de huidige stream die u bekijkt",
 		"Dit", "doet niet", "bewaart/ontgrendelt de emoticon"
 	],
+
+	"@@predictive-raiding": [
+		"Prädiktive Überraschungen",
+
+		"Gehen Sie in Erwartung einer Überraschung zu", "bestimmten kanälen",
+		"Dies dauert mindestens eine Woche, um sich richtig einzustellen"
+	],
+		"@@predictive-raiding:options:leave-before": [
+			"Vorher verlassen",
+			"Gehe", "vor Ende des Streams zum Kanal"
+		],
 
 	"@@soft-unban": [
 		"Lichte herroeping",

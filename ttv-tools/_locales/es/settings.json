@@ -4,7 +4,18 @@
         "save": ["Mantener"],
         "extras": [null],
         "options": ["Opciones"],
-        "en|dis": ["Habilitar a las", "Desactivar a las"],
+        "en|dis": ["Desactivar", "Habilitar"],
+        "new": ["Nuevo"],
+        "ok": ["Continuar"],
+        "nk": ["Cancelar"],
+
+        "minute": ["%d minuto%s"],
+        "hour": ["%d hora%s"],
+        "day": ["%d día%s"],
+        "week": ["%d semana%s"],
+        "month": ["%d mese%s"],
+        "year": ["%d año%s"],
+        "century": ["%d siglo%s"],
 
         "smart-notifications": ["Notificaciones Inteligentes"],
 
@@ -39,6 +50,13 @@
         "away-mode:hide-chat": ["Ocultar Chat", "Mantenga el chat oculto mientras", "monitoreo"],
         "away-mode:volume": ["Volumen al monitoreo", "Ponga el volumen a", "cuando esté a", "monitoreo"],
         "away-mode:schedule": ["Calendario", "Seleccionar días"],
+			"away-mode:schedule:options": ["Horas"],
+			"away-mode:schedule:create": ["Crear un nuevo horario"],
+			"away-mode:schedule:create:frequency": ["Frecuencia", "Todos"],
+			"away-mode:schedule:create:functionality": ["Funcionalidad", "en", "para"],
+			"away-mode:schedule:create:hour": ["%d:00"],
+			"away-mode:schedule:create:notice": ["Las horas se guardarán en su zona horaria actual", null],
+			"away-mode:schedule:create:add-more": ["Agregar otro horario"],
 
     "auto-claim-bonuses": [
         "Bonificaciones de Reclamo",
@@ -413,6 +431,19 @@
 
 
 
+	"header:networking": ["Networking"],
+		"networking:sync-settings": [
+			"Exportar configuración",
+			"Si desea", "descargar configuraciones", "ingrese el", "ID de Carga"
+		],
+		"networking:sync-settings:upload": ["Subir"],
+		"networking:sync-settings:download": ["Descargar"],
+		"networking:sync-settings:copy": ["Copiar"],
+
+
+
+
+
     "header:video-recovery": ["Recuperación de Video"],
     "keep-popout": [
         "Mantener Ventana Emergente",
@@ -540,6 +571,17 @@
         "Esto", "no", "guarda/desbloquea el emoticono"
     ],
 
+	"@@predictive-raiding": [
+		"Sorpresas Predictivas",
+
+		"vaya a", "canales específicos", "antes de una sorpresa",
+		"Esto toma al menos una semana para ajustarse correctamente"
+	],
+		"@@predictive-raiding:options:leave-before": [
+			"Salir antes",
+			"Ve al canal", "antes de que finalice la transmisión"
+		],
+
     "@@soft-unban": [
         "Ligera Revocación",
         "Vuelva a habilitar el chat para los canales en los que ha sido bloqueado",
@@ -549,12 +591,10 @@
             "Desvanecer Mensajes",
             "Los mensajes serán visibles durante", null
         ],
-
         "@@soft-unban:options:keep-bots": [
             "Mantenga los Robots",
             "Mostrar mensajes del robot"
         ],
-
         "@@soft-unban:options:prevent-clips": [
             "Evitar Compartir",
             "Oculte los hipervínculos de video de Twitch™"

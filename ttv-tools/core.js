@@ -138,6 +138,57 @@ function $(selector, multiple = false, container = document) {
     container?.querySelector(selector);
 }
 
+Object.defineProperties($, {
+    html: {
+        value: {
+            getElementByText: Element.prototype.getElementByText.bind(document.firstElementChild),
+            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.firstElementChild),
+        },
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    head: {
+        value: {
+            getElementByText: Element.prototype.getElementByText.bind(document.head),
+            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.head),
+        },
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    body: {
+        value: {
+            getElementByText: Element.prototype.getElementByText.bind(document.body),
+            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.body),
+        },
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    getElementByText: {
+        value: Element.prototype.getElementByText.bind(document.firstElementChild),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    getElementsByTextContent: {
+        value: Element.prototype.getElementsByTextContent.bind(document.firstElementChild),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+});
+
 function unknown(value) {
     return value === undefined || value === null;
 }
@@ -267,8 +318,13 @@ async function RemoveCache(keys, callback = () => {}) {
 }
 
 // Convert strings to RegExps
+    // RegExp lookers
+        // `X(?=Y)`     - match X if before Y
+        // `X(?!Y)`     - match X if not before Y
+        // `(?<=Y)X`    - match X if after Y
+        // `(?<!Y)X`    - match X if not after Y
 function AsteriskFn(feature) {
-    return RegExp(`^${ feature.replace('*', '(\\w+)?').replace('#', '([^_]+)?') }$`, 'i');
+    return RegExp(`^${ feature.replace(/\./g, '\\.').replace(/\?/g, '.?').replace(/\+/g, '(\\w+)?').replace(/\*/g, '(\\w*)?').replace(/\#/g, '([^_]+)?').replace(/([^]+)~([^~]+)/, '($1)(?<!$2)') }$`, 'i');
 }
 
 // The following needs to be run once per page

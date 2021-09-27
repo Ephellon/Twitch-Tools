@@ -10,11 +10,17 @@
  */
 
 let $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
-let empty = value => (value === undefined || value === null),
-    defined = value => !empty(value);
+let unknown = value => (value === undefined || value === null),
+    defined = value => !unknown(value);
 let encodeHTML = string => string.replace(/([<&>])/g, ($0, $1, $$, $_) => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;' }[$1]));
 
 let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
+
+let privateConfiguration = Object.freeze({
+    writable: false,
+    enumerable: false,
+    configurable: false,
+});
 
 if(browser && browser.runtime)
     BrowserNamespace = 'browser';
@@ -50,6 +56,7 @@ let // These are option names. Anything else will be removed
             'away_mode__hide_chat',
             'away_mode__volume_control',
             'away_mode__volume',
+            'away_mode_schedule',
         // Auto-claim Bonuses
         'auto_claim_bonuses',
         // Auto-Follow
@@ -195,6 +202,9 @@ let // These are option names. Anything else will be removed
         'experimental_mode',
         // User Defined Settings
         'user_language_preference',
+
+        /* "Hidden" options */
+        'sync-token',
     ];
 
 // https://stackoverflow.com/a/2117523/4211612
@@ -359,7 +369,7 @@ class Tooltip {
                 )
             );
 
-            tooltip.setAttribute('style', 'display:block');
+            tooltip.setAttribute('style', `display:block;`);
         });
 
         let hideTooltip = event => {
@@ -378,6 +388,179 @@ class Tooltip {
 
     static get(container) {
         return Tooltip.#TOOLTIPS.get(container);
+    }
+}
+
+// Creates a new Twitch-style date input
+    // new DatePicker() -> Promise~Array:Object
+class DatePicker {
+    static values = [];
+    static weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ');
+    static months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+
+    constructor(defaultDate, defaultStatus = false, defaultTime = null, defaultDuration = 1) {
+        let date = +new Date(defaultDate ?? new Date),
+            h = 60 * 60 * 1000,
+            d = 24 * h,
+            f = furnish;
+
+        let locale = SETTINGS?.user_language_preference ?? 'en';
+        let preExisting = defined(defaultDate) && (defined(defaultTime) || defaultDuration > 1);
+
+        let now = new Date(date - (date % h)),
+            timezone = (now + '').replace(/[^]+\(([^]+?)\)[^]*/, '$1').replace(/[^A-Z]/g, ''),
+            timeOptions = new Array(24).fill(0).map((v, i, a) => +now + (i * h)).map(d => new Date(d).toLocaleTimeString(locale).replace(/[^\s\w][\d\W]+/, '')),
+            [timeDefault] = [defaultTime, ...timeOptions].filter(defined);
+
+        let durationOptions = new Array(23).fill(0).map((v, i, a) => i + 1);
+
+        durationOptions = [...durationOptions, ...new Array(7).fill(0).map((v, i, a) => 24 * (i + 1))];
+
+        let dayOptions = new Array(7).fill(0).map((v, i, a) => i),
+            dayDefault = now.getDay();
+
+        let statusOptions = new Array(2).fill(0).map((v, i, a) => !!i);
+
+        let to24H = string => string
+            .replace(/\s+/g, '')
+            .replace(/(\d+)[AP]M?/i, ($0, $1, $$, $_) => parseInt($1) + (12 * /12a|(?<!12)p/i.test($0)))
+            .replace(/^24/, 0);
+
+        timeDefault = to24H(timeDefault + '');
+
+        let daySelect = f(`select.edit`, { type: 'day', value: dayDefault },
+                ...dayOptions.map(value => f(`option${ (value == dayDefault? '[selected]': '') }`, { value, 'tr-id': 'day-of-week' }, DatePicker.weekdays[value]))
+            ),
+
+            statusSelect = f(`select.edit`, { type: 'status', value: defaultStatus, 'tr-id': 'en|dis' },
+                ...statusOptions.map(value => f(`option${ (value == defaultStatus? '[selected]': '') }`, { value }, 'off on'.split(' ')[+value]))
+            ),
+
+            timeSelect = f(`select.edit`, { type: 'time', value: timeDefault, 'tr-id': 'away-mode:schedule:create:hour' },
+                ...timeOptions.map(value =>
+                    f(`option${ (to24H(value) == timeDefault? '[selected]': '') }`, { value: to24H(value), 'tr-id': '' },
+                        value.replace(/12[AP]M?/i, $0 => $0 + [' \u{1f31a}', ' \u{1f31e}'][+/p/i.test($0)])
+                    )
+                )
+            ),
+
+            durationSelect = f(`select.edit`, { type: 'duration', value: defaultDuration, 'tr-id': 'away-mode:schedule:create:duration' },
+                ...durationOptions.map(value => {
+                    let timeString = toTimeString(value * h),
+                        timeType = timeString.replace(/[^a-z]|s$/ig, '').replace(/ie$/i, 'y');
+
+                    return f(`option${ (value == defaultDuration? '[selected]': '') }`, { value, 'tr-id': timeType }, timeString);
+                })
+            );
+
+        daySelect.value = dayDefault;
+
+        let container =
+            f(`div.tt-modal-wrapper.context-root`, {},
+                f(`div.tt-modal-body`, {},
+                    f(`div.tt-modal-container`, {},
+                        // Header
+                        f('div.tt-modal-header', {},
+                            f('h3', { 'tr-id': 'away-mode:schedule:create', innerHTML: Glyphs.modify('calendar', { height: 30, width: 30 }).toString() }, ' Create a new schedule')
+                        ),
+
+                        // Body
+                        f('div.tt-modal-content.details.context-body', {},
+                            f('div', { style: 'width:-webkit-fill-available' },
+                                // Frequency
+                                f('div', { 'pad-bottom': '' },
+                                    f('div.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
+                                    f('div.summary', {},
+                                        f('span', { 'tr-id': '' }, 'Every'),
+                                        daySelect
+                                    )
+                                ),
+
+                                // Status & Functionality
+                                f('div', { 'pad-bottom': '' },
+                                    f('div.title', { 'tr-id': 'away-mode:schedule:create:functionality' }, 'Functionality'),
+                                    f('div.summary', { 'tr-id': '' },
+                                        statusSelect,
+                                        'at',
+                                        timeSelect,
+                                        'for',
+                                        durationSelect,
+
+                                        f('div.subtitle', {
+                                            'tr-id': 'away-mode:schedule:create:notice',
+                                            innerHTML: `Times will be saved in your current timezone <span>(${ timezone })</span>.`
+                                        })
+                                    )
+                                ),
+
+                                // Submit / Cancel
+                                f('div', { 'pad-bottom': '' },
+                                    // Add more
+                                    f('div', { style: 'width:fit-content' },
+                                        f('div.checkbox.left', { onmouseup: event => $('input', false, event.currentTarget).click() },
+                                            f('input#add-more', { type: 'checkbox', name: 'add-more-times' }),
+                                            f('label', { for: 'add-more-times', 'tr-id': 'away-mode:schedule:create:add-more' }, 'Add another schedule')
+                                        )
+                                    ),
+
+                                    // Continue
+                                    f('button', {
+                                        'tr-id': 'ok',
+
+                                        onmousedown: event => {
+                                            let { currentTarget } = event;
+
+                                            let values = $('select[type]', true, currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), select.value]);
+
+                                            let object = {};
+                                            for(let [key, value] of values)
+                                                object[key] = value;
+
+                                            DatePicker.values.push(object);
+                                        },
+
+                                        onmouseup: event => {
+                                            let { currentTarget } = event,
+                                                addNew = $('#add-more', false, currentTarget.closest(':not(button)')).checked;
+
+                                            if(addNew)
+                                                new DatePicker();
+                                            else
+                                                $('#date-picker-value').value = JSON.stringify(DatePicker.values.filter(defined));
+
+                                            setTimeout(() => currentTarget.closest('.context-root')?.remove(), 100);
+                                        },
+                                    }, ['Continue', 'Save'][+preExisting]),
+
+                                    // Cancel
+                                    f(`button.${ ['edit', 'remove'][+preExisting] }`, {
+                                        'tr-id': 'nk',
+
+                                        onmousedown: event => DatePicker.values.push(null),
+
+                                        onmouseup: event => {
+                                            let { currentTarget } = event;
+
+                                            $('#date-picker-value').value = JSON.stringify(DatePicker.values.filter(defined));
+
+                                            setTimeout(() => currentTarget.closest('.context-root')?.remove(), 100);
+                                        },
+                                    }, ['Cancel', 'Delete'][+preExisting]),
+
+                                    // Hidden
+                                    f('input#date-picker-value', { type: 'text', style: 'display:none!important' })
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+        Translate(locale, container);
+
+        document.body.append(container);
+
+        return awaitOn(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
     }
 }
 
@@ -409,7 +592,7 @@ function RedoRuleElements(rules, ruleType) {
     rules = rules.split(',').sort();
 
     for(let rule of rules) {
-        if(!(rule && rule.length))
+        if(!rule?.length)
             continue;
 
         let E = document.createElement('button'),
@@ -439,7 +622,7 @@ function RedoRuleElements(rules, ruleType) {
                 itemType = 'text';
             } break;
 
-            default:{
+            default: {
                 itemType = 'regexp';
             } break;
         }
@@ -486,18 +669,82 @@ function RedoRuleElements(rules, ruleType) {
     }
 }
 
+function RedoTimeElements(schedules, scheduleType) {
+    if(!schedules?.length)
+        return;
+
+    schedules = JSON.parse(schedules);
+
+    let validSchedules = [];
+    for(let schedule of schedules) {
+        let E = document.createElement('button'),
+            R = document.createElement('button');
+
+        let scheduleID = UUID.from(JSON.stringify(schedule)).value,
+            { day, time, duration, status } = schedule;
+
+        if(defined($(`#${ scheduleType }_schedule [day-of-week="${ day }"i] [${ scheduleType }-id="${ scheduleID }"i]`)))
+            continue;
+
+        validSchedules.push(schedule);
+
+        // "Edit" button
+        E.innerHTML = `<code fill>${ encodeHTML(`${ ['\u{1f534}','\u{1f7e2}'][+parseBool(status)] } ${ time }:00 + ${ toTimeString(duration * 3_600_000, '?hours_h') }`) }</code>`;
+        E.classList.add('edit');
+        E.setAttribute(`${ scheduleType }-id`, scheduleID);
+
+        for(let key in schedule)
+            E.setAttribute(key, schedule[key]);
+
+        E.onclick = event => {
+            let { currentTarget } = event;
+
+            let day = parseInt(currentTarget.getAttribute('day')),
+                time = parseInt(currentTarget.getAttribute('time')),
+                duration = parseInt(currentTarget.getAttribute('duration')),
+                status = parseBool(currentTarget.getAttribute('status'));
+
+            let date = new Date,
+                dayOffset = (date.getDate() - (date.getDay() - day));
+
+            dayOffset = (dayOffset > 0)?
+                dayOffset:
+            dayOffset + 7;
+
+            let offset = new Date([DatePicker.months[date.getMonth()], dayOffset, date.getFullYear(), time].join(' '));
+
+            new DatePicker(offset, status, time, duration).then(schedules => RedoTimeElements(JSON.stringify(schedules), 'away_mode'));
+
+            currentTarget.remove();
+        };
+        E.setAttribute('up-tooltip', `Edit schedule`);
+        E.setAttribute('tr-skip', true);
+        E.append(R);
+
+        // "Remove" button
+        R.id = scheduleID;
+        R.innerHTML = Glyphs.modify('trash', { fill: 'white', height: '20px', width: '20px' });
+        R.classList.add('remove');
+
+        R.onclick = event => {
+            let { currentTarget } = event,
+                { id } = currentTarget;
+
+            $(`[${ scheduleType }-id="${ id }"]`)?.remove();
+
+            event.stopPropagation();
+        };
+        R.setAttribute('up-tooltip', `Remove schedule`);
+
+        $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.setAttribute('not-empty', true);
+        $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.append(E);
+    }
+
+    $(`#${ scheduleType }_schedule-input`).value = JSON.stringify([...new Set(validSchedules)]);
+}
+
 async function SaveSettings() {
-    let extractValue = element => {
-        return element[{
-            'date': 'value',
-            'text': 'value',
-            'time': 'value',
-            'radio': 'checked',
-            'number': 'value',
-            'checkbox': 'checked',
-            'select-one': 'value',
-        }[element.type]];
-    };
+    let extractValue = SaveSettings.extractValue;
 
     let elements = $(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', '), true),
         using = elements.map(element => element.id),
@@ -538,6 +785,36 @@ async function SaveSettings() {
                 RedoRuleElements(settings.phrase_rules, 'phrase');
             } break;
 
+            case 'away_mode_schedule': {
+                let times = JSON.parse(extractValue($('#phrase_rules-input')) || '[]');
+                for(let button of $('#away_mode_schedule button[duration]', true)) {
+                    let day = parseInt(button.getAttribute('day')),
+                        time = parseInt(button.getAttribute('time')),
+                        duration = parseInt(button.getAttribute('duration')),
+                        status = parseBool(button.getAttribute('status'));
+
+                    times.push({ day, time, duration, status });
+                }
+
+                let validTimes = [];
+                for(let object of times) {
+                    let { day, time, duration } = object;
+
+                    if(false
+                        || (day < 0 || day > 6)
+                        || (time < 0 || time > 23)
+                        || (duration < 1)
+                    )
+                        continue;
+
+                    validTimes.push(object);
+                }
+
+                settings.away_mode_schedule = JSON.stringify([...new Set(validTimes)]);
+
+                RedoTimeElements(settings.away_mode_schedule, 'away_mode');
+            } break;
+
             case 'away_mode__volume': {
                 let volume = extractValue($('#away_mode__volume'));
 
@@ -558,27 +835,32 @@ async function SaveSettings() {
     return await Storage.set(SETTINGS = settings);
 }
 
-async function LoadSettings() {
-    let assignValue = (element, value) => {
-        if(!defined(value))
-            return;
+Object.defineProperties(SaveSettings, {
+    extractValue: {
+        value: element => {
+            return element[{
+                'date': 'value',
+                'text': 'value',
+                'time': 'value',
+                'radio': 'checked',
+                'number': 'value',
+                'checkbox': 'checked',
+                'select-one': 'value',
+            }[element.type]];
+        },
 
-        return element[{
-            'date': 'value',
-            'text': 'value',
-            'time': 'value',
-            'radio': 'checked',
-            'number': 'value',
-            'checkbox': 'checked',
-            'select-one': 'value',
-        }[element.type]] = value;
-    };
+        ...privateConfiguration
+    },
+});
+
+async function LoadSettings(OVER_RIDE_SETTINGS = null) {
+    let assignValue = LoadSettings.assignValue;
 
     let elements = $(usable_settings.map(name => '#' + name).join(', '), true),
         using = elements.map(element => element.id);
 
     return await Storage.get(null, settings => {
-        SETTINGS = settings;
+        SETTINGS = OVER_RIDE_SETTINGS ?? settings;
 
         loading:
         for(let id of using) {
@@ -586,31 +868,37 @@ async function LoadSettings() {
 
             switch(id) {
                 case 'filter_rules': {
-                    let rules = settings[id];
+                    let rules = SETTINGS[id];
 
                     RedoRuleElements(rules, 'filter');
                 } break;
 
                 case 'phrase_rules': {
-                    let rules = settings[id];
+                    let rules = SETTINGS[id];
 
                     RedoRuleElements(rules, 'phrase');
                 } break;
 
+                case 'away_mode_schedule': {
+                    let times = SETTINGS[id];
+
+                    RedoTimeElements(times, 'away_mode');
+                } break;
+
                 case 'away_mode__volume': {
-                    let volume = settings[id];
+                    let volume = SETTINGS[id];
 
                     assignValue(element, volume * 100);
                 } break;
 
                 case 'user_language_preference': {
-                    let preferred = settings[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
+                    let preferred = SETTINGS[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
                     assignValue(element, preferred);
 
                     if(TRANSLATED) continue loading;
 
-                    TranslatePageTo(preferred);
+                    Translate(preferred);
                 } break;
 
                 default: {
@@ -619,12 +907,33 @@ async function LoadSettings() {
                     if(defined(selected))
                         selected.removeAttribute('selected');
 
-                    assignValue(element, settings[id]);
+                    assignValue(element, SETTINGS[id]);
                 } break;
             }
         }
     });
 }
+
+Object.defineProperties(LoadSettings, {
+    assignValue: {
+        value: (element, value) => {
+            if(!defined(value))
+                return;
+
+            return element[{
+                'date': 'value',
+                'text': 'value',
+                'time': 'value',
+                'radio': 'checked',
+                'number': 'value',
+                'checkbox': 'checked',
+                'select-one': 'value',
+            }[element.type]] = value;
+        },
+
+        ...privateConfiguration
+    },
+});
 
 function compareVersions(oldVersion = '', newVersion = '', returnType) {
     if(/[<=>]/.test(oldVersion)) {
@@ -692,6 +1001,20 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     return diff;
 }
 
+/* Auto-making tooltips */
+
+$('input[type="number"i]:is([min], [max])', true)
+    .map(input => {
+        let parent = input.closest(':not(input)'),
+            min = input.getAttribute('min') || input.getAttribute('value') || '0',
+            max = input.getAttribute('max') || '&infin;';
+
+        return ({ parent, min, max });
+    })
+    .map(({ parent, min, max }) => parent.setAttribute('top-tooltip', `${ min } &mdash; ${ max }`));
+
+/* All of the "clickables" */
+
 $('#whisper_audio_sound', true).map(element => element.onchange = async event => setTimeout(() => $('#whisper_audio_sound-test')?.click(), 10));
 
 $('#whisper_audio_sound-test', true).map(button => button.onclick = async event => {
@@ -721,7 +1044,7 @@ $('#user_language_preference', true).map(element => element.onchange = async eve
     let { currentTarget } = event,
         preferred = currentTarget.value;
 
-    TranslatePageTo(preferred);
+    Translate(preferred);
 
     await Storage.set({ ...SETTINGS, user_language_preference: preferred });
 });
@@ -757,6 +1080,137 @@ $('#save, .save', true).map(element => element.onclick = async event => {
             }, 1500);
         });
 });
+
+function postSyncStatus(message = '&nbsp;', type = 'alert') {
+    clearTimeout(clearSyncStatus.clearID);
+
+    $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
+
+    message = $('#sync-status').innerHTML = `<span ${type}-text>${message}</span>`;
+
+    clearSyncStatus.clearID = setTimeout(clearSyncStatus, message.split(/\s+/).length * 1_500);
+}
+
+Object.defineProperties(postSyncStatus, {
+    alert: { value: message => postSyncStatus(message, 'alert'), ...privateConfiguration },
+    error: { value: message => postSyncStatus(message, 'error'), ...privateConfiguration },
+    success: { value: message => postSyncStatus(message, 'success'), ...privateConfiguration },
+    warning: { value: message => postSyncStatus(message, 'warning'), ...privateConfiguration },
+});
+
+function clearSyncStatus() {
+    $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 0'));
+}
+
+clearSyncStatus.clearID = -1;
+
+setTimeout(clearSyncStatus, 1_000);
+
+$('#sync-settings--upload').onmouseup = async event => {
+    let syncToken = $('#sync-token'),
+        { currentTarget } = event;
+
+    await SaveSettings()
+        .then(async() => {
+            currentTarget.classList.add('spin');
+            postSyncStatus('Uploading...');
+
+            let id = parseURL(Runtime.getURL('')).host;
+
+            let url = parseURL(`https://www.tinyurl.com/api-create.php`)
+                .pushToSearch({
+                    url: encodeURIComponent(
+                        parseURL(`json://${ id }.settings.js/`)
+                            .pushToSearch({ json: btoa(JSON.stringify({ ...SETTINGS, syncDate: new Date().toJSON() })) })
+                            .href
+                    )
+                });
+
+            await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(url.href) }`/*, { mode: 'no-cors' } */)
+                .then(response => response.text())
+                .then(token => {
+                    let { pathname } = parseURL(token);
+
+                    if(!pathname.length)
+                        throw `Unable to upload`;
+
+                    return `Uploaded. Your Upload ID is ${ (syncToken.value = pathname.slice(1)).toUpperCase() }`;
+                })
+                .then(postSyncStatus.success)
+                .then(SaveSettings)
+                .catch(postSyncStatus.warning)
+                .finally(() => currentTarget.classList.remove('spin'));
+        });
+};
+
+$('#sync-settings--download').onmouseup = async event => {
+    let syncToken = $('#sync-token').value,
+        { currentTarget } = event;
+
+    if((syncToken?.replace(/\W+/g, '')?.length | 0) < 8)
+        return postSyncStatus.warning('Please use a valid Upload ID');
+
+    currentTarget.classList.add('spin');
+    postSyncStatus('Downloading...');
+
+    await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(`https://preview.tinyurl.com/${ syncToken }`) }`/*, { mode: 'no-cors' } */)
+        .then(response => response.text())
+        .catch(postSyncStatus.warning)
+        .then(html => {
+            let parser = new DOMParser;
+            let doc = parser.parseFromString(html, 'text/html');
+
+            return $('#contentcontainer', false, doc)?.getElementByText('json://');
+        })
+        .then(element => {
+            let url = element?.textContent,
+                data;
+
+            if(!url?.length)
+                throw `Invalid Upload ID "${ syncToken.toUpperCase() }"`;
+
+            try {
+                data = JSON.parse(atob(decodeURIComponent(parseURL(url).searchParameters.json)));
+            } catch(error) {
+                throw error;
+            }
+
+            return data;
+        })
+        .then(async settings => {
+            await LoadSettings({ ...settings, 'sync-token': syncToken })
+                .then(() => {
+                    let messages = ['Downloaded. Ready to save'],
+                        uploadAge = +new Date() - +new Date(settings.syncDate);
+
+                    if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
+                        messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '?days days') } old</span>`);
+
+                        LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
+                    }
+
+                    postSyncStatus.success(messages.join('. '));
+                })
+                .catch(postSyncStatus.warning);
+        })
+        .catch(postSyncStatus.warning)
+        .finally(() => currentTarget.classList.remove('spin'));
+};
+
+$('#sync-settings--share').onmousedown = async event => {
+    let syncToken = $('#sync-token').value,
+        { currentTarget } = event;
+
+    if(!syncToken?.length)
+        return postSyncStatus.warning('Nothing to share');
+
+    await navigator.clipboard.writeText(syncToken)
+        .then(() => postSyncStatus.success('Copied to clipboard'))
+        .catch(postSyncStatus.warning);
+};
+
+/* Adding new schedules */
+$('#add-time').onmouseup = event => new DatePicker().then(schedules => RedoTimeElements(JSON.stringify(schedules), 'away_mode'));
 
 // $('#version').setAttribute('version', Manifest.version);
 
@@ -927,7 +1381,6 @@ let FETCHED_DATA = { wasFetched: false };
     });
 })(location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
-
 // All anchors with the [continue-search] attribute
 $('a[continue-search]', true).map(a => {
     let parameters = [];
@@ -960,7 +1413,7 @@ $('[new]', true).map(element => {
 // Any keys that need "translating"
 $('[id^="key:"i]', true).map(element => element.innerText = GetMacro(element.innerText));
 
-async function TranslatePageTo(language = 'en') {
+async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
             WARN(`Translations to "${ language.toUpperCase() }" are not available`);
@@ -977,13 +1430,16 @@ async function TranslatePageTo(language = 'en') {
 
             let { ELEMENT_NODE, TEXT_NODE } = document;
 
-            for(let element of $('[tr-id]', true)) {
+            for(let element of $('[tr-id]', true, container)) {
                 let translation_id = (element.getAttribute('tr-id') || lastTrID),
                     translations = (null
                         ?? json['?']?.[translation_id]
                         ?? json[translation_id]
                         ?? []
                     );
+
+                if(!translations?.length)
+                    continue;
 
                 let nodes = [...element.childNodes]
                     .filter(node => [ELEMENT_NODE, TEXT_NODE].contains(node.nodeType))
@@ -994,7 +1450,7 @@ async function TranslatePageTo(language = 'en') {
                         if([TEXT_NODE].contains(nodeType))
                             return node;
 
-                        if(!defined(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
+                        if(unknown(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
                             return;
 
                         return node;
@@ -1008,8 +1464,17 @@ async function TranslatePageTo(language = 'en') {
                         stop: node.textContent.replace(/^[^]*?((?:&#?[\w\-]+?;)?[\s\.!:?,]*)$/, '$1'),
                     };
 
+                    if(/^%%$/.test(translation ?? ''))
+                        continue;
+
+                    let number;
                     if(defined(translation))
-                        node.textContent = padding.start + translation + padding.stop;
+                        node.textContent =
+                            padding.start
+                            + translation
+                                .replace(/%d\b/g, number = node.textContent.replace(/[^]*?(\d+)[^]*/, '$1'))
+                                .replace(/%s\b/g, parseInt(number) > 1? 's': '')
+                            + padding.stop;
 
                     if(translation?.length < 1)
                         node.textContent = node.textContent.trim();
@@ -1026,7 +1491,7 @@ async function TranslatePageTo(language = 'en') {
 
                 lastTrID = translation_id;
             }
-        })
+        });
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
@@ -1078,7 +1543,7 @@ document.body.onload = async() => {
             if(defined(language))
                 await Storage.set({ user_language_preference: language });
 
-            await Storage.get(['user_language_preference'], ({ user_language_preference }) => TranslatePageTo(user_language_preference));
+            await Storage.get(['user_language_preference'], ({ user_language_preference }) => Translate(user_language_preference));
 
             TRANSLATED = true;
         })
@@ -1094,6 +1559,11 @@ document.body.onload = async() => {
             // Stop or continue loading settings
             if((search['show-defaults'] + '') != 'true')
                 await LoadSettings();
+
+            // Overwrite settings defined in the search
+            for(let key in search)
+                if(usable_settings.contains(key) && defined($(`#${ key }`)))
+                    LoadSettings.assignValue($(`#${ key }`), search[key]);
 
             // Adjust summaries
             $('.summary', true).map(element => {
@@ -1131,17 +1601,23 @@ document.body.onload = async() => {
                             element.setAttribute('style', 'display:none!important');
                     });
 
-                summary.setAttribute('style', `padding-bottom:calc(${ margin.join(' + ') })`);
+                summary.setAttribute('style', `${ summary.getAttribute('style')?.replace(/([^;])(?!;)$/, '$1; ') ?? '' }padding-bottom:calc(${ margin.join(' + ') })`);
             });
 
             // Update links (hrefs), tooltips, and other items
             setTimeout(() => {
+                // Adjust all audio URLs
                 $('#whisper_audio_sound', true).map(element => {
                     let [selected] = element.selectedOptions;
                     let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
 
                     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
                 });
+
+                // Add the "Experimental feature" tooltip
+                $('[id=":settings--experimental"i] section > .summary :not([hidden]) input', true)
+                    .map(input => input.closest(':not(input)'))
+                    .map(container => container.setAttribute('right-tooltip', 'Experimental feature'));
 
                 $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
                     let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),

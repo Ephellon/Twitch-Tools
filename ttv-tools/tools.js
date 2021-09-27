@@ -2045,7 +2045,7 @@ async function update() {
     top.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'STREAMERS',
@@ -2056,7 +2056,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] [href$="${ pathname }"]`);
 
                         if(!defined(parent))
                             return false;
@@ -2120,10 +2120,10 @@ let // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode*', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next*', 'view_mode'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next*', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
-    NORMALIZED_FEATURES = ['away_mode*', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
+    NORMALIZED_FEATURES = ['away_mode*~schedule', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
 
     // Features that need to be refreshed when changed
     REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'highlight_phrases', 'native_twitch_reply', '*placement'].map(AsteriskFn);
@@ -2364,12 +2364,12 @@ let Initialize = async(START_OVER = false) => {
         cache = cache[round(random() * cache.length)];
 
         // There isn't a channel that fits the criteria
-        if(parseBool(Settings.stay_live) && !defined(next) && !defined(GetNextStreamer?.cachedStreamer) && online.length) {
-            WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired`);
-
+        if(parseBool(Settings.stay_live) && !defined(next) && !defined(GetNextStreamer?.cachedStreamer) && online?.length) {
             next ??= GetNextStreamer.cachedStreamer ??= cache;
+
+            WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired:`, next);
         } else if(parseBool(Settings.stay_live) && defined(next)) {
-            GetNextStreamer.cachedStreamer = null;
+            GetNextStreamer.cachedStreamer = next;
         }
 
         return next;
@@ -2424,6 +2424,7 @@ let Initialize = async(START_OVER = false) => {
     /** Streamer Array - the current streamer/channel
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
+     * cult:number*      - GETTER: the estimated number of followers
      * face:string       - GETTER: a URL to the channel points image, if applicable
      * fiat:string*      - GETTER: returns the name of the streamer's coin, if applicable
      * follow:function   - follows the current channel
@@ -2435,6 +2436,7 @@ let Initialize = async(START_OVER = false) => {
      * name:string       - the channel's username
      * paid:boolean*     - GETTER: is the user  subscribed
      * ping:boolean*     - GETTER: does the user have notifications on
+     * plug:boolean*     - GETTER: is there an advertisement running
      * poll:number*      - GETTER: how many viewers are watching the channel
      * sole:number       - GETTER: the channel's ID
      * tags:array*       - GETTER: tags of the current stream
@@ -2458,6 +2460,12 @@ let Initialize = async(START_OVER = false) => {
                 points = parseCoin(balance?.textContent);
 
             return points;
+        },
+
+        get cult() {
+            let followers = $.getElementByText(/([\d\W]+[a-z]?) follow/i)? RegExp.$1: 0;
+
+            return parseCoin(followers);
         },
 
         get face() {
@@ -2530,6 +2538,10 @@ let Initialize = async(START_OVER = false) => {
 
         get ping() {
             return defined($('[data-a-target^="live-notifications"i][data-a-target$="on"i]'))
+        },
+
+        get plug() {
+            return defined($('[data-a-target*="ad-countdown"i]'));
         },
 
         get poll() {
@@ -2612,16 +2624,16 @@ let Initialize = async(START_OVER = false) => {
         },
 
         __eventlisteners__: {
-            onhost: [],
-            onraid: [],
+            onhost: new Set,
+            onraid: new Set,
         },
 
         set onhost(job) {
-            STREAMER.__eventlisteners__.onhost.push(job);
+            STREAMER.__eventlisteners__.onhost.add(job);
         },
 
         set onraid(job) {
-            STREAMER.__eventlisteners__.onraid.push(job);
+            STREAMER.__eventlisteners__.onraid.add(job);
         },
     };
 
@@ -2642,6 +2654,15 @@ let Initialize = async(START_OVER = false) => {
 
         event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
         event.dataTransfer.dropEffect = 'move';
+    };
+
+    // Handlers: on-raid | on-host
+    STREAMER.onraid = STREAMER.onhost = async({ hosting = false, raiding = false, raided = false }) => {
+        let next = await GetNextStreamer();
+
+        LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+
+        SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
     };
 
     /** Notification Array - the visible, actionable notifications
@@ -2681,7 +2702,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -2783,7 +2804,7 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'STREAMERS',
@@ -2794,7 +2815,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-label^="fav"i] [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] [href$="${ pathname }"]`);
 
                             if(!defined(parent))
                                 return false;
@@ -3612,14 +3633,17 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 background: $('button', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `${ ['','Exit '][+enabled] }Away Mode (${ GetMacro('alt+a') })`, { from: 'up', left: +5 }),
+                tooltip: new Tooltip(container, `Turn away mode ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'up', left: +5 }),
             };
 
             button.tooltip.id = new UUID().toString().replace(/-/g, '');
             button.container.setAttribute('tt-away-mode-enabled', enabled);
 
             button.icon ??= $('svg', false, container);
-            button.icon.outerHTML = Glyphs.modify('eye', { height: '20px', width: '20px' }).toString();
+            button.icon.outerHTML = [
+                Glyphs.modify('show', { id: 'tt-away-mode--show', height: '20px', width: '20px' }).toString(),
+                Glyphs.modify('hide', { id: 'tt-away-mode--hide', height: '20px', width: '20px' }).toString(),
+            ].filter(defined).join('');
             button.icon = $('svg', false, container);
         } else {
             let container = $('#away-mode');
@@ -3666,8 +3690,8 @@ let Initialize = async(START_OVER = false) => {
                 { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
+            tooltip.innerHTML = `Turn away mode ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`;
             background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
-            tooltip.innerHTML = `${ ['','Exit '][+enabled] }Away Mode (${ GetMacro('alt+a') })`;
 
             // Return control when Away Mode is engaged
             MAINTAIN_VOLUME_CONTROL = true;
@@ -3688,11 +3712,24 @@ let Initialize = async(START_OVER = false) => {
         };
 
         button.container.onmouseenter ??= event => {
-            AwayModeButton.icon?.setAttribute('style', 'transform: translateX(0px) scale(1.2); transition: transform 300ms ease 0s');
+            let { currentTarget } = event,
+                svgContainer = $('figure', false, currentTarget),
+                svgShow = $('svg#tt-away-mode--show', false, svgContainer),
+                svgHide = $('svg#tt-away-mode--hide', false, svgContainer);
+            let enabled = parseBool(currentTarget.closest('#away-mode').getAttribute('tt-away-mode-enabled'));
+
+            svgShow?.setAttribute('preview', !enabled);
+            svgHide?.setAttribute('preview', !!enabled);
         };
 
         button.container.onmouseleave ??= event => {
-            AwayModeButton.icon?.setAttribute('style', 'transform: translateX(0px) scale(1); transition: transform 300ms ease 0s');
+            let { currentTarget } = event,
+                svgContainer = $('figure', false, currentTarget),
+                svgShow = $('svg#tt-away-mode--show', false, svgContainer),
+                svgHide = $('svg#tt-away-mode--hide', false, svgContainer);
+
+            svgShow?.removeAttribute('preview');
+            svgHide?.removeAttribute('preview');
         };
 
         // Alt + A | Opt + A
@@ -3727,6 +3764,48 @@ let Initialize = async(START_OVER = false) => {
 
             SetVolume(volume);
         };
+
+        // Scheduling logic...
+        awaitOn(() => $('#away-mode'), 3_000).then(() => {
+            let schedules = JSON.parse(Settings?.away_mode_schedule || '[]');
+            let today = new Date(),
+                YEAR = today.getFullYear(),
+                MONTH = today.getMonth(),
+                DATE = today.getDate(),
+                TODAY = today.getDay(),
+                H = today.getHours(),
+                M = today.getMinutes(),
+                S = today.getSeconds();
+
+            let weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' '),
+                months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+
+            let enableAwayMode,
+                currentAwayMode = parseBool($('#away-mode')?.getAttribute('tt-away-mode-enabled'));
+
+            for(let schedule of schedules) {
+                let { day, time, duration, status } = schedule;
+
+                if(TODAY != day)
+                    continue;
+
+                if((H < time) || (H > (time + duration) % 24))
+                    continue;
+
+                duration *= 3_600_000;
+
+                WARN(`Away Mode is scheduled to be "${ status }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
+
+                // Found at least one schedule...
+                if(defined(enableAwayMode = status))
+                    break;
+            }
+
+            // Scheduled state...
+            // LOG('Away Mode needs to be:', enableAwayMode, 'Current status:', currentAwayMode);
+            if(defined(enableAwayMode) && enableAwayMode != currentAwayMode)
+                $('#away-mode').click();
+        });
     }
 
     /*** Auto-claim Channel Points
@@ -3866,7 +3945,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
                 href: FIRST_IN_LINE_HREF,
 
-                onmouseup: event => {
+                onmousedown: event => {
                     let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
                         uuid = existing?.getAttribute('uuid');
 
@@ -4419,12 +4498,6 @@ let Initialize = async(START_OVER = false) => {
 
                     FIRST_IN_LINE_BALLOON.counter.setAttribute('length', $(`[up-next--body] [time]`, true).length);
                 }, 1000);
-
-            STREAMER.onraid = STREAMER.onhost = ({ hosting = false, raiding = false, raided = false, next }) => {
-                LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
-
-                SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
-            };
         }
     }, 1000);
 
@@ -4827,12 +4900,12 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names, { ...STREAMER, date: new Date }).toNativeStack();
+            WARN('Twitch failed to add these channels correctly:', bad_names, JSON.stringify({ ...STREAMER, date: new Date })).toNativeStack();
 
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
-        } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-label^="fav"i] a[class*="side-nav-card"i]'))) {
+        } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -5019,11 +5092,11 @@ let Initialize = async(START_OVER = false) => {
      *                     | |                                    __/ |
      *                     |_|                                   |___/
      */
-    Handlers.prevent_hosting = async() => {
+    Handlers.prevent_hosting = () => {
         START__STOP_WATCH('prevent_hosting');
 
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"i]')),
-            next = await GetNextStreamer(),
+            next = GetNextStreamer.cachedStreamer,
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
             host = (STREAMER.name ?? ''),
             [guest] = host_banner.filter(name => name.toLowerCase() != host.toLowerCase());
@@ -5047,7 +5120,8 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
 
-            STREAMER.__eventlisteners__.onhost.forEach(job => job({ hosting, next }));
+            for(let job of STREAMER.__eventlisteners__.onhost)
+                job({ hosting });
 
             if(defined(next)) {
                 LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
@@ -5081,7 +5155,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let CONTINUE_RAIDING = false;
 
-    Handlers.prevent_raiding = async() => {
+    Handlers.prevent_raiding = () => {
         START__STOP_WATCH('prevent_raiding');
 
         if(CONTINUE_RAIDING)
@@ -5091,7 +5165,7 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
-            next = await GetNextStreamer(),
+            next = GetNextStreamer.cachedStreamer,
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
             from = (raided? null: STREAMER.name),
             [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.toLowerCase() != from.toLowerCase()));
@@ -5132,7 +5206,8 @@ let Initialize = async(START_OVER = false) => {
             let leaveStream = () => {
                 CONTINUE_RAIDING = false;
 
-                STREAMER.__eventlisteners__.onraid.forEach(job => job({ raided, raiding, next }));
+                for(let job of STREAMER.__eventlisteners__.onraid)
+                    job({ raided, raiding, next });
 
                 if(defined(next)) {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
@@ -5998,7 +6073,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('stream_preview');
     };
-    Timers.stream_preview = 250;
+    Timers.stream_preview = 500;
 
     Unhandlers.stream_preview = () => {
         STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
@@ -6390,7 +6465,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-label^="fav"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-section-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget } = event;
 
@@ -6577,6 +6652,9 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                             if(defined(results.find(message => message.uuid == uuid)))
                                 continue;
+
+                            // Replace all share URLs
+                            // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
 
                             results.push({
                                 raw,
@@ -6765,6 +6843,21 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
         // Set the SVGs' section IDs
         SectionLabeling: {
+            let conversions = {
+                favorite:   [
+                                "followed"
+                            ].reverse(),
+
+                video:      [
+                                "suggested",
+                                "related",
+                            ].reverse(),
+
+                people:     [
+                                "friends"
+                            ].reverse(),
+            };
+
             for(let container of $('#sideNav .side-nav-section[aria-label]', true)) {
                 let svg = $('svg', false, container);
 
@@ -6785,12 +6878,12 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
                                 let matchPercentage = 100 - misMatchPercentage;
 
-                                if(matchPercentage < 80 || container.getAttribute('tt-label')?.length)
+                                if(matchPercentage < 80 || container.getAttribute('tt-section-label')?.length)
                                     return;
 
                                 // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
 
-                                container.setAttribute('tt-label', glyph);
+                                container.setAttribute('tt-section-label', conversions[glyph].pop());
                             });
             }
         }
@@ -6900,6 +6993,27 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
             [tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
             [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
+
+            /* Away Mode */
+            #away-mode svg[id^="tt-away-mode"i] {
+                display: inline-block;
+
+                transform: translateX(0px) scale(1);
+                transition: all 100ms ease-in;
+            }
+
+            #tt-away-mode--hide {
+                position: absolute;
+            }
+
+            [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
+                opacity: 0;
+            }
+
+            svg[id^="tt-away-mode"i][preview="true"i] {
+                opacity: 1 !important;
+                transform: translateX(0px) scale(1.2) !important;
+            }
 
             /* Rich tooltips */
             [role] [data-popper-placement="right-start"i] [role] {

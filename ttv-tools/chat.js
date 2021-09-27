@@ -251,7 +251,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         setTimeout(() => {
                             if(EmoteSearch.value == EmoteSearch.input.value)
                                 callback(EmoteSearch.value);
-                        }, 100);
+                        }, 250);
     };
     Timers.emote_searching = 250;
 
@@ -2473,6 +2473,9 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 if(defined(results.find(message => message.uuid == uuid)))
                                     continue;
+
+                                // Replace all share URLs
+                                // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
 
                                 results.push({
                                     raw,

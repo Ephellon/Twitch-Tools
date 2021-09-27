@@ -26,7 +26,7 @@ function parseURL(url) {
 
     url = url.toString();
 
-    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]+):([^@]+)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
+    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]*):([^@]*)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
         i    = 0,
         e    = "";
 
@@ -134,7 +134,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
 }
 
 // Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) -> Object={ left:number, top:number }
+    // getOffset(element:Element) -> Object={ height:number, width:number, left:number, top:number, right:number, bottom:number }
 function getOffset(element) {
     let bounds = element.getBoundingClientRect(),
         { height, width } = bounds;
@@ -160,17 +160,18 @@ function toTimeString(milliseconds = 0, format = 'natural') {
         year   = 365 * day;
 
     let time = [],
-        times = [
+        times = new Map([
             ['year'  ,   year],
             ['day'   ,    day],
             ['hour'  ,   hour],
             ['minute', minute],
             ['second', second],
-        ],
+        ]),
         result;
 
     let joining_symbol = ' ',
-        sign = (milliseconds < 0? '-': '');
+        sign = (milliseconds < 0? '-': ''),
+        originalTime = milliseconds;
 
     milliseconds = Math.abs(milliseconds);
 
@@ -206,18 +207,36 @@ function toTimeString(milliseconds = 0, format = 'natural') {
                     milliseconds -= amount * value;
                 }
 
-            times.push(['millisecond', milliseconds]);
+            times.set('millisecond', milliseconds);
 
-            result = format.split(/\!(year|day|hour|minute|(?:milli)?second)s?\b/g)
+            result = format
+                // Replace the text
+                .split(/([\!\?](?:year|day|hour|minute|(?:milli)?second))s?(?:\b|_)/g)
                 .map($1 => {
-                    for(let [name, value] of times)
-                        if($1 == 'millisecond')
-                            return milliseconds;
-                        else if($1 == name)
-                            return time[name] ?? '00';
+                    let [command, ...argument] = $1;
+
+                    argument = argument.join('');
+
+                    switch(command) {
+                        case '?': {
+                            for(let [name, value] of times)
+                                if(argument == 'millisecond')
+                                    return milliseconds;
+                                else if(argument == name)
+                                    return Math.round(originalTime / times.get(name));
+                        } break;
+
+                        case '!': {
+                            for(let [name, value] of times)
+                                if(argument == 'millisecond')
+                                    return milliseconds;
+                                else if(argument == name)
+                                    return time[name] ?? '00';
+                        } break;
+                    }
 
                     return $1;
-                })
+                });
         } break;
     }
 
@@ -287,6 +306,205 @@ Array.prototype.contains ??= function contains(...values) {
             break;
 
     return has;
+};
+
+// Returns an element based upon its text content
+    // Element..getElementByText(searchText:string|regexp[, flags:string]) -> Element | null
+Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
+    let searchType = (searchText instanceof RegExp? 'regexp': typeof searchText);
+
+    if(!(searchText?.length ?? searchText?.source))
+        throw 'Can not search for empty text';
+
+    let container = this,
+        owner = null,
+        thisIsOwner = true;
+
+    switch(searchType) {
+        case 'regexp': {
+            searchText = RegExp(searchText.source, searchText.flags || flags);
+
+            // See if the element contains the text...
+            if(!searchText.test(this.textContent))
+                return null;
+
+            searching:
+            while(unknown(owner)) {
+                for(let child of container.children)
+                    if([...child.children].filter(element => searchText.test(element.textContent)).length) {
+                        // A sub-child is the text container
+                        container = child;
+                        thisIsOwner = false;
+
+                        continue searching;
+                    } else if(searchText.test(child.textContent)) {
+                        // This is the text container
+                        owner = child;
+                        thisIsOwner = false;
+
+                        break searching;
+                    }
+
+                // None of the children contain the text...
+                if(thisIsOwner)
+                    owner = this;
+            }
+
+            return owner;
+        } break;
+
+        default: {
+            // Convert to a string...
+            searchText += '';
+
+            if(flags.contains('i')) {
+                // Ignore-case mode
+                searchText = searchText.toLowerCase();
+
+                // See if the element contains the text...
+                if(!this.textContent?.toLowerCase()?.contains(searchText))
+                    return null;
+
+                searching:
+                while(unknown(owner)) {
+                    for(let child of container.children)
+                        if([...child.children].filter(element => element.textContent?.toLowerCase()?.contains(searchText)).length) {
+                            // A sub-child is the text container
+                            container = child;
+                            thisIsOwner = false;
+
+                            continue searching;
+                        } else if(child.textContent?.toLowerCase()?.contains(searchText)) {
+                            // This is the text container
+                            owner = child;
+                            thisIsOwner = false;
+
+                            break searching;
+                        }
+
+                    // None of the children contain the text...
+                    if(thisIsOwner)
+                        owner = this;
+                }
+            } else {
+                // Normal (perfect-match) mode
+                // See if the element contains the text...
+                if(!this.textContent?.contains(searchText))
+                    return null;
+
+                searching:
+                while(unknown(owner)) {
+                    for(let child of container.children)
+                        if([...child.children].filter(element => element.textContent?.contains(searchText)).length) {
+                            // A sub-child is the text container
+                            container = child;
+                            thisIsOwner = false;
+
+                            continue searching;
+                        } else if(child.textContent?.contains(searchText)) {
+                            // This is the text container
+                            owner = child;
+                            thisIsOwner = false;
+
+                            break searching;
+                        }
+
+                    // None of the children contain the text...
+                    if(thisIsOwner)
+                        owner = this;
+                }
+            }
+
+            return owner;
+        } break;
+    }
+};
+
+// Returns an array of elements that contain the text content
+    // Element..getElementsByTextContent(searchText:string|regexp[, flags:string]) -> array
+Element.prototype.getElementsByTextContent ??= function getElementsByTextContent(searchText, flags = '') {
+    let searchType = (searchText instanceof RegExp? 'regexp': typeof searchText);
+
+    if(!(searchText?.length ?? searchText?.source))
+        throw 'Can not search for empty text';
+
+    let containers = [];
+
+    switch(searchType) {
+        case 'regexp': {
+            searchText = RegExp(searchText.source, searchText.flags || flags);
+
+            // See if the element contains the text...
+            if(!searchText.test(this.textContent))
+                break;
+            containers.push(this);
+
+            let children = [...this.children],
+                child;
+
+            collecting:
+            while(child = children.pop())
+                if([...child.children].filter(element => searchText.test(element.textContent)).length) {
+                    // A sub-child contains the text
+                    containers.push(child);
+                    children = [...new Set([...children, ...child.children])];
+                } else if(searchText.test(child.textContent)) {
+                    // This contains the text
+                    containers.push(child);
+                }
+        } break;
+
+        default: {
+            // Convert to a string...
+            searchText += '';
+
+            if(flags.contains('i')) {
+                // Ignore-case mode
+                searchText = searchText.toLowerCase();
+
+                // See if the element contains the text...
+                if(!this.textContent?.toLowerCase()?.contains(searchText))
+                    break;
+                containers.push(this);
+
+                let children = [...this.children],
+                    child;
+
+                collecting:
+                while(child = children.pop())
+                    if([...child.children].filter(element => element.textContent?.toLowerCase()?.contains(searchText)).length) {
+                        // A sub-child contains the text
+                        containers.push(child);
+                        children = [...new Set([...children, ...child.children])];
+                    } else if(child.textContent?.toLowerCase()?.contains(searchText)) {
+                        // This contains the text
+                        containers.push(child);
+                    }
+            } else {
+                // Normal (perfect-match) mode
+                // See if the element contains the text...
+                if(!this.textContent?.contains(searchText))
+                    break;
+                containers.push(this);
+
+                let children = [...this.children],
+                    child;
+
+                collecting:
+                while(child = children.pop())
+                    if([...child.children].filter(element => element.textContent?.contains(searchText)).length) {
+                        // A sub-child contains the text
+                        containers.push(child);
+                        children = [...new Set([...children, ...child.children])];
+                    } else if(child.textContent?.contains(searchText)) {
+                        // This contains the text
+                        containers.push(child);
+                    }
+            }
+        } break;
+    }
+
+    return [...new Set(containers)];
 };
 
 // https://stackoverflow.com/a/35859991/4211612

@@ -14,10 +14,10 @@
         <title tr-id='title'>TTV Tools &mdash; Settings</title>
 
         <!-- Colors & Meanings
-            # Gold - deals with cosmetics
-            # Red - deals with followage
-            # Purple - deals with channel points
-            # White - everything else
+            # Gold      - deals with cosmetics
+            # Red       - deals with followage
+            # Purple    - deals with currencies
+            # White     - everything else
         -->
 
         <link rel='icon' href='favicon.png'/>
@@ -56,8 +56,8 @@
             <!-- [[Auto-Focus]] -->
 
             <!-- Away Mode -->
-            <section new='3.2'>
-                <div class='title' tr-id='away-mode'><span small glyph='eye'></span>Away Mode</div>
+            <section new='4.12'>
+                <div class='title' tr-id='away-mode'><span small glyph='show'></span>Away Mode</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='away_mode' type='checkbox' checked/>
@@ -94,119 +94,36 @@
                                         <label for='away_mode__volume_control'></label>
                                     </div>
                                     <p tr-id>
-                                        Set the volume to <span top-tooltip='1 &mdash; 25' unit='%'><input id='away_mode__volume' type='number' value='25' min='1' max='25'/></span> when <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                                        Set the volume to <span unit='%'><input id='away_mode__volume' type='number' value='25' min='1' max='25'/></span> when <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                                     </p>
                                 </div>
                             </div>
 
-                            <div text-only disabled>
+                            <div text-only>
                                 <div class='title' tr-id='away-mode:schedule'>Schedule</div>
                                 <div class='summary'>
                                     <details>
-                                        <summary tr-id subtitle='Automatically lurk at these times'>Select Times</summary>
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_0' type='checkbox' name='away-mode-schedule-0'/>
-                                            <label for='away_mode__on_0' tr-id='day-of-week'>Sunday</label>
-                                            <label for='away_mode__on_0:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_0_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_0_to' type='time' required/>
-                                                </div>
-                                            </label>
-                                        </div>
+                                        <summary tr-id='away-mode:schedule:options' subtitle='View, or remove times'>Times</summary>
+                                        <div id='away_mode_schedule' type='list'>
+                                            <div day-of-week='0'><h2 tr-id='day-of-week'>Sunday</h2></div>
 
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_1' type='checkbox' name='away-mode-schedule-1'/>
-                                            <label for='away_mode__on_1' tr-id='day-of-week'>Monday</label>
-                                            <label for='away_mode__on_1:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_1_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_1_to' type='time' required/>
-                                                </div>
-                                            </label>
-                                        </div>
+                                            <div day-of-week='1'><h2 tr-id='day-of-week'>Monday</h2></div>
 
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_2' type='checkbox' name='away-mode-schedule-2'/>
-                                            <label for='away_mode__on_2' tr-id='day-of-week'>Tuesday</label>
-                                            <label for='away_mode__on_2:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_2_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_2_to' type='time' required/>
-                                                </div>
-                                            </label>
-                                        </div>
+                                            <div day-of-week='2'><h2 tr-id='day-of-week'>Tuesday</h2></div>
 
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_3' type='checkbox' name='away-mode-schedule-3'/>
-                                            <label for='away_mode__on_3' tr-id='day-of-week'>Wednesday</label>
-                                            <label for='away_mode__on_3:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_3_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_3_to' type='time' required/>
-                                                </div>
-                                            </label>
-                                        </div>
+                                            <div day-of-week='3'><h2 tr-id='day-of-week'>Wednesday</h2></div>
 
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_4' type='checkbox' name='away-mode-schedule-4'/>
-                                            <label for='away_mode__on_4' tr-id='day-of-week'>Thursday</label>
-                                            <label for='away_mode__on_4:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_4_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_4_to' type='time' required/>
-                                                </div>
-                                            </label>
-                                        </div>
+                                            <div day-of-week='4'><h2 tr-id='day-of-week'>Thursday</h2></div>
 
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_5' type='checkbox' name='away-mode-schedule-5'/>
-                                            <label for='away_mode__on_5' tr-id='day-of-week'>Friday</label>
-                                            <label for='away_mode__on_5:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_5_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_5_to' type='time' required/>
-                                                </div>
-                                            </label>
-                                        </div>
+                                            <div day-of-week='5'><h2 tr-id='day-of-week'>Friday</h2></div>
 
-                                        <div class='checkbox'>
-                                            <input id='away_mode__on_6' type='checkbox' name='away-mode-schedule-6'/>
-                                            <label for='away_mode__on_6' tr-id='day-of-week'>Saturday</label>
-                                            <label for='away_mode__on_6:checked'>
-                                                <div>
-                                                    <h3 tr-id='en|dis'>Enable at</h3>
-                                                    <input id='away_mode__on_6_from' type='time' required/>
-                                                </div>
-                                                <div>
-                                                    <h3 tr-id>Disable at</h3>
-                                                    <input id='away_mode__on_6_to' type='time' required/>
-                                                </div>
-                                            </label>
+                                            <div day-of-week='6'><h2 tr-id='day-of-week'>Saturday</h2></div>
+
+                                            <div hr><button id='add-time'><span small glyph='add_to_calendar'></span> <span tr-id='new'>New</span></button></div>
+
+                                            <div hidden>
+                                                <input id='away_mode_schedule-input' type='text' value=''/>
+                                            </div>
                                         </div>
                                     </details>
                                 </div>
@@ -257,7 +174,7 @@
                                 <label tr-id='first-in-line:notification' for='first_in_line'>
                                     <h2>Notification</h2>
                                     When you receive a notification for a channel going live, go to its stream after
-                                    <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='first_in_line_time_minutes' type='number' value='15' min='5' step='5'/></span>
+                                    <span unit='min'><input id='first_in_line_time_minutes' type='number' value='15' min='5' step='5'/></span>
                                 </label>
                             </div>
 
@@ -266,7 +183,7 @@
                                 <label tr-id='first-in-line:appearance' for='first_in_line_plus'>
                                     <h2>Appearance</h2>
                                     When a channel appears in your Followed Channels, go to its stream after
-                                    <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='first_in_line_plus_time_minutes' type='number' value='15' min='5' step='5'/></span>
+                                    <span unit='min'><input id='first_in_line_plus_time_minutes' type='number' value='15' min='5' step='5'/></span>
                                 </label>
                             </div>
 
@@ -275,7 +192,7 @@
                                 <label tr-id='first-in-line:smart-notifications' for='first_in_line_all'>
                                     <h2 bubble='Smart Notifications'>Automatic</h2>
                                     Go to all streams automatically after
-                                    <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='first_in_line_all_time_minutes' type='number' value='15' min='5' step='5'/></span>
+                                    <span unit='min'><input id='first_in_line_all_time_minutes' type='number' value='15' min='5' step='5'/></span>
                                 </label>
                             </div>
                         </div>
@@ -329,7 +246,7 @@
                                 <input id='auto_follow_time' type='radio' name='auto-follow'/>
                                 <label tr-id='auto-follow:time' for='auto_follow_time'>
                                     <h2>Viewership</h2>
-                                    After watching <span top-tooltip='5 &mdash; &infin;' unit='min'><input id='auto_follow_time_minutes' type='number' value='15' min='5' step='5'/></span> of content, follow the channel
+                                    After watching <span unit='min'><input id='auto_follow_time_minutes' type='number' value='15' min='5' step='5'/></span> of content, follow the channel
                                 </label>
                             </div>
 
@@ -384,7 +301,7 @@
 
             <!-- Prevent Hosting -->
             <section>
-                <div class='title' tr-id='prevent-hosting'><span small glyph='lock'></span> Prevent Hosting</div>
+                <div class='title' tr-id='prevent-hosting'><span small glyph='people'></span> Prevent Hosting</div>
                 <div class='summary'>
                     <p tr-id>
                         Prevent certain or all channels from hosting by going to the <b>Next Channel</b>.
@@ -399,7 +316,7 @@
 
             <!-- Prevent Raiding -->
             <section>
-                <div class='title' tr-id='prevent-raiding'><span small glyph='lock'></span> Prevent Raiding</div>
+                <div class='title' tr-id='prevent-raiding'><span small glyph='people'></span> Prevent Raiding</div>
                 <div class='summary'>
                     <p tr-id>
                         Prevent certain or all channels from raiding by going to the <b>Next Channel</b>.
@@ -566,7 +483,7 @@
 
             <!-- Filter Messages -->
             <section new='4.2.1'>
-                <div class='title' tr-id='filter-messages'><span small glyph='mod'></span> Filter Messages</div>
+                <div class='title' tr-id='filter-messages'><span small gold glyph='mod'></span> Filter Messages</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='filter_messages' type='checkbox' checked/>
@@ -737,7 +654,7 @@
 
             <!-- Notification Sounds -->
             <section new='4.1'>
-                <div class='title' tr-id='notification-sounds'><span small gold glyph='music'></span> Notification Sounds</div>
+                <div class='title' tr-id='notification-sounds'><span small white glyph='music'></span> Notification Sounds</div>
                 <div class='summary'>
                     <p tr-id>
                         When one (or more) of the following conditions are met, play a notification sound.
@@ -821,7 +738,7 @@
 
             <!-- Prevent Spam -->
             <section>
-                <div class='title' tr-id='prevent-spam'><span small glyph='mod'></span> Prevent Spam</div>
+                <div class='title' tr-id='prevent-spam'><span small gold glyph='mod'></span> Prevent Spam</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='prevent_spam' type='checkbox' checked/>
@@ -990,7 +907,7 @@
 
             <!-- Channel Points Receipt -->
             <section>
-                <div class='title' tr-id='channel-points-receipt'><span small glyph='bits'></span> Channel Points Receipt</div>
+                <div class='title' tr-id='channel-points-receipt'><span small glyph='channelpoints'></span> Channel Points Receipt</div>
                 <div class='summary'>
                     <p tr-id>
                         How should the receipt display <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Channel Points'><button style='background-color:var(--grey)!important'><span small purple glyph='channelpoints'></span></button></a> collection?
@@ -1101,7 +1018,7 @@
 
             <!-- Stream Preview -->
             <section new='4.2.0'>
-                <div class='title' tr-id='stream-preview'><span small glyph='latest'></span> Stream Preview</div>
+                <div class='title' tr-id='stream-preview'><span small gold glyph='video'></span> Stream Preview</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='stream_preview' type='checkbox'/>
@@ -1157,6 +1074,50 @@
                         <option value='over' tr-id>Over the video</option>
                         <option value='under' tr-id>Under the video</option>
                     </select>
+                </div>
+            </section>
+
+            <!-- Save Footer -->
+            <section save tr-id='save'>
+                <button class='ripple save'>Save</button>
+            </section>
+        </article>
+
+        <!-- Networking
+        #    _   _      _                      _    _
+        #   | \ | |    | |                    | |  (_)
+        #   |  \| | ___| |___      _____  _ __| | ___ _ __   __ _
+        #   | . ` |/ _ \ __\ \ /\ / / _ \| '__| |/ / | '_ \ / _` |
+        #   | |\  |  __/ |_ \ V  V / (_) | |  |   <| | | | | (_| |
+        #   |_| \_|\___|\__| \_/\_/ \___/|_|  |_|\_\_|_| |_|\__, |
+        #                                                    __/ |
+        #                                                   |___/
+        -->
+        <header tr-id='header:networking'>Networking <span white glyph='help' right-tooltip='Data here will interact with the Internet'></span></header>
+        <article>
+            <section new='4.12'>
+                <div class='title' tr-id='networking:sync-settings'><span small glyph='export'></span> Export Settings</div>
+                <div class='summary' style='width:fit-content'>
+                    <p tr-id>
+                        If you would like to <b attention-text top-tooltip='Save settings from the cloud to this device'>download settings</b>, enter the <b attention-text top-tooltip='8 or more letters, numbers and/or dashes'>Upload ID</b>.
+                    </p>
+                    <p>
+                        <input id='sync-token' type='text' value='TTV-TOOL' style='width:-webkit-fill-available; font-family: monospace; letter-spacing:1em; text-align:center; text-transform:uppercase; text-overflow:clip' placeholder='ABCD1234' pattern='[\w\-]{8,}'/>
+                        <div id='sync-status' class='subtitle' style='margin-left:0.5rem; transition: all .5s;;'>&nbsp;</div>
+                    </p>
+
+                    <button id='sync-settings--upload' style='margin-right:0.5rem' --right-tooltip='Generates a new ID'>
+                        <span small glyph='upload'></span>
+                        <span tr-id='networking:sync-settings:upload'>Upload</span>
+                    </button>
+                    <button id='sync-settings--download'>
+                        <span small glyph='download'></span>
+                        <span tr-id='networking:sync-settings:download'>Download</span>
+                    </button>
+                    <button id='sync-settings--share' class='edit'>
+                        <span small glyph='bolt'></span>
+                        <span tr-id='networking:sync-settings:copy'>Copy</span>
+                    </button>
                 </div>
             </section>
 
@@ -1437,7 +1398,7 @@
             <section>
                 <div class='title' tr-id='@@auto-focus'><span small glyph='stream'></span> Auto-Focus</div>
                 <div class='summary'>
-                    <div class='toggle' right-tooltip='Experimental feature'>
+                    <div class='toggle'>
                         <input id='auto_focus' type='checkbox'/>
                         <label for='auto_focus'></label>
                     </div>
@@ -1507,7 +1468,7 @@
             <section>
                 <div class='title' tr-id='@@convert-emotes'><span small gold glyph='emotes'></span> Convert emotes</div>
                 <div class='summary'>
-                    <div class='toggle' right-tooltip='Experimental feature'>
+                    <div class='toggle'>
                         <input id='convert_emotes' type='checkbox'/>
                         <label for='convert_emotes'></label>
                     </div>
@@ -1523,11 +1484,43 @@
                 </div>
             </section>
 
+            <!-- Predictive Raiding -->
+            <section new='4.12' beta soon>
+                <div class='title' tr-id='@@predictive-raiding'><span small gold glyph='bolt'></span> Predictive Raiding</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='predictive_raiding' type='checkbox'/>
+                        <label for='predictive_raiding'></label>
+                    </div>
+                    <p tr-id>
+                        Go to <b attention-text top-tooltip='Followed channels that normally raid'>certain channels</b> in anticipation of a raid.
+                    </p>
+                    <p warning-text tr-id>
+                        This takes at least one week to properly adjust.
+                    </p>
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Predictive Raiding&quot;'>Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id='@@predictive-raiding:options:leave-before'>Leave Before</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Head to the channel
+                                        <span unit='min'><input id='predictive_raiding_leave_before' type='number' value='15' min='5' step='5'/></span>
+                                        before the stream ends
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
             <!-- Soft Unban -->
             <section new='3.1'>
-                <div class='title' tr-id='@@soft-unban'><span small glyph='chat'></span> Soft Unban</div>
+                <div class='title' tr-id='@@soft-unban'><span small gold glyph='chat'></span> Soft Unban</div>
                 <div class='summary'>
-                    <div class='toggle' right-tooltip='Experimental feature'>
+                    <div class='toggle'>
                         <input id='soft_unban' type='checkbox'/>
                         <label for='soft_unban'></label>
                     </div>
