@@ -1135,9 +1135,9 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     overflow: auto;
 }
 
-:is(#filter_rules, #phrase_rules, #away_mode_schedule) h2:only-child,
-:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [day-of-week]):not([not-empty]),
-:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [day-of-week])[not-empty] ~ *:last-child {
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is(h1, h2, h3, h4, h5, h6):only-child,
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) :not([not-empty]):is([filter-type], [day-of-week]),
+:is(#filter_rules, #phrase_rules, #away_mode_schedule) [not-empty]:is([filter-type], [day-of-week]) ~ *:last-child {
     display: none;
 }
 

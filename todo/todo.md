@@ -29,6 +29,7 @@
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
 9. Volume Control
     * Goes awry when moving slider, hovering a channel (stream preview), then attempting to move slider again
+    * Tentative fix `4.12.1`
 10. Up Next doesn't go to all channels?
     * Not sure how often this happens or why
     * Most likely due to "Followed Channels" being labeled incorrectly
@@ -49,6 +50,8 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.1)
+- Fixed #2 - audio bug with Stream Preview & Away Mode
 
 > [`4.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12)
 - Added Sync Settings (upload/download settings)

@@ -2311,7 +2311,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
-            return ALL_CHANNELS.find(channel => channel.href.contains(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
+            return GetNextStreamer.cachedStreamer ??= ALL_CHANNELS.find(channel => channel.href.contains(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
 
         let next,
             { random, round } = Math;
@@ -3760,7 +3760,7 @@ let Initialize = async(START_OVER = false) => {
 
             WARN('[Away Mode] is releasing volume control due to user interaction...');
 
-            MAINTAIN_VOLUME_CONTROL = false;
+            MAINTAIN_VOLUME_CONTROL = !isTrusted;
 
             SetVolume(volume);
         };
@@ -3794,7 +3794,7 @@ let Initialize = async(START_OVER = false) => {
 
                 duration *= 3_600_000;
 
-                WARN(`Away Mode is scheduled to be "${ status }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
+                WARN(`Away Mode is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
 
                 // Found at least one schedule...
                 if(defined(enableAwayMode = status))
@@ -5971,7 +5971,7 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(richTooltip)) {
             if(parseBool(Settings.stream_preview_sound) && MAINTAIN_VOLUME_CONTROL)
                 SetVolume(parseBool(Settings.away_mode__volume_control) && AwayModeStatus? Settings.away_mode__volume: InitialVolume ?? 1);
-            else if(parseBool(Settings.stream_preview_sound))
+            else if(parseBool(Settings.stream_preview_sound) && defined(STREAM_PREVIEW?.element))
                 SetVolume(InitialVolume);
 
             return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };

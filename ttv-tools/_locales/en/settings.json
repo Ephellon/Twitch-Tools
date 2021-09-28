@@ -510,7 +510,7 @@
 
 	"@experimental": [
 		"Experimental Features",
-		"Allow the extension display, and use experimental features",
+		"Allow the extension to display, and use experimental features",
 		"May cause data loss"
 	],
 
@@ -581,7 +581,7 @@
 	],
 		"@@predictive-raiding:options:leave-before": [
 			"Leave Before",
-			"Head to the channel", "before the stream ends"
+			"Head to the channel", "before the stream normally ends"
 		],
 
 	"@@soft-unban": [
