@@ -20,7 +20,10 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     LITERATURE,
     SPECIAL_MODE,
     NORMAL_MODE,
-    NORMALIZED_PATHNAME;
+    NORMALIZED_PATHNAME,
+    // Hmm...
+    JUMPED_FRAMES = false,
+    JUMP_DATA = {};
 
 // Populate the username field by quickly showing the menu
 awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
@@ -986,48 +989,357 @@ class Card {
 }
 
 // Search Twitch for channels/categories
-    // new Search([query:string[, maximum:integer[, type:string="channels"|"categories"[, OVER_RIDE_CACHE:boolean]]]])
-/** Returns an Array of Objects ->
- * broadcaster_language: String~I18N-Language
- * broadcaster_login: String
- * display_name: String
- * game_id: String~Integer
- * id: String~Integer
- * is_live: Boolean
- * started_at: String~Date
- * tag_ids: Array:String
- * thumbnail_url: String~URL
- * title: String:Unicode16
+    // new Search([ID:string|number[, type:string]]) -> Promise~Object
+/** Returns a promised Object ->
+ * { data:object, extensions:object }
  */
 class Search {
-    static #TOKENS = {
-        oauth: JSON.parse(atob("WyJ2MnNnZWN5NWJ3eDNmc3pyYmpscm92OWtpYTVyMjkiLCAia2ltbmU3OGt4M25jeDZicmdvNG12NndraTVoMWtvIl0=")),
-        bauth: JSON.parse(atob("WyJ2MnNnZWN5NWJ3eDNmc3pyYmpscm92OWtpYTVyMjkiLCJraW1uZTc4a3gzbmN4NmJyZ280bXY2d2tpNWgxa28iXQ==")),
+    static cookies = {
+        ...((cookies = []) => {
+            let object = ({});
+            for(let cookie of cookies) {
+                let [name, value] = cookie.split('=', 2);
+
+                object[name] = value;
+            }
+
+            return object;
+        })(document?.cookie?.split(/;\s*/))
+    };
+
+    static authorization = (
+        defined(Search.cookies['auth-token'])?
+            `OAuth ${ Search.cookies['auth-token'] }`:
+        void null
+    );
+
+    constructor(ID = null, type = 'channel', as = null) {
+        let spadeEndpoint = `https://spade.twitch.tv/track`,
+            twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
+
+        let pathname = top.location.pathname.substr(1),
+            options = ({
+                method: 'POST',
+                headers: {
+                    "Accept-Language":  'en-US',
+                    "Accept":           '*/*',
+                    "Authorization":    Search.authorization,
+                    "Client-ID":        'kimne78kx3ncx6brgo4mv6wki5h1ko',
+                    "Content-Type":     `text/plain; charset=UTF-8`,
+                    "Device-ID":        Search.cookies.unique_id
+                }
+            }),
+            player = ({
+                type: 'site',
+                routes: {
+                    exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'popout', 'prime', 'store', 'subs'],
+                    start: ['bits-checkout/', 'checkout/', 'collections/', 'communities/', 'dashboard/', 'directory/', 'event/', 'prime/', 'products/', 'settings/', 'store/', 'subs/'],
+                },
+            });
+
+        let vodID = null, channelName = null;
+        if(!defined(ID) && /^auto(?:matic)?$/i.test(type)) {
+            if(true
+                && !player.routes.exact.contains(pathname)
+                && !player.routes.start.filter(route => pathname.startsWith(route)).length
+                && (
+                    // Is a VOD
+                    pathname.startsWith('videos/')?
+                        (
+                            vodID = pathname
+                                .replace('videos/', '')
+                                .replace(/\//g, '')
+                                .replace(/^v/, '')
+                        ):
+                    // Is a channel
+                    (
+                        channelName = pathname.replace(/\//g, '')
+                    )
+                )
+            )
+                /* All good */;
+            else
+                throw `Unable to parse Search data`;
+
+            if(vodID?.length) {
+                ID = vodID;
+                type = 'vod';
+            } else if(channelName?.length) {
+                ID = channelName;
+                type = 'channel';
+            }
+        }
+
+        if(type == 'vod')
+            vodID = ID;
+
+        if(type == 'channel')
+            channelName = ID;
+
+        let template;
+        switch(Search.parseType = as) {
+            case 'advanced': {
+                // https://api.twitch.tv/kraken/channels/39367256
+                //     broadcaster_language: "en"
+                //     broadcaster_software: "unknown_rtmp"
+                //     broadcaster_type: "partner"
+                //     created_at: "2013-01-15T20:07:57Z"
+                //     description: "I stream a lot of Dead by Daylight but I also like occasionally playing a variety of games. My gaming/content creator roots started in Runescape (making RSMVs ~2007) and since then I’ve branched out to so much more! My stream is about community so be sure to talk in chat and introduce yourself!"
+                //     display_name: "AimzAtchu"
+                //     followers: 157824
+                //     game: "Dead by Daylight"
+                //     language: "en"
+                //     logo: "https://static-cdn.jtvnw.net/jtv_user_pictures/6a3138ef-333d-4932-b891-1b5a88accc0f-profile_image-300x300.jpg"
+                //     mature: false
+                //     name: "aimzatchu"
+                //     partner: true
+                //     privacy_options_enabled: false
+                //     private_video: false
+                //     profile_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/3887c3fa-9ed8-4465-b873-03c78dbec505-profile_banner-480.png"
+                //     profile_banner_background_color: "#030303"
+                //     status: "🎃Happy !PTB Day!👻Are Boons OP? Let's Find Out!  #DeadbyDaylightPartner"
+                //     updated_at: "2021-09-29T01:39:51Z"
+                //     url: "https://www.twitch.tv/aimzatchu"
+                //     video_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/aimzatchu-channel_offline_image-c8fb4fef334d2afa-1920x1080.png"
+                //     views: 5919706
+                //     _id: "39367256"
+            } break;
+
+            case 'chat.info': {
+                let variables = { login: channelName },
+                    extensions = { persistedQuery: "SHA-256", version: 1 };
+
+                template = ({ operationName: 'StreamChat', variables, extensions });
+            };
+
+            case 'chat.user': {
+                let variables = {},
+                    extensions = { persistedQuery: "SHA-256", version: 1 };
+
+                template = ({ operationName: 'Chat_UserData', variables, extensions });
+            } break;
+
+            case 'video.ad': {
+                let variables = { login: channelName, ownsCollectionID: null, ownsVideoID: vodID },
+                    extensions = { persistedQuery: "SHA-256", version: 1 };
+
+                template = ({ operationName: 'VideoAdBanner', variables, extensions });
+            } break;
+
+            case 'video.info': {
+                let variables = { id: STREAMER.sole },
+                    extensions = { persistedQuery: "SHA-256", version: 1 };
+
+                template = ({ operationName: 'WithIsStreamLiveQuery', variables, extensions });
+            } break;
+
+            default: {
+                let query = ('query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) { streamPlaybackAccessToken(channelName: $login, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isLive) { value signature __typename } videoPlaybackAccessToken(id: $vodID, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isVod) { value signature __typename }}');
+
+                template = ({ operationName: 'PlaybackAccessToken_Template', query });
+            } break;
+        }
+
+        let body, results;
+        switch(type) {
+            case 'vod': {
+                body = JSON.stringify({
+                    ...template,
+                    variables: {
+                        isLive: !1,
+                        login: '',
+                        isVod: !0,
+                        vodID: ID,
+                        playerType: player.type,
+                    }
+                });
+
+                results = {
+                    contentType: 'vod',
+                    id: ID,
+                    playerType: player.type,
+                    request: Search.retrieve({ ...options, body }),
+                };
+            } break;
+
+            case 'channel': {
+                body = JSON.stringify({
+                    ...template,
+                    variables: {
+                        isLive: !0,
+                        login: ID,
+                        isVod: !1,
+                        vodID: '',
+                        playerType: player.type,
+                    }
+                });
+
+                results = {
+                    contentType: 'live',
+                    id: ID,
+                    playerType: player.type,
+                    request: Search.retrieve({ ...options, body }),
+                };
+            } break;
+
+            default: throw `Unable to search for item of type "${ type }"`;
+        }
+
+        let blob = new Blob([
+            `data=${
+                encodeURIComponent(
+                    btoa(
+                        JSON.stringify({
+                            event: 'benchmark_template_loaded',
+                            properties: {
+                                app_version: twilightBuildID,
+                                benchmark_server_id: Search.cookies.server_session_id,
+                                client_time: (Date.now() / 1e3),
+                                device_id: Search.cookies.unique_id,
+                                duration: Math.round(performance.now()),
+                                url: `${ location.protocol }//${ [location.hostname, location.pathname, location.search].join('') }`,
+                            }
+                        })
+                    )
+                )
+            }`
+        ], {
+            type: `application/x-www-form-urlencoded; charset=UTF-8`
+        });
+
+        let request = new XMLHttpRequest;
+
+        request.open('POST', spadeEndpoint);
+        request.send(blob);
+
+        return results.request;
     }
 
-    static #CACHE = new Map()
+    static retrieve(query) {
+        if(typeof fetch == 'function')
+            return fetch('https://gql.twitch.tv/gql', query);
 
-    constructor(query = "", maximum = 15, type = "channels", OVER_RIDE_CACHE = false) {
-        let [bearer, clientID] = Search.#TOKENS.bauth,
-            token = UUID.from(Object.values({ query, maximum, type }).join('|')).value;
+        return new Promise((onSuccess, onError) => {
+            let request = new XMLHttpRequest;
 
-        if(!query?.length)
-            return;
-        if(!parseBool(OVER_RIDE_CACHE) && Search.#CACHE.has(token))
-            return new Promise((resolve, reject) => resolve(Search.#CACHE.get(token)));
+            request.open('POST', `https://gql.twitch.tv/gql`);
 
-        return fetch(`https://api.twitch.tv/helix/search/${ type }?first=${ maximum }&query=${ query }`, { headers: { 'Authorization': `Bearer ${ bearer }`, 'Client-ID': clientID, } })
-            .then(response => response.json())
-            .then(json => {
-                Search.#CACHE.set(token, json);
-
-                return json;
-            })
-            .catch(error => {
-                WARN(error);
-
-                return {};
+            Object.keys(query.headers).map(key => {
+                try {
+                    request.setRequestHeader(key, query.headers[key]);
+                } catch(error) {
+                    WARN(error);
+                }
             });
+
+            request.withCredentials = 'include' == query.credentials;
+            request.onerror = onError;
+            request.onload = () => onSuccess({
+                status: request.status,
+                statusText: request.statusText,
+                body: request.response || request.responseText,
+                ok: request.status >= 200 && request.status < 300,
+                json: () => new Promise((onSuccess, onError) => {
+                    try {
+                        onSuccess(JSON.parse(query.body));
+                    } catch(query) {
+                        onError(query);
+                    }
+                })
+            });
+
+            request.send(query.body);
+        });
+    }
+
+    static async convertResults(response) {
+        let json = await response.json(),
+            data = {};
+
+        let ConversionKey = {
+            banStatus:          'veto',
+            channel:            'name',
+            channel_id:         'sole',
+            createdAt:          'date',
+            displayName:        'name',
+            hosting:            'host',
+            id:                 'sole',
+            isMature:           'nsfw',
+            login:              'name',
+            mature:             'nsfw',
+            partner:            'ally',
+            profileImageURL:    'icon',
+            role:               'role',
+            subscriber:         'paid',
+            turbo:              'fast',
+        },
+            deeper = [];
+
+        switch(Search.parseType) {
+            case 'advanced': {
+                // TODO: parse advanced results...
+            } break;
+
+            case 'chat.info': {
+                try {
+                    json = JSON.parse(json?.data?.channel ?? 'null');
+                    deeper = ['self'];
+                } catch(error) {
+                    throw `Unable to parse results: ${ error }`;
+                }
+            } break;
+
+            case 'chat.user': {
+                try {
+                    json = JSON.parse(json?.data?.user ?? 'null');
+                } catch(error) {
+                    throw `Unable to parse results: ${ error }`;
+                }
+            } break;
+
+            case 'video.ad': {
+                try {
+                    json = JSON.parse(json?.data?.userByAttribute ?? 'null');
+                } catch(error) {
+                    throw `Unable to parse results: ${ error }`;
+                }
+            } break;
+
+            case 'video.info': {
+                try {
+                    json = JSON.parse(json?.data?.user?.stream ?? 'null');
+                } catch(error) {
+                    throw `Unable to parse results: ${ error }`;
+                }
+            } break;
+
+            default: {
+                try {
+                    json = JSON.parse(json?.data?.streamPlaybackAccessToken?.value ?? 'null');
+                } catch(error) {
+                    throw `Unable to parse results: ${ error }`;
+                }
+            } break;
+        }
+
+        let deeperLevels = {};
+        for(let key in json) {
+            let to = ConversionKey[key];
+
+            if(to?.length)
+                data[to] = json[key];
+            if(deeper.contains(to))
+                deeperLevels[to] = json[key];
+        }
+
+        for(let key in deeperLevels) {
+            let to = ConversionKey[key];
+
+            if(to?.length)
+                data[to] = deeperLevels[key];
+        }
+
+        return new Promise(resolve => resolve(data));
     }
 }
 
@@ -1931,14 +2243,81 @@ try {
     });
 
     // Add message listener
-    top.addEventListener("message", async event => {
+    // Jumping frames...
+    top.addEventListener('message', event => {
         if(event.origin != top.location.origin)
             return /* Not meant for us... */;
 
-        let { data } = event;
+        let R = RegExp;
+        let { data } = event,
+            BroadcastSettings = {},
+            User = {},
+            Stream = {},
+            Channel = {};
 
-        for(let target in data)
-            PostOffice.set(target, data[target]);
+        // Not  jump data
+        if(!('ROOT_QUERY' in data)) {
+            for(let target in data)
+                PostOffice.set(target, data[target]);
+        } else {
+            for(let key in data) {
+                if(/^BroadcastSettings:([^$]+)/.test(key))
+                    BroadcastSettings[R.$1] = data[key];
+                else if(/^Channel:([^$]+)/.test(key))
+                    Channel = data[key];
+                else if(/^User:([^$]+)/.test(key))
+                    User[R.$1] = data[key];
+                else if(/^Stream:([^$]+)/.test(key))
+                    Stream[R.$1] = data[key];
+
+                JUMPED_FRAMES = true;
+            }
+
+            if(Channel?.id?.length) {
+                LIVE_CACHE?.set('coin', Channel.self?.communityPoints?.balance);
+                LIVE_CACHE?.set('sole', Channel.id);
+
+                if(JUMPED_FRAMES)
+                    for(let channel in BroadcastSettings) {
+                        let { id, title } = BroadcastSettings[channel],
+                            { displayName, login, primaryColorHex } = User[channel];
+
+                        let profileImageURL = (channel => {
+                            for(let key in channel)
+                                if(/^profileImageURL/i.test(key))
+                                    return channel[key];
+                        })(User[channel]);
+
+                        let stream = (streams => {
+                            for(let stream in streams)
+                                if(streams[stream]?.broadcaster?.__ref?.contains?.(channel)) {
+                                    stream = streams[stream];
+
+                                    stream.broadcaster = BroadcastSettings[channel];
+
+                                    let previews = {};
+                                    for(let key in stream)
+                                        if(/^previewImageURL\(([^]+)\)\s*$/i.test(key)) {
+                                            let { height, width } = JSON.parse(R.$1);
+
+                                            previews[`${ width }x${ height }`] = stream[key];
+
+                                            delete stream[key];
+                                        }
+
+                                    stream.previewImageURL = previews;
+
+                                    return stream;
+                                }
+                            return null;
+                        })(Stream);
+
+                        JUMP_DATA[login] = { id: parseFloat(id), title, displayName, login, primaryColorHex, profileImageURL, stream };
+                    }
+
+                // LOG('Jumped frames, retrieved:', JUMP_DATA);
+            }
+        }
     });
 } catch(error) {
     // Most likely in a child frame...
@@ -2516,6 +2895,10 @@ let Initialize = async(START_OVER = false) => {
             return $('img', false, $(`a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]`))?.src
         },
 
+        get jump() {
+            return JUMP_DATA;
+        },
+
         get like() {
             return defined($('[data-a-target="unfollow-button"i]'))
         },
@@ -2864,30 +3247,11 @@ let Initialize = async(START_OVER = false) => {
     ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 
     // Load the streamer's data from Twitch as a backup...
-    let __Profile__ = NORMALIZED_PATHNAME.replace(/\/([^\/]+?)(?:\/.*)?$/, '$1'),
-        __Profile_Image__ = url => parseURL(url).pathname?.replace(/-profile.+?$/i, '');
-
-    await new Search(__Profile__)
-        .then(({ data }) => data.filter(streamer => __Profile_Image__(STREAMER.icon) === __Profile_Image__(streamer.thumbnail_url) ))
-        .then(([streamer]) => {
-            let ConversionKey = {
-                broadcaster_language: 'lang',
-                broadcaster_login: 'call',
-                display_name: 'name',
-                game_id: 'game',
-                id: 'sole',
-                is_live: 'live',
-                started_at: 'date',
-                tag_ids: 'tags',
-                thumbnail_url: 'icon',
-                title: 'head',
-            };
-
-            for(let from in ConversionKey) {
-                let to = ConversionKey[from];
-
-                LIVE_CACHE.set(to, streamer?.[from]);
-            }
+    await new Search(null, 'auto')
+        .then(Search.convertResults)
+        .then(streamer => {
+            for(let key in streamer)
+                LIVE_CACHE.set(key, streamer[key]);
         })
         .catch(WARN)
         .finally(async() => {
@@ -2988,19 +3352,11 @@ let Initialize = async(START_OVER = false) => {
 
                         if(!sole)
                             await new Search(name)
-                                .then(({ data = [] }) => {
-                                    let found;
-
-                                    for(let channel of data)
-                                        if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
-                                            sole = channel.id;
-
-                                            break;
-                                        }
-                                });
+                                .then(Search.convertResults)
+                                .then(streamer => sole = streamer.sole);
 
                         // Proper CORS request to fetch the HTML data
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'cors' })
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'no-cors' })
                             .then(response => response.json())
                             .then(json => {
                                 let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
@@ -4014,26 +4370,18 @@ let Initialize = async(START_OVER = false) => {
                 let name = pathname.slice(1).toLowerCase();
 
                 new Search(name)
-                    .then(({ data = [] }) => {
-                        let found;
+                    .then(Search.convertResults)
+                    .then(streamer => {
+                        let restored = ({
+                            from: 'SEARCH',
+                            href,
+                            icon: streamer.icon,
+                            live: streamer.live,
+                            name: streamer.name,
+                        });
 
-                        for(let channel of data)
-                            if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
-                                let restored = ({
-                                    from: 'SEARCH',
-                                    href,
-                                    icon: channel.thumbnail_url,
-                                    live: channel.is_live,
-                                    name: channel.display_name,
-                                });
-
-                                ALL_CHANNELS = [...ALL_CHANNELS, restored];
-                                ALL_FIRST_IN_LINE_JOBS[index] = restored;
-                            }
-
-                        if(found)
-                            return true;
-                        throw `Unable to restore "${ name }"`;
+                        ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                        ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
                         ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(url => url?.length).filter(href => href != FIRST_IN_LINE_HREF);
@@ -4285,25 +4633,17 @@ let Initialize = async(START_OVER = false) => {
                         let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
 
                         new Search(name)
-                            .then(({ data = [] }) => {
-                                let found;
+                            .then(Search.convertResults)
+                            .then(streamer => {
+                                let restored = ({
+                                    from: 'SEARCH',
+                                    href,
+                                    icon: streamer.icon,
+                                    live: streamer.live,
+                                    name: streamer.name,
+                                });
 
-                                for(let channel of data)
-                                    if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
-                                        streamer = ({
-                                            from: 'SEARCH',
-                                            href,
-                                            icon: channel.thumbnail_url,
-                                            live: channel.is_live,
-                                            name: channel.display_name,
-                                        });
-
-                                        ALL_CHANNELS = [...ALL_CHANNELS, streamer];
-                                    }
-
-                                if(found)
-                                    return true;
-                                throw `Unable to find "${ name }"`;
+                                ALL_CHANNELS = [...ALL_CHANNELS, restored];
                             });
                     }
 
@@ -4816,29 +5156,22 @@ let Initialize = async(START_OVER = false) => {
                 let name = pathname.slice(1).toLowerCase();
 
                 (null
-                    ?? new Search(name)
+                    ?? new Search(name).then(Search.convertResults)
                     ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
                 )
-                    .then(({ data = [] }) => {
-                        let found;
+                    .then(streamer => {
+                        let restored = ({
+                            from: 'SEARCH',
+                            href,
+                            icon: streamer.icon,
+                            live: streamer.live,
+                            name: streamer.name,
+                        });
 
-                        for(let channel of data)
-                            if(found ||= [channel.display_name, channel.broadcaster_login].map(name => name.toLowerCase()).contains(name)) {
-                                let restored = ({
-                                    from: 'SEARCH',
-                                    href,
-                                    icon: channel.thumbnail_url,
-                                    live: channel.is_live,
-                                    name: channel.display_name,
-                                });
+                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(uniqueChannels);
+                        ALL_FIRST_IN_LINE_JOBS[index] = restored;
 
-                                ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(uniqueChannels);
-                                ALL_FIRST_IN_LINE_JOBS[index] = restored;
-                            }
-
-                        if(found)
-                            REDO_FIRST_IN_LINE_QUEUE(href);
-                        throw `Unable to restore "${ name }"`;
+                        REDO_FIRST_IN_LINE_QUEUE(href);
                     })
                     .catch(error => {
                         let [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
@@ -5092,11 +5425,11 @@ let Initialize = async(START_OVER = false) => {
      *                     | |                                    __/ |
      *                     |_|                                   |___/
      */
-    Handlers.prevent_hosting = () => {
+    Handlers.prevent_hosting = async() => {
         START__STOP_WATCH('prevent_hosting');
 
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"i]')),
-            next = GetNextStreamer.cachedStreamer,
+            next = await GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
             host = (STREAMER.name ?? ''),
             [guest] = host_banner.filter(name => name.toLowerCase() != host.toLowerCase());
@@ -5155,7 +5488,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let CONTINUE_RAIDING = false;
 
-    Handlers.prevent_raiding = () => {
+    Handlers.prevent_raiding = async() => {
         START__STOP_WATCH('prevent_raiding');
 
         if(CONTINUE_RAIDING)
@@ -5165,7 +5498,7 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
-            next = GetNextStreamer.cachedStreamer,
+            next = await GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
             from = (raided? null: STREAMER.name),
             [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.toLowerCase() != from.toLowerCase()));
@@ -7096,6 +7429,11 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
             }
 
             Storage.set({ onInstalledReason: null });
+        }
+
+        // Jump some frames
+        FrameJumper: {
+            top.open('javascript:top.postMessage(__APOLLO_CLIENT__?.cache?.data?.data)', '_self');
         }
     }
 }, 500);

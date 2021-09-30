@@ -50,6 +50,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.2)
+- Fixed Stop Host and Stop Raid logic
+- Adjusted some caching logic `STREAMER.data`
+
 > [`4.12.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.1)
 - Fixed #2 - audio bug with Stream Preview & Away Mode
 
