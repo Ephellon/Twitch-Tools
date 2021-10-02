@@ -44,7 +44,7 @@
 ----
 
 # DONE &mdash; Notable Changes
-> [`4.12.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.2)
+> [`4.12.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.3)
 - Re-enabled `STREAMER.data` caching
 
 > [`4.12.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.2)
