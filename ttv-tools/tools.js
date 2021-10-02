@@ -3356,7 +3356,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then(streamer => sole = streamer.sole);
 
                         // Proper CORS request to fetch the HTML data
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'no-cors' })
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'cors' })
                             .then(response => response.json())
                             .then(json => {
                                 let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },

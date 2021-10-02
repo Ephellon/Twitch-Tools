@@ -13,28 +13,22 @@
     * Heads to the stream 5min before it **should** end
     * Only applies to streams that have a `raidsLastWeek` &ge; 3
     * Tentative addition `4.12`
-4. "Away Mode Lurking Schedule"
-    * Automatically enables &/ disables Away Mode at user defined times
-    * Added `4.12`
-5. Add the **option** to keep Up Next purely unique
+4. Add the **option** to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
     * Up Next does not currently allow duplicates
-6. Add the "Sync Activity across devices" option
+5. Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
-7. Remove more language dependencies
+6. Remove more language dependencies
     * ~~`parseCoin` is language dependent - it only reads "SI" units~~
         * Tentative fix `4.11.5`
     * All bulletin filters are language dependent - they only recognize English
-8. Add an "Auto-Spend" feature for Channel Points
+7. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
-9. Volume Control
-    * Goes awry when moving slider, hovering a channel (stream preview), then attempting to move slider again
-    * Tentative fix `4.12.1`
-10. Up Next doesn't go to all channels?
+8. Up Next doesn't go to all channels?
     * Not sure how often this happens or why
     * Most likely due to "Followed Channels" being labeled incorrectly
     * Tentative fix `4.11.7`
-11. Up Next re-adds all channels after Followed Channels are deleted
+9. Up Next re-adds all channels after Followed Channels are deleted
     * Cache the channels?
 
 - Make initial loading actions less intrusive
@@ -50,6 +44,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.2)
+- Re-enabled `STREAMER.data` caching
+
 > [`4.12.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.2)
 - Fixed Stop Host and Stop Raid logic
 - Adjusted some caching logic `STREAMER.data`
@@ -563,6 +560,14 @@
 ----
 
 # FIXED &mdash; Fixed Issues
+
+> [`2.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.12)
+1. "Away Mode Lurking Schedule"
+    * Automatically enables &/ disables Away Mode at user defined times
+    * Added `4.12`
+2. Volume Control
+    * Goes awry when moving slider, hovering a channel (stream preview), then attempting to move slider again
+    * Tentative fix `4.12.1`
 
 > [`2.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9)*
 1. Some elements don't register (like SVG animations)
