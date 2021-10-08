@@ -459,6 +459,9 @@
         "Recuperar Imagen",
         "Cuando el video no se reproduce (pierde fotogramas durante más de", "15 segundos", "), vuelva a cargar la página web"
     ],
+		"recover-frames:extras": [
+			"Intente insertar", "Intente sobrescribir el video con una transmisión incrustada"
+		],
 
     "recover-pages": [
         "Recuperar Páginas",

@@ -461,6 +461,9 @@
 		"Recover Frames",
 		"When the video fails to play (drops frames for longer than", "15 seconds", "), reload the webpage"
 	],
+		"recover-frames:extras": [
+			"Try Embed", "Attempt to override the video with an embedded stream"
+		],
 
 	"recover-pages": [
 		"Recover Pages",

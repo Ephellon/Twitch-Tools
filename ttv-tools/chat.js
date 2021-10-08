@@ -456,21 +456,23 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let { bttvEmote } = emote.dataset,
                         tooltip = new Tooltip(emote, bttvEmote);
 
-                    emote.addEventListener('mouseup', async event => {
+                    emote.addEventListener('mousedown', async event => {
                         let { currentTarget } = event,
                             { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
                             { top } = getOffset(currentTarget);
 
                         top -= 150;
 
-                        await new Search(bttvOwner)
-                            .then(({ data }) => {
-                                let [streamer] = data.filter(({ id }) => id == bttvOwnerId);
+                        // FIX-ME: Sometimes, the event never actually finishes???
+                        let handledEvent = setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: true, view: window })), 500);
 
+                        await new Search(bttvOwner)
+                            .then(Search.convertResults)
+                            .then(streamer => {
                                 if(!defined(streamer))
                                     throw "Emote owner not found...";
 
-                                let { broadcaster_login, display_name, is_live } = streamer;
+                                let { live } = streamer;
 
                                 new Card({
                                     title: bttvEmote,
@@ -480,9 +482,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         alt: bttvEmote,
                                     },
                                     footer: {
-                                        href: `/${ broadcaster_login }`,
-                                        name: display_name,
-                                        live: parseBool(is_live),
+                                        href: `/${ bttvOwner }`,
+                                        name: bttvOwner,
+                                        live,
                                     },
                                     fineTuning: { top }
                                 });
@@ -499,7 +501,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     },
                                     fineTuning: { top }
                                 });
-                            });
+                            })
+                            .finally(() => clearTimeout(handledEvent));
                     });
                 });
         };
@@ -1180,7 +1183,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let filter = furnish('div#tt-filter-rule--emote', {
                 title: 'Filter this emote',
-                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal; text-decoration:line-through;',
+                style: 'cursor:pointer; fill:var(--color-red); font-size:1.1rem; font-weight:normal; --text-decoration:line-through;',
                 emote: `:${ name }:`,
 
                 onclick: event => {
@@ -1197,7 +1200,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     Storage.set({ filter_rules });
                 },
 
-                innerHTML: `${ Glyphs.trash } ${ name }`,
+                innerHTML: `${ Glyphs.trash } Filter <strong>${ name }</strong>`,
             });
 
             let svg = $('svg', false, filter);
@@ -1441,7 +1444,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     Storage.set({ phrase_rules });
                 },
 
-                innerHTML: `${ Glyphs.star } ${ name }`,
+                innerHTML: `${ Glyphs.star } Highlight <strong>${ name }</strong>`,
             });
 
             let svg = $('svg', false, phrase);

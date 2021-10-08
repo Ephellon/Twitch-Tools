@@ -465,6 +465,9 @@
 		"Beeld herstellen",
 		"Wanneer de video niet afspeelt (frames verliest gedurende meer dan", "15 seconden", "), herlaad de webpagina"
 	],
+		"recover-frames:extras": [
+			"Einbetten versuchen", "Versuchen Sie, das Video mit einem eingebetteten Stream zu überschreiben"
+		],
 
 	"recover-pages": [
 		"Pagina's ophalen",

@@ -155,11 +155,9 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 let owner = null,
                     ownerAlive = false;
 
-                for(let tab of tabs) {
-                    ownerAlive ||= tab.id == UP_NEXT_OWNER;
-
-                    owner = (ownerAlive? owner ?? tab.id: owner);
-                }
+                for(let tab of tabs)
+                    if(ownerAlive ||= tab.id == UP_NEXT_OWNER)
+                        owner ??= tab.id;
 
                 if(ownerAlive) {
                     respond({ owner: owner == sender.tab.id });

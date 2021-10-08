@@ -223,6 +223,9 @@
                     <p tr-id>
                         While watching a channel that isn't followed, follow it automatically.
                     </p>
+
+                    <div><!-- EMPTY OFFSET --></div>
+
                     <details>
                         <summary tr-id='options' subtitle='Adjust settings for &quot;Auto-Follow&quot;'>Options</summary>
                         <div>
@@ -654,11 +657,13 @@
 
             <!-- Notification Sounds -->
             <section new='4.1'>
-                <div class='title' tr-id='notification-sounds'><span small white glyph='music'></span> Notification Sounds</div>
+                <div class='title' tr-id='notification-sounds'><span small gold glyph='music'></span> Notification Sounds</div>
                 <div class='summary'>
                     <p tr-id>
                         When one (or more) of the following conditions are met, play a notification sound.
                     </p>
+
+                    <div><!-- EMPTY OFFSET --></div>
 
                     <details>
                         <summary tr-id='options' subtitle='Adjust options for &quot;Notification Sounds&quot;'>Options</summary>
@@ -1168,7 +1173,7 @@
             </section>
 
             <!-- Recover Frames -->
-            <section>
+            <section new='4.12.4'>
                 <div class='title' tr-id='recover-frames'><span small glyph='video'></span> Recover Frames</div>
                 <div class='summary'>
                     <div class='toggle'>
@@ -1178,6 +1183,24 @@
                     <p tr-id>
                         When the video fails to play (drops frames for longer than <b>15 seconds</b>), reload the webpage.
                     </p>
+
+                    <details>
+                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Recover Frames&quot;'>Extras</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id='recover-frames:extras'>Try Embed</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='recover_frames__allow_embed' type='checkbox'/>
+                                        <label for='recover_frames__allow_embed'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Attempt to override the video with an embedded stream.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 

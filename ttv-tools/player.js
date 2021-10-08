@@ -88,6 +88,17 @@ let Player__Initialize = async(START_OVER = false) => {
         RegisterJob('auto_accept_mature');
     }
 
+    // Extras
+    __UnmuteEmbed__: {
+        let { channel, controls, muted, parent, quality } = parseURL(window.location).searchParameters;
+
+        controls = parseBool(controls);
+        muted = parseBool(muted);
+
+        if(!controls && !muted)
+            $('figure[tt-svg-label~="unmute"i]')?.click();
+    }
+
     // End of Player__Initialize
 };
 // End of Player__Initialize
@@ -153,6 +164,45 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                     });
 
                 observer.observe(body, { childList: true, subtree: true });
+            }
+        }
+
+        // Set the SVGs' section IDs
+        SectionLabeling: {
+            let conversions = {
+                unmute: [
+                            "unmute"
+                        ].reverse(),
+            },
+                Glyphs = top.Glyphs;
+
+            for(let container of $('figure', true)) {
+                let svg = $('svg', false, container);
+
+                comparing:
+                for(let glyph in Glyphs)
+                    if(Glyphs.__exclusionList__.contains(glyph))
+                        continue comparing;
+                    else
+                        resemble(SVGtoImage(svg))
+                            .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
+                            .ignoreColors()
+                            .scaleToSameSize()
+                            .onComplete(async data => {
+                                let { analysisTime, misMatchPercentage } = data;
+
+                                analysisTime = parseInt(analysisTime);
+                                misMatchPercentage = parseFloat(misMatchPercentage);
+
+                                let matchPercentage = 100 - misMatchPercentage;
+
+                                if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
+                                    return;
+
+                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+
+                                container.setAttribute('tt-svg-label', conversions[glyph].pop());
+                            });
             }
         }
 

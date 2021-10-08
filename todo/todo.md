@@ -44,6 +44,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.4)
+- Changed emote card styling
+- Changed "Earned All" channel point balance styling
+- Added logic to unmute embedded channels (if the user has the "Stream Preview Audio" setting enabled)
+- Added Try Embed to Recover Frames
+- Adjusted `Search` logic
+- Added `STREAMER.done`
+
 > [`4.12.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.3)
 - Re-enabled `STREAMER.data` caching
 

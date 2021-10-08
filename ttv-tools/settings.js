@@ -184,6 +184,7 @@ let // These are option names. Anything else will be removed
         'recover_ads',
         // Recover Frames
         'recover_frames',
+            'recover_frames__allow_embed',
         // Recover Page
         'recover_pages',
         // Keep Pop-out
@@ -1437,6 +1438,8 @@ async function Translate(language = 'en', container = document) {
                         ?? json[translation_id]
                         ?? []
                     );
+
+                element.setAttribute('tr-id', translation_id);
 
                 if(!translations?.length)
                     continue;

@@ -1026,7 +1026,7 @@ class Search {
                     "Authorization":    Search.authorization,
                     "Client-ID":        'kimne78kx3ncx6brgo4mv6wki5h1ko',
                     "Content-Type":     `text/plain; charset=UTF-8`,
-                    "Device-ID":        Search.cookies.unique_id
+                    "Device-ID":        Search.cookies.unique_id,
                 }
             }),
             player = ({
@@ -1078,31 +1078,10 @@ class Search {
 
         let template;
         switch(Search.parseType = as) {
-            case 'advanced': {
-                // https://api.twitch.tv/kraken/channels/39367256
-                //     broadcaster_language: "en"
-                //     broadcaster_software: "unknown_rtmp"
-                //     broadcaster_type: "partner"
-                //     created_at: "2013-01-15T20:07:57Z"
-                //     description: "I stream a lot of Dead by Daylight but I also like occasionally playing a variety of games. My gaming/content creator roots started in Runescape (making RSMVs ~2007) and since then I’ve branched out to so much more! My stream is about community so be sure to talk in chat and introduce yourself!"
-                //     display_name: "AimzAtchu"
-                //     followers: 157824
-                //     game: "Dead by Daylight"
-                //     language: "en"
-                //     logo: "https://static-cdn.jtvnw.net/jtv_user_pictures/6a3138ef-333d-4932-b891-1b5a88accc0f-profile_image-300x300.jpg"
-                //     mature: false
-                //     name: "aimzatchu"
-                //     partner: true
-                //     privacy_options_enabled: false
-                //     private_video: false
-                //     profile_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/3887c3fa-9ed8-4465-b873-03c78dbec505-profile_banner-480.png"
-                //     profile_banner_background_color: "#030303"
-                //     status: "🎃Happy !PTB Day!👻Are Boons OP? Let's Find Out!  #DeadbyDaylightPartner"
-                //     updated_at: "2021-09-29T01:39:51Z"
-                //     url: "https://www.twitch.tv/aimzatchu"
-                //     video_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/aimzatchu-channel_offline_image-c8fb4fef334d2afa-1920x1080.png"
-                //     views: 5919706
-                //     _id: "39367256"
+            case 'query': {
+                let query = ('query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) { streamPlaybackAccessToken(channelName: $login, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isLive) { value signature __typename } videoPlaybackAccessToken(id: $vodID, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isVod) { value signature __typename }}');
+
+                template = ({ operationName: 'PlaybackAccessToken_Template', query });
             } break;
 
             case 'chat.info': {
@@ -1133,10 +1112,91 @@ class Search {
                 template = ({ operationName: 'WithIsStreamLiveQuery', variables, extensions });
             } break;
 
-            default: {
-                let query = ('query PlaybackAccessToken_Template($login: String!, $isLive: Boolean!, $vodID: ID!, $isVod: Boolean!, $playerType: String!) { streamPlaybackAccessToken(channelName: $login, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isLive) { value signature __typename } videoPlaybackAccessToken(id: $vodID, params: { platform: "web", playerBackend: "mediaplayer", playerType: $playerType }) @include(if: $isVod) { value signature __typename }}');
+            case '.legacy': {
+                // https://api.twitch.tv/kraken/channels/39367256
+                //     broadcaster_language: "en"
+                //     broadcaster_software: "unknown_rtmp"
+                //     broadcaster_type: "partner"
+                //     created_at: "2013-01-15T20:07:57Z"
+                //     description: "I stream a lot of Dead by Daylight but I also like occasionally playing a variety of games. My gaming/content creator roots started in Runescape (making RSMVs ~2007) and since then I’ve branched out to so much more! My stream is about community so be sure to talk in chat and introduce yourself!"
+                //     display_name: "AimzAtchu"
+                //     followers: 157824
+                //     game: "Dead by Daylight"
+                //     language: "en"
+                //     logo: "https://static-cdn.jtvnw.net/jtv_user_pictures/6a3138ef-333d-4932-b891-1b5a88accc0f-profile_image-300x300.jpg"
+                //     mature: false
+                //     name: "aimzatchu"
+                //     partner: true
+                //     privacy_options_enabled: false
+                //     private_video: false
+                //     profile_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/3887c3fa-9ed8-4465-b873-03c78dbec505-profile_banner-480.png"
+                //     profile_banner_background_color: "#030303"
+                //     status: "🎃Happy !PTB Day!👻Are Boons OP? Let's Find Out!  #DeadbyDaylightPartner"
+                //     updated_at: "2021-09-29T01:39:51Z"
+                //     url: "https://www.twitch.tv/aimzatchu"
+                //     video_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/aimzatchu-channel_offline_image-c8fb4fef334d2afa-1920x1080.png"
+                //     views: 5919706
+                //     _id: "39367256"
+            } break;
 
-                template = ({ operationName: 'PlaybackAccessToken_Template', query });
+            default: {
+                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl pt pt-br ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
+                let name = channelName;
+
+                if(!defined(name) || type != 'channel')
+                    break;
+
+                return (async({ name, languages }) =>
+                    await fetch(`./${ name }`, { mode: 'cors' })
+                        .then(response => response.text())
+                        .then(html => {
+                            let parser = new DOMParser;
+
+                            return parser.parseFromString(html, 'text/html');
+                        })
+                        .then(async doc => {
+                            let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
+                                [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
+
+                            let display_name = await awaitOn(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
+                                [language] = languages.filter(lang => !alt_languages.contains(lang)),
+                                name = display_name?.toLowerCase(),
+                                profile_image = $('meta[property$="image"i]', false, doc)?.content,
+                                live = parseBool(data?.publication?.isLiveBroadcast),
+                                started_at = new Date(data?.publication?.startDate).toJSON(),
+                                status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
+                                updated_at = new Date(data?.publication?.endDate).toJSON();
+
+                            Search.parseType = 'pure';
+
+                            let json = { display_name, language, live, name, profile_image, started_at, status, updated_at };
+
+                            return ({
+                                async arrayBuffer() {
+                                    return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
+                                },
+
+                                async blob() {
+                                    return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
+                                },
+
+                                async json() {
+                                    return json;
+                                },
+
+                                async text() {
+                                    JSON.stringify(json);
+                                },
+
+                                async formData() {
+                                    let form = new FormData;
+                                    for(let key in json)
+                                        form.set(key, json[key]);
+                                    return form;
+                                },
+                            });
+                        })
+                )({ name, languages });
             } break;
         }
 
@@ -1272,12 +1332,20 @@ class Search {
             role:               'role',
             subscriber:         'paid',
             turbo:              'fast',
+
+            display_name:       'name',
+            live:               'live',
+            profile_image:      'icon',
         },
             deeper = [];
 
         switch(Search.parseType) {
             case 'advanced': {
                 // TODO: parse advanced results...
+            } break;
+
+            case 'pure': {
+                /* Do nothing... */
             } break;
 
             case 'chat.info': {
@@ -2365,7 +2433,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify(channel));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2408,7 +2476,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2449,7 +2517,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2478,7 +2546,7 @@ async function update() {
                     return;
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2632,6 +2700,10 @@ let Initialize = async(START_OVER = false) => {
             leastProgressNeeded = 0,
             closestToCompletion = null;
 
+        // Next channel in "Up Next"
+        if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
+            return GetNextStreamer.cachedStreamer = ALL_CHANNELS.find(channel => channel.href.contains(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
+
         await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
             filtering:
             for(let channel in ChannelPoints) {
@@ -2687,10 +2759,6 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
         });
-
-        // Next channel in "Up Next"
-        if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
-            return GetNextStreamer.cachedStreamer ??= ALL_CHANNELS.find(channel => channel.href.contains(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
 
         let next,
             { random, round } = Math;
@@ -2786,7 +2854,7 @@ let Initialize = async(START_OVER = false) => {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify(channel));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2804,6 +2872,7 @@ let Initialize = async(START_OVER = false) => {
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
      * cult:number*      - GETTER: the estimated number of followers
+     * done:boolean*     - GETTER: are all of the channel point rewards purchasable
      * face:string       - GETTER: a URL to the channel points image, if applicable
      * fiat:string*      - GETTER: returns the name of the streamer's coin, if applicable
      * follow:function   - follows the current channel
@@ -2845,6 +2914,30 @@ let Initialize = async(START_OVER = false) => {
             let followers = $.getElementByText(/([\d\W]+[a-z]?) follow/i)? RegExp.$1: 0;
 
             return parseCoin(followers);
+        },
+
+        get done() {
+            return STREAMER.__done__ ?? (async() => {
+                let done = false;
+
+                await LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
+                    let { name } = STREAMER,
+                        [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                        allRewards = $('[data-test-selector="cost"i]', true);
+
+                    notEarned = (
+                        (allRewards?.length)?
+                            allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length:
+                        (notEarned > -Infinity)?
+                            notEarned:
+                        -1
+                    );
+
+                    return done = (notEarned == 0);
+                });
+
+                return STREAMER.__done__ = done;
+            })();
         },
 
         get face() {
@@ -3031,7 +3124,7 @@ let Initialize = async(START_OVER = false) => {
         delete StreamerFilteredData[key];
 
     StreamerMainIcon.setAttribute('draggable', true);
-    StreamerMainIcon.setAttribute('tt-streamer-data', JSON.stringify(STREAMER));
+    StreamerMainIcon.setAttribute('tt-streamer-data', JSON.stringify({ ...STREAMER, chat: null, jump: null }));
     StreamerMainIcon.ondragstart ??= event => {
         let { currentTarget } = event;
 
@@ -3120,7 +3213,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
+                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
@@ -3167,7 +3260,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
+                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
@@ -3211,7 +3304,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify(streamer));
+                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
@@ -3272,13 +3365,7 @@ let Initialize = async(START_OVER = false) => {
                 __FineDetails__:
                 if(parseBool(Settings.fine_details)) {
                     // Get the cookie values
-                    let cookies = {};
-
-                    document.cookie.split(/(?:\s*;\s*)+/).map(cookie => {
-                        let [name, value = null] = cookie.split('=');
-
-                        cookies[name] = value;
-                    });
+                    let { cookies } = Search;
 
                     USERNAME = top.USERNAME = cookies.name ?? USERNAME;
 
@@ -5233,7 +5320,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names, JSON.stringify({ ...STREAMER, date: new Date })).toNativeStack();
+            WARN('Twitch failed to add these channels correctly:', bad_names, JSON.stringify({ ...STREAMER, chat: null, jump: null, date: new Date })).toNativeStack();
 
             BAD_STREAMERS = "";
 
@@ -6157,7 +6244,7 @@ let Initialize = async(START_OVER = false) => {
         balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button'),
         hasPointsEnabled = false;
 
-    Handlers.point_watcher_placement = () => {
+    Handlers.point_watcher_placement = async() => {
         START__STOP_WATCH('point_watcher_placement');
 
         let richTooltip = $('[class*="channel-tooltip"i]');
@@ -6202,6 +6289,9 @@ let Initialize = async(START_OVER = false) => {
                 SaveCache({ ChannelPoints });
             });
         }
+
+        // Color the balance text
+        $('[data-test-selector="balance-string"i]')?.setAttribute('tt-earned-all', await STREAMER.done);
 
         if(!defined(richTooltip))
             return JUDGE__STOP_WATCH('point_watcher_placement');
@@ -6338,7 +6428,8 @@ let Initialize = async(START_OVER = false) => {
         let scale = parseFloat(Settings.stream_preview_scale) || 1,
             muted = !parseBool(Settings.stream_preview_sound),
             quality = (scale > 1? 'auto': '720p'),
-            watchParty = defined($('[data-a-target^="watchparty"i][data-a-target*="overlay"i]'));
+            watchParty = defined($('[data-a-target^="watchparty"i][data-a-target*="overlay"i]')),
+            controls = false;
 
         STREAM_PREVIEW = {
             name,
@@ -6350,7 +6441,7 @@ let Initialize = async(START_OVER = false) => {
                                 `--below: tooltip; top: calc(${ bottom + height }px);`:
                             // Above tooltip
                             `--above: tooltip; top: calc(${ top - height }px - (15rem * ${ scale }));`
-                        ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width ?? 50: video.left) }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
+                        ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width: video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
                     },
                     furnish('div.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
@@ -6360,7 +6451,12 @@ let Initialize = async(START_OVER = false) => {
                     }),
                     furnish(`iframe.tt-stream-preview--iframe`, {
                         allow: 'autoplay',
-                        src: `https://player.twitch.tv/?channel=${ name }&parent=twitch.tv&muted=${ muted }&controls=false&quality=${ quality }`,
+                        src: parseURL(`https://player.twitch.tv/`).pushToSearch({
+                            channel: name,
+                            parent: 'twitch.tv',
+
+                            controls, muted, quality,
+                        }).href,
 
                         height: '100%',
                         width: '100%',
@@ -6565,12 +6661,13 @@ let Initialize = async(START_OVER = false) => {
     let SECONDS_PAUSED_UNSAFELY = 0,
         CREATION_TIME,
         TOTAL_VIDEO_FRAMES,
-        PAGE_HAS_FOCUS = document.visibilityState === "visible";
+        PAGE_HAS_FOCUS = document.visibilityState === "visible",
+        VIDEO_OVERRIDE = false;
 
     Handlers.recover_frames = () => {
         START__STOP_WATCH('recover_frames');
 
-        let video = $('video');
+        let video = $('video') ?? $('video', false, $('#tt-embedded-video')?.contentDocument);
 
         if(!defined(video))
             return JUDGE__STOP_WATCH('recover_frames');
@@ -6597,14 +6694,72 @@ let Initialize = async(START_OVER = false) => {
                 WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
             if(SECONDS_PAUSED_UNSAFELY > 5 && !(SECONDS_PAUSED_UNSAFELY % 3)) {
-                WARN(`Attempting to pause/play the video`);
+                __RecoverFrames_Embed__:
+                if(parseBool(Settings.recover_frames__allow_embed)) {
+                    WARN(`Attempting to override the video`);
 
-                let state = $('button[data-a-player-state]')?.getAttribute('data-a-player-state')?.toLowerCase?.();
+                    let container = $('video')?.closest('[class*="container"i]');
 
-                if(state == "playing") {
-                    $('button[data-a-player-state]').click();
+                    if(!defined(container))
+                        break __RecoverFrames_Embed__;
 
-                    setTimeout(() => $('button[data-a-player-state]').click(), 1000);
+                    let { name } = STREAMER,
+                        controls = true,
+                        muted = true;
+
+                    container.replaceChild(
+                        furnish(`iframe#tt-embedded-video`, {
+                            allow: 'autoplay',
+                            src: parseURL(`https://player.twitch.tv/`).pushToSearch({
+                                channel: name,
+                                parent: 'twitch.tv',
+
+                                controls, muted,
+                            }).href,
+
+                            style: `border: 1px solid var(--color-warn)`,
+
+                            height: '100%',
+                            width: '100%',
+
+                            onload: event => {
+                                let hasVideo = element => defined(element) && /(video)/i.test(element.tagName);
+
+                                awaitOn(() => {
+                                    let doc = $('#video')?.contentDocument;
+
+                                    if(!defined(doc))
+                                        return /* No document */;
+
+                                    let loadedVideo = hasVideo($('video', false, doc));
+
+                                    if(!loadedVideo)
+                                        return /* No video */;
+
+                                    let video = $('video', false, doc);
+
+                                    if((video.currentTime || 0) <= 0)
+                                        return /* Video not loading */;
+
+                                    return VIDEO_OVERRIDE = true;
+                                }, 100);
+                            },
+                        }),
+
+                        container.firstElementChild
+                    );
+
+                    new Tooltip($('#tt-embedded-video'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error`);
+                } else {
+                    WARN(`Attempting to pause/play the video`);
+
+                    let state = $('button[data-a-player-state]')?.getAttribute('data-a-player-state')?.toLowerCase?.();
+
+                    if(state == "playing") {
+                        $('button[data-a-player-state]').click();
+
+                        setTimeout(() => $('button[data-a-player-state]').click(), 1000);
+                    }
                 }
             }
 
@@ -6751,7 +6906,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_video = async() => {
         START__STOP_WATCH('recover_video');
 
-        let errorMessage = $('[data-a-target="player-overlay-content-gate"i]');
+        let errorMessage = $('[data-a-target^="player"i][data-a-target$="content-gate"i] [data-test-selector*="text"i]');
 
         if(!defined(errorMessage))
             return JUDGE__STOP_WATCH('recover_video');
@@ -7324,8 +7479,9 @@ PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
 
             [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-            [tt-earned-all="true"i] { color: var(--color-${ accent }); font-weight: bold }
             [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
+            [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--color-${ accent }) }
+            [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--color-${ accent }) }
 
             /* Away Mode */
             #away-mode svg[id^="tt-away-mode"i] {

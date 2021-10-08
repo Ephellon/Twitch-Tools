@@ -465,6 +465,9 @@
 		"Recuperar imagem",
 		"Quando o vídeo não é reproduzido (perde frames por mais de", "15 segundos", "), carregar de novo a página web"
 	],
+		"recover-frames:extras": [
+			"Tente incorporar", "Tente substituir o vídeo por um stream incorporado"
+		],
 
 	"recover-pages": [
 		"Recuperar Páginas",
