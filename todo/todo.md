@@ -48,6 +48,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.6)
+- Reverted minor changes
+
 > [`4.12.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.5)
 - Added Stream Preview: Position to adjust the preview's z-index
 - Adjusted `onlocationchange` logic (minor)
