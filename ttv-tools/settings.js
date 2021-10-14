@@ -16,7 +16,7 @@ let encodeHTML = string => string.replace(/([<&>])/g, ($0, $1, $$, $_) => ({ '<'
 
 let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
 
-let privateConfiguration = Object.freeze({
+const PRIVATE_OBJECT_CONFIGURATION = Object.freeze({
     writable: false,
     enumerable: false,
     configurable: false,
@@ -168,6 +168,7 @@ let // These are option names. Anything else will be removed
         'stream_preview',
             'stream_preview_scale',
             'stream_preview_sound',
+            'stream_preview_position',
         // Accent Color
         'accent_color',
 
@@ -850,7 +851,7 @@ Object.defineProperties(SaveSettings, {
             }[element.type]];
         },
 
-        ...privateConfiguration
+        ...PRIVATE_OBJECT_CONFIGURATION
     },
 });
 
@@ -932,7 +933,7 @@ Object.defineProperties(LoadSettings, {
             }[element.type]] = value;
         },
 
-        ...privateConfiguration
+        ...PRIVATE_OBJECT_CONFIGURATION
     },
 });
 
@@ -1082,7 +1083,7 @@ $('#save, .save', true).map(element => element.onclick = async event => {
         });
 });
 
-function postSyncStatus(message = '&nbsp;', type = 'alert') {
+function PostSyncStatus(message = '&nbsp;', type = 'alert') {
     clearTimeout(clearSyncStatus.clearID);
 
     $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
@@ -1092,11 +1093,11 @@ function postSyncStatus(message = '&nbsp;', type = 'alert') {
     clearSyncStatus.clearID = setTimeout(clearSyncStatus, message.split(/\s+/).length * 1_500);
 }
 
-Object.defineProperties(postSyncStatus, {
-    alert: { value: message => postSyncStatus(message, 'alert'), ...privateConfiguration },
-    error: { value: message => postSyncStatus(message, 'error'), ...privateConfiguration },
-    success: { value: message => postSyncStatus(message, 'success'), ...privateConfiguration },
-    warning: { value: message => postSyncStatus(message, 'warning'), ...privateConfiguration },
+Object.defineProperties(PostSyncStatus, {
+    alert: { value: message => PostSyncStatus(message, 'alert'), ...PRIVATE_OBJECT_CONFIGURATION },
+    error: { value: message => PostSyncStatus(message, 'error'), ...PRIVATE_OBJECT_CONFIGURATION },
+    success: { value: message => PostSyncStatus(message, 'success'), ...PRIVATE_OBJECT_CONFIGURATION },
+    warning: { value: message => PostSyncStatus(message, 'warning'), ...PRIVATE_OBJECT_CONFIGURATION },
 });
 
 function clearSyncStatus() {
@@ -1113,21 +1114,20 @@ $('#sync-settings--upload').onmouseup = async event => {
 
     await SaveSettings()
         .then(async() => {
+            PostSyncStatus('Uploading...');
             currentTarget.classList.add('spin');
-            postSyncStatus('Uploading...');
 
             let id = parseURL(Runtime.getURL('')).host;
-
             let url = parseURL(`https://www.tinyurl.com/api-create.php`)
                 .pushToSearch({
                     url: encodeURIComponent(
                         parseURL(`json://${ id }.settings.js/`)
-                            .pushToSearch({ json: btoa(JSON.stringify({ ...SETTINGS, syncDate: new Date().toJSON() })) })
+                            .pushToSearch({ json: btoa(JSON.stringify({ ...SETTINGS, SyncSettings: null, syncDate: new Date().toJSON() })) })
                             .href
                     )
                 });
 
-            await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(url.href) }`/*, { mode: 'no-cors' } */)
+            await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(url.href) }`/*, { mode: 'cors' } */)
                 .then(response => response.text())
                 .then(token => {
                     let { pathname } = parseURL(token);
@@ -1137,11 +1137,12 @@ $('#sync-settings--upload').onmouseup = async event => {
 
                     return `Uploaded. Your Upload ID is ${ (syncToken.value = pathname.slice(1)).toUpperCase() }`;
                 })
-                .then(postSyncStatus.success)
+                .then(PostSyncStatus.success)
                 .then(SaveSettings)
-                .catch(postSyncStatus.warning)
+                .catch(PostSyncStatus.warning)
                 .finally(() => currentTarget.classList.remove('spin'));
-        });
+        })
+        .catch(PostSyncStatus.warning);
 };
 
 $('#sync-settings--download').onmouseup = async event => {
@@ -1149,19 +1150,19 @@ $('#sync-settings--download').onmouseup = async event => {
         { currentTarget } = event;
 
     if((syncToken?.replace(/\W+/g, '')?.length | 0) < 8)
-        return postSyncStatus.warning('Please use a valid Upload ID');
+        return PostSyncStatus.warning('Please use a valid Upload ID');
 
+    PostSyncStatus('Downloading...');
     currentTarget.classList.add('spin');
-    postSyncStatus('Downloading...');
 
-    await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(`https://preview.tinyurl.com/${ syncToken }`) }`/*, { mode: 'no-cors' } */)
+    await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(`https://preview.tinyurl.com/${ syncToken }`) }`/*, { mode: 'cors' } */)
         .then(response => response.text())
-        .catch(postSyncStatus.warning)
+        .catch(PostSyncStatus.warning)
         .then(html => {
             let parser = new DOMParser;
             let doc = parser.parseFromString(html, 'text/html');
 
-            return $('#contentcontainer', false, doc)?.getElementByText('json://');
+            return doc?.documentElement?.getElementByText('json://');
         })
         .then(element => {
             let url = element?.textContent,
@@ -1190,11 +1191,11 @@ $('#sync-settings--download').onmouseup = async event => {
                         LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
                     }
 
-                    postSyncStatus.success(messages.join('. '));
+                    PostSyncStatus.success(messages.join('. '));
                 })
-                .catch(postSyncStatus.warning);
+                .catch(PostSyncStatus.warning);
         })
-        .catch(postSyncStatus.warning)
+        .catch(PostSyncStatus.warning)
         .finally(() => currentTarget.classList.remove('spin'));
 };
 
@@ -1203,11 +1204,11 @@ $('#sync-settings--share').onmousedown = async event => {
         { currentTarget } = event;
 
     if(!syncToken?.length)
-        return postSyncStatus.warning('Nothing to share');
+        return PostSyncStatus.warning('Nothing to share');
 
     await navigator.clipboard.writeText(syncToken)
-        .then(() => postSyncStatus.success('Copied to clipboard'))
-        .catch(postSyncStatus.warning);
+        .then(() => PostSyncStatus.success('Copied to clipboard'))
+        .catch(PostSyncStatus.warning);
 };
 
 /* Adding new schedules */
@@ -1453,7 +1454,7 @@ async function Translate(language = 'en', container = document) {
                         if([TEXT_NODE].contains(nodeType))
                             return node;
 
-                        if(unknown(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
+                        if(!defined(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
                             return;
 
                         return node;

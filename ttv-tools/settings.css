@@ -999,7 +999,7 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 
     border: 0;
     margin-left: 0;
-    vertical-align: middle;
+    vertical-align: -15%;
 
     height: 2rem;
 }
@@ -1325,6 +1325,8 @@ body.popup {
 
 .popup [unit]::after {
     padding: calc(.1rem - 2px) calc(.5rem - 2px);
+
+    vertical-align: middle;
 }
 
 .popup #filter_rules, .popup #phrase_rules {

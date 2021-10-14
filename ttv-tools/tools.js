@@ -1013,6 +1013,8 @@ class Search {
         void null
     );
 
+    static #cache = new Map;
+
     constructor(ID = null, type = 'channel', as = null) {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
             twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
@@ -1075,6 +1077,12 @@ class Search {
 
         if(type == 'channel')
             channelName = ID;
+
+        let searchID = UUID.from({ ID, type, as }).value,
+            searchResults;
+
+        if(Search.#cache.has(searchID))
+            return Search.#cache.get(searchID);
 
         let template;
         switch(Search.parseType = as) {
@@ -1146,8 +1154,8 @@ class Search {
                 if(!defined(name) || type != 'channel')
                     break;
 
-                return (async({ name, languages }) =>
-                    await fetch(`./${ name }`, { mode: 'cors' })
+                searchResults =
+                    fetch(`./${ name }`, { mode: 'cors' })
                         .then(response => response.text())
                         .then(html => {
                             let parser = new DOMParser;
@@ -1167,9 +1175,11 @@ class Search {
                                 status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
                                 updated_at = new Date(data?.publication?.endDate).toJSON();
 
+                            let json = { display_name, language, live, name, profile_image, started_at, status, updated_at };
+
                             Search.parseType = 'pure';
 
-                            let json = { display_name, language, live, name, profile_image, started_at, status, updated_at };
+                            SEARCH_CACHE.set(display_name, await Search.convertResults({ async json() { return json } }));
 
                             return ({
                                 async arrayBuffer() {
@@ -1195,8 +1205,11 @@ class Search {
                                     return form;
                                 },
                             });
-                        })
-                )({ name, languages });
+                        });
+
+                Search.#cache.set(searchID, searchResults);
+
+                return searchResults;
             } break;
         }
 
@@ -1272,7 +1285,9 @@ class Search {
         request.open('POST', spadeEndpoint);
         request.send(blob);
 
-        return results.request;
+        Search.#cache.set(searchID, searchResults = results.request);
+
+        return searchResults;
     }
 
     static retrieve(query) {
@@ -2183,7 +2198,7 @@ try {
             get() {
                 let last;
 
-                for(let key of __ONLOCATIONCHANGE__)
+                for(let [key, func] of __ONLOCATIONCHANGE__)
                     last = key;
 
                 return __ONLOCATIONCHANGE__.get(last);
@@ -4313,7 +4328,6 @@ let Initialize = async(START_OVER = false) => {
      *                                                                           |_|
      */
     let FIRST_IN_LINE_JOB,                  // The current job (interval)
-        FIRST_IN_LINE_HREF,                 // The upcoming HREF
         FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
         FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
         FIRST_IN_LINE_PAUSED,               // The pause-state
@@ -4344,7 +4358,7 @@ let Initialize = async(START_OVER = false) => {
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
     function REDO_FIRST_IN_LINE_QUEUE(url) {
-        if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(unknown).length <= 0))
+        if(!defined(url) || (ALL_FIRST_IN_LINE_JOBS[0] === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(unknown).length <= 0))
             return;
 
         url = parseURL(url);
@@ -4357,7 +4371,6 @@ let Initialize = async(START_OVER = false) => {
 
         let { name } = channel;
 
-        FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
         if(!ALL_FIRST_IN_LINE_JOBS.filter(defined).length)
@@ -4382,11 +4395,11 @@ let Initialize = async(START_OVER = false) => {
 
             STARTED_TIMERS.WARNING = true;
 
-            LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
+            LOG('Heading to stream in', toTimeString(timeRemaining), ALL_FIRST_IN_LINE_JOBS[0], new Date);
 
             let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(timeRemaining) }\t`, {
                 icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
-                href: FIRST_IN_LINE_HREF,
+                href: ALL_FIRST_IN_LINE_JOBS[0],
 
                 onmousedown: event => {
                     let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
@@ -4443,15 +4456,15 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
             // TO-NOTICE: this may cause reloading issues?
-            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF),
+            let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]),
                 timeRemaining = GET_TIME_REMAINING();
 
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
             if(!defined(channel)) {
-                LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
+                LOG('Restoring dead channel (interval)...', ALL_FIRST_IN_LINE_JOBS[0]);
 
-                let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
+                let { href, pathname } = parseURL(ALL_FIRST_IN_LINE_JOBS[0]),
                     channelID = UUID.from(pathname).value;
 
                 let name = pathname.slice(1).toLowerCase();
@@ -4471,7 +4484,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(url => url?.length).filter(href => href != FIRST_IN_LINE_HREF);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(url => url?.length).filter(href => href != ALL_FIRST_IN_LINE_JOBS[0]);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -4492,10 +4505,10 @@ let Initialize = async(START_OVER = false) => {
             /* After above is `false` */
 
             SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                LOG('Heading to stream now [Job Interval]', FIRST_IN_LINE_HREF);
+                LOG('Heading to stream now [Job Interval]', ALL_FIRST_IN_LINE_JOBS[0]);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                open(FIRST_IN_LINE_HREF, '_self');
+                open(ALL_FIRST_IN_LINE_JOBS[0], '_self');
             });
         }, 1000);
     }
@@ -4705,21 +4718,51 @@ let Initialize = async(START_OVER = false) => {
                     streamer = JSON.parse(event.dataTransfer.getData('application/tt-streamer'));
                 } catch(error) {
                     /* error suppression for sorting-related drops */;
-                    if(!from_container)
-                        return ERROR(error);
-                }
+                    if(!from_container) {
+                        // Try to see if it's a link...
+                        let { href, hostname, pathname, domainPath } = parseURL(event.dataTransfer.getData('text'));
 
-                if(from_container) {
-                    // Most likely a sorting event
-                } else {
-                    let { href } = streamer;
+                        // No idea what the user just dropped
+                        if(!hostname?.length || !pathname?.length)
+                            return ERROR(error);
 
-                    LOG('Adding to Up Next [ondrop]:', { href, streamer });
+                        if(!/^tv\.twitch/i.test(domainPath.join('.')) || ReservedTwitchPathnames.test(pathname))
+                            return WARN(`Unable to add link to Up Next "${ href }"`);
 
-                    if(!defined(streamer?.icon)) {
-                        let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
+                        streamer = await(null
+                            ?? ALL_CHANNELS.find(channel => channel.href == href)
+                            ?? (null
+                                ?? new Search(pathname.slice(1)).then(Search.convertResults)
+                                ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
+                            )
+                                .then(search => {
+                                    let found = ({
+                                        from: 'SEARCH',
+                                        href,
+                                        icon: search.icon,
+                                        live: search.live,
+                                        name: search.name,
+                                    });
 
-                        new Search(name)
+                                    ALL_CHANNELS = [...ALL_CHANNELS, found].filter(uniqueChannels);
+
+                                    return found;
+                                })
+                                .catch(WARN)
+                        )
+                    }
+                } finally {
+                    if(from_container) {
+                        // Most likely a sorting event
+                    } else {
+                        let { href } = streamer;
+
+                        LOG('Adding to Up Next [ondrop]:', { href, streamer });
+
+                        if(!defined(streamer?.icon)) {
+                            let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
+
+                            new Search(name)
                             .then(Search.convertResults)
                             .then(streamer => {
                                 let restored = ({
@@ -4732,18 +4775,19 @@ let Initialize = async(START_OVER = false) => {
 
                                 ALL_CHANNELS = [...ALL_CHANNELS, restored];
                             });
+                        }
+
+                        // Jobs are unknown. Restart timer
+                        if(ALL_FIRST_IN_LINE_JOBS.length < 1)
+                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+
+                        // LOG('Accessing here... #1');
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+
+                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                     }
-
-                    // Jobs are unknown. Restart timer
-                    if(ALL_FIRST_IN_LINE_JOBS.length < 1)
-                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-
-                    // LOG('Accessing here... #1');
-                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
-
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
-
-                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                 }
             };
 
@@ -4799,7 +4843,7 @@ let Initialize = async(START_OVER = false) => {
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                         REDO_FIRST_IN_LINE_QUEUE(channel.href);
-                        LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                        LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
                     }
 
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -4822,6 +4866,9 @@ let Initialize = async(START_OVER = false) => {
 
                         let { live, name } = channel;
 
+                        if(!live)
+                            live ||= (new Search(name).then(Search.convertResults))?.live;
+
                         let [balloon] = FIRST_IN_LINE_BALLOON?.add({
                             href,
                             src: channel.icon,
@@ -4839,11 +4886,10 @@ let Initialize = async(START_OVER = false) => {
                                 if(index > 0) {
                                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                                 } else {
-                                    LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
+                                    LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
 
                                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                                    FIRST_IN_LINE_HREF = undefined;
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -4865,8 +4911,17 @@ let Initialize = async(START_OVER = false) => {
                                 return setInterval(() => {
                                     START__STOP_WATCH('up_next_balloon__subheader_timer_animation');
 
-                                    if(FIRST_IN_LINE_PAUSED)
-                                        return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000) /* First in Line is paused */;
+                                    let timeRemaining = GET_TIME_REMAINING();
+
+                                    timeRemaining = timeRemaining < 0? 0: timeRemaining
+
+                                    /* First in Line is paused */
+                                    if(FIRST_IN_LINE_PAUSED) {
+                                        SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                        JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000);
+
+                                        return;
+                                    }
 
                                     let channel = (ALL_CHANNELS.find(channel => channel.name == container.getAttribute('name')) ?? {}),
                                         { name, live } = channel;
@@ -4877,7 +4932,7 @@ let Initialize = async(START_OVER = false) => {
                                         intervalID = parseInt(container.getAttribute('animationID')),
                                         index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
-                                    if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                                    if(time < 60_000 && !ALL_FIRST_IN_LINE_JOBS[0]?.length) {
                                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                         WARN('Creating job to avoid [Job Listing] mitigation event', channel);
@@ -4887,7 +4942,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     if(time < 0)
                                         setTimeout(() => {
-                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, new Date);
                                             // Mitigate 0 time bug?
 
                                             SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
@@ -4979,8 +5034,8 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('Received an actionable notification:', innerText, new Date);
 
-            if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
-                if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
+            if(!!ALL_FIRST_IN_LINE_JOBS[0]?.length) {
+                if(![...ALL_FIRST_IN_LINE_JOBS].contains(href)) {
                     LOG('Pushing to First in Line:', href, new Date);
 
                     // LOG('Accessing here... #2');
@@ -4988,7 +5043,7 @@ let Initialize = async(START_OVER = false) => {
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
-                        'It is the next job:', FIRST_IN_LINE_HREF === href,
+                        'It is the next job:', ALL_FIRST_IN_LINE_JOBS[0] === href,
                         'It is in the queue already:', ALL_FIRST_IN_LINE_JOBS.contains(href),
                     );
                 }
@@ -5022,6 +5077,9 @@ let Initialize = async(START_OVER = false) => {
 
                 let { live, name } = channel;
 
+                if(!live)
+                    live ||= (new Search(name).then(Search.convertResults))?.live;
+
                 index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
 
                 let [balloon] = FIRST_IN_LINE_BALLOON?.add({
@@ -5041,11 +5099,10 @@ let Initialize = async(START_OVER = false) => {
                         if(index > 0) {
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                         } else {
-                            LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
+                            LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_DUE_DATE });
 
                             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                            FIRST_IN_LINE_HREF = undefined;
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                         }
@@ -5069,8 +5126,17 @@ let Initialize = async(START_OVER = false) => {
                         return setInterval(() => {
                             START__STOP_WATCH('first_in_line__job_watcher');
 
-                            if(FIRST_IN_LINE_PAUSED)
-                                return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000) /* First in Line is paused */;
+                            let timeRemaining = GET_TIME_REMAINING();
+
+                            timeRemaining = timeRemaining < 0? 0: timeRemaining;
+
+                            /* First in Line is paused */
+                            if(FIRST_IN_LINE_PAUSED) {
+                                SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000);
+
+                                return;
+                            }
 
                             SaveCache({ FIRST_IN_LINE_BOOST });
 
@@ -5083,7 +5149,7 @@ let Initialize = async(START_OVER = false) => {
                                 intervalID = parseInt(container.getAttribute('animationID')),
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
-                            if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                            if(time < 60_000 && !ALL_FIRST_IN_LINE_JOBS[0]?.length) {
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                 WARN('Creating job to avoid [First in Line] mitigation event', channel);
@@ -5093,7 +5159,7 @@ let Initialize = async(START_OVER = false) => {
 
                             if(time < 0)
                                 setTimeout(() => {
-                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, new Date);
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
@@ -5129,19 +5195,19 @@ let Initialize = async(START_OVER = false) => {
                 })
                     ?? [];
 
-                if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
+                if(defined(FIRST_IN_LINE_WAIT_TIME) && !ALL_FIRST_IN_LINE_JOBS[0]?.length) {
                     REDO_FIRST_IN_LINE_QUEUE(href);
-                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
                 } else if(Settings.first_in_line_none) {
                     let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
 
                     if(defined(existing))
                         existing.remove();
 
-                    LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
+                    LOG('Heading to stream now [First in Line] is OFF', ALL_FIRST_IN_LINE_JOBS[0]);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                    open(FIRST_IN_LINE_HREF, '_self');
+                    open(ALL_FIRST_IN_LINE_JOBS[0], '_self');
                 }
             }
         }
@@ -5163,9 +5229,6 @@ let Initialize = async(START_OVER = false) => {
 
         if(UnregisterJob.__reason__ == 'default')
             return;
-
-        if(defined(FIRST_IN_LINE_HREF))
-            FIRST_IN_LINE_HREF = '?';
 
         ALL_FIRST_IN_LINE_JOBS = [];
         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
@@ -5226,7 +5289,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         // Controls what's listed under the Up Next balloon
-        if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
+        if(ALL_FIRST_IN_LINE_JOBS.length && !ALL_FIRST_IN_LINE_JOBS[0]?.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
                 first = !ALL_FIRST_IN_LINE_JOBS.filter(defined).indexOf(STREAMER.href),
                 channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
@@ -5320,7 +5383,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names, JSON.stringify({ ...STREAMER, chat: null, jump: null, date: new Date })).toNativeStack();
+            WARN('Twitch failed to add these channels correctly:', bad_names, 'Current streamer data:', JSON.stringify({ ...STREAMER, chat: null, jump: null, date: new Date })).toNativeStack();
 
             BAD_STREAMERS = "";
 
@@ -5702,7 +5765,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 WARN(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch?.({ from: STREAMER?.name })?.href );
+                REDO_FIRST_IN_LINE_QUEUE( parseURL(ALL_FIRST_IN_LINE_JOBS[0])?.pushToSearch?.({ from: STREAMER?.name })?.href );
 
                 open(`${ next.href }?obit=${ STREAMER?.name }`, '_self');
             } else  {
@@ -6441,7 +6504,7 @@ let Initialize = async(START_OVER = false) => {
                                 `--below: tooltip; top: calc(${ bottom + height }px);`:
                             // Above tooltip
                             `--above: tooltip; top: calc(${ top - height }px - (15rem * ${ scale }));`
-                        ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width: video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale });`,
+                        ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width: video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale }); z-index: ${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 0)) };`,
                     },
                     furnish('div.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
@@ -6669,7 +6732,7 @@ let Initialize = async(START_OVER = false) => {
 
         let video = $('video') ?? $('video', false, $('#tt-embedded-video')?.contentDocument);
 
-        if(!defined(video))
+        if(!defined(video) || !STREAMER.live)
             return JUDGE__STOP_WATCH('recover_frames');
 
         let { paused } = video,
@@ -6705,10 +6768,11 @@ let Initialize = async(START_OVER = false) => {
 
                     let { name } = STREAMER,
                         controls = true,
-                        muted = true;
+                        muted = true,
+                        iframe;
 
-                    container.replaceChild(
-                        furnish(`iframe#tt-embedded-video`, {
+                    container.append(
+                        iframe = furnish(`iframe#tt-embedded-video`, {
                             allow: 'autoplay',
                             src: parseURL(`https://player.twitch.tv/`).pushToSearch({
                                 channel: name,
@@ -6744,12 +6808,13 @@ let Initialize = async(START_OVER = false) => {
                                     return VIDEO_OVERRIDE = true;
                                 }, 100);
                             },
-                        }),
-
-                        container.firstElementChild
+                        })
                     );
 
-                    new Tooltip($('#tt-embedded-video'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error`);
+                    $('[data-a-player-state]')?.addEventListener?.('mouseup', event => top.location.reload());
+                    $('video', false, container).setAttribute('style', `display:none`);
+
+                    new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
                 } else {
                     WARN(`Attempting to pause/play the video`);
 
@@ -7022,574 +7087,580 @@ let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE;
 
-PAGE_CHECKER = setInterval(WAIT_FOR_PAGE = async() => {
-    let ready = (true
-        // There is a valid username
-        && defined(USERNAME)
-        // The follow button exists
-        && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
-        // There are channel buttons on the side
-        && $('#sideNav .side-nav-section[aria-label]', true)?.length
-        && (false
-            // There is a message container
-            || defined($('[data-test-selector$="message-container"i]'))
-            // There is an ongoing search
-            || (true
-                && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true))
-                && defined($('[data-a-target^="threads-box-"i]'))
+Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
+    let isProperRuntime = Manifest.version == version;
+
+    PAGE_CHECKER = !isProperRuntime?
+        WARN(`The current runtime (v${ Manifest.version }) is not correct (${ version })`).toNativeStack():
+    setInterval(WAIT_FOR_PAGE = async() => {
+        let ready = (true
+            // There is a valid username
+            && defined(USERNAME)
+            // The follow button exists
+            && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+            // There are channel buttons on the side
+            && $('#sideNav .side-nav-section[aria-label]', true)?.length
+            && (false
+                // There is a message container
+                || defined($('[data-test-selector$="message-container"i]'))
+                // There is an ongoing search
+                || (true
+                    && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true))
+                    && defined($('[data-a-target^="threads-box-"i]'))
+                )
+                // The page is a channel viewing page
+                // || /^(ChannelWatch|SquadStream|VideoWatch)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+                // There is an error message
+                || defined($('[data-a-target="core-error-message"i]'))
             )
-            // The page is a channel viewing page
-            // || /^(ChannelWatch|SquadStream|VideoWatch)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
-            // There is an error message
-            || defined($('[data-a-target="core-error-message"i]'))
-        )
-    );
+        );
 
-    if(ready) {
-        LOG("Main container ready");
+        if(ready) {
+            LOG("Main container ready");
 
-        Settings = await GetSettings();
+            Settings = await GetSettings();
 
-        // Set the usre's language
-        let [documentLanguage] = (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
+            // Set the usre's language
+            let [documentLanguage] = (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
-        top.LANGUAGE = LANGUAGE = Settings.user_language_preference ?? documentLanguage;
+            top.LANGUAGE = LANGUAGE = Settings.user_language_preference ?? documentLanguage;
 
-        // Give the storage 1s to perform any "catch-up"
-        setTimeout(Initialize, 1000);
-        clearInterval(PAGE_CHECKER);
+            // Give the storage 1s to perform any "catch-up"
+            setTimeout(Initialize, 1000);
+            clearInterval(PAGE_CHECKER);
 
-        top.MAIN_CONTROLLER_READY = true;
+            top.MAIN_CONTROLLER_READY = true;
 
-        // Observe location changes
-        LocationObserver: {
-            let { body } = document,
-                observer = new MutationObserver(mutations => {
-                    mutations.map(mutation => {
-                        if(PATHNAME !== top.location.pathname) {
-                            let OLD_HREF = PATHNAME;
+            // Observe location changes
+            LocationObserver: {
+                let { body } = document,
+                    observer = new MutationObserver(mutations => {
+                        mutations.map(mutation => {
+                            if(PATHNAME !== top.location.pathname) {
+                                let OLD_HREF = PATHNAME;
 
-                            PATHNAME = top.location.pathname;
+                                PATHNAME = top.location.pathname;
 
-                            NORMALIZED_PATHNAME = PATHNAME
-                                // Remove common "modes"
-                                .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
-                                .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
+                                NORMALIZED_PATHNAME = PATHNAME
+                                    // Remove common "modes"
+                                    .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
+                                    .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
-                            for(let [name, func] of __ONLOCATIONCHANGE__)
-                                func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
+                                for(let [name, func] of __ONLOCATIONCHANGE__)
+                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
+                            }
+                        });
+                    });
+
+                observer.observe(body, { childList: true, subtree: true });
+            }
+
+            // Observe chat changes
+            ChatObserver: {
+                let chat = $('[data-test-selector$="message-container"i]'),
+                    observer = new MutationObserver(mutations => {
+                        let emotes = {},
+                            results = [];
+
+                        mutations = mutations.filter(({ type }) => type == 'childList');
+
+                        MutationToNode:
+                        for(let mutation of mutations) {
+                            let { addedNodes } = mutation;
+
+                            NodeToObject:
+                            for(let line of addedNodes) {
+                                let keepEmotes = true;
+
+                                let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
+                                    author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
+                                    message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
+                                    mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
+                                    badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
+                                    style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
+                                    reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
+
+                                let raw = line.innerText?.trim(),
+                                    containedEmotes = [];
+
+                                message = message
+                                    .map(element => {
+                                        let string;
+
+                                        if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
+                                            let img = $('img', false, element);
+
+                                            if(defined(img))
+                                                containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
+                                        } else {
+                                            string = element.innerText;
+                                        }
+
+                                        return string;
+                                    })
+                                    .filter(defined)
+                                    .join(' ')
+                                    .trim()
+                                    .replace(/(\s){2,}/g, '$1');
+
+                                style = style
+                                    .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+
+                                let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
+
+                                if(defined(results.find(message => message.uuid == uuid)))
+                                    continue;
+
+                                // Replace all share URLs
+                                // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
+
+                                results.push({
+                                    raw,
+                                    uuid,
+                                    reply,
+                                    style,
+                                    author,
+                                    badges,
+                                    handle,
+                                    message,
+                                    mentions,
+                                    element: line,
+                                    emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
+                                    deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+                                    highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
+                                });
+                            }
+                        }
+
+                        results.emotes = emotes;
+
+                        for(let [name, callback] of GetChat.__onnewmessage__)
+                            callback(results);
+
+                        setTimeout(async(results) => {
+                            for(let [name, callback] of GetChat.__deferredEvents__.__onnewmessage__)
+                                await callback(results);
+                        }, 50, results);
+                    });
+
+                if(!defined(chat))
+                    break ChatObserver;
+
+                observer.observe(chat, { childList: true });
+            }
+
+            // Observe whisper changes
+            WhisperObserver: {
+                let chat = $('main'),
+                    chat_observer = new MutationObserver(mutations => {
+                        mutations = mutations.filter(({ type }) => type == 'childList');
+
+                        MutationToNode:
+                        for(let mutation of mutations) {
+                            let { addedNodes } = mutation;
+
+                            NodeToObject:
+                            for(let node of addedNodes) {
+                                let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
+                                    newmessage = ["whisper-message"].contains(node.dataset.aTarget);
+
+                                if(false
+                                    || !highlighted
+                                    || !newmessage
+                                )
+                                    continue;
+
+                                async function parse(callback, { node, highlighted, newmessage }) {
+                                    if(highlighted) {
+                                        await callback({ highlighted });
+                                    } else if(newmessage) {
+                                        let keepEmotes = true;
+
+                                        let handle = $('[data-a-target="whisper-message-name"i]', false, node).innerText,
+                                            author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
+                                            message = $('[data-test-selector="separator"i] ~ * > *', true, node),
+                                            style = node.getAttribute('style');
+
+                                        let raw = node.innerText;
+
+                                        message = message
+                                            .map(element => {
+                                                let string;
+
+                                                switch(element.dataset.aTarget) {
+                                                    case 'emote-name': {
+                                                        if(keepEmotes)
+                                                            string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
+                                                    } break;
+
+                                                    default: {
+                                                        string = element.innerText;
+                                                    } break;
+                                                }
+
+                                                return string;
+                                            })
+                                            .filter(defined)
+                                            .join(' ')
+                                            .trim()
+                                            .replace(/(\s){2,}/g, '$1');
+
+                                        style = style
+                                            .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+
+                                        let uuid = UUID.from([author, new Date, message].join(':')).value;
+
+                                        await callback({
+                                            raw,
+                                            uuid,
+                                            style,
+                                            author,
+                                            handle,
+                                            message,
+                                            element: node,
+                                        });
+                                    }
+                                }
+
+                                for(let [name, callback] of GetChat.__onwhisper__)
+                                    parse(callback, { node, highlighted, newmessage });
+
+                                setTimeout(async({ node, highlighted, newmessage }) => {
+                                    for(let [name, callback] of GetChat.__deferredEvents__.__onwhisper__)
+                                        await parse(callback, { node, highlighted, newmessage });
+                                }, 50, { node, highlighted, newmessage });
+                            }
+                        }
+                    }),
+
+                    pill = $('[data-a-target^="threads-box-"i]')?.previousElementSibling,
+                    pill_observer = new MutationObserver(mutations => {
+                        mutations = mutations.filter(({ type }) => type == 'childList');
+
+                        // LOG('The Whisper Pill has mutated...', mutations);
+
+                        MutationToNode:
+                        for(let mutation of mutations) {
+                            let { addedNodes } = mutation;
+
+                            NodeToObject:
+                            for(let node of addedNodes) {
+                                if(!node.classList.contains('whispers__pill'))
+                                    continue;
+
+                                let unread = parseInt(node.innerText) | 0;
+
+                                for(let [name, callback] of GetChat.__onwhisper__)
+                                    callback({ unread });
+                            }
                         }
                     });
+
+                if(defined(chat))
+                    chat_observer.observe(chat, { childList: true });
+
+                if(defined(pill))
+                    pill_observer.observe(pill, { childList: true });
+            }
+
+            // Observe the volume changes
+            VolumeObserver: {
+                $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget }) => {
+                    $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
                 });
 
-            observer.observe(body, { childList: true, subtree: true });
-        }
-
-        // Observe chat changes
-        ChatObserver: {
-            let chat = $('[data-test-selector$="message-container"i]'),
-                observer = new MutationObserver(mutations => {
-                    let emotes = {},
-                        results = [];
-
-                    mutations = mutations.filter(({ type }) => type == 'childList');
-
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
-
-                        NodeToObject:
-                        for(let line of addedNodes) {
-                            let keepEmotes = true;
-
-                            let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
-                                author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
-                                mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-                                badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
-                                style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
-                                reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
-
-                            let raw = line.innerText?.trim(),
-                                containedEmotes = [];
-
-                            message = message
-                                .map(element => {
-                                    let string;
-
-                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
-                                        let img = $('img', false, element);
-
-                                        if(defined(img))
-                                            containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
-                                    } else {
-                                        string = element.innerText;
-                                    }
-
-                                    return string;
-                                })
-                                .filter(defined)
-                                .join(' ')
-                                .trim()
-                                .replace(/(\s){2,}/g, '$1');
-
-                            style = style
-                                .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                            let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
-
-                            if(defined(results.find(message => message.uuid == uuid)))
-                                continue;
-
-                            // Replace all share URLs
-                            // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
-
-                            results.push({
-                                raw,
-                                uuid,
-                                reply,
-                                style,
-                                author,
-                                badges,
-                                handle,
-                                message,
-                                mentions,
-                                element: line,
-                                emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
-                                deleted: defined($('[class*="--deleted-notice"i]', false, line)),
-                                highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
-                            });
-                        }
-                    }
-
-                    results.emotes = emotes;
-
-                    for(let [name, callback] of GetChat.__onnewmessage__)
-                        callback(results);
-
-                    setTimeout(async(results) => {
-                        for(let [name, callback] of GetChat.__deferredEvents__.__onnewmessage__)
-                            await callback(results);
-                    }, 50, results);
+                $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget }) => {
+                    $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
                 });
 
-            if(!defined(chat))
-                break ChatObserver;
+                let target = $('[data-a-target^="player-volume"i] + * [style]'),
+                    observer = new MutationObserver(mutations => {
+                        mutations.map(mutation => {
+                            let { style = '', isTrusted = false } = mutation.target?.attributes,
+                                css = {};
 
-            observer.observe(chat, { childList: true });
-        }
+                            for(let rule of style.value.split(';')) {
+                                let [name, value] = rule.split(':', 2);
 
-        // Observe whisper changes
-        WhisperObserver: {
-            let chat = $('main'),
-                chat_observer = new MutationObserver(mutations => {
-                    mutations = mutations.filter(({ type }) => type == 'childList');
-
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
-
-                        NodeToObject:
-                        for(let node of addedNodes) {
-                            let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
-                                newmessage = ["whisper-message"].contains(node.dataset.aTarget);
-
-                            if(false
-                                || !highlighted
-                                || !newmessage
-                            )
-                                continue;
-
-                            async function parse(callback, { node, highlighted, newmessage }) {
-                                if(highlighted) {
-                                    await callback({ highlighted });
-                                } else if(newmessage) {
-                                    let keepEmotes = true;
-
-                                    let handle = $('[data-a-target="whisper-message-name"i]', false, node).innerText,
-                                        author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                        message = $('[data-test-selector="separator"i] ~ * > *', true, node),
-                                        style = node.getAttribute('style');
-
-                                    let raw = node.innerText;
-
-                                    message = message
-                                        .map(element => {
-                                            let string;
-
-                                            switch(element.dataset.aTarget) {
-                                                case 'emote-name': {
-                                                    if(keepEmotes)
-                                                        string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
-                                                } break;
-
-                                                default: {
-                                                    string = element.innerText;
-                                                } break;
-                                            }
-
-                                            return string;
-                                        })
-                                        .filter(defined)
-                                        .join(' ')
-                                        .trim()
-                                        .replace(/(\s){2,}/g, '$1');
-
-                                    style = style
-                                        .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                                    let uuid = UUID.from([author, new Date, message].join(':')).value;
-
-                                    await callback({
-                                        raw,
-                                        uuid,
-                                        style,
-                                        author,
-                                        handle,
-                                        message,
-                                        element: node,
-                                    });
-                                }
+                                if(name?.length)
+                                    css[ name.trim() ] = value?.trim();
                             }
 
-                            for(let [name, callback] of GetChat.__onwhisper__)
-                                parse(callback, { node, highlighted, newmessage });
+                            let volume = parseFloat(css?.width ?? 50) / 100;
 
-                            setTimeout(async({ node, highlighted, newmessage }) => {
-                                for(let [name, callback] of GetChat.__deferredEvents__.__onwhisper__)
-                                    await parse(callback, { node, highlighted, newmessage });
-                            }, 50, { node, highlighted, newmessage });
-                        }
-                    }
-                }),
-
-                pill = $('[data-a-target^="threads-box-"i]')?.previousElementSibling,
-                pill_observer = new MutationObserver(mutations => {
-                    mutations = mutations.filter(({ type }) => type == 'childList');
-
-                    // LOG('The Whisper Pill has mutated...', mutations);
-
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
-
-                        NodeToObject:
-                        for(let node of addedNodes) {
-                            if(!node.classList.contains('whispers__pill'))
-                                continue;
-
-                            let unread = parseInt(node.innerText) | 0;
-
-                            for(let [name, callback] of GetChat.__onwhisper__)
-                                callback({ unread });
-                        }
-                    }
-                });
-
-            if(defined(chat))
-                chat_observer.observe(chat, { childList: true });
-
-            if(defined(pill))
-                pill_observer.observe(pill, { childList: true });
-        }
-
-        // Observe the volume changes
-        VolumeObserver: {
-            $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget }) => {
-                $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
-            });
-
-            $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget }) => {
-                $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
-            });
-
-            let target = $('[data-a-target^="player-volume"i] + * [style]'),
-                observer = new MutationObserver(mutations => {
-                    mutations.map(mutation => {
-                        let { style = '', isTrusted = false } = mutation.target?.attributes,
-                            css = {};
-
-                        for(let rule of style.value.split(';')) {
-                            let [name, value] = rule.split(':', 2);
-
-                            if(name?.length)
-                                css[ name.trim() ] = value?.trim();
-                        }
-
-                        let volume = parseFloat(css?.width ?? 50) / 100;
-
-                        for(let [name, callback] of GetVolume.__onchange__)
-                            callback(volume, { isTrusted: parseBool(isTrusted) });
+                            for(let [name, callback] of GetVolume.__onchange__)
+                                callback(volume, { isTrusted: parseBool(isTrusted) });
+                        });
                     });
-                });
 
-            if(!defined(target))
-                break VolumeObserver;
+                if(!defined(target))
+                    break VolumeObserver;
 
-            observer.observe(target, { attributes: true, childList: false, subtree: false });
-        }
+                observer.observe(target, { attributes: true, childList: false, subtree: false });
+            }
 
-        // Set the SVGs' section IDs
-        SectionLabeling: {
-            let conversions = {
-                favorite:   [
-                                "followed"
-                            ].reverse(),
+            // Set the SVGs' section IDs
+            SectionLabeling: {
+                let conversions = {
+                    favorite:   [
+                                    "followed"
+                                ].reverse(),
 
-                video:      [
-                                "suggested",
-                                "related",
-                            ].reverse(),
+                    video:      [
+                                    "suggested",
+                                    "related",
+                                ].reverse(),
 
-                people:     [
-                                "friends"
-                            ].reverse(),
+                    people:     [
+                                    "friends"
+                                ].reverse(),
+                };
+
+                for(let container of $('#sideNav .side-nav-section[aria-label]', true)) {
+                    let svg = $('svg', false, container);
+
+                    comparing:
+                    for(let glyph in Glyphs)
+                        if(Glyphs.__exclusionList__.contains(glyph))
+                            continue comparing;
+                        else
+                            resemble(SVGtoImage(svg))
+                                .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
+                                .ignoreColors()
+                                .scaleToSameSize()
+                                .onComplete(async data => {
+                                    let { analysisTime, misMatchPercentage } = data;
+
+                                    analysisTime = parseInt(analysisTime);
+                                    misMatchPercentage = parseFloat(misMatchPercentage);
+
+                                    let matchPercentage = 100 - misMatchPercentage;
+
+                                    if(matchPercentage < 80 || container.getAttribute('tt-section-label')?.length)
+                                        return;
+
+                                    // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+
+                                    container.setAttribute('tt-section-label', conversions[glyph].pop());
+                                });
+                }
+            }
+
+            top.onlocationchange = () => {
+                WARN("[Parent] Re-initializing...");
+
+                Balloon.get('Up Next')?.remove();
+
+                // Do NOT soft-reset ("turn off, turn on") these settings
+                // They will be destroyed, including any data they are using
+                let VOLATILE = top.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+
+                DestroyingJobs:
+                for(let job in Jobs)
+                    if(!!~VOLATILE.findIndex(name => name.test(job)))
+                        continue DestroyingJobs;
+                    else
+                        RestartJob(job);
+
+                Reinitialize:
+                if(NORMAL_MODE) {
+                    if(Settings.keep_popout) {
+                        PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
+
+                        break Reinitialize;
+                    }
+
+                    location.reload();
+                }
             };
 
-            for(let container of $('#sideNav .side-nav-section[aria-label]', true)) {
-                let svg = $('svg', false, container);
+            // Add custom styling
+            CustomCSSInitializer: {
+                CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
 
-                comparing:
-                for(let glyph in Glyphs)
-                    if(Glyphs.__exclusionList__.contains(glyph))
-                        continue comparing;
-                    else
-                        resemble(SVGtoImage(svg))
-                            .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
-                            .ignoreColors()
-                            .scaleToSameSize()
-                            .onComplete(async data => {
-                                let { analysisTime, misMatchPercentage } = data;
+                let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
 
-                                analysisTime = parseInt(analysisTime);
-                                misMatchPercentage = parseFloat(misMatchPercentage);
+                CUSTOM_CSS.innerHTML =
+                `
+                .tt-first-run {
+                    border: 1px solid var(--color-blue);
+                    border-radius: 3px;
 
-                                let matchPercentage = 100 - misMatchPercentage;
-
-                                if(matchPercentage < 80 || container.getAttribute('tt-section-label')?.length)
-                                    return;
-
-                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
-
-                                container.setAttribute('tt-section-label', conversions[glyph].pop());
-                            });
-            }
-        }
-
-        top.onlocationchange = () => {
-            WARN("[Parent] Re-initializing...");
-
-            Balloon.get('Up Next')?.remove();
-
-            // Do NOT soft-reset ("turn off, turn on") these settings
-            // They will be destroyed, including any data they are using
-            let VOLATILE = top.VOLATILE = ['first_in_line*'].map(AsteriskFn);
-
-            DestroyingJobs:
-            for(let job in Jobs)
-                if(!!~VOLATILE.findIndex(name => name.test(job)))
-                    continue DestroyingJobs;
-                else
-                    RestartJob(job);
-
-            Reinitialize:
-            if(NORMAL_MODE) {
-                if(Settings.keep_popout) {
-                    PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
-
-                    break Reinitialize;
+                    transition: border 1s;
                 }
 
-                location.reload();
-            }
-        };
+                [animationID] a { cursor: grab }
+                [animationID] a:active { cursor: grabbing }
 
-        // Add custom styling
-        CustomCSSInitializer: {
-            CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
+                [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+                [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
-            let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
+                /* Up Next */
+                [up-next--body] {
+                    background-color: var(--color-${ accent });
+                    border-radius: 0.5rem;
+                    color: var(--color-hinted-grey-${ compliment });
+                }
 
-            CUSTOM_CSS.innerHTML =
-            `
-            .tt-first-run {
-                border: 1px solid var(--color-blue);
-                border-radius: 3px;
+                [up-next--body][empty="true"i] {
+                    background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
+                    background-repeat: no-repeat;
+                    background-size: 35rem;
+                    background-position: bottom left;
+                    background-blend-mode: normal;
+                }
 
-                transition: border 1s;
-            }
+                [up-next--body][allowed="false"i] {
+                    background-image: url("${ Extension.getURL('256.png') }") !important;
+                    background-repeat: repeat !important;
+                    background-size: 5rem !important;
+                    background-position: center center !important;
+                    background-blend-mode: soft-light !important;
+                }
 
-            [animationID] a { cursor: grab }
-            [animationID] a:active { cursor: grabbing }
+                [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
 
-            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+                [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
+                [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
+                [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
 
-            /* Up Next */
-            [up-next--body] {
-                background-color: var(--color-${ accent });
-                border-radius: 0.5rem;
-                color: var(--color-hinted-grey-${ compliment });
-            }
+                [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
+                [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
 
-            [up-next--body][empty="true"i] {
-                background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
-                background-repeat: no-repeat;
-                background-size: 35rem;
-                background-position: bottom left;
-                background-blend-mode: normal;
-            }
+                #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
+                    opacity: 0.7;
+                    margin-top: -100%;
+                }
 
-            [up-next--body][allowed="false"i] {
-                background-image: url("${ Extension.getURL('256.png') }") !important;
-                background-repeat: repeat !important;
-                background-size: 5rem !important;
-                background-position: center center !important;
-                background-blend-mode: soft-light !important;
-            }
+                .tt-emote-captured [data-test-selector="badge-button-icon"i],
+                .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                    left: 0;
+                    top: 0;
+                }
 
-            [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
+                [tt-live-status-indicator] {
+                    background-color: var(--color-hinted-grey-6);
+                    border-radius: var(--border-radius-rounded);
+                    width: 0.8rem;
+                    height: 0.8rem;
+                    display: inline-block;
+                    position: relative;
+                }
 
-            [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
-            [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
-            [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
+                [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-            [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
-            [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+                [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
+                [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--color-${ accent }) }
+                [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--color-${ accent }) }
 
-            #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
-                opacity: 0.7;
-                margin-top: -100%;
-            }
+                /* Away Mode */
+                #away-mode svg[id^="tt-away-mode"i] {
+                    display: inline-block;
 
-            .tt-emote-captured [data-test-selector="badge-button-icon"i],
-            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-                left: 0;
-                top: 0;
-            }
+                    transform: translateX(0px) scale(1);
+                    transition: all 100ms ease-in;
+                }
 
-            [tt-live-status-indicator] {
-                background-color: var(--color-hinted-grey-6);
-                border-radius: var(--border-radius-rounded);
-                width: 0.8rem;
-                height: 0.8rem;
-                display: inline-block;
-                position: relative;
-            }
+                #tt-away-mode--hide {
+                    position: absolute;
+                }
 
-            [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+                [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
+                    opacity: 0;
+                }
 
-            [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
-            [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--color-${ accent }) }
-            [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--color-${ accent }) }
+                svg[id^="tt-away-mode"i][preview="true"i] {
+                    opacity: 1 !important;
+                    transform: translateX(0px) scale(1.2) !important;
+                }
 
-            /* Away Mode */
-            #away-mode svg[id^="tt-away-mode"i] {
-                display: inline-block;
+                /* Rich tooltips */
+                [role] [data-popper-placement="right-start"i] [role] {
+                    width: max-content;
+                }
 
-                transform: translateX(0px) scale(1);
-                transition: all 100ms ease-in;
-            }
+                /* Bits */
+                [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
+                    max-width: 45rem;
+                }
 
-            #tt-away-mode--hide {
-                position: absolute;
-            }
+                /* Stream Preview */
+                .tt-stream-preview {
+                    border-radius: 0.6rem;
+                    box-shadow: #000 0 4px 8px, #000 0 0 4px;
+                    display: block;
+                    visibility: visible;
 
-            [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
-                opacity: 0;
-            }
+                    transition: all 0.5s ease-in;
 
-            svg[id^="tt-away-mode"i][preview="true"i] {
-                opacity: 1 !important;
-                transform: translateX(0px) scale(1.2) !important;
-            }
+                    position: fixed;
+                    margin-left: 7rem;
+                    z-index: 9;
 
-            /* Rich tooltips */
-            [role] [data-popper-placement="right-start"i] [role] {
-                width: max-content;
-            }
+                    height: 9rem;
+                    width: 16rem;
+                }
 
-            /* Bits */
-            [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
-                max-width: 45rem;
-            }
+                .tt-stream-preview--poster {
+                    background-color: #0008;
+                    background-size: cover;
+                    border-radius: inherit;
+                    display: block;
 
-            /* Stream Preview */
-            .tt-stream-preview {
-                border-radius: 0.6rem;
-                box-shadow: #000 0 4px 8px, #000 0 0 4px;
-                display: block;
-                visibility: visible;
+                    transition: all 1.5s ease-in;
 
-                transition: all 0.5s ease-in;
+                    position: absolute;
+                    margin: 0;
+                    padding: 0;
+                    left: 0;
+                    top: 0;
+                    z-index: 99;
 
-                position: fixed;
-                margin-left: 7rem;
-                z-index: 9;
+                    height: 100% !important;
+                    width: 100% !important;
+                }
 
-                height: 9rem;
-                width: 16rem;
-            }
+                .tt-stream-preview--iframe {
+                    display: block;
+                    border-radius: inherit;
+                    opacity: 1;
+                    visibility: inherit;
+                }
 
-            .tt-stream-preview--poster {
-                background-color: #0008;
-                background-size: cover;
-                border-radius: inherit;
-                display: block;
+                .invisible {
+                    opacity: 0;
+                }
+                `;
 
-                transition: all 1.5s ease-in;
-
-                position: absolute;
-                margin: 0;
-                padding: 0;
-                left: 0;
-                top: 0;
-                z-index: 99;
-
-                height: 100% !important;
-                width: 100% !important;
+                CUSTOM_CSS?.remove();
+                $('body').append(CUSTOM_CSS);
             }
 
-            .tt-stream-preview--iframe {
-                display: block;
-                border-radius: inherit;
-                opacity: 1;
-                visibility: inherit;
-            }
-
-            .invisible {
-                opacity: 0;
-            }
-            `;
-
-            CUSTOM_CSS?.remove();
-            $('body').append(CUSTOM_CSS);
-        }
-
-        // Update the settings
-        SettingsInitializer: {
-            switch(Settings.onInstalledReason) {
-                // Is this the first time the extension has run?
-                // If so, then point out what's been changed
-                case INSTALL: {
-                    setTimeout(() => {
-                        for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
-                            element.classList.add('tt-first-run');
-
+            // Update the settings
+            SettingsInitializer: {
+                switch(Settings.onInstalledReason) {
+                    // Is this the first time the extension has run?
+                    // If so, then point out what's been changed
+                    case INSTALL: {
                         setTimeout(() => {
-                            $('.tt-first-run', true)
-                                .forEach(element => element.classList.remove('tt-first-run'));
-                        }, 30_000);
-                    }, 10_000);
-                } break;
+                            for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
+                                element.classList.add('tt-first-run');
+
+                            setTimeout(() => {
+                                $('.tt-first-run', true)
+                                    .forEach(element => element.classList.remove('tt-first-run'));
+                            }, 30_000);
+                        }, 10_000);
+                    } break;
+                }
+
+                Storage.set({ onInstalledReason: null });
             }
 
-            Storage.set({ onInstalledReason: null });
+            // Jump some frames
+            FrameJumper: {
+                top.open('javascript:top.postMessage(__APOLLO_CLIENT__?.cache?.data?.data)', '_self');
+            }
         }
-
-        // Jump some frames
-        FrameJumper: {
-            top.open('javascript:top.postMessage(__APOLLO_CLIENT__?.cache?.data?.data)', '_self');
-        }
-    }
-}, 500);
+    }, 500);
+});

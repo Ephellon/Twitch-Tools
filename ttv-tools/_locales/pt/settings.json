@@ -419,6 +419,15 @@
 		"Visualização da Transmissão",
 		"Exiba uma visualização ao vivo das transmissões ao passar o mouse sobre elas"
 	],
+		"stream-preview:position": [
+			"Posição da pré-visualização",
+			"Ajusta a posição ortogonal da pré-visualização"
+		],
+		"stream-preview:position-options": [
+			"Sempre no topo",
+			"Normal",
+			"Sempre em segundo plano"
+		],
 		"stream-preview:size": [
 			"Tamanho da Visualização",
 			"Ajuste o tamanho da visualização"
@@ -592,7 +601,7 @@
 	"@@soft-unban": [
 		"Ligeira Revogação",
 		"Conversa reutilizável para canais onde tenha sido bloqueado",
-		"Isto só lhe permite ver o chat"
+		"Isso apenas reativa a exibição do bate-papo"
 	],
     	"@@soft-unban:options:fade-messages": [
     		"Mensagens de desvanecimento",

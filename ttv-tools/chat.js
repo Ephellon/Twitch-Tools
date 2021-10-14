@@ -457,52 +457,65 @@ let Chat__Initialize = async(START_OVER = false) => {
                         tooltip = new Tooltip(emote, bttvEmote);
 
                     emote.addEventListener('mousedown', async event => {
-                        let { currentTarget } = event,
+                        let { currentTarget, isTrusted = false } = event,
                             { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
                             { top } = getOffset(currentTarget);
 
                         top -= 150;
 
-                        // FIX-ME: Sometimes, the event never actually finishes???
-                        let handledEvent = setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: true, view: window })), 500);
+                        // Raw Search...
+                            // FIX-ME: new Search does not complete???
+                        await fetch(`./${ bttvOwner }`, { mode: 'cors' })
+                            .then(response => response.text())
+                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                            .then(({ documentElement }) => documentElement)
+                            .then(async doc => {
+                                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl pt pt-br ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
+                                let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
+                                    [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
 
-                        await new Search(bttvOwner)
-                            .then(Search.convertResults)
-                            .then(streamer => {
-                                if(!defined(streamer))
-                                    throw "Emote owner not found...";
+                                let display_name = await awaitOn(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
+                                    [language] = languages.filter(lang => !alt_languages.contains(lang)),
+                                    name = display_name?.toLowerCase(),
+                                    profile_image = $('meta[property$="image"i]', false, doc)?.content,
+                                    live = parseBool(data?.publication?.isLiveBroadcast),
+                                    started_at = new Date(data?.publication?.startDate).toJSON(),
+                                    status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
+                                    updated_at = new Date(data?.publication?.endDate).toJSON();
 
-                                let { live } = streamer;
+                                await Search.convertResults({
+                                    json() { return { display_name, language, live, name, profile_image, started_at, status, updated_at }; }
+                                })
+                                .then(({ live = false }) => {
+                                    new Card({
+                                        title: bttvEmote,
+                                        subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                        icon: {
+                                            src: BTTV_EMOTES.get(bttvEmote),
+                                            alt: bttvEmote,
+                                        },
+                                        footer: {
+                                            href: `./${ bttvOwner }`,
+                                            name: bttvOwner,
+                                            live,
+                                        },
+                                        fineTuning: { top }
+                                    });
+                                })
+                                .catch(error => {
+                                    WARN(error);
 
-                                new Card({
-                                    title: bttvEmote,
-                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                    icon: {
-                                        src: BTTV_EMOTES.get(bttvEmote),
-                                        alt: bttvEmote,
-                                    },
-                                    footer: {
-                                        href: `/${ bttvOwner }`,
-                                        name: bttvOwner,
-                                        live,
-                                    },
-                                    fineTuning: { top }
+                                    new Card({
+                                        title: bttvEmote,
+                                        subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                        icon: {
+                                            src: BTTV_EMOTES.get(bttvEmote),
+                                            alt: bttvEmote,
+                                        },
+                                        fineTuning: { top }
+                                    });
                                 });
-                            })
-                            .catch(error => {
-                                WARN(error);
-
-                                new Card({
-                                    title: bttvEmote,
-                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                    icon: {
-                                        src: BTTV_EMOTES.get(bttvEmote),
-                                        alt: bttvEmote,
-                                    },
-                                    fineTuning: { top }
-                                });
-                            })
-                            .finally(() => clearTimeout(handledEvent));
+                            });
                     });
                 });
         };

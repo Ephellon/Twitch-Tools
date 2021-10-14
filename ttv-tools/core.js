@@ -69,7 +69,13 @@ class UUID {
     }
 
     static from(key = '') {
-        key = (key ?? '').toString();
+        key = JSON.stringify(
+            (null
+                ?? key?.toJSON?.()
+                ?? key
+            )
+            || null
+        );
 
         let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,

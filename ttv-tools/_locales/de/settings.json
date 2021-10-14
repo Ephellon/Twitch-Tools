@@ -419,6 +419,15 @@
 		"Stream-Vorschau",
 		"Zeigen Sie eine Live-Vorschau von Streams an, wenn Sie mit der Maus darüber fahren"
 	],
+		"stream-preview:position": [
+			"Vorschauposition",
+			"Passen Sie die orthogonale Position der Vorschau an"
+		],
+		"stream-preview:position-options": [
+			"Immer oben",
+			"Normal",
+			"Immer im Hintergrund"
+		],
 		"stream-preview:size": [
 			"Vorschaugröße",
 			"Passen Sie die Größe der Vorschau an"
@@ -594,7 +603,7 @@
 	"@@soft-unban": [
 		"Lichte herroeping",
 		"Chat opnieuw inschakelen voor chatrooms waar het geblokkeerd is",
-		"Hierdoor kun je alleen de chat zien"
+		"Dadurch wird nur die Chatanzeige wieder aktiviert"
 	],
 		"@@soft-unban:options:fade-messages": [
 			"Fade berichten",

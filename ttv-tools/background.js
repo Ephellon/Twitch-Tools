@@ -174,6 +174,12 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             UP_NEXT_OWNER = null;
         } break;
+
+        case 'GET_VERSION': {
+            let { version } = Manifest;
+
+            respond({ version });
+        } break;
     }
 
     if(refresh)

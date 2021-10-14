@@ -300,7 +300,7 @@
 	],
     	"prevent-spam:options": [
     		"Message History",
-    		"Prevent spam", "will look back", "lines backwards to detect", "plagiarism",
+    		"Prevent spam", "will look back", "lines to detect", "plagiarism",
 
     		"Minimum Word Length",
     		"Prevent Spam", "will ignore messages if there aren't any words longer than", "characters",
@@ -415,6 +415,15 @@
 		"Stream Preview",
 		"Display a live preview of streams when hovering over them"
 	],
+		"stream-preview:position": [
+			"Preview Position",
+			"Adjust the orthogonal position of the preview"
+		],
+		"stream-preview:position-options": [
+			"Always on top",
+			"Normal",
+			"Always on bottom"
+		],
 		"stream-preview:size": [
 			"Preview Size",
 			"Adjust the size of the preview"
@@ -590,7 +599,7 @@
 	"@@soft-unban": [
 		"Soft Unban",
 		"Re-enable chat for channels you've been banned from",
-		"This only allows viewing the chat"
+		"This only re-enables viewing the chat"
 	],
     	"@@soft-unban:options:fade-messages": [
     		"Fade Messages",

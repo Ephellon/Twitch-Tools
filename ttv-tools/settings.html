@@ -1036,6 +1036,20 @@
                         <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Stream Preview&quot;'>Extras</summary>
                         <div>
                             <div text-only>
+                                <div class='title' tr-id='stream-preview:position'>Preview Position</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Adjust the orthogonal position of the preview.
+                                    </p>
+                                    <select id='stream_preview_position'>
+                                        <option value='3' selected tr-id='stream-preview:position-options'>Always on top</option>
+                                        <option value='2' tr-id>Normal</option>
+                                        <option value='1' tr-id>Always on bottom</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div text-only>
                                 <div class='title' tr-id='stream-preview:size'>Preview Size</div>
                                 <div class='summary'>
                                     <p tr-id>
@@ -1551,7 +1565,7 @@
                         Re-enable chat for channels you've been banned from.
                     </p>
                     <p warning-text tr-id>
-                        This only allows viewing the chat.
+                        This only re-enables viewing the chat.
                     </p>
                     <details>
                         <summary tr-id='options' subtitle='Adjust options for &quot;Soft Unban&quot;'>Options</summary>

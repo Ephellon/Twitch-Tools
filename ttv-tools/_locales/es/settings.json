@@ -413,6 +413,15 @@
 		"Vista Previa de la Transmisión",
 		"Muestre una vista previa en vivo de las transmisiones al pasar el mouse sobre ellas"
 	],
+		"stream-preview:position": [
+			"Posición de vista previa",
+			"Ajustar la posición ortogonal de la vista previa"
+		],
+		"stream-preview:position-options": [
+			"Siempre en la cima",
+			"Normal",
+			"Siempre en el fondo"
+		],
 		"stream-preview:size": [
 			"Tamaño de la Vista Previa",
 			"Ajusta el tamaño de la vista previa"
@@ -588,7 +597,7 @@
     "@@soft-unban": [
         "Ligera Revocación",
         "Vuelva a habilitar el chat para los canales en los que ha sido bloqueado",
-        "Esto solo permite ver el chat"
+        "Esto solo vuelve a habilitar la visualización del chat"
     ],
         "@@soft-unban:options:fade-messages": [
             "Desvanecer Mensajes",

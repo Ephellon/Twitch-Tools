@@ -30,6 +30,10 @@
     * Tentative fix `4.11.7`
 9. Up Next re-adds all channels after Followed Channels are deleted
     * Cache the channels?
+10. Up Next sometimes goes in an irregular order
+    * Not sure why
+11. `chat.js` has an issue for card popups: `new Search` does not always complete
+    * Changed to a raw search to remedy the issue
 
 - Make initial loading actions less intrusive
     - [x] "Prime Loot" open/close action
@@ -44,6 +48,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.5)
+- Added Stream Preview: Position to adjust the preview's z-index
+- Adjusted `onlocationchange` logic (minor)
+- Fixed Up Next pausing mechanic
+- Added `ondrop` logic to include raw links
+- Adjusted Settings' descriptions
+- Added version-checker logic
+
 > [`4.12.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.4)
 - Changed emote card styling
 - Changed "Earned All" channel point balance styling

@@ -568,11 +568,14 @@ function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
     try {
         let offset = getOffset(SVG);
 
-        height = offset.height || SVG?.getAttribute('height');
-        width = offset.width || SVG?.getAttribute('width');
+        height = offset.height;
+        width = offset.width;
     } catch(e) {
-        height = SVG?.height || SVG?.getAttribute('height');
-        width = SVG?.width || SVG?.getAttribute('width');
+        height = SVG?.height;
+        width = SVG?.width;
+    } finally {
+        height ||= SVG?.getAttribute('height');
+        width ||= SVG?.getAttribute('width');
     }
 
     height = parseFloat(height);
