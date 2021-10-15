@@ -8,6 +8,7 @@
 		"new": ["Neu"],
 		"ok": ["Weitermachen"],
 		"nk": ["Stornieren"],
+		"rm": ["Löschen"],
 
 		"minute": ["%d minuten%s"],
 		"hour": ["%d stunden%s"],
@@ -52,7 +53,8 @@
 		"away-mode:schedule": ["Kalender", "Kies dagen"],
 			"away-mode:schedule:options": ["Zeiten"],
 			"away-mode:schedule:create": ["Erstellen Sie einen neuen Zeitplan"],
-			"away-mode:schedule:create:frequency": ["Frequenz", "Jeden"],
+			"away-mode:schedule:create:frequency": ["Frequenz"],
+			"away-mode:schedule:create:controls": ["Wählen Sie mit", null, "oder", null, "mehrere Tage aus"],
 			"away-mode:schedule:create:functionality": ["Funktionalität", "bei", "für"],
 			"away-mode:schedule:create:hour": ["%d:00"],
 			"away-mode:schedule:create:notice": ["Die Zeiten werden in Ihrer aktuellen Zeitzone", null, "gespeichert."],

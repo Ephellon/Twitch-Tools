@@ -290,7 +290,7 @@ footer {
 }
 
 .summary li {
-    padding: 0.1rem;
+    padding: .1rem;
 }
 
 .radio, .checkbox {
@@ -302,7 +302,7 @@ footer {
 
     line-height: 2rem;
 
-    padding: 0.5rem 0;
+    padding: .5rem 0;
 
     transform: scale(.95);
 }
@@ -414,7 +414,7 @@ input:not(:checked) ~ label[for$=":checked"] {
 }
 
 [disabled] {
-    opacity: 0.3 !important;
+    opacity: .3 !important;
 }
 
 [hidden] {
@@ -518,7 +518,7 @@ summary + *:last-child {
 }
 
 summary + * > [text-only]:not(:first-child) {
-    margin-top: 0.5rem;
+    margin-top: .5rem;
 }
 
 details[open] {
@@ -564,34 +564,65 @@ select, .select {
     vertical-align: middle;
 }
 
-option:checked, .option.checked {
+select:not([multiple]) option:checked, .select:not(.multiple) .option.checked {
     display: none;
 }
 
-option:not(:checked), .option:not(.checked) {
+select:not([multiple]) option:not(:checked), .select:not(.multiple) .option:not(.checked) {
     background-color: var(--background-dark-lit);
 }
 
-.select.multiple {
+select[multiple], .select.multiple {
+    background-color: var(--background-dark-lit);
+    display: inline-block;
+    align-items: center;
     text-align: right;
 
     overflow: auto;
+    max-height: 2.5rem;
     max-width: 150%;
-
-    width: -webkit-fill-available;
+    height: fit-content;
+    width: fit-content;
 }
 
-.select.multiple > .option.checked {
-    background-color: #0000;
+select[multiple]:hover, .select.multiple:hover {
+    background-color: var(--background-dark-lit) !important;
+}
+
+:is(select[multiple], .select.multiple)[selected]::before {
+    content: attr(selected);
+
+    background: var(--red);
+    border: 0 solid;
+    border-radius: 50%;
+    display: block;
+    text-align: center;
+
+    position: fixed;
+    padding: .1rem;
+    transform: translate(-100%, -100%);
+
+    height: 1rem;
+    width: 1rem;
+}
+
+select[multiple] option, .select.multiple .option {
+    display: inline-block;
+
+    padding: .25rem;
+}
+
+select[multiple] [option]:checked, .select.multiple .option.checked {
+    background-color: var(--purple-highlighted);
     outline: none;
 
-    -webkit-tap-highlight-color: #0000;
+    -webkit-tap-highlight-color: #18181b;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
 }
 
-.select.multiple > .option.checked::before {
+select[multiple] [option]:checked::before, .select.multiple .option.checked::before {
     border-bottom: 2px solid var(--text-light);
     border-left: 2px solid var(--text-light);
     content: '';
@@ -933,16 +964,6 @@ input[type="number"i], input[type="date"i], input[type="time"i], [unit]::after {
 
 input[type="number"]::-webkit-inner-spin-button {
     display: none;
-    /* background: var(--grey);
-    border: 1px solid var(--grey);
-    border-radius: 1rem;
-    display: inline-block;
-    opacity: 1;
-
-    padding: 0;
-
-    height: 1.5rem;
-    width: 1rem; */
 }
 
 input[type="text"i]:not(:valid), input[type="number"i]:not(:valid), input[type="date"i]:not(:valid), input[type="time"i]:not(:valid) {
@@ -995,7 +1016,7 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     /* background-color: #8882; */
     content: attr(unit);
     display: inline;
-    opacity: 0.5;
+    opacity: .5;
 
     border: 0;
     margin-left: 0;
@@ -1157,11 +1178,11 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 [from-github="false"i], [from-chrome="false"i] {
-    transition: all 0.3s;
+    transition: all .3s;
 }
 
 [from-github="false"i]:not(:hover), [from-chrome="false"i]:not(:hover) {
-    opacity: 0.1;
+    opacity: .1;
 }
 
 .cc-container {
@@ -1276,8 +1297,8 @@ section:is([new], [beta])::before {
 
     line-height: 1;
 
-    margin-top: 0.5rem;
-    padding: 0.25rem 0.5rem;
+    margin-top: .5rem;
+    padding: .25rem .5rem;
     position: absolute;
     left: 0;
     top: -1rem;
@@ -1555,7 +1576,7 @@ body.popup {
 
 .tt-modal-body {
     background: var(--background-dark);
-    border-radius: 0.3rem;
+    border-radius: .3rem;
 
     padding: 1rem;
 }

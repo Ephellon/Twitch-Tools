@@ -69,6 +69,12 @@ top.Glyphs ??= {
             )
         )
     */
+    /** Licensed under the Creative Commons license
+     * "Mouse Left Click" "Mouse Right Click" and "Mouse" by Icon Solid from the Noun Project
+     */
+    primary_mouse_button:   `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c-2.209,0-4-1.791-4-4V4c0-1.381,1.119-2.5,2.5-2.5h3c1.381,0,2.5,1.119,2.5,2.5v6.5C11.5,12.709,9.709,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="7.5" y1="5.5" x2="3.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
+    secondary_mouse_button: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c2.209,0,4-1.791,4-4V4c0-1.381-1.119-2.5-2.5-2.5H6C4.619,1.5,3.5,2.619,3.5,4v6.5C3.5,12.709,5.291,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="11.5" y1="5.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
+    mouse:                  `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c-2.209,0-4-1.791-4-4V4c0-1.381,1.119-2.5,2.5-2.5h3c1.381,0,2.5,1.119,2.5,2.5v6.5C11.5,12.709,9.709,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="3.5" y1="5.5" x2="11.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
 
     add_to_calendar: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11 8H9v2H7v2h2v2h2v-2h2v-2h-2V8z"></path><path fill-rule="evenodd" d="M5 2h2v1h6V2h2v1h1a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h1V2zM4 6v10h12V6H4z" clip-rule="evenodd"></path></g></svg>`,
     more_horizontal: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 10a2 2 0 114 0 2 2 0 01-4 0zM8 10a2 2 0 114 0 2 2 0 01-4 0zM16 8a2 2 0 100 4 2 2 0 000-4z"></path></g></svg>`,
@@ -223,6 +229,11 @@ top.Glyphs ??= {
             twitch: "\uD83D\uDC41\uFE0F\u200D\uD83D\uDDE8\uFE0F",
             unmute: "\u{1F507}",
             audio: "\u{1F50A}",
+
+            // 4th batch
+            mouse: "\uD83D\uDDB1\uFE0F",
+            primary_mouse_button: "\uD83D\uDC49\uFE0F\u200D\uD83D\uDDB1\uFE0F",
+            secondary_mouse_button: "\uD83D\uDDB1\uFE0F\u200D\uD83D\uDC48\uFE0F",
         });
     },
 

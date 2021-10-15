@@ -8,6 +8,7 @@
 		"new": ["Novo"],
 		"ok": ["Prosseguir"],
 		"nk": ["Cancelar"],
+		"rm": ["Excluir"],
 
 		"minute": ["%d minuto%s"],
 		"hour": ["%d hora%s"],
@@ -55,7 +56,8 @@
     	"away-mode:schedule": ["Calendário", "Seleccionar dias"],
 			"away-mode:schedule:options": ["Horários"],
 			"away-mode:schedule:create": ["Criar uma nova programação"],
-			"away-mode:schedule:create:frequency": ["Frequência", "A cada"],
+			"away-mode:schedule:create:frequency": ["Frequência"],
+			"away-mode:schedule:create:controls": ["Use", null, "ou", null, "para selecionar vários dias"],
 			"away-mode:schedule:create:functionality": ["Funcionalidade", "em", "por"],
 			"away-mode:schedule:create:hour": ["%d:00"],
 			"away-mode:schedule:create:notice": ["Os horários serão salvos no seu fuso horário atual", null],

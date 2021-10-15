@@ -8,6 +8,7 @@
 		"new": ["Новый"],
 		"ok": ["Продолжать"],
 		"nk": ["Отмена"],
+		"rm": ["Удалить"],
 
 		"minute": ["%d минут"],
 		"hour": ["%d часов"],
@@ -52,7 +53,8 @@
     	"away-mode:schedule": ["Календарь", "Выберите дни"],
 			"away-mode:schedule:options": ["Времена"],
 			"away-mode:schedule:create": ["Создать новое расписание"],
-			"away-mode:schedule:create:frequency": ["Периодичность", "Каждый"],
+			"away-mode:schedule:create:frequency": ["Периодичность"],
+			"away-mode:schedule:create:controls": ["Используйте", null, "или", null, "чтобы выбрать несколько дней"],
 			"away-mode:schedule:create:functionality": ["Функционал", "в", "на"],
 			"away-mode:schedule:create:hour": ["%d:00"],
 			"away-mode:schedule:create:notice": ["Время будет сохранено в вашем текущем часовом поясе", null],

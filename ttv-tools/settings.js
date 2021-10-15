@@ -267,7 +267,13 @@ class UUID {
     }
 
     static from(key = '', traceable = false) {
-        key = (key ?? '').toString();
+        key = JSON.stringify(
+            (null
+                ?? key?.toJSON?.()
+                ?? key
+            )
+            || null
+        );
 
         let PRIVATE_KEY = (traceable? '': `private-key=${ UUID.#BWT_SEED }`),
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
@@ -430,7 +436,7 @@ class DatePicker {
 
         timeDefault = to24H(timeDefault + '');
 
-        let daySelect = f(`select.edit`, { type: 'day', value: dayDefault },
+        let daySelect = f(`select.edit`, { type: 'days', value: dayDefault, multiple: true, selected: 1, onchange: ({ currentTarget }) => currentTarget.setAttribute('selected', currentTarget.selectedOptions.length) },
                 ...dayOptions.map(value => f(`option${ (value == dayDefault? '[selected]': '') }`, { value, 'tr-id': 'day-of-week' }, DatePicker.weekdays[value]))
             ),
 
@@ -473,8 +479,12 @@ class DatePicker {
                                 f('div', { 'pad-bottom': '' },
                                     f('div.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
                                     f('div.summary', {},
-                                        f('span', { 'tr-id': '' }, 'Every'),
-                                        daySelect
+                                        daySelect,
+
+                                        f('div.subtitle', {
+                                            'tr-id': 'away-mode:schedule:create:controls',
+                                            innerHTML: `Use <code>${ GetMacro('Ctrl') }</code> and <code>${ GetMacro('Shift') }</code> to select multiple days.`
+                                        })
                                     )
                                 ),
 
@@ -512,7 +522,7 @@ class DatePicker {
                                         onmousedown: event => {
                                             let { currentTarget } = event;
 
-                                            let values = $('select[type]', true, currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), select.value]);
+                                            let values = $('select[type]', true, currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), (select.multiple? [...select.selectedOptions].map(option => option.value): select.value)]);
 
                                             let object = {};
                                             for(let [key, value] of values)
@@ -536,7 +546,7 @@ class DatePicker {
 
                                     // Cancel
                                     f(`button.${ ['edit', 'remove'][+preExisting] }`, {
-                                        'tr-id': 'nk',
+                                        'tr-id': ['nk', 'rm'][+preExisting],
 
                                         onmousedown: event => DatePicker.values.push(null),
 
@@ -677,72 +687,79 @@ function RedoTimeElements(schedules, scheduleType) {
 
     schedules = JSON.parse(schedules);
 
-    let validSchedules = [];
     for(let schedule of schedules) {
-        let E = document.createElement('button'),
-            R = document.createElement('button');
+        let { days, time, duration, status } = schedule;
 
-        let scheduleID = UUID.from(JSON.stringify(schedule)).value,
-            { day, time, duration, status } = schedule;
-
-        if(defined($(`#${ scheduleType }_schedule [day-of-week="${ day }"i] [${ scheduleType }-id="${ scheduleID }"i]`)))
-            continue;
-
-        validSchedules.push(schedule);
-
-        // "Edit" button
-        E.innerHTML = `<code fill>${ encodeHTML(`${ ['\u{1f534}','\u{1f7e2}'][+parseBool(status)] } ${ time }:00 + ${ toTimeString(duration * 3_600_000, '?hours_h') }`) }</code>`;
-        E.classList.add('edit');
-        E.setAttribute(`${ scheduleType }-id`, scheduleID);
-
-        for(let key in schedule)
-            E.setAttribute(key, schedule[key]);
-
-        E.onclick = event => {
-            let { currentTarget } = event;
-
-            let day = parseInt(currentTarget.getAttribute('day')),
-                time = parseInt(currentTarget.getAttribute('time')),
-                duration = parseInt(currentTarget.getAttribute('duration')),
-                status = parseBool(currentTarget.getAttribute('status'));
-
-            let date = new Date,
-                dayOffset = (date.getDate() - (date.getDay() - day));
-
-            dayOffset = (dayOffset > 0)?
-                dayOffset:
-            dayOffset + 7;
-
-            let offset = new Date([DatePicker.months[date.getMonth()], dayOffset, date.getFullYear(), time].join(' '));
-
-            new DatePicker(offset, status, time, duration).then(schedules => RedoTimeElements(JSON.stringify(schedules), 'away_mode'));
-
-            currentTarget.remove();
-        };
-        E.setAttribute('up-tooltip', `Edit schedule`);
-        E.setAttribute('tr-skip', true);
-        E.append(R);
-
-        // "Remove" button
-        R.id = scheduleID;
-        R.innerHTML = Glyphs.modify('trash', { fill: 'white', height: '20px', width: '20px' });
-        R.classList.add('remove');
-
-        R.onclick = event => {
-            let { currentTarget } = event,
-                { id } = currentTarget;
-
-            $(`[${ scheduleType }-id="${ id }"]`)?.remove();
-
-            event.stopPropagation();
-        };
-        R.setAttribute('up-tooltip', `Remove schedule`);
-
-        $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.setAttribute('not-empty', true);
-        $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.append(E);
+        // Add buttons per day
+        if(defined(days))
+            for(let day of days)
+                CreateTimeElement(({ day, time, duration, status }), scheduleType);
+        else
+            CreateTimeElement(schedule, scheduleType);
     }
+}
 
-    $(`#${ scheduleType }_schedule-input`).value = JSON.stringify([...new Set(validSchedules)]);
+function CreateTimeElement(self, scheduleType) {
+    let { day, time, duration, status } = self,
+        scheduleID = UUID.from(self).value;
+
+    if(defined($(`#${ scheduleType }_schedule [day="${ day }"][time="${ time }"]`)))
+        return;
+
+    let E = document.createElement('button'),
+        R = document.createElement('button');
+
+    // "Edit" button
+    E.innerHTML = `<code fill>${ encodeHTML(`${ ['\u{1f534}','\u{1f7e2}'][+parseBool(status)] } ${ time }:00 + ${ toTimeString(duration * 3_600_000, '?hours_h') }`) }</code>`;
+    E.classList.add('edit');
+    E.setAttribute(`${ scheduleType }-id`, scheduleID);
+
+    for(let key in self)
+        E.setAttribute(key, self[key]);
+
+    E.onclick = event => {
+        let { currentTarget } = event;
+
+        let day = parseInt(currentTarget.getAttribute('day')),
+            time = parseInt(currentTarget.getAttribute('time')),
+            duration = parseInt(currentTarget.getAttribute('duration')),
+            status = parseBool(currentTarget.getAttribute('status'));
+
+        let date = new Date,
+            dayOffset = (date.getDate() - (date.getDay() - day));
+
+        dayOffset = (dayOffset > 0)?
+            dayOffset:
+        dayOffset + 7;
+
+        let offset = new Date([DatePicker.months[date.getMonth()], dayOffset, date.getFullYear(), time].join(' '));
+
+        new DatePicker(offset, status, time, duration).then(schedules => RedoTimeElements(JSON.stringify(schedules), scheduleType));
+
+        currentTarget.remove();
+    };
+    E.setAttribute('up-tooltip', `Edit schedule`);
+    E.setAttribute('tr-skip', true);
+    E.append(R);
+
+    // "Remove" button
+    R.id = scheduleID;
+    R.innerHTML = Glyphs.modify('trash', { fill: 'white', height: '20px', width: '20px' });
+    R.classList.add('remove');
+
+    R.onclick = event => {
+        let { currentTarget } = event,
+            { id } = currentTarget;
+
+        $(`[${ scheduleType }-id="${ id }"]`)?.remove();
+
+        event.stopPropagation();
+    };
+    R.setAttribute('up-tooltip', `Remove schedule`);
+
+    // Add to parent container
+    $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.setAttribute('not-empty', true);
+    $(`#${ scheduleType }_schedule [day-of-week="${ day }"i]`)?.append(E);
 }
 
 async function SaveSettings() {
@@ -788,7 +805,7 @@ async function SaveSettings() {
             } break;
 
             case 'away_mode_schedule': {
-                let times = JSON.parse(extractValue($('#phrase_rules-input')) || '[]');
+                let times = [];
                 for(let button of $('#away_mode_schedule button[duration]', true)) {
                     let day = parseInt(button.getAttribute('day')),
                         time = parseInt(button.getAttribute('time')),

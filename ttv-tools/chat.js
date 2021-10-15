@@ -463,6 +463,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         top -= 150;
 
+                        let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: false, view: window })), 1_000);
+
                         // Raw Search...
                             // FIX-ME: new Search does not complete???
                         await fetch(`./${ bttvOwner }`, { mode: 'cors' })
@@ -515,7 +517,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         fineTuning: { top }
                                     });
                                 });
-                            });
+                            })
+                            .finally(() => clearTimeout(redoSearch));
                     });
                 });
         };

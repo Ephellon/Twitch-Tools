@@ -48,6 +48,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.7)
+- Adjusted `chat.js` card logic
+- Adjusted `ReservedTwitchPathnames`
+- Fixed issue for Away Mode Schedule
+- Added functionality to allow picking multiple days for `DatePicker`
+- Added "overview" option to `GetViewMode` and `SetViewMode`
+- Added a page checker to determine if TTV Tools loaded correctly
+- Added user intention logic to prevent re-closing the channel overview
+
 > [`4.12.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.6)
 - Reverted minor changes
 

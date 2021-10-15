@@ -8,6 +8,7 @@
 		"new": ["New"],
 		"ok": ["Continue"],
 		"nk": ["Cancel"],
+		"rm": ["Delete"],
 
 		"minute": ["%d minute%s"],
 		"hour": ["%d hour%s"],
@@ -52,7 +53,8 @@
     	"away-mode:schedule": ["Schedule", "Select Times"],
 			"away-mode:schedule:options": ["Times"],
 			"away-mode:schedule:create": ["Create a new schedule"],
-			"away-mode:schedule:create:frequency": ["Frequency", "Every"],
+			"away-mode:schedule:create:frequency": ["Frequency"],
+			"away-mode:schedule:create:controls": ["Use", null, "or", null, "to select multiple days"],
 			"away-mode:schedule:create:functionality": ["Functionality", "at", "for"],
 			"away-mode:schedule:create:hour": ["%%"],
 			"away-mode:schedule:create:notice": ["Times will be saved in your current timezone", null],

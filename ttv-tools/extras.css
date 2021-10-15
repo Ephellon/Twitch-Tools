@@ -211,3 +211,122 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     margin-left: -3px;
     top: 6px;
 }
+
+/* Alerts, Confirmations, and Prompts */
+.tt-alert, .tt-confirm, .tt-prompt {
+    background: #000e;
+    display: block;
+    font-size: 1em;
+
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 99999;
+
+    height: 100vh;
+    width: 100vw;
+}
+
+.tt-alert-container, .tt-confirm-container, .tt-prompt-container {
+    background: #222;
+    border-radius: 0.3rem;
+
+    padding: 1rem;
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    min-width: 25vw;
+    max-width: 35vw;
+    width: fit-content;
+}
+
+.tt-alert-header, .tt-confirm-header, .tt-prompt-header {
+    font-family: var(--font-display);
+    font-size: 1.25em;
+    font-weight: bold;
+
+    padding-bottom: 0.5rem;
+}
+
+.tt-alert-body, .tt-confirm-body, .tt-prompt-body {
+    /* ... */
+}
+
+.tt-alert-footer, .tt-confirm-footer, .tt-prompt-footer {
+    text-align: right;
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(button, [type="button"]) {
+    align-items: center;
+    display: inline-block;
+    justify-content: center;
+
+    background-color: var(--color-twitch-purple);
+    border-radius: 3px;
+    color: var(--color-white);
+    cursor: pointer;
+    font-family: Roobert;
+    font-weight: bold;
+
+    transition: background-color .1s ease;
+
+    overflow: hidden;
+
+    margin: 5px 10px;
+    padding: 5px 10px;
+
+    vertical-align: middle;
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove {
+    background-color: var(--color-red);
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit {
+    background-color: var(--color-hinted-grey-6);
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(button, input[type="button"]):hover {
+    background-color: var(--color-twitch-purple-10);
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove:hover  {
+    background-color: var(--color-red-darker) !important;
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit:hover  {
+    background-color: var(--color-hinted-grey-7) !important;
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(textarea, input) {
+    appearance: none;
+    background-clip: padding-box;
+    background-color: var(--color-hinted-grey-6);
+    border: 2px solid var(--color-hinted-grey-6);
+    border-radius: 3px;
+    color: var(--color-white);
+    display: block;
+    font-size: 100%;
+    line-height: 1;
+    text-overflow: ellipsis;
+
+    transition: all .1s ease-in;
+
+    overflow-x: hidden;
+    resize: none;
+
+    padding: 1rem;
+
+    height: 1rem;
+    width: 100%;
+}
+
+*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(textarea, input):focus {
+    background-color: var(--color-black);
+    border-color: var(--color-twitch-purple);
+
+    outline: none;
+}

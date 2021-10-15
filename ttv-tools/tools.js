@@ -1989,12 +1989,18 @@ function SetVolume(volume = 0.5) {
 function GetViewMode() {
     let mode = 'default',
         theatre = false,
+        overview = false,
         fullwidth = false;
 
     if(theatre
         ||= /theatre/i.test([...$(`[data-test-selector*="video-container"i]`).classList].join(' '))
     )
         mode = 'theatre';
+
+    if(overview
+        ||= defined($(`.home`))
+    )
+        mode = 'overview';
 
     if(fullwidth
         ||= defined($(`[data-a-target*="right-column"i][data-a-target*="chat-bar"i][data-a-target*="collapsed"i] button[data-a-target*="collapse"i]`))
@@ -2012,6 +2018,7 @@ function GetViewMode() {
         || (true
                 && theatre
                 && fullwidth
+                && !overview
             )
         || $(classes, true, container.parentElement).length <= 3
     )
@@ -2025,6 +2032,10 @@ function GetViewMode() {
 function SetViewMode(mode = 'default') {
     let buttons = [],
         toggles = {
+            overview: {
+                off: `[class*="root"i][class*="home"i] [href]`,
+                on: `[class*="root"i][class*="chat"i] [href]`,
+            },
             theatre: {
                 off: `[data-test-selector*="video-container"i]:not([class*="theatre"i]) button[data-a-target*="theatre-mode"i]`,
                 on: `[data-test-selector*="video-container"i][class*="theatre"i] button[data-a-target*="theatre-mode"i]`,
@@ -2042,6 +2053,10 @@ function SetViewMode(mode = 'default') {
 
         case 'fullwidth': {
             buttons.push(toggles.theatre.on, toggles.chat.off);
+        } break;
+
+        case 'overview': {
+            buttons.push(toggles.overview.on);
         } break;
 
         case 'theatre': {
@@ -3681,13 +3696,17 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i]')?.click();
+        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home:not([user-intended="true"i]) [data-a-target^="home"i]')?.click();
     };
     Timers.auto_accept_mature = 5_000;
 
     __AutoMatureAccept__:
     if(parseBool(Settings.auto_accept_mature)) {
         RegisterJob('auto_accept_mature');
+
+        $('[class*="info"i] [href] [class*="title"i]').addEventListener('mousedown', async({ isTrusted }) => {
+            (await awaitOn(() => $('.home')))?.setAttribute?.('user-intended', isTrusted);
+        });
     }
 
     /*** Auto-Focus
@@ -4209,6 +4228,8 @@ let Initialize = async(START_OVER = false) => {
 
     __AwayMode__:
     if(parseBool(Settings.away_mode)) {
+        REMARK("Adding & Scheduling the Away Mode button...");
+
         RegisterJob('away_mode');
 
         // Maintain the volume until the user changes it
@@ -5734,7 +5755,25 @@ let Initialize = async(START_OVER = false) => {
      *                      |___/
      */
     let ClearIntent,
-        TwitchPathnames = [USERNAME, '$', '[up]/', 'directory', 'downloads?', 'friends?', 'inventory', 'jobs?', 'moderator', 'search', 'settings', 'subscriptions?', 'team', 'turbo', 'user', 'videos?', 'wallet', 'watchparty'],
+        TwitchPathnames = [
+            USERNAME, '$', '[up]/',
+
+            'activate',
+            'bits(-checkout/?)?',
+            'checkout/', 'collections/?', 'communities/?',
+            'dashboard/?', 'directory/?', 'downloads?',
+            'event/?',
+            'following', 'friends?',
+            'inventory',
+            'jobs?',
+            'moderator',
+            'popout', 'prime/?', 'products/?',
+            'search', 'settings/?', 'store/?', 'subs/?', 'subscriptions?',
+            'team', 'turbo',
+            'user',
+            'videos?',
+            'wallet', 'watchparty',
+        ],
         ReservedTwitchPathnames = RegExp(`/(${ TwitchPathnames.join('|') })`, 'i');
 
     Handlers.stay_live = async() => {
@@ -5754,7 +5793,7 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('stay_live'), RemoveCache('UserIntent');
         }
 
-        IsntLive:
+        NotLive:
         if(
             parseBool(Settings.stay_live__ignore_channel_reruns)?
                 (true
@@ -5764,10 +5803,10 @@ let Initialize = async(START_OVER = false) => {
             !STREAMER.live
         ) {
             if(ReservedTwitchPathnames.test(pathname))
-                break IsntLive;
+                break NotLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
-                break IsntLive;
+                break NotLive;
 
             if(defined(next)) {
                 WARN(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
@@ -7094,6 +7133,9 @@ let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE;
 
+// TTV Tools has 30s to initilize correctly...
+let REINITALIZE_TTV_TOOLS = setTimeout(() => location.reload(), 30_000);
+
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version == version;
 
@@ -7124,6 +7166,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
         if(ready) {
             LOG("Main container ready");
+            clearTimeout(REINITALIZE_TTV_TOOLS);
 
             Settings = await GetSettings();
 

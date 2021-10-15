@@ -1228,6 +1228,7 @@ function comify(number, locale = top.LANGUAGE) {
 function toFormat(string, patterns) {
     patterns = patterns.split('-');
 
+    let nonWords = /[\s\-\+]+/;
     for(let pattern of patterns)
         switch(pattern) {
             case 'capped': {
@@ -1243,15 +1244,15 @@ function toFormat(string, patterns) {
             } break;
 
             case 'dotted': {
-                string = string.split('').join('.');
+                string = string.split(nonWords).join('.');
             } break;
 
             case 'dashed': {
-                string = string.split('').join('-');
+                string = string.split(nonWords).join('-');
             } break;
 
             case 'spaced': {
-                string = string.split('').join(' ');
+                string = string.split(nonWords).join(' ');
             } break;
         }
 
@@ -1284,8 +1285,9 @@ function GetOS() {
 
 // Returns the assumed key combination
     // GetMacro(keys:string) -> string
-function GetMacro(keys = '') {
+function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
+    OS ??= GetOS();
 
     let pattern = (
         /^[A-Z][a-z]/.test(keys)?
@@ -1305,11 +1307,17 @@ function GetMacro(keys = '') {
         ''
     );
 
+    // Mouse buttons (emojis)
+    let Mouse = {
+        AClick: 'primary_mouse_button',
+        BClick: 'secondary_mouse_button',
+    };
+
     return keys
-        .split(/(\W+)/)
+        .split(/([\s\-\+]+)/)
         .filter(string => !!string.length)
         .map(key => {
-            switch(GetOS()) {
+            switch(OS.slice(0, 7)) {
                 /** MacOS Keys
                  * Command (Cmd)        ⌘
                  * Option/Alt (Opt/Alt) ⌥
@@ -1319,12 +1327,14 @@ function GetMacro(keys = '') {
                  */
                 case 'Mac': {
                     key = (
-                        /^Win$/i.test(key)?
+                        /^(Win)$/i.test(key)?
                             '\u2318':
-                        /^Alt$/i.test(key)?
+                        /^(Alt)$/i.test(key)?
                             '\u2325':
-                        /^Shift$/i.test(key)?
+                        /^(Shift)$/i.test(key)?
                             '\u21e7':
+                        /^([AB]Click)$/.test(key)?
+                            Glyphs.utf8[Mouse[RegExp.$1]]:
                         key
                     );
                 } break;
@@ -1338,6 +1348,8 @@ function GetMacro(keys = '') {
                             'Alt':
                         /^(Shift|\u21e7)$/i.test(key)?
                             'Shift':
+                        /^([AB]Click)$/.test(key)?
+                            Glyphs.utf8[Mouse[RegExp.$1]]:
                         key
                     );
                 } break;
@@ -1587,3 +1599,87 @@ function REMARK(...messages) {
         }
     });
 };
+
+// Alerts a message
+function alert(message = '') {
+    let f = furnish;
+
+    let container =
+    f('div.tt-alert', {},
+        f('div.tt-alert-container', {},
+            f('div.tt-alert-header', { innerHTML: `${ top.document.title } (TTV Tools)` }),
+            f('div.tt-alert-body', { innerHTML: message }),
+            f('div.tt-alert-footer', {},
+                f('button', {
+                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-alert').remove()
+                }, 'OK')
+            )
+        )
+    );
+
+    document.body.append(container);
+}
+
+// Confirms a message
+function confirm(message = '') {
+    let f = furnish;
+
+    let container =
+    f('div.tt-confirm', {},
+        f('div.tt-confirm-container', {},
+            f('div.tt-confirm-header', { innerHTML: `${ top.document.title } (TTV Tools)` }),
+            f('div.tt-confirm-body', { innerHTML: message }),
+            f('div.tt-confirm-footer', {},
+                f('button.edit', {
+                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-confirm').setAttribute('value', false),
+                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-confirm').remove(),
+                }, 'Cancel'),
+
+                f('button', {
+                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-confirm').setAttribute('value', true),
+                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-confirm').remove(),
+                }, 'OK')
+            )
+        )
+    );
+
+    document.body.append(container);
+
+    return awaitOn(() => {
+        let value = $('.tt-confirm')?.getAttribute('value');
+
+        return value && parseBool(value);
+    });
+}
+
+// Prompts a message
+function prompt(message = '', defaultValue = '') {
+    let f = furnish;
+
+    let container =
+    f('div.tt-prompt', {},
+        f('div.tt-prompt-container', {},
+            f('div.tt-prompt-header', { innerHTML: `${ top.document.title } (TTV Tools)` }),
+            f('div.tt-prompt-body', { innerHTML: message }),
+            f('div.tt-prompt-footer', {},
+                f('input.tt-prompt-input', { type: 'text' }),
+
+                f('button.edit', {
+                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-prompt').setAttribute('value', null),
+                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-prompt').remove(),
+                }, 'Cancel'),
+
+                f('button', {
+                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-prompt').setAttribute('value', $('.tt-prompt-input').value),
+                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-prompt').remove(),
+                }, 'OK')
+            )
+        )
+    );
+
+    $('.tt-prompt-input', false, container).value = defaultValue;
+
+    document.body.append(container);
+
+    return awaitOn(() => $('.tt-prompt')?.getAttribute('value'));
+}
