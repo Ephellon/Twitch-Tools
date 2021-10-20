@@ -49,196 +49,6 @@ awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
  *                           |_|        |_|
  */
 
-// Displays a popup
-    // new Popup(subject:string, message:string[, options:object]) -> Object
-    // Popup.prototype.remove() -> undefined
-class Popup {
-    static #POPUPS = new Map()
-
-    constructor(subject, message, options = {}) {
-        let f = furnish;
-
-        // The document (container)
-        top.CHILD_CONTROLLER_CONTAINER = $('#tt-popup-container', false, top.document)?.contentDocument ?? top.document;
-
-        let P = $('.stream-chat-header', false, top.CHILD_CONTROLLER_CONTAINER),
-            X = $('#tt-popup', false, P),
-            I = Extension.getURL('profile.png'),
-            N = 'Continue',
-            D = 'Close',
-            A = event => $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER)?.remove(),
-            C = event => $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER)?.remove(),
-            R = '_self',
-            U, S, M, G, T, W, H;
-
-        let uuid = U = UUID.from(subject).value,
-            existing = Popup.#POPUPS.get(uuid);
-
-        if(defined(existing))
-            return existing;
-
-        if(defined(X)) {
-            if(!Queue.popups.map(popup => popup.uuid).contains(uuid)) {
-                let interval = setInterval(() => {
-                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
-
-                    if(defined(existing))
-                        return;
-
-                    let { subject, message, options, uuid, interval } = Queue.popups.pop();
-
-                    new Popup(subject, message, options);
-
-                    clearInterval(interval);
-                }, 500);
-
-                Queue.popups.splice(0, 0, { subject, message, options, uuid, interval });
-            }
-
-            return;
-        }
-
-        for(let n in options)
-            if(typeof options[n] == 'function')
-                if(/\b(abandon|cancel|choke|close|drop|end|halt|kill|nix|plug|postpone|seal|scrap|scrub|stop)\b/i.test(n))
-                    C = options[D = n] ?? C;
-                else
-                    A = options[N = n] ?? A;
-            else if(/\b(figure|(?:fav)?icon|image|picture|profile|symbol)\b/i.test(n))
-                I = options[n] ?? I;
-            else if(/\b(href|link)\b/i.test(n))
-                H = options[n] ?? H;
-            else if(/\b(target|to)\b/i.test(n))
-                H = options[n] ?? H;
-
-        let [accent] = (Settings.accent_color ?? 'blue/12').split('/');
-
-        let p =
-        f('div#tt-popup.tt-absolute.tt-mg-t-5', { uuid, style: 'z-index:9; bottom:10rem; right:1rem' },
-            f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease', { 'data-a-target': 'tt-animation-target' },
-                f('div', {},
-                    f('div.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-small.tt-border-t.tt-c-background-base.tt-elevation-2.tt-flex.tt-flex-nowrap.tt-mg-b-1', {
-                            style: `background-color:var(--color-${ accent })!important;`
-                        },
-                        f('a', { href: H, target: R, style: 'text-decoration:none' },
-                            f('div.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive', {},
-                                f('div.tt-flex.tt-flex-nowrap.tt-pd-l-1.tt-pd-y-1', {},
-                                    f('div', {},
-                                        f('div', { style: 'height:4rem; width:4rem' },
-                                            G = f('img.tt-border-radius-rounded.tt-full-height.tt-full-width.tt-image', {
-                                                src: I,
-                                                sizeinpixels: 40,
-                                                borderradius: 'tt-border-radius-rounded',
-                                            })
-                                        )
-                                    ),
-                                    f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-overflow-hidden.tt-pd-x-1', {},
-                                        f('div.tt-full-height.tt-overflow-hidden', {},
-                                            f('span.tt-c-text-alt', {},
-                                                f('div', {},
-                                                    S = f('p', {}, subject)
-                                                )
-                                            )
-                                        ),
-                                        f('div.tt-flex-shrink-0.tt-mg-t-05', {},
-                                            M = f('div.tt-c-text-alt', {}, message)
-                                        )
-                                    )
-                                )
-                            )
-                        ),
-                        // Notification counter
-                        f('div#tt-notification-counter--popup.tt-absolute.tt-font-size-7.tt-right-0.tt-top-0', { style: 'visibility:hidden' },
-                            f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in', {
-                                    'data-a-target': 'tt-animation-target'
-                                },
-                                f('div.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
-                                    f('div#tt-notification-counter-output--popup.tt-c-text-overlay.tt-number-badge__badge.tt-relative', {
-                                        'interval-id': setInterval(() => {
-                                            let { length } = Queue.popups,
-                                                counter = $('#tt-notification-counter--popup'),
-                                                output = $('#tt-notification-counter-output--popup');
-
-                                            if(!defined(counter) || !defined(output))
-                                                return;
-
-                                            let visibility = counter.getAttribute('style').replace(/[^]+:/, ''),
-                                                interval = parseInt(output.getAttribute('interval-id'));
-
-                                            output.textContent = length;
-
-                                            if(length < 1) {
-                                                counter.setAttribute('style', 'visibility:hidden');
-                                            } else {
-                                                counter.setAttribute('style', 'visibility:unset');
-                                            }
-                                        }, 100),
-                                    }, Queue.popups.length)
-                                )
-                            )
-                        ),
-                        // Confirmation/Decline buttons
-                        f('div.tt-align-content-stretch.tt-border-l.tt-flex.tt-flex-column.tt-flex-grow-0.tt-flex-shrink-0', {},
-                            // Confirm
-                            f('div.tt-align-content-stretch.tt-border-b.tt-flex.tt-flex-grow-1', {},
-                                T = f('button.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive', {
-                                        onclick: A,
-                                    },
-                                    f('div.tt-align-items-center.tt-flex.tt-flex-grow-1.tt-full-height.tt-justify-content-center.tt-pd-05', {},
-                                        f('p.tt-c-text-alt', {}, N)
-                                    )
-                                )
-                            ),
-                            // Decline
-                            f('div.tt-align-content-stretch.tt-border-b.tt-flex.tt-flex-grow-1', {},
-                                W = f('button.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive', {
-                                        onclick: C,
-                                    },
-                                    f('div.tt-align-items-center.tt-flex.tt-flex-grow-1.tt-full-height.tt-justify-content-center.tt-pd-05', {},
-                                        f('p.tt-c-text-alt', {}, D)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-        );
-
-        P?.append(p);
-
-        this.uuid = U;
-        this.next = A;
-        this.close = C;
-        this.parent = P;
-        this.container = p;
-        this.elements = {
-            icon: G,
-            accept: T,
-            decline: W,
-            message: M,
-            subject: S,
-            container: p,
-        };
-
-        Popup.#POPUPS.set(uuid, this);
-
-        return this;
-    }
-
-    static remove(uuid) {
-        let popup = Popup.#POPUPS.get(uuid);
-
-        popup.container?.remove();
-
-        Popup.#POPUPS.delete(uuid);
-    }
-
-    static get(uuid) {
-        return Popup.#POPUPS.get(uuid);
-    }
-}
-
 // Displays a balloon (popup)
     // new Balloon({ title:string, icon:string? }[, ...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }]) -> Object
     // Balloon.prototype.add(...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }) -> Element
@@ -262,7 +72,7 @@ class Balloon {
             return existing;
 
         if(defined(X)) {
-            if(!Queue.balloons.map(popup => popup.uuid).contains(uuid)) {
+            if(!Queue.balloons.map(balloon => balloon.uuid).contains(uuid)) {
                 let interval = setInterval(() => {
                     let existing = $('#tt-balloon');
 
@@ -283,7 +93,7 @@ class Balloon {
         }
 
         let p =
-        f('div.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', {},
+        f('div.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
             f('div', {},
                 f('div.tt-relative', {},
                     // Navigation Icon
@@ -423,6 +233,8 @@ class Balloon {
                                                                 {
                                                                     'data-test-selector': 'persistent-notification__click',
                                                                     'connected-to': `${ U }--${ guid }`,
+                                                                    // Sometimes, Twitch likes to default to `_blank`
+                                                                    'target': '_self',
 
                                                                     href,
 
@@ -744,22 +556,26 @@ class Tooltip {
                 furnish('div.tt-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
+                            let style = 'animation:.3s fade-in 1;';
+
                             switch(from) {
                                 // case 'up':
-                                //     return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
 
                                 case 'down':
-                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
 
                                 // case 'left':
-                                //     return `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
                                 //
                                 // case 'right':
-                                //     return `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
 
                                 default:
-                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
                             }
+
+                            return style;
                         })()
                     },
                     furnish('div.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
@@ -896,7 +712,7 @@ class Card {
         let iconElement = f('img.emote-card__big-emote.tt-image[data-test-selector="big-emote"]', { ...icon });
 
         card.append(
-            f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1 [data-a-target="emote-card"]', {},
+            f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1 [data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
                 f('div.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
                     f('div.tt-inline-flex.viewer-card-drag-cancel', {},
                         f('div.tt-inline.tt-relative.tt-tooltip__container[data-a-target="emote-name"]', {},
@@ -2632,6 +2448,27 @@ const PRIVATE_SYMBOL = Symbol(new UUID);
  */
 let LIVE_CACHE = new Map();
 
+let TWITCH_PATHNAMES = [
+        '$', '[up]/',
+
+        'activate',
+        'bits(-checkout/?)?',
+        'checkout/', 'collections/?', 'communities/?',
+        'dashboard/?', 'directory/?', 'downloads?',
+        'event/?',
+        'following', 'friends?',
+        'inventory',
+        'jobs?',
+        'moderator',
+        'popout', 'prime/?', 'products/?',
+        'search', 'settings/?', 'store/?', 'subs/?', 'subscriptions?',
+        'team', 'turbo',
+        'user',
+        'videos?',
+        'wallet', 'watchparty',
+    ],
+    RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
+
 // Intializes the extension
     // Initialize(START_OVER:boolean) -> undefined
 let Initialize = async(START_OVER = false) => {
@@ -2666,7 +2503,7 @@ let Initialize = async(START_OVER = false) => {
 
             if(span > max)
                 WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
-                    .toNativeStack();
+                    ?.toNativeStack?.();
         },
         START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
 
@@ -2717,24 +2554,32 @@ let Initialize = async(START_OVER = false) => {
 
     // Gets the next available channel (streamer)
         // GetNextStreamer() -> Object#Channel
-    async function GetNextStreamer() {
-        let online = STREAMERS.filter(isLive),
-            mostWatched = null,
-            mostPoints = 0,
-            mostLeft = 0,
-            mostProgressNeeded = 0,
-            furthestFromCompletion = null,
-            leastWatched = null,
-            leastPoints = +Infinity,
-            leastLeft = +Infinity,
-            leastProgressNeeded = 0,
-            closestToCompletion = null;
-
+    function GetNextStreamer() {
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
             return GetNextStreamer.cachedStreamer = ALL_CHANNELS.find(channel => channel.href.contains(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
 
-        await LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+        if(parseBool(Settings.stay_live) && defined(GetNextStreamer?.cachedStreamer))
+            return GetNextStreamer.cachedStreamer;
+
+        LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+            let { random, round } = Math;
+            let online = STREAMERS.filter(isLive),
+                mostWatched = null,
+                mostPoints = 0,
+                mostLeft = 0,
+                mostProgressNeeded = 0,
+                furthestFromCompletion = null,
+                leastWatched = null,
+                leastPoints = +Infinity,
+                leastLeft = +Infinity,
+                leastProgressNeeded = 0,
+                closestToCompletion = null;
+
+            let randomChannel = online.sort(() => random() >= 0.5? +1: -1);
+
+            randomChannel = randomChannel[round(random() * randomChannel.length)];
+
             filtering:
             for(let channel in ChannelPoints) {
                 let [streamer] = online.filter(({ name }) => name == channel);
@@ -2788,68 +2633,59 @@ let Initialize = async(START_OVER = false) => {
                     leastLeft = notEarned;
                 }
             }
+
+            next_channel:
+            switch(Settings.next_channel_preference) {
+                // The most popular channel (most amount of current viewers)
+                case 'popular': {
+                    GetNextStreamer.cachedStreamer = online[0];
+                } break;
+
+                // The least popular channel (least amount of current viewers)
+                case 'unpopular': {
+                    GetNextStreamer.cachedStreamer = online[online.length - 1];
+                } break;
+
+                // Most watched channel (most channel points)
+                case 'rich': {
+                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === mostWatched);
+                } break;
+
+                // Least watched channel (least channel points)
+                case 'poor': {
+                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === leastWatched);
+                } break;
+
+                // Most un-earned Rewards & Challenges
+                case 'furthest': {
+                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === furthestFromCompletion);
+                } break;
+
+                // Least un-earned Rewards & Challenges
+                case 'closest': {
+                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === closestToCompletion);
+                } break;
+
+                // Do not use this feature
+                case 'none': {
+                    return null;
+                } break;
+
+                // A random channel
+                default: {
+                    GetNextStreamer.cachedStreamer = online[round(random() * online.length)];
+                } break;
+            }
+
+            // There isn't a channel that fits the criteria
+            if(parseBool(Settings.stay_live) && !defined(GetNextStreamer?.cachedStreamer) && online?.length) {
+                GetNextStreamer.cachedStreamer ??= randomChannel;
+
+                WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired:`, GetNextStreamer.cachedStreamer);
+            }
         });
 
-        let next,
-            { random, round } = Math;
-
-        next_channel:
-        switch(Settings.next_channel_preference) {
-            // The most popular channel (most amount of current viewers)
-            case 'popular': {
-                next = online[0];
-            } break;
-
-            // The least popular channel (least amount of current viewers)
-            case 'unpopular': {
-                next = online[online.length - 1];
-            } break;
-
-            // Most watched channel (most channel points)
-            case 'rich': {
-                next = STREAMERS.find(channel => channel.name === mostWatched);
-            } break;
-
-            // Least watched channel (least channel points)
-            case 'poor': {
-                next = STREAMERS.find(channel => channel.name === leastWatched);
-            } break;
-
-            // Most un-earned Rewards & Challenges
-            case 'furthest': {
-                next = STREAMERS.find(channel => channel.name === furthestFromCompletion);
-            } break;
-
-            // Least un-earned Rewards & Challenges
-            case 'closest': {
-                next = STREAMERS.find(channel => channel.name === closestToCompletion);
-            } break;
-
-            // Do not use this feature
-            case 'none': {
-                return null;
-            } break;
-
-            // A random channel
-            default: {
-                next = online[round(random() * online.length)];
-            } break;
-        }
-
-        let cache = online.sort(() => random() >= 0.5? +1: -1);
-
-        cache = cache[round(random() * cache.length)];
-
-        // There isn't a channel that fits the criteria
-        if(parseBool(Settings.stay_live) && !defined(next) && !defined(GetNextStreamer?.cachedStreamer) && online?.length) {
-            next ??= GetNextStreamer.cachedStreamer ??= cache;
-
-            WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired:`, next);
-        } else if(parseBool(Settings.stay_live) && defined(next)) {
-            GetNextStreamer.cachedStreamer = next;
-        }
-
-        return next;
+        return GetNextStreamer.cachedStreamer;
     }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
@@ -3015,7 +2851,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get icon() {
-            return $('img', false, $(`a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]`))?.src
+            return $(`[class*="channel"i] *:is(a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]) img`)?.src
         },
 
         get jump() {
@@ -3084,19 +2920,15 @@ let Initialize = async(START_OVER = false) => {
             let tags = [];
 
             $('.tw-tag', true).map(element => {
-                let name = element.textContent.toLowerCase(),
-                    { href } = element.closest('a[href]');
+                let { href } = element.closest('a[href]');
 
                 if(parseBool(Settings.show_stats)) {
-                    let score = scoreTagActivity(name);
+                    let score = scoreTagActivity(href);
 
                     new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'up' });
                 }
 
-                tags.push(name);
-                tags[name] = href;
-
-                return name;
+                tags.push(href);
             });
 
             return scoreTagActivity(...tags);
@@ -3164,7 +2996,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Handlers: on-raid | on-host
     STREAMER.onraid = STREAMER.onhost = async({ hosting = false, raiding = false, raided = false }) => {
-        let next = await GetNextStreamer();
+        let next = GetNextStreamer();
 
         LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
@@ -3730,83 +3562,87 @@ let Initialize = async(START_OVER = false) => {
     function scoreTagActivity(...tags) {
         let score = 0;
 
-        tags = tags.map(tag => tag.split(/\W/).reverse().pop().toLowerCase());
+        tags = tags.map(tag => tag.split(/\//).pop().toUpperCase());
 
         scoring:
         for(let tag of tags)
             switch(tag) {
-                case 'action':
-                case 'adventure':
-                case 'fps':
-                case 'pinball':
-                case 'platformer':
-                case 'shoot':
-                case 'shooter':
-                case 'sports':
-                case 'wrestling': {
+                case '4D1EAA36-F750-4862-B7E9-D0A13970D535': // Action
+                case '80427D95-BB46-42D3-BF4D-408E9BDCA49A': // Adventure
+                case 'A69F7FFB-DDDA-4C05-8D7D-F0B24975A2C3': // FPS
+                case '9386024F-DB7E-4E4F-B8DF-A73E354C5BC2': // Pinball
+                case '5D289CF9-D75A-42B5-A635-0D117609E6A6': // Platformer
+                case 'E607B115-8FA1-49C1-ACDF-F6927BE4CA1B': // Shoot
+                case '523FE736-FA95-44C7-B22F-13008CA2172C': // Shooter
+                case '0D4233AF-7AC6-49DA-937D-E0F42B7DB187': // Sports
+                case '7199189A-0569-4854-908E-08E6C3667379': // Wrestling
+                {
                     score += 20;
                 } continue scoring;
 
-                case '4x':
-                case 'bmx':
-                case 'cosplay':
-                case 'drag':
-                case 'driving':
-                case 'e3':
-                case 'esports':
-                case 'fashion':
-                case 'fighting':
-                case 'game':
-                case 'irl':
-                case 'mmo':
-                case 'moba':
-                case 'party':
-                case 'point':
-                case 'rhythm':
-                case 'roguelike':
-                case 'vr':
-                case 'vtuber': {
+                case '7304B834-D065-47D5-9865-C19CD17D2639': // 4X
+                case 'E62CB1D5-A47D-4690-A373-FE4C0856F78B': // BMX
+                case '2FFD5C3E-B927-4749-BA53-79D3B626B2DA': // Cosplay
+                case '011F7C20-F533-4AD1-8093-8C6F8F75BC4C': // Drag
+                case 'F5ED5BD0-78CB-4467-8E13-9172A210B64D': // Driving
+                case 'D27DA25E-1EE2-4207-BB11-DD8D54FA29EC': // E3
+                case '36A89A80-4FCD-4B74-B3D2-2C6FD9B30C95': // Esports
+                case '246D6E4B-B9C6-442B-9573-77028839F194': // Fashion
+                case '9751EE1D-0E5A-4FD3-8E9F-BC3C5D3230F0': // Fighting
+                case '068C541B-DC07-4D7F-A689-5578F90905A9': // Game
+                case '2610CFF9-10AE-4CB3-8500-778E6722FBB5': // IRL
+                case '643FE658-C4FC-45F0-9AED-CBE54A7C1D10': // MMO
+                case '12510423-D1F6-4992-8AEA-1441A43D1DF4': // MOBA
+                case 'B1E92364-CBDA-4033-92FC-E01094C1753F': // Party
+                case '0C99BF18-5A92-4257-8974-D7A60088D1E8': // Point
+                case 'C8BB9D08-8202-42F8-B028-C59AC1AAFE76': // Rhythm
+                case 'CAD488FB-C95C-4BE1-B197-5B851D3A12FA': // Roguelike
+                case 'CA470745-C1DF-4C11-9474-9AB79DFC1863': // VR
+                case '52D7E4CC-633D-46F5-818C-BB59102D9549': // Vtuber
+                {
                     score += 15;
                 } continue scoring;
 
-                case '100':
-                case '12':
-                case 'achievement':
-                case 'anime':
-                case 'arcade':
-                case 'athletics':
-                case 'autobattler':
-                case 'automotive':
-                case 'baking':
-                case 'brickbuilding':
-                case 'creative':
-                case 'farming':
-                case 'flight':
-                case 'horror':
-                case 'mobile':
-                case 'mystery':
-                case 'rpg':
-                case 'rts':
-                case 'survival': {
+                case 'E659959D-392F-44C5-83A5-FB959CDBACCC': // 100
+                case 'A31DAEB5-EDC2-4B29-AFA1-84C96612836D': // 12
+                case '27937CEC-5CFC-4F56-B1D3-F6E1D67735E2': // Achievement
+                case '6606E54C-F92D-40F6-8257-74977889CCDD': // Anime
+                case '7FF66192-68EF-4B69-8906-24736BF66ED0': // Arcade
+                case '72340836-353F-49BF-B9BE-1AAC4F658AFE': // Athletics
+                case 'CD2EE226-342B-4E6B-90D5-C14687006B04': // Autobattler
+                case '1400CA9C-84EA-414E-A85B-076A70D38ECF': // Automotive
+                case '31866A92-269D-4DF3-A2FB-58081BF97378': // Baking
+                case 'F1E3759C-35B3-4858-A50F-8F9CAFC2660F': // Brickbuilding
+                case 'E36D0169-268A-4C62-A4F4-DDF61A0B3AE4': // Creative
+                case '3FFBEC21-97A2-43F9-BD73-4506A1B4D62C': // Farming
+                case '10D820BB-A0A9-40DF-B0D3-FE32B45419EE': // Flight
+                case 'CF0F97AD-EFB8-4494-83EC-6A11CA30261B': // Horror
+                case '6E23D976-33EC-47E8-B22B-3727ACD41862': // Mobile
+                case '6540ED8D-3282-44DF-A592-887B37881846': // Mystery
+                case '9D38085E-EE62-4203-877B-81797052A18B': // RPG
+                case '3E30C47A-26C0-4DD3-9C3A-9CD6AD35589C': // RTS
+                case 'AE7D0652-8B2E-476B-8B51-A076550B234F': // Survival
+                {
                     score += 10;
                 } continue scoring;
 
-                case 'animals':
-                case 'animation':
-                case 'art':
-                case 'card':
-                case 'dj':
-                case 'drones':
-                case 'fantasy':
-                case 'gambling':
-                case 'hype': // hype trains are a special occasion
-                case 'indie':
-                case 'metroidvania':
-                case 'open':
-                case 'puzzle':
-                case 'simulation':
-                case 'stealth':
-                case 'unboxing': {
+                case '3DC8F084-D886-4264-B20F-8BD5F90562B5': // Animals
+                case 'E3A6B378-232B-4EC2-9A82-86B72851E09A': // Animation
+                case 'DF448DA8-7082-45B2-92AD-C624DBA6551F': // Art
+                case '8D39B307-D3AD-4F4A-98A4-D1951F55CEB7': // Card
+                case 'D81D54C8-D705-4DF6-AAF0-01D715C1DBCC': // DJ
+                case 'AA971BDC-A28D-4A33-A686-F112C764E73B': // Drones
+                case 'CB00CFE5-AE4E-4E4F-A8F1-8FA6DDEC6361': // Fantasy
+                case '71265475-E0B0-411E-A0CF-B93C33848B2B': // Gambling
+                case 'C2839AF5-F1D2-46C4-8EDC-1D0BFBD85070': // Hype
+                case 'D72D9DE6-1DF8-4C4E-B6A2-74E6F4C80557': // Indie
+                case '537F5D21-9CA0-4632-84F3-9A29A761D66D': // Metroidvania
+                case 'A682F560-5186-4871-B97A-8D8E3F4308E9': // Open
+                case '7616F6EA-7E3D-4501-A87C-C160D2BC1849': // Puzzle
+                case '22E434B6-CA88-46E8-91EF-C18EE1CB8A67': // Simulation
+                case '0472BAB0-E068-49B3-9BB8-789FDFE3C66A': // Stealth
+                case 'CD9ED640-426D-4A08-B8E0-417A61197264': // Unboxing
+                {
                     score += 5;
                 } continue scoring;
 
@@ -4088,10 +3924,12 @@ let Initialize = async(START_OVER = false) => {
             }
 
             if(!defined(parent) || !defined(sibling))
-                return JUDGE__STOP_WATCH('away_mode') /* WARN('Unable to create the Away Mode button') */;
+                return JUDGE__STOP_WATCH('away_mode') /* || WARN('Unable to create the Away Mode button') */;
 
             container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
+            // TODO: add an animation for the button appearing?
+            // container.setAttribute('style', 'animation:1s fade-in-from-zero 1;');
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
@@ -4158,7 +3996,7 @@ let Initialize = async(START_OVER = false) => {
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
+        button.background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
         // button.icon.setAttribute('height', '20px');
         // button.icon.setAttribute('width', '20px');
 
@@ -4168,7 +4006,7 @@ let Initialize = async(START_OVER = false) => {
 
             container.setAttribute('tt-away-mode-enabled', enabled);
             tooltip.innerHTML = `Turn away mode ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`;
-            background?.setAttribute('style', `background:${ [`var(--color-${ accent })`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
+            background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 
             // Return control when Away Mode is engaged
             MAINTAIN_VOLUME_CONTROL = true;
@@ -4245,7 +4083,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         // Scheduling logic...
-        awaitOn(() => $('#away-mode'), 3_000).then(() => {
+        awaitOn(() => $('#away-mode'), 3_000).then(awayMode => {
             let schedules = JSON.parse(Settings?.away_mode_schedule || '[]');
             let today = new Date(),
                 YEAR = today.getFullYear(),
@@ -4260,7 +4098,7 @@ let Initialize = async(START_OVER = false) => {
                 months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
             let enableAwayMode,
-                currentAwayMode = parseBool($('#away-mode')?.getAttribute('tt-away-mode-enabled'));
+                currentAwayMode = parseBool(awayMode.getAttribute('tt-away-mode-enabled'));
 
             for(let schedule of schedules) {
                 let { day, time, duration, status } = schedule;
@@ -4283,7 +4121,7 @@ let Initialize = async(START_OVER = false) => {
             // Scheduled state...
             // LOG('Away Mode needs to be:', enableAwayMode, 'Current status:', currentAwayMode);
             if(defined(enableAwayMode) && enableAwayMode != currentAwayMode)
-                $('#away-mode').click();
+                awayMode.click();
         });
     }
 
@@ -4358,7 +4196,7 @@ let Initialize = async(START_OVER = false) => {
         ALL_FIRST_IN_LINE_JOBS,             // All First in Line jobs
         FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
         FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
-        FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via popup)
+        FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via timed confirmation dialog)
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
@@ -4411,8 +4249,6 @@ let Initialize = async(START_OVER = false) => {
             if(timeRemaining > 60_000)
                 return /* There's more than 1 minute left */;
 
-            let existing = Popup.get(`Up Next \u2014 ${ name }`);
-
             if(defined(STARTED_TIMERS.WARNING))
                 return /* There is already a warning pending */;
 
@@ -4420,65 +4256,41 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
-            let popup = existing ?? new Popup(`Up Next \u2014 ${ name }`, `Heading to stream in \t${ toTimeString(timeRemaining) }\t`, {
-                icon: ALL_CHANNELS.find(channel => channel.href === href)?.icon,
-                href: FIRST_IN_LINE_HREF,
+            confirm
+                ?.timed?.(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
+                ?.then?.(action => {
+                    if(!defined(action))
+                        return /* The event timed out... */;
 
-                onmousedown: event => {
-                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
-                        uuid = existing?.getAttribute('uuid');
+                    let [thisJob] = ALL_FIRST_IN_LINE_JOBS;
 
-                    Popup.remove(uuid);
-
-                    SaveCache({ FIRST_IN_LINE_DUE_DATE: NEW_DUE_DATE() });
-                },
-
-                Hide: event => {
-                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
-                        uuid = existing?.getAttribute('uuid');
-
-                    Popup.remove(uuid);
-                },
-
-                Cancel: event => {
-                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER),
-                        uuid = existing?.getAttribute('uuid'),
-                        removal = $('button[connected-to][data-test-selector$="delete"i]'),
-                        [thisJob] = ALL_FIRST_IN_LINE_JOBS;
-
-                    Popup.remove(uuid);
-
-                    LOG('Canceled First in Line event', thisJob);
-
-                    removal?.click?.();
+                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(1);
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-                },
-            });
 
-            FIRST_IN_LINE_WARNING_TEXT_UPDATE = setInterval(() => {
-                let timeRemaining = GET_TIME_REMAINING();
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
 
-                timeRemaining = timeRemaining < 0? 0: timeRemaining;
+                    if(action) {
+                        // The user clicked "OK"
+                        open(thisJob, '_self');
+                    } else {
+                        // The user clicked "Cancel"
+                        LOG('Canceled First in Line event', thisJob);
 
-                if(FIRST_IN_LINE_PAUSED)
-                    return /* First in Line is paused */;
+                        let { pathname } = parseURL(thisJob);
+                        let balloonChild = $(`[id^="tt-balloon-job"i][href$="${ pathname }"i]`),
+                            animationID = (balloonChild?.getAttribute('animationID')) || -1;
 
-                if(defined(popup?.elements))
-                    popup.elements.message.innerHTML
-                        = popup.elements.message.innerHTML
-                            .replace(/\t([^\t]+?)\t/i, ['\t', toTimeString(timeRemaining, '!minute:!second'), '\t'].join(''));
-
-                if(timeRemaining < 1000) {
-                    popup?.remove?.();
-                    clearInterval(FIRST_IN_LINE_WARNING_TEXT_UPDATE);
-                }
-            }, 1000);
+                        clearInterval(animationID);
+                        balloonChild?.remove();
+                    }
+                });
         }, 1000);
 
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
-            // TO-NOTICE: this may cause reloading issues?
+            // FIX-ME: this may cause reloading issues?
             let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF),
                 timeRemaining = GET_TIME_REMAINING();
 
@@ -4657,7 +4469,7 @@ let Initialize = async(START_OVER = false) => {
                 [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
-            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--color-${ accent })">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`));
+            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`));
 
             // Load cache
             LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
@@ -4749,7 +4561,7 @@ let Initialize = async(START_OVER = false) => {
                         if(!hostname?.length || !pathname?.length)
                             return ERROR(error);
 
-                        if(!/^tv\.twitch/i.test(domainPath.join('.')) || ReservedTwitchPathnames.test(pathname))
+                        if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
                             return WARN(`Unable to add link to Up Next "${ href }"`);
 
                         streamer = await(null
@@ -4859,7 +4671,8 @@ let Initialize = async(START_OVER = false) => {
                     // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
                         // To create a new due date, `NEW_DUE_DATE(time)` -> `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
-                        let time = FIRST_IN_LINE_TIMER = parseInt($(`[name="${ channel.name }"i]`).getAttribute('time'));
+                        // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
+                        let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ channel.name }"i]`).getAttribute('time'));
 
                         LOG('New First in Line event:', { ...channel, time  });
 
@@ -5224,11 +5037,6 @@ let Initialize = async(START_OVER = false) => {
                     REDO_FIRST_IN_LINE_QUEUE(href);
                     LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
-                    let existing = $('#tt-popup', false, top.CHILD_CONTROLLER_CONTAINER);
-
-                    if(defined(existing))
-                        existing.remove();
-
                     LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
@@ -5312,7 +5120,7 @@ let Initialize = async(START_OVER = false) => {
             REMARK('Resetting timer. Location change detected:', { from, to });
 
             // If the user clicks on a channel, reset the timer
-            if(!ReservedTwitchPathnames.test(to))
+            if(!RESERVED_TWITCH_PATHNAMES.test(to))
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
         };
 
@@ -5411,7 +5219,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names, 'Current streamer data:', JSON.stringify({ ...STREAMER, chat: null, jump: null, date: new Date })).toNativeStack();
+            WARN('Twitch failed to add these channels correctly:', bad_names, 'Current streamer data:', JSON.stringify({ ...STREAMER, chat: null, jump: null, date: new Date }))?.toNativeStack?.();
 
             BAD_STREAMERS = "";
 
@@ -5607,7 +5415,7 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('prevent_hosting');
 
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"i]')),
-            next = await GetNextStreamer(),
+            next = GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
             host = (STREAMER.name ?? ''),
             [guest] = host_banner.filter(name => name.toLowerCase() != host.toLowerCase());
@@ -5676,7 +5484,7 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
-            next = await GetNextStreamer(),
+            next = GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
             from = (raided? null: STREAMER.name),
             [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.toLowerCase() != from.toLowerCase()));
@@ -5754,38 +5562,25 @@ let Initialize = async(START_OVER = false) => {
      *                       __/ |
      *                      |___/
      */
-    let ClearIntent,
-        TwitchPathnames = [
-            USERNAME, '$', '[up]/',
+    let ClearIntent;
 
-            'activate',
-            'bits(-checkout/?)?',
-            'checkout/', 'collections/?', 'communities/?',
-            'dashboard/?', 'directory/?', 'downloads?',
-            'event/?',
-            'following', 'friends?',
-            'inventory',
-            'jobs?',
-            'moderator',
-            'popout', 'prime/?', 'products/?',
-            'search', 'settings/?', 'store/?', 'subs/?', 'subscriptions?',
-            'team', 'turbo',
-            'user',
-            'videos?',
-            'wallet', 'watchparty',
-        ],
-        ReservedTwitchPathnames = RegExp(`/(${ TwitchPathnames.join('|') })`, 'i');
+    TWITCH_PATHNAMES = [
+        USERNAME,
+
+        ...TWITCH_PATHNAMES
+    ];
+    RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
 
     Handlers.stay_live = async() => {
         START__STOP_WATCH('stay_live');
 
-        let next = await GetNextStreamer(),
+        let next = GetNextStreamer(),
             { pathname } = top.location;
 
         try {
             await LoadCache('UserIntent', async({ UserIntent }) => {
                 if(parseBool(UserIntent))
-                    TwitchPathnames.push(UserIntent);
+                    TWITCH_PATHNAMES.push(UserIntent);
 
                 RemoveCache('UserIntent');
             });
@@ -5802,7 +5597,7 @@ let Initialize = async(START_OVER = false) => {
                 ):
             !STREAMER.live
         ) {
-            if(ReservedTwitchPathnames.test(pathname))
+            if(RESERVED_TWITCH_PATHNAMES.test(pathname))
                 break NotLive;
 
             if(!RegExp(STREAMER?.name, 'i').test(PATHNAME))
@@ -5832,6 +5627,8 @@ let Initialize = async(START_OVER = false) => {
 
     __StayLive__:
     if(parseBool(Settings.stay_live)) {
+        REMARK('Ensuring Twitch stays live...');
+
         RegisterJob('stay_live');
     }
 
@@ -7029,7 +6826,7 @@ let Initialize = async(START_OVER = false) => {
         errorMessage = errorMessage.textContent;
 
         if(/subscribe|mature/i.test(errorMessage)) {
-            let next = await GetNextStreamer();
+            let next = GetNextStreamer();
 
             // Subscriber only, etc.
             if(defined(next))
@@ -7107,7 +6904,7 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('recover_pages');
 
         let message = error.innerText,
-            next = await GetNextStreamer();
+            next = GetNextStreamer();
 
         ERROR(message);
 
@@ -7125,6 +6922,42 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('recover_pages');
     }
 
+    // Did everything load properly?
+    setTimeout(() => {
+        let NOT_LOADED_CORRECTLY = [],
+            ALL_LOADED_CORRECTLY = (true
+                &&  parseBool(
+                        parseBool(Settings.away_mode)?
+                            (defined($('#away-mode')) || !NOT_LOADED_CORRECTLY.push('Away Mode')):
+                        true
+                    )
+                && parseBool(
+                        parseBool(Settings.auto_claim_bonuses)?
+                            (defined($('#tt-auto-claim-bonuses')) || !NOT_LOADED_CORRECTLY.push('Auto-Claim Bonuses')):
+                        true
+                    )
+                &&  parseBool(
+                        !parseBool(Settings.first_in_line_none)?
+                            (defined($('[up-next--container]')) || !NOT_LOADED_CORRECTLY.push('Up Next')):
+                        true
+                    )
+            );
+
+        if(false
+            // This page shouldn't be touched...
+            || RESERVED_TWITCH_PATHNAMES.test(top.location.pathname)
+
+            // Everything loaded just fine
+            || ALL_LOADED_CORRECTLY
+        )
+            return;
+
+        WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`)?.toNativeStack?.();
+
+        // Failed to activate job at...
+        PushToTopSearch({ 'tt-ftaja': (+new Date).toString(36) });
+    }, 1.1 * Math.max(...Object.values(Timers)));
+
     // End of Initialize
 };
 // End of Initialize
@@ -7133,14 +6966,13 @@ let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE;
 
-// TTV Tools has 30s to initilize correctly...
-let REINITALIZE_TTV_TOOLS = setTimeout(() => location.reload(), 30_000);
+// TTV Tools has 60s to initilize correctly...
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version == version;
 
     PAGE_CHECKER = !isProperRuntime?
-        WARN(`The current runtime (v${ Manifest.version }) is not correct (${ version })`).toNativeStack():
+        WARN(`The current runtime (v${ Manifest.version }) is not correct (${ version })`)?.toNativeStack?.():
     setInterval(WAIT_FOR_PAGE = async() => {
         let ready = (true
             // There is a valid username
@@ -7166,7 +6998,6 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
         if(ready) {
             LOG("Main container ready");
-            clearTimeout(REINITALIZE_TTV_TOOLS);
 
             Settings = await GetSettings();
 
@@ -7532,6 +7363,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                 CUSTOM_CSS.innerHTML =
                 `
+                :root {
+                    --user-accent-color: var(--color-${ accent });
+                    --user-compliment-color: var(--color-${ accent }-${ compliment });
+                }
+
                 .tt-first-run {
                     border: 1px solid var(--color-blue);
                     border-radius: 3px;
@@ -7547,7 +7383,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                 /* Up Next */
                 [up-next--body] {
-                    background-color: var(--color-${ accent });
+                    background-color: var(--user-accent-color);
                     border-radius: 0.5rem;
                     color: var(--color-hinted-grey-${ compliment });
                 }
@@ -7599,9 +7435,9 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-                [tt-in-up-next="true"i] { border: 1px solid var(--color-${ accent }) !important }
-                [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--color-${ accent }) }
-                [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--color-${ accent }) }
+                [tt-in-up-next="true"i] { border: 1px solid var(--user-accent-color) !important }
+                [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--user-accent-color) }
+                [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--user-accent-color) }
 
                 /* Away Mode */
                 #away-mode svg[id^="tt-away-mode"i] {

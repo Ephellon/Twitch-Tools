@@ -214,9 +214,12 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 
 /* Alerts, Confirmations, and Prompts */
 .tt-alert, .tt-confirm, .tt-prompt {
-    background: #000e;
+    animation: 1s fade-in 1;
+
+    background: #000d;
     display: block;
     font-size: 1em;
+    opacity: 1;
 
     position: fixed;
     left: 0;
@@ -227,11 +230,16 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     width: 100vw;
 }
 
-.tt-alert-container, .tt-confirm-container, .tt-prompt-container {
-    background: #222;
-    border-radius: 0.3rem;
+@keyframes fade-in {
+    from { opacity: 0 }
+    to { opacity: 1 }
+}
 
-    padding: 1rem;
+.tt-alert-container, .tt-confirm-container, .tt-prompt-container {
+    background: var(--color-background-base);
+    border-radius: 0.3em;
+
+    padding: 1em;
 
     position: absolute;
     left: 50%;
@@ -248,7 +256,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     font-size: 1.25em;
     font-weight: bold;
 
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.5em;
 }
 
 .tt-alert-body, .tt-confirm-body, .tt-prompt-body {
@@ -259,7 +267,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     text-align: right;
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(button, [type="button"]) {
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(button, [type="button"]) {
     align-items: center;
     display: inline-block;
     justify-content: center;
@@ -281,27 +289,27 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     vertical-align: middle;
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove {
+:is(.tt-alert, .tt-confirm, .tt-prompt) *.emove {
     background-color: var(--color-red);
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit {
+:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit {
     background-color: var(--color-hinted-grey-6);
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(button, input[type="button"]):hover {
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(button, input[type="button"]):hover {
     background-color: var(--color-twitch-purple-10);
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove:hover  {
+:is(.tt-alert, .tt-confirm, .tt-prompt) *.emove:hover  {
     background-color: var(--color-red-darker) !important;
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit:hover  {
-    background-color: var(--color-hinted-grey-7) !important;
+:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit:hover  {
+    background-color: var(--color-hinted-grey-6) !important;
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(textarea, input) {
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(textarea, input) {
     appearance: none;
     background-clip: padding-box;
     background-color: var(--color-hinted-grey-6);
@@ -318,15 +326,167 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     overflow-x: hidden;
     resize: none;
 
-    padding: 1rem;
+    padding: 1em;
 
-    height: 1rem;
+    height: 1em;
     width: 100%;
 }
 
-*:is(.tt-alert, .tt-confirm, .tt-prompt) *:is(textarea, input):focus {
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(textarea, input):focus {
     background-color: var(--color-black);
-    border-color: var(--color-twitch-purple);
+    border-color: var(--color-prime-blue);
 
     outline: none;
+}
+
+.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt):not(.tt-silent) {
+    animation: 1s fade-out 1;
+
+    opacity: 0;
+}
+
+@keyframes fade-out {
+    from { opacity: 1 }
+    to { opacity: 0 }
+}
+
+/* Silent alerts, confirmations, and prompts */
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) {
+    background: none;
+
+    margin-top: 100%;
+}
+
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
+    animation: 1s glide-in-from-bottom--silent 1;
+
+    margin-top: -100%;
+    top: 99%;
+    transform: translate(-50%, -100%);
+}
+
+@keyframes glide-in-from-bottom--silent {
+    from { top: 200% }
+    to { top: 99% }
+}
+
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
+    transition: transform .6s, opacity .3s;
+
+    opacity: .6;
+
+    top: 99%;
+    transform: translate(-50%, calc(1% + .1em));
+}
+
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container):is(:hover, :focus-within) {
+    opacity: 1;
+
+    transform: translate(-50%, -100%);
+}
+
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-alert-container {
+    border: 1px solid var(--user-accent-color);
+
+    --current-border-color: var(--user-accent-color);
+}
+
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-confirm-container {
+    border: 1px solid var(--user-accent-color);
+
+    --current-border-color: var(--user-accent-color);
+}
+
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-prompt-container {
+    border: 1px solid var(--user-accent-color);
+
+    --current-border-color: var(--user-accent-color);
+}
+
+.tt-silent.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
+    animation: .6s glide-out-to-bottom--silent 1;
+
+    top: 200%;
+}
+
+@keyframes glide-out-to-bottom--silent {
+    from { top: 99% }
+    to { top: 200% }
+}
+
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+    content: "\1F92B";
+
+    transition: opacity .3s, top .6s;
+    transition-delay: .3s;
+
+    background: var(--current-border-color);
+    border: 1px solid var(--current-border-color);
+    border-radius: 25%;
+    display: inline-block;
+    font-size: 1em;
+    font-weight: bold;
+    mix-blend-mode: darken;
+    opacity: 1;
+    text-align: center;
+
+    margin-top: -1em;
+    position: fixed;
+    left: 50%;
+    top: 0;
+
+    padding: .1em .5em .4em;
+
+    height: 1em;
+    width: fit-content;
+
+    transform: translate(-50%, -50%);
+}
+
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt):is(:hover, :focus-within) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+    opacity: 0;
+    top: 3em;
+}
+
+[class*="root"i][class*="theme-light"i] .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+    mix-blend-mode: lighten;
+}
+
+@keyframes shake {
+    10%, 90% {
+        transform: translate(-55%, -50%);
+    }
+
+    20%, 80% {
+        transform: translate(-45%, -50%);
+    }
+
+    30%, 50%, 70% {
+        transform: translate(-52.5%, -50%);
+    }
+
+    40%, 60% {
+        transform: translate(-42.5%, -50%);
+    }
+}
+
+/* Timed alerts, confirmations, and prompts */
+.tt-timed:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-time, .tt-confirm-time, .tt-prompt-time) {
+    display: inline-block;
+
+    float: right;
+    padding-left: 1em;
+}
+
+.tt-timed:is(.tt-alert, .tt-confirm, .tt-prompt) [tt-done="true"i]:is(.tt-alert-time, .tt-confirm-time, .tt-prompt-time) {
+    transition: opacity .3s;
+
+    opacity: 0;
+}
+
+.tt-timed.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+    /* content: attr(tt-time-left); */
+    content: "\23F1";
+
+    animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) infinite 37s;
 }

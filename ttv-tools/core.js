@@ -137,6 +137,146 @@ class UUID {
     }
 }
 
+// The LZW Library
+class LZW {
+    /** LZW base64 codec functionality
+     * @author      GitHub@antonylesuisse
+     * @timestamp   05 APR 2021 21:15 MDT
+     * @url         https://gist.github.com/revolunet/843889#gistcomment-3694417
+     */
+    static B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    constructor(string) {
+        Object.defineProperties(this, {
+            value: { value: string },
+
+            encoded: {
+                get() { return LZW.encode64(this.value) }
+            },
+
+            decoded: {
+                get() {
+                    let { value } = this;
+
+                    try {
+                        value = LZW.decode64(value)
+                    } catch(error) {
+                        /* Suppress the error? */
+                        throw error;
+                    }
+
+                    return value;
+                }
+            },
+        });
+
+        return this;
+    }
+
+    // A simple hashing algorithm
+        // hash(input:string[salt:string]) -> String
+    static hash(input = '', salt = '') {
+        let output = '';
+
+        for(let char, index = 0, { length } = input; index < length; ++index) {
+            let a = input.charCodeAt(index),
+                b = salt.charCodeAt(index % salt.length);
+
+            output += String.fromCharCode(a ^ b);
+        }
+
+        return output;
+    }
+
+    // Encodes a string to LZW-64 format
+        // encode64(string:string) -> String~LZW-64
+    static encode64(string = '') {
+        if(!string.length)
+            return '';
+
+        string = unescape(encodeURIComponent(string)).split('');
+
+        let { B64 } = LZW;
+        let dictionary = new Map,
+            [word] = string,
+            index = 256,
+            output = [],
+            key;
+
+        function push(word) {
+            let k = 0x3f;
+
+            key = word.length > 1? dictionary.get(word): word.charCodeAt(0);
+
+            output.push(B64[key & k]);
+            output.push(B64[(key >> 6) & k]);
+            output.push(B64[(key >> 12) & k]);
+        }
+
+        for(let i = 1; i < string.length; ++i) {
+            let char = string[i];
+
+            if(dictionary.has(word + char)) {
+                word += char;
+            } else {
+                dictionary.set(word + char, index++);
+
+                push(word);
+
+                word = char;
+
+                if(index == (1 << 18) - 1) {
+                    dictionary.clear();
+                    index = 256;
+                }
+            }
+        }
+
+        push(word);
+
+        return output.join('');
+    }
+
+    // Decodes an LZW-64 string
+        // decode64(string:string~LZW-64) -> String
+    static decode64(string = '') {
+        let { B64 } = LZW,
+            D64 = {};
+
+        let chardex = 0;
+        for(let char of B64)
+            D64[char] = chardex++;
+
+        let dictionary = new Map,
+            word = String.fromCharCode((D64[string[0]]) + (D64[string[1]] << 6) + (D64[string[2]] << 12)),
+            index = 256,
+            output = [word],
+            last = word;
+
+        for(let i = 3; i < string.length; i += 3) {
+            let key = ((D64[string[i + 0]]) + (D64[string[i + 1]] << 6) + (D64[string[i + 2]] << 12));
+
+            word = (
+                key < 256?
+                    String.fromCharCode(key):
+                dictionary.has(key)?
+                    dictionary.get(key):
+                word + word.charAt(0)
+            );
+
+            output.push(word);
+            dictionary.set(index++, last + (last = word).charAt(0));
+
+            if(index == (1 << 18) - 1) {
+                dictionary.clear();
+                index = 256;
+            }
+        }
+
+        return decodeURIComponent(escape(output.join('')));
+    }
+};
+
 // The following is just shared logic
 function $(selector, multiple = false, container = document) {
     return multiple?
@@ -212,10 +352,28 @@ async function awaitOn(callback, ms = 100) {
 
             if(defined(value)) {
                 clearInterval(interval);
-                resolve(value);
+                resolve(
+                    (value === awaitOn.null)?
+                        null:
+                    (value === awaitOn.void)?
+                        void(''):
+                    (value === awaitOn.undefined)?
+                        undefined:
+                    value
+                );
             }
         }, ms);
     });
+}
+
+try {
+    Object.defineProperties(awaitOn, {
+        "null": { value: Symbol(null) },
+        "void": { value: Symbol(void('')) },
+        "undefined": { value: Symbol(undefined) },
+    });
+} catch(error) {
+    /* Ignore the error... */
 }
 
 // The following facilitates communication between pages

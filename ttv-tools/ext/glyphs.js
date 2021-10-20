@@ -58,19 +58,14 @@
 
 top.Glyphs ??= {
     bonuschannelpoints: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>`,
-    /*  let fill="currentcolor", width="100%", height="100%", version="1.1", viewBox="0 0 20 20", x="0px", y="0px";
-        f('svg', { fill, width, height, version, viewBox, x, y },
-            f('g', {},
-                f('path', {
-                    'clip-rule': 'evenodd',
-                    'fill-rule': 'evenodd',
-                    d: 'M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z',
-                })
-            )
-        )
-    */
+    /** The Chromium Authors (c) 2015. All rights reserved.
+     * "Exit Picture in Picture," and "Picture in Picture" by The Chromium Authors
+     */
+    exit_picture_in_picture:    `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 22 18" x="0px" y="0px"><g fill="none" fill-rule="evenodd" opacity=".87"><path d="M18 4H4v10h14V4zm4 12V1.98C22 .88 21.1 0 20 0H2C.9 0 0 .88 0 1.98V16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H2V1.97h18v14.05z" fill="WindowText" fill-rule="nonzero"/><path d="M-1-3h24v24H-1z"/></g></svg>`,
+    picture_in_picture:         `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 24 24" x="0px" y="0px"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>`,
+
     /** Licensed under the Creative Commons license
-     * "Mouse Left Click" "Mouse Right Click" and "Mouse" by Icon Solid from the Noun Project
+     * "Mouse Left Click," "Mouse Right Click," and "Mouse" by Icon Solid from the Noun Project
      */
     primary_mouse_button:   `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c-2.209,0-4-1.791-4-4V4c0-1.381,1.119-2.5,2.5-2.5h3c1.381,0,2.5,1.119,2.5,2.5v6.5C11.5,12.709,9.709,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="7.5" y1="5.5" x2="3.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
     secondary_mouse_button: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c2.209,0,4-1.791,4-4V4c0-1.381-1.119-2.5-2.5-2.5H6C4.619,1.5,3.5,2.619,3.5,4v6.5C3.5,12.709,5.291,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="11.5" y1="5.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,

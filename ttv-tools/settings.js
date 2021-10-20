@@ -352,22 +352,26 @@ class Tooltip {
                 furnish('div.twitch-tools-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
+                            let style = 'animation:.3s fade-in 1;';
+
                             switch(direction) {
                                 // case 'up':
-                                //     return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
 
                                 case 'down':
-                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
 
                                 // case 'left':
-                                //     return `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
                                 //
                                 // case 'right':
-                                //     return `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
 
                                 default:
-                                    return `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
                             }
+
+                            return style;
                         })()
                     },
                     furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tt-inline-flex tt-relative tt-tooltip-wrapper tt-tooltip-wrapper--show' },
@@ -1517,17 +1521,36 @@ async function Translate(language = 'en', container = document) {
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
     // awaitOn(callback:function[,ms:number~Integer:milliseconds]) -> Promise
-let awaitOn = async(callback, ms = 100) =>
-    new Promise((resolve, reject) => {
+async function awaitOn(callback, ms = 100) {
+    return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
             let value = callback();
 
             if(defined(value)) {
                 clearInterval(interval);
-                resolve(value);
+                resolve(
+                    (value === awaitOn.null)?
+                        null:
+                    (value === awaitOn.void)?
+                        void(''):
+                    (value === awaitOn.undefined)?
+                        undefined:
+                    value
+                );
             }
         }, ms);
     });
+}
+
+try {
+    Object.defineProperties(awaitOn, {
+        "null": { value: Symbol(null) },
+        "void": { value: Symbol(void('')) },
+        "undefined": { value: Symbol(undefined) },
+    });
+} catch(error) {
+    /* Ignore the error... */
+}
 
 document.body.onload = async() => {
     let url = parseURL(location.href),

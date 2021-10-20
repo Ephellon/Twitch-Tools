@@ -656,14 +656,14 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 
     if(number > 1) {
         for(let index = 0, units = system.large; index < units.length; ++index)
-            if(number >= 1e3) {
-                number /= 1e3;
+            if(number >= 1_000) {
+                number /= 1_000;
                 suffix = units[index];
             }
     } else if(number < 1 && number > 0) {
         for(let index = 0, units = system.small; index < units.length; ++index) {
             if(number < 1) {
-                number *= 1e3;
+                number *= 1_000;
                 suffix = units[index];
             }
         }
@@ -1261,6 +1261,7 @@ function toFormat(string, patterns) {
 
 // https://stackoverflow.com/a/19176790/4211612
 // Returns the assumed operating system
+    // GetOS() -> String
 function GetOS() {
     let { userAgent } = top.navigator;
     let OSs = {
@@ -1414,9 +1415,13 @@ function LOG(...messages) {
     console.groupEnd();
 
     return ({
-        toNativeStack() {
-            console.log(...messages);
-        }
+        toNativeStack(stack = console.log) {
+            stack(...messages);
+        },
+
+        toForeignStack(stack) {
+            return stack(messages.join(' '));
+        },
     });
 };
 
@@ -1474,9 +1479,13 @@ function WARN(...messages) {
     console.groupEnd();
 
     return ({
-        toNativeStack() {
-            console.warn(...messages);
-        }
+        toNativeStack(stack = console.warn) {
+            stack(...messages);
+        },
+
+        toForeignStack(stack) {
+            return stack(messages.join(' '));
+        },
     });
 };
 
@@ -1534,9 +1543,13 @@ function ERROR(...messages) {
     console.groupEnd();
 
     return ({
-        toNativeStack() {
-            console.error(...messages);
-        }
+        toNativeStack(stack = console.error) {
+            stack(...messages);
+        },
+
+        toForeignStack(stack) {
+            return stack(messages.join(' '));
+        },
     });
 };
 
@@ -1594,50 +1607,42 @@ function REMARK(...messages) {
     console.groupEnd();
 
     return ({
-        toNativeStack() {
-            console.log(...messages);
-        }
+        toNativeStack(stack = console.log) {
+            stack(...messages);
+        },
+
+        toForeignStack(stack) {
+            return stack(messages.join(' '));
+        },
     });
 };
 
-// Alerts a message
+// Displays an alert message
+    // alert([message:string[, defaultValue:string]]) -> null
 function alert(message = '') {
     let f = furnish;
 
     let container =
     f('div.tt-alert', {},
         f('div.tt-alert-container', {},
-            f('div.tt-alert-header', { innerHTML: `${ top.document.title } (TTV Tools)` }),
+            f('div.tt-alert-header', { innerHTML: `TTV Tools &mdash; Please see...` }),
             f('div.tt-alert-body', { innerHTML: message }),
             f('div.tt-alert-footer', {},
                 f('button', {
-                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-alert').remove()
-                }, 'OK')
-            )
-        )
-    );
+                    onmousedown: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-alert');
 
-    document.body.append(container);
-}
+                        parent.setAttribute('value', true);
+                    },
+                    onmouseup: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-alert'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
-// Confirms a message
-function confirm(message = '') {
-    let f = furnish;
-
-    let container =
-    f('div.tt-confirm', {},
-        f('div.tt-confirm-container', {},
-            f('div.tt-confirm-header', { innerHTML: `${ top.document.title } (TTV Tools)` }),
-            f('div.tt-confirm-body', { innerHTML: message }),
-            f('div.tt-confirm-footer', {},
-                f('button.edit', {
-                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-confirm').setAttribute('value', false),
-                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-confirm').remove(),
-                }, 'Cancel'),
-
-                f('button', {
-                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-confirm').setAttribute('value', true),
-                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-confirm').remove(),
+                        parent.classList.add('tt-done');
+                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
+                        setTimeout(() => parent.remove(), 1_000);
+                        clearInterval(timedJobID);
+                    }
                 }, 'OK')
             )
         )
@@ -1646,40 +1651,307 @@ function confirm(message = '') {
     document.body.append(container);
 
     return awaitOn(() => {
-        let value = $('.tt-confirm')?.getAttribute('value');
+        let element = $('.tt-alert'),
+            value = element?.getAttribute('value'),
+            timedOut = parseBool($('.tt-alert-time')?.getAttribute('tt-done'));
 
-        return value && parseBool(value);
+        value &&= parseBool(value);
+
+        if(timedOut) {
+            let button = $('button', false, element),
+                mousedown = new MouseEvent('mousedown', { bubbles: true }),
+                mouseup = new MouseEvent('mouseup', { bubbles: true });
+
+            button?.dispatchEvent(mousedown);
+            button?.dispatchEvent(mouseup);
+
+            return awaitOn.void;
+        }
+
+        return (value? awaitOn.void: null);
     });
 }
 
-// Prompts a message
-function prompt(message = '', defaultValue = '') {
+// Displays an alert message (silently)
+    // alert.silent([message:string[, defaultValue:string]]) -> null
+alert.silent ??= (message = '') => {
+    let response = alert(message),
+        container = $('.tt-alert');
+
+    container.classList.add('tt-silent');
+    setTimeout(() => container.classList.add('tt-veiled'), 7_000);
+
+    return response;
+};
+
+// Displays an alert message with a timer
+    // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> null
+alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
+    let response = alert.silent(message),
+        container = $('.tt-alert');
+
+    container.classList.add('tt-timed');
+    $('.tt-alert-header').append(
+        furnish('span.tt-alert-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
+    );
+
+    let timedJobID = setInterval(() => {
+        let time = $('.tt-alert-time'),
+            due = parseInt(time?.getAttribute('due')),
+            milliseconds = (+new Date(due) - (+new Date));
+
+        if(!defined(time))
+            return clearInterval(timedJobID);
+
+        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-alert-container')))
+            return time.setAttribute('due', due + 100);
+
+        time.closest('.tt-alert-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), '?seconds_s'));
+        time.setAttribute('tt-done', milliseconds < 0);
+    }, 100);
+
+    container.setAttribute('timedJobID', timedJobID);
+
+    return response;
+};
+
+// Displays a confirmation message
+    // confirm([message:string[, defaultValue:string]]) -> Boolean|null
+function confirm(message = '') {
     let f = furnish;
 
     let container =
-    f('div.tt-prompt', {},
-        f('div.tt-prompt-container', {},
-            f('div.tt-prompt-header', { innerHTML: `${ top.document.title } (TTV Tools)` }),
-            f('div.tt-prompt-body', { innerHTML: message }),
-            f('div.tt-prompt-footer', {},
-                f('input.tt-prompt-input', { type: 'text' }),
-
+    f('div.tt-confirm', {},
+        f('div.tt-confirm-container', {},
+            f('div.tt-confirm-header', { innerHTML: `TTV Tools &mdash; Please confirm...` }),
+            f('div.tt-confirm-body', { innerHTML: message }),
+            f('div.tt-confirm-footer', {},
                 f('button.edit', {
-                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-prompt').setAttribute('value', null),
-                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-prompt').remove(),
+                    onmousedown: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-confirm');
+
+                        parent.setAttribute('value', false);
+                    },
+                    onmouseup: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-confirm'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+
+                        parent.classList.add('tt-done');
+                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
+                        setTimeout(() => parent.remove(), 1_000);
+                        clearInterval(timedJobID);
+                    },
                 }, 'Cancel'),
 
                 f('button', {
-                    onmousedown: ({ currentTarget }) => currentTarget.closest('.tt-prompt').setAttribute('value', $('.tt-prompt-input').value),
-                    onmouseup: ({ currentTarget }) => currentTarget.closest('.tt-prompt').remove(),
+                    onmousedown: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-confirm');
+
+                        parent.setAttribute('value', true);
+                    },
+                    onmouseup: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-confirm'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+
+                        parent.classList.add('tt-done');
+                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
+                        setTimeout(() => parent.remove(), 1_000);
+                        clearInterval(timedJobID);
+                    },
                 }, 'OK')
             )
         )
     );
 
-    $('.tt-prompt-input', false, container).value = defaultValue;
+    document.body.append(container);
+
+    return awaitOn(() => {
+        let element = $('.tt-confirm'),
+            value = element?.getAttribute('value'),
+            timedOut = parseBool($('.tt-confirm-time')?.getAttribute('tt-done'));
+
+        value &&= parseBool(value);
+
+        if(timedOut) {
+            let button = $('button', false, element),
+                mousedown = new MouseEvent('mousedown', { bubbles: true }),
+                mouseup = new MouseEvent('mouseup', { bubbles: true });
+
+            button?.dispatchEvent(mousedown);
+            button?.dispatchEvent(mouseup);
+
+            return awaitOn.null;
+        }
+
+        return value;
+    });
+}
+
+// Displays a confirmation message (silently)
+    // confirm.silent([message:string[, defaultValue:string]]) -> Boolean|null
+confirm.silent ??= (message = '') => {
+    let response = confirm(message),
+        container = $('.tt-confirm');
+
+    container.classList.add('tt-silent');
+    setTimeout(() => container.classList.add('tt-veiled'), 7_000);
+
+    return response;
+};
+
+// Displays a confirmation message with a timer
+    // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> Boolean|null
+confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
+    let response = confirm.silent(message),
+        container = $('.tt-confirm');
+
+    container.classList.add('tt-timed');
+    $('.tt-confirm-header').append(
+        furnish('span.tt-confirm-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
+    );
+
+    let timedJobID = setInterval(() => {
+        let time = $('.tt-confirm-time'),
+            due = parseInt(time?.getAttribute('due')),
+            milliseconds = (+new Date(due) - (+new Date));
+
+        if(!defined(time))
+            return clearInterval(timedJobID);
+
+        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-confirm-container')))
+            return time.setAttribute('due', due + 100);
+
+        time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), '?seconds_s'));
+        time.setAttribute('tt-done', milliseconds < 0);
+    }, 100);
+
+    container.setAttribute('timedJobID', timedJobID);
+
+    return response;
+};
+
+// Prompts a message
+    // prompt([message:string[, defaultValue:string]]) -> String|null
+function prompt(message = '', defaultValue = '') {
+    let f = furnish;
+
+    let format = (null
+        ?? $('[format]', false, (new DOMParser).parseFromString(message, 'text/html'))?.textContent
+        ?? (
+            parseBool(defaultValue)?
+                `Default: ${ defaultValue }`:
+            ''
+        )
+    );
+
+    let container =
+    f('div.tt-prompt', {},
+        f('div.tt-prompt-container', {},
+            f('div.tt-prompt-header', { innerHTML: `TTV Tools &mdash; Please provide input...` }),
+            f('div.tt-prompt-body', { innerHTML: message }),
+            f('div.tt-prompt-footer', {},
+                f('input.tt-prompt-input', { type: 'text', placeholder: format }),
+
+                f('button.edit', {
+                    onmousedown: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-prompt');
+
+                        parent.setAttribute('value', '\0');
+                    },
+                    onmouseup: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-prompt'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+
+                        parent.classList.add('tt-done');
+                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
+                        setTimeout(() => parent.remove(), 1_000);
+                        clearInterval(timedJobID);
+                    },
+                }, 'Cancel'),
+
+                f('button', {
+                    onmousedown: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-prompt');
+
+                        parent.setAttribute('value', $('.tt-prompt-input').value);
+                    },
+                    onmouseup: ({ currentTarget }) => {
+                        let parent = currentTarget.closest('.tt-prompt'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+
+                        parent.classList.add('tt-done');
+                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
+                        setTimeout(() => parent.remove(), 1_000);
+                        clearInterval(timedJobID);
+                    },
+                }, 'OK')
+            )
+        )
+    );
 
     document.body.append(container);
 
-    return awaitOn(() => $('.tt-prompt')?.getAttribute('value'));
+    $('.tt-prompt-input').value = defaultValue;
+
+    return awaitOn(() => {
+        let element = $('.tt-prompt'),
+            value = element?.getAttribute('value'),
+            timedOut = parseBool($('.tt-prompt-time')?.getAttribute('tt-done'));
+
+        if(timedOut) {
+            let button = $('button', false, element),
+                mousedown = new MouseEvent('mousedown', { bubbles: true }),
+                mouseup = new MouseEvent('mouseup', { bubbles: true });
+
+            button?.dispatchEvent(mousedown);
+            button?.dispatchEvent(mouseup);
+
+            return awaitOn.null;
+        }
+
+        return (value == '\0'? awaitOn.null: value);
+    });
 }
+
+// Prompts a message (silently)
+    // prompt.silent([message:string[, defaultValue:string]]) -> String|null
+prompt.silent ??= (message = '', defaultValue = '') => {
+    let response = prompt(message, defaultValue),
+        container = $('.tt-prompt');
+
+    container.classList.add('tt-silent');
+    setTimeout(() => container.classList.add('tt-veiled'), 7_000);
+
+    return response;
+};
+
+// Prompts a message with a timer
+    // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> String|null
+prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
+    let response = prompt.silent(message),
+        container = $('.tt-prompt');
+
+    container.classList.add('tt-timed');
+    $('.tt-prompt-header').append(
+        furnish('span.tt-prompt-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
+    );
+
+    let timedJobID = setInterval(() => {
+        let time = $('.tt-prompt-time'),
+            due = parseInt(time?.getAttribute('due')),
+            milliseconds = (+new Date(due) - (+new Date));
+
+        if(!defined(time))
+            return clearInterval(timedJobID);
+
+        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-prompt-container')))
+            return time.setAttribute('due', due + 100);
+
+        time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), '?seconds_s'));
+        time.setAttribute('tt-done', milliseconds < 0);
+    }, 100);
+
+    container.setAttribute('timedJobID', timedJobID);
+
+    return response;
+};

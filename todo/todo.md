@@ -12,7 +12,7 @@
         * OR - listen for notifications/channel-popups; then save a timer (`{streamsCounted}:{totalSecondsCountedLive}`) for how long the channel lives
     * Heads to the stream 5min before it **should** end
     * Only applies to streams that have a `raidsLastWeek` &ge; 3
-    * Tentative addition `4.12`
+    * Tentative addition `4.12` (boiler)
 4. Add the **option** to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
     * Up Next does not currently allow duplicates
@@ -24,30 +24,26 @@
     * All bulletin filters are language dependent - they only recognize English
 7. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
-8. Up Next doesn't go to all channels?
-    * Not sure how often this happens or why
-    * Most likely due to "Followed Channels" being labeled incorrectly
-    * Tentative fix `4.11.7`
-9. Up Next re-adds all channels after Followed Channels are deleted
-    * Cache the channels?
-10. Up Next sometimes goes in an irregular order
+8. Up Next sometimes goes in an irregular order
     * Not sure why
-11. `chat.js` has an issue for card popups: `new Search` does not always complete
+9. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
-
-- Make initial loading actions less intrusive
-    - [x] "Prime Loot" open/close action
-    - [x] "Convert Emotes" open/close action
-    - [x] "BetterTTV Emotes" open/close action
-- [x] Clean up SVGs & IMGs
-- [x] Provide more concise and informative console messages
-- [x] Add more translations
-- ~~Listen for "on-subscribe" events to update the Channel Points Multiplier?~~
-    * Too invasive. Does not match importance
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.8)
+- Updated `scoreTagActivity` to ignore language barriers
+- Adjusted page checker logic to ignore reserved pathnames
+- Added more glyphs
+- Removed `class Popup`
+- Added custom `alert` `confirm` and `prompt` logic
+- Fixed `STREAMER.icon`
+- Added fade-in animations
+- Fixed issue with Stay Live not going to cached streams
+- Adjusted `GetNextStreamer` logic; now synchronous
+- Added logic to reload the page if certain elements were missing
+
 > [`4.12.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.7)
 - Adjusted `chat.js` card logic
 - Adjusted `ReservedTwitchPathnames`
@@ -95,6 +91,7 @@
 > [`4.11.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.7)
 - Fixed Highlight Phrases' CSS
 - Added side-panel labeling logic
+- Fixed issue where Up Next wouldn't go to all channels due to Followed Channel edge-case
 
 > [`4.11.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.6)
 - Fixed issue where Up Next would instantly go to channels
@@ -588,85 +585,3 @@
     - Moved experimental features to this section
 - Channel notifications can now be properly dragged to the "First in Line" area
 - Chat popups have been fixed
-
-----
-
-# FIXED &mdash; Fixed Issues
-
-> [`2.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.12)
-1. "Away Mode Lurking Schedule"
-    * Automatically enables &/ disables Away Mode at user defined times
-    * Added `4.12`
-2. Volume Control
-    * Goes awry when moving slider, hovering a channel (stream preview), then attempting to move slider again
-    * Tentative fix `4.12.1`
-
-> [`2.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9)*
-1. Some elements don't register (like SVG animations)
-    * Fixed? 2.9
-2. The Up Next timer resets when clicking a channel from the side-panel
-    * In work...
-    * Fine how it is?
-3. `UserIntent` doesn't prevent faulty "no longer live" from firing
-    * Causes reloads?
-    * Fixed. Was issue with "Stay Live" and page reloading
-4. If the page isn't fully reloaded, pausing the timer doesn't work
-    * Since 2.8.3
-    * Fixed? 2.8.3
-5. When all channels are deleted (on the side-panel by Twitch), First in Line re-adds all channels
-    * Added code to *detect* if the channels were deleted, and ignore the change
-    * Fixed? 2.8.3
-
-> [`2.8.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.8.8)
-1. Away-Mode displayed over the video keeps the "fullscreen" tooltip attached
-    * Fixed. 2.8.8
-
-> [`2.8.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.8.3)
-1. Removing a channel from Up Next before it goes live re-adds it
-    * Only when both First in Line features are enabled
-    * Fixed: added code to ignore canceled jobs
-        * Old "First in Line" Flow Chart:
-            * `Twitch Notification` &rarr; FirstInLine Event &rarr; `User cancels event` &rarr; FirstInLinePlus Event
-        * New "First in Line" Flow Chart:
-            * `Twitch Notification` &rarr; FirstInLine Event &rarr; `User cancels event` &rarr; Interrupt @FirstInLine Event
-
-> [`2.8.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.8.2)
-1. If Up Next is set to off, the dead page will continue to reload
-    - Change `GetNextStreamer` logic
-2. If the Boost feature has anyone in the queue, the boost will activate by itself
-    - Added `parseBool` function to check for actually falsy values
-3. If too many channels are shown on the side-nav, others may be removed as they are seen as "dead"
-    * Fixed? The extension loads more channels automatically
-        * The jobs are marked as "dead" because there are too many elements and `isLive` can't access the elements properly
-4. Switching to another channel causes the "Auto-Collect Bonus Points" to bleed into the next element
-    * Fixable: there is a div with the "+X" points text that never gets deleted by Twitch
-5. Jobs duplicate. From old job-names, and notifications (drop-down)
-    * Fixed?
-    * Fixed. Needed to ensure __all__ channels were added and not overridden
-    * Also: needed to specify the location of the elements to watch (side-panel anchors v. all anchors)
-6. Channels appearing but not counted in First in Line+
-    * Fixed. Used `streamers` instead of `STREAMERS`
-7. Added the ability for the extension to resolve crashed pages
-    * OK. Added an interval job to `background.js`
-8. Remove unused settings' names from `settings.js`
-    * Done.
-
-> [`2.6.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6.3)
-1. Fixed First in Line+
-
-> [`2.6.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6.2)
-1. Fixed onnewmessage event setter
-
-> [`2.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.6)
-1. Fixed Native Chat Replies
-2. Changed the usable namespace for saving settings
-3. Added the "Watch Time" feature
-
-> [`2.5.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.5.1)
-1. New channels that give a notification before appearing count as dead until the page reloads
-    - `FIRST_IN_LINE_JOB = setInterval(...)`
-    - Forgot to return a value for `.map`. We don't talk about it
-2. Notifications sometimes don't trigger First in Line (job addition)
-    - See above note
-3. The chat popups don't propagate
-    - Fixed.

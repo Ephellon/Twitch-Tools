@@ -48,7 +48,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(span > max)
                 WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
-                    .toNativeStack();
+                    ?.toNativeStack?.();
         },
         START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
 
@@ -113,6 +113,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             container.innerHTML = parent.outerHTML;
             container.id = 'tt-auto-claim-bonuses';
             container.classList.add('community-points-summary', 'tt-align-items-center', 'tt-flex', 'tt-full-height');
+            container.setAttribute('style', `animation:1s fade-in 1;`);
 
             heading.insertBefore(container, heading.children[1]);
 
@@ -1830,7 +1831,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     return message;
                 }
 
-                // If not run asynchrounously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
+                // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
                 new Promise(resolve => {
                     resolve(spamChecker(message));
                 }).then(message => {

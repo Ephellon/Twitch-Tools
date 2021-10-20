@@ -44,20 +44,31 @@
     --text-light: #fff;
     --border-light: #fff1;
 
+    --color-background-base: var(--background-dark);
+
     --black: #000;
     --black-highlighted: #222;
+    --color-black: var(--black);
 
     --blue: #00ad96;
+    --blue-dark: #0e9bd8;
     --blue-highlighted: #00e6cb;
+    --color-prime-blue: var(--blue-dark);
 
     --green: #22fa7c;
     --green-dark: #00c85a;
     --green-highlighted: #70ffa9;
+    --color-green: var(--green);
 
     --grey: #fff3;
     --grey-highlighted: #fff4;
     --gray: var(--grey);
     --gray-highlighted: var(--grey-highlighted);
+
+    --color-hinted-grey-6: var(--grey);
+    --color-hinted-grey-10: var(--grey-highlighted);
+    --color-hinted-gray-6: var(--gray);
+    --color-hinted-gray-10: var(--gray-highlighted);
 
     --baby-blue: #387aff;
     --baby-pink: #f5009b;
@@ -65,11 +76,15 @@
     --purple: #9147ff;
     --purple-dark: #4700b3;
     --purple-highlighted: #a970ff;
+    --color-twitch-purple: var(--purple);
+    --color-twitch-purple-10: var(--purple-highlighted);
 
     --red: #bb1411;
     --red-dark: #991411;
     --red-highlighted: #771411;
     --live-red: #e91916;
+    --color-red: var(--red);
+    --color-red-darker: var(--red-dark);
 
     --gold: #fcc21b;
     --yellow: #e6cb00;
@@ -81,8 +96,12 @@
     --white: #fff;
     --white-faded: #fff8;
     --white-highlighted: #eee;
+    --color-white: var(--white);
+
+    --user-accent-color: var(--purple);
 
     /* Fonts */
+    --font-display: 'Inter', 'Roobert';
     --code-font: System, Monospace, Menlo, Arial, Consolas, "Liberation Mono", Menlo, Courier, monospace;
     --live-font: Roobert, Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
 
