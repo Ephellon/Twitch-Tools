@@ -4350,7 +4350,7 @@ let Initialize = async(START_OVER = false) => {
 
     function NEW_DUE_DATE(offset) {
         if(!UP_NEXT_ALLOW_THIS_TAB)
-            return (+new Date) + 24 * 3_600_000;
+            return (+new Date) + 3_600_000;
 
         return (+new Date) + (null
             ?? offset
@@ -4360,7 +4360,7 @@ let Initialize = async(START_OVER = false) => {
 
     function GET_TIME_REMAINING() {
         if(!UP_NEXT_ALLOW_THIS_TAB)
-            return 24 * 3_600_000;
+            return 3_600_000;
 
         let now = (+new Date),
             due = FIRST_IN_LINE_DUE_DATE;
@@ -6922,42 +6922,6 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('recover_pages');
     }
 
-    // Did everything load properly?
-    setTimeout(() => {
-        let NOT_LOADED_CORRECTLY = [],
-            ALL_LOADED_CORRECTLY = (true
-                &&  parseBool(
-                        parseBool(Settings.away_mode)?
-                            (defined($('#away-mode')) || !NOT_LOADED_CORRECTLY.push('Away Mode')):
-                        true
-                    )
-                && parseBool(
-                        parseBool(Settings.auto_claim_bonuses)?
-                            (defined($('#tt-auto-claim-bonuses')) || !NOT_LOADED_CORRECTLY.push('Auto-Claim Bonuses')):
-                        true
-                    )
-                &&  parseBool(
-                        !parseBool(Settings.first_in_line_none)?
-                            (defined($('[up-next--container]')) || !NOT_LOADED_CORRECTLY.push('Up Next')):
-                        true
-                    )
-            );
-
-        if(false
-            // This page shouldn't be touched...
-            || RESERVED_TWITCH_PATHNAMES.test(top.location.pathname)
-
-            // Everything loaded just fine
-            || ALL_LOADED_CORRECTLY
-        )
-            return;
-
-        WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`)?.toNativeStack?.();
-
-        // Failed to activate job at...
-        PushToTopSearch({ 'tt-ftaja': (+new Date).toString(36) });
-    }, 1.1 * Math.max(...Object.values(Timers)));
-
     // End of Initialize
 };
 // End of Initialize
@@ -6967,6 +6931,59 @@ let CUSTOM_CSS,
     WAIT_FOR_PAGE;
 
 // TTV Tools has 60s to initilize correctly...
+let REINIT_PAGE =
+setTimeout(() => {
+    let NOT_LOADED_CORRECTLY = [],
+        ALL_LOADED_CORRECTLY = (true
+            // Away Mode
+            &&  parseBool(
+                    parseBool(Settings.away_mode)?
+                        (defined($('#away-mode')) || !NOT_LOADED_CORRECTLY.push('away_mode')):
+                    true
+                )
+            // Auto-Claim Bonuses
+            && parseBool(
+                    parseBool(Settings.auto_claim_bonuses)?
+                        (defined($('#tt-auto-claim-bonuses')) || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')):
+                    true
+                )
+            // Up Next
+            &&  parseBool(
+                    !parseBool(Settings.first_in_line_none)?
+                        (defined($('[up-next--container]')) || !NOT_LOADED_CORRECTLY.push('first_in_line')):
+                    true
+                )
+            // Watch Time
+            &&  parseBool(
+                    (Settings.watch_time_placement != 'null')?
+                        (defined($('#tt-watch-time')) || !NOT_LOADED_CORRECTLY.push('watch_time_placement')):
+                    true
+                )
+            // Channel Points Receipt
+            &&  parseBool(
+                    (Settings.points_receipt_placement != 'null')?
+                        (defined($('#tt-points-receipt')) || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')):
+                    true
+                )
+        );
+
+    if(false
+        // This page shouldn't be touched...
+        || RESERVED_TWITCH_PATHNAMES.test(top.location.pathname)
+
+        // Everything loaded just fine
+        || ALL_LOADED_CORRECTLY
+    )
+        return;
+
+    WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`)?.toNativeStack?.();
+
+    for(let job of NOT_LOADED_CORRECTLY)
+        RestartJob(job, 'failure_to_activate');
+
+    // Failed to activate job at...
+    // PushToTopSearch({ 'tt-ftaja': (+new Date).toString(36) });
+}, 30_000);
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version == version;

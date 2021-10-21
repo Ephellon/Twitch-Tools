@@ -32,6 +32,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.9)
+- Adjusted page reload logic to restart the job(s) instead
+- Adjusted due date logic for Up Next
+
 > [`4.12.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.8)
 - Updated `scoreTagActivity` to ignore language barriers
 - Adjusted page checker logic to ignore reserved pathnames
