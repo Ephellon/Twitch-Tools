@@ -180,6 +180,21 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             respond({ version });
         } break;
+
+        case 'LOG_RAID_EVENT': {
+            let { from, to } = request.data;
+
+            Storage.get(['RaidEvents'], ({ RaidEvents = {} }) => {
+                let date = (new Date),
+                    week = `${ date.getFullYear() }/${ date.getWeek() }`;
+
+                let events = ((RaidEvents[from] ??= {})[week] ??= []).push(to);
+
+                Storage.set({ RaidEvents });
+
+                respond({ events });
+            });
+        };
     }
 
     if(refresh)

@@ -7,12 +7,9 @@
         * Sets all emotes back to their text and displays the image in a tooltip
 2. Instance (tab) data separation?
     * Simply separate each tab's data for certain things, e.g. "Up Next"
-3. "Predictive Raiding"
-    * Uses the streamers' `dailyBroadcastTime` to predict when their stream will end
-        * OR - listen for notifications/channel-popups; then save a timer (`{streamsCounted}:{totalSecondsCountedLive}`) for how long the channel lives
-    * Heads to the stream 5min before it **should** end
-    * Only applies to streams that have a `raidsLastWeek` &ge; 3
-    * Tentative addition `4.12` (boiler)
+3. "Greedy Raiding" ~~"Predictive Raiding"~~
+    * Heads to the stream as a raid begins (within 15s)
+        * Only activates if the user has "greedy" raiding enabled
 4. Add the **option** to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
     * Up Next does not currently allow duplicates
@@ -32,6 +29,13 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.10)
+- Removed some `toNativeStack` messages
+- Added better styling functionality
+- Added "Auto" option for Accent Color
+- Added Greedy Raiding functionality (previously known as "Predictive Raiding")
+- Added logic to detect undead channels (offline but still loaded)
+
 > [`4.12.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.9)
 - Adjusted page reload logic to restart the job(s) instead
 - Adjusted due date logic for Up Next

@@ -79,6 +79,9 @@ let // These are option names. Anything else will be removed
         'first_in_line_all',
             'first_in_line_all_time_minutes',
         'up_next__one_instance',
+        // Greedy Raiding
+        'greedy_raiding',
+            'greedy_raiding_leave_before',
         // Prevent Raiding
         'prevent_raiding',
         // Prevent Hosting
@@ -1024,6 +1027,10 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     return diff;
 }
 
+function depadName(string) {
+    return string.replace(/(^|_)([a-z])/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, ' -');
+}
+
 /* Auto-making tooltips */
 
 $('input[type="number"i]:is([min], [max])', true)
@@ -1645,7 +1652,7 @@ document.body.onload = async() => {
                             element.setAttribute('style', 'display:none!important');
                     });
 
-                summary.setAttribute('style', `${ summary.getAttribute('style')?.replace(/([^;])(?!;)$/, '$1; ') ?? '' }padding-bottom:calc(${ margin.join(' + ') })`);
+                summary.setAttribute('style', `${ summary.getAttribute('style')?.replace(/([^;])(?!;)$/, '$1; ') ?? '' }--padding-bottom:calc(${ margin.join(' + ') })`);
             });
 
             // Update links (hrefs), tooltips, and other items
@@ -1661,7 +1668,7 @@ document.body.onload = async() => {
                 // Add the "Experimental feature" tooltip
                 $('[id=":settings--experimental"i] section > .summary :not([hidden]) input', true)
                     .map(input => input.closest(':not(input)'))
-                    .map(container => container.setAttribute('right-tooltip', 'Experimental feature'));
+                    // .map(container => container.setAttribute('right-tooltip', 'Experimental feature'));
 
                 $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
                     let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
@@ -1714,6 +1721,10 @@ document.body.onload = async() => {
                         if(checked)
                             $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
                     });
+
+                    let tooltipContainer = dependent.closest(':not(input)');
+
+                    tooltipContainer.setAttribute('right-tooltip', new Tooltip(tooltipContainer, `Requires ${ providers.map(provider => depadName(provider.id)).join(', ') }`, { direction: 'right' }));
                 });
 
                 // All unit targets

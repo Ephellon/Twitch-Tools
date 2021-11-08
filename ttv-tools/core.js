@@ -159,10 +159,10 @@ class LZW {
                     let { value } = this;
 
                     try {
-                        value = LZW.decode64(value)
+                        value = LZW.decode64(value);
                     } catch(error) {
                         /* Suppress the error? */
-                        throw error;
+                        // throw error;
                     }
 
                     return value;
@@ -487,6 +487,13 @@ async function RemoveCache(keys, callback = () => {}) {
         // `X(?!Y)`     - match X if not before Y
         // `(?<=Y)X`    - match X if after Y
         // `(?<!Y)X`    - match X if not after Y
+    // AsteriskFn symbols
+        // `.`         - 1 character
+        // `?`         - 0 or 1 character
+        // `+`         - 1 or more characters
+        // `*`         - 0 or more characters
+        // `X#`        - X followed by any charactrer that is NOT: _
+        // `X~Y`       - X NOT followed by Y
 function AsteriskFn(feature) {
     return RegExp(`^${ feature.replace(/\./g, '\\.').replace(/\?/g, '.?').replace(/\+/g, '(\\w+)?').replace(/\*/g, '(\\w*)?').replace(/\#/g, '([^_]+)?').replace(/([^]+)~([^~]+)/, '($1)(?<!$2)') }$`, 'i');
 }

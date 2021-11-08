@@ -409,6 +409,7 @@
 		"Accent Color",
 		"What should the accent color be"
 	],
+		"color:auto": ["Automatic"],
 		"color:blue": ["Blue"],
 		"color:purple": ["Purple"],
 		"color:red": ["Red"],
@@ -587,16 +588,11 @@
 		"This does", "not", "save/unlock the emote"
 	],
 
-	"@@predictive-raiding": [
-		"Predictive Raiding",
+	"@@greedy-raiding": [
+		"Greedy Raiding",
 
-		"Go to", "certain channels", "in anticipation of a raid",
-		"This takes at least one week to properly adjust"
+		"Go to", "certain channels", "when they begin a raid"
 	],
-		"@@predictive-raiding:options:leave-before": [
-			"Leave Before",
-			"Head to the channel", "before the stream normally ends"
-		],
 
 	"@@soft-unban": [
 		"Soft Unban",

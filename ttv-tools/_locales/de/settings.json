@@ -413,6 +413,7 @@
 		"Akzentfarbe",
 		"Wie soll die Akzentfarbe sein"
 	],
+		"color:auto": ["Automatisch"],
 		"color:blue": ["Blau"],
 		"color:purple": ["Lila"],
 		"color:red": ["Rot"],
@@ -591,16 +592,11 @@
 		"Dit", "doet niet", "bewaart/ontgrendelt de emoticon"
 	],
 
-	"@@predictive-raiding": [
-		"Prädiktive Überraschungen",
+	"@@greedy-raiding": [
+		"Gierige Überraschungen",
 
-		"Gehen Sie in Erwartung einer Überraschung zu", "bestimmten kanälen",
-		"Dies dauert mindestens eine Woche, um sich richtig einzustellen"
+		"Gehe zu", "bestimmten Kanälen", "wenn sie eine Überraschung beginnen"
 	],
-		"@@predictive-raiding:options:leave-before": [
-			"Vorher verlassen",
-			"Gehe", "vor Ende des Streams zum Kanal"
-		],
 
 	"@@soft-unban": [
 		"Lichte herroeping",

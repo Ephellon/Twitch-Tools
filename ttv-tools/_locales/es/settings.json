@@ -407,6 +407,7 @@
 		"Color de acento",
 		"¿Cuál debería ser el color de acento"
 	],
+        "color:auto": ["Automático"],
 		"color:blue": ["Azul"],
 		"color:purple": ["Morado"],
 		"color:red": ["Rojo"],
@@ -585,16 +586,11 @@
         "Esto", "no", "guarda/desbloquea el emoticono"
     ],
 
-	"@@predictive-raiding": [
-		"Sorpresas Predictivas",
+	"@@greedy-raiding": [
+		"Sorpresas codiciosas",
 
-		"vaya a", "canales específicos", "antes de una sorpresa",
-		"Esto toma al menos una semana para ajustarse correctamente"
+        "Vaya a", "canales específicos", "cuando comiencen una sorpresa"
 	],
-		"@@predictive-raiding:options:leave-before": [
-			"Salir antes",
-			"Ve al canal", "antes de que finalice la transmisión"
-		],
 
     "@@soft-unban": [
         "Ligera Revocación",

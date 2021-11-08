@@ -18,6 +18,8 @@
             # Red       - deals with followage
             # Purple    - deals with currencies
             # White     - everything else
+
+            # Pink      - in beta
         -->
 
         <link rel='icon' href='favicon.png'/>
@@ -319,7 +321,7 @@
             </section>
 
             <!-- Prevent Raiding -->
-            <section>
+            <section new='4.12.10' beta>
                 <div class='title' tr-id='prevent-raiding'><span small glyph='people'></span> Prevent Raiding</div>
                 <div class='summary'>
                     <p tr-id>
@@ -331,6 +333,24 @@
                         <option value='all' tr-id>Prevent all channels from raiding</option>
                         <option value='unfollowed' tr-id>Prevent unfollowed channels from being raided</option>
                     </select>
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Prevent Raiding&quot;'>Options</summary>
+                        <div>
+                            <div text-only>
+                                <!-- Greedy Raiding -->
+                                <div class='title' tr-id='@@greedy-raiding'><span small pink glyph='bolt'></span> Greedy Raiding</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='greedy_raiding' type='checkbox' requires='#prevent_raiding'/>
+                                        <label for='greedy_raiding'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Go to <b attention-text top-tooltip='Followed channels with Channel Points'>certain channels</b> when they begin a raid.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -365,7 +385,7 @@
                             <div text-only>
                                 <div class='title'><span class='offline'>Rerun</span> &rarr; <span class='offline'>Offline</span></div>
                                 <div class='summary'>
-                                    <div class='toggle' right-tooltip='Requires &quot;Stay Live&quot;'>
+                                    <div class='toggle'>
                                         <input id='stay_live__ignore_channel_reruns' type='checkbox' requires='#stay_live'/>
                                         <label for='stay_live__ignore_channel_reruns'></label>
                                     </div>
@@ -969,8 +989,9 @@
                     </p>
 
                     <select id='accent_color'>
-                        <option value='blue/12' selected tr-id='color:blue'>Blue</option>
-                        <option value='twitch-purple/12' tr-id='color:purple'>Purple</option>
+                        <option value='colored/complement' tr-id='color:auto'>Auto</option>
+                        <option value='blue/12' tr-id='color:blue'>Blue</option>
+                        <option value='twitch-purple/12' selected tr-id='color:purple'>Purple</option>
                         <option value='red/15' tr-id='color:red'>Red</option>
                     </select>
                 </div>
@@ -1177,7 +1198,7 @@
             <section>
                 <div class='title' tr-id='recover-ads'><span small glyph='play'></span> Recover Ads</div>
                 <div class='summary'>
-                    <div class='toggle' right-tooltip='Requires &quot;Recover Stream&quot;'>
+                    <div class='toggle'>
                         <input id='recover_ads' type='checkbox' requires='#recover_stream'/>
                         <label for='recover_ads'></label>
                     </div>
@@ -1519,38 +1540,6 @@
                     <p warning-text tr-id>
                         This does <b>not</b> save/unlock the emote.
                     </p>
-                </div>
-            </section>
-
-            <!-- Predictive Raiding -->
-            <section new='4.12' beta soon>
-                <div class='title' tr-id='@@predictive-raiding'><span small gold glyph='bolt'></span> Predictive Raiding</div>
-                <div class='summary'>
-                    <div class='toggle'>
-                        <input id='predictive_raiding' type='checkbox'/>
-                        <label for='predictive_raiding'></label>
-                    </div>
-                    <p tr-id>
-                        Go to <b attention-text top-tooltip='Followed channels that normally raid'>certain channels</b> in anticipation of a raid.
-                    </p>
-                    <p warning-text tr-id>
-                        This takes at least one week to properly adjust.
-                    </p>
-                    <details>
-                        <summary tr-id='options' subtitle='Adjust options for &quot;Predictive Raiding&quot;'>Options</summary>
-                        <div>
-                            <div text-only>
-                                <div class='title' tr-id='@@predictive-raiding:options:leave-before'>Leave Before</div>
-                                <div class='summary'>
-                                    <p tr-id>
-                                        Head to the channel
-                                        <span unit='min'><input id='predictive_raiding_leave_before' type='number' value='15' min='5' step='5'/></span>
-                                        before the stream ends
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
                 </div>
             </section>
 

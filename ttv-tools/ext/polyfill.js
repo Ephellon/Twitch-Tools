@@ -308,6 +308,25 @@ Array.prototype.contains ??= function contains(...values) {
     return has;
 };
 
+// https://stackoverflow.com/a/6117889/4211612
+// Returns the current week of the year
+    // Date..getWeek() -> number:Integer
+Date.prototype.getWeek = function getWeek() {
+    let now = new Date(Date.UTC(
+        this.getFullYear(),
+        this.getMonth(),
+        this.getDate()
+    ));
+
+    let day = now.getUTCDay() || 7;
+
+    now.setUTCDate(now.getUTCDate() + 4 - day);
+
+    let year = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+
+    return Math.ceil((((now - year) / 86_400_000) + 1) / 7);
+};
+
 // Returns an element based upon its text content
     // Element..getElementByText(searchText:string|regexp[, flags:string]) -> Element | null
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
@@ -548,6 +567,26 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     canvas?.remove();
 
     return data;
+};
+
+// https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write#example_of_copying_canvas_contents_to_the_clipboard
+// Copies the current frame from a video element to the clipboard
+    // HTMLVideoElement..copyFrame() -> undefined
+HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
+    let { height, width, videoHeight, videoWidth } = this;
+
+    let canvas = furnish('canvas', { height: height ||= videoHeight, width: width ||= videoWidth }),
+        context = canvas.getContext('2d');
+
+    context.drawImage(this, 0, 0);
+
+    let promise = new Promise((resolve, reject) => {
+        canvas.toBlob(blob => navigator.clipboard.write([ new ClipboardItem({ [blob?.type]: blob }) ]).then(resolve).catch(reject));
+    });
+
+    canvas?.remove();
+
+    return promise;
 };
 
 // Converts SVGs to images

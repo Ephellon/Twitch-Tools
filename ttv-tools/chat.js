@@ -36,6 +36,15 @@ let Chat__Initialize = async(START_OVER = false) => {
         GLOBAL_EVENT_LISTENERS,
     } = top;
 
+    // Fill STREAMER
+    let [path, name, endpoint] = top.location.pathname.split(/(?<!^)\//),
+        sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
+
+    STREAMER ??= ({ name: (name ?? path), sole });
+
+    // Fill GLOBAL_EVENT_LISTENERS
+    GLOBAL_EVENT_LISTENERS ??= {};
+
     // Time how long jobs take to complete properly
     let STOP_WATCHES = new Map,
         JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
@@ -1612,14 +1621,15 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.native_twitch_reply = () => {
         START__STOP_WATCH('native_twitch_reply');
 
-        if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
-            return JUDGE__STOP_WATCH('native_twitch_reply');
-
+        // Enter
         if(!defined(GLOBAL_EVENT_LISTENERS.ENTER))
             $('[data-a-target="chat-input"i]')?.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
                 if(!(altKey || ctrlKey || metaKey || shiftKey) && key == 'Enter')
                     $('#tt-close-native-twitch-reply')?.click();
             });
+
+        if(defined(NATIVE_REPLY_POLYFILL) || defined($('.chat-line__reply-icon')))
+            return JUDGE__STOP_WATCH('native_twitch_reply');
 
         NATIVE_REPLY_POLYFILL ??= {
             // Button above chat elements
@@ -2211,7 +2221,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
             exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]')?.innerText;
 
-        top.postMessage({ points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, top.location.origin);
+        top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, top.location.origin);
     };
     Timers.points_receipt_placement_framed_helper = 1_000;
 
@@ -2251,7 +2261,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Add an iframe...
         let [,name] = ([,STREAMER?.name] ?? top.location.pathname.split(/\W/, 2)),
             input = $('.chat-input'),
-            iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative[src="/popout/${name}/chat"][role="tt-log"]`),
+            iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative[src="./popout/${name}/chat"][role="tt-log"]`),
             container = $('.chat-shell .stream-chat', false, top.document);
 
         container?.parentElement?.replaceChild?.(iframe, container);
@@ -2264,12 +2274,31 @@ let Chat__Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.recover_chat)) {
         RegisterJob('recover_chat');
     }
-
     // End of Chat__Initialize
 };
 // End of Chat__Initialize
 
 let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
+    let {
+        USERNAME,
+        LANGUAGE,
+        THEME,
+
+        PATHNAME,
+        STREAMER,
+
+        GLOBAL_EVENT_LISTENERS,
+    } = top;
+
+    // Fill STREAMER
+    let [path, name, endpoint] = top.location.pathname.split(/(?<!^)\//),
+        sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
+
+    STREAMER ??= ({ name: (name ?? path), sole });
+
+    // Fill GLOBAL_EVENT_LISTENERS
+    GLOBAL_EVENT_LISTENERS ??= {};
+
     /*** Video Recovery
      *     __      ___     _              _____
      *     \ \    / (_)   | |            |  __ \
@@ -2372,6 +2401,60 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
         RegisterJob('soft_unban');
     }
     // End of Chat__Initialize_Safe_Mode
+
+    /*** Experimental Features
+     *      ______                      _                      _        _   ______         _
+     *     |  ____|                    (_)                    | |      | | |  ____|       | |
+     *     | |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ __ _| | | |__ ___  __ _| |_ _   _ _ __ ___  ___
+     *     |  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ _` | | |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
+     *     | |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | || (_| | | | | |  __/ (_| | |_| |_| | | |  __/\__ \
+     *     |______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__\__,_|_| |_|  \___|\__,_|\__|\__,_|_|  \___||___/
+     *                 | |
+     *                 |_|
+     */
+    /*** Greedy Raiding
+     *      _____              _ _      _   _             _____       _     _ _
+     *     |  __ \            | (_)    | | (_)           |  __ \     (_)   | (_)
+     *     | |__) | __ ___  __| |_  ___| |_ ___   _____  | |__) |__ _ _  __| |_ _ __   __ _
+     *     |  ___/ '__/ _ \/ _` | |/ __| __| \ \ / / _ \ |  _  // _` | |/ _` | | '_ \ / _` |
+     *     | |   | | |  __/ (_| | | (__| |_| |\ V /  __/ | | \ \ (_| | | (_| | | | | | (_| |
+     *     |_|   |_|  \___|\__,_|_|\___|\__|_| \_/ \___| |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
+     *                                                                                 __/ |
+     *                                                                                |___/
+     */
+    let RAID_LOGGED = false;
+    Handlers.greedy_raiding = () => {
+        let raiding = defined($('[data-test-selector="raid-banner"i]')),
+            atTop = (top == window);
+
+        if(RAID_LOGGED || atTop || !raiding)
+            return;
+        RAID_LOGGED ||= raiding;
+
+        let raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
+            from = STREAMER.name,
+            [to] = raid_banner.filter(name => name.toLowerCase() != from.toLowerCase());
+
+        LOG(`There is a raid happening on another channel... ${ from } → ${ to }`);
+
+        Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
+            WARN(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`).toNativeStack();
+
+            let payable = defined($('[data-test-selector="balance-string"i]'));
+
+            top.postMessage({ action: 'raid', from, to, events, payable });
+        });
+    };
+    Timers.greedy_raiding = 5_000;
+
+    Unhandlers.greedy_raiding = () => {};
+
+    __GreedyRaiding__:
+    if(parseBool(Settings.greedy_raiding)) {
+        // REMARK('[CHILD] Adding raid-watching logic...');
+
+        RegisterJob('greedy_raiding');
+    }
 };
 // End of Chat__Initialize_Safe_Mode
 
@@ -2384,25 +2467,30 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
     let banned = STREAMER?.veto || !!$('[class*="banned"i]', true).length;
 
-    if([banned].contains(true)) {
-        WARN('[NON_FATAL] Child container unavailable. Reason:', { banned });
+    // Keep hidden iframes from loading resources
+    let { hidden } = parseURL(window.location).searchParameters;
 
-        Settings = await GetSettings();
+    if([banned, hidden].map(parseBool).contains(true)) {
+        if(!parseBool(hidden))
+            WARN('[NON_FATAL] Child container unavailable. Reason:', { banned, hidden });
 
         setTimeout(Chat__Initialize_Safe_Mode, 5000);
         clearInterval(Chat__PAGE_CHECKER);
+
+        return Settings = await GetSettings();
     }
 
     // Only executes if the user is NOT banned
     let ready = (true
         // The main controller is ready
-        && parseBool(top.MAIN_CONTROLLER_READY)
+        && (false
+            || parseBool(top.MAIN_CONTROLLER_READY)
+            || this === top
+        )
         // The welcome message exists
         && defined($(`[data-a-target*="welcome"i]`))
-        && (false
-            // There is a message container
-            || defined($('[data-test-selector$="message-container"i]'))
-        )
+        // There is a message container
+        && defined($('[data-test-selector$="message-container"i]'))
         // There is an error message
         || defined($('[data-a-target="core-error-message"i]'))
     );

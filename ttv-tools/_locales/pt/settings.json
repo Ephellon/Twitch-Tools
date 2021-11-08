@@ -413,6 +413,7 @@
 		"Cor de destaque",
 		"Qual deve ser a cor de destaque"
 	],
+		"color:auto": ["Automático"],
 		"color:blue": ["Azul"],
 		"color:purple": ["Roxo"],
 		"color:red": ["Vermelho"],
@@ -589,16 +590,11 @@
 		"Isto", "não", "guarda/desbloqueia o emoticon"
 	],
 
-	"@@predictive-raiding": [
-		"Surpresas Preditivas",
+	"@@greedy-raiding": [
+		"Surpresas gananciosas",
 
-		"vá para", "canais específicos", "antes de uma surpresa",
-		"Isso leva pelo menos uma semana para se ajustar corretamente"
+		"Vá para", "canais específicos", "quando eles começarem uma surpresa"
 	],
-		"@@predictive-raiding:options:leave-before": [
-			"Sair antes",
-			"vá para o canal", "antes do fim da transmissão"
-		],
 
 	"@@soft-unban": [
 		"Ligeira Revogação",

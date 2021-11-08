@@ -286,7 +286,7 @@ footer {
     /* display: flex; */
     /* flex-grow: 1; */
 
-    height: 4rem;
+    height: fit-content;
     width: 100%;
 }
 
@@ -1138,6 +1138,11 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     fill: var(--blue)!important;
 }
 
+[gold], [gold] svg {
+    color: var(--gold)!important;
+    fill: var(--gold)!important;
+}
+
 [green], [green] svg {
     color: var(--green)!important;
     fill: var(--green)!important;
@@ -1148,6 +1153,11 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
     fill: var(--grey)!important;
 }
 
+[pink], [pink] svg {
+    color: var(--baby-pink)!important;
+    fill: var(--baby-pink)!important;
+}
+
 [purple], [purple] svg {
     color: var(--purple)!important;
     fill: var(--purple)!important;
@@ -1156,11 +1166,6 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 [red], [red] svg {
     color: var(--red)!important;
     fill: var(--red)!important;
-}
-
-[gold], [gold] svg {
-    color: var(--gold)!important;
-    fill: var(--gold)!important;
 }
 
 [white], [white] svg {

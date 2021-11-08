@@ -17,6 +17,8 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     USERNAME,
     LANGUAGE,
     THEME,
+    THEME__CHANNEL_DARK,
+    THEME__CHANNEL_LIGHT,
     LITERATURE,
     SPECIAL_MODE,
     NORMAL_MODE,
@@ -119,7 +121,7 @@ class Balloon {
 
                                         let display = balloon.getAttribute('display') === 'block'? 'none': 'block';
 
-                                        balloon.setAttribute('style', `display:${ display }!important`);
+                                        balloon.setAttribute('style', `display:${ display }!important; z-index:9`);
                                         balloon.setAttribute('display', display);
                                     },
                                 },
@@ -174,6 +176,8 @@ class Balloon {
                         f('div.tt-border-radius-large.tt-c-background-base.tt-c-text-inherit.tt-elevation-4', {},
                             (C = f(`div#tt-balloon-container-${ U }.tt-flex.tt-flex-column`,
                                 {
+                                    'tt-mix-blend': (Settings?.accent_color ?? 'twitch-purple/12'),
+
                                     style: 'min-height:22rem; max-height: 90vh; min-width:40rem; overflow-y: auto;',
                                     role: 'dialog',
                                 },
@@ -560,19 +564,19 @@ class Tooltip {
 
                             switch(from) {
                                 // case 'up':
-                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
 
                                 case 'down':
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
 
                                 // case 'left':
-                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
                                 //
                                 // case 'right':
-                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
 
                                 default:
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9000;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
                             }
 
                             return style;
@@ -1272,6 +1276,60 @@ class CSSObject {
         }
 
         return object;
+    }
+}
+
+// CSS-Tricks - Jon Kantner 26 JAN 2021 @ https://css-tricks.com/converting-color-spaces-in-javascript/
+// Creates a Color object
+class Color {
+    constructor() {}
+
+    static RGBtoHSL([R, G, B]) {
+        // Convert RGB to fractions of 1
+        let r = R / 255,
+            g = G / 255,
+            b = B / 255;
+
+        // Find channel values
+        let Cmin = Math.min(r, g, b),
+            Cmax = Math.max(r, g, b),
+            delta = Cmax - Cmin;
+
+        let H = 0, S = 0, L = 0;
+
+        // Calculate the hue
+        if(delta == 0)
+            H = 0;
+        else if(r == Cmax)
+            H = ((g - b) / delta) % 6;
+        else if (g == Cmax)
+            H = ((b - r) / delta) + 2;
+        else
+            H = ((r - g) / delta) + 4;
+
+        H = Math.round(H * 60);
+
+        if(H < 0)
+            H += 360;
+
+        // Calculate lightness
+        L = (Cmax + Cmin) / 2;
+
+        // Calculate saturation
+        S = (delta == 0? 0: delta / (1 - Math.abs(2 * L - 1)));
+
+        S = +(S * 100).toFixed(1);
+        L = +(L * 100).toFixed(1);
+
+        return {
+            H, S, L,
+            hue: H, saturation: S, lightness: L,
+            HSL: `hsl(${ H },${ S }%,${ L }%)`,
+
+            R, G, B,
+            red: r, green: g, blue: b,
+            RGB: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
     }
 }
 
@@ -2163,80 +2221,119 @@ try {
             return /* Not meant for us... */;
 
         let R = RegExp;
-        let { data } = event,
-            BroadcastSettings = {},
-            User = {},
-            Stream = {},
-            Channel = {};
+        let { data } = event;
 
-        // Not  jump data
-        if(!('ROOT_QUERY' in data)) {
-            for(let target in data)
-                PostOffice.set(target, data[target]);
-        } else {
-            for(let key in data) {
-                if(/^BroadcastSettings:([^$]+)/.test(key))
-                    BroadcastSettings[R.$1] = data[key];
-                else if(/^Channel:([^$]+)/.test(key))
-                    Channel = data[key];
-                else if(/^User:([^$]+)/.test(key))
-                    User[R.$1] = data[key];
-                else if(/^Stream:([^$]+)/.test(key))
-                    Stream[R.$1] = data[key];
+        switch(data.action) {
+            case 'jump': {
+                let BroadcastSettings = {},
+                    User = {},
+                    Stream = {},
+                    Channel = {};
 
-                JUMPED_FRAMES = true;
-            }
+                // Not jump data
+                if(!('ROOT_QUERY' in data)) {
+                    for(let target in data)
+                        PostOffice.set(target, data[target]);
+                } else {
+                    for(let key in data) {
+                        if(/^BroadcastSettings:([^$]+)/.test(key))
+                            BroadcastSettings[R.$1] = data[key];
+                        else if(/^Channel:([^$]+)/.test(key))
+                            Channel = data[key];
+                        else if(/^User:([^$]+)/.test(key))
+                            User[R.$1] = data[key];
+                        else if(/^Stream:([^$]+)/.test(key))
+                            Stream[R.$1] = data[key];
 
-            if(Channel?.id?.length) {
-                LIVE_CACHE?.set('coin', Channel.self?.communityPoints?.balance);
-                LIVE_CACHE?.set('sole', Channel.id);
-
-                if(JUMPED_FRAMES)
-                    for(let channel in BroadcastSettings) {
-                        let { id, title } = BroadcastSettings[channel],
-                            { displayName, login, primaryColorHex } = User[channel];
-
-                        let profileImageURL = (channel => {
-                            for(let key in channel)
-                                if(/^profileImageURL/i.test(key))
-                                    return channel[key];
-                        })(User[channel]);
-
-                        let stream = (streams => {
-                            for(let stream in streams)
-                                if(streams[stream]?.broadcaster?.__ref?.contains?.(channel)) {
-                                    stream = streams[stream];
-
-                                    stream.broadcaster = BroadcastSettings[channel];
-
-                                    let previews = {};
-                                    for(let key in stream)
-                                        if(/^previewImageURL\(([^]+)\)\s*$/i.test(key)) {
-                                            let { height, width } = JSON.parse(R.$1);
-
-                                            previews[`${ width }x${ height }`] = stream[key];
-
-                                            delete stream[key];
-                                        }
-
-                                    stream.previewImageURL = previews;
-
-                                    return stream;
-                                }
-                            return null;
-                        })(Stream);
-
-                        JUMP_DATA[login] = { id: parseFloat(id), title, displayName, login, primaryColorHex, profileImageURL, stream };
+                        JUMPED_FRAMES = true;
                     }
 
-                // LOG('Jumped frames, retrieved:', JUMP_DATA);
-            }
+                    if(Channel?.id?.length) {
+                        LIVE_CACHE?.set('coin', Channel.self?.communityPoints?.balance);
+                        LIVE_CACHE?.set('sole', Channel.id);
+
+                        if(JUMPED_FRAMES)
+                            for(let channel in BroadcastSettings) {
+                                let { id, title } = BroadcastSettings[channel],
+                                    { displayName, login, primaryColorHex } = User[channel];
+
+                                let profileImageURL = (channel => {
+                                    for(let key in channel)
+                                        if(/^profileImageURL/i.test(key))
+                                            return channel[key];
+                                })(User[channel]);
+
+                                let stream = (streams => {
+                                    for(let stream in streams)
+                                        if(streams[stream]?.broadcaster?.__ref?.contains?.(channel)) {
+                                            stream = streams[stream];
+
+                                            stream.broadcaster = BroadcastSettings[channel];
+
+                                            let previews = {};
+                                            for(let key in stream)
+                                                if(/^previewImageURL\(([^]+)\)\s*$/i.test(key)) {
+                                                    let { height, width } = JSON.parse(R.$1);
+
+                                                    previews[`${ width }x${ height }`] = stream[key];
+
+                                                    delete stream[key];
+                                                }
+
+                                            stream.previewImageURL = previews;
+
+                                            return stream;
+                                        }
+                                    return null;
+                                })(Stream);
+
+                                JUMP_DATA[login] = { id: parseFloat(id), title, displayName, login, primaryColorHex, profileImageURL, stream };
+                            }
+
+                        // LOG('Jumped frames, retrieved:', JUMP_DATA);
+                    }
+                }
+            } break;
+
+            case 'raid': {
+                let { from, to, events, payable } = data,
+                    method = Settings.prevent_raiding ?? "none";
+
+                // "Would the user allow this raid condition?"
+                if(false
+                    || (payable && method == "greed")
+                    || (STREAMERS.contains(({ name }) => RegExp(`^${ to }$`).test(name)) && method == "unfollowed")
+                    || (method == "all")
+                )
+                    confirm
+                        ?.timed?.(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000, true)
+                        ?.then?.(action => {
+                            // The event timed out...
+                            action ??= true;
+
+                            if(action) {
+                                // The user clicked "OK"
+                                // Return to the current page eventually...
+                                if(!parseBool(Settings.first_in_line_none)) {
+                                    let { name, href } = STREAMER;
+
+                                    Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` });
+                                }
+
+                                open(`./${ from }`, '_self');
+                            } else {
+                                // The user clicked "Cancel"
+                                LOG('Canceled Greedy Raiding event', { from, to });
+                            }
+                        });
+            } break;
         }
     });
 } catch(error) {
     // Most likely in a child frame...
     // REMARK("Moving to chat child frame...");
-    WARN(error);
+    if(!parseBool(parseURL(window.location).searchParameters?.hidden))
+        WARN(error);
 }
 
 async function update() {
@@ -2250,6 +2347,57 @@ async function update() {
 
     // The theme
     top.THEME = THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+
+    let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
+        .map(color => color
+            .split(/(\w{2})/)
+            .filter(v => v.length > 1)
+            .map(v => parseInt(v, 16))
+        )
+        .map(Color.RGBtoHSL)
+        // Sort furthest from white (descending)
+        .sort((C1, C2) => {
+            // https://stackoverflow.com/a/9733420/4211612
+            // Gets the luminance of a color
+            function lum(R, G, B) {
+                let l = [R, G, B].map(c => {
+                    c /= 255;
+
+                    return (
+                        c <= 0.03928?
+                            c / 12.92:
+                        ((c + 0.055) / 1.055)**2.4
+                    );
+                });
+
+                return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
+            }
+
+            // Gets the contrast of two colors
+            function con(C1, C2) {
+                let L1 = lum(...C1),
+                    L2 = lum(...C2),
+                    L = Math.max(L1, L2),
+                    D = Math.min(L1, L2);
+
+                return (L + 0.05) / (D + 0.05);
+            }
+
+            let background = (THEME == 'dark'? [0, 0, 0]: [255, 255, 255]);
+
+            C1 = [C1.R, C1.G, C1.B];
+            C2 = [C2.R, C2.G, C2.B];
+
+            if(con(background, C1) > con(background, C2))
+                return +1;
+            else if(con(background, C1) < con(background, C2))
+                return -1;
+            return 0;
+        })
+        .map(color => color.RGB);
+
+    THEME__CHANNEL_DARK = (THEME == 'dark'? PRIMARY: SECONDARY);
+    THEME__CHANNEL_LIGHT = (THEME != 'dark'? PRIMARY: SECONDARY);
 
     // All Channels under Search
     top.SEARCH = SEARCH = [
@@ -2410,7 +2558,7 @@ async function update() {
 }
 
 let // Features that require the experimental flag
-    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'soft_unban'].map(AsteriskFn),
+    EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'greedy_raiding', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
     SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next*', 'view_mode'].map(AsteriskFn),
@@ -2755,6 +2903,7 @@ let Initialize = async(START_OVER = false) => {
      * sole:number       - GETTER: the channel's ID
      * tags:array*       - GETTER: tags of the current stream
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
+     * tint:string*      - GETTER: the channel's accent color (if applicable)
      * time:number*      - GETTER: how long has the channel been live
      * unfollow:function - unfollows the current channel
      * veto:boolean      - GETTER: determines if the user is banned from the streamer's chat or not
@@ -2870,6 +3019,24 @@ let Initialize = async(START_OVER = false) => {
                 )
         },
 
+        get mark() {
+            let tags = [];
+
+            $('.tw-tag', true).map(element => {
+                let { href } = element.closest('a[href]');
+
+                if(parseBool(Settings.show_stats)) {
+                    let score = scoreTagActivity(href);
+
+                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'up' });
+                }
+
+                tags.push(href);
+            });
+
+            return scoreTagActivity(...tags);
+        },
+
         get name() {
             return $(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name')
         },
@@ -2916,24 +3083,6 @@ let Initialize = async(START_OVER = false) => {
             return tags ?? LIVE_CACHE.get('tags');
         },
 
-        get mark() {
-            let tags = [];
-
-            $('.tw-tag', true).map(element => {
-                let { href } = element.closest('a[href]');
-
-                if(parseBool(Settings.show_stats)) {
-                    let score = scoreTagActivity(href);
-
-                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'up' });
-                }
-
-                tags.push(href);
-            });
-
-            return scoreTagActivity(...tags);
-        },
-
         get team() {
             let element = $('[href^="/team"]'),
                 team = new String((element?.innerText ?? "").trim());
@@ -2949,8 +3098,26 @@ let Initialize = async(START_OVER = false) => {
             return parseTime($('.live-time')?.textContent ?? '0');
         },
 
+        get tint() {
+            let color = top
+                ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`))
+                ?.getPropertyValue?.('--color-accent');
+
+            return (color || '#9147FF').toUpperCase();
+        },
+
+        get tone() {
+            let color = STREAMER.tint
+                .split(/(\w{2})/)
+                .filter(v => v.length > 1)
+                .map(v => (255 - parseInt(v, 16)).toString(16).padStart(2, '0'))
+                .join('');
+
+            return `#${ color }`;
+        },
+
         get veto() {
-            return !!$('[class*="banned"i]', true).length;
+            return !!$('[id*="banned"i], [class*="banned"i]', true).length;
         },
 
         follow() {
@@ -3011,7 +3178,7 @@ let Initialize = async(START_OVER = false) => {
      */
     // Notifications
     NOTIFICATIONS = [
-        ...$('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true)
+        ...$('[data-test-selector="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true)
             .map(element =>
                 ({
                     live: true,
@@ -3863,7 +4030,8 @@ let Initialize = async(START_OVER = false) => {
         InitialQuality,
         InitialVolume,
         InitialViewMode,
-        MAINTAIN_VOLUME_CONTROL = true;
+        MAINTAIN_VOLUME_CONTROL = true,
+        NUMBER_OF_FAILED_QUALITY_FETCHES = 0;
 
     Handlers.away_mode = async() => {
         START__STOP_WATCH('away_mode');
@@ -3871,14 +4039,31 @@ let Initialize = async(START_OVER = false) => {
         let button = $('#away-mode'),
             currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
+        // Alt + A | Opt + A
+        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
+            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+                if(altKey && key == 'a')
+                    $('#away-mode')?.click?.();
+            });
+
         /** Return (don't activate) if
          * a) The toggle-button already exists
          * b) There is an advertisement playing
          * c) There are no quality controls
          * d) The page is a search
          */
-        if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME))
+        if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
+            // If the quality controls have failed to load for 1min, leave the page
+            if(!defined(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
+                let scapeGoat = GetNextStreamer();
+
+                WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`).toNativeStack();
+
+                open(scapeGoat.href, '_self');
+            }
+
             return JUDGE__STOP_WATCH('away_mode');
+        }
 
         await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
@@ -3992,7 +4177,7 @@ let Initialize = async(START_OVER = false) => {
                 });
         }
 
-        let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
+        let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
 
         // if(init === true) ->
         // Don't use above, event listeners won't work
@@ -4046,13 +4231,6 @@ let Initialize = async(START_OVER = false) => {
             svgShow?.removeAttribute('preview');
             svgHide?.removeAttribute('preview');
         };
-
-        // Alt + A | Opt + A
-        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
-                if(altKey && key == 'a')
-                    $('#away-mode').click();
-            });
 
         AwayModeButton = button;
 
@@ -4395,7 +4573,8 @@ let Initialize = async(START_OVER = false) => {
 
                     speeding = !speeding;
 
-                    currentTarget.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][+speeding] }`);
+                    currentTarget.querySelector('svg[fill]')?.setAttribute('fill', '');
+                    currentTarget.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!speeding }`);
                     currentTarget.setAttribute('speeding', FIRST_IN_LINE_BOOST = speeding);
 
                     currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
@@ -4466,7 +4645,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: 'help',
                 left: true,
             }),
-                [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/'),
+                [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`));
@@ -4520,7 +4699,8 @@ let Initialize = async(START_OVER = false) => {
 
                 // Up Next Boost
                 first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
-                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', `#${ ['dddb','e6cb00'][FIRST_IN_LINE_BOOST | 0] }`);
+                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', '');
+                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!FIRST_IN_LINE_BOOST }`);
                 first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
 
                 $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ (FIRST_IN_LINE_BOOST || !UP_NEXT_ALLOW_THIS_TAB) | 0 }px solid var(--color-${ ['yellow', 'red'][!UP_NEXT_ALLOW_THIS_TAB | 0] })`);
@@ -4631,7 +4811,7 @@ let Initialize = async(START_OVER = false) => {
                     offset = getOffset(container);
 
                 $('div#root > *').append(
-                    furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9000;` },
+                    furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9999;` },
                         furnish('div.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                             furnish('div', { style: 'width: 30px; height: 30px;' }),
                             tooltip
@@ -4836,7 +5016,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.first_in_line = (ActionableNotification) => {
         START__STOP_WATCH('first_in_line');
 
-        let notifications = [...$('[data-test-selector="onsite-notifications-toast-manager"i] [data-test-selector^="onsite-notification-toast"i]', true), ActionableNotification].filter(defined);
+        let notifications = [...$('[data-test-selector="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true), ActionableNotification].filter(defined);
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
@@ -5414,7 +5594,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.prevent_hosting = async() => {
         START__STOP_WATCH('prevent_hosting');
 
-        let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="channel-status-info--hosting"i]')),
+        let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]')),
             next = GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.innerText),
             host = (STREAMER.name ?? ''),
@@ -5500,7 +5680,7 @@ let Initialize = async(START_OVER = false) => {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
                 if(method == "greed" && raiding) {
-                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).pushToSearch({ referrer: 'raid' }, true).href);
+                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).pushToSearch({ referrer: 'raid' }, true).href, { html: LZW.encode64(document.documentElement.innerHTML) });
 
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
@@ -6443,7 +6623,6 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         let parent, container,
-            color = 'green',
             extra = () => {};
 
         let classes = element => [...element.classList].map(label => '.' + label).join('');
@@ -6458,7 +6637,6 @@ let Initialize = async(START_OVER = false) => {
             case 'over': {
                 container = live_time.closest(`*:not(${ classes(live_time) })`);
                 parent = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="left-control-group"i]');
-                color = 'white';
             } break;
 
             // Option 2 "under" - under quick actions, live count/live time area
@@ -6487,7 +6665,7 @@ let Initialize = async(START_OVER = false) => {
 
         let f = furnish;
         let watch_time = f(`${ container.tagName }${ classes(container) }`,
-            { style: `color: var(--color-${ color })` },
+            { style: `color: var(--user-complement-color)` },
             f(`${ live_time.tagName }#tt-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
 
@@ -6922,6 +7100,117 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('recover_pages');
     }
 
+    /*** Experimental Features
+     *      ______                      _                      _        _   ______         _
+     *     |  ____|                    (_)                    | |      | | |  ____|       | |
+     *     | |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ __ _| | | |__ ___  __ _| |_ _   _ _ __ ___  ___
+     *     |  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ _` | | |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
+     *     | |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | || (_| | | | | |  __/ (_| | |_| |_| | | |  __/\__ \
+     *     |______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__\__,_|_| |_|  \___|\__,_|\__|\__,_|_|  \___||___/
+     *                 | |
+     *                 |_|
+     */
+    /*** Greedy Raiding
+     *       _____                   _         _____       _     _ _
+     *      / ____|                 | |       |  __ \     (_)   | (_)
+     *     | |  __ _ __ ___  ___  __| |_   _  | |__) |__ _ _  __| |_ _ __   __ _
+     *     | | |_ | '__/ _ \/ _ \/ _` | | | | |  _  // _` | |/ _` | | '_ \ / _` |
+     *     | |__| | | |  __/  __/ (_| | |_| | | | \ \ (_| | | (_| | | | | | (_| |
+     *      \_____|_|  \___|\___|\__,_|\__, | |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
+     *                                  __/ |                               __/ |
+     *                                 |___/                               |___/
+     */
+    let GREEDY_RAIDING_FRAMES = new Map;
+    Handlers.greedy_raiding = () => {
+        let online = STREAMERS.filter(isLive),
+            container = (null
+                ?? $('#tt-greedy-raiding--container')
+                ?? furnish('div#tt-greedy-raiding--container', { style: 'display:none!important' })
+            );
+
+        for(let channel of online) {
+            let { name } = channel;
+            let frame = (null
+                ?? $(`#tt-greedy-raiding--${ name }`)
+                ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
+                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv`,
+
+                    // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
+                })
+            );
+
+            GREEDY_RAIDING_FRAMES.set(channel.name, frame);
+
+            if(![...container.children].contains(frame))
+                container.append(frame);
+        }
+
+        if(![...document.body.children].contains(container))
+            document.body.append(container);
+    };
+    Timers.greedy_raiding = 5_000;
+
+    Unhandlers.greedy_raiding = () => {
+        for(let [name, frame] of GREEDY_RAIDING_FRAMES)
+            frame?.remove();
+    };
+
+    __GreedyRaiding__:
+    if(parseBool(Settings.greedy_raiding)) {
+        REMARK('Adding raid-watching logic...');
+
+        RegisterJob('greedy_raiding');
+    }
+
+    /*** Miscellaneous
+     *      __  __ _              _ _
+     *     |  \/  (_)            | | |
+     *     | \  / |_ ___  ___ ___| | | __ _ _ __   ___  ___  _   _ ___
+     *     | |\/| | / __|/ __/ _ \ | |/ _` | '_ \ / _ \/ _ \| | | / __|
+     *     | |  | | \__ \ (_|  __/ | | (_| | | | |  __/ (_) | |_| \__ \
+     *     |_|  |_|_|___/\___\___|_|_|\__,_|_| |_|\___|\___/ \__,_|___/
+     *
+     *
+     */
+    Miscellaneous: {
+        // Better styling. Will match the user's theme choice as best as possible
+        CUSTOM_CSS.innerHTML +=
+            `
+            /* The user is using the light theme (like a crazy person) */
+            :root {
+                --channel-color: ${ STREAMER.tint };
+                --channel-color-complement: ${ STREAMER.tone };
+                --channel-color-dark: ${ THEME__CHANNEL_DARK };
+                --channel-color-light: ${ THEME__CHANNEL_LIGHT };
+            }
+
+            :root[class*="theme-light"i] {
+                --color-colored: ${ THEME__CHANNEL_LIGHT };
+                --color-colored-complement: ${ THEME__CHANNEL_DARK };
+            }
+
+            /* The user is using the dark theme */
+            :root[class*="theme-dark"i] {
+                --color-colored: ${ THEME__CHANNEL_DARK };
+                --color-colored-complement: ${ THEME__CHANNEL_LIGHT };
+            }
+
+            [up-next--body] *:is(button, h5) {
+                color: var(--user-complement-color) !important;
+                fill: var(--user-complement-color) !important;
+            }
+            `;
+
+        // Alt + Shift + X | Opt + Shift + X
+        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
+            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+                if(altKey && shiftKey && key == 'X')
+                    $('video', true).pop().copyFrame()
+                        .then(copied => alert.timed('Screenshot saved to clipboard!', 5_000))
+                        .catch(error => alert.timed(`Failed to take screenshot: ${ error }`, 7_000));
+            });
+    }
+
     // End of Initialize
 };
 // End of Initialize
@@ -6931,8 +7220,8 @@ let CUSTOM_CSS,
     WAIT_FOR_PAGE;
 
 // TTV Tools has 60s to initilize correctly...
-let REINIT_PAGE =
-setTimeout(() => {
+let REINIT_JOBS =
+setInterval(() => {
     let NOT_LOADED_CORRECTLY = [],
         ALL_LOADED_CORRECTLY = (true
             // Away Mode
@@ -6944,7 +7233,7 @@ setTimeout(() => {
             // Auto-Claim Bonuses
             && parseBool(
                     parseBool(Settings.auto_claim_bonuses)?
-                        (defined($('#tt-auto-claim-bonuses')) || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')):
+                        (defined($('#tt-auto-claim-bonuses')) || STREAMER.veto || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')):
                     true
                 )
             // Up Next
@@ -6969,21 +7258,24 @@ setTimeout(() => {
 
     if(false
         // This page shouldn't be touched...
-        || RESERVED_TWITCH_PATHNAMES.test(top.location.pathname)
+        || RESERVED_TWITCH_PATHNAMES.test(window.location.pathname)
 
         // Everything loaded just fine
         || ALL_LOADED_CORRECTLY
     )
-        return;
+        return clearInterval(REINIT_JOBS);
 
-    WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`)?.toNativeStack?.();
+    WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
 
-    for(let job of NOT_LOADED_CORRECTLY)
-        RestartJob(job, 'failure_to_activate');
+    if(parseBool(Settings.recover_pages))
+        return location.reload();
+    else
+        for(let job of NOT_LOADED_CORRECTLY)
+            RestartJob(job, 'failure_to_activate');
 
     // Failed to activate job at...
     // PushToTopSearch({ 'tt-ftaja': (+new Date).toString(36) });
-}, 30_000);
+}, 45_000);
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version == version;
@@ -7376,13 +7668,19 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             CustomCSSInitializer: {
                 CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
 
-                let [accent, compliment] = (Settings.accent_color ?? 'blue/12').split('/');
+                let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
 
                 CUSTOM_CSS.innerHTML =
                 `
                 :root {
                     --user-accent-color: var(--color-${ accent });
-                    --user-compliment-color: var(--color-${ accent }-${ compliment });
+                    --user-complement-color: var(--color-${ accent }-${ complement });
+
+                    /* z-index meanings */
+                    --always-on-top:    9999;
+                    --normal:           999;
+                    --always-on-bottom: 99;
+                    --baseline:         9;
                 }
 
                 .tt-first-run {
@@ -7402,7 +7700,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 [up-next--body] {
                     background-color: var(--user-accent-color);
                     border-radius: 0.5rem;
-                    color: var(--color-hinted-grey-${ compliment });
+                    color: var(--color-hinted-grey-${ complement });
                 }
 
                 [up-next--body][empty="true"i] {
@@ -7410,7 +7708,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     background-repeat: no-repeat;
                     background-size: 35rem;
                     background-position: bottom left;
-                    background-blend-mode: normal;
+                }
+
+                [up-next--body][empty="true"i]:is([tt-mix-blend$="auto"i]) {
+                    background-blend-mode: difference;
                 }
 
                 [up-next--body][allowed="false"i] {
@@ -7456,6 +7757,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--user-accent-color) }
                 [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--user-accent-color) }
 
+                /* Change Up Next font color */
+                [class*="theme"i][class*="dark"i] [tt-mix-blend$="auto"i] { --mix-blend-mode:color-dodge }
+                [class*="theme"i][class*="light"i] [tt-mix-blend$="auto"i] { --mix-blend-mode:color-burn }
+
                 /* Away Mode */
                 #away-mode svg[id^="tt-away-mode"i] {
                     display: inline-block;
@@ -7498,7 +7803,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                     position: fixed;
                     margin-left: 7rem;
-                    z-index: 9;
+                    z-index: 999;
 
                     height: 9rem;
                     width: 16rem;
@@ -7517,7 +7822,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     padding: 0;
                     left: 0;
                     top: 0;
-                    z-index: 99;
+                    z-index: 999;
 
                     height: 100% !important;
                     width: 100% !important;
