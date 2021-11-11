@@ -147,7 +147,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 
         // Only re-execute if in an iframe
         if(top != window) {
-            // Observe location changes
+            // Observe [top] location changes
             LocationObserver: {
                 let { body } = document,
                     observer = new MutationObserver(mutations => {
@@ -224,14 +224,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                 // Is this the first time the extension has run?
                 // If so, then point out what's been changed
                 case INSTALL: {
-                    setTimeout(() => {
-                        // Add items to mark as "First Run"
-
-                        setTimeout(() => {
-                            $('.tt-first-run', true)
-                                .forEach(element => element.classList.remove('tt-first-run'));
-                        }, 30_000);
-                    }, 5_000);
+                    // Alert something for the players...
                 } break;
             }
 

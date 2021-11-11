@@ -37,7 +37,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     } = top;
 
     // Fill STREAMER
-    let [path, name, endpoint] = top.location.pathname.split(/(?<!^)\//),
+    let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
     STREAMER ??= ({ name: (name ?? path), sole });
@@ -141,7 +141,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 text: textContainer,
                 icon: $('svg, img', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / hr`, { top: -10 }),
+                tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`, { top: -10 }),
             };
 
             button.tooltip.id = new UUID().toString();
@@ -174,7 +174,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             button.container.setAttribute('tt-auto-claim-enabled', enabled);
             button.text.innerHTML = ['','+'][+enabled] + BonusChannelPointsSVG;
-            button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / hr`;
+            button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
         };
 
         button.container.onmouseenter ??= event => {
@@ -610,7 +610,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 // Load extra emotes
                 for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
-                    // TODO - might cause loading issues?
+                    // TODO: might cause loading issues?
                     await LOAD_BTTV_EMOTES(keyword);
             })
             .then(() => {
@@ -887,7 +887,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .map(img => OWNED_EMOTES.set(img.alt, shrt(img.src)));
 
                 // Close and continue...
-                // TODO - add an `onscroll` event listener to close the panel dynamically
+                // TODO: add an `onscroll` event listener to close the panel dynamically
                 setTimeout(() => {
                     $('#tt-hidden-emote-container')?.removeAttribute('id');
 
@@ -2279,25 +2279,151 @@ let Chat__Initialize = async(START_OVER = false) => {
 // End of Chat__Initialize
 
 let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
-    let {
-        USERNAME,
-        LANGUAGE,
-        THEME,
-
-        PATHNAME,
-        STREAMER,
-
-        GLOBAL_EVENT_LISTENERS,
-    } = top;
+    let USERNAME, LANGUAGE, THEME,
+        PATHNAME, STREAMER,
+        GLOBAL_EVENT_LISTENERS;
 
     // Fill STREAMER
-    let [path, name, endpoint] = top.location.pathname.split(/(?<!^)\//),
+    let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
     STREAMER ??= ({ name: (name ?? path), sole });
 
     // Fill GLOBAL_EVENT_LISTENERS
     GLOBAL_EVENT_LISTENERS ??= {};
+
+    /*** Automation
+     *                    _                        _   _
+     *         /\        | |                      | | (_)
+     *        /  \  _   _| |_ ___  _ __ ___   __ _| |_ _  ___  _ __
+     *       / /\ \| | | | __/ _ \| '_ ` _ \ / _` | __| |/ _ \| '_ \
+     *      / ____ \ |_| | || (_) | | | | | | (_| | |_| | (_) | | | |
+     *     /_/    \_\__,_|\__\___/|_| |_| |_|\__,_|\__|_|\___/|_| |_|
+     *
+     *
+     */
+    /*** Greedy Raiding
+     *       _____                   _         _____       _     _ _
+     *      / ____|                 | |       |  __ \     (_)   | (_)
+     *     | |  __ _ __ ___  ___  __| |_   _  | |__) |__ _ _  __| |_ _ __   __ _
+     *     | | |_ | '__/ _ \/ _ \/ _` | | | | |  _  // _` | |/ _` | | '_ \ / _` |
+     *     | |__| | | |  __/  __/ (_| | |_| | | | \ \ (_| | | (_| | | | | | (_| |
+     *      \_____|_|  \___|\___|\__,_|\__, | |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
+     *                                  __/ |                               __/ |
+     *                                 |___/                               |___/
+     */
+    // May not always fire, sometimes Twitch prevents banners from being displayed in iframes
+    let RAID_LOGGED = false;
+    Handlers.greedy_raiding = () => {
+        let raiding = defined($('[data-test-selector="raid-banner"i]')),
+            atTop = (top == window);
+
+        if(RAID_LOGGED || atTop || !raiding)
+            return;
+        RAID_LOGGED ||= raiding;
+
+        let raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
+            [,from,] = window.location.pathname.split(/(?<!^)\//),
+            [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
+
+        WARN(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`).toNativeStack();
+
+        Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
+            WARN(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`).toNativeStack();
+
+            let payable = defined($('[data-test-selector="balance-string"i]'));
+
+            top.postMessage({ action: 'raid', from, to, events, payable });
+        });
+    };
+    Timers.greedy_raiding = 5_000;
+
+    Unhandlers.greedy_raiding = () => {};
+
+    __GreedyRaiding__:
+    if(parseBool(Settings.greedy_raiding)) {
+        // REMARK('[CHILD] Adding raid-watching logic...');
+
+        RegisterJob('greedy_raiding');
+    }
+
+    /*** Customization
+     *       _____          _                  _          _   _
+     *      / ____|        | |                (_)        | | (_)
+     *     | |    _   _ ___| |_ ___  _ __ ___  _ ______ _| |_ _  ___  _ __
+     *     | |   | | | / __| __/ _ \| '_ ` _ \| |_  / _` | __| |/ _ \| '_ \
+     *     | |___| |_| \__ \ || (_) | | | | | | |/ / (_| | |_| | (_) | | | |
+     *      \_____\__,_|___/\__\___/|_| |_| |_|_/___\__,_|\__|_|\___/|_| |_|
+     *
+     *
+     */
+    /*** Point Watcher (Helper)
+     *      _____      _       _    __          __   _       _
+     *     |  __ \    (_)     | |   \ \        / /  | |     | |
+     *     | |__) |__  _ _ __ | |_   \ \  /\  / /_ _| |_ ___| |__   ___ _ __
+     *     |  ___/ _ \| | '_ \| __|   \ \/  \/ / _` | __/ __| '_ \ / _ \ '__|
+     *     | |  | (_) | | | | | |_     \  /\  / (_| | || (__| | | |  __/ |
+     *     |_|   \___/|_|_| |_|\__|     \/  \/ \__,_|\__\___|_| |_|\___|_|
+     *
+     *
+     */
+    let pointWatcherCounter = 0,
+        balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button'),
+        hasPointsEnabled = false;
+
+    Handlers.point_watcher_helper = async() => {
+        LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
+            let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
+                allRewards = $('[data-test-selector="cost"i]', true),
+                balance = $('[data-test-selector="balance-string"i]');
+
+            hasPointsEnabled ||= defined(balance);
+
+            amount = (STREAMER.coin = balance?.innerText ?? (hasPointsEnabled? amount: '&#128683;'));
+            fiat = (STREAMER.fiat ??= fiat ?? 0);
+            face = (STREAMER.face ??= face ?? '');
+            notEarned = (
+                (allRewards?.length)?
+                    allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length:
+                (notEarned > -Infinity)?
+                    notEarned:
+                -1
+            );
+            pointsToEarnNext = (
+                (allRewards?.length)?
+                    allRewards
+                        .map(amount => (parseCoin(amount?.innerText) > STREAMER.coin? parseCoin(amount?.innerText) - STREAMER.coin: 0))
+                        .sort((x, y) => (x > y? -1: +1))
+                        .filter(x => x > 0)
+                        .pop():
+                (notEarned > -Infinity)?
+                    pointsToEarnNext:
+                0
+            );
+
+            face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
+
+            ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
+
+            SaveCache({ ChannelPoints });
+        });
+    };
+    Timers.point_watcher_helper = 15_000;
+
+    Unhandlers.point_watcher_helper = () => {
+        $('.tt-point-amount', true)
+            .forEach(span => span?.remove());
+    };
+
+    __PointWatcherHelper__:
+    if(parseBool(Settings.point_watcher_placement)) {
+        RegisterJob('point_watcher_helper');
+
+        if(defined(balanceButton)) {
+            balanceButton.click();
+            setTimeout(() => balanceButton.click(), 300);
+        }
+    }
 
     /*** Video Recovery
      *     __      ___     _              _____
@@ -2401,60 +2527,6 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
         RegisterJob('soft_unban');
     }
     // End of Chat__Initialize_Safe_Mode
-
-    /*** Experimental Features
-     *      ______                      _                      _        _   ______         _
-     *     |  ____|                    (_)                    | |      | | |  ____|       | |
-     *     | |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ __ _| | | |__ ___  __ _| |_ _   _ _ __ ___  ___
-     *     |  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ _` | | |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
-     *     | |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | || (_| | | | | |  __/ (_| | |_| |_| | | |  __/\__ \
-     *     |______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__\__,_|_| |_|  \___|\__,_|\__|\__,_|_|  \___||___/
-     *                 | |
-     *                 |_|
-     */
-    /*** Greedy Raiding
-     *      _____              _ _      _   _             _____       _     _ _
-     *     |  __ \            | (_)    | | (_)           |  __ \     (_)   | (_)
-     *     | |__) | __ ___  __| |_  ___| |_ ___   _____  | |__) |__ _ _  __| |_ _ __   __ _
-     *     |  ___/ '__/ _ \/ _` | |/ __| __| \ \ / / _ \ |  _  // _` | |/ _` | | '_ \ / _` |
-     *     | |   | | |  __/ (_| | | (__| |_| |\ V /  __/ | | \ \ (_| | | (_| | | | | | (_| |
-     *     |_|   |_|  \___|\__,_|_|\___|\__|_| \_/ \___| |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
-     *                                                                                 __/ |
-     *                                                                                |___/
-     */
-    let RAID_LOGGED = false;
-    Handlers.greedy_raiding = () => {
-        let raiding = defined($('[data-test-selector="raid-banner"i]')),
-            atTop = (top == window);
-
-        if(RAID_LOGGED || atTop || !raiding)
-            return;
-        RAID_LOGGED ||= raiding;
-
-        let raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
-            from = STREAMER.name,
-            [to] = raid_banner.filter(name => name.toLowerCase() != from.toLowerCase());
-
-        LOG(`There is a raid happening on another channel... ${ from } → ${ to }`);
-
-        Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
-            WARN(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`).toNativeStack();
-
-            let payable = defined($('[data-test-selector="balance-string"i]'));
-
-            top.postMessage({ action: 'raid', from, to, events, payable });
-        });
-    };
-    Timers.greedy_raiding = 5_000;
-
-    Unhandlers.greedy_raiding = () => {};
-
-    __GreedyRaiding__:
-    if(parseBool(Settings.greedy_raiding)) {
-        // REMARK('[CHILD] Adding raid-watching logic...');
-
-        RegisterJob('greedy_raiding');
-    }
 };
 // End of Chat__Initialize_Safe_Mode
 
@@ -2485,7 +2557,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         // The main controller is ready
         && (false
             || parseBool(top.MAIN_CONTROLLER_READY)
-            || this === top
+            || top == window
         )
         // The welcome message exists
         && defined($(`[data-a-target*="welcome"i]`))
@@ -2503,11 +2575,11 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         setTimeout(Chat__Initialize, 5000);
         clearInterval(Chat__PAGE_CHECKER);
 
-        top.CHILD_CONTROLLER_READY = true;
+        window.CHILD_CONTROLLER_READY = true;
 
         // Only re-execute if in an iframe
         if(top != window) {
-            // Observe location changes
+            // Observe [top] location changes
             LocationObserver: {
                 let { body } = document,
                     observer = new MutationObserver(mutations => {
@@ -2698,15 +2770,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 // Is this the first time the extension has run?
                 // If so, then point out what's been changed
                 case INSTALL: {
-                    setTimeout(() => {
-                        for(let element of $('#tt-auto-claim-bonuses', true))
-                            element.classList.add('tt-first-run');
-
-                        setTimeout(() => {
-                            $('.tt-first-run', true)
-                                .forEach(element => element.classList.remove('tt-first-run'));
-                        }, 30_000);
-                    }, 5_000);
+                    // Alert something for the chats...
                 } break;
             }
 

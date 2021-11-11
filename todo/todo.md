@@ -3,32 +3,38 @@
 # TO-DO &mdash; Known Issues
 
 1. Accessibility options?
-    1. "Reverse Emotes"
-        * Sets all emotes back to their text and displays the image in a tooltip
-2. Instance (tab) data separation?
-    * Simply separate each tab's data for certain things, e.g. "Up Next"
-3. "Greedy Raiding" ~~"Predictive Raiding"~~
-    * Heads to the stream as a raid begins (within 15s)
-        * Only activates if the user has "greedy" raiding enabled
-4. Add the **option** to keep Up Next purely unique
+    * "Reverse Emotes"
+        + Sets all emotes back to their text and displays the image in a tooltip
+2. Add the **option** to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
     * Up Next does not currently allow duplicates
-5. Add the "Sync Activity across devices" option
+3. Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
-6. Remove more language dependencies
+4. Remove more language dependencies
     * ~~`parseCoin` is language dependent - it only reads "SI" units~~
         * Tentative fix `4.11.5`
     * All bulletin filters are language dependent - they only recognize English
-7. Add an "Auto-Spend" feature for Channel Points
+5. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
-8. Up Next sometimes goes in an irregular order
+6. Up Next sometimes goes in an irregular order
     * Not sure why
-9. `chat.js` has an issue for card popups: `new Search` does not always complete
+7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
+8. `v5` will need to be made in [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
+    * Required by **Jan 2023**
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.11)
+- Adjusted iframe logic that affects Greedy Raiding (detected streamer)
+- Adjusted receipt logic
+- Adjusted wording for the Automatic Accent Color option (now calculates the color's name)
+- Adjusted watch time logic (now counts the moment the page loads)
+- Adjusted first run notices (made some elements more noticeable)
+- Fixed issue with pausing First in Line
+- Added a point watcher helper to framed chats (now updates the amount correctly no matter what channel is displayed)
+
 > [`4.12.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.10)
 - Removed some `toNativeStack` messages
 - Added better styling functionality

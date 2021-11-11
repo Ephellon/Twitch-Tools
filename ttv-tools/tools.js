@@ -17,6 +17,7 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     USERNAME,
     LANGUAGE,
     THEME,
+    ANTITHEME,
     THEME__CHANNEL_DARK,
     THEME__CHANNEL_LIGHT,
     LITERATURE,
@@ -31,12 +32,13 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
 awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
     .then(() => {
         UserMenuToggleButton.click();
-        ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText ?? '';
-        USERNAME = top.USERNAME = $('[data-a-target="user-display-name"i]')?.innerText ?? null;
-        THEME = top.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+        ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText ?? '';
+        USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.innerText ?? null;
+        THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+        ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
         $('[data-a-target^="language"i]')?.click();
-        LITERATURE = top.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
+        LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
         UserMenuToggleButton.click();
     });
 
@@ -139,7 +141,7 @@ class Balloon {
                                             'data-a-target': 'tt-animation-target'
                                         },
                                         f('div.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
-                                            f(`div#tt-notification-counter-output--${ U }.tt-c-text-overlay.tt-number-badge__badge.tt-relative`, {
+                                            f(`div#tt-notification-counter-output--${ U }.tt-number-badge__badge.tt-relative`, {
                                                 'interval-id': setInterval(() => {
                                                     let counter = $(`#tt-notification-counter--${ uuid }`),
                                                         output = $(`#tt-notification-counter-output--${ uuid }`),
@@ -625,7 +627,7 @@ class ChatFooter {
 
         let parent = $('[data-a-target="chat-scroller"i]'),
             footer =
-            f('div#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-c-text-overlay.tt-mg-b-1',
+            f('div#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
                 {
                     uuid,
 
@@ -839,7 +841,7 @@ class Search {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
             twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
 
-        let pathname = top.location.pathname.substr(1),
+        let pathname = window.location.pathname.substr(1),
             options = ({
                 method: 'POST',
                 headers: {
@@ -1953,10 +1955,10 @@ async function GetActivity() {
         let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
 
         if(open) {
-            ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText;
+            ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText;
         } else {
             UserMenuToggleButton?.click();
-            ACTIVITY = top.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText;
+            ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.innerText;
             UserMenuToggleButton?.click();
         }
 
@@ -1971,11 +1973,11 @@ async function GetLanguage() {
         let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
 
         if(open) {
-            LITERATURE = top.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
+            LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
         } else {
             UserMenuToggleButton?.click();
             $('[data-a-target^="language"i]')?.click();
-            LITERATURE = top.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
+            LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
             UserMenuToggleButton?.click();
         }
 
@@ -1991,7 +1993,7 @@ let { Glyphs } = top;
 let nth = n => {
     n += '';
 
-    switch(top.LANGUAGE) {
+    switch(window.LANGUAGE) {
         case 'de': {
             // 1. 2. 3. 4. ... 11. 12. 13. ... 21. 22. 23.
 
@@ -2061,7 +2063,7 @@ let isLive = channel => channel?.live;
  */
 
 // Update common variables
-let PATHNAME = top.location.pathname,
+let PATHNAME = window.location.pathname,
     // The current streamer
     STREAMER,
     // The followed streamers (excluding STREAMER)
@@ -2180,7 +2182,7 @@ try {
                     } break;
 
                     case 'user_language_preference': {
-                        top.LANGUAGE = LANGUAGE = newValue;
+                        window.LANGUAGE = LANGUAGE = newValue;
                     } break;
 
                     case 'watch_time_placement': {
@@ -2302,8 +2304,8 @@ try {
                 // "Would the user allow this raid condition?"
                 if(false
                     || (payable && method == "greed")
-                    || (STREAMERS.contains(({ name }) => RegExp(`^${ to }$`).test(name)) && method == "unfollowed")
-                    || (method == "all")
+                    // || (STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)) && method == "unfollowed")
+                    // || (method == "all")
                 )
                     confirm
                         ?.timed?.(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000, true)
@@ -2338,7 +2340,7 @@ try {
 
 async function update() {
     // The location
-    top.PATHNAME = PATHNAME = top.location.pathname;
+    window.PATHNAME = PATHNAME = window.location.pathname;
 
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
@@ -2346,7 +2348,8 @@ async function update() {
         .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
     // The theme
-    top.THEME = THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+    window.THEME = THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+    ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
     let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
         .map(color => color
@@ -2400,7 +2403,7 @@ async function update() {
     THEME__CHANNEL_LIGHT = (THEME != 'dark'? PRIMARY: SECONDARY);
 
     // All Channels under Search
-    top.SEARCH = SEARCH = [
+    window.SEARCH = SEARCH = [
         ...SEARCH,
         // Current (followed) streamers
         ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
@@ -2442,7 +2445,7 @@ async function update() {
     ].filter(uniqueChannels);
 
     // All visible Channels
-    top.CHANNELS = CHANNELS = [
+    window.CHANNELS = CHANNELS = [
         ...CHANNELS,
         // Current (followed) streamers
         ...$(`#sideNav .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
@@ -2483,7 +2486,7 @@ async function update() {
     ].filter(uniqueChannels);
 
     // All followed Channels
-    top.STREAMERS = STREAMERS = [
+    window.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
         ...$(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
@@ -2524,7 +2527,7 @@ async function update() {
     ].filter(uniqueChannels);
 
     // All Notifications
-    top.NOTIFICATIONS = NOTIFICATIONS = [
+    window.NOTIFICATIONS = NOTIFICATIONS = [
         ...NOTIFICATIONS,
         // Notification elements
         ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true).map(
@@ -2554,7 +2557,7 @@ async function update() {
 
     // Every channel
         // Putting the channels in this order guarantees channels already defined aren't overridden
-    top.ALL_CHANNELS = ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
+    window.ALL_CHANNELS = ALL_CHANNELS = [...ALL_CHANNELS, ...SEARCH, ...NOTIFICATIONS, ...STREAMERS, ...CHANNELS, STREAMER].filter(defined).filter(uniqueChannels);
 }
 
 let // Features that require the experimental flag
@@ -2602,7 +2605,7 @@ let TWITCH_PATHNAMES = [
         'activate',
         'bits(-checkout/?)?',
         'checkout/', 'collections/?', 'communities/?',
-        'dashboard/?', 'directory/?', 'downloads?',
+        'dashboard/?', 'directory/?', 'downloads?', 'drops/?',
         'event/?',
         'following', 'friends?',
         'inventory',
@@ -2650,15 +2653,15 @@ let Initialize = async(START_OVER = false) => {
                 max = abs(JobTime) * 1.1;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
+                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ window.location.pathname }`)
                     ?.toNativeStack?.();
         },
         START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
 
     // Initialize all settings/features //
 
-    let GLOBAL_TWITCH_API = (top.GLOBAL_TWITCH_API ??= {}),
-        GLOBAL_EVENT_LISTENERS = (top.GLOBAL_EVENT_LISTENERS ??= {});
+    let GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {}),
+        GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {});
 
     SPECIAL_MODE = defined($('[data-test-selector="exit-button"i]'));
     NORMAL_MODE = !SPECIAL_MODE;
@@ -2883,12 +2886,13 @@ let Initialize = async(START_OVER = false) => {
     ].filter(uniqueChannels);
 
     /** Streamer Array - the current streamer/channel
-     * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
+     * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * cult:number*      - GETTER: the estimated number of followers
+     * data:object       - extra data about the channel
      * done:boolean*     - GETTER: are all of the channel point rewards purchasable
-     * face:string       - GETTER: a URL to the channel points image, if applicable
-     * fiat:string*      - GETTER: returns the name of the streamer's coin, if applicable
+     * face:string       - GETTER: a URL to the channel points image (if applicable)
+     * fiat:string*      - GETTER: returns the name of the channel points (if applicable)
      * follow:function   - follows the current channel
      * game:string*      - GETTER: the name of the current game/category
      * href:string       - link to the channel (usually the current href)
@@ -2900,20 +2904,22 @@ let Initialize = async(START_OVER = false) => {
      * ping:boolean*     - GETTER: does the user have notifications on
      * plug:boolean*     - GETTER: is there an advertisement running
      * poll:number*      - GETTER: how many viewers are watching the channel
+     * redo:boolean*     - GETTER: is the channel streaming a rerun (VOD)
      * sole:number       - GETTER: the channel's ID
      * tags:array*       - GETTER: tags of the current stream
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
-     * tint:string*      - GETTER: the channel's accent color (if applicable)
      * time:number*      - GETTER: how long has the channel been live
+     * tint:string*      - GETTER: the channel's accent color (if applicable)
+     * tone:string*      - GETTER: the channel's complementary accent color (if applicable)
      * unfollow:function - unfollows the current channel
-     * veto:boolean      - GETTER: determines if the user is banned from the streamer's chat or not
+     * veto:boolean      - GETTER: determines if the user is banned from the chat or not
 
      * Only available with Fine Details enabled
      * ally:boolean      - is the channel partnered?
      * fast:boolean      - is the channel using turbo?
      * nsfw:boolean      - is the channel deemed NSFW (mature)?
      */
-    STREAMER = top.STREAMER = {
+    STREAMER = window.STREAMER = {
         get chat() {
             return GetChat();
         },
@@ -3099,7 +3105,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get tint() {
-            let color = top
+            let color = window
                 ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`))
                 ?.getPropertyValue?.('--color-accent');
 
@@ -3113,7 +3119,7 @@ let Initialize = async(START_OVER = false) => {
                 .map(v => (255 - parseInt(v, 16)).toString(16).padStart(2, '0'))
                 .join('');
 
-            return `#${ color }`;
+            return (`#${ color }`).toUpperCase();
         },
 
         get veto() {
@@ -3178,7 +3184,7 @@ let Initialize = async(START_OVER = false) => {
      */
     // Notifications
     NOTIFICATIONS = [
-        ...$('[data-test-selector="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true)
+        ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true)
             .map(element =>
                 ({
                     live: true,
@@ -3396,7 +3402,7 @@ let Initialize = async(START_OVER = false) => {
                     // Get the cookie values
                     let { cookies } = Search;
 
-                    USERNAME = top.USERNAME = cookies.name ?? USERNAME;
+                    USERNAME = window.USERNAME = cookies.name ?? USERNAME;
 
                     // Get the channel/vod information
                     let channelName,
@@ -3666,7 +3672,7 @@ let Initialize = async(START_OVER = false) => {
             };
         });
 
-    // TODO - Add an "un-delete" feature
+    // TODO: Add an "un-delete" feature
     // Keep a copy of all messages
     // REMARK("Keeping a log of all original messages");
     // Messages.set(STREAMER.name, new Set);
@@ -4422,8 +4428,9 @@ let Initialize = async(START_OVER = false) => {
 
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
+            // TODO: Figure out a single pause controller for First in Line
             if(FIRST_IN_LINE_PAUSED)
-                return /* First in Line is paused */;
+                return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
             if(timeRemaining > 60_000)
                 return /* There's more than 1 minute left */;
 
@@ -4474,6 +4481,10 @@ let Initialize = async(START_OVER = false) => {
 
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
+            // The timer is paused
+            if(FIRST_IN_LINE_PAUSED)
+                return /* SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) }) */;
+
             if(!defined(channel)) {
                 LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
 
@@ -4508,9 +4519,6 @@ let Initialize = async(START_OVER = false) => {
                     });
             }
 
-            // The timer is paused
-            if(FIRST_IN_LINE_PAUSED)
-                return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
             // Don't act until 1sec is left
             if(timeRemaining > 1000)
                 return;
@@ -4648,7 +4656,55 @@ let Initialize = async(START_OVER = false) => {
                 [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
-            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`));
+            function getColorName() {
+                let { H, S, L, R, G, B } = Color.RGBtoHSL(
+                    (
+                        THEME == 'dark'?
+                            THEME__CHANNEL_DARK:
+                        THEME__CHANNEL_LIGHT
+                    ).split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16))
+                );
+
+                // TODO: Add more colors &/ better detection
+                let colors = {
+                    // Extremes
+                    light: ({ S, L }) => ((L > 70 && L <= 90) || (S <= 15)),
+                    dark: ({ S, L }) => (L > 0 && L <= 10),
+                    grey: ({ R, G, B }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9),
+
+                    // Reds
+                    pink: ({ H }) => H > 285 && H <= 330,
+                    red: ({ H }) => H > 330 || H <= 30,
+                    orange: ({ H }) => H > 30 && H <= 45,
+                    brown: ({ H, S, L }) => colors.orange({ H }) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
+                    yellow: ({ H }) => H > 45 && H <= 75,
+
+                    // Greens
+                    green: ({ H }) => H > 75 && H <= 150,
+
+                    // Blues
+                    blue: ({ H }) => H > 150 && H <= 240,
+                    purple: ({ H }) => H > 240 && H <= 285,
+                };
+
+                let name = [];
+
+                for(let key in colors) {
+                    let condition = colors[key];
+
+                    if(condition({ H, S, L, R, G, B }))
+                        name.push(key);
+                }
+
+                return name.sort(name => /^(light|dark)$/i.test(name)? -1: 0).join(' ').replace(/[^]*(grey|brown)[^]*/, '$1').replace(/light$/i, 'white').replace(/dark$/i, 'black');
+            }
+
+            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
+
+            // Update the color name...
+            setInterval(() => {
+                first_in_line_help_button.tooltip.innerHTML = (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`).replace(/\bcolored\b/g, getColorName);
+            }, 1000);
 
             // Load cache
             LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
@@ -4687,7 +4743,6 @@ let Initialize = async(START_OVER = false) => {
                 );
 
                 REMARK(`Up Next Boost is ${ ['dis','en'][FIRST_IN_LINE_BOOST | 0] }abled`);
-
 
                 if(FIRST_IN_LINE_BOOST) {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_TIME_REMAINING(), fiveMin));
@@ -4934,7 +4989,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     /* First in Line is paused */
                                     if(FIRST_IN_LINE_PAUSED) {
-                                        SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                        // SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                         JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000);
 
                                         return;
@@ -4945,7 +5000,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     live ||= SEARCH_CACHE.get(name)?.live;
 
-                                    let time = GET_TIME_REMAINING(),
+                                    let time = timeRemaining,
                                         intervalID = parseInt(container.getAttribute('animationID')),
                                         index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
@@ -4969,7 +5024,7 @@ let Initialize = async(START_OVER = false) => {
                                             return clearInterval(intervalID);
                                         }, 5000);
 
-                                    container.setAttribute('time', GET_TIME_REMAINING() - (index > 0? 0: 1000));
+                                    container.setAttribute('time', time - (index > 0? 0: 1000));
 
                                     if(container.getAttribute('index') != index)
                                         container.setAttribute('index', index);
@@ -5016,7 +5071,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.first_in_line = (ActionableNotification) => {
         START__STOP_WATCH('first_in_line');
 
-        let notifications = [...$('[data-test-selector="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true), ActionableNotification].filter(defined);
+        let notifications = [...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true), ActionableNotification].filter(defined);
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
@@ -5150,7 +5205,7 @@ let Initialize = async(START_OVER = false) => {
 
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
-                                SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                // SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                 JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000);
 
                                 return;
@@ -5163,7 +5218,7 @@ let Initialize = async(START_OVER = false) => {
 
                             live ||= SEARCH_CACHE.get(name)?.live;
 
-                            let time = GET_TIME_REMAINING(),
+                            let time = timeRemaining,
                                 intervalID = parseInt(container.getAttribute('animationID')),
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
@@ -5188,7 +5243,7 @@ let Initialize = async(START_OVER = false) => {
                                     return clearInterval(intervalID);
                                 }, 5000);
 
-                            container.setAttribute('time', GET_TIME_REMAINING() - (index > 0? 0: 1000));
+                            container.setAttribute('time', time - (index > 0? 0: 1000));
 
                             if(container.getAttribute('index') != index)
                                 container.setAttribute('index', index);
@@ -5502,7 +5557,7 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(STREAMER))
             return JUDGE__STOP_WATCH('auto_follow_raids');
 
-        let url = parseURL(top.location),
+        let url = parseURL(window.location),
             data = url.searchParameters;
 
         let { like, follow } = STREAMER,
@@ -5660,7 +5715,7 @@ let Initialize = async(START_OVER = false) => {
         if(CONTINUE_RAIDING)
             return JUDGE__STOP_WATCH('prevent_raiding');
 
-        let url = parseURL(top.location),
+        let url = parseURL(window.location),
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
@@ -5680,7 +5735,7 @@ let Initialize = async(START_OVER = false) => {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
                 if(method == "greed" && raiding) {
-                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).pushToSearch({ referrer: 'raid' }, true).href, { html: LZW.encode64(document.documentElement.innerHTML) });
+                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).pushToSearch({ referrer: 'raid' }, true).href);
 
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
@@ -5732,6 +5787,58 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('prevent_raiding');
     }
 
+    /*** Greedy Raiding
+     *       _____                   _         _____       _     _ _
+     *      / ____|                 | |       |  __ \     (_)   | (_)
+     *     | |  __ _ __ ___  ___  __| |_   _  | |__) |__ _ _  __| |_ _ __   __ _
+     *     | | |_ | '__/ _ \/ _ \/ _` | | | | |  _  // _` | |/ _` | | '_ \ / _` |
+     *     | |__| | | |  __/  __/ (_| | |_| | | | \ \ (_| | | (_| | | | | | (_| |
+     *      \_____|_|  \___|\___|\__,_|\__, | |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
+     *                                  __/ |                               __/ |
+     *                                 |___/                               |___/
+     */
+    let GREEDY_RAIDING_FRAMES = new Map;
+    Handlers.greedy_raiding = () => {
+        let online = STREAMERS.filter(isLive),
+            container = (null
+                ?? $('#tt-greedy-raiding--container')
+                ?? furnish('div#tt-greedy-raiding--container', { style: 'display:none!important' })
+            );
+
+        for(let channel of online) {
+            let { name } = channel;
+            let frame = (null
+                ?? $(`#tt-greedy-raiding--${ name }`)
+                ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
+                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv`,
+
+                    // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
+                })
+            );
+
+            GREEDY_RAIDING_FRAMES.set(channel.name, frame);
+
+            if(![...container.children].contains(frame))
+                container.append(frame);
+        }
+
+        if(![...document.body.children].contains(container))
+            document.body.append(container);
+    };
+    Timers.greedy_raiding = 5_000;
+
+    Unhandlers.greedy_raiding = () => {
+        for(let [name, frame] of GREEDY_RAIDING_FRAMES)
+            frame?.remove();
+    };
+
+    __GreedyRaiding__:
+    if(parseBool(Settings.greedy_raiding)) {
+        REMARK('Adding raid-watching logic...');
+
+        RegisterJob('greedy_raiding');
+    }
+
     /*** Stay Live
      *       _____ _                _      _
      *      / ____| |              | |    (_)
@@ -5755,7 +5862,7 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('stay_live');
 
         let next = GetNextStreamer(),
-            { pathname } = top.location;
+            { pathname } = window.location;
 
         try {
             await LoadCache('UserIntent', async({ UserIntent }) => {
@@ -6220,7 +6327,7 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(chat)) {
                 let framedData = PostOffice.get('points_receipt_placement');
 
-                top.PostOffice = PostOffice;
+                window.PostOffice = PostOffice;
 
                 if(!defined(framedData))
                     return;
@@ -6233,7 +6340,10 @@ let Initialize = async(START_OVER = false) => {
             let current = parseCoin(balance?.innerText);
 
             INITIAL_POINTS ??= current;
-            EXACT_POINTS_SPENT = parseCoin(exact_debt?.innerText ?? (INITIAL_POINTS > current? INITIAL_POINTS - current: EXACT_POINTS_SPENT));
+
+            let debt = INITIAL_POINTS - current;
+
+            EXACT_POINTS_SPENT = parseCoin(exact_debt?.innerText ?? (debt? EXACT_POINTS_SPENT > debt? EXACT_POINTS_SPENT: debt: EXACT_POINTS_SPENT));
 
             let animationID = (exact_change?.innerText ?? exact_debt?.innerText ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': 0)),
                 animationTimeStamp = +new Date;
@@ -6677,7 +6787,7 @@ let Initialize = async(START_OVER = false) => {
 
         LoadCache(['WatchTime', 'Watching'], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME }) => {
             if(NORMALIZED_PATHNAME != Watching)
-                STARTED_WATCHING = (+new Date);
+                STARTED_WATCHING = +($('#root').dataset.aPageLoaded ??= +new Date);
 
             WATCH_TIME_INTERVAL = setInterval(() => {
                 let watch_time = $('#tt-watch-time'),
@@ -6690,6 +6800,7 @@ let Initialize = async(START_OVER = false) => {
 
                 watch_time.setAttribute('time', time);
                 watch_time.innerHTML = toTimeString(time, 'clock');
+                watch_time.setAttribute('style', `mix-blend-mode:${ ANTITHEME }en;`);
 
                 if(parseBool(Settings.show_stats))
                     WATCH_TIME_TOOLTIP.innerHTML = comify(parseInt(time / 1000)) + 's';
@@ -6832,7 +6943,7 @@ let Initialize = async(START_OVER = false) => {
                         })
                     );
 
-                    $('[data-a-player-state]')?.addEventListener?.('mouseup', event => top.location.reload());
+                    $('[data-a-player-state]')?.addEventListener?.('mouseup', event => window.location.reload());
                     $('video', false, container).setAttribute('style', `display:none`);
 
                     new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
@@ -7100,68 +7211,6 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('recover_pages');
     }
 
-    /*** Experimental Features
-     *      ______                      _                      _        _   ______         _
-     *     |  ____|                    (_)                    | |      | | |  ____|       | |
-     *     | |__  __  ___ __   ___ _ __ _ _ __ ___   ___ _ __ | |_ __ _| | | |__ ___  __ _| |_ _   _ _ __ ___  ___
-     *     |  __| \ \/ / '_ \ / _ \ '__| | '_ ` _ \ / _ \ '_ \| __/ _` | | |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
-     *     | |____ >  <| |_) |  __/ |  | | | | | | |  __/ | | | || (_| | | | | |  __/ (_| | |_| |_| | | |  __/\__ \
-     *     |______/_/\_\ .__/ \___|_|  |_|_| |_| |_|\___|_| |_|\__\__,_|_| |_|  \___|\__,_|\__|\__,_|_|  \___||___/
-     *                 | |
-     *                 |_|
-     */
-    /*** Greedy Raiding
-     *       _____                   _         _____       _     _ _
-     *      / ____|                 | |       |  __ \     (_)   | (_)
-     *     | |  __ _ __ ___  ___  __| |_   _  | |__) |__ _ _  __| |_ _ __   __ _
-     *     | | |_ | '__/ _ \/ _ \/ _` | | | | |  _  // _` | |/ _` | | '_ \ / _` |
-     *     | |__| | | |  __/  __/ (_| | |_| | | | \ \ (_| | | (_| | | | | | (_| |
-     *      \_____|_|  \___|\___|\__,_|\__, | |_|  \_\__,_|_|\__,_|_|_| |_|\__, |
-     *                                  __/ |                               __/ |
-     *                                 |___/                               |___/
-     */
-    let GREEDY_RAIDING_FRAMES = new Map;
-    Handlers.greedy_raiding = () => {
-        let online = STREAMERS.filter(isLive),
-            container = (null
-                ?? $('#tt-greedy-raiding--container')
-                ?? furnish('div#tt-greedy-raiding--container', { style: 'display:none!important' })
-            );
-
-        for(let channel of online) {
-            let { name } = channel;
-            let frame = (null
-                ?? $(`#tt-greedy-raiding--${ name }`)
-                ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
-                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv`,
-
-                    // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
-                })
-            );
-
-            GREEDY_RAIDING_FRAMES.set(channel.name, frame);
-
-            if(![...container.children].contains(frame))
-                container.append(frame);
-        }
-
-        if(![...document.body.children].contains(container))
-            document.body.append(container);
-    };
-    Timers.greedy_raiding = 5_000;
-
-    Unhandlers.greedy_raiding = () => {
-        for(let [name, frame] of GREEDY_RAIDING_FRAMES)
-            frame?.remove();
-    };
-
-    __GreedyRaiding__:
-    if(parseBool(Settings.greedy_raiding)) {
-        REMARK('Adding raid-watching logic...');
-
-        RegisterJob('greedy_raiding');
-    }
-
     /*** Miscellaneous
      *      __  __ _              _ _
      *     |  \/  (_)            | | |
@@ -7311,25 +7360,25 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             Settings = await GetSettings();
 
             // Set the usre's language
-            let [documentLanguage] = (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
+            let [documentLanguage] = (window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
 
-            top.LANGUAGE = LANGUAGE = Settings.user_language_preference ?? documentLanguage;
+            window.LANGUAGE = LANGUAGE = Settings.user_language_preference ?? documentLanguage;
 
             // Give the storage 1s to perform any "catch-up"
             setTimeout(Initialize, 1000);
             clearInterval(PAGE_CHECKER);
 
-            top.MAIN_CONTROLLER_READY = true;
+            window.MAIN_CONTROLLER_READY = true;
 
             // Observe location changes
             LocationObserver: {
                 let { body } = document,
                     observer = new MutationObserver(mutations => {
                         mutations.map(mutation => {
-                            if(PATHNAME !== top.location.pathname) {
+                            if(PATHNAME !== window.location.pathname) {
                                 let OLD_HREF = PATHNAME;
 
-                                PATHNAME = top.location.pathname;
+                                PATHNAME = window.location.pathname;
 
                                 NORMALIZED_PATHNAME = PATHNAME
                                     // Remove common "modes"
@@ -7643,7 +7692,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                 // Do NOT soft-reset ("turn off, turn on") these settings
                 // They will be destroyed, including any data they are using
-                let VOLATILE = top.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+                let VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
 
                 DestroyingJobs:
                 for(let job in Jobs)
@@ -7684,10 +7733,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 }
 
                 .tt-first-run {
-                    border: 1px solid var(--color-blue);
+                    background-color: var(--color-blue);
                     border-radius: 3px;
 
-                    transition: border 1s;
+                    transition: background-color 1s;
                 }
 
                 [animationID] a { cursor: grab }
@@ -7710,7 +7759,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     background-position: bottom left;
                 }
 
-                [up-next--body][empty="true"i]:is([tt-mix-blend$="auto"i]) {
+                [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
                     background-blend-mode: difference;
                 }
 
@@ -7758,8 +7807,8 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--user-accent-color) }
 
                 /* Change Up Next font color */
-                [class*="theme"i][class*="dark"i] [tt-mix-blend$="auto"i] { --mix-blend-mode:color-dodge }
-                [class*="theme"i][class*="light"i] [tt-mix-blend$="auto"i] { --mix-blend-mode:color-burn }
+                [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { mix-blend-mode:lighten }
+                [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { mix-blend-mode:darken }
 
                 /* Away Mode */
                 #away-mode svg[id^="tt-away-mode"i] {
@@ -7771,6 +7820,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                 #tt-away-mode--hide {
                     position: absolute;
+                }
+
+                #tt-away-mode--hide, #tt-away-mode--show {
+                    fill: var(--color-text-base);
                 }
 
                 [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
@@ -7854,11 +7907,12 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                             for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
                                 element.classList.add('tt-first-run');
 
-                            setTimeout(() => {
-                                $('.tt-first-run', true)
-                                    .forEach(element => element.classList.remove('tt-first-run'));
-                            }, 30_000);
-                        }, 10_000);
+                            let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+
+                            alert
+                                .timed(`Please visit the <a href="${ Runtime.getURL('settings.html') }" target="_blank">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
+                                .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
+                        }, 15_000);
                     } break;
                 }
 

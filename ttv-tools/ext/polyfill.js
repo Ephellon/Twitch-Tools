@@ -1717,6 +1717,9 @@ alert.silent ??= (message = '') => {
     let response = alert(message),
         container = $('.tt-alert');
 
+    if(container.classList.contains('tt-silent'))
+        return response;
+
     container.classList.add('tt-silent');
     setTimeout(() => container.classList.add('tt-veiled'), 7_000);
 
@@ -1728,6 +1731,9 @@ alert.silent ??= (message = '') => {
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     let response = alert.silent(message),
         container = $('.tt-alert');
+
+    if(container.classList.contains('tt-timed'))
+        return response;
 
     container.classList.add('tt-timed');
     $('.tt-alert-header').append(
@@ -1832,6 +1838,9 @@ confirm.silent ??= (message = '') => {
     let response = confirm(message),
         container = $('.tt-confirm');
 
+    if(container.classList.contains('tt-silent'))
+        return response;
+
     container.classList.add('tt-silent');
     setTimeout(() => container.classList.add('tt-veiled'), 7_000);
 
@@ -1843,6 +1852,9 @@ confirm.silent ??= (message = '') => {
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     let response = confirm.silent(message),
         container = $('.tt-confirm');
+
+    if(container.classList.contains('tt-timed'))
+        return response;
 
     container.classList.add('tt-timed');
     $('.tt-confirm-header').append(
@@ -1958,6 +1970,9 @@ prompt.silent ??= (message = '', defaultValue = '') => {
     let response = prompt(message, defaultValue),
         container = $('.tt-prompt');
 
+    if(container.classList.contains('tt-silent'))
+        return response;
+
     container.classList.add('tt-silent');
     setTimeout(() => container.classList.add('tt-veiled'), 7_000);
 
@@ -1969,6 +1984,9 @@ prompt.silent ??= (message = '', defaultValue = '') => {
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     let response = prompt.silent(message),
         container = $('.tt-prompt');
+
+    if(container.classList.contains('tt-timed'))
+        return response;
 
     container.classList.add('tt-timed');
     $('.tt-prompt-header').append(
