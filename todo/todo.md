@@ -26,7 +26,7 @@
 ----
 
 # DONE &mdash; Notable Changes
-> [`4.12.11.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.11.1)
+> [`4.12.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.12)
 - Fixed an issue with First in Line not going to channels at 0s
 
 > [`4.12.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.11)
