@@ -26,6 +26,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.12.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.12.1)
+- Fixed an issue with an issue with First in Line (I'm about done with Chrome)
+
 > [`4.12.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.12)
 - Fixed an issue with First in Line not going to channels at 0s
 

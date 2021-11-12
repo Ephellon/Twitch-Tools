@@ -5526,10 +5526,13 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
+    let FIRST_IN_LINE_SAFETY_CATCH;
+
     __FirstInLinePlus__:
     if(parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         RegisterJob('first_in_line_plus');
 
+        FIRST_IN_LINE_SAFETY_CATCH =
         setInterval(() => {
             let job = $('[up-next--body] [name][time]');
 
@@ -5538,7 +5541,7 @@ let Initialize = async(START_OVER = false) => {
 
             let timeRemaining = parseInt(job.getAttribute('time'));
 
-            if(timeRemaining <= 60_000)
+            if(timeRemaining <= 60_000 && !defined('.tt-confirm'))
                 setTimeout(() => {
                     WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`).toNativeStack();
 
@@ -5565,6 +5568,8 @@ let Initialize = async(START_OVER = false) => {
 
                     top.open(href, '_self');
                 }, 60_000);
+
+            clearInterval(FIRST_IN_LINE_SAFETY_CATCH);
         }, 1000);
     }
 
