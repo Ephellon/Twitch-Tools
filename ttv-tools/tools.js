@@ -4696,7 +4696,7 @@ let Initialize = async(START_OVER = false) => {
                         name.push(key);
                 }
 
-                return name.sort(name => /^(light|dark)$/i.test(name)? -1: 0).join(' ').replace(/[^]*(grey|brown)[^]*/, '$1').replace(/light$/i, 'white').replace(/dark$/i, 'black');
+                return name.sort(name => /^(light|dark)$/i.test(name)? -1: 0).join(' ').replace('light red', 'pink').replace(/[^]*(grey|brown)[^]*/, '$1').replace(/light$/i, 'white').replace(/dark$/i, 'black');
             }
 
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
@@ -5529,6 +5529,43 @@ let Initialize = async(START_OVER = false) => {
     __FirstInLinePlus__:
     if(parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         RegisterJob('first_in_line_plus');
+
+        setInterval(() => {
+            let job = $('[up-next--body] [name][time]');
+
+            if(!defined(job))
+                return;
+
+            let timeRemaining = parseInt(job.getAttribute('time'));
+
+            if(timeRemaining <= 60_000)
+                setTimeout(() => {
+                    WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`).toNativeStack();
+
+                    let name = $('[up-next--body] [name][time]').name;
+
+                    confirm
+                        ?.timed?.(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
+                        ?.then?.(action => {
+                            if(!defined(action))
+                                return /* The event timed out... */;
+
+                            if(action) {
+                                // The user clicked "OK"
+                                open(`./${ name }`, '_self');
+                            } else {
+                                // The user clicked "Cancel"
+                                let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
+                                    animationID = (balloonChild?.getAttribute('animationID')) || -1;
+
+                                clearInterval(animationID);
+                                balloonChild?.remove();
+                            }
+                        });
+
+                    top.open(href, '_self');
+                }, 60_000);
+        }, 1000);
     }
 
     /*** Auto-Follow
