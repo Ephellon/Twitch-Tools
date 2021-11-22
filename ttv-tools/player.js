@@ -201,7 +201,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 
                                 // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
 
-                                container.setAttribute('tt-svg-label', conversions[glyph].pop());
+                                container.setAttribute('tt-svg-label', conversions[glyph]?.pop());
                             });
             }
         }

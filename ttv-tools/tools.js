@@ -20,6 +20,8 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     ANTITHEME,
     THEME__CHANNEL_DARK,
     THEME__CHANNEL_LIGHT,
+    THEME__BASE_CONTRAST,
+    THEME__PREFERRED_CONTRAST,
     LITERATURE,
     SPECIAL_MODE,
     NORMAL_MODE,
@@ -186,11 +188,12 @@ class Balloon {
                                 // Header
                                 f('div.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', {},
                                     f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center', {},
-                                        (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important' }, title))
+                                        (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST, }, title))
                                     ),
                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
                                         {
                                             style: 'padding:0.5rem!important; height:3rem!important; width:3rem!important',
+                                            contrast: THEME__PREFERRED_CONTRAST,
                                             innerHTML: Glyphs.x,
 
                                             'connected-to': U,
@@ -1284,8 +1287,25 @@ class CSSObject {
 // CSS-Tricks - Jon Kantner 26 JAN 2021 @ https://css-tricks.com/converting-color-spaces-in-javascript/
 // Creates a Color object
 class Color {
+    static LOW_CONTRAST     = "LOW";
+    static NORMAL_CONTRAST  = "NORMAL";
+    static HIGH_CONTRAST    = "HIGH";
+    static PERFECT_CONTRAST = "PERFECT";
+
+    static CONTRASTS = [Color.LOW_CONTRAST, Color.NORMAL_CONTRAST, Color.HIGH_CONTRAST, Color.PERFECT_CONTRAST];
+
     constructor() {}
 
+    // Converts Hex color values to a color-object
+        // Color.HEXtoColor(hex:String~/#?RGB/i) -> Object~Color.RGBtoHSL(...)
+    static HEXtoColor(hex) {
+        let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
+
+        return Color.RGBtoHSL([R, G, B]);
+    }
+
+    // Converts RGB to HSL
+        // Color.RGBtoHSL(Array=[Number~UInt8, Number~UInt8, Number~UInt8]) -> Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
     static RGBtoHSL([R, G, B]) {
         // Convert RGB to fractions of 1
         let r = R / 255,
@@ -1332,6 +1352,45 @@ class Color {
             red: r, green: g, blue: b,
             RGB: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
         };
+    }
+
+    // https://stackoverflow.com/a/9733420/4211612
+    // Gets the luminance of a color
+        // Color.luminance(Number~UInt8, Number~Uint8, Number~Uint8) -> Number~Float@[0, 1]
+    static luminance(R, G, B) {
+        let l = [R, G, B].map(c => {
+            c /= 255;
+
+            return (
+                c <= 0.03928?
+                    c / 12.92:
+                ((c + 0.055) / 1.055)**2.4
+            );
+        });
+
+        return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
+    }
+
+    // https://stackoverflow.com/a/9733420/4211612
+    // Gets the contrast of two colors
+        // Color.contrast(Array=[Number~UInt8, Number~UInt8, Number~UInt8], Array=[Number~UInt8, Number~UInt8, Number~UInt8]) -> Number@[0, 21]
+    static contrast(C1, C2) {
+        let L1 = Color.luminance(...C1),
+            L2 = Color.luminance(...C2),
+            L = Math.max(L1, L2),
+            D = Math.min(L1, L2);
+
+        let value = new Number((L + 0.05) / (D + 0.05));
+
+        Object.defineProperties(value, {
+            toString: {
+                value() {
+                    return Color.CONTRASTS[(3 * (this / 21)) | 0];
+                },
+            },
+        });
+
+        return value;
     }
 }
 
@@ -2308,8 +2367,8 @@ try {
                     // || (method == "all")
                 )
                     confirm
-                        ?.timed?.(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000, true)
-                        ?.then?.(action => {
+                        .timed(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000, true)
+                        .then(action => {
                             // The event timed out...
                             action ??= true;
 
@@ -2352,48 +2411,17 @@ async function update() {
     ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
     let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
-        .map(color => color
-            .split(/(\w{2})/)
-            .filter(v => v.length > 1)
-            .map(v => parseInt(v, 16))
-        )
-        .map(Color.RGBtoHSL)
+        .map(Color.HEXtoColor)
         // Sort furthest from white (descending)
         .sort((C1, C2) => {
-            // https://stackoverflow.com/a/9733420/4211612
-            // Gets the luminance of a color
-            function lum(R, G, B) {
-                let l = [R, G, B].map(c => {
-                    c /= 255;
-
-                    return (
-                        c <= 0.03928?
-                            c / 12.92:
-                        ((c + 0.055) / 1.055)**2.4
-                    );
-                });
-
-                return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
-            }
-
-            // Gets the contrast of two colors
-            function con(C1, C2) {
-                let L1 = lum(...C1),
-                    L2 = lum(...C2),
-                    L = Math.max(L1, L2),
-                    D = Math.min(L1, L2);
-
-                return (L + 0.05) / (D + 0.05);
-            }
-
             let background = (THEME == 'dark'? [0, 0, 0]: [255, 255, 255]);
 
             C1 = [C1.R, C1.G, C1.B];
             C2 = [C2.R, C2.G, C2.B];
 
-            if(con(background, C1) > con(background, C2))
+            if(Color.contrast(background, C1) > Color.contrast(background, C2))
                 return +1;
-            else if(con(background, C1) < con(background, C2))
+            else if(Color.contrast(background, C1) < Color.contrast(background, C2))
                 return -1;
             return 0;
         })
@@ -2401,6 +2429,20 @@ async function update() {
 
     THEME__CHANNEL_DARK = (THEME == 'dark'? PRIMARY: SECONDARY);
     THEME__CHANNEL_LIGHT = (THEME != 'dark'? PRIMARY: SECONDARY);
+
+    PRIMARY = Color.HEXtoColor(PRIMARY);
+    SECONDARY = Color.HEXtoColor(SECONDARY);
+
+    let contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B])),
+
+        black = { R: 0, G: 0, B: 0 },
+        white = { R: 255, G: 255, B: 255 },
+
+        theme = (THEME == 'dark'? black: white),
+        antitheme = (THEME != 'dark'? black: white);
+
+    THEME__BASE_CONTRAST = contrastOf(PRIMARY, SECONDARY);
+    THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(PRIMARY, antitheme)? THEME: ANTITHEME) }`;
 
     // All Channels under Search
     window.SEARCH = SEARCH = [
@@ -4047,7 +4089,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Alt + A | Opt + A
         if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Away_Mode({ key, altKey, ctrlKey, metaKey, shiftKey }) {
                 if(altKey && key == 'a')
                     $('#away-mode')?.click?.();
             });
@@ -4381,6 +4423,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
         FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
         FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via timed confirmation dialog)
+        FIRST_IN_LINE_SAFETY_CATCH,         // Keeps the alert from not showing properly
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
@@ -4442,8 +4485,8 @@ let Initialize = async(START_OVER = false) => {
             LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
             confirm
-                ?.timed?.(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
-                ?.then?.(action => {
+                .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
+                .then(action => {
                     if(!defined(action))
                         return /* The event timed out... */;
 
@@ -4454,22 +4497,22 @@ let Initialize = async(START_OVER = false) => {
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                        if(action) {
+                            // The user clicked "OK"
+                            open(thisJob, '_self');
+                        } else {
+                            // The user clicked "Cancel"
+                            LOG('Canceled First in Line event', thisJob);
 
-                    if(action) {
-                        // The user clicked "OK"
-                        open(thisJob, '_self');
-                    } else {
-                        // The user clicked "Cancel"
-                        LOG('Canceled First in Line event', thisJob);
-
-                        let { pathname } = parseURL(thisJob);
-                        let balloonChild = $(`[id^="tt-balloon-job"i][href$="${ pathname }"i]`),
+                            let { pathname } = parseURL(thisJob);
+                            let balloonChild = $(`[id^="tt-balloon-job"i][href$="${ pathname }"i]`),
                             animationID = (balloonChild?.getAttribute('animationID')) || -1;
 
-                        clearInterval(animationID);
-                        balloonChild?.remove();
-                    }
+                            clearInterval(animationID);
+                            balloonChild?.remove();
+                        }
+                    });
                 });
         }, 1000);
 
@@ -4563,6 +4606,48 @@ let Initialize = async(START_OVER = false) => {
     else
         Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
 
+    FIRST_IN_LINE_SAFETY_CATCH =
+    setInterval(() => {
+        let job = $('[up-next--body] [name][time]');
+
+        if(!defined(job))
+            return;
+
+        let timeRemaining = parseInt(job.getAttribute('time'));
+
+        if(timeRemaining <= 60_000 && !defined('.tt-confirm'))
+            setTimeout(() => {
+                WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`).toNativeStack();
+
+                let name = $('[up-next--body] [name][time]').name;
+
+                confirm
+                    .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
+                    .then(action => {
+                        if(!defined(action))
+                            return /* The event timed out... */;
+
+                        // Does NOT touch the cache
+
+                        if(action) {
+                            // The user clicked "OK"
+                            open(`./${ name }`, '_self');
+                        } else {
+                            // The user clicked "Cancel"
+                            let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
+                                animationID = (balloonChild?.getAttribute('animationID')) || -1;
+
+                            clearInterval(animationID);
+                            balloonChild?.remove();
+                        }
+                    });
+
+                top.open(href, '_self');
+            }, 60_000);
+
+        clearInterval(FIRST_IN_LINE_SAFETY_CATCH);
+    }, 1000);
+
     let FIRST_IN_LINE_BALLOON__INSURANCE =
     setInterval(() => {
         if(NORMAL_MODE && !defined(FIRST_IN_LINE_BALLOON)) {
@@ -4571,7 +4656,8 @@ let Initialize = async(START_OVER = false) => {
             // Up Next Boost Button
             let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
-                    id: 'up-next-boost'
+                    id: 'up-next-boost',
+                    contrast: THEME__PREFERRED_CONTRAST,
                 },
 
                 icon: 'latest',
@@ -4627,7 +4713,8 @@ let Initialize = async(START_OVER = false) => {
             // Pause Button
             let first_in_line_pause_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
-                    id: 'up-next-control'
+                    id: 'up-next-control',
+                    contrast: THEME__PREFERRED_CONTRAST,
                 },
 
                 icon: 'pause',
@@ -4647,7 +4734,8 @@ let Initialize = async(START_OVER = false) => {
             // Help Button
             let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
-                    id: 'up-next-help'
+                    id: 'up-next-help',
+                    contrast: THEME__PREFERRED_CONTRAST,
                 },
 
                 icon: 'help',
@@ -4657,12 +4745,10 @@ let Initialize = async(START_OVER = false) => {
                 [colorName] = accent.split('-').reverse();
 
             function getColorName() {
-                let { H, S, L, R, G, B } = Color.RGBtoHSL(
-                    (
-                        THEME == 'dark'?
-                            THEME__CHANNEL_DARK:
-                        THEME__CHANNEL_LIGHT
-                    ).split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16))
+                let { H, S, L, R, G, B } = Color.HEXtoColor(
+                    THEME == 'dark'?
+                        THEME__CHANNEL_DARK:
+                    THEME__CHANNEL_LIGHT
                 );
 
                 // TODO: Add more colors &/ better detection
@@ -4670,13 +4756,13 @@ let Initialize = async(START_OVER = false) => {
                     // Extremes
                     light: ({ S, L }) => ((L > 70 && L <= 90) || (S <= 15)),
                     dark: ({ S, L }) => (L > 0 && L <= 10),
-                    grey: ({ R, G, B }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9),
+                    grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9) || (S <= 10),
 
                     // Reds
                     pink: ({ H }) => H > 285 && H <= 330,
                     red: ({ H }) => H > 330 || H <= 30,
-                    orange: ({ H }) => H > 30 && H <= 45,
-                    brown: ({ H, S, L }) => colors.orange({ H }) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
+                    orange: ({ H, S, L }) => (colors.red({ H }) && S < 90 && L < 50) || (H > 30 && H <= 45),
+                    brown: ({ H, S, L }) => (colors.orange({ H }) || colors.red({ H })) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
                     yellow: ({ H }) => H > 45 && H <= 75,
 
                     // Greens
@@ -4703,7 +4789,11 @@ let Initialize = async(START_OVER = false) => {
 
             // Update the color name...
             setInterval(() => {
-                first_in_line_help_button.tooltip.innerHTML = (UP_NEXT_ALLOW_THIS_TAB? `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`: `Up Next is disabled for this tab`).replace(/\bcolored\b/g, getColorName);
+                first_in_line_help_button.tooltip.innerHTML = (
+                    UP_NEXT_ALLOW_THIS_TAB?
+                        `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`:
+                    `Up Next is disabled for this tab`
+                ).replace(/\bcolored\b/g, getColorName);
             }, 1000);
 
             // Load cache
@@ -5012,7 +5102,7 @@ let Initialize = async(START_OVER = false) => {
                                         return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(channel.href);
                                     }
 
-                                    if(time < 0)
+                                    if(time < 1_000)
                                         setTimeout(() => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
@@ -5230,7 +5320,7 @@ let Initialize = async(START_OVER = false) => {
                                 return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(channel.href);
                             }
 
-                            if(time < 0)
+                            if(time < 1_000)
                                 setTimeout(() => {
                                     LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
@@ -5526,51 +5616,9 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
-    let FIRST_IN_LINE_SAFETY_CATCH;
-
     __FirstInLinePlus__:
     if(parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         RegisterJob('first_in_line_plus');
-
-        FIRST_IN_LINE_SAFETY_CATCH =
-        setInterval(() => {
-            let job = $('[up-next--body] [name][time]');
-
-            if(!defined(job))
-                return;
-
-            let timeRemaining = parseInt(job.getAttribute('time'));
-
-            if(timeRemaining <= 60_000 && !defined('.tt-confirm'))
-                setTimeout(() => {
-                    WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`).toNativeStack();
-
-                    let name = $('[up-next--body] [name][time]').name;
-
-                    confirm
-                        ?.timed?.(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
-                        ?.then?.(action => {
-                            if(!defined(action))
-                                return /* The event timed out... */;
-
-                            if(action) {
-                                // The user clicked "OK"
-                                open(`./${ name }`, '_self');
-                            } else {
-                                // The user clicked "Cancel"
-                                let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
-                                    animationID = (balloonChild?.getAttribute('animationID')) || -1;
-
-                                clearInterval(animationID);
-                                balloonChild?.remove();
-                            }
-                        });
-
-                    top.open(href, '_self');
-                }, 60_000);
-
-            clearInterval(FIRST_IN_LINE_SAFETY_CATCH);
-        }, 1000);
     }
 
     /*** Auto-Follow
@@ -6817,7 +6865,7 @@ let Initialize = async(START_OVER = false) => {
 
         let f = furnish;
         let watch_time = f(`${ container.tagName }${ classes(container) }`,
-            { style: `color: var(--user-complement-color)` },
+            { style: `color: var(--user-complement-color)`, contrast: THEME__PREFERRED_CONTRAST },
             f(`${ live_time.tagName }#tt-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
 
@@ -7253,6 +7301,68 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('recover_pages');
     }
 
+    /*** Developer Features
+     *      _____                 _                         ______         _
+     *     |  __ \               | |                       |  ____|       | |
+     *     | |  | | _____   _____| | ___  _ __   ___ _ __  | |__ ___  __ _| |_ _   _ _ __ ___  ___
+     *     | |  | |/ _ \ \ / / _ \ |/ _ \| '_ \ / _ \ '__| |  __/ _ \/ _` | __| | | | '__/ _ \/ __|
+     *     | |__| |  __/\ V /  __/ | (_) | |_) |  __/ |    | | |  __/ (_| | |_| |_| | | |  __/\__ \
+     *     |_____/ \___| \_/ \___|_|\___/| .__/ \___|_|    |_|  \___|\__,_|\__|\__,_|_|  \___||___/
+     *                                   | |
+     *                                   |_|
+     */
+    Handlers.extra_keyboard_shortcuts = () => {
+        /* Add the shortcuts */
+
+        // Take screenshots of the stream
+        // Alt + Shift + X | Opt + Shift + X
+        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
+            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+                if(altKey && shiftKey && key == 'X')
+                    $('video', true).pop().copyFrame()
+                        .then(copied => alert.timed('Screenshot saved to clipboard!', 5_000))
+                        .catch(error => alert.timed(`Failed to take screenshot: ${ error }`, 7_000));
+            });
+
+        // Display the enabled keyboard shortcuts
+        let help = document.body.getElementByText('space/k', 'i')?.closest('tbody');
+
+        let f = furnish;
+        if(defined(help) && !defined($('.tt-extra-keyboard-shortcuts', false, help)))
+            for(let shortcut in GLOBAL_EVENT_LISTENERS)
+                if(/^(key(?:up|down)_)/i.test(shortcut)) {
+                    let name = GLOBAL_EVENT_LISTENERS[shortcut].name,
+                        macro = GetMacro(shortcut.replace(RegExp.$1, '').toLowerCase().split('_').join('+'));
+
+                    if(!name.length)
+                        continue;
+
+                    name = name
+                        .replace(/\$\$/g, ' | ')
+                        .replace(/\$/g, '/')
+                        .replace(/__/g, ' - ')
+                        .replace(/_/g, ' ')
+                        .trim();
+
+                    help.append(
+                        f('tr.tw-table-row.tt-extra-keyboard-shortcuts', {},
+                            f('td.tw-tabel-cell', {},
+                                f('p', {}, name)
+                            ),
+                            f('td.tw-table-cell', {},
+                                f('span', {}, macro)
+                            )
+                        )
+                    );
+                }
+    };
+    Timers.extra_keyboard_shortcuts = 100;
+
+    __ExtraKeyboardShortcuts__:
+    if(parseBool(Settings.extra_keyboard_shortcuts)) {
+        RegisterJob('extra_keyboard_shortcuts');
+    }
+
     /*** Miscellaneous
      *      __  __ _              _ _
      *     |  \/  (_)            | | |
@@ -7275,13 +7385,13 @@ let Initialize = async(START_OVER = false) => {
                 --channel-color-light: ${ THEME__CHANNEL_LIGHT };
             }
 
-            :root[class*="theme-light"i] {
+            :root[class*="light"i] {
                 --color-colored: ${ THEME__CHANNEL_LIGHT };
                 --color-colored-complement: ${ THEME__CHANNEL_DARK };
             }
 
             /* The user is using the dark theme */
-            :root[class*="theme-dark"i] {
+            :root[class*="dark"i] {
                 --color-colored: ${ THEME__CHANNEL_DARK };
                 --color-colored-complement: ${ THEME__CHANNEL_LIGHT };
             }
@@ -7290,16 +7400,32 @@ let Initialize = async(START_OVER = false) => {
                 color: var(--user-complement-color) !important;
                 fill: var(--user-complement-color) !important;
             }
-            `;
 
-        // Alt + Shift + X | Opt + Shift + X
-        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
-                if(altKey && shiftKey && key == 'X')
-                    $('video', true).pop().copyFrame()
-                        .then(copied => alert.timed('Screenshot saved to clipboard!', 5_000))
-                        .catch(error => alert.timed(`Failed to take screenshot: ${ error }`, 7_000));
-            });
+            /* Apply contrast correction... div[contrast="low prefer dark"] */
+            :root[class*="light"i] [contrast~="low"i][contrast~="light"i],
+            [contrast~="low"i][contrast~="dark"i] {
+                color: #000 !important;
+                fill: #000 !important;
+
+                /** Over complicated method
+                 * background-color: #0000;
+                 * mix-blend-mode: lighten;
+                 * text-shadow: 0 0 5px #000;
+                 */
+            }
+
+            :root[class*="dark"i] [contrast~="low"i][contrast~="dark"i],
+            [contrast~="low"i][contrast~="light"i] {
+                color: #fff !important;
+                fill: #fff !important;
+
+                /** Over complicated method
+                 * background-color: #fff0;
+                 * mix-blend-mode: darken;
+                 * text-shadow: 0 0 5px #fff;
+                 */
+            }
+            `;
     }
 
     // End of Initialize
@@ -7324,7 +7450,7 @@ setInterval(() => {
             // Auto-Claim Bonuses
             && parseBool(
                     parseBool(Settings.auto_claim_bonuses)?
-                        (defined($('#tt-auto-claim-bonuses')) || STREAMER.veto || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')):
+                        (defined($('#tt-auto-claim-bonuses')) || !defined($('[data-test-selector="balance-string"i]')) || STREAMER.veto || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')):
                     true
                 )
             // Up Next
@@ -7787,6 +7913,19 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
                 [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
+                /* Keyborad Shortcuts */
+                .tt-extra-keyboard-shortcuts td {
+                    padding: 0.5rem;
+                }
+
+                .tt-extra-keyboard-shortcuts td:first-child {
+                    text-align: left;
+                }
+
+                .tt-extra-keyboard-shortcuts td:last-child {
+                    text-align: right;
+                }
+
                 /* Up Next */
                 [up-next--body] {
                     background-color: var(--user-accent-color);
@@ -7844,9 +7983,13 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
-                [tt-in-up-next="true"i] { border: 1px solid var(--user-accent-color) !important }
-                [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--user-accent-color) }
-                [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--user-accent-color) }
+                [class*="theme"i][class*="dark"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-light) !important }
+                [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--channel-color-light) }
+                [class*="theme"i][class*="dark"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-light) }
+
+                [class*="theme"i][class*="light"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-dark) !important }
+                [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--channel-color-dark) }
+                [class*="theme"i][class*="light"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-dark) }
 
                 /* Change Up Next font color */
                 [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { mix-blend-mode:lighten }

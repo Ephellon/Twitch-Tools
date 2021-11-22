@@ -1412,7 +1412,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             type = (card.getAttribute('data-a-target').toLowerCase() == 'viewer-card'? 'user': 'emote'),
             { phrase_rules } = Settings;
 
-        name = name?.textContent;
+        name = name?.textContent?.replace(/[^]+?\((\w+)\)/, '$1');
 
         if(type == 'user') {
             /* Highlight users */

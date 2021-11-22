@@ -205,6 +205,8 @@ let // These are option names. Anything else will be removed
         'show_stats',
         // Enable emperimental features
         'experimental_mode',
+        // Extra Keyboard Shortcuts
+        'extra_keyboard_shortcuts',
         // User Defined Settings
         'user_language_preference',
 

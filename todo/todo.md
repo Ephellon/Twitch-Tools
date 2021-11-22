@@ -22,10 +22,16 @@
     * Changed to a raw search to remedy the issue
 8. `v5` will need to be made in [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
     * Required by **Jan 2023**
+9. Dead channels get re-added to Up Next sometimes
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.13)
+- [Added contrast correction](https://webdesign.tutsplus.com/articles/css-tips-for-better-color-and-contrast-accessibility--cms-34472)
+- Added Extra Keyboard shortcuts
+- Fixed an issue where channels without channel points would reload infinitely
+
 > [`4.12.12.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.12.1)
 - Fixed an issue with an issue with First in Line (I'm about done with Chrome)
 

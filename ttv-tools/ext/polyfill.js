@@ -1358,7 +1358,7 @@ function GetMacro(keys = '', OS = null) {
         .filter(string => !!string.length)
         .map(key => {
             switch(OS.slice(0, 7)) {
-                /** MacOS Keys
+                /** MacOS Keys | Order of Precedence -> Ctrl Opt Shift Cmd [Key(s)]
                  * Command (Cmd)        ⌘
                  * Option/Alt (Opt/Alt) ⌥
                  * Caps Lock            ⇪
@@ -1379,7 +1379,7 @@ function GetMacro(keys = '', OS = null) {
                     );
                 } break;
 
-                // Windows Keys
+                // Windows Keys | Order of Precedence -> Meta Ctrl Alt Shift [Key(s)]
                 case 'Windows': {
                     key = (
                         /^(Cmd|\u2318)$/i.test(key)?
@@ -1657,7 +1657,7 @@ function REMARK(...messages) {
 };
 
 // Displays an alert message
-    // alert([message:string[, defaultValue:string]]) -> null
+    // alert([message:string]) -> null
 function alert(message = '') {
     let f = furnish;
 
@@ -1712,7 +1712,7 @@ function alert(message = '') {
 }
 
 // Displays an alert message (silently)
-    // alert.silent([message:string[, defaultValue:string]]) -> null
+    // alert.silent([message:string]) -> null
 alert.silent ??= (message = '') => {
     let response = alert(message),
         container = $('.tt-alert');
@@ -1761,7 +1761,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 };
 
 // Displays a confirmation message
-    // confirm([message:string[, defaultValue:string]]) -> Boolean|null
+    // confirm([message:string]) -> Boolean|null
 function confirm(message = '') {
     let f = furnish;
 
@@ -1833,7 +1833,7 @@ function confirm(message = '') {
 }
 
 // Displays a confirmation message (silently)
-    // confirm.silent([message:string[, defaultValue:string]]) -> Boolean|null
+    // confirm.silent([message:string]) -> Boolean|null
 confirm.silent ??= (message = '') => {
     let response = confirm(message),
         container = $('.tt-confirm');
