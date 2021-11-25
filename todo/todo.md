@@ -23,10 +23,16 @@
 8. `v5` will need to be made in [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
     * Required by **Jan 2023**
 9. Dead channels get re-added to Up Next sometimes
+10. Pseudo-follows
+    * Temporarily replace Twitch follows with dummy code to check if the page is live; then throw a notification and add the channel to the side panel
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.12.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.14)
+- Added Time Zones to translate times in the title/rich-tooltip to a local time
+- Fixed an issue where Filter Rules wouldn't be saved
+
 > [`4.12.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.13)
 - [Added contrast correction](https://webdesign.tutsplus.com/articles/css-tips-for-better-color-and-contrast-accessibility--cms-34472)
 - Added Extra Keyboard shortcuts

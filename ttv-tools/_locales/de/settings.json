@@ -169,6 +169,11 @@
 			"Behandeln Sie", "VOD", "-Streams als Offline-Streams"
 		],
 
+	"time-zones": [
+		"Zeitzonen",
+		"Konvertieren Sie die Stunden im Titel in Ihre lokale Zeitzone"
+	],
+
 	"view-mode": [
 		"Weergavemodus",
 		"Als de pagina klaar is met laden, verander dan de weergave in"

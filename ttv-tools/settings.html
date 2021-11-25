@@ -20,6 +20,7 @@
             # White     - everything else
 
             # Pink      - in beta
+            # Blue      - notice this
         -->
 
         <link rel='icon' href='favicon.png'/>
@@ -338,7 +339,7 @@
                         <div>
                             <div text-only>
                                 <!-- Greedy Raiding -->
-                                <div class='title' tr-id='@@greedy-raiding'><span small purple glyph='bolt'></span> Greedy Raiding</div>
+                                <div class='title' tr-id='@@greedy-raiding'>Greedy Raiding</div>
                                 <div class='summary'>
                                     <div class='toggle'>
                                         <input id='greedy_raiding' type='checkbox' requires='#prevent_raiding'/>
@@ -399,6 +400,20 @@
                 </div>
             </section>
 
+            <!-- Time Zones -->
+            <section new='4.12.14'>
+                <div class='title' tr-id='time-zones'><span small gold glyph='calendar'></span> Time Zones</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='time_zones' type='checkbox'/>
+                        <label for='time_zones'></label>
+                    </div>
+                    <p tr-id>
+                        Convert times in the title to your local time zone.
+                    </p>
+                </div>
+            </section>
+
             <!-- View Mode -->
             <section new='3.1.5'>
                 <div class='title' tr-id='view-mode'><span small gold glyph='video'></span> View Mode</div>
@@ -432,7 +447,7 @@
         #                                                                  __/ |         __/ |
         #                                                                 |___/         |___/
         -->
-        <header tr-id='header:chat-and-messaging'>Chat &amp; Messaging <span white glyph='help' right-tooltip='These settings do not apply to banned channels'></span></header>
+        <header tr-id='header:chat-and-messaging'>Chat &amp; Messaging <span blue glyph='help' right-tooltip='These settings do not apply to banned channels'></span></header>
         <article>
             <!-- BetterTTV Emotes -->
             <section>
@@ -1015,7 +1030,7 @@
 
             <!-- Points Receipt Placement -->
             <section>
-                <div class='title' tr-id='placement:points-receipt'><span small glyph='latest'></span> Points Receipt</div>
+                <div class='title' tr-id='placement:points-receipt'><span small gold glyph='channelpoints'></span> Points Receipt</div>
                 <div class='summary'>
                     <p tr-id>
                         Where should the <b>Points Receipt</b> text be displayed?
@@ -1030,7 +1045,7 @@
 
             <!-- Point Watcher Placement -->
             <section>
-                <div class='title' tr-id='placement:point-watcher'><span small glyph='latest'></span> Point Watcher</div>
+                <div class='title' tr-id='placement:point-watcher'><span small gold glyph='channelpoints'></span> Point Watcher</div>
                 <div class='summary'>
                     <p tr-id>
                         Where should the <b>Point Watcher</b> text be displayed?
@@ -1134,7 +1149,7 @@
         #                                                    __/ |
         #                                                   |___/
         -->
-        <header tr-id='header:networking'>Networking <span white glyph='help' right-tooltip='Data here will interact with the Internet'></span></header>
+        <header tr-id='header:networking'>Networking <span blue glyph='help' right-tooltip='Data here will interact with the Internet'></span></header>
         <article>
             <section new='4.12'>
                 <div class='title' tr-id='networking:sync-settings'><span small glyph='export'></span> Export Settings</div>
@@ -1299,7 +1314,7 @@
         #                                 |_|
         -->
 
-        <header tr-id='header:developer-features'>Developer Features <span glyph='help' right-tooltip='These are advanced features that should be used for testing'></span></header>
+        <header tr-id='header:developer-features'>Developer Features <span blue glyph='help' right-tooltip='These are advanced features that should be used for testing'></span></header>
         <article id=':settings--developer' danger>
             <!-- Display Console Messages -->
             <section>
@@ -1468,7 +1483,7 @@
         #               |_|
         -->
 
-        <header tr-id='header:experimental-features'>Experimental Features <span glyph='help' right-tooltip='These are experimental features that may produce errors'></span></header>
+        <header tr-id='header:experimental-features'>Experimental Features <span blue glyph='help' right-tooltip='These are experimental features that may produce errors'></span></header>
         <article id=':settings--experimental' caution>
             <!-- Auto-focus -->
             <section>

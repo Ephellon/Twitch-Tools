@@ -97,6 +97,8 @@ let // These are option names. Anything else will be removed
             'auto_focus_detection_threshold',
             'auto_focus_poll_interval',
             'auto_focus_poll_image_type',
+        // Time Zones
+            'time_zones',
         // View Mode
         'view_mode',
 
@@ -658,10 +660,10 @@ function RedoRuleElements(rules, ruleType) {
 
         E.onclick = event => {
             let { currentTarget } = event,
-                { innerText } = currentTarget,
+                { textContent } = currentTarget,
                 input = $(`#${ ruleType }_rules-input`);
 
-            input.value = [...input.value.split(','), innerText].filter(v => v?.trim()?.length).join(',');
+            input.value = [...input.value.split(','), textContent].filter(v => v?.trim()?.length).join(',');
 
             currentTarget.remove();
         };
@@ -772,11 +774,10 @@ function CreateTimeElement(self, scheduleType) {
 }
 
 async function SaveSettings() {
-    let extractValue = SaveSettings.extractValue;
+    let { extractValue } = SaveSettings;
 
     let elements = $(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', '), true),
-        using = elements.map(element => element.id),
-        settings = {};
+        using = elements.map(element => element.id);
 
     // Edit settings before exporting them (if needed)
     for(let id of using)
@@ -785,32 +786,32 @@ async function SaveSettings() {
                 let rules = [],
                     input = extractValue($('#filter_rules-input'));
 
-                if(input)
-                    rules = [...input.split(',')];
+                if(parseBool(input))
+                    rules = input.split(',');
 
                 for(let rule of $('#filter_rules code', true))
-                    rules.push(rule.innerText);
-                rules = [...new Set(rules)].filter(parseBool);
+                    rules.push(rule.textContent);
+                rules = [...new Set(rules)].filter(rule => rule.length);
 
-                settings.filter_rules = rules.sort().join(',');
+                SETTINGS.filter_rules = rules.sort().join(',');
 
-                RedoRuleElements(settings.filter_rules, 'filter');
+                RedoRuleElements(SETTINGS.filter_rules, 'filter');
             } break;
 
             case 'phrase_rules': {
                 let rules = [],
                     input = extractValue($('#phrase_rules-input'));
 
-                if(input)
-                    rules = [...input.split(',')];
+                if(parseBool(input))
+                    rules = input.split(',');
 
                 for(let rule of $('#phrase_rules code', true))
-                    rules.push(rule.innerText);
-                rules = [...new Set(rules)].filter(parseBool);
+                    rules.push(rule.textContent);
+                rules = [...new Set(rules)].filter(rule => rule.length);
 
-                settings.phrase_rules = rules.sort().join(',');
+                SETTINGS.phrase_rules = rules.sort().join(',');
 
-                RedoRuleElements(settings.phrase_rules, 'phrase');
+                RedoRuleElements(SETTINGS.phrase_rules, 'phrase');
             } break;
 
             case 'away_mode_schedule': {
@@ -838,29 +839,29 @@ async function SaveSettings() {
                     validTimes.push(object);
                 }
 
-                settings.away_mode_schedule = JSON.stringify([...new Set(validTimes)]);
+                SETTINGS.away_mode_schedule = JSON.stringify([...new Set(validTimes)]);
 
-                RedoTimeElements(settings.away_mode_schedule, 'away_mode');
+                RedoTimeElements(SETTINGS.away_mode_schedule, 'away_mode');
             } break;
 
             case 'away_mode__volume': {
                 let volume = extractValue($('#away_mode__volume'));
 
-                settings.away_mode__volume = parseFloat(volume) / 100;
+                SETTINGS.away_mode__volume = parseFloat(volume) / 100;
             } break;
 
             case 'user_language_preference': {
                 let preferred = extractValue($('#user_language_preference'));
 
-                settings.user_language_preference = preferred;
+                SETTINGS.user_language_preference = preferred;
             } break;
 
             default:{
-                settings[id] = extractValue($(`#${ id }`));
+                SETTINGS[id] = extractValue($(`#${ id }`));
             } break;
         }
 
-    return await Storage.set(SETTINGS = settings);
+    return await Storage.set(SETTINGS);
 }
 
 Object.defineProperties(SaveSettings, {
@@ -1443,7 +1444,7 @@ $('[new]', true).map(element => {
 });
 
 // Any keys that need "translating"
-$('[id^="key:"i]', true).map(element => element.innerText = GetMacro(element.innerText));
+$('[id^="key:"i]', true).map(element => element.textContent = GetMacro(element.textContent));
 
 async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)

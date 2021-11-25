@@ -172,6 +172,11 @@
 			"Trate os fluxos de", "VOD", "como fluxos offline"
 		],
 
+	"time-zones": [
+		"Fusos Horários",
+		"Converta as horas do título para o seu fuso horário local"
+	],
+
 	"view-mode": [
 		"Modo Ver",
 		"Quando a página tiver terminado de carregar, altere a vista para"

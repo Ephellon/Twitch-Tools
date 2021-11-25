@@ -4461,7 +4461,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        if(!ALL_FIRST_IN_LINE_JOBS.filter(defined).length)
+        if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
         LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
@@ -4551,14 +4551,14 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(url => url?.length).filter(href => href != FIRST_IN_LINE_HREF);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href?.length).filter(href => href != FIRST_IN_LINE_HREF);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-
-                        WARN(error, killed);
+                            WARN(error, killed);
+                        });
                     });
             }
 
@@ -4568,11 +4568,12 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                LOG('Heading to stream now [Job Interval]', FIRST_IN_LINE_HREF);
+            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
+                LOG('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                open(FIRST_IN_LINE_HREF, '_self');
+
+                open(href, '_self');
             });
         }, 1000);
     }
@@ -4755,7 +4756,7 @@ let Initialize = async(START_OVER = false) => {
                 let colors = {
                     // Extremes
                     light: ({ S, L }) => ((L > 70 && L <= 90) || (S <= 15)),
-                    dark: ({ S, L }) => (L > 0 && L <= 10),
+                    dark: ({ S, L }) => (L <= 25),
                     grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9) || (S <= 10),
 
                     // Reds
@@ -4782,7 +4783,7 @@ let Initialize = async(START_OVER = false) => {
                         name.push(key);
                 }
 
-                return name.sort(name => /^(light|dark)$/i.test(name)? -1: 0).join(' ').replace('light red', 'pink').replace(/[^]*(grey|brown)[^]*/, '$1').replace(/light$/i, 'white').replace(/dark$/i, 'black');
+                return name.sort(color => /^(light|dark)$/i.test(color)? -1: /^(grey|brown)$/i.test(color)? +1: 0).join(' ').replace('light red', 'pink').replace(/(?<!light|dark)\s+(grey|brown)/i, '-$1').replace(/light$/i, 'white').replace(/dark$/i, 'black');
             }
 
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
@@ -4944,9 +4945,9 @@ let Initialize = async(START_OVER = false) => {
                         // LOG('Accessing here... #1');
                         ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
 
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
-
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                        });
                     }
                 }
             };
@@ -5054,7 +5055,7 @@ let Initialize = async(START_OVER = false) => {
                                     FIRST_IN_LINE_HREF = undefined;
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]));
                                 }
                             },
 
@@ -5267,7 +5268,7 @@ let Initialize = async(START_OVER = false) => {
 
                             FIRST_IN_LINE_HREF = undefined;
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]));
                         }
                     },
 
@@ -5452,7 +5453,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = !ALL_FIRST_IN_LINE_JOBS.filter(defined).indexOf(STREAMER.href),
+                first = !ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).indexOf(STREAMER.href),
                 channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname);
 
             if(!defined(channel) && !first) {
@@ -5487,9 +5488,9 @@ let Initialize = async(START_OVER = false) => {
                     .catch(error => {
                         let [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS });
-
-                        WARN(error, killed);
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
+                            WARN(error, killed);
+                        });
                     });
 
                 break __FirstInLine__;
@@ -5505,8 +5506,9 @@ let Initialize = async(START_OVER = false) => {
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
-                WARN('Removed duplicate job', popped);
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
+                    WARN('Removed duplicate job', popped);
+                });
             }
         }
     }
@@ -6007,6 +6009,144 @@ let Initialize = async(START_OVER = false) => {
         REMARK('Ensuring Twitch stays live...');
 
         RegisterJob('stay_live');
+    }
+
+    /*** Time Zones
+     *      _______ _                  ______
+     *     |__   __(_)                |___  /
+     *        | |   _ _ __ ___   ___     / / ___  _ __   ___  ___
+     *        | |  | | '_ ` _ \ / _ \   / / / _ \| '_ \ / _ \/ __|
+     *        | |  | | | | | | |  __/  / /_| (_) | | | |  __/\__ \
+     *        |_|  |_|_| |_| |_|\___| /_____\___/|_| |_|\___||___/
+     *
+     *
+     */
+    let TIME_ZONE__LATEST_TITLE,
+        TIME_ZONE__LATEST_TOOLTIP;
+
+    Handlers.time_zones = () => {
+        let cTitle = $('[data-a-target="stream-title"i]'),
+            rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
+
+        if(TIME_ZONE__LATEST_TITLE == cTitle?.textContent && TIME_ZONE__LATEST_TOOLTIP == rTitle?.textContent)
+            return;
+
+        // Time-zone RegExps
+        let regexps = [
+                // Natural
+                // 3:00PM EST | 3PM EST | 3 EST
+                /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>GMT|UTC|[ABCEGHIJMNPSUV][ACDEGILMNRST]T)\b/i,
+                // 3:00PM | 3PM
+                /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+
+                // Zulu - https://stackoverflow.com/a/23421472/4211612
+                // Z15:00 | +05:00 | -05:00
+                /\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
+
+                // GMT/UTC
+                // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00
+                /\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
+            ];
+
+        let conversions = {
+            ACT: "+09:30",
+            AET: "+10:00",
+            AGT: "-03:00",
+            ART: "+02:00",
+            AST: "-09:00",
+                ADT: "-08:00",
+            BET: "-03:00",
+            BDT: "+06:00",
+            BST: "+06:00",
+            CAT: "-01:00",
+            CNT: "-03:30",
+            CST: "-06:00",
+                CDT: "-05:00",
+            CTT: "+08:00",
+            EAT: "+03:00",
+            ECT: "+01:00",
+            EET: "+02:00",
+            EST: "-05:00",
+                EDT: "-04:00",
+            GMT: "+00:00",
+            HST: "-10:00",
+            IET: "-05:00",
+            IST: "+05:30",
+            JST: "+09:00",
+            MET: "+03:30",
+            MIT: "-11:00",
+            MST: "-07:00",
+                MDT: "-06:00",
+            NET: "+04:00",
+            NST: "+12:00",
+            PLT: "+05:00",
+            PNT: "-07:00",
+            PRT: "-04:00",
+            PST: "-08:00",
+                PDT: "-07:00",
+            SST: "+11:00",
+            UTC: "+00:00",
+            VST: "+07:00",
+        };
+
+        top:
+        for(let title of [cTitle, rTitle])
+            for(let regexp of regexps)
+                if(regexp.test(title?.textContent ?? '')) {
+                    let { hour, minute = ':00', offset = '', meridiem = '', timezone = '' } = regexp.exec(title.textContent).groups;
+                    let now = new Date,
+                        year = now.getFullYear(),
+                        month = now.getMonth() + 1,
+                        day = now.getDate();
+
+                    hour = parseInt(hour) + (/^p/.test(meridiem)? 12: 0);
+
+                    timezone = timezone.toUpperCase();
+                    timezone = (conversions[timezone] ?? timezone).replace(/^[+-]/, 'GMT$&');
+
+                    let newTime = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
+                        [H, M] = [newTime.getHours(), ('00' + newTime.getMinutes()).slice(-2)];
+
+                    if(meridiem.length) {
+                        H += (H < 1? 12: H > 12? -12: 0);
+                        M += meridiem.toUpperCase();
+                    }
+
+                    newTime = `${H}:${M}`;
+
+                    title.innerText = title.innerText
+                        .replace(regexp,
+                            (
+                                (title == rTitle)?
+                                    // Rich Tooltips
+                                    `{{?=${ newTime }}}`:
+                                // Stream Title
+                                `{{?=$&}}`
+                            )
+                        );
+
+                    title.innerHTML = title.innerHTML
+                        .replace(/\{\{\?=(.+?)\}\}/, `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">$1</span>`);
+
+                    // Stream Title ONLY
+                    if(title == cTitle)
+                        new Tooltip($('[data-a-target="stream-title"i] > span'), `${ newTime } (local time)`, { from: 'up' });
+
+                    // leave on the first matched regexp
+                    continue top;
+                }
+        ;
+
+        TIME_ZONE__LATEST_TITLE = cTitle?.textContent;
+        TIME_ZONE__LATEST_TOOLTIP = rTitle?.textContent;
+    };
+    Timers.time_zones = 250;
+
+    __TimeZones__:
+    if(parseBool(Settings.time_zones)) {
+        REMARK('Converting times in the title...');
+
+        RegisterJob('time_zones');
     }
 
     /*** View Mode
@@ -7444,31 +7584,48 @@ setInterval(() => {
             // Away Mode
             &&  parseBool(
                     parseBool(Settings.away_mode)?
-                        (defined($('#away-mode')) || !NOT_LOADED_CORRECTLY.push('away_mode')):
+                        (false
+                            || defined($('#away-mode'))
+                            || !NOT_LOADED_CORRECTLY.push('away_mode')
+                        ):
                     true
                 )
             // Auto-Claim Bonuses
             && parseBool(
                     parseBool(Settings.auto_claim_bonuses)?
-                        (defined($('#tt-auto-claim-bonuses')) || !defined($('[data-test-selector="balance-string"i]')) || STREAMER.veto || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')):
+                        (false
+                            || defined($('#tt-auto-claim-bonuses'))
+                            || !defined($('[data-test-selector="balance-string"i]'))
+                            || STREAMER.veto
+                            || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
+                        ):
                     true
                 )
             // Up Next
             &&  parseBool(
                     !parseBool(Settings.first_in_line_none)?
-                        (defined($('[up-next--container]')) || !NOT_LOADED_CORRECTLY.push('first_in_line')):
+                        (false
+                            || defined($('[up-next--container]'))
+                            || !NOT_LOADED_CORRECTLY.push('first_in_line')
+                        ):
                     true
                 )
             // Watch Time
             &&  parseBool(
-                    (Settings.watch_time_placement != 'null')?
-                        (defined($('#tt-watch-time')) || !NOT_LOADED_CORRECTLY.push('watch_time_placement')):
+                    parseBool(Settings.watch_time_placement)?
+                        (false
+                            || defined($('#tt-watch-time'))
+                            || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
+                        ):
                     true
                 )
             // Channel Points Receipt
             &&  parseBool(
-                    (Settings.points_receipt_placement != 'null')?
-                        (defined($('#tt-points-receipt')) || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')):
+                    parseBool(Settings.points_receipt_placement)?
+                        (false
+                            || defined($('#tt-points-receipt'))
+                            || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
+                        ):
                     true
                 )
         );

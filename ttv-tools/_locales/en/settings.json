@@ -169,6 +169,11 @@
 			"Treat", "VOD", "streams as offline streams"
 		],
 
+	"time-zones": [
+		"Time Zones",
+		"Convert times in the title to your local time zone"
+	],
+
 	"view-mode": [
 		"View Mode",
 		"When the page is done loading, change the view to"

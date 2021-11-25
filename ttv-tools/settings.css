@@ -1134,8 +1134,8 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 [blue], [blue] svg {
-    color: var(--blue)!important;
-    fill: var(--blue)!important;
+    color: var(--baby-blue)!important;
+    fill: var(--baby-blue)!important;
 }
 
 [gold], [gold] svg {

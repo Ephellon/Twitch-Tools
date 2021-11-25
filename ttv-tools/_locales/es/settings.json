@@ -167,6 +167,11 @@
 			"Trate las transmisiones de", "VOD", "como transmisiones sin conexión"
 		],
 
+	"time-zones": [
+		"Zonas Horarias",
+		"Convierta las horas en el título a su zona horaria local"
+	],
+
     "view-mode": [
         "Modo de Vista",
         "Cuando la página termine de cargarse, cambie la vista a"
