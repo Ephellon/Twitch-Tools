@@ -1659,6 +1659,9 @@ function REMARK(...messages) {
 // Displays an alert message
     // alert([message:string]) -> null
 function alert(message = '') {
+    if(defined($('.tt-alert')))
+        return awaitOn(() => !defined($('.tt-alert'))? alert(message): null);
+
     let f = furnish;
 
     let container =
@@ -1714,6 +1717,9 @@ function alert(message = '') {
 // Displays an alert message (silently)
     // alert.silent([message:string]) -> null
 alert.silent ??= (message = '') => {
+    if(defined($('.tt-alert')))
+        return awaitOn(() => !defined($('.tt-alert'))? alert.silent(message): null);
+
     let response = alert(message),
         container = $('.tt-alert');
 
@@ -1729,6 +1735,9 @@ alert.silent ??= (message = '') => {
 // Displays an alert message with a timer
     // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> null
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
+    if(defined($('.tt-alert')))
+        return awaitOn(() => !defined($('.tt-alert'))? alert.timed(message, milliseconds, pausable): null);
+
     let response = alert.silent(message),
         container = $('.tt-alert');
 
@@ -1763,6 +1772,9 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 // Displays a confirmation message
     // confirm([message:string]) -> Boolean|null
 function confirm(message = '') {
+    if(defined($('.tt-confirm')))
+        return awaitOn(() => !defined($('.tt-confirm'))? confirm(message): null);
+
     let f = furnish;
 
     let container =
@@ -1835,6 +1847,9 @@ function confirm(message = '') {
 // Displays a confirmation message (silently)
     // confirm.silent([message:string]) -> Boolean|null
 confirm.silent ??= (message = '') => {
+    if(defined($('.tt-confirm')))
+        return awaitOn(() => !defined($('.tt-confirm'))? confirm.silent(message): null);
+
     let response = confirm(message),
         container = $('.tt-confirm');
 
@@ -1850,6 +1865,9 @@ confirm.silent ??= (message = '') => {
 // Displays a confirmation message with a timer
     // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> Boolean|null
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
+    if(defined($('.tt-confirm')))
+        return awaitOn(() => !defined($('.tt-confirm'))? confirm.timed(message, milliseconds, pausable): null);
+
     let response = confirm.silent(message),
         container = $('.tt-confirm');
 
@@ -1884,6 +1902,9 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 // Prompts a message
     // prompt([message:string[, defaultValue:string]]) -> String|null
 function prompt(message = '', defaultValue = '') {
+    if(defined($('.tt-prompt')))
+        return awaitOn(() => !defined($('.tt-prompt'))? prompt(message, defaultValue): null);
+
     let f = furnish;
 
     let format = (null
@@ -1967,6 +1988,9 @@ function prompt(message = '', defaultValue = '') {
 // Prompts a message (silently)
     // prompt.silent([message:string[, defaultValue:string]]) -> String|null
 prompt.silent ??= (message = '', defaultValue = '') => {
+    if(defined($('.tt-prompt')))
+        return awaitOn(() => !defined($('.tt-prompt'))? prompt.silent(message, defaultValue): null);
+
     let response = prompt(message, defaultValue),
         container = $('.tt-prompt');
 
@@ -1982,6 +2006,9 @@ prompt.silent ??= (message = '', defaultValue = '') => {
 // Prompts a message with a timer
     // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> String|null
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
+    if(defined($('.tt-prompt')))
+        return awaitOn(() => !defined($('.tt-prompt'))? prompt.timed(message, milliseconds, pausable): null);
+
     let response = prompt.silent(message),
         container = $('.tt-prompt');
 

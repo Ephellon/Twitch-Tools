@@ -112,6 +112,11 @@
 			"Volgt alle kanalen automatisch"
 		],
 
+		"auto-follow:live-reminders": [
+			"LIVE", "Erinnerungen",
+			"Füge Kanälen, denen du nicht folgst, eine Schaltfläche", "Erinnerung", "im Abschnitt", "Über mich", "hinzu"
+		],
+
 	"kill-extensions": [
 		"Extensies uitschakelen",
 		"Sta niet toe dat Twitch™ extensies worden weergegeven in de stream"
@@ -536,6 +541,12 @@
 		"Experimentele Functies",
 		"Laat de uitbreiding experimentele functies weergeven en gebruiken",
 		"Kan gegevensverlies veroorzaken"
+	],
+
+	"@keyboard-shortcuts": [
+		"Zusätzliche Tastenkombinationen",
+		"Erlauben Sie der Erweiterung, zusätzliche Tastenkombinationen hinzuzufügen",
+		"Tastenkombinationen können durch Drücken von %< angezeigt werden"
 	],
 
 	"@fine-details": [

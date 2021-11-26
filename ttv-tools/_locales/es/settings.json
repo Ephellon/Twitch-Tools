@@ -112,6 +112,11 @@
             "Sigue todos los canales automáticamente"
         ],
 
+		"auto-follow:live-reminders": [
+			"VIVO", "Recordatorios",
+			"Agrega un botón de", "recordatorio", "en el panel", "acerca de mí", "a los canales que no sigues"
+		],
+
     "kill-extensions": [
         "Matar Extensiones",
         "No permita que las extensiones de Twitch™ se muestren en la transmisión"
@@ -531,6 +536,12 @@
         "Deje que la extensión muestre y utilice funciones experimentales",
         "Puede causar pérdida de datos"
     ],
+
+	"@keyboard-shortcuts": [
+		"Atajos de teclado adicionales",
+		"Permita que la extensión agregue atajos de teclado adicionales",
+		"Los atajos de teclado se pueden ver presionando", null
+	],
 
     "@fine-details": [
         "Utilice Detalles Finos",

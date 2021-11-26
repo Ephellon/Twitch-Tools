@@ -40,6 +40,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
+    USERNAME ??= Search?.cookies?.name;
     STREAMER ??= ({ name: (name ?? path), sole });
 
     // Fill GLOBAL_EVENT_LISTENERS
@@ -1118,7 +1119,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 let hidden = element.getAttribute('tt-hidden-message') === 'true';
 
                 if(hidden || mentions.contains(USERNAME))
-                    return;
+                    continue;
 
                 // LOG(`Censoring message because the ${ reason } matches`, line);
 
@@ -1278,7 +1279,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     continue censoring;
 
                 if(mentions.contains(USERNAME))
-                    return;
+                    continue;
 
                 // LOG(`Censoring bulletin because its subject is "${ reason }"`, bullet);
 
@@ -1803,7 +1804,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
                     minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
 
-                let { handle, element, message } = line;
+                let { handle, element, message, author } = line;
 
                 let spam_placeholder = "chat-deleted-message-placeholder";
 
@@ -1826,9 +1827,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                     }
                 }
 
-                function spamChecker(message) {
-                    if(message.length < 1)
-                        return "";
+                function spamChecker(message, author) {
+                    if(message.length < 1 || RegExp(`^${USERNAME}$`, 'i').test(author))
+                        return message;
 
                     // The same message is already posted (within X lines)
                     if( [...SPAM].slice(-lookBack).contains(message) )
@@ -1843,7 +1844,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
                 new Promise(resolve => {
-                    resolve(spamChecker(message));
+                    resolve(spamChecker(message, author));
                 }).then(message => {
                     SPAM = [...new Set([...SPAM, message])];
                 });
@@ -2287,6 +2288,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
     let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
+    USERNAME ??= Search?.cookies?.name;
     STREAMER ??= ({ name: (name ?? path), sole });
 
     // Fill GLOBAL_EVENT_LISTENERS

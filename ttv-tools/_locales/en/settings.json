@@ -93,7 +93,7 @@
 
 	"auto-follow": [
 		"Follows",
-		"While watching a channel that isn't followed, follow it automatically"
+		"While watching a channel that is not followed, follow it automatically"
 	],
     	"auto-follow:none": [
     		"Disabled",
@@ -112,6 +112,11 @@
     		"Automatic",
     		"Follow all channels automatically"
     	],
+
+		"auto-follow:live-reminders": [
+			null, "Reminders",
+			"Adds a", "reminder", "button in the", "about me", "panel of channels you do not follow"
+		],
 
 	"kill-extensions": [
 		"Kill Extensions",
@@ -310,7 +315,7 @@
     		"Prevent spam", "will look back", "lines to detect", "plagiarism",
 
     		"Minimum Word Length",
-    		"Prevent Spam", "will ignore messages if there aren't any words longer than", "characters",
+    		"Prevent Spam", "will ignore messages if there are not any words longer than", "characters",
 
     		"Maximum Occurrences",
     		"Prevent Spam", "will mark messages as", "repetitive", "after a word appears", "or more times"
@@ -532,6 +537,12 @@
 		"Experimental Features",
 		"Allow the extension to display, and use experimental features",
 		"May cause data loss"
+	],
+
+	"@keyboard-shortcuts": [
+		"Extra Keyboard Shortcuts",
+		"Allow the extension to add extra keyboard shortcuts",
+		"Keyboard shortcuts can be viewed by pressing", null
 	],
 
 	"@fine-details": [

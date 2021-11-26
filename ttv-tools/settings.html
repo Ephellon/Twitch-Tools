@@ -75,7 +75,7 @@
                     </p>
 
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Away Mode&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Away Mode&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <div class='title' tr-id='away-mode:hide-chat'>Hide Chat</div>
@@ -152,7 +152,7 @@
             </section>
 
             <!-- First in Line / Up Next -->
-            <section new='4.8'>
+            <section new='4.13'>
                 <div class='title' tr-id='first-in-line'><span small glyph='favorite'></span> First in Line / Up Next</div>
                 <div class='summary'>
                     <p tr-id>
@@ -163,7 +163,7 @@
                     </p>
 
                     <details>
-                        <summary tr-id='options' subtitle='Adjust settings for &quot;First in Line&quot;'>Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;First in Line&quot;'>Options</summary>
                         <div>
                             <div class='radio'>
                                 <input id='first_in_line_none' type='radio' name='first-in-line' checked/>
@@ -203,17 +203,32 @@
                     </details>
 
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Up Next&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Up Next&quot;'>Extras</summary>
                         <div>
-                            <div class='title' tr-id='up-next:extras'>One Instance</div>
-                            <div class='summary'>
-                                <div class='toggle'>
-                                    <input id='up_next__one_instance' type='checkbox'/>
-                                    <label for='up_next__one_instance'></label>
+                            <div text-only>
+                                <div class='title' tr-id='up-next:extras'>One Instance</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='up_next__one_instance' type='checkbox'/>
+                                        <label for='up_next__one_instance'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Only the first tab to load <b>Up Next</b> is allowed to use it.
+                                    </p>
                                 </div>
-                                <p tr-id>
-                                    Only the first tab to load <b>Up Next</b> is allowed to use it.
-                                </p>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='auto-follow:live-reminders'><span class='live'>LIVE</span> Reminders</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='live_reminders' type='checkbox'/>
+                                        <label for='live_reminders'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Adds a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button in the <b>about me</b> panel of channels you do not follow.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </details>
@@ -225,13 +240,13 @@
                 <div class='title' tr-id='auto-follow'><span small glyph='favorite'></span> Follows</div>
                 <div class='summary'>
                     <p tr-id>
-                        While watching a channel that isn't followed, follow it automatically.
+                        While watching a channel that is not followed, follow it automatically.
                     </p>
 
                     <div><!-- EMPTY OFFSET --></div>
 
                     <details>
-                        <summary tr-id='options' subtitle='Adjust settings for &quot;Auto-Follow&quot;'>Options</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Follows&quot;'>Options</summary>
                         <div>
                             <div class='radio'>
                                 <input id='auto_follow_none' type='radio' name='auto-follow' checked/>
@@ -335,7 +350,7 @@
                         <option value='unfollowed' tr-id>Prevent unfollowed channels from being raided</option>
                     </select>
                     <details>
-                        <summary tr-id='options' subtitle='Adjust options for &quot;Prevent Raiding&quot;'>Options</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Prevent Raiding&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <!-- Greedy Raiding -->
@@ -381,7 +396,7 @@
                         After the current stream ends, go to the <b>Next Channel</b>.
                     </p>
                     <details>
-                        <summary tr-id='options' subtitle='Adjust options for &quot;Stay Live&quot;'>Options</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Stay Live&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <div class='title'><span class='offline'>Rerun</span> &rarr; <span class='offline'>Offline</span></div>
@@ -618,7 +633,7 @@
                         When someone mentions you <code purple>@username</code>, make the message stand out by highlighting it.
                     </p>
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Highlight Mentions&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Highlight Mentions&quot;'>Extras</summary>
                         <div>
                             <div class='title' tr-id='highlight-mentions:options'>General Highlighting</div>
                             <div class='summary'>
@@ -804,7 +819,7 @@
                                 <div class='title' tr-id>Minimum Word Length</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        <b>Prevent spam</b> will ignore messages if there aren't any words longer than <span><input id='prevent_spam_minimum_length' type='number' value='3' min='3' max='500' step='1' set='top-tooltip:this.min &mdash; this.max'/></span> characters.
+                                        <b>Prevent spam</b> will ignore messages if there are not any words longer than <span><input id='prevent_spam_minimum_length' type='number' value='3' min='3' max='500' step='1' set='top-tooltip:this.min &mdash; this.max'/></span> characters.
                                     </p>
                                 </div>
                             </div>
@@ -862,7 +877,7 @@
                         Apply dual tones to make chat easier to read.
                     </p>
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Simplify Chat&quot;'>Extras</summary>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Simplify Chat&quot;'>Options</summary>
                         <div>
                             <div text-only>
                                 <div class='title' tr-id='simplify-chat:options'>Monotone Usernames</div>
@@ -1070,7 +1085,7 @@
                         Display a live preview of streams when hovering over them.
                     </p>
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Stream Preview&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Stream Preview&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <div class='title' tr-id='stream-preview:position'>Preview Position</div>
@@ -1236,7 +1251,7 @@
                     </p>
 
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Recover Frames&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Recover Frames&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <div class='title' tr-id='recover-frames:extras'>Try Embed</div>
@@ -1328,7 +1343,7 @@
                         Allow the extension to display messages in the console.
                     </p>
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust extra settings for &quot;Display Console Messages&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Display Console Messages&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <div class='title' tr-id='@console.log'>Allow logs</div>
@@ -1425,10 +1440,10 @@
                         <input id='extra_keyboard_shortcuts' type='checkbox' checked/>
                         <label for='extra_keyboard_shortcuts'></label>
                     </div>
-                    <p tr-id="@">
+                    <p tr-id>
                         Allow the extension to add extra keyboard shortcuts.
                     </p>
-                    <p tr-id="@">
+                    <p tr-id>
                         Keyboard shortcuts can be viewed by pressing <code id='key:shift-/'>Shift + /</code>
                     </p>
                 </div>

@@ -490,3 +490,57 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 
     animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) infinite 37s;
 }
+
+/* About Panel - Actions */
+.about-section__actions > [action-origin]:first-child:not(:only-child) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.about-section__actions > [action-origin]:not(:first-child) {
+    border-top: var(--border-width-default) solid var(--color-border-base);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+[tt-action] {
+    background-color: var(--color-background-base);
+    border-radius: 0.4rem;
+
+    padding: 0.5rem 1rem;
+}
+
+[tt-action] button {
+    padding: 0.5rem 0;
+}
+
+[tt-action] button > * {
+    background-color: var(--color-background-base);
+    border-radius: 0.4rem;
+    display: flex;
+
+    padding: 1rem;
+}
+
+[tt-action] button > *:hover {
+    background-color: var(--color-background-alt);
+}
+
+.tt-action-icon {
+    padding-right: 1rem;
+}
+
+.tt-action-icon + * {
+    color: var(--color-text-base);
+}
+
+.tt-action-title {
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-heading);
+}
+
+.tt-action-subtitle {
+    color: var(--color-text-alt-2);
+    font-size: var(--font-size-6);
+}

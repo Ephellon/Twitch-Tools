@@ -65,6 +65,7 @@ let // These are option names. Anything else will be removed
         'auto_follow_time',
             'auto_follow_time_minutes',
         'auto_follow_all',
+        'live_reminders',
         // Keep Watching
         'stay_live',
             'stay_live__ignore_channel_reruns',
@@ -1461,7 +1462,8 @@ async function Translate(language = 'en', container = document) {
             let lastTrID,
                 placement = {};
 
-            let { ELEMENT_NODE, TEXT_NODE } = document;
+            let { ELEMENT_NODE, TEXT_NODE } = document,
+                PREV_NODE, SEND_BACK = 0;
 
             for(let element of $('[tr-id]', true, container)) {
                 let translation_id = (element.getAttribute('tr-id') || lastTrID),
@@ -1499,29 +1501,44 @@ async function Translate(language = 'en', container = document) {
                         stop: node.textContent.replace(/^[^]*?((?:&#?[\w\-]+?;)?[\s\.!:?,]*)$/, '$1'),
                     };
 
-                    if(/^%%$/.test(translation ?? ''))
-                        continue;
-
                     let number;
-                    if(defined(translation))
-                        node.textContent =
-                            padding.start
-                            + translation
-                                .replace(/%d\b/g, number = node.textContent.replace(/[^]*?(\d+)[^]*/, '$1'))
-                                .replace(/%s\b/g, parseInt(number) > 1? 's': '')
-                            + padding.stop;
+                    let pad = (string = '') =>
+                        padding.start
+                        + string
+                            .replace(/%d\b/g, number = node.textContent.replace(/[^]*?(\d+)[^]*/, '$1'))
+                            .replace(/%s\b/g, parseInt(number) > 1? 's': '')
+                        + padding.stop;
 
-                    if(translation?.length < 1)
-                        node.textContent = node.textContent.trim();
-
-                    node.textContent = node.textContent
+                    let slim = (string = '') => string
                         .replace(/\([\s]+/g, '(')
                         .replace(/[\s,:;]+\)/g, ')')
                         .replace(/\s+(-\w)/g, '$1');
 
+                    if(/^%%$/.test(translation ?? ''))
+                        continue;
+
+                    if(SEND_BACK > 0) {
+                        PREV_NODE.innerHTML = PREV_NODE.textContent.replace(node.textContent, '').replace(/%</, slim(pad(node.outerHTML)));
+                        node.remove();
+                        --SEND_BACK;
+
+                        continue;
+                    }
+
+                    if(defined(translation))
+                        node.textContent = pad(translation);
+
+                    if(translation?.length < 1)
+                        node.textContent = node.textContent.trim();
+
+                    node.textContent = slim(node.textContent);
+
                     placement[translation_id] = (placement[translation_id] + 1 < translations.length)?
                         placement[translation_id] + 1:
                     0;
+
+                    if(SEND_BACK += +(/%</.test(translation ?? '')))
+                        PREV_NODE = node.parentElement;
                 }
 
                 lastTrID = translation_id;
