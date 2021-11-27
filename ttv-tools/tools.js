@@ -284,11 +284,12 @@ class Balloon {
                                                                             f('div.tt-mg-l-05', {},
                                                                                 f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
                                                                             )
-                                                                        )
+                                                                        ),
+                                                                        f('div', { innerHTML: Glyphs.modify('navigation', { height: '20px', width: '20px', style: 'position:absolute; right:0; top:40%;' }) })
                                                                     )
                                                                 )
                                                             ),
-                                                            f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1.tt-pd-r-05.tt-pd-t-1', {},
+                                                            f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
                                                                 f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                                         {
@@ -471,11 +472,12 @@ class Balloon {
                                                     f('div.tt-mg-l-05', {},
                                                         f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
                                                     )
-                                                )
+                                                ),
+                                                f('div', { innerHTML: Glyphs.modify('navigation', { height: '20px', width: '20px', style: 'position:absolute; right:0; top:40%;' }) })
                                             )
                                         )
                                     ),
-                                    f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1.tt-pd-r-05.tt-pd-t-1', {},
+                                    f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
                                         f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                 {
@@ -2382,7 +2384,7 @@ try {
                                 if(!parseBool(Settings.first_in_line_none)) {
                                     let { name, href } = STREAMER;
 
-                                    Handlers.first_in_line({ href, textContent: `${ name } is live [Greedy Raiding]` });
+                                    Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ name } is live [Greedy Raiding]` });
                                 }
 
                                 open(`./${ from }`, '_self');
@@ -4496,7 +4498,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let [thisJob] = ALL_FIRST_IN_LINE_JOBS;
 
-                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(1);
+                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(1).map(href => href.toLowerCase());
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -4555,7 +4557,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href?.length).filter(href => href != FIRST_IN_LINE_HREF);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS.map(href => href.toLowerCase()))].filter(href => href?.length).filter(href => href != FIRST_IN_LINE_HREF);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -4807,7 +4809,7 @@ let Initialize = async(START_OVER = false) => {
                     fiveMin = 5 * oneMin,
                     tenMin = 10 * oneMin;
 
-                ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+                ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []).map(href => href.toLowerCase());
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
                 FIRST_IN_LINE_DUE_DATE = (null
                     ?? cache.FIRST_IN_LINE_DUE_DATE
@@ -4947,7 +4949,7 @@ let Initialize = async(START_OVER = false) => {
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         // LOG('Accessing here... #1');
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(href => href.toLowerCase()))].filter(url => url?.length);
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -5187,7 +5189,7 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(action))
                 continue;
 
-            let { href, pathname } = parseURL(action.href),
+            let { href, pathname } = parseURL(action.href.toLowerCase()),
                 { textContent } = action,
                 uuid = UUID.from(textContent).value;
 
@@ -5208,7 +5210,7 @@ let Initialize = async(START_OVER = false) => {
                     LOG('Pushing to First in Line:', href, new Date);
 
                     // LOG('Accessing here... #2');
-                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(href => href.toLowerCase()))].filter(url => url?.length);
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
@@ -5226,7 +5228,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Add the new job...
                 // LOG('Accessing here... #3');
-                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(href => href.toLowerCase()))].filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
@@ -5413,7 +5415,7 @@ let Initialize = async(START_OVER = false) => {
                 fiveMin = 5 * oneMin,
                 tenMin = 10 * oneMin;
 
-            ALL_FIRST_IN_LINE_JOBS = cache.ALL_FIRST_IN_LINE_JOBS ?? [];
+            ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []).map(href => href.toLowerCase());
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
             FIRST_IN_LINE_DUE_DATE = (null
                 ?? cache.FIRST_IN_LINE_DUE_DATE
@@ -5503,7 +5505,7 @@ let Initialize = async(START_OVER = false) => {
 
                 break __FirstInLine__;
             } else if(!first) {
-                // Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
+                // Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ channel.name } is live [First in Line]` });
 
                 // WARN('Forcing queue update for', href);
                 // REDO_FIRST_IN_LINE_QUEUE(href);
@@ -5613,7 +5615,7 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('A channel just appeared:', name, new Date);
 
-            Handlers.first_in_line({ href, textContent: `${ name } is live [First in Line+]` });
+            Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ name } is live [First in Line+]` });
         }
 
         OLD_STREAMERS = NEW_STREAMERS;
@@ -5641,12 +5643,48 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
+    let LIVE_REMINDERS__CHECKING_INTERVAL;
     Handlers.live_reminders = () => {
         START__STOP_WATCH('live_reminders');
 
+        // See if there are any notifications to push...
+        LIVE_REMINDERS__CHECKING_INTERVAL =
+        setInterval(() => {
+            START__STOP_WATCH('live_reminders__reminder_checking_interval');
+
+            LoadCache('LiveReminders', async({ LiveReminders }) => {
+                LiveReminders = JSON.parse(LiveReminders || '{}');
+
+                checking:
+                for(let reminderName in LiveReminders)
+                    // Only check for the stream after it's likely to be dead...
+                    if((+new Date) > +new Date(LiveReminders[reminderName])) {
+                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults));
+
+                        // The channel is live!
+                        if(parseBool(live)) {
+                            // TODO - Currently, only one option looks for notifications... I can just call it here
+                            Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ name } is live [Live Reminders]` });
+
+                            delete LiveReminders[reminderName];
+
+                            alert.timed(`${ name } just went live!`, 10_000);
+
+                            (null
+                                ?? $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`)?.click
+                                ?? SaveCache
+                            )({ LiveReminders: JSON.stringify(LiveReminders) });
+                        }
+                    }
+            });
+
+            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 15_000);
+        }, 15_000);
+
+        // Add the button to unfollowed channels
         let actionPanel = $('.about-section__actions');
 
-        if(STREAMER.like || !defined(actionPanel))
+        if(!defined(actionPanel))
             return JUDGE__STOP_WATCH('live_reminders');
 
         let action = $('[tt-section-label="live-reminders"i], [tt-action="live-reminders"i]', false, actionPanel);
@@ -5691,11 +5729,15 @@ let Initialize = async(START_OVER = false) => {
                             $('.tt-action-subtitle', false, currentTarget).textContent = subtitle;
 
                             // Add the reminder...
-                            if(hasReminder)
-                                LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.projectedStopTime ?? (+new Date) + 14_400_000) + 14_400_000).floorToNearest(3_600_000));
+                            if(hasReminder) {
+                                alert.timed(`You'll be notified when ${ reminderName } goes live.`, 10_000);
+                                LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.projectedStopTime ?? (+new Date) + 21_600_000) + 21_600_000).floorToNearest(3_600_000));
+                            }
                             // Remove the reminder...
-                            else
+                            else {
+                                alert.timed(`Reminder removed successfully!`, 5_000);
                                 delete LiveReminders[reminderName];
+                            }
 
                             currentTarget.closest('[tt-action]').setAttribute('remind', hasReminder);
 
@@ -5714,35 +5756,6 @@ let Initialize = async(START_OVER = false) => {
             actionPanel.append(action);
         });
 
-        // See if there are any notifications to push...
-        setInterval(() => {
-            LoadCache('LiveReminders', async({ LiveReminders }) => {
-                LiveReminders = JSON.parse(LiveReminders || '{}');
-
-                checking:
-                for(let reminderName in LiveReminders)
-                    // Only check for the stream after it's likely to be dead...
-                    if((+new Date) > +new Date(LiveReminders[reminderName])) {
-                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults));
-
-                        // The channel is live!
-                        if(parseBool(live)) {
-                            // TODO - Currently, only one option looks for notifications... I can just call it here
-                            Handlers.first_in_line({ href, textContent: `${ name } is live [Live Reminders]` });
-
-                            alert.timed(`${ name } just went live!`, 10_000);
-
-                            delete LiveReminders[reminderName];
-
-                            if(parseBool($(`[tt-action="live-reminders"i][for="${ reminderName }"i]`).getAttribute('remind')))
-                                $(`[tt-action="live-reminders"i][for="${ reminderName }"i] button`).click();
-                            else
-                                SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
-                        }
-                    }
-            });
-        }, 60_000);
-
         JUDGE__STOP_WATCH('live_reminders');
     };
     Timers.live_reminders = -2_500;
@@ -5760,7 +5773,7 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(actionPanel)) {
             actionPanel = furnish('div.about-section__actions', { style: `padding-left: 2rem; margin-bottom: 3rem; width: 24rem;` });
 
-            $('.about-section').append(actionPanel);
+            $('.about-section')?.append?.(actionPanel);
         } else {
             for(let child of actionPanel.children)
                 child.setAttribute('action-origin', 'native');
@@ -8303,6 +8316,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                     people: [
                         "friends",
+                        "watch-channel-trailer",
                     ].reverse(),
 
                     inform: [
@@ -8310,7 +8324,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     ].reverse(),
 
                     rewind: [
-                        "rewind-the-stream",
+                        "rewind-stream",
                     ].reverse(),
                 };
 
@@ -8339,7 +8353,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                                     // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
 
-                                    container.setAttribute('tt-section-label', conversions[glyph].pop());
+                                    let family = conversions[glyph];
+
+                                    if(family?.length)
+                                        container.setAttribute('tt-section-label', family.pop());
                                 });
                 }
             }

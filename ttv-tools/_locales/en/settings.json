@@ -312,7 +312,7 @@
 	],
     	"prevent-spam:options": [
     		"Message History",
-    		"Prevent spam", "will look back", "lines to detect", "plagiarism",
+    		"Prevent Spam", "will look back", "lines to detect", "plagiarism",
 
     		"Minimum Word Length",
     		"Prevent Spam", "will ignore messages if there are not any words longer than", "characters",

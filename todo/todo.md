@@ -23,10 +23,18 @@
 8. `v5` will need to be made in [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
     * Required by **Jan 2023**
 9. Dead channels get re-added to Up Next sometimes
+    * May have something to do with case sensitivity in HREFs?
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.14)
+- Removed e-mail support link
+- Updated look of Up Next to better depict the drag-n-drop feature of channels
+- Fixed issue where Live Reminders would not fire on followed channels
+    - Changed Live Reminders to also be allowed on followed channels
+- Changed First in Line / Up Next to ignore case sensitivity when adding channels
+
 > [`4.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.13)
 - Added more time zones for Time Zones
 - Added better Search logic to re-add unknown ("hidden") channels back to Up Next
@@ -37,7 +45,7 @@
 
 > [`4.12.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.14)
 - Added Time Zones to translate times in the title/rich-tooltip to a local time
-- Fixed an issue where Filter Rules wouldn't be saved
+- Fixed an issue where Filter Rules would not be saved
 
 > [`4.12.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.13)
 - [Added contrast correction](https://webdesign.tutsplus.com/articles/css-tips-for-better-color-and-contrast-accessibility--cms-34472)
@@ -122,14 +130,14 @@
 
 > [`4.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12)
 - Added Sync Settings (upload/download settings)
-- Fixed issue where clicking the next channel's popup didn't reset the timer
+- Fixed issue where clicking the next channel's popup did not reset the timer
 - Enabled the Away Mode Schedule feature
 - Fixed issue where the next channel would `blank`
 
 > [`4.11.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.7)
 - Fixed Highlight Phrases' CSS
 - Added side-panel labeling logic
-- Fixed issue where Up Next wouldn't go to all channels due to Followed Channel edge-case
+- Fixed issue where Up Next would not go to all channels due to Followed Channel edge-case
 
 > [`4.11.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.6)
 - Fixed issue where Up Next would instantly go to channels
@@ -143,7 +151,7 @@
 > [`4.11.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.4)
 - Added "cache next streamer" logic
 - Fixed Up Next adding unfollowed channels to Up Next
-- Added logic to detect if the user is logged out (don't run the extension...)
+- Added logic to detect if the user is logged out (do not run the extension...)
 
 > [`4.11.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.11.3)
 - Adjusted `author` logic for Filter Messages - to include translated names `Username (Translated Username)`
@@ -229,7 +237,7 @@
 
 > [`4.2.0`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.2.0)
 - Removed `CRX` package
-- Fixed edge-case where streamer data wouldn't be passed to `chat.js`
+- Fixed edge-case where streamer data would not be passed to `chat.js`
 - Added Stream Preview
 - Fixed Keep Popout
 - Added Accent Color
@@ -438,7 +446,7 @@
     - Added automatic garbage collector for cached data
     - Added custom channel point icons to the rich tooltip
     - Corrected "Available during this stream" logic
-- Fixed issue where captured (esp. locked) emotes wouldn't be displayed under "Captured Emotes"
+- Fixed issue where captured (esp. locked) emotes would not be displayed under "Captured Emotes"
 - Fixed issue that removed unfollowed channels from "Up Next"
 
 ----
@@ -470,8 +478,8 @@
 - Fixed icon color
 
 > [`2.9.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9.10)
-- Fixed issue that wouldn't register `ondrop` events
-- Fixed issue that wouldn't add points collected from bets
+- Fixed issue that would not register `ondrop` events
+- Fixed issue that would not add points collected from bets
 - Fixed `STREAMER.ping` logic
 - Added "BetterTTV Emotes"
 
@@ -497,7 +505,7 @@
 - Added the "Channel Points Receipt (Display)" option
 
 > [`2.9.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9.3)
-- Fixed issue where clicking Up Next wouldn't restart the timer
+- Fixed issue where clicking Up Next would not restart the timer
 - Fixed issue where some offline channels still appeared as "live"
 
 > [`2.9.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.9.2)
