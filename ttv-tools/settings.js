@@ -164,6 +164,8 @@ let // These are option names. Anything else will be removed
         /* Customization */
         // Away Mode Button Placement
         'away_mode_placement',
+        // Hide Blank Ads
+        'hide_blank_ads',
         // Watch Time Text Placement
         'watch_time_placement',
         // Points Collected Text Placement

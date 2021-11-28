@@ -53,7 +53,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 max = abs(JobTime) * 1.1;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
+                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ parent.location.pathname }`)
                     ?.toNativeStack?.();
         },
         START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
@@ -86,6 +86,61 @@ let Player__Initialize = async(START_OVER = false) => {
     __AutoMatureAccept__:
     if(parseBool(Settings.auto_accept_mature)) {
         RegisterJob('auto_accept_mature');
+    }
+
+    /*** Customization
+     *       _____          _                  _          _   _
+     *      / ____|        | |                (_)        | | (_)
+     *     | |    _   _ ___| |_ ___  _ __ ___  _ ______ _| |_ _  ___  _ __
+     *     | |   | | | / __| __/ _ \| '_ ` _ \| |_  / _` | __| |/ _ \| '_ \
+     *     | |___| |_| \__ \ || (_) | | | | | | |/ / (_| | |_| | (_) | | | |
+     *      \_____\__,_|___/\__\___/|_| |_| |_|_/___\__,_|\__|_|\___/|_| |_|
+     *
+     *
+     */
+    /*** Hide Blank Ads
+     *      _    _ _     _        ____  _             _                  _
+     *     | |  | (_)   | |      |  _ \| |           | |        /\      | |
+     *     | |__| |_  __| | ___  | |_) | | __ _ _ __ | | __    /  \   __| |___
+     *     |  __  | |/ _` |/ _ \ |  _ <| |/ _` | '_ \| |/ /   / /\ \ / _` / __|
+     *     | |  | | | (_| |  __/ | |_) | | (_| | | | |   <   / ____ \ (_| \__ \
+     *     |_|  |_|_|\__,_|\___| |____/|_|\__,_|_| |_|_|\_\ /_/    \_\__,_|___/
+     *
+     *
+     */
+    let BLANK_AD_PRESENCE = false;
+
+    Handlers.hide_blank_ads = () => {
+        let capture = $('video').captureFrame(),
+            banner = Extension.getURL('twitch-banner.png');
+
+        resemble(capture)
+            .compareTo(banner)
+            .ignoreColors()
+            .scaleToSameSize()
+            .onComplete(async data => {
+                let { analysisTime, misMatchPercentage } = data;
+
+                analysisTime = parseInt(analysisTime);
+                misMatchPercentage = parseFloat(misMatchPercentage);
+
+                let matchPercentage = 100 - misMatchPercentage,
+                    isBlankAd = matchPercentage > 80;
+
+                if(BLANK_AD_PRESENCE == isBlankAd)
+                    return;
+                BLANK_AD_PRESENCE = isBlankAd;
+
+                // WARN(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
+
+                parent.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, parent.location.origin);
+            });
+    };
+    Timers.hide_blank_ads = 500;
+
+    __Hide_Blank_Ads__:
+    if(parseBool(Settings.hide_blank_ads)) {
+        RegisterJob('hide_blank_ads');
     }
 
     // Extras
@@ -129,7 +184,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is NOT banned
     let ready = (true
         // The main controller is ready
-        && parseBool(top.MAIN_CONTROLLER_READY)
+        && parseBool(parent.MAIN_CONTROLLER_READY)
 
         // There is an error message
         || defined($('[data-test-selector^="content-overlay-gate"i]'))
@@ -143,7 +198,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
         setTimeout(Player__Initialize, 5000);
         clearInterval(Player__PAGE_CHECKER);
 
-        top.FRAMED_CONTROLLER_READY = true;
+        parent.FRAMED_CONTROLLER_READY = true;
 
         // Only re-execute if in an iframe
         if(top != window) {
@@ -152,10 +207,10 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                 let { body } = document,
                     observer = new MutationObserver(mutations => {
                         mutations.map(mutation => {
-                            if(PATHNAME !== top.location.pathname) {
+                            if(PATHNAME !== parent.location.pathname) {
                                 let OLD_HREF = PATHNAME;
 
-                                PATHNAME = top.location.pathname;
+                                PATHNAME = parent.location.pathname;
 
                                 for(let [name, func] of __ONLOCATIONCHANGE__)
                                     func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
@@ -174,7 +229,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                             "unmute"
                         ].reverse(),
             },
-                Glyphs = top.Glyphs;
+                Glyphs = parent.Glyphs;
 
             for(let container of $('figure', true)) {
                 let svg = $('svg', false, container);
@@ -234,6 +289,6 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 }, 500);
 
 Player__SETTING_RELOADER = setInterval(() => {
-    for(let MAX_CALLS = 60; MAX_CALLS > 0 && top.REFRESH_ON_CHILD?.length; --MAX_CALLS)
-        RestartJob(top.REFRESH_ON_CHILD.pop());
+    for(let MAX_CALLS = 60; MAX_CALLS > 0 && parent.REFRESH_ON_CHILD?.length; --MAX_CALLS)
+        RestartJob(parent.REFRESH_ON_CHILD.pop());
 }, 250);

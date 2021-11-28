@@ -2114,7 +2114,7 @@ let uniqueChannels = (channel, index, channels) =>
 
 // Returns whether or not a channel is live (used with `Array..filter`)
     // isLive(channel:object#Channel) -> boolean
-let isLive = channel => channel?.live;
+let isLive = channel => parseBool(channel?.live);
 
 /*** Setup (pre-init) #MARK:globals #MARK:variables
  *       _____      _                  __                      _       _ _ __
@@ -2283,8 +2283,8 @@ try {
 
     // Add message listener
     // Jumping frames...
-    top.addEventListener('message', event => {
-        if(event.origin != top.location.origin)
+    top.addEventListener('message', async event => {
+        if(!/\b\.?twitch\.tv\b/i.test(event.origin))
             return /* Not meant for us... */;
 
         let R = RegExp;
@@ -2394,6 +2394,14 @@ try {
                             }
                         });
             } break;
+
+            case 'report-blank-ad': {
+                switch(data.from) {
+                    case 'player.js': {
+                        $('.tt-stream-preview').setAttribute('blank-ad', parseBool(data.purple));
+                    } break;
+                }
+            } break;
         }
     });
 } catch(error) {
@@ -2486,7 +2494,7 @@ async function update() {
                     event.dataTransfer.dropEffect = 'move';
                 };
 
-                SEARCH_CACHE.set(channel.name.toLowerCase(), { ...channel });
+                SEARCH_CACHE.set(channel.name?.toLowerCase(), { ...channel });
 
                 return channel;
             }),
@@ -2871,6 +2879,7 @@ let Initialize = async(START_OVER = false) => {
                 } break;
 
                 // A random channel
+                case 'random':
                 default: {
                     GetNextStreamer.cachedStreamer = online[round(random() * online.length)];
                 } break;
@@ -4457,7 +4466,7 @@ let Initialize = async(START_OVER = false) => {
         url = parseURL(url);
 
         let { href } = url,
-            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname == url.pathname);
+            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.toLowerCase() == url.pathname.toLowerCase());
 
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -4496,9 +4505,9 @@ let Initialize = async(START_OVER = false) => {
                     if(!defined(action))
                         return /* The event timed out... */;
 
-                    let [thisJob] = ALL_FIRST_IN_LINE_JOBS;
+                    let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF);
 
-                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(1).map(href => href.toLowerCase());
+                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1).map(href => href.toLowerCase());
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -4506,14 +4515,16 @@ let Initialize = async(START_OVER = false) => {
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
                             // The user clicked "OK"
-                            open(thisJob, '_self');
+                            open(FIRST_IN_LINE_HREF, '_self');
                         } else {
                             // The user clicked "Cancel"
-                            LOG('Canceled First in Line event', thisJob);
+                            LOG('Canceled First in Line event', FIRST_IN_LINE_HREF);
 
-                            let { pathname } = parseURL(thisJob);
+                            let { pathname } = parseURL(FIRST_IN_LINE_HREF);
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="${ pathname }"i]`),
-                            animationID = (balloonChild?.getAttribute('animationID')) || -1;
+                                animationID = (balloonChild?.getAttribute('animationID')) || -1;
+
+                            $(`button[data-test-selector$="delete"i]`, false, balloonChild)?.click();
 
                             clearInterval(animationID);
                             balloonChild?.remove();
@@ -5028,7 +5039,7 @@ let Initialize = async(START_OVER = false) => {
                     for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             name = parseURL(href).pathname.slice(1),
-                            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname) ?? await(new Search(name).then(Search.convertResults));
+                            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.toLowerCase() === parseURL(href).pathname.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
 
                         if(!defined(href) || !defined(channel))
                             continue;
@@ -5036,7 +5047,7 @@ let Initialize = async(START_OVER = false) => {
                         let { live } = channel;
 
                         if(!live)
-                            live ||= SEARCH_CACHE.get(name.toLowerCase())?.live;
+                            live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                         let [balloon] = FIRST_IN_LINE_BALLOON?.add({
                             href,
@@ -5047,7 +5058,7 @@ let Initialize = async(START_OVER = false) => {
                                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                                LOG('Removed First in Line event:', removed, 'Was it canceled?', event.canceled);
+                                LOG('Removed from Up Next (first):', removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
@@ -5097,7 +5108,7 @@ let Initialize = async(START_OVER = false) => {
                                         channel = (ALL_CHANNELS.find(channel => channel.name == name) ?? await(new Search(name).then(Search.convertResults))),
                                         { live } = channel;
 
-                                    live ||= SEARCH_CACHE.get(name.toLowerCase())?.live;
+                                    live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                                     let time = timeRemaining,
                                         intervalID = parseInt(container.getAttribute('animationID')),
@@ -5133,12 +5144,12 @@ let Initialize = async(START_OVER = false) => {
                                     $('a', false, container)
                                         .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
-                                    if(container.getAttribute('live') != (live + '')) {
+                                    // if(container.getAttribute('live') != (live + '')) {
                                         $('.tt-balloon-message', false, container).innerHTML =
                                             `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
                                         container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
                                         container.setAttribute('live', live);
-                                    }
+                                    // }
 
                                     subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
 
@@ -5242,7 +5253,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     name = parseURL(href).pathname.slice(1),
-                    channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname === parseURL(href).pathname) ?? await(new Search(name).then(Search.convertResults));
+                    channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.toLowerCase() === parseURL(href).pathname.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
 
                 if(!defined(channel))
                     continue;
@@ -5250,7 +5261,7 @@ let Initialize = async(START_OVER = false) => {
                 let { live } = channel;
 
                 if(!live)
-                    live ||= SEARCH_CACHE.get(name.toLowerCase())?.live;
+                    live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                 index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
 
@@ -5263,7 +5274,7 @@ let Initialize = async(START_OVER = false) => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                        LOG('Removed from First in Line:', removed, 'Was it canceled?', event.canceled);
+                        LOG('Removed from Up Next:', removed, 'Was it canceled?', event.canceled);
 
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
@@ -5317,7 +5328,7 @@ let Initialize = async(START_OVER = false) => {
                                 channel = (ALL_CHANNELS.find(channel => channel.name == name) ?? await(new Search(name).then(Search.convertResults))),
                                 { live } = channel;
 
-                            live ||= SEARCH_CACHE.get(name.toLowerCase())?.live;
+                            live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                             let time = timeRemaining,
                                 intervalID = parseInt(container.getAttribute('animationID')),
@@ -5354,12 +5365,12 @@ let Initialize = async(START_OVER = false) => {
                             $('a', false, container)
                                 .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
-                            if(container.getAttribute('live') != (live + '')) {
+                            // if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', false, container).innerHTML =
                                     `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
                                 container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
                                 container.setAttribute('live', live);
-                            }
+                            // }
 
                             subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
 
@@ -5370,7 +5381,7 @@ let Initialize = async(START_OVER = false) => {
                     ?? [];
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
-                    REDO_FIRST_IN_LINE_QUEUE(href);
+                    REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                     LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
                     LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
@@ -5463,8 +5474,19 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = !ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).indexOf(STREAMER.href),
-                channel = ALL_CHANNELS.filter(isLive).filter(channel => channel.href !== STREAMER.href).find(channel => parseURL(channel.href).pathname === parseURL(href).pathname) ?? (new Search(parseURL(href).pathname.slice(1)).then(Search.convertResults));
+                first = (href.toLowerCase() == STREAMER.href.toLowerCase()),
+                channel = (null
+                    // Attempts to find the channel via "cache"
+                    ?? ALL_CHANNELS
+                        // Get all live channels listed
+                        .filter(isLive)
+                        // Used below to control whether the channel is deemed a duplicate
+                        .filter(channel => channel.href !== STREAMER.href)
+                        // Gets the channel in question, if applicable
+                        .find(channel => parseURL(channel.href).pathname === parseURL(href).pathname)
+                    // Attempts to find the channel via a search
+                    ?? new Search(parseURL(href).pathname.slice(1)).then(Search.convertResults)
+                );
 
             if(!defined(channel) && !first) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
@@ -5477,10 +5499,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let name = pathname.slice(1).toLowerCase();
 
-                (null
-                    ?? new Search(name).then(Search.convertResults)
-                    ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
-                )
+                new Search(name).then(Search.convertResults)
                     .then(streamer => {
                         let restored = ({
                             from: 'SEARCH',
@@ -5493,13 +5512,14 @@ let Initialize = async(START_OVER = false) => {
                         ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(uniqueChannels);
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
 
-                        REDO_FIRST_IN_LINE_QUEUE(href);
+                        REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                     })
                     .catch(error => {
-                        let [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                        let [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            name = parseURL(killed).pathname.slice(1);
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
-                            WARN(error, killed);
+                            WARN(`Unable to perform search for "${ name }" - ${ error }`, killed);
                         });
                     });
 
@@ -5508,9 +5528,7 @@ let Initialize = async(START_OVER = false) => {
                 // Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ channel.name } is live [First in Line]` });
 
                 // WARN('Forcing queue update for', href);
-                // REDO_FIRST_IN_LINE_QUEUE(href);
-
-                LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for ${ href }`, new Date);
+                REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
             } else if(first) {
                 let [popped] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
 
@@ -5668,7 +5686,8 @@ let Initialize = async(START_OVER = false) => {
 
                             delete LiveReminders[reminderName];
 
-                            alert.timed(`${ name } just went live!`, 10_000);
+                            REMARK(`Live Reminders: ${ name } just went live`, new Date);
+                            alert.timed(`${ name } just went live!`, 7_000);
 
                             (null
                                 ?? $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`)?.click
@@ -5696,11 +5715,12 @@ let Initialize = async(START_OVER = false) => {
             LiveReminders = JSON.parse(LiveReminders || '{}');
 
             let f = furnish,
-                reminderName = STREAMER.name.toLowerCase()
+                s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
+                reminderName = STREAMER.name.toLowerCase(),
                 hasReminder = defined(LiveReminders[reminderName]),
                 [title, subtitle, icon] = [
-                    ['Remind me', "Receive a notification for this channel's next live stream", 'inform'],
-                    ['Reminder set', "You will receive a notification for this channel's next live stream", 'checkmark']
+                    ['Remind me', `Receive a notification for ${ s(reminderName) } next live stream`, 'inform'],
+                    ['Reminder set', `You will receive a notification for ${ s(reminderName) } next live stream`, 'checkmark']
                 ][+!!hasReminder];
 
             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -5715,11 +5735,12 @@ let Initialize = async(START_OVER = false) => {
                         LoadCache('LiveReminders', async({ LiveReminders }) => {
                             LiveReminders = JSON.parse(LiveReminders || '{}');
 
-                            let reminderName = STREAMER.name.toLowerCase(),
+                            let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
+                                reminderName = STREAMER.name.toLowerCase(),
                                 hasReminder = !defined(LiveReminders[reminderName]),
                                 [title, subtitle, icon] = [
-                                    ['Remind me', "Receive a notification for this channel's next live stream", 'inform'],
-                                    ['Reminder set', "You will receive a notification for this channel's next live stream", 'checkmark']
+                                    ['Remind me', `Receive a notification for ${ s(reminderName) } next live stream`, 'inform'],
+                                    ['Reminder set', `You will receive a notification for ${ s(reminderName) } next live stream`, 'checkmark']
                                 ][+!!hasReminder];
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -5730,7 +5751,7 @@ let Initialize = async(START_OVER = false) => {
 
                             // Add the reminder...
                             if(hasReminder) {
-                                alert.timed(`You'll be notified when ${ reminderName } goes live.`, 10_000);
+                                alert.timed(`You'll be notified when ${ reminderName } goes live.`, 7_000);
                                 LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.projectedStopTime ?? (+new Date) + 21_600_000) + 21_600_000).floorToNearest(3_600_000));
                             }
                             // Remove the reminder...
@@ -7148,7 +7169,16 @@ let Initialize = async(START_OVER = false) => {
         }
     }
 
-    // Stream Preview
+    /*** Stream Preview
+     *       _____ _                              _____                _
+     *      / ____| |                            |  __ \              (_)
+     *     | (___ | |_ _ __ ___  __ _ _ __ ___   | |__) | __ _____   ___  _____      __
+     *      \___ \| __| '__/ _ \/ _` | '_ ` _ \  |  ___/ '__/ _ \ \ / / |/ _ \ \ /\ / /
+     *      ____) | |_| | |  __/ (_| | | | | | | | |   | | |  __/\ V /| |  __/\ V  V /
+     *     |_____/ \__|_|  \___|\__,_|_| |_| |_| |_|   |_|  \___| \_/ |_|\___| \_/\_/
+     *
+     *
+     */
     let STREAM_PREVIEW;
 
     Handlers.stream_preview = async() => {

@@ -544,3 +544,24 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     color: var(--color-text-alt-2);
     font-size: var(--font-size-6);
 }
+
+/* Blank Ads */
+.tt-stream-preview[blank-ad="true"i] {
+    border-radius: 5rem !important;
+
+    height: 5rem !important;
+    width: 5rem !important;
+}
+
+.tt-stream-preview[blank-ad="true"i]::before {
+    content: "Ad";
+
+    background: var(--color-twitch-purple);
+    border: 2.5rem solid var(--color-twitch-purple);
+    border-radius: 5rem;
+    transform: translate(-50%, -50%);
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}

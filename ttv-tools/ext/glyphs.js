@@ -68,8 +68,8 @@ top.Glyphs ??= {
     /** The Chromium Authors (c) 2015. All rights reserved.
      * "Exit Picture in Picture," and "Picture in Picture" by The Chromium Authors
      */
-    exit_picture_in_picture:    `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 22 18" x="0px" y="0px"><g fill="none" fill-rule="evenodd" opacity=".87"><path d="M18 4H4v10h14V4zm4 12V1.98C22 .88 21.1 0 20 0H2C.9 0 0 .88 0 1.98V16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H2V1.97h18v14.05z" fill="WindowText" fill-rule="nonzero"/><path d="M-1-3h24v24H-1z"/></g></svg>`,
-    picture_in_picture:         `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 24 24" x="0px" y="0px"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>`,
+    exit_picture_in_picture: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 22 18" x="0px" y="0px"><g fill="none" fill-rule="evenodd" opacity=".87"><path d="M18 4H4v10h14V4zm4 12V1.98C22 .88 21.1 0 20 0H2C.9 0 0 .88 0 1.98V16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H2V1.97h18v14.05z" fill="WindowText" fill-rule="nonzero"/><path d="M-1-3h24v24H-1z"/></g></svg>`,
+    picture_in_picture:      `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 24 24" x="0px" y="0px"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>`,
 
     /** Licensed under the Creative Commons license
      * "Mouse Left Click," "Mouse Right Click," and "Mouse" by Icon Solid from the Noun Project
@@ -84,7 +84,7 @@ top.Glyphs ??= {
     more_vertical: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 18a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM8 4a2 2 0 104 0 2 2 0 00-4 0z"></path></g></svg>`,
     channelpoints: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 6a4 4 0 014 4h-2a2 2 0 00-2-2V6z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
 
-    extensions: '<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M4 16h11a1 1 0 001-1V7h-5V5.5a1.5 1.5 0 00-3 0V7H4v1.035a3.5 3.5 0 010 6.93V16zM2 5v5h1.5a1.5 1.5 0 010 3H2v5h13c1.5 0 3-1.5 3-3V5h-5a3 3 0 00-3-3H9a3 3 0 00-3 3H2z" clip-rule="evenodd"></path></g></svg>',
+    extensions: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M4 16h11a1 1 0 001-1V7h-5V5.5a1.5 1.5 0 00-3 0V7H4v1.035a3.5 3.5 0 010 6.93V16zM2 5v5h1.5a1.5 1.5 0 010 3H2v5h13c1.5 0 3-1.5 3-3V5h-5a3 3 0 00-3-3H9a3 3 0 00-3 3H2z" clip-rule="evenodd"></path></g></svg>`,
     navigation: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M17 7H3V5h14v2zM17 11H3V9h14v2zM3 15h14v-2H3v2z"></path></g></svg>`,
 
     checkmark: `<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>`,

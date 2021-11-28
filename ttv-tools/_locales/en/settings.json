@@ -387,6 +387,11 @@
     		"Under the video"
     	],
 
+	"hide-blank-ads": [
+		"Hide Blank Ads",
+		"When Twitch™ display a", "Blank Ad", "temporarily hide it"
+	],
+
 	"placement:points-receipt": [
 		"Points Receipt",
 		"Where should the", "Points Receipt", "text be displayed"

@@ -24,10 +24,15 @@
     * Required by **Jan 2023**
 9. Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
+    * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15)
+- Added Hide Blank Ads option
+- Applied an auto-translator to non-English language packs
+
 > [`4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.14)
 - Removed e-mail support link
 - Updated look of Up Next to better depict the drag-n-drop feature of channels

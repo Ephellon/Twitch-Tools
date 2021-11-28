@@ -2335,7 +2335,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
             let payable = defined($('[data-test-selector="balance-string"i]'));
 
-            top.postMessage({ action: 'raid', from, to, events, payable });
+            top.postMessage({ action: 'raid', from, to, events, payable }, top.location.origin);
         });
     };
     Timers.greedy_raiding = 5_000;
