@@ -29,6 +29,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.15.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.2)
+- Fixed issue with Live Reminders not firing correctly
+
 > [`4.15.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.1)
 - Removed the pause for "[Someone] is raiding"
 - Minor bug fixes

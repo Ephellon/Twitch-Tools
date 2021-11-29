@@ -4773,7 +4773,9 @@ let Initialize = async(START_OVER = false) => {
                 let colors = {
                     // Extremes
                     light: ({ S, L }) => ((L > 70 && L <= 90) || (S <= 15)),
+                    white: ({ S, L }) => (S > 90) && (L > 90),
                     dark: ({ S, L }) => (L <= 25),
+                    black: ({ S, L }) => (S > 90) && (L < 10),
                     grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9) || (S <= 10),
 
                     // Reds
@@ -5687,10 +5689,12 @@ let Initialize = async(START_OVER = false) => {
                             REMARK(`Live Reminders: ${ name } just went live`, new Date);
                             alert.timed(`${ name } just went live!`, 7_000);
 
-                            (null
-                                ?? $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`)?.click
-                                ?? SaveCache
-                            )({ LiveReminders: JSON.stringify(LiveReminders) });
+                            let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
+
+                            if(defined(button))
+                                button.click();
+                            else
+                                SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
                         }
                     }
             });
