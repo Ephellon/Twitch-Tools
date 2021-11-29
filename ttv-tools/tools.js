@@ -2373,7 +2373,7 @@ try {
                     // || (method == "all")
                 )
                     confirm
-                        .timed(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000, true)
+                        .timed(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000)
                         .then(action => {
                             // The event timed out...
                             action ??= true;
@@ -4574,7 +4574,7 @@ let Initialize = async(START_OVER = false) => {
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                            WARN(error, killed);
+                            WARN(error);
                         });
                     });
             }
@@ -4800,7 +4800,7 @@ let Initialize = async(START_OVER = false) => {
                         name.push(key);
                 }
 
-                return name.sort(color => /^(light|dark)$/i.test(color)? -1: /^(grey|brown)$/i.test(color)? +1: 0).join(' ').replace('light red', 'pink').replace(/(?<!light|dark)\s+(grey|brown)/i, '-$1').replace(/light$/i, 'white').replace(/dark$/i, 'black');
+                return name.sort(color => /^(light|dark)$/i.test(color)? -1: /^(grey|brown)$/i.test(color)? +1: 0).join(' ').replace('light red', 'pink').replace(/^(light|dark).+(grey|brown)$/i, '$1 $2').replace(/light$/i, 'white').replace(/dark$/i, 'black');
             }
 
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
@@ -5015,7 +5015,7 @@ let Initialize = async(START_OVER = false) => {
                         // To create a new due date, `NEW_DUE_DATE(time)` -> `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
                         // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
-                        let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ channel.name }"i]`).getAttribute('time'));
+                        let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ channel.name }"i]`)?.getAttribute('time'));
 
                         LOG('New First in Line event:', { ...channel, time  });
 
@@ -5039,15 +5039,14 @@ let Initialize = async(START_OVER = false) => {
                     for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             name = parseURL(href).pathname.slice(1),
-                            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.toLowerCase() === parseURL(href).pathname.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
+                            channel = ALL_CHANNELS.find(channel => channel.name.toLowerCase() === name.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
 
                         if(!defined(href) || !defined(channel))
                             continue;
 
                         let { live } = channel;
 
-                        if(!live)
-                            live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                        live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                         let [balloon] = FIRST_IN_LINE_BALLOON?.add({
                             href,
@@ -5105,10 +5104,10 @@ let Initialize = async(START_OVER = false) => {
                                     }
 
                                     let name = container.getAttribute('name').toLowerCase(),
-                                        channel = (ALL_CHANNELS.find(channel => channel.name == name) ?? await(new Search(name).then(Search.convertResults))),
+                                        channel = (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) ?? await(new Search(name).then(Search.convertResults))),
                                         { live } = channel;
 
-                                    live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                                    live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                                     let time = timeRemaining,
                                         intervalID = parseInt(container.getAttribute('animationID')),
@@ -5144,12 +5143,12 @@ let Initialize = async(START_OVER = false) => {
                                     $('a', false, container)
                                         .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
-                                    // if(container.getAttribute('live') != (live + '')) {
+                                    if(container.getAttribute('live') != (live + '')) {
                                         $('.tt-balloon-message', false, container).innerHTML =
                                             `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
                                         container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
                                         container.setAttribute('live', live);
-                                    // }
+                                    }
 
                                     subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
 
@@ -5253,15 +5252,14 @@ let Initialize = async(START_OVER = false) => {
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     name = parseURL(href).pathname.slice(1),
-                    channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.toLowerCase() === parseURL(href).pathname.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
+                    channel = ALL_CHANNELS.find(channel => channel.name.toLowerCase() === name.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
 
                 if(!defined(channel))
                     continue;
 
                 let { live } = channel;
 
-                if(!live)
-                    live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                 index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
 
@@ -5325,10 +5323,10 @@ let Initialize = async(START_OVER = false) => {
                             SaveCache({ FIRST_IN_LINE_BOOST });
 
                             let name = container.getAttribute('name').toLowerCase(),
-                                channel = (ALL_CHANNELS.find(channel => channel.name == name) ?? await(new Search(name).then(Search.convertResults))),
+                                channel = (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) ?? await(new Search(name).then(Search.convertResults))),
                                 { live } = channel;
 
-                            live ||= (ALL_CHANNELS[name] || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                            live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
 
                             let time = timeRemaining,
                                 intervalID = parseInt(container.getAttribute('animationID')),
@@ -5365,12 +5363,12 @@ let Initialize = async(START_OVER = false) => {
                             $('a', false, container)
                                 .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
-                            // if(container.getAttribute('live') != (live + '')) {
+                            if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', false, container).innerHTML =
                                     `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
                                 container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
                                 container.setAttribute('live', live);
-                            // }
+                            }
 
                             subheader.innerHTML = index > 0? nth(index + 1): toTimeString(time, 'clock');
 

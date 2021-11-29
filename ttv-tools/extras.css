@@ -549,17 +549,22 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 .tt-stream-preview[blank-ad="true"i] {
     border-radius: 5rem !important;
 
+    top: 5rem !important;
+
     height: 5rem !important;
     width: 5rem !important;
 }
 
 .tt-stream-preview[blank-ad="true"i]::before {
     content: "Ad";
+    transition: all .6s fade-in 1;
 
     background: var(--color-twitch-purple);
     border: 2.5rem solid var(--color-twitch-purple);
     border-radius: 5rem;
     transform: translate(-50%, -50%);
+    opacity: 1;
+
 
     position: absolute;
     top: 50%;

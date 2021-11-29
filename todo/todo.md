@@ -29,6 +29,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.15.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.1)
+- Removed the pause for "[Someone] is raiding"
+- Minor bug fixes
+
 > [`4.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15)
 - Added Hide Blank Ads option
 - Applied an auto-translator to non-English language packs
