@@ -4910,7 +4910,7 @@ let Initialize = async(START_OVER = false) => {
                             return WARN(`Unable to add link to Up Next "${ href }"`);
 
                         streamer = await(null
-                            ?? ALL_CHANNELS.find(channel => channel.href == href)
+                            ?? ALL_CHANNELS.find(channel => channel.pathname.toLowerCase() == pathname.toLowerCase())
                             ?? (null
                                 ?? new Search(pathname.slice(1)).then(Search.convertResults)
                                 ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
@@ -4943,18 +4943,18 @@ let Initialize = async(START_OVER = false) => {
                             let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
 
                             new Search(name)
-                            .then(Search.convertResults)
-                            .then(streamer => {
-                                let restored = ({
-                                    from: 'SEARCH',
-                                    href,
-                                    icon: streamer.icon,
-                                    live: streamer.live,
-                                    name: streamer.name,
-                                });
+                                .then(Search.convertResults)
+                                .then(streamer => {
+                                    let restored = ({
+                                        from: 'SEARCH',
+                                        href,
+                                        icon: streamer.icon,
+                                        live: streamer.live,
+                                        name: streamer.name,
+                                    });
 
-                                ALL_CHANNELS = [...ALL_CHANNELS, restored];
-                            });
+                                    ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                                });
                         }
 
                         // Jobs are unknown. Restart timer
@@ -5721,8 +5721,8 @@ let Initialize = async(START_OVER = false) => {
                 reminderName = STREAMER.name.toLowerCase(),
                 hasReminder = defined(LiveReminders[reminderName]),
                 [title, subtitle, icon] = [
-                    ['Remind me', `Receive a notification for ${ s(reminderName) } next live stream`, 'inform'],
-                    ['Reminder set', `You will receive a notification for ${ s(reminderName) } next live stream`, 'checkmark']
+                    ['Remind me', `Receive a notification for ${ s(STREAMER.name) } next live stream`, 'inform'],
+                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) } next live stream`, 'checkmark']
                 ][+!!hasReminder];
 
             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -5741,8 +5741,8 @@ let Initialize = async(START_OVER = false) => {
                                 reminderName = STREAMER.name.toLowerCase(),
                                 hasReminder = !defined(LiveReminders[reminderName]),
                                 [title, subtitle, icon] = [
-                                    ['Remind me', `Receive a notification for ${ s(reminderName) } next live stream`, 'inform'],
-                                    ['Reminder set', `You will receive a notification for ${ s(reminderName) } next live stream`, 'checkmark']
+                                    ['Remind me', `Receive a notification for ${ s(STREAMER.name) } next live stream`, 'inform'],
+                                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) } next live stream`, 'checkmark']
                                 ][+!!hasReminder];
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -6025,8 +6025,8 @@ let Initialize = async(START_OVER = false) => {
                 else if(raided && STREAMER.like) {
                     LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
 
+                    RemoveFromTopSearch(['referrer']);
                     CONTINUE_RAIDING = true;
-                    // RemoveFromTopSearch(['referrer']);
                     break raid_stopper;
                 }
             }
@@ -8352,6 +8352,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     ].reverse(),
 
                     inform: [
+                        "live-reminders",
+                    ].reverse(),
+
+                    checkmark: [
                         "live-reminders",
                     ].reverse(),
 

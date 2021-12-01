@@ -18,6 +18,7 @@
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
 6. Up Next sometimes goes in an irregular order
     * Not sure why
+    * It might also not list jobs immediately
 7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
 8. `v5` will need to be made in [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
@@ -29,6 +30,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.15.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.3)
+- Minor Live Reminder update (added "checkmark" as a valid icon to detect native support)
+- Fixed an issue with Greedy Raiding looping
+
 > [`4.15.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.2)
 - Fixed issue with Live Reminders not firing correctly
 
