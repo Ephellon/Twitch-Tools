@@ -27,9 +27,15 @@
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
 
+- Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
+
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.15.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.4)
+- Fixed minor issue with "Earned All" not waiting for the cache
+- Fixed an issue with turning Live Reminders off (automatically)
+
 > [`4.15.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.3)
 - Minor Live Reminder update (added "checkmark" as a valid icon to detect native support)
 - Fixed an issue with Greedy Raiding looping

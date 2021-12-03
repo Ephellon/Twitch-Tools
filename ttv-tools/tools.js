@@ -2996,7 +2996,7 @@ let Initialize = async(START_OVER = false) => {
 
         get done() {
             return STREAMER.__done__ ?? (async() => {
-                let done = false;
+                let done;
 
                 await LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
                     let { name } = STREAMER,
@@ -3014,7 +3014,7 @@ let Initialize = async(START_OVER = false) => {
                     return done = (notEarned == 0);
                 });
 
-                return STREAMER.__done__ = done;
+                return STREAMER.__done__ = await awaitOn(() => done);
             })();
         },
 
@@ -5686,13 +5686,13 @@ let Initialize = async(START_OVER = false) => {
 
                             delete LiveReminders[reminderName];
 
-                            REMARK(`Live Reminders: ${ name } just went live`, new Date);
+                            WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
                             alert.timed(`${ name } just went live!`, 7_000);
 
                             let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
 
                             if(defined(button))
-                                button.click();
+                                button.dispatchEvent(new MouseEvent('mouseup'));
                             else
                                 SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
                         }
