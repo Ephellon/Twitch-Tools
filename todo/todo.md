@@ -31,6 +31,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.17)
+- Fixed issue restoring dead channels in Up Next
+- Fixed issue with Up Next sorting
+
 > [`4.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.16)
 - Minor QoL update for Live Reminders
 - Minor QoL update for Up Next Boost

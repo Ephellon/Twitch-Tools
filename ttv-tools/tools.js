@@ -2494,7 +2494,7 @@ async function update() {
                     event.dataTransfer.dropEffect = 'move';
                 };
 
-                SEARCH_CACHE.set(channel.name?.toLowerCase(), { ...channel });
+                SEARCH_CACHE.set(channel.name?.toLowerCase?.(), { ...channel });
 
                 return channel;
             }),
@@ -4546,7 +4546,8 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
             // FIX-ME: this may cause reloading issues?
-            let channel = ALL_CHANNELS.find(channel => channel.href == FIRST_IN_LINE_HREF),
+            let index = ALL_CHANNELS.findIndex(channel => RegExp(channel.href, 'i').test(FIRST_IN_LINE_HREF)),
+                channel = ALL_CHANNELS[index],
                 timeRemaining = GET_TIME_REMAINING();
 
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
@@ -4578,7 +4579,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href?.length).filter(href => href != FIRST_IN_LINE_HREF);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href?.length).filter(href => !RegExp(href, 'i').test(FIRST_IN_LINE_HREF));
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -5042,7 +5043,7 @@ let Initialize = async(START_OVER = false) => {
                     // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                     // LOG('Moved', { oldIndex, newIndex, moved });
 
-                    let channel = ALL_CHANNELS.find(channel => channel.href == ALL_FIRST_IN_LINE_JOBS[0]);
+                    let channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
 
                     if(!defined(channel))
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
@@ -5053,7 +5054,7 @@ let Initialize = async(START_OVER = false) => {
                         // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
                         let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ channel.name }"i]`)?.getAttribute('time'));
 
-                        LOG('New First in Line event:', { ...channel, time  });
+                        LOG('New First in Line event:', { ...channel, time });
 
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
