@@ -995,7 +995,7 @@ class Search {
 
                             let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                                 [language] = languages.filter(lang => !alt_languages.contains(lang)),
-                                name = display_name?.toLowerCase(),
+                                name = display_name?.trim(),
                                 profile_image = $('meta[property$="image"i]', false, doc)?.content,
                                 live = parseBool(data?.publication?.isLiveBroadcast),
                                 started_at = new Date(data?.publication?.startDate).toJSON(),
@@ -2384,7 +2384,7 @@ try {
                                 if(!parseBool(Settings.first_in_line_none)) {
                                     let { name, href } = STREAMER;
 
-                                    Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ name } is live [Greedy Raiding]` });
+                                    Handlers.first_in_line({ href, textContent: `${ name } is live [Greedy Raiding]` });
                                 }
 
                                 open(`./${ from }`, '_self');
@@ -2545,7 +2545,7 @@ async function update() {
     window.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'STREAMERS',
@@ -2556,7 +2556,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"]`);
 
                         if(!defined(parent))
                             return false;
@@ -2780,7 +2780,7 @@ let Initialize = async(START_OVER = false) => {
                 leastWatched = null,
                 leastPoints = +Infinity,
                 leastLeft = +Infinity,
-                leastProgressNeeded = 0,
+                leastProgressNeeded = +Infinity,
                 closestToCompletion = null;
 
             let randomChannel = online.sort(() => random() >= 0.5? +1: -1);
@@ -2881,7 +2881,7 @@ let Initialize = async(START_OVER = false) => {
                 // A random channel
                 case 'random':
                 default: {
-                    GetNextStreamer.cachedStreamer = online[round(random() * online.length)];
+                    GetNextStreamer.cachedStreamer = randomChannel;
                 } break;
             }
 
@@ -2936,7 +2936,7 @@ let Initialize = async(START_OVER = false) => {
                     event.dataTransfer.dropEffect = 'move';
                 };
 
-                SEARCH_CACHE.set(channel.name.toLowerCase(), { ...channel });
+                SEARCH_CACHE.set(channel.name?.toLowerCase?.(), { ...channel });
 
                 return channel;
             }),
@@ -3270,7 +3270,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -3290,13 +3290,22 @@ let Initialize = async(START_OVER = false) => {
                         get live() {
                             let { href } = element,
                                 url = parseURL(href),
-                                { pathname } = url;
+                                { pathname } = url,
+                                name = pathname.slice(1).toLowerCase();
 
+                            // Return the cached results first...
+                            let cache = SEARCH_CACHE.get(name);
+
+                            if(defined(cache))
+                                return cache.live;
+
+                            // Then the actual "does the channel show up" result
                             let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
 
                             if(!defined(parent))
                                 return false;
 
+                            // THe nthe "is it offline" result
                             let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
 
                             return live;
@@ -3372,7 +3381,7 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'STREAMERS',
@@ -3383,7 +3392,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"]`);
 
                             if(!defined(parent))
                                 return false;
@@ -4459,19 +4468,20 @@ let Initialize = async(START_OVER = false) => {
 
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
-    function REDO_FIRST_IN_LINE_QUEUE(url) {
+    async function REDO_FIRST_IN_LINE_QUEUE(url) {
         if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(unknown).length <= 0))
             return;
 
         url = parseURL(url);
 
-        let { href } = url,
-            channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.toLowerCase() == url.pathname.toLowerCase());
+        let { href, pathname } = url,
+            name = pathname.slice(1),
+            channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
 
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
 
-        let { name } = channel;
+        name = channel.name;
 
         FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
@@ -4507,7 +4517,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF);
 
-                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1).map(href => href.toLowerCase());
+                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1);
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -4551,7 +4561,7 @@ let Initialize = async(START_OVER = false) => {
                 let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
                     channelID = UUID.from(pathname).value;
 
-                let name = pathname.slice(1).toLowerCase();
+                let name = pathname.slice(1);
 
                 new Search(name)
                     .then(Search.convertResults)
@@ -4568,7 +4578,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS.map(href => href.toLowerCase()))].filter(href => href?.length).filter(href => href != FIRST_IN_LINE_HREF);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href?.length).filter(href => href != FIRST_IN_LINE_HREF);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -4681,7 +4691,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: 'latest',
                 onclick: event => {
                     let { currentTarget } = event,
-                        speeding = currentTarget.getAttribute('speeding') == 'true';
+                        speeding = parseBool(currentTarget.getAttribute('speeding'));
 
                     speeding = !speeding;
 
@@ -4691,7 +4701,10 @@ let Initialize = async(START_OVER = false) => {
 
                     currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
 
-                    $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ +speeding }px solid var(--color-yellow)`);
+                    let up_next_button = $('[up-next--container] button');
+
+                    up_next_button?.setAttribute('allowed', parseBool(UP_NEXT_ALLOW_THIS_TAB));
+                    up_next_button?.setAttribute('speeding', parseBool(speeding));
 
                     let oneMin = 60_000,
                         fiveMin = 5 * oneMin,
@@ -4775,7 +4788,7 @@ let Initialize = async(START_OVER = false) => {
                     light: ({ S, L }) => ((L > 70 && L <= 90) || (S <= 15)),
                     white: ({ S, L }) => (S > 90) && (L > 90),
                     dark: ({ S, L }) => (L <= 25),
-                    black: ({ S, L }) => (S > 90) && (L < 10),
+                    black: ({ S, L }) => (S > 90 || S < 10) && (L < 10),
                     grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9) || (S <= 10),
 
                     // Reds
@@ -4802,7 +4815,25 @@ let Initialize = async(START_OVER = false) => {
                         name.push(key);
                 }
 
-                return name.sort(color => /^(light|dark)$/i.test(color)? -1: /^(grey|brown)$/i.test(color)? +1: 0).join(' ').replace('light red', 'pink').replace(/^(light|dark).+(grey|brown)$/i, '$1 $2').replace(/light$/i, 'white').replace(/dark$/i, 'black');
+                return name
+                    .sort((primary, secondary) => {
+                        return (
+                            /^(light|dark)$/i.test(primary)?
+                                -1:
+                            /^(grey|brown)$/i.test(primary)?
+                                +1:
+                            /^(light|dark)$/i.test(secondary)?
+                                +1:
+                            /^(grey|brown)$/i.test(secondary)?
+                                -1:
+                            0
+                        )
+                    })
+                    .join(' ')
+                    .replace('light red', 'pink')
+                    .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
+                    .replace(/light$/i, 'white')
+                    .replace(/dark$/i, 'black');
             }
 
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
@@ -4822,7 +4853,7 @@ let Initialize = async(START_OVER = false) => {
                     fiveMin = 5 * oneMin,
                     tenMin = 10 * oneMin;
 
-                ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []).map(href => href.toLowerCase());
+                ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
                 FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
                 FIRST_IN_LINE_DUE_DATE = (null
                     ?? cache.FIRST_IN_LINE_DUE_DATE
@@ -4868,7 +4899,10 @@ let Initialize = async(START_OVER = false) => {
                 first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!FIRST_IN_LINE_BOOST }`);
                 first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
 
-                $('[up-next--container] button')?.setAttribute('style', `border-bottom: ${ (FIRST_IN_LINE_BOOST || !UP_NEXT_ALLOW_THIS_TAB) | 0 }px solid var(--color-${ ['yellow', 'red'][!UP_NEXT_ALLOW_THIS_TAB | 0] })`);
+                let up_next_button = $('[up-next--container] button');
+
+                up_next_button?.setAttribute('allowed', parseBool(UP_NEXT_ALLOW_THIS_TAB));
+                up_next_button?.setAttribute('speeding', parseBool(FIRST_IN_LINE_BOOST));
 
                 // Pause
                 first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
@@ -4910,7 +4944,7 @@ let Initialize = async(START_OVER = false) => {
                             return WARN(`Unable to add link to Up Next "${ href }"`);
 
                         streamer = await(null
-                            ?? ALL_CHANNELS.find(channel => channel.pathname.toLowerCase() == pathname.toLowerCase())
+                            ?? ALL_CHANNELS.find(channel => channel.href.toLowerCase().contains(pathname.toLowerCase()))
                             ?? (null
                                 ?? new Search(pathname.slice(1)).then(Search.convertResults)
                                 ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
@@ -4940,7 +4974,7 @@ let Initialize = async(START_OVER = false) => {
                         LOG('Adding to Up Next [ondrop]:', { href, streamer });
 
                         if(!defined(streamer?.icon)) {
-                            let name = (streamer?.name ?? parseURL(href).pathname.slice(1)).toLowerCase();
+                            let name = (streamer?.name ?? parseURL(href).pathname.slice(1));
 
                             new Search(name)
                                 .then(Search.convertResults)
@@ -4962,7 +4996,7 @@ let Initialize = async(START_OVER = false) => {
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         // LOG('Accessing here... #1');
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(href => href.toLowerCase()))].filter(url => url?.length);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -5041,14 +5075,13 @@ let Initialize = async(START_OVER = false) => {
                     for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             name = parseURL(href).pathname.slice(1),
-                            channel = ALL_CHANNELS.find(channel => channel.name.toLowerCase() === name.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
+                            channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
 
                         if(!defined(href) || !defined(channel))
                             continue;
 
                         let { live } = channel;
-
-                        live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                        name = channel.name;
 
                         let [balloon] = FIRST_IN_LINE_BALLOON?.add({
                             href,
@@ -5084,7 +5117,7 @@ let Initialize = async(START_OVER = false) => {
                                 index,
                                 time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
 
-                                style: (live? '': 'opacity: 0.3!important'),
+                                style: `opacity: ${ 2**-!live }!important`,
                             },
 
                             animate: container => {
@@ -5105,11 +5138,10 @@ let Initialize = async(START_OVER = false) => {
                                         return;
                                     }
 
-                                    let name = container.getAttribute('name').toLowerCase(),
-                                        channel = (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) ?? await(new Search(name).then(Search.convertResults))),
+                                    let name = container.getAttribute('name'),
+                                        channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults)),
                                         { live } = channel;
-
-                                    live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                                        name = channel.name;
 
                                     let time = timeRemaining,
                                         intervalID = parseInt(container.getAttribute('animationID')),
@@ -5148,7 +5180,7 @@ let Initialize = async(START_OVER = false) => {
                                     if(container.getAttribute('live') != (live + '')) {
                                         $('.tt-balloon-message', false, container).innerHTML =
                                             `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                        container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
+                                        container.setAttribute('style', `opacity: ${ 2**-!live }!important`);
                                         container.setAttribute('live', live);
                                     }
 
@@ -5201,7 +5233,7 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(action))
                 continue;
 
-            let { href, pathname } = parseURL(action.href.toLowerCase()),
+            let { href, pathname } = parseURL(action.href),
                 { textContent } = action,
                 uuid = UUID.from(textContent).value;
 
@@ -5222,7 +5254,7 @@ let Initialize = async(START_OVER = false) => {
                     LOG('Pushing to First in Line:', href, new Date);
 
                     // LOG('Accessing here... #2');
-                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(href => href.toLowerCase()))].filter(url => url?.length);
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
@@ -5240,7 +5272,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Add the new job...
                 // LOG('Accessing here... #3');
-                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(href => href.toLowerCase()))].filter(url => url?.length);
+                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
@@ -5254,14 +5286,13 @@ let Initialize = async(START_OVER = false) => {
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     name = parseURL(href).pathname.slice(1),
-                    channel = ALL_CHANNELS.find(channel => channel.name.toLowerCase() === name.toLowerCase()) ?? await(new Search(name).then(Search.convertResults));
+                    channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
 
                 if(!defined(channel))
                     continue;
 
                 let { live } = channel;
-
-                live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                name = channel.name;
 
                 index = index < 0? ALL_FIRST_IN_LINE_JOBS.length: index;
 
@@ -5298,7 +5329,7 @@ let Initialize = async(START_OVER = false) => {
                         index,
                         time: (index < 1? GET_TIME_REMAINING(): FIRST_IN_LINE_WAIT_TIME * 60_000),
 
-                        style: (live? '': 'opacity: 0.3!important'),
+                        style: `opacity: ${ 2**-!live }!important`,
                     },
 
                     animate: container => {
@@ -5324,11 +5355,10 @@ let Initialize = async(START_OVER = false) => {
 
                             SaveCache({ FIRST_IN_LINE_BOOST });
 
-                            let name = container.getAttribute('name').toLowerCase(),
-                                channel = (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) ?? await(new Search(name).then(Search.convertResults))),
+                            let name = container.getAttribute('name'),
+                                channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults)),
                                 { live } = channel;
-
-                            live ||= (ALL_CHANNELS.find(channel => RegExp(`^${ name }$`, 'i').test(channel.name)) || SEARCH_CACHE.get(name.toLowerCase()))?.live;
+                                name = channel.name;
 
                             let time = timeRemaining,
                                 intervalID = parseInt(container.getAttribute('animationID')),
@@ -5368,7 +5398,7 @@ let Initialize = async(START_OVER = false) => {
                             if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', false, container).innerHTML =
                                     `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                container.setAttribute('style', (live? '': 'opacity: 0.3!important'));
+                                container.setAttribute('style', `opacity: ${ 2**-!live }!important`);
                                 container.setAttribute('live', live);
                             }
 
@@ -5426,7 +5456,7 @@ let Initialize = async(START_OVER = false) => {
                 fiveMin = 5 * oneMin,
                 tenMin = 10 * oneMin;
 
-            ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []).map(href => href.toLowerCase());
+            ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
             FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0;
             FIRST_IN_LINE_DUE_DATE = (null
                 ?? cache.FIRST_IN_LINE_DUE_DATE
@@ -5474,7 +5504,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = (href.toLowerCase() == STREAMER.href.toLowerCase()),
+                first = RegExp(`\\b${ href }\\b`, 'i').test(STREAMER.href),
                 channel = (null
                     // Attempts to find the channel via "cache"
                     ?? ALL_CHANNELS
@@ -5497,7 +5527,7 @@ let Initialize = async(START_OVER = false) => {
                 let { pathname } = parseURL(dead),
                     channelID = UUID.from(pathname).value;
 
-                let name = pathname.slice(1).toLowerCase();
+                let name = pathname.slice(1);
 
                 new Search(name).then(Search.convertResults)
                     .then(streamer => {
@@ -5525,7 +5555,7 @@ let Initialize = async(START_OVER = false) => {
 
                 break __FirstInLine__;
             } else if(!first) {
-                // Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ channel.name } is live [First in Line]` });
+                // Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
 
                 // WARN('Forcing queue update for', href);
                 REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
@@ -5579,7 +5609,7 @@ let Initialize = async(START_OVER = false) => {
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
-        } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-section-label="followed"i] a[class*="side-nav-card"i]'))) {
+        } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -5633,7 +5663,7 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('A channel just appeared:', name, new Date);
 
-            Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ name } is live [First in Line+]` });
+            Handlers.first_in_line({ href, textContent: `${ name } is live [First in Line+]` });
         }
 
         OLD_STREAMERS = NEW_STREAMERS;
@@ -5665,50 +5695,13 @@ let Initialize = async(START_OVER = false) => {
     Handlers.live_reminders = () => {
         START__STOP_WATCH('live_reminders');
 
-        // See if there are any notifications to push...
-        LIVE_REMINDERS__CHECKING_INTERVAL =
-        setInterval(() => {
-            START__STOP_WATCH('live_reminders__reminder_checking_interval');
-
-            LoadCache('LiveReminders', async({ LiveReminders }) => {
-                LiveReminders = JSON.parse(LiveReminders || '{}');
-
-                checking:
-                for(let reminderName in LiveReminders)
-                    // Only check for the stream after it's likely to be dead...
-                    if((+new Date) > +new Date(LiveReminders[reminderName])) {
-                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults));
-
-                        // The channel is live!
-                        if(parseBool(live)) {
-                            // TODO - Currently, only one option looks for notifications... I can just call it here
-                            Handlers.first_in_line({ href: href.toLowerCase(), textContent: `${ name } is live [Live Reminders]` });
-
-                            delete LiveReminders[reminderName];
-
-                            WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
-                            alert.timed(`${ name } just went live!`, 7_000);
-
-                            let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
-
-                            if(defined(button))
-                                button.dispatchEvent(new MouseEvent('mouseup'));
-                            else
-                                SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
-                        }
-                    }
-            });
-
-            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 15_000);
-        }, 15_000);
-
         // Add the button to unfollowed channels
         let actionPanel = $('.about-section__actions');
 
         if(!defined(actionPanel))
             return JUDGE__STOP_WATCH('live_reminders');
 
-        let action = $('[tt-section-label="live-reminders"i], [tt-action="live-reminders"i]', false, actionPanel);
+        let action = $('[tt-svg-label="live-reminders"i], [tt-action="live-reminders"i]', false, actionPanel);
 
         if(defined(action))
             return JUDGE__STOP_WATCH('live_reminders');
@@ -5718,7 +5711,7 @@ let Initialize = async(START_OVER = false) => {
 
             let f = furnish,
                 s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                reminderName = STREAMER.name.toLowerCase(),
+                reminderName = STREAMER.name,
                 hasReminder = defined(LiveReminders[reminderName]),
                 [title, subtitle, icon] = [
                     ['Remind me', `Receive a notification for ${ s(STREAMER.name) } next live stream`, 'inform'],
@@ -5729,7 +5722,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Create the action button...
             action =
-            f('div', { 'tt-action': 'live-reminders', 'for': reminderName, 'remind': hasReminder, 'action-origin': 'foreign' },
+            f('div', { 'tt-action': 'live-reminders', 'for': reminderName, 'remind': hasReminder, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                 f('button', {
                     onmouseup: async event => {
                         let { currentTarget } = event;
@@ -5738,7 +5731,7 @@ let Initialize = async(START_OVER = false) => {
                             LiveReminders = JSON.parse(LiveReminders || '{}');
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                                reminderName = STREAMER.name.toLowerCase(),
+                                reminderName = STREAMER.name,
                                 hasReminder = !defined(LiveReminders[reminderName]),
                                 [title, subtitle, icon] = [
                                     ['Remind me', `Receive a notification for ${ s(STREAMER.name) } next live stream`, 'inform'],
@@ -5753,7 +5746,7 @@ let Initialize = async(START_OVER = false) => {
 
                             // Add the reminder...
                             if(hasReminder) {
-                                alert.timed(`You'll be notified when ${ reminderName } goes live.`, 7_000);
+                                alert.timed(`You'll be notified when ${ STREAMER.name } goes live.`, 7_000);
                                 LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.projectedStopTime ?? (+new Date) + 21_600_000) + 21_600_000).floorToNearest(3_600_000));
                             }
                             // Remove the reminder...
@@ -5785,12 +5778,58 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.live_reminders = () => {
         $('[tt-action]', true).map(action => action.remove());
+        clearInterval(LIVE_REMINDERS__CHECKING_INTERVAL);
     };
 
     __Live_Reminders__:
     if(parseBool(Settings.live_reminders)) {
         REMARK('Adding Live Reminders...');
 
+        // See if there are any notifications to push...
+        LIVE_REMINDERS__CHECKING_INTERVAL =
+        setInterval(() => {
+            START__STOP_WATCH('live_reminders__reminder_checking_interval');
+
+            LoadCache('LiveReminders', async({ LiveReminders }) => {
+                LiveReminders = JSON.parse(LiveReminders || '{}');
+
+                checking:
+                for(let reminderName in LiveReminders)
+                    // Only check for the stream after it's likely to be dead...
+                    if((+new Date) > +new Date(LiveReminders[reminderName])) {
+                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults));
+
+                        // The channel is live!
+                        if(parseBool(live)) {
+                            delete LiveReminders[reminderName];
+
+                            let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
+
+                            if(defined(button))
+                                button.dispatchEvent(new MouseEvent('mouseup'));
+                            else
+                                SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => {
+                                    // TODO - Currently, only one option looks for notifications... I can just call it here
+                                    Handle: {
+                                        let notification = { href, textContent: `${ name } is live [Live Reminders]` };
+
+                                        Handlers.first_in_line(notification);
+                                    }
+
+                                    // Show a notification
+                                    Notify: {
+                                        REMARK(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
+                                        alert.timed(`${ name } just went live!`, 7_000);
+                                    }
+                                });
+                        }
+                    }
+            });
+
+            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 15_000);
+        }, 15_000);
+
+        // Add the panel & button
         let actionPanel = $('.about-section__actions');
 
         if(!defined(actionPanel)) {
@@ -5927,7 +5966,7 @@ let Initialize = async(START_OVER = false) => {
             next = GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.textContent),
             host = (STREAMER.name ?? ''),
-            [guest] = host_banner.filter(name => name.toLowerCase() != host.toLowerCase());
+            [guest] = host_banner.filter(name => !RegExp(name, 'i').test(host));
 
         guest ??= "anonymous";
 
@@ -5996,7 +6035,7 @@ let Initialize = async(START_OVER = false) => {
             next = GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.textContent),
             from = (raided? null: STREAMER.name),
-            [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.toLowerCase() != from.toLowerCase()));
+            [to] = (raided? [STREAMER.name]: raid_banner.filter(name => !RegExp(name, 'i').test(from)));
 
         let method = Settings.prevent_raiding ?? "none";
 
@@ -7211,10 +7250,10 @@ let Initialize = async(START_OVER = false) => {
 
         let [name] = title.textContent.split(/[^\w\s]/);
 
-        name = name?.trim()?.toLowerCase();
+        name = name?.trim();
 
         // There is already a preview of the hovered tooltip
-        if([STREAMER?.name, STREAM_PREVIEW?.name].map(name => name?.toLowerCase()).contains(name))
+        if([STREAMER?.name, STREAM_PREVIEW?.name].contains(name))
             return JUDGE__STOP_WATCH('stream_preview');
 
         let { top, left, bottom, right, height, width } = getOffset(richTooltip),
@@ -7241,7 +7280,7 @@ let Initialize = async(START_OVER = false) => {
                         ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width: video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale }); z-index: ${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 0)) };`,
                     },
                     furnish('div.tt-stream-preview--poster', {
-                        style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name }-1280x720.jpg?${ +new Date }");`,
+                        style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name.toLowerCase() }-1280x720.jpg?${ +new Date }");`,
                         onerror: event => {
                             // Do something if the stream's live preview poster doesn't load...
                         },
@@ -7751,7 +7790,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-section-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget } = event;
 
@@ -8384,7 +8423,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                                     let matchPercentage = 100 - misMatchPercentage;
 
-                                    if(matchPercentage < 80 || container.getAttribute('tt-section-label')?.length)
+                                    if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
                                         return;
 
                                     // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
@@ -8392,7 +8431,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                     let family = conversions[glyph];
 
                                     if(family?.length)
-                                        container.setAttribute('tt-section-label', family.pop());
+                                        container.setAttribute('tt-svg-label', family.pop());
                                 });
                 }
             }
@@ -8496,6 +8535,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     background-blend-mode: soft-light !important;
                 }
 
+                #up-next-boost[speeding="true"i] {
+                    animation: fade-in 1s alternate infinite;
+                }
+
+                /* Auto-Focus */
                 [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
 
                 [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }

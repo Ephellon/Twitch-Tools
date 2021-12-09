@@ -212,6 +212,21 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     top: 6px;
 }
 
+/* Native tooltips */
+[fade-right]::before {
+    content: "";
+
+    background: linear-gradient(to right, #fff, #000);
+    border-radius: 6px;
+    mix-blend-mode: multiply;
+
+    height: 100%;
+    width: calc(100% - 1rem);
+
+    position: absolute;
+    margin-left: 1rem;
+}
+
 /* Alerts, Confirmations, and Prompts */
 .tt-alert, .tt-confirm, .tt-prompt {
     animation: 1s fade-in 1;
@@ -569,4 +584,24 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     position: absolute;
     top: 50%;
     left: 50%;
+}
+
+/* Up Next - Boost */
+[up-next--container] button {
+    transition: border 1s;
+}
+
+[up-next--container] button[allowed="false"i] {
+    border-color: var(--color-red) !important;
+}
+
+[up-next--container] button[allowed="true"i][speeding="true"i] {
+    animation: up-next-speeding 1s alternate infinite;
+
+    border: 1px solid var(--color-yellow);
+}
+
+@keyframes up-next-speeding {
+    from { border-color: var(--color-yellow) }
+    to { border-color: transparent }
 }

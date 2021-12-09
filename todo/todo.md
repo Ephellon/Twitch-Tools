@@ -26,12 +26,19 @@
 9. Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
-
-- Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
+10. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.16)
+- Minor QoL update for Live Reminders
+- Minor QoL update for Up Next Boost
+- Fixed minor issue with `GetNextStreamer`
+- Fixed color naming scheme
+- Fixed issue where Up Next wouldn't count some channels as live
+- Increased visibility of Up Next Boost status
+
 > [`4.15.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.15.4)
 - Fixed minor issue with "Earned All" not waiting for the cache
 - Fixed an issue with turning Live Reminders off (automatically)
