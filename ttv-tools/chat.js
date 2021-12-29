@@ -257,7 +257,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(defined(EmoteSearch.input?.value))
             if(EmoteSearch.input.value != EmoteSearch.value)
-                if((EmoteSearch.value = EmoteSearch.input.value)?.length >= 3)
+                if((EmoteSearch.value = EmoteSearch.input.value.trim())?.length >= 3)
                     for(let [name, callback] of EmoteSearch.__onquery__)
                         setTimeout(() => {
                             if(EmoteSearch.value == EmoteSearch.input.value)
@@ -333,7 +333,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30),
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
-                existing = $(`img.bttv[alt="${ name }"]`);
+                existing = $(`img.bttv`, { alt: name });
 
             if(defined(existing))
                 return existing.closest('div.tt-emote-bttv');
@@ -2254,7 +2254,13 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.recover_chat = () => {
         START__STOP_WATCH('recover_chat');
 
-        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
+        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true),
+            error = $('[class*="chat"i][class*="content"] .core-error');
+
+        if(defined(error)) {
+            $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${error.textContent}`));
+            error.remove();
+        }
 
         if(defined(chat))
             return;
@@ -2262,10 +2268,13 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Add an iframe...
         let [,name] = ([,STREAMER?.name] ?? top.location.pathname.split(/\W/, 2)),
             input = $('.chat-input'),
-            iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative[src="./popout/${name}/chat"][role="tt-log"]`),
-            container = $('.chat-shell .stream-chat', false, top.document);
+            iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative`, {
+                src: `./popout/${name}/chat`,
+                role: "tt-log",
+            }),
+            container = $('.chat-shell', false, top.document);
 
-        container?.parentElement?.replaceChild?.(iframe, container);
+        container?.parentElement?.replaceChild(iframe, container);
 
         JUDGE__STOP_WATCH('recover_chat');
     };
@@ -2468,7 +2477,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
                 f('div#tt-banned-banner.tt-pd-b-2.tt-pd-x-2', {},
                     f('div.tt-border-t.tt-pd-b-1.tt-pd-x-2'),
                     f('div.tt-align-center', {},
-                        f('p.tt-c-text.tt-strong[data-test-selector="current-user-timed-out-text"]', {},
+                        f('p.tt-c-text.tt-strong', { 'data-test-selector': "current-user-timed-out-text" },
                             `Messages from ${ name } chat.`
                         ),
                         f('p.tt-c-text-alt-2', {},

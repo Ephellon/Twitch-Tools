@@ -709,7 +709,7 @@ class Card {
         let f = furnish;
 
         let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-            card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[data-a-target="viewer-card-positioner"]`, { style: styling }),
+            card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable`, { style: styling, 'data-a-target': "viewer-card-positioner" }),
             uuid = UUID.from([title, subtitle].join('\n')).value;
 
         icon ??= { src: Extension.getURL('profile.png'), alt: 'Profile' };
@@ -720,30 +720,34 @@ class Card {
         [...container.children].forEach(child => child.remove());
 
         // Furnish the card
-        let iconElement = f('img.emote-card__big-emote.tt-image[data-test-selector="big-emote"]', { ...icon });
+        let iconElement = f('img.emote-card__big-emote.tt-image', { ...icon, 'data-test-selector': "big-emote" });
 
         card.append(
             f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1 [data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
                 f('div.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
                     f('div.tt-inline-flex.viewer-card-drag-cancel', {},
-                        f('div.tt-inline.tt-relative.tt-tooltip__container[data-a-target="emote-name"]', {},
+                        f('div.tt-inline.tt-relative.tt-tooltip__container', { 'data-a-target': "emote-name" },
                             iconElement
                         )
                     ),
                     f('div.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1', {},
-                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong[data-test-selector="emote-code-header"]', {}, title),
-                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6[data-test-selector="emote-type-copy"]', {}, subtitle)
+                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong', { 'data-test-selector': "emote-code-header" }, title),
+                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6', { 'data-test-selector': "emote-type-copy" }, subtitle)
                     )
                 )
             ),
-            f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[data-a-target="viewer-card-close-button"]',
+            f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0',
                 {
+                    'data-a-target': "viewer-card-close-button",
                     onmouseup: event => {
                         $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                     },
                 },
                 f('div.tt-inline-flex.viewer-card-drag-cancel', {},
-                    f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[aria-label="Hide"][data-test-selector="close-viewer-card"]', {},
+                    f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button', {
+                        'aria-label': "Hide",
+                        'data-test-selector': "close-viewer-card",
+                    },
                         f('span.tt-button-icon__icon', {},
                             f('div[style="width: 2rem; height: 2rem;"]', {},
                                 f('div.tt-icon', {},
@@ -2889,7 +2893,11 @@ let Initialize = async(START_OVER = false) => {
             if(parseBool(Settings.stay_live) && !defined(GetNextStreamer?.cachedStreamer) && online?.length) {
                 GetNextStreamer.cachedStreamer ??= randomChannel;
 
-                WARN(`No channel fits the "${ Settings.next_channel_preference }" criteria. Assuming a random channel is desired:`, GetNextStreamer.cachedStreamer);
+                let preference = Settings.next_channel_preference,
+                    channel = GetNextStreamer.cachedStreamer,
+                    { name } = channel ?? (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1)[round(random() * online.length)]);
+
+                WARN(`No channel fits the "${ preference }" criteria. Assuming a random channel is desired:`, channel);
             }
         });
 
@@ -3923,23 +3931,23 @@ let Initialize = async(START_OVER = false) => {
                     .outputSettings({ errorType: 'movementDifferenceIntensity', errorColor: { red: 0, green: 255, blue: 255 } })
                     .onComplete(async data => {
                         let { analysisTime, misMatchPercentage } = data,
-                            threshold = 0,
+                            threshold = detectionThreshold,
                             totalTime = 0,
                             bias = [];
 
                         analysisTime = parseInt(analysisTime);
                         misMatchPercentage = parseFloat(misMatchPercentage);
 
-                        for(let [misMatchPercentage, analysisTime, trend] of CAPTURE_HISTORY) {
-                            threshold += parseFloat(misMatchPercentage);
-                            totalTime += analysisTime;
+                        for(let [mismatch, time, trend] of CAPTURE_HISTORY) {
+                            threshold += parseFloat(mismatch);
+                            totalTime += time;
                             bias.push(trend);
                         }
                         threshold /= CAPTURE_HISTORY.length;
 
                         let trend = (misMatchPercentage > (parseBool(Settings.auto_focus_detection_threshold)? detectionThreshold: threshold)? 'up': 'down');
 
-                        CAPTURE_HISTORY.push([misMatchPercentage, analysisTime, trend]);
+                        (window.CAP_HIS = CAPTURE_HISTORY).push([misMatchPercentage, analysisTime, trend]);
 
                         /* Display capture stats */
                         let diffImg = $('img#tt-auto-focus-differences'),
@@ -4579,7 +4587,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS)].filter(href => href?.length).filter(href => !RegExp(href, 'i').test(FIRST_IN_LINE_HREF));
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set(ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()))].filter(url => url?.length).filter(url => !RegExp(url, 'i').test(FIRST_IN_LINE_HREF));
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -4997,7 +5005,7 @@ let Initialize = async(START_OVER = false) => {
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         // LOG('Accessing here... #1');
-                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+                        ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()))].filter(url => url?.length);
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -5255,7 +5263,7 @@ let Initialize = async(START_OVER = false) => {
                     LOG('Pushing to First in Line:', href, new Date);
 
                     // LOG('Accessing here... #2');
-                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+                    ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()))].filter(url => url?.length);
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
                     LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
@@ -5273,7 +5281,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Add the new job...
                 // LOG('Accessing here... #3');
-                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href])].filter(url => url?.length);
+                ALL_FIRST_IN_LINE_JOBS = [...new Set([...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()))].filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
@@ -5798,7 +5806,7 @@ let Initialize = async(START_OVER = false) => {
                 for(let reminderName in LiveReminders)
                     // Only check for the stream after it's likely to be dead...
                     if((+new Date) > +new Date(LiveReminders[reminderName])) {
-                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults));
+                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults) ?? ALL_CHANNELS.find(channel => RegExp(`^${ reminderName }$`, 'i').test(channel.name)));
 
                         // The channel is live!
                         if(parseBool(live)) {
@@ -5811,15 +5819,21 @@ let Initialize = async(START_OVER = false) => {
                             else
                                 SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => {
                                     // TODO - Currently, only one option looks for notifications... I can just call it here
-                                    Handle: {
-                                        let notification = { href, textContent: `${ name } is live [Live Reminders]` };
+                                    Handle_phantom_notification: {
+                                        let notification = { href, textContent: `${ name } is live [Live Reminders]` },
+                                            [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
+
+                                        // If already on the stream, break
+
+                                        if(page.toLowerCase() == note.toLowerCase())
+                                            break Handle_phantom_notification;
 
                                         Handlers.first_in_line(notification);
                                     }
 
                                     // Show a notification
-                                    Notify: {
-                                        REMARK(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
+                                    Display_phantom_notification: {
+                                        WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
                                         alert.timed(`${ name } just went live!`, 7_000);
                                     }
                                 });
@@ -5827,8 +5841,8 @@ let Initialize = async(START_OVER = false) => {
                     }
             });
 
-            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 15_000);
-        }, 15_000);
+            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 120_000);
+        }, 120_000);
 
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
@@ -7828,7 +7842,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_pages = async() => {
         START__STOP_WATCH('recover_pages');
 
-        let error = $('[data-a-target="core-error-message"i]');
+        let error = $('main [data-a-target="core-error-message"i]');
 
         if(!defined(error))
             return JUDGE__STOP_WATCH('recover_pages');

@@ -31,6 +31,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.18)
+- Fixed issue where Up Next would add jobs multiple times (case-sensitive)
+- Increased Live Reminder timer to 2min
+- Adjusted Live Reminder logic
+- Adjusted Auto-focus logic
+- Fixed infinite reload issue if chat isn't loaded correctly
+- Fixed an issue with Recover Chat not loading content
+
 > [`4.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.17)
 - Fixed issue restoring dead channels in Up Next
 - Fixed issue with Up Next sorting
