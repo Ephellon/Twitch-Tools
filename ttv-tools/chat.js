@@ -333,10 +333,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30),
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
-                existing = $(`img.bttv`, { alt: name });
+                existing = $(`img.bttv[alt="${ name }"i]`);
 
             if(defined(existing))
-                return existing.closest('div.tt-emote-bttv');
+                return existing.closest?.('div.tt-emote-bttv');
 
             let f = furnish;
 
@@ -470,7 +470,12 @@ let Chat__Initialize = async(START_OVER = false) => {
                     emote.addEventListener('mousedown', async event => {
                         let { currentTarget, isTrusted = false } = event,
                             { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
-                            { top } = getOffset(currentTarget);
+                            { top } = getOffset(currentTarget),
+                            ownedEmotes = [];
+
+                        for(let [emote, meta] of BTTV_OWNERS)
+                            if(meta.providerId == bttvOwnerId)
+                                ownedEmotes.push(meta);
 
                         top -= 150;
 
@@ -503,6 +508,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     new Card({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                        description: `${ bttvOwner } has ${ ownedEmotes.length } BetterTTV emote${ 's\b'[+!~-ownedEmotes.length] } to use in chat!`,
+
                                         icon: {
                                             src: BTTV_EMOTES.get(bttvEmote),
                                             alt: bttvEmote,
@@ -521,6 +528,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     new Card({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
+
                                         icon: {
                                             src: BTTV_EMOTES.get(bttvEmote),
                                             alt: bttvEmote,
@@ -1289,6 +1297,16 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(defined(BULLETIN_FILTER))
             BULLETIN_FILTER(GetChat(250, true));
+
+        setInterval(() => {
+            let banners = {
+                con: null,
+                raid: null,
+                subs: $('[class*="mystery"i]', true).map(bullet => bullet.closest(':is([data-a-target*="welcome"i], [tabindex]):not([tt-hidden-bulletin]) ~ *')),
+            };
+
+            [...new Set(banners.subs)].map(bullet => bullet.setAttribute('tt-hidden-bulletin', parseBool(Settings.filter_messages__bullets_subs)));
+        }, 250);
 
         JUDGE__STOP_WATCH('filter_bulletins');
     };

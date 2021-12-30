@@ -683,7 +683,7 @@ class ChatFooter {
 class Card {
     static #CARDS = new Map()
 
-    constructor({ title = "", subtitle = "", footer, icon, fineTuning = {} }) {
+    constructor({ title = "", subtitle = "", description = "", footer, icon, fineTuning = {} }) {
         fineTuning.top ??= '7rem';
         fineTuning.left ??= '0px';
         fineTuning.cursor ??= 'auto';
@@ -766,7 +766,8 @@ class Card {
         // Add the optional footer
         if(footer?.href?.length)
             $('div', false, card).append(
-                f('div.emote-card__content.tt-c-background-base.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
+                // Tiny banner (live status)
+                f('div.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
                     f('div', {},
                         f('div.tt-align-items-center.tt-align-self-start.tt-mg-b-05', {},
                             f('div.tt-align-items-center.tt-flex', {},
@@ -794,8 +795,15 @@ class Card {
                             )
                         )
                     )
+                ),
+
+                // "This useer has X emotes"
+                f('div', { 'data-a-test-selector': "emote-card-content-description", style: 'padding:0 1rem; margin-bottom: 1rem' },
+                    description
                 )
             );
+
+        card.classList.add('tt-c-background-base');
 
         this.body = card;
         this.icon = iconElement;
@@ -4841,6 +4849,7 @@ let Initialize = async(START_OVER = false) => {
                     .join(' ')
                     .replace('light red', 'pink')
                     .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
+                    .replace(/(dark|light)\s+(black|white)/i, '$1')
                     .replace(/light$/i, 'white')
                     .replace(/dark$/i, 'black');
             }
@@ -6515,7 +6524,7 @@ let Initialize = async(START_OVER = false) => {
                         month = now.getMonth() + 1,
                         day = now.getDate();
 
-                    hour = parseInt(hour) + (/^p/.test(meridiem)? 12: 0);
+                    hour = parseInt(hour) + (/^p/i.test(meridiem)? 12: 0);
 
                     timezone = timezone.toUpperCase();
                     timezone = (conversions[timezone] ?? timezone).replace(/^[+-]/, 'GMT$&');
@@ -6524,8 +6533,8 @@ let Initialize = async(START_OVER = false) => {
                         [H, M] = [newTime.getHours(), ('00' + newTime.getMinutes()).slice(-2)];
 
                     if(meridiem.length) {
+                        M += (H < 12? 'A': 'P') + 'M';
                         H += (H < 1? 12: H > 12? -12: 0);
-                        M += meridiem.toUpperCase();
                     }
 
                     newTime = `${H}:${M}`;

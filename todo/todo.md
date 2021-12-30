@@ -31,6 +31,13 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.19)
+- Fixed an issue with Time Zones not recognizing capital meridiem
+- Added logic to detect Gift banners (Filter Bulletins)
+- Adjusted color-name logic
+- Adjusted BetterTTV emote panels
+- Fixed an issue with BetterTTV listing
+
 > [`4.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.18)
 - Fixed issue where Up Next would add jobs multiple times (case-sensitive)
 - Increased Live Reminder timer to 2min
