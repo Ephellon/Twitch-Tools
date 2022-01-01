@@ -97,9 +97,9 @@
         "automatisch"
     ],
     "away-mode": [
-        "Abwesenheitsmodus",
+        "Easy Lurk",
         "Fügt eine Schaltfläche zum Umschalten hinzu",
-        "lauernd",
+        "lauern",
         "Die Tastenkombination",
         null,
         "kann ebenfalls verwendet werden"
@@ -207,11 +207,11 @@
     "auto-follow:live-reminders": [
         null,
         "Erinnerungen",
-        "Fügt eine",
-        "Erinnerungsschaltfläche",
-        "im",
+        "Fügt eine Schaltfläche",
+        "Erinnerung",
+        "im Bereich",
         "Über mich",
-        "Bereich von Kanälen hinzu, denen du nicht folgst"
+        "hinzu"
     ],
     "kill-extensions": [
         "Kill-Erweiterungen",
@@ -292,6 +292,12 @@
         "BetterTTV Emotes",
         "BetterTTV Emotes verwenden",
         "Dies kann zu Instabilität beim Laden von Emotes führen"
+    ],
+    "bttv-emotes:auto-load-bttv-emotes": [
+        "Emotes automatisch laden",
+        "Emote-Text automatisch in",
+        "BetterTTV",
+        "Emotes konvertieren"
     ],
     "bttv-emotes:channel-specific-emotes": [
         "Kanalspezifische Emotes",
@@ -491,9 +497,9 @@
         "Anpassung"
     ],
     "placement:away-mode": [
-        "Abwesenheitsmodus",
+        "Easy Lurk",
         "Wo soll die Schaltfläche",
-        "Abwesenheitsmodus",
+        "Easy Lurk",
         "angezeigt werden?"
     ],
     "placement:away-mode:options": [
@@ -696,11 +702,11 @@
         "Automatisch anpassen",
         "Up Next",
         "und",
-        "Abwesenheitsmodus",
+        "Easy Lurk",
         "basierend auf der Stream-Aktivität",
         "Dadurch wird",
         "nicht",
-        "der einminütige Timer gestoppt"
+        "stoppt der einminütige Timer"
     ],
     "@@auto-focus:options:detection-level": [
         "Erkennungsstufe",

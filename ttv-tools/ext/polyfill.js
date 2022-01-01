@@ -348,7 +348,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
                 return null;
 
             searching:
-            while(unknown(owner)) {
+            while(nullish(owner)) {
                 for(let child of container.children)
                     if([...child.children].filter(element => searchText.test(element.textContent)).length) {
                         // A sub-child is the text container
@@ -385,7 +385,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
                     return null;
 
                 searching:
-                while(unknown(owner)) {
+                while(nullish(owner)) {
                     for(let child of container.children)
                         if([...child.children].filter(element => element.textContent?.toLowerCase()?.contains(searchText)).length) {
                             // A sub-child is the text container
@@ -412,7 +412,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
                     return null;
 
                 searching:
-                while(unknown(owner)) {
+                while(nullish(owner)) {
                     for(let child of container.children)
                         if([...child.children].filter(element => element.textContent?.contains(searchText)).length) {
                             // A sub-child is the text container

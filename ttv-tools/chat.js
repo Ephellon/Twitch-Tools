@@ -331,6 +331,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map),
         BTTV_LOADED_INDEX = 0,
         BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30),
+        NON_EMOTE_PHRASES = new Set,
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
                 existing = $(`img.bttv[alt="${ name }"i]`);
@@ -407,7 +408,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         let emotes = [...channelEmotes, ...sharedEmotes];
 
-                        for(let { emote, code, user, id } of emotes) {
+                        for(let { emote, code, user, id, imageType, userId = null } of emotes) {
                             code ??= emote?.code;
                             user ??= emote?.user ?? { displayName: STREAMER.name, name: STREAMER.name.toLowerCase(), providerId: STREAMER.sole };
 
@@ -415,7 +416,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 continue;
 
                             BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
-                            BTTV_OWNERS.set(code, user);
+                            BTTV_OWNERS.set(code, { ...user, userId: userId ?? user.id });
                         }
                     })
                     .catch(WARN);
@@ -425,21 +426,25 @@ let Chat__Initialize = async(START_OVER = false) => {
                     await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
-                            for(let { emote, code, user, id } of emotes) {
+                            for(let { emote, code, user, id, userId = null } of emotes) {
                                 code ??= emote?.code;
-                                user ??= emote?.user;
+                                user ??= emote?.user ?? {};
 
                                 if(BTTV_EMOTES.has(code))
                                     continue;
 
                                 BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
-                                BTTV_OWNERS.set(code, user ?? {});
+                                BTTV_OWNERS.set(code, { ...user, userId: userId ?? user.id });
                             }
 
                             offset += emotes.length | 0;
                             allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
                         })
-                        .catch(WARN);
+                        .catch(error => {
+                            NON_EMOTE_PHRASES.add(keyword);
+
+                            WARN(error);
+                        });
             // Load all emotes from...
             else
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
@@ -453,7 +458,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     continue;
 
                                 BTTV_EMOTES.set(code, `//cdn.betterttv.net/emote/${ id }/3x`);
-                                BTTV_OWNERS.set(code, user ?? {});
+                                BTTV_OWNERS.set(code, { ...user, userId: user.id });
                             }
 
                             offset += emotes.length | 0;
@@ -475,7 +480,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         for(let [emote, meta] of BTTV_OWNERS)
                             if(meta.providerId == bttvOwnerId)
-                                ownedEmotes.push(meta);
+                                ownedEmotes.push({ ...meta, emote });
 
                         top -= 150;
 
@@ -483,7 +488,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         // Raw Search...
                             // FIX-ME: new Search does not complete???
-                        await fetch(`./${ bttvOwner }`, { mode: 'cors' })
+                        await fetch(`./${ bttvOwner }`)
                             .then(response => response.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(({ documentElement }) => documentElement)
@@ -505,10 +510,27 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     json() { return { display_name, language, live, name, profile_image, started_at, status, updated_at }; }
                                 })
                                 .then(({ live = false }) => {
+                                    let count = ownedEmotes.length,
+                                        owner = BTTV_OWNERS.get(bttvEmote).userId,
+                                        f = furnish;
+
+                                    let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
+                                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
+                                            f('span', { 'data-a-target': 'emote-name' },
+                                                f('div.class.chat-image__container.tt-align-center.tt-inline-block', {},
+                                                    f('img.bttv.chat-image.chat-line__message--emote', {
+                                                        src: BTTV_EMOTES.get(emote),
+                                                        alt: emote,
+                                                    })
+                                                )
+                                            )
+                                        )
+                                    ).map(div => div.outerHTML).join('');
+
                                     new Card({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                        description: `${ bttvOwner } has ${ ownedEmotes.length } BetterTTV emote${ 's\b'[+!~-ownedEmotes.length] } to use in chat!`,
+                                        description: `Visit <a href="//betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } (BetterTTV)</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
 
                                         icon: {
                                             src: BTTV_EMOTES.get(bttvEmote),
@@ -640,7 +662,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 REMARK("Adding BTTV emote event listener...");
 
                 // Run the bttv-emote changer on pre-populated messages
-                (GetChat.onnewmessage = chat => {
+                (GetChat.onnewmessage = async chat => {
                     let regexp;
 
                     for(let line of chat) {
@@ -650,6 +672,12 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         Queue.bttv_emotes.push(line.uuid);
                         Queue.bttv_emotes = Queue.bttv_emotes.slice(-15);
+
+                        // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
+                        if(parseBool(Settings.auto_load_bttv_emotes))
+                            for(let word of line.message.split(/\s+/))
+                                if(!NON_EMOTE_PHRASES.has(word) && !BTTV_EMOTES.has(word) && word.length > 3 && /[a-z][A-Z]|^[A-Z]+$/.test(word))
+                                    await LOAD_BTTV_EMOTES(word, null, true);
 
                         for(let [name, src] of BTTV_EMOTES)
                             if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
@@ -1305,7 +1333,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 subs: $('[class*="mystery"i]', true).map(bullet => bullet.closest(':is([data-a-target*="welcome"i], [tabindex]):not([tt-hidden-bulletin]) ~ *')),
             };
 
-            [...new Set(banners.subs)].map(bullet => bullet.setAttribute('tt-hidden-bulletin', parseBool(Settings.filter_messages__bullets_subs)));
+            [...new Set(banners.subs)].filter(defined).map(bullet => bullet.setAttribute('tt-hidden-bulletin', parseBool(Settings.filter_messages__bullets_subs)));
         }, 250);
 
         JUDGE__STOP_WATCH('filter_bulletins');

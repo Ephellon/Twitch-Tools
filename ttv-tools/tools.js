@@ -798,9 +798,7 @@ class Card {
                 ),
 
                 // "This useer has X emotes"
-                f('div', { 'data-a-test-selector': "emote-card-content-description", style: 'padding:0 1rem; margin-bottom: 1rem' },
-                    description
-                )
+                f('div', { 'data-a-test-selector': "emote-card-content-description", style: 'padding:0 1rem; margin-bottom: 1rem', innerHTML: description })
             );
 
         card.classList.add('tt-c-background-base');
@@ -994,7 +992,7 @@ class Search {
                     break;
 
                 searchResults =
-                    fetch(`./${ name }`, { mode: 'cors' })
+                    fetch(`./${ name }`)
                         .then(response => response.text())
                         .then(html => {
                             let parser = new DOMParser;
@@ -2776,7 +2774,14 @@ let Initialize = async(START_OVER = false) => {
     function GetNextStreamer() {
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
-            return GetNextStreamer.cachedStreamer = ALL_CHANNELS.find(channel => channel?.href?.contains?.(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname));
+            return GetNextStreamer.cachedStreamer = (null
+                ?? ALL_CHANNELS.find(channel => channel?.href?.contains?.(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
+                ?? {
+                    from: 'GET_NEXT_STREAMER',
+                    href: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).href,
+                    name: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname.slice(1),
+                }
+            );
 
         if(parseBool(Settings.stay_live) && defined(GetNextStreamer?.cachedStreamer))
             return GetNextStreamer.cachedStreamer;
@@ -3999,7 +4004,7 @@ let Initialize = async(START_OVER = false) => {
                         let changes = [];
 
                         if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
-                            // Positive activity trend; disable Away Mode, pause Up Next
+                            // Positive activity trend; disable Lurking, pause Up Next
                             if((!defined(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
 
@@ -4016,7 +4021,7 @@ let Initialize = async(START_OVER = false) => {
                                     changes.push('pausing up next');
                                 }
 
-                                // Disable Away Mode
+                                // Disable Lurking
                                 __AutoFocus_Disable_AwayMode__: {
                                     let button = $('#away-mode'),
                                         quality = await GetQuality();
@@ -4026,13 +4031,13 @@ let Initialize = async(START_OVER = false) => {
 
                                     button?.click();
 
-                                    changes.push('disabling away mode');
+                                    changes.push('disabling lurking');
                                 }
 
                                 detectedTrend = '&uArr;';
                                 LOG('Positive trend detected: ' + changes.join(', '));
                             }
-                            // Negative activity trend; enable Away Mode, resume Up Next
+                            // Negative activity trend; enable Lurking, resume Up Next
                             else if((!defined(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
                                 POSITIVE_TREND = false;
 
@@ -4049,7 +4054,7 @@ let Initialize = async(START_OVER = false) => {
                                     changes.push('resuming up next');
                                 }
 
-                                // Enable Away Mode
+                                // Enable Lurking
                                 __AutoFocus_Enable_AwayMode__: {
                                     let button = $('#away-mode'),
                                         quality = await GetQuality();
@@ -4059,7 +4064,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     button?.click();
 
-                                    changes.push('enabling away mode');
+                                    changes.push('enabling lurking');
                                 }
 
                                 detectedTrend = '&dArr;';
@@ -4102,7 +4107,7 @@ let Initialize = async(START_OVER = false) => {
         WARN("[Auto-Focus] is monitoring the stream...");
     }
 
-    /*** Away Mode
+    /*** Lurking
      *                                   __  __           _
      *         /\                       |  \/  |         | |
      *        /  \__      ____ _ _   _  | \  / | ___   __| | ___
@@ -4197,7 +4202,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             if(!defined(parent) || !defined(sibling))
-                return JUDGE__STOP_WATCH('away_mode') /* || WARN('Unable to create the Away Mode button') */;
+                return JUDGE__STOP_WATCH('away_mode') /* || WARN('Unable to create the Lurking button') */;
 
             container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
             container.id = 'away-mode';
@@ -4221,7 +4226,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 background: $('button', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `Turn away mode ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'up', left: +5 }),
+                tooltip: new Tooltip(container, `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'up', left: +5 }),
             };
 
             button.tooltip.id = new UUID().toString().replace(/-/g, '');
@@ -4278,10 +4283,10 @@ let Initialize = async(START_OVER = false) => {
                 { container, background, tooltip } = AwayModeButton;
 
             container.setAttribute('tt-away-mode-enabled', enabled);
-            tooltip.innerHTML = `Turn away mode ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`;
+            tooltip.innerHTML = `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`;
             background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 
-            // Return control when Away Mode is engaged
+            // Return control when Lurking is engaged
             MAINTAIN_VOLUME_CONTROL = true;
 
             await SetQuality(['auto','low'][+enabled])
@@ -4332,7 +4337,7 @@ let Initialize = async(START_OVER = false) => {
 
     __AwayMode__:
     if(parseBool(Settings.away_mode)) {
-        REMARK("Adding & Scheduling the Away Mode button...");
+        REMARK("Adding & Scheduling the Lurking button...");
 
         RegisterJob('away_mode');
 
@@ -4341,7 +4346,7 @@ let Initialize = async(START_OVER = false) => {
             if(!MAINTAIN_VOLUME_CONTROL || !isTrusted)
                 return;
 
-            WARN('[Away Mode] is releasing volume control due to user interaction...');
+            WARN('[Lurking] is releasing volume control due to user interaction...');
 
             MAINTAIN_VOLUME_CONTROL = !isTrusted;
 
@@ -4377,7 +4382,7 @@ let Initialize = async(START_OVER = false) => {
 
                 duration *= 3_600_000;
 
-                WARN(`Away Mode is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
+                WARN(`Lurking is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
 
                 // Found at least one schedule...
                 if(defined(enableAwayMode = status))
@@ -4385,7 +4390,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // Scheduled state...
-            // LOG('Away Mode needs to be:', enableAwayMode, 'Current status:', currentAwayMode);
+            // LOG('Lurking needs to be:', enableAwayMode, 'Current status:', currentAwayMode);
             if(defined(enableAwayMode) && enableAwayMode != currentAwayMode)
                 awayMode.click();
         });
@@ -4485,7 +4490,7 @@ let Initialize = async(START_OVER = false) => {
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
     async function REDO_FIRST_IN_LINE_QUEUE(url) {
-        if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(unknown).length <= 0))
+        if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
             return;
 
         url = parseURL(url);
@@ -6021,7 +6026,7 @@ let Initialize = async(START_OVER = false) => {
             } else {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
-                location.reload();
+                // location.reload();
             }
         }
 
@@ -6266,35 +6271,27 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let TIME_ZONE__LATEST_TITLE,
-        TIME_ZONE__LATEST_TOOLTIP;
-
-    Handlers.time_zones = () => {
-        let cTitle = $('[data-a-target="stream-title"i]'),
-            rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
-
-        if(TIME_ZONE__LATEST_TITLE == cTitle?.textContent && TIME_ZONE__LATEST_TOOLTIP == rTitle?.textContent)
-            return;
+    let TIME_ZONE__TEXT_MATCHES = [],
 
         // Time-zone RegExps
-        let regexps = [
-                // Natural
-                // 3:00PM EST | 3PM EST | 3 EST
-                /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
-                // 3:00PM | 3PM
-                /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+        TIME_ZONE__REGEXPS = [
+            // Natural
+            // 3:00PM EST | 3PM EST | 3 EST
+            /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            // 3:00PM | 3PM
+            /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
 
-                // Zulu - https://stackoverflow.com/a/23421472/4211612
-                // Z15:00 | +05:00 | -05:00
-                /\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
+            // Zulu - https://stackoverflow.com/a/23421472/4211612
+            // Z15:00 | +05:00 | -05:00
+            /\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
 
-                // GMT/UTC
-                // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00
-                /\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
-            ];
+            // GMT/UTC
+            // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00
+            /\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
+        ],
 
         // TODO - fix conflicting entries
-        let conversions = {
+        TIME_ZONE__CONVERSIONS = {
             AOE: "-12:00",
             GMT: "+00:00",
             UTC: "+00:00",
@@ -6338,186 +6335,194 @@ let Initialize = async(START_OVER = false) => {
             // "Other" timezones - https://www.timeanddate.com/time/zones/
                 // There are some conflicting entries--I chose to stick with the first entry
             ACDT: "+10:30",
-        	ACST: "+09:30",
-        	ACWST: "+08:45",
-        	ADT: "+4:00",
-        	AEDT: "+11:00",
-        	AEST: "+10:00",
-        	AFT: "+04:30",
-        	AKDT: "-8:00",
-        	AKST: "-9:00",
-        	ALMT: "+6:00",
-        	AMST: "-3:00",
-        	AMT: "-4:00",
-        	ANAST: "+12:00",
-        	ANAT: "+12:00",
-        	AQTT: "+5:00",
-        	AWDT: "+9:00",
-        	AWST: "+8:00",
-        	AZOST: "+0:00",
-        	AZOT: "-1:00",
-        	AZST: "+5:00",
-        	AZT: "+4:00",
-        	BNT: "+8:00",
-        	BOT: "-4:00",
-        	BRST: "-2:00",
-        	BRT: "-3:00",
-        	BTT: "+6:00",
-        	CAST: "+8:00",
-        	CCT: "+06:30",
-        	CEST: "+2:00",
-        	CET: "+1:00",
-        	CHADT: "+13:45",
-        	CHAST: "+12:45",
-        	CHOST: "+9:00",
-        	CHOT: "+8:00",
-        	CHUT: "+10:00",
-        	CIDST: "-4:00",
-        	CIST: "-5:00",
-        	CKT: "-10:00",
-        	CLST: "-3:00",
-        	CLT: "-4:00",
-        	COT: "-5:00",
-        	CVT: "-1:00",
-        	CXT: "+7:00",
-        	CHST: "+10:00",
-        	DAVT: "+7:00",
-        	DDUT: "+10:00",
-        	EASST: "-5:00",
-        	EAST: "-6:00",
-        	EEST: "+3:00",
-        	EGST: "+0:00",
-        	EGT: "-1:00",
-        	EST: "-5:00",
-        	FET: "+3:00",
-        	FJST: "+13:00",
-        	FJT: "+12:00",
-        	FKST: "-3:00",
-        	FKT: "-4:00",
-        	FNT: "-2:00",
-        	GALT: "-6:00",
-        	GAMT: "-9:00",
-        	GET: "+4:00",
-        	GFT: "-3:00",
-        	GILT: "+12:00",
-        	GMT: "+0:00",
-        	GST: "+4:00",
-        	GYT: "-4:00",
-        	HDT: "-9:00",
-        	HKT: "+8:00",
-        	HOVST: "+8:00",
-        	HOVT: "+7:00",
-        	ICT: "+7:00",
-        	IDT: "+3:00",
-        	IOT: "+6:00",
-        	IRDT: "+04:30",
-        	IRKST: "+9:00",
-        	IRKT: "+8:00",
-        	IRST: "+03:30",
-        	KGT: "+6:00",
-        	KOST: "+11:00",
-        	KRAST: "+8:00",
-        	KRAT: "+7:00",
-        	KST: "+9:00",
-        	KUYT: "+4:00",
-        	LHDT: "+11:00",
-        	LHST: "+10:30",
-        	LINT: "+14:00",
-        	MAGST: "+12:00",
-        	MAGT: "+11:00",
-        	MART: "-09:30",
-        	MAWT: "+5:00",
-        	MHT: "+12:00",
-        	MMT: "+06:30",
-        	MSD: "+4:00",
-        	MSK: "+3:00",
-        	MUT: "+4:00",
-        	MVT: "+5:00",
-        	MYT: "+8:00",
-        	NCT: "+11:00",
-        	NDT: "-02:30",
-        	NFDT: "+12:00",
-        	NFT: "+11:00",
-        	NOVST: "+7:00",
-        	NOVT: "+7:00",
-        	NPT: "+05:45",
-        	NRT: "+12:00",
-        	NUT: "-11:00",
-        	NZDT: "+13:00",
-        	NZST: "+12:00",
-        	OMSST: "+7:00",
-        	OMST: "+6:00",
-        	ORAT: "+5:00",
-        	PET: "-5:00",
-        	PETST: "+12:00",
-        	PETT: "+12:00",
-        	PGT: "+10:00",
-        	PHOT: "+13:00",
-        	PHT: "+8:00",
-        	PKT: "+5:00",
-        	PMDT: "-2:00",
-        	PMST: "-3:00",
-        	PONT: "+11:00",
-        	PWT: "+9:00",
-        	PYST: "-3:00",
-        	PYT: "-4:00",
-        	QYZT: "+6:00",
-        	RET: "+4:00",
-        	ROTT: "-3:00",
-        	SAKT: "+11:00",
-        	SAMT: "+4:00",
-        	SAST: "+2:00",
-        	SBT: "+11:00",
-        	SCT: "+4:00",
-        	SGT: "+8:00",
-        	SRET: "+11:00",
-        	SRT: "-3:00",
-        	SYOT: "+3:00",
-        	TAHT: "-10:00",
-        	TFT: "+5:00",
-        	TJT: "+5:00",
-        	TKT: "+13:00",
-        	TLT: "+9:00",
-        	TMT: "+5:00",
-        	TOST: "+14:00",
-        	TOT: "+13:00",
-        	TRT: "+3:00",
-        	TVT: "+12:00",
-        	ULAST: "+9:00",
-        	ULAT: "+8:00",
-        	UTC: ":00",
-        	UYST: "-2:00",
-        	UYT: "-3:00",
-        	UZT: "+5:00",
-        	VET: "-4:00",
-        	VLAST: "+11:00",
-        	VLAT: "+10:00",
-        	VOST: "+6:00",
-        	VUT: "+11:00",
-        	WAKT: "+12:00",
-        	WARST: "-3:00",
-        	WAST: "+2:00",
-        	WAT: "+1:00",
-        	WEST: "+1:00",
-        	WET: "+0:00",
-        	WFT: "+12:00",
-        	WGST: "-2:00",
-        	WGT: "-3:00",
-        	WIB: "+7:00",
-        	WIT: "+9:00",
-        	WITA: "+8:00",
-        	WST: "+13:00",
-        	YAKST: "+10:00",
-        	YAKT: "+9:00",
-        	YAPT: "+10:00",
-        	YEKST: "+6:00",
-        	YEKT: "+5:00",
+            ACST: "+09:30",
+            ACWST: "+08:45",
+            ADT: "+4:00",
+            AEDT: "+11:00",
+            AEST: "+10:00",
+            AFT: "+04:30",
+            AKDT: "-8:00",
+            AKST: "-9:00",
+            ALMT: "+6:00",
+            AMST: "-3:00",
+            AMT: "-4:00",
+            ANAST: "+12:00",
+            ANAT: "+12:00",
+            AQTT: "+5:00",
+            AWDT: "+9:00",
+            AWST: "+8:00",
+            AZOST: "+0:00",
+            AZOT: "-1:00",
+            AZST: "+5:00",
+            AZT: "+4:00",
+            BNT: "+8:00",
+            BOT: "-4:00",
+            BRST: "-2:00",
+            BRT: "-3:00",
+            BTT: "+6:00",
+            CAST: "+8:00",
+            CCT: "+06:30",
+            CEST: "+2:00",
+            CET: "+1:00",
+            CHADT: "+13:45",
+            CHAST: "+12:45",
+            CHOST: "+9:00",
+            CHOT: "+8:00",
+            CHUT: "+10:00",
+            CIDST: "-4:00",
+            CIST: "-5:00",
+            CKT: "-10:00",
+            CLST: "-3:00",
+            CLT: "-4:00",
+            COT: "-5:00",
+            CVT: "-1:00",
+            CXT: "+7:00",
+            CHST: "+10:00",
+            DAVT: "+7:00",
+            DDUT: "+10:00",
+            EASST: "-5:00",
+            EAST: "-6:00",
+            EEST: "+3:00",
+            EGST: "+0:00",
+            EGT: "-1:00",
+            EST: "-5:00",
+            FET: "+3:00",
+            FJST: "+13:00",
+            FJT: "+12:00",
+            FKST: "-3:00",
+            FKT: "-4:00",
+            FNT: "-2:00",
+            GALT: "-6:00",
+            GAMT: "-9:00",
+            GET: "+4:00",
+            GFT: "-3:00",
+            GILT: "+12:00",
+            GMT: "+0:00",
+            GST: "+4:00",
+            GYT: "-4:00",
+            HDT: "-9:00",
+            HKT: "+8:00",
+            HOVST: "+8:00",
+            HOVT: "+7:00",
+            ICT: "+7:00",
+            IDT: "+3:00",
+            IOT: "+6:00",
+            IRDT: "+04:30",
+            IRKST: "+9:00",
+            IRKT: "+8:00",
+            IRST: "+03:30",
+            KGT: "+6:00",
+            KOST: "+11:00",
+            KRAST: "+8:00",
+            KRAT: "+7:00",
+            KST: "+9:00",
+            KUYT: "+4:00",
+            LHDT: "+11:00",
+            LHST: "+10:30",
+            LINT: "+14:00",
+            MAGST: "+12:00",
+            MAGT: "+11:00",
+            MART: "-09:30",
+            MAWT: "+5:00",
+            MHT: "+12:00",
+            MMT: "+06:30",
+            MSD: "+4:00",
+            MSK: "+3:00",
+            MUT: "+4:00",
+            MVT: "+5:00",
+            MYT: "+8:00",
+            NCT: "+11:00",
+            NDT: "-02:30",
+            NFDT: "+12:00",
+            NFT: "+11:00",
+            NOVST: "+7:00",
+            NOVT: "+7:00",
+            NPT: "+05:45",
+            NRT: "+12:00",
+            NUT: "-11:00",
+            NZDT: "+13:00",
+            NZST: "+12:00",
+            OMSST: "+7:00",
+            OMST: "+6:00",
+            ORAT: "+5:00",
+            PET: "-5:00",
+            PETST: "+12:00",
+            PETT: "+12:00",
+            PGT: "+10:00",
+            PHOT: "+13:00",
+            PHT: "+8:00",
+            PKT: "+5:00",
+            PMDT: "-2:00",
+            PMST: "-3:00",
+            PONT: "+11:00",
+            PWT: "+9:00",
+            PYST: "-3:00",
+            PYT: "-4:00",
+            QYZT: "+6:00",
+            RET: "+4:00",
+            ROTT: "-3:00",
+            SAKT: "+11:00",
+            SAMT: "+4:00",
+            SAST: "+2:00",
+            SBT: "+11:00",
+            SCT: "+4:00",
+            SGT: "+8:00",
+            SRET: "+11:00",
+            SRT: "-3:00",
+            SYOT: "+3:00",
+            TAHT: "-10:00",
+            TFT: "+5:00",
+            TJT: "+5:00",
+            TKT: "+13:00",
+            TLT: "+9:00",
+            TMT: "+5:00",
+            TOST: "+14:00",
+            TOT: "+13:00",
+            TRT: "+3:00",
+            TVT: "+12:00",
+            ULAST: "+9:00",
+            ULAT: "+8:00",
+            UTC: ":00",
+            UYST: "-2:00",
+            UYT: "-3:00",
+            UZT: "+5:00",
+            VET: "-4:00",
+            VLAST: "+11:00",
+            VLAT: "+10:00",
+            VOST: "+6:00",
+            VUT: "+11:00",
+            WAKT: "+12:00",
+            WARST: "-3:00",
+            WAST: "+2:00",
+            WAT: "+1:00",
+            WEST: "+1:00",
+            WET: "+0:00",
+            WFT: "+12:00",
+            WGST: "-2:00",
+            WGT: "-3:00",
+            WIB: "+7:00",
+            WIT: "+9:00",
+            WITA: "+8:00",
+            WST: "+13:00",
+            YAKST: "+10:00",
+            YAKT: "+9:00",
+            YAPT: "+10:00",
+            YEKST: "+6:00",
+            YEKT: "+5:00",
         };
 
+    Handlers.time_zones = () => {
+        let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]', true),
+            rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
+
         top:
-        for(let title of [cTitle, rTitle])
-            for(let regexp of regexps)
+        for(let title of [...cTitle, rTitle])
+            for(let regexp of TIME_ZONE__REGEXPS)
                 if(regexp.test(title?.textContent ?? '')) {
+                    if(TIME_ZONE__TEXT_MATCHES.contains(title.textContent))
+                        continue top;
+                    TIME_ZONE__TEXT_MATCHES.push(title.textContent);
+
                     let { hour, minute = ':00', offset = '', meridiem = '', timezone = '' } = regexp.exec(title.textContent).groups;
                     let now = new Date,
                         year = now.getFullYear(),
@@ -6527,7 +6532,7 @@ let Initialize = async(START_OVER = false) => {
                     hour = parseInt(hour) + (/^p/i.test(meridiem)? 12: 0);
 
                     timezone = timezone.toUpperCase();
-                    timezone = (conversions[timezone] ?? timezone).replace(/^[+-]/, 'GMT$&');
+                    timezone = (TIME_ZONE__CONVERSIONS[timezone] ?? timezone).replace(/^[+-]/, 'GMT$&');
 
                     let newTime = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
                         [H, M] = [newTime.getHours(), ('00' + newTime.getMinutes()).slice(-2)];
@@ -6539,31 +6544,18 @@ let Initialize = async(START_OVER = false) => {
 
                     newTime = `${H}:${M}`;
 
-                    title.textContent = title.textContent
-                        .replace(regexp,
-                            (
-                                (title == rTitle)?
-                                    // Rich Tooltips
-                                    `{{?=${ newTime }}}`:
-                                // Stream Title
-                                `{{?=$&}}`
-                            )
-                        );
+                    title.innerHTML = title.innerHTML
+                        .replace(regexp, `{{?=${ newTime }}}`);
 
                     title.innerHTML = title.innerHTML
                         .replace(/\{\{\?=(.+?)\}\}/, `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">$1</span>`);
-
-                    // Stream Title ONLY
-                    if(title == cTitle)
-                        new Tooltip($('[data-a-target="stream-title"i] > span'), `${ newTime } (local time)`, { from: 'up' });
 
                     // leave on the first matched regexp
                     continue top;
                 }
         ;
 
-        TIME_ZONE__LATEST_TITLE = cTitle?.textContent;
-        TIME_ZONE__LATEST_TOOLTIP = rTitle?.textContent;
+        TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
     };
     Timers.time_zones = 250;
 
@@ -8015,7 +8007,7 @@ let REINIT_JOBS =
 setInterval(() => {
     let NOT_LOADED_CORRECTLY = [],
         ALL_LOADED_CORRECTLY = (true
-            // Away Mode
+            // Lurking
             &&  parseBool(
                     parseBool(Settings.away_mode)?
                         (false
@@ -8607,7 +8599,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }
                 [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:darken */ }
 
-                /* Away Mode */
+                /* Lurking */
                 #away-mode svg[id^="tt-away-mode"i] {
                     display: inline-block;
 

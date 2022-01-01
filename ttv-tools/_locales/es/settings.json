@@ -97,10 +97,10 @@
         "automáticamente"
     ],
     "away-mode": [
-        "Modo ausente",
+        "Easy Lurk",
         "Agrega un botón para alternar",
-        "al acecho",
-        "El método abreviado de teclado",
+        "lurking",
+        "El atajo de teclado",
         null,
         "también se puede usar"
     ],
@@ -193,7 +193,7 @@
     ],
     "auto-follow:raids": [
         "Incursiones",
-        "Cuando participe en una incursión, siga el canal que se está allanado"
+        "Cuando participe en una incursión, siga el canal que se está allanando"
     ],
     "auto-follow:time": [
         "Audiencia",
@@ -211,7 +211,7 @@
         "recordatorio",
         "en el panel",
         "acerca de mí",
-        "de canales que no sigues"
+        null
     ],
     "kill-extensions": [
         "Kill Extensions",
@@ -236,7 +236,7 @@
     ],
     "prevent-hosting": [
         "Impedir el alojamiento",
-        "Evitar que ciertos o todos los canales se alóje yendo al",
+        "Evitar que ciertos o todos los canales se alojen yendo al",
         "Siguiente canal"
     ],
     "prevent-hosting:options": [
@@ -294,8 +294,14 @@
         "Use BetterTTV emotes",
         "Esto puede causar inestabilidad al cargar emotes"
     ],
+    "bttv-emotes:auto-load-bttv-emotes": [
+        "Emocos de carga automática",
+        "Convertir automáticamente texto emote a",
+        "BetterTTV",
+        "emotes"
+    ],
     "bttv-emotes:channel-specific-emotes": [
-        "Emoticonos específicos del canal",
+        "Emocos específicos del canal",
         "Cargar específicos del canal",
         "BetterTTV",
         "emoticonos"
@@ -418,16 +424,15 @@
     "prevent-spam:options": [
         "Historial de mensajes",
         "Evitar spam",
-        "mirará hacia atrás",
-        "líneas para detectar",
+        "revisará las líneas para detectar",
         "plagio",
         "Longitud mínima de la palabra",
         "Evitar spam",
-        "ignorará los mensajes si no hay palabras de más de",
+        "Ignorará los mensajes si no hay palabras de más de",
         "caracteres",
         "Ocurrencias máximas",
         "Evitar spam",
-        "marcará los mensajes como",
+        "Marcará los mensajes como",
         "repetitivo",
         "después de que aparezca una palabra",
         "o más veces"
@@ -490,9 +495,9 @@
         "Personalización"
     ],
     "placement:away-mode": [
-        "Modo Ausente",
+        "Easy Lurk",
         "Dónde debe mostrarse el botón",
-        "Modo Ausente",
+        "Easy Lurk",
         null
     ],
     "placement:away-mode:options": [
@@ -573,7 +578,7 @@
     "stream-preview:size-options": [
         "Normal (×1)",
         "Grande (×2)",
-        "Extra grande (×3)"
+        "Extragrande (×3)"
     ],
     "stream-preview:sound": [
         "Vista previa del sonido",
@@ -695,7 +700,7 @@
         "Ajuste automático",
         "A continuación",
         "y",
-        "Modo ausente",
+        "Fácil lurk",
         "en función de la actividad de la transmisión",
         "Esto",
         "no",

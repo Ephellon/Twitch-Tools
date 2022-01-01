@@ -44,7 +44,7 @@
 	],
 
 	"away-mode": [
-		"Away Mode",
+		"Easy Lurk",
 		"Adds a button to toggle", "lurking",
 		"The keyboard shortcut", null, "can also be used"
 	],
@@ -115,7 +115,7 @@
 
 		"auto-follow:live-reminders": [
 			null, "Reminders",
-			"Adds a", "reminder", "button in the", "about me", "panel of channels you do not follow"
+			"Adds a", "reminder", "button in the", "about me", "panel"
 		],
 
 	"kill-extensions": [
@@ -201,6 +201,11 @@
 		"Use BetterTTV emotes",
 		"This may cause instability while loading emotes"
 	],
+    	"bttv-emotes:auto-load-bttv-emotes": [
+    		"Auto-load Emotes",
+    		"Automatically convert emote text to", "BetterTTV", "emotes"
+    	],
+
     	"bttv-emotes:channel-specific-emotes": [
     		"Channel Specific Emotes",
     		"Load channel specific", "BetterTTV", "emotes"
@@ -378,8 +383,8 @@
 
 	"header:customization": ["Customization"],
 	"placement:away-mode": [
-		"Away Mode",
-		"Where should the", "Away Mode", "button be displayed"
+		"Easy Lurk",
+		"Where should the", "Easy Lurk", "button be displayed"
 	],
     	"placement:away-mode:options": [
     		"Do not display",
@@ -569,7 +574,7 @@
 	"header:experimental-features": ["Experimental Features"],
 	"@@auto-focus": [
 		"Auto-Focus",
-		"Automatically adjust", "Up Next", "and", "Away Mode", "based upon stream activity",
+		"Automatically adjust", "Up Next", "and", "Easy Lurk", "based upon stream activity",
 		"This will", "not", "stop the one minute timer"
 	],
     	"@@auto-focus:options:detection-level": [

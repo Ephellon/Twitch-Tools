@@ -97,7 +97,7 @@
         "automaticamente"
     ],
     "away-mode": [
-        "Modo afastado",
+        "Easy Lurk",
         "Adiciona um botão para alternar",
         "espreitando",
         "O atalho do teclado",
@@ -211,7 +211,7 @@
         "lembrete",
         "no painel",
         "sobre mim",
-        "de canais que você não segue"
+        null
     ],
     "kill-extensions": [
         "Kill Extensions",
@@ -293,6 +293,12 @@
         "Emotes BetterTTV",
         "Use emotes BetterTTV",
         "Isso pode causar instabilidade ao carregar emotes"
+    ],
+    "bttv-emotes:auto-load-bttv-emotes": [
+        "Emotes de carga automática",
+        "Converta automaticamente o texto emote para",
+        "BetterTTV",
+        "emotes"
     ],
     "bttv-emotes:channel-specific-emotes": [
         "Emotes específicos do canal",
@@ -491,10 +497,10 @@
         "Personalização"
     ],
     "placement:away-mode": [
-        "Modo afastado",
+        "Easy Lurk",
         "Onde o botão",
-        "Modo Afastado",
-        "será exibido"
+        "Easy Lurk",
+        "deve ser exibido"
     ],
     "placement:away-mode:options": [
         "Não exiba",
@@ -697,7 +703,7 @@
         "Ajuste automaticamente",
         "Up Next",
         "e",
-        "Modo Afastado",
+        "Easy Lurk",
         "com base na atividade do fluxo",
         "Isso",
         "não",

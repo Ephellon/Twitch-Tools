@@ -335,12 +335,12 @@ Object.defineProperties($, {
     },
 });
 
-function unknown(value) {
+function nullish(value) {
     return value === undefined || value === null;
 }
 
 function defined(value) {
-    return !unknown(value);
+    return !nullish(value);
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3

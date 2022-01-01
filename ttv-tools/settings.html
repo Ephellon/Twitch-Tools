@@ -59,9 +59,23 @@
 
             <!-- [[Auto-Focus]] -->
 
-            <!-- Away Mode -->
+            <!-- Claim Bonuses -->
+            <section>
+                <div class='title' tr-id='auto-claim-bonuses'><span small glyph='channelpoints'></span> Claim Bonuses</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='auto_claim_bonuses' type='checkbox' checked/>
+                        <label for='auto_claim_bonuses'></label>
+                    </div>
+                    <p tr-id>
+                        When the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Bonus Channel Points'><button style='background-color:var(--blue)!important'><span small black glyph='bonuschannelpoints'></span></button></a> button appears, click it automatically.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Easy Lurk -->
             <section new='4.12'>
-                <div class='title' tr-id='away-mode'><span small glyph='show'></span>Away Mode</div>
+                <div class='title' tr-id='away-mode'><span small glyph='show'></span>Easy Lurk</div>
                 <div class='summary'>
                     <div class='toggle'>
                         <input id='away_mode' type='checkbox' checked/>
@@ -75,7 +89,7 @@
                     </p>
 
                     <details>
-                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Away Mode&quot;'>Extras</summary>
+                        <summary tr-id='extras' subtitle='Adjust settings for &quot;Easy Lurk&quot;'>Extras</summary>
                         <div>
                             <div text-only>
                                 <div class='title' tr-id='away-mode:hide-chat'>Hide Chat</div>
@@ -134,20 +148,6 @@
                             </div>
                         </div>
                     </details>
-                </div>
-            </section>
-
-            <!-- Claim Bonuses -->
-            <section>
-                <div class='title' tr-id='auto-claim-bonuses'><span small glyph='channelpoints'></span> Claim Bonuses</div>
-                <div class='summary'>
-                    <div class='toggle'>
-                        <input id='auto_claim_bonuses' type='checkbox' checked/>
-                        <label for='auto_claim_bonuses'></label>
-                    </div>
-                    <p tr-id>
-                        When the <a href='https://help.twitch.tv/s/article/channel-points-guide' top-tooltip='Bonus Channel Points'><button style='background-color:var(--blue)!important'><span small black glyph='bonuschannelpoints'></span></button></a> button appears, click it automatically.
-                    </p>
                 </div>
             </section>
 
@@ -226,7 +226,7 @@
                                         <label for='live_reminders'></label>
                                     </div>
                                     <p tr-id>
-                                        Adds a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button in the <b>about me</b> panel of channels you do not follow.
+                                        Adds a <b attention-text top-tooltip='A notification will display when a channel goes live'>reminder</b> button in the <b>about me</b> panel.
                                     </p>
                                 </div>
                             </div>
@@ -481,6 +481,19 @@
                     <details>
                         <summary tr-id='options' subtitle='Adjust options for &quot;BetterTTV emotes&quot;'>Options</summary>
                         <div>
+                            <div text-only>
+                                <div class='title' tr-id='bttv-emotes:auto-load-bttv-emotes'>Auto-load Emotes</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='auto_load_bttv_emotes' type='checkbox'/>
+                                        <label for='auto_load_bttv_emotes'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Automatically convert emote text to <b>BetterTTV</b> emotes.
+                                    </p>
+                                </div>
+                            </div>
+
                             <div text-only>
                                 <div class='title' tr-id='bttv-emotes:channel-specific-emotes'>Channel Specific Emotes</div>
                                 <div class='summary'>
@@ -1027,12 +1040,12 @@
                 </div>
             </section>
 
-            <!-- Away Mode Placement -->
+            <!-- Easy Lurk Placement -->
             <section>
-                <div class='title' tr-id='placement:away-mode'><span small glyph='latest'></span> Away Mode</div>
+                <div class='title' tr-id='placement:away-mode'><span small glyph='latest'></span> Easy Lurk</div>
                 <div class='summary'>
                     <p tr-id>
-                        Where should the <b>Away Mode</b> button be displayed?
+                        Where should the <b>Easy Lurk</b> button be displayed?
                     </p>
 
                     <select id='away_mode_placement'>
@@ -1524,7 +1537,7 @@
                         <label for='auto_focus'></label>
                     </div>
                     <p tr-id>
-                        Automatically adjust <b>Up Next</b> and <b>Away Mode</b> based upon stream activity.
+                        Automatically adjust <b>Up Next</b> and <b>Easy Lurk</b> based upon stream activity.
                     </p>
                     <p warning-text tr-id>
                         This will <b>not</b> stop the one minute timer.

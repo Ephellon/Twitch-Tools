@@ -9,8 +9,8 @@
  *                           |___/                            |__/
  */
 let $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
-let empty = value => (value === undefined || value === null),
-    defined = value => !empty(value);
+let nullish = value => (value === undefined || value === null),
+    defined = value => !nullish(value);
 
 let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
@@ -49,10 +49,7 @@ let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstall
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
         url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
-    }, tabs => {
-        if(!defined(tabs))
-            return;
-
+    }, (tabs = []) => {
         Storage.set({ onInstalledReason: reason, chromeUpdateAvailable: false, githubUpdateAvailable: false });
 
         switch(reason) {
@@ -75,7 +72,6 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
                 for(let tab of tabs)
                     Container.tabs.reload(tab.id);
             } break;
-
         }
 
         // Update the badge text when there's an update available
@@ -92,10 +88,7 @@ let TabWatcherInterval = setInterval(() => {
         Container.tabs.query({
             url: "*://www.twitch.tv/*",
             status: "unloaded",
-        }, tabs => {
-            if(!defined(tabs))
-                return;
-
+        }, (tabs = []) => {
             for(let tab of tabs)
                 if(UnloadedTabs.has(tab.id))
                     Container.tabs.reload(tab.id);
@@ -147,10 +140,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             Container.tabs.query({
                 url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
-            }, tabs => {
-                if(!defined(tabs))
-                    return;
-
+            }, (tabs = []) => {
                 // An owner already exists and is active...
                 let owner = null,
                     ownerAlive = false;

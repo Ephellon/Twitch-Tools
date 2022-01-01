@@ -31,6 +31,12 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.20)
+- Added logic to load emote-based text to the initial library
+- Removed infinite loading issue for Prevent Hosting
+- Renamed "Away Mode" to "Easy Lurk" (superficial only)
+- Adjusted Time Zone logic to include the About Me panels
+
 > [`4.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.19)
 - Fixed an issue with Time Zones not recognizing capital meridiem
 - Added logic to detect Gift banners (Filter Bulletins)
