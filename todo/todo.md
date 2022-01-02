@@ -31,6 +31,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.20.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.20.1)
+- Fixed issue with Auto loading BTTV emotes
+- Fixed issue with Time Zones not loading for the About Me panel recursively
+- Fixed issue where bulletins would traverse up to the root element(s)
+
 > [`4.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.20)
 - Added logic to load emote-based text to the initial library
 - Removed infinite loading issue for Prevent Hosting

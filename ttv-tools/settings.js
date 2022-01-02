@@ -122,6 +122,7 @@ let // These are option names. Anything else will be removed
         'filter_messages__bullets_subs',
         // BetterTTV Emotes
         'bttv_emotes',
+            'auto_load_bttv_emotes',
             'bttv_emotes_maximum',
             'bttv_emotes_location',
             'bttv_emotes_channel',

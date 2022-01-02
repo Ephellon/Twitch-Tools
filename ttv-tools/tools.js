@@ -6277,7 +6277,7 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3 EST
-            /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
             // 3:00PM | 3PM
             /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
 
@@ -6511,19 +6511,30 @@ let Initialize = async(START_OVER = false) => {
             YEKT: "+5:00",
         };
 
+    function convertWordsToTimes(string) {
+        return string
+            .replace(/\b(mornings?|dawn)\b/i, '6:00AM')
+            .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
+            .replace(/\b(after\s?noons?)\b/i, '01:00PM')
+            .replace(/\b(nights?|dusk)\b/i, '6:00PM')
+            .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM');
+    }
+
     Handlers.time_zones = () => {
         let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]', true),
             rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
 
         top:
-        for(let title of [...cTitle, rTitle])
-            for(let regexp of TIME_ZONE__REGEXPS)
-                if(regexp.test(title?.textContent ?? '')) {
-                    if(TIME_ZONE__TEXT_MATCHES.contains(title.textContent))
-                        continue top;
-                    TIME_ZONE__TEXT_MATCHES.push(title.textContent);
+        for(let title of [...cTitle, rTitle].filter(defined)) {
+            let titleText = convertWordsToTimes(title?.innerText ?? '');
 
-                    let { hour, minute = ':00', offset = '', meridiem = '', timezone = '' } = regexp.exec(title.textContent).groups;
+            for(let regexp of TIME_ZONE__REGEXPS)
+                while(regexp.test(titleText)) {
+                    if(TIME_ZONE__TEXT_MATCHES.contains(titleText))
+                        continue top;
+                    TIME_ZONE__TEXT_MATCHES.push(titleText);
+
+                    let { hour, minute = ':00', offset = '', meridiem = '', timezone = '' } = regexp.exec(titleText).groups;
                     let now = new Date,
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
@@ -6544,16 +6555,13 @@ let Initialize = async(START_OVER = false) => {
 
                     newTime = `${H}:${M}`;
 
-                    title.innerHTML = title.innerHTML
-                        .replace(regexp, `{{?=${ newTime }}}`);
-
-                    title.innerHTML = title.innerHTML
-                        .replace(/\{\{\?=(.+?)\}\}/, `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">$1</span>`);
-
-                    // leave on the first matched regexp
-                    continue top;
+                    title.innerHTML = convertWordsToTimes(title.innerHTML)
+                        .replace(regexp, `{{?=${ btoa(newTime) }}}`);
                 }
-        ;
+
+            title.innerHTML = title.innerHTML
+                .replace(/\{\{\?=(.+?)\}\}/g, ($0, $1, $$, $_) => `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">${ atob($1) }</span>`);
+        }
 
         TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
     };
