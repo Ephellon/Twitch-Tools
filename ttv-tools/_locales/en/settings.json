@@ -398,8 +398,8 @@
 	],
 
 	"placement:points-receipt": [
-		"Points Receipt",
-		"Where should the", "Points Receipt", "text be displayed"
+		"Points Receipt & Rank",
+		"Where should the", "Points Receipt", "&", "Point Ranking", "text be displayed"
 	],
     	"placement:points-receipt:options": [
     		"Do not display",

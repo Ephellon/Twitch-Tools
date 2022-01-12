@@ -31,6 +31,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.21)
+- Adjusted Stay Live logic to better handle Up Next - One Instance
+- Added Point Ranking
+- Fixed issue where non-Up Next owner tabs would continue greedy raids
+
 > [`4.20.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.20.1)
 - Fixed issue with Auto loading BTTV emotes
 - Fixed issue with Time Zones not loading for the About Me panel recursively

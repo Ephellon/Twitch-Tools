@@ -514,9 +514,11 @@
         "vorübergehend ausblenden"
     ],
     "placement:points-receipt": [
-        "Punkteeingang",
+        "Punkteeingang & Rang",
         "Wo soll der Text",
-        "Punktebeleg",
+        "Punkteeingang",
+        "und",
+        "Punkterangliste",
         "angezeigt werden?"
     ],
     "placement:points-receipt:options": [

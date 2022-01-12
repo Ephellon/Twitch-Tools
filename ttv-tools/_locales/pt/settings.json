@@ -514,10 +514,11 @@
         "oculta temporariamente"
     ],
     "placement:points-receipt": [
-        "Recibo de pontos",
-        "Onde o texto",
-        "Recibo de Pontos",
-        "deve ser exibido"
+        "Recibo de pontos e classificação",
+        "Onde o recibo de pontos",
+        "e",
+        "point ranking",
+        "texto ser exibido"
     ],
     "placement:points-receipt:options": [
         "Não exiba",

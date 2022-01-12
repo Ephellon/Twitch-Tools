@@ -544,6 +544,7 @@ class Tooltip {
         fineTuning.left |= 0;
 
         fineTuning.from ??= '';
+        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
@@ -2064,9 +2065,24 @@ async function GetLanguage() {
 let { Glyphs } = top;
 
 // Returns ordinal numbers
-    // nth(n:number) -> string
-let nth = n => {
+    // nth(n:number[, s:string]) -> string
+let nth = (n, s = 'in line') => {
     n += '';
+
+    let c = (s, l) => {
+        switch(s) {
+            case 'in line': {
+                switch(l) {
+                    case 'de': return ' Reihe';
+                    case 'es': return ' en línea';
+                    case 'pt': return ' na linha';
+                    case 'ru': return ' в строке';
+                }
+            } break;
+        }
+
+        return s;
+    };
 
     switch(window.LANGUAGE) {
         case 'de': {
@@ -2074,7 +2090,7 @@ let nth = n => {
 
             n = n
                 .replace(/(\d)$/, '$1.')
-            + ' Reihe';
+            + c(s);
         } break;
 
         case 'es': {
@@ -2082,7 +2098,7 @@ let nth = n => {
 
             n = n
                 .replace(/(\d)$/, '$1°')
-            + ' en línea';
+            + c(s);
         } break;
 
         case 'pt': {
@@ -2090,7 +2106,7 @@ let nth = n => {
 
             n = n
                 .replace(/(\d)$/, '$1°')
-            + ' na linha';
+            + c(s);
         } break;
 
         case 'ru': {
@@ -2098,7 +2114,7 @@ let nth = n => {
 
             n = n
                 .replace(/(\d)$/, '$1-й')
-            + ' в строке';
+            + c(s);
         } break;
 
         case 'en':
@@ -2110,7 +2126,7 @@ let nth = n => {
                 .replace(/1$/, '1st')
                 .replace(/2$/, '2nd')
                 .replace(/3$/, '3rd')
-            + ' in line';
+            + c(s);
         } break;
     }
 
@@ -2376,6 +2392,9 @@ try {
                 let { from, to, events, payable } = data,
                     method = Settings.prevent_raiding ?? "none";
 
+                if(!UP_NEXT_ALLOW_THIS_TAB)
+                    break;
+
                 // "Would the user allow this raid condition?"
                 if(false
                     || (payable && method == "greed")
@@ -2496,7 +2515,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null }));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2539,7 +2558,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2580,7 +2599,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2609,7 +2628,7 @@ async function update() {
                     return;
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2773,7 +2792,7 @@ let Initialize = async(START_OVER = false) => {
         // GetNextStreamer() -> Object#Channel
     function GetNextStreamer() {
         // Next channel in "Up Next"
-        if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
+        if(!parseBool(Settings.first_in_line_none) && !parseBool(Settings.up_next__one_instance) && ALL_FIRST_IN_LINE_JOBS?.length)
             return GetNextStreamer.cachedStreamer = (null
                 ?? ALL_CHANNELS.find(channel => channel?.href?.contains?.(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
                 ?? {
@@ -2949,7 +2968,7 @@ let Initialize = async(START_OVER = false) => {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null }));
+                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
                     let { currentTarget } = event;
 
@@ -2982,6 +3001,7 @@ let Initialize = async(START_OVER = false) => {
      * ping:boolean*     - GETTER: does the user have notifications on
      * plug:boolean*     - GETTER: is there an advertisement running
      * poll:number*      - GETTER: how many viewers are watching the channel
+     * rank:number*      - GETTER: what is the user's assumed rank--based on the amount of channel points they possess
      * redo:boolean*     - GETTER: is the channel streaming a rerun (VOD)
      * sole:number       - GETTER: the channel's ID
      * tags:array*       - GETTER: tags of the current stream
@@ -2991,6 +3011,7 @@ let Initialize = async(START_OVER = false) => {
      * tone:string*      - GETTER: the channel's complementary accent color (if applicable)
      * unfollow:function - unfollows the current channel
      * veto:boolean      - GETTER: determines if the user is banned from the chat or not
+     * vods:array*       - GETTER: returns a list (up to 25) of the channel's VODs
 
      * Only available with Fine Details enabled
      * ally:boolean      - is the channel partnered?
@@ -3014,6 +3035,9 @@ let Initialize = async(START_OVER = false) => {
 
             return parseCoin(followers);
         },
+
+        // Gets values later...
+        data: {},
 
         get done() {
             return STREAMER.__done__ ?? (async() => {
@@ -3112,7 +3136,7 @@ let Initialize = async(START_OVER = false) => {
                 if(parseBool(Settings.show_stats)) {
                     let score = scoreTagActivity(href);
 
-                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'up' });
+                    new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'top' });
                 }
 
                 tags.push(href);
@@ -3139,6 +3163,21 @@ let Initialize = async(START_OVER = false) => {
 
         get poll() {
             return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) || 0
+        },
+
+        get rank() {
+            // Creates a triangle with: base → time streamer has been active (divided into hours); height → number of followers
+                // Also take the average amount of channel points gained per hour (320) into account?
+                // Area → (base * height) / 2
+            let cult = STREAMER.data.followers ?? STREAMER.cult;
+            let base = ((+new Date(STREAMER.data.lastSeen) - +new Date(STREAMER.data.firstSeen)) / 3_600_000),
+                area = (base * cult / 2),
+
+                // Rank: how much of the triangle the user covers
+                size = (STREAMER.coin / area),
+                rank = Math.round(1 / size);
+
+            return 0 | (rank > cult? cult: rank);
         },
 
         get redo() {
@@ -3204,6 +3243,15 @@ let Initialize = async(START_OVER = false) => {
             return !!$('[id*="banned"i], [class*="banned"i]', true).length;
         },
 
+        get vods() {
+            let { name, sole } = STREAMER;
+
+            return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos`)}`, { mode: 'cors' })
+                .then(response => response.text())
+                .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) );
+        },
+
         follow() {
             $('[data-a-target="follow-button"i]')?.click?.();
         },
@@ -3237,7 +3285,7 @@ let Initialize = async(START_OVER = false) => {
         delete StreamerFilteredData[key];
 
     StreamerMainIcon.setAttribute('draggable', true);
-    StreamerMainIcon.setAttribute('tt-streamer-data', JSON.stringify({ ...STREAMER, chat: null, jump: null }));
+    StreamerMainIcon.setAttribute('tt-streamer-data', JSON.stringify({ ...STREAMER, chat: null, jump: null, vods: null }));
     StreamerMainIcon.ondragstart ??= event => {
         let { currentTarget } = event;
 
@@ -3326,7 +3374,7 @@ let Initialize = async(START_OVER = false) => {
                             if(!defined(parent))
                                 return false;
 
-                            // THe nthe "is it offline" result
+                            // The "is it offline" result
                             let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
 
                             return live;
@@ -3335,7 +3383,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
+                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
@@ -3382,7 +3430,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
+                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
@@ -3426,7 +3474,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null }));
+                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                     element.ondragstart ??= event => {
                         let { currentTarget } = event;
 
@@ -3552,7 +3600,7 @@ let Initialize = async(START_OVER = false) => {
                             else if((dataRetrievedAt + (4 * 60 * 60 * 1000)) < +new Date)
                                 throw "The data likely expired";
                             else
-                                STREAMER.data = data;
+                                STREAMER.data = { ...STREAMER.data, ...data };
 
                             REMARK(`Cached details about "${ STREAMER.name }"`, data);
                         });
@@ -3564,7 +3612,8 @@ let Initialize = async(START_OVER = false) => {
                                 .then(Search.convertResults)
                                 .then(streamer => sole = streamer.sole);
 
-                        // Proper CORS request to fetch the HTML data
+                        // Proper CORS requests to fetch the HTML data
+                        // Stream details
                         await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'cors' })
                             .then(response => response.json())
                             .then(json => {
@@ -3664,9 +3713,9 @@ let Initialize = async(START_OVER = false) => {
                                     * 60_000
                                 ));
 
-                                REMARK(`Details about "${ STREAMER.name }"`, data);
+                                REMARK(`Stream details about "${ STREAMER.name }"`, data);
 
-                                return STREAMER.data = data;
+                                return STREAMER.data = { ...STREAMER.data, ...data };
                             })
                             .catch(WARN)
                             .then(data => {
@@ -3674,6 +3723,39 @@ let Initialize = async(START_OVER = false) => {
 
                                 SaveCache({ [`data/${ STREAMER.name }`]: data });
                             });
+
+                        // Channel details
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }`)}`, { mode: 'cors' })
+                            .then(response => response.text())
+                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                            .then(DOM => {
+                                let data = {};
+
+                                $('dt+dd', true, DOM).map(dd => {
+                                    let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
+                                        value = dd.textContent.trim();
+
+                                    value = (
+                                        /^(followers)$/i.test(name)?
+                                            parseInt(value.replace(/\D/g, '')):
+                                        /^((first|last)seen)$/i.test(name)?
+                                            new Date($('time', false, dd).getAttribute('datetime')):
+                                        value
+                                    );
+
+                                    data[name] = value;
+                                });
+
+                                REMARK(`Channel details about "${ STREAMER.name }"`, data);
+
+                                return STREAMER.data = { ...STREAMER.data, ...data };
+                            })
+                            .catch(WARN)
+                            .then(data => {
+                                data = { ...data, dataRetrievedOK: defined(data?.firstSeen), dataRetrievedAt: +new Date };
+
+                                SaveCache({ [`data/${ STREAMER.name }`]: data });
+                            });;
 
                         //  OBSOLETE //
                         // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
@@ -3746,7 +3828,7 @@ let Initialize = async(START_OVER = false) => {
                         //
                         //         REMARK(`Details about "${ STREAMER.name }"`, data, { bearer, clientID });
                         //
-                        //         return STREAMER.data = data;
+                        //         return STREAMER.data = { ...STREAMER.data, ...data };
                         //     })
                         //     .catch(WARN)
                         //     .then(data => {
@@ -4226,7 +4308,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: $('svg', false, container),
                 background: $('button', false, container),
                 get offset() { return getOffset(container) },
-                tooltip: new Tooltip(container, `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'up', left: +5 }),
+                tooltip: new Tooltip(container, `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
             };
 
             button.tooltip.id = new UUID().toString().replace(/-/g, '');
@@ -5627,7 +5709,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names, 'Current streamer data:', JSON.stringify({ ...STREAMER, chat: null, jump: null, date: new Date }))?.toNativeStack?.();
+            WARN('Twitch failed to add these channels correctly:', bad_names, 'Current streamer data:', JSON.stringify({ ...STREAMER, chat: null, jump: null, vods: null, date: new Date }))?.toNativeStack?.();
 
             BAD_STREAMERS = "";
 
@@ -5838,10 +5920,10 @@ let Initialize = async(START_OVER = false) => {
                                             [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
 
                                         // If already on the stream, break
-
                                         if(page.toLowerCase() == note.toLowerCase())
                                             break Handle_phantom_notification;
 
+                                        // All of the Live Reminder handlers...
                                         Handlers.first_in_line(notification);
                                     }
 
@@ -5856,7 +5938,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
             JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 120_000);
-        }, 120_000);
+        }, 60_000);
 
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
@@ -6276,18 +6358,22 @@ let Initialize = async(START_OVER = false) => {
         // Time-zone RegExps
         TIME_ZONE__REGEXPS = [
             // Natural
-            // 3:00PM EST | 3PM EST | 3 EST
-            /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
+            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            // 15:00 EST | 1500 EST
+            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
             // 3:00PM | 3PM
-            /\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+            // 15:00
+            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
-            // Z15:00 | +05:00 | -05:00
-            /\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
+            // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
+            /(?<![\$\#\.])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
 
             // GMT/UTC
-            // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00
-            /\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:[0-5][0-9])\b/i,
+            // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00 | GMT+0500 | GMT-0500 | UTC+0500 | UTC-0500
+            /(?<![\$\#\.])\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
         ],
 
         // TODO - fix conflicting entries
@@ -6511,17 +6597,18 @@ let Initialize = async(START_OVER = false) => {
             YEKT: "+5:00",
         };
 
+    // Convert text to times
     function convertWordsToTimes(string) {
         return string
-            .replace(/\b(mornings?|dawn)\b/i, '6:00AM')
+            .replace(/\b(mornings?|dawn)\b/i, '06:00AM')
             .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
-            .replace(/\b(after\s?noons?)\b/i, '01:00PM')
-            .replace(/\b(nights?|dusk)\b/i, '6:00PM')
+            .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00PM')
+            .replace(/\b(nights?|dusk)\b/i, '06:00PM')
             .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM');
     }
 
     Handlers.time_zones = () => {
-        let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]', true),
+        let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] p, [data-a-target^="panel"i] p', true),
             rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
 
         top:
@@ -6542,8 +6629,14 @@ let Initialize = async(START_OVER = false) => {
 
                     hour = parseInt(hour) + (/^p/i.test(meridiem)? 12: 0);
 
-                    timezone = timezone.toUpperCase();
-                    timezone = (TIME_ZONE__CONVERSIONS[timezone] ?? timezone).replace(/^[+-]/, 'GMT$&');
+                    if(timezone.length) {
+                        timezone = timezone.toUpperCase();
+
+                        if(timezone in TIME_ZONE__CONVERSIONS)
+                            timezone = TIME_ZONE__CONVERSIONS[timezone].replace(/^[+-]/, 'GMT$&');
+                        else
+                            continue top;
+                    }
 
                     let newTime = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
                         [H, M] = [newTime.getHours(), ('00' + newTime.getMinutes()).slice(-2)];
@@ -6555,7 +6648,7 @@ let Initialize = async(START_OVER = false) => {
 
                     newTime = `${H}:${M}`;
 
-                    title.innerHTML = convertWordsToTimes(title.innerHTML)
+                    title.innerText = convertWordsToTimes(title.innerText)
                         .replace(regexp, `{{?=${ btoa(newTime) }}}`);
                 }
 
@@ -6925,7 +7018,7 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    /*** Points Receipt
+    /*** Points Receipt & Ranking
      *      _____      _       _         _____               _       _
      *     |  __ \    (_)     | |       |  __ \             (_)     | |
      *     | |__) |__  _ _ __ | |_ ___  | |__) |___  ___ ___ _ _ __ | |_
@@ -6941,134 +7034,190 @@ let Initialize = async(START_OVER = false) => {
         EXACT_POINTS_SPENT = 0,
         EXACT_POINTS_EARNED = 0,
         COUNTING_HREF = NORMALIZED_PATHNAME,
-        OBSERVED_COLLECTION_ANIMATIONS = new Map();
+        OBSERVED_COLLECTION_ANIMATIONS = new Map(),
+        DISPLAYING_RANK;
 
     Handlers.points_receipt_placement = () => {
+        // Display the ranking
+        START__STOP_WATCH('points_receipt_placement__ranking');
+
+        DisplayRanking: {
+            let placement;
+
+            if((placement = Settings.points_receipt_placement ??= "null") == "null") {
+                JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+                break DisplayRanking;
+            }
+
+            DISPLAYING_RANK = setInterval(() => {
+                let container = $('[data-test-selector="chat-input-buttons-container"i]'),
+                    ranking = $('#tt-channel-point-ranking');
+
+                if(!defined(container))
+                    return JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+
+                let { rank } = STREAMER,
+                    string = nth(rank.toLocaleString(LANGUAGE), ''),
+                    color = (null
+                        ?? ['#FFD700', '#C0C0C0', '#CD7F32'][rank - 1]
+                        ?? '#91FF47'
+                    );
+
+                rank = (
+                    rank < 1?
+                        '?':
+                    rank < 4?
+                        `<span style="text-decoration:${ 4 - rank }px underline ${ color }">${ string }</span>`:
+                    string
+                );
+
+                if(!defined(ranking))
+                    container.insertBefore(ranking = (
+                        furnish('div', { style: 'animation:1s fade-in 1;' },
+                            furnish('div#tt-channel-point-ranking', { style: 'display:flex; position:relative; align-items:center; vertical-align:middle; height:100%;' })
+                        )
+                    ), container.lastElementChild);
+                else
+                    ranking.innerHTML = Glyphs.modify('trophy', { height: '16px', width: '16px', fill: color }) + rank;
+
+                if(rank == '?')
+                    return JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+
+                new Tooltip(ranking, `Top ${ (100 * (STREAMER.rank / STREAMER.cult)).round() || '?' }%`, { from: 'top' });
+            }, 250);
+        }
+
+        JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+
+        // Display the receipt
         START__STOP_WATCH('points_receipt_placement');
 
-        let placement;
+        DisplayReceipt: {
+            let placement;
 
-        if((placement = Settings.points_receipt_placement ??= "null") == "null")
-            return JUDGE__STOP_WATCH('points_receipt_placement');
+            if((placement = Settings.points_receipt_placement ??= "null") == "null")
+                return JUDGE__STOP_WATCH('points_receipt_placement');
 
-        let live_time = $('.live-time');
+            let live_time = $('.live-time');
 
-        if(!defined(live_time))
-            return JUDGE__STOP_WATCH('points_receipt_placement');
+            if(!defined(live_time))
+                return JUDGE__STOP_WATCH('points_receipt_placement');
 
-        let classes = element => [...element.classList].map(label => '.' + label).join('');
+            let classes = element => [...element.classList].map(label => '.' + label).join('');
 
-        let container = live_time.closest(`*:not(${ classes(live_time) })`),
-            parent = container.closest(`*:not(${ classes(container) })`);
+            let container = live_time.closest(`*:not(${ classes(live_time) })`),
+                parent = container.closest(`*:not(${ classes(container) })`);
 
-        let f = furnish;
-        let points_receipt =
-        f(`${ container.tagName }${ classes(container) }`, {},
-            f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0 })
-        );
+            let f = furnish;
+            let points_receipt =
+            f(`${ container.tagName }${ classes(container) }`, {},
+                f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0 })
+            );
 
-        parent.append(points_receipt);
+            parent.append(points_receipt);
 
-        RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
+            RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
 
-        COUNTING_POINTS = setInterval(() => {
-            let points_receipt = $('#tt-points-receipt'),
-                balance = $('[data-test-selector="balance-string"i]'),
-                exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
-                exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
+            COUNTING_POINTS = setInterval(() => {
+                let points_receipt = $('#tt-points-receipt'),
+                    balance = $('[data-test-selector="balance-string"i]'),
+                    exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
+                    exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
-            let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
+                let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
 
-            if(!defined(chat)) {
-                let framedData = PostOffice.get('points_receipt_placement');
+                if(!defined(chat)) {
+                    let framedData = PostOffice.get('points_receipt_placement');
 
-                window.PostOffice = PostOffice;
+                    window.PostOffice = PostOffice;
 
-                if(!defined(framedData))
+                    if(!defined(framedData))
+                        return;
+
+                    balance ??= { textContent: framedData.balance };
+                    exact_debt ??= { textContent: framedData.exact_debt };
+                    exact_change ??= { textContent: framedData.exact_change };
+                }
+
+                let current = parseCoin(balance?.textContent);
+
+                INITIAL_POINTS ??= current;
+
+                let debt = INITIAL_POINTS - current;
+
+                EXACT_POINTS_SPENT = parseCoin(exact_debt?.textContent ?? (debt? EXACT_POINTS_SPENT > debt? EXACT_POINTS_SPENT: debt: EXACT_POINTS_SPENT));
+
+                let animationID = (exact_change?.textContent ?? exact_debt?.textContent ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': 0)),
+                    animationTimeStamp = +new Date;
+
+                if(!/^([\+\-, \d]+)$/.test(animationID))
                     return;
 
-                balance ??= { textContent: framedData.balance };
-                exact_debt ??= { textContent: framedData.exact_debt };
-                exact_change ??= { textContent: framedData.exact_change };
-            }
+                // Don't keep adding the exact change while the animation is playing
+                if(OBSERVED_COLLECTION_ANIMATIONS.has(animationID)) {
+                    let time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
 
-            let current = parseCoin(balance?.textContent);
+                    // It's been less than 5 minutes
+                    if(!defined(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
+                        return;
 
-            INITIAL_POINTS ??= current;
+                    // Continue executing...
+                }
+                OBSERVED_COLLECTION_ANIMATIONS.set(animationID, animationTimeStamp);
 
-            let debt = INITIAL_POINTS - current;
+                if(+animationID)
+                    LOG(`Observing "${ animationID }" @ ${ new Date }`, OBSERVED_COLLECTION_ANIMATIONS);
 
-            EXACT_POINTS_SPENT = parseCoin(exact_debt?.textContent ?? (debt? EXACT_POINTS_SPENT > debt? EXACT_POINTS_SPENT: debt: EXACT_POINTS_SPENT));
+                if(!~[points_receipt, exact_change, balance].findIndex(defined)) {
+                    points_receipt?.parentElement?.remove();
 
-            let animationID = (exact_change?.textContent ?? exact_debt?.textContent ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT + '': 0)),
-                animationTimeStamp = +new Date;
+                    RestartJob('points_receipt_placement');
 
-            if(!/^([\+\-, \d]+)$/.test(animationID))
-                return;
+                    return clearInterval(COUNTING_POINTS);
+                }
 
-            // Don't keep adding the exact change while the animation is playing
-            if(OBSERVED_COLLECTION_ANIMATIONS.has(animationID)) {
-                let time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
+                EXACT_POINTS_EARNED += parseCoin(exact_change?.textContent);
 
-                // It's been less than 5 minutes
-                if(!defined(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
-                    return;
+                let receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT,
+                    glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
+                    { abs } = Math;
 
-                // Continue executing...
-            }
-            OBSERVED_COLLECTION_ANIMATIONS.set(animationID, animationTimeStamp);
+                switch(Settings.channelpoints_receipt_display) {
+                    case "round100": {
+                        // Round to nearest hundred
+                        receipt = receipt.floorToNearest(100);
+                    } break;
 
-            if(+animationID)
-                LOG(`Observing "${ animationID }" @ ${ new Date }`, OBSERVED_COLLECTION_ANIMATIONS);
+                    case "round50": {
+                        // Round to nearest fifty (half)
+                        receipt = receipt.floorToNearest(50);
+                    } break;
 
-            if(!~[points_receipt, exact_change, balance].findIndex(defined)) {
-                points_receipt?.parentElement?.remove();
+                    case "round25": {
+                        // Round to nearest twenty-five (quarter)
+                        receipt = receipt.floorToNearest(25);
+                    } break;
 
-                RestartJob('points_receipt_placement');
+                    case "null":
+                    default: {
+                        // Do nothing...
+                    } break;
+                }
 
-                return clearInterval(COUNTING_POINTS);
-            }
-
-            EXACT_POINTS_EARNED += parseCoin(exact_change?.textContent);
-
-            let receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT,
-                glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
-                { abs } = Math;
-
-            switch(Settings.channelpoints_receipt_display) {
-                case "round100": {
-                    // Round to nearest hundred
-                    receipt = receipt.floorToNearest(100);
-                } break;
-
-                case "round50": {
-                    // Round to nearest fifty (half)
-                    receipt = receipt.floorToNearest(50);
-                } break;
-
-                case "round25": {
-                    // Round to nearest twenty-five (quarter)
-                    receipt = receipt.floorToNearest(25);
-                } break;
-
-                case "null":
-                default: {
-                    // Do nothing...
-                } break;
-            }
-
-            RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } &uarr; | ${ comify(abs(EXACT_POINTS_SPENT)) } &darr;`;
-            points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural').replace(/\.0+/, '') }`;
-        }, 100);
+                RECEIPT_TOOLTIP.innerHTML = `${ comify(abs(EXACT_POINTS_EARNED)) } &uarr; | ${ comify(abs(EXACT_POINTS_SPENT)) } &darr;`;
+                points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural').replace(/\.0+/, '') }`;
+            }, 100);
+        }
 
         JUDGE__STOP_WATCH('points_receipt_placement');
     };
     Timers.points_receipt_placement = -2_500;
 
     Unhandlers.points_receipt_placement = () => {
-        clearInterval(COUNTING_POINTS);
+        [COUNTING_POINTS, DISPLAYING_RANK].map(clearInterval);
 
-        $('#tt-points-receipt')?.parentElement?.remove();
+        $('#tt-points-receipt, #tt-channel-point-ranking', true)
+            .forEach(span => span?.parentElement?.remove());
 
         if(UnregisterJob.__reason__ == 'modify')
             return;
@@ -7096,6 +7245,7 @@ let Initialize = async(START_OVER = false) => {
         hasPointsEnabled = false;
 
     Handlers.point_watcher_placement = async() => {
+        // Display the points
         START__STOP_WATCH('point_watcher_placement');
 
         let richTooltip = $('[class*="channel-tooltip"i]');
@@ -7199,7 +7349,7 @@ let Initialize = async(START_OVER = false) => {
 
             let text = furnish('span.tt-point-amount', {
                     'tt-earned-all': notEarned == 0,
-                    innerHTML: amount.toLocaleString(),
+                    innerHTML: amount.toLocaleString(LANGUAGE),
                 }),
                 icon = face?.length?
                     furnish('span.tt-point-face', {

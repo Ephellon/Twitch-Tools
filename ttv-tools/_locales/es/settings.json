@@ -512,9 +512,11 @@
         "ocultarlo temporalmente"
     ],
     "placement:points-receipt": [
-        "Recibo de puntos",
+        "Recibo de puntos y rango",
         "Dónde debe mostrarse el texto",
         "Recibo de puntos",
+        "y",
+        "Clasificación de puntos",
         null
     ],
     "placement:points-receipt:options": [
