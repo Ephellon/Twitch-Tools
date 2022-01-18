@@ -3175,7 +3175,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // Rank: how much of the triangle the user covers
                 size = (STREAMER.coin / area),
-                rank = Math.round(1 / size);
+                rank = cult - Math.round(size * cult**(5/3));
 
             return 0 | (rank > cult? cult: rank);
         },
@@ -3249,7 +3249,8 @@ let Initialize = async(START_OVER = false) => {
             return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos`)}`, { mode: 'cors' })
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) );
+                .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
+                .catch(WARN);
         },
 
         follow() {
@@ -3709,8 +3710,7 @@ let Initialize = async(START_OVER = false) => {
                                         parseBool(Settings.first_in_line_all)?
                                             Settings.first_in_line_all_time_minutes:
                                         15
-                                    )
-                                    * 60_000
+                                    ) * 60_000
                                 ));
 
                                 REMARK(`Stream details about "${ STREAMER.name }"`, data);
@@ -5938,7 +5938,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
             JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 120_000);
-        }, 60_000);
+        }, 300_000);
 
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
@@ -6359,21 +6359,21 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
-            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?:\(?(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\)?)\b/i,
             // 15:00 EST | 1500 EST
-            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
             // 3:00PM | 3PM
-            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
             // 15:00
-            /(?<![\$\#\.])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
+            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
             // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
-            /(?<![\$\#\.])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
+            /(?<![\$\#\.\-\+])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
 
             // GMT/UTC
             // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00 | GMT+0500 | GMT-0500 | UTC+0500 | UTC-0500
-            /(?<![\$\#\.])\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
+            /(?<![\$\#\.\-\+])\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
         ],
 
         // TODO - fix conflicting entries
@@ -6600,10 +6600,10 @@ let Initialize = async(START_OVER = false) => {
     // Convert text to times
     function convertWordsToTimes(string) {
         return string
-            .replace(/\b(mornings?|dawn)\b/i, '06:00AM')
-            .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
+            // .replace(/\b(mornings?|dawn)\b/i, '06:00AM')
             .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00PM')
-            .replace(/\b(nights?|dusk)\b/i, '06:00PM')
+            .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
+            // .replace(/\b(nights?|dusk)\b/i, '06:00PM')
             .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM');
     }
 
@@ -7035,7 +7035,8 @@ let Initialize = async(START_OVER = false) => {
         EXACT_POINTS_EARNED = 0,
         COUNTING_HREF = NORMALIZED_PATHNAME,
         OBSERVED_COLLECTION_ANIMATIONS = new Map(),
-        DISPLAYING_RANK;
+        DISPLAYING_RANK,
+        RANK_TOOLTIP;
 
     Handlers.points_receipt_placement = () => {
         // Display the ranking
@@ -7081,9 +7082,10 @@ let Initialize = async(START_OVER = false) => {
                     ranking.innerHTML = Glyphs.modify('trophy', { height: '16px', width: '16px', fill: color }) + rank;
 
                 if(rank == '?')
-                    return JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+                    return ranking?.remove() || JUDGE__STOP_WATCH('points_receipt_placement__ranking');
 
-                new Tooltip(ranking, `Top ${ (100 * (STREAMER.rank / STREAMER.cult)).round() || '?' }%`, { from: 'top' });
+                RANK_TOOLTIP ??= new Tooltip(ranking, "", { from: 'top' });
+                RANK_TOOLTIP.innerHTML = `Top ${ (100 * (STREAMER.rank / STREAMER.cult)).round() || '?' }%`;
             }, 250);
         }
 
@@ -8180,6 +8182,7 @@ setInterval(() => {
                         (false
                             || defined($('#tt-auto-claim-bonuses'))
                             || !defined($('[data-test-selector="balance-string"i]'))
+                            || parseBool(Settings.view_mode)
                             || STREAMER.veto
                             || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
                         ):

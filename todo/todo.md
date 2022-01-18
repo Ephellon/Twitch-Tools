@@ -31,6 +31,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.22`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.22)
+- Adjusted ranking algorithm
+- Adjusted logic to ignore auto-claim in different viewing modes
+
 > [`4.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.21)
 - Adjusted Stay Live logic to better handle Up Next - One Instance
 - Added Point Ranking
