@@ -348,7 +348,7 @@ function defined(value) {
 async function awaitOn(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
-            let value = callback();
+            let value = await callback();
 
             if(defined(value)) {
                 clearInterval(interval);
@@ -356,7 +356,7 @@ async function awaitOn(callback, ms = 100) {
                     (value === awaitOn.null)?
                         null:
                     (value === awaitOn.void)?
-                        void(''):
+                        void undefined:
                     (value === awaitOn.undefined)?
                         undefined:
                     value
@@ -369,7 +369,7 @@ async function awaitOn(callback, ms = 100) {
 try {
     Object.defineProperties(awaitOn, {
         "null": { value: Symbol(null) },
-        "void": { value: Symbol(void('')) },
+        "void": { value: Symbol(void undefined) },
         "undefined": { value: Symbol(undefined) },
     });
 } catch(error) {

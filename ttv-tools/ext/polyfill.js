@@ -1271,7 +1271,7 @@ function toFormat(string, patterns) {
     for(let pattern of patterns)
         switch(pattern) {
             case 'capped': {
-                string = string[0].toUpperCase() + string.slice(1, string.length).toLowerCase();
+                string = string.toLowerCase().replace(/(\w)/, ($0, $1, $$, $_) => $1.toUpperCase());
             } break;
 
             case 'upper': {
@@ -1329,7 +1329,7 @@ function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
     OS ??= GetOS();
 
-    let pattern = (
+    let pattern = [
         /^[A-Z][a-z]/.test(keys)?
             'capped':
         /^[A-Z]/.test(keys)?
@@ -1337,15 +1337,15 @@ function GetMacro(keys = '', OS = null) {
         /^[a-z]/.test(keys)?
             'lower':
         ''
-    ) + (
+    ,
         /[a-z]\.[a-z\.]/i.test(keys)?
-            '-dotted':
+            'dotted':
         /[a-z]\-[a-z\-]/i.test(keys)?
-            '-dashed':
+            'dashed':
         /[a-z]\s[a-z\-]/i.test(keys)?
-            '-spaced':
+            'spaced':
         ''
-    );
+    ].filter(string => string.length).join('-');
 
     // Mouse buttons (emojis)
     let Mouse = {
@@ -1656,6 +1656,17 @@ function REMARK(...messages) {
     });
 };
 
+// "Clicks" on elements
+function phantomClick(...elements) {
+    for(let element of elements) {
+        let mousedown = new MouseEvent('mousedown', { bubbles: true }),
+            mouseup = new MouseEvent('mouseup', { bubbles: true });
+
+        element?.dispatchEvent(mousedown);
+        setTimeout(() => element?.dispatchEvent(mouseup), 30);
+    }
+}
+
 // Displays an alert message
     // alert([message:string]) -> null
 function alert(message = '') {
@@ -1670,13 +1681,13 @@ function alert(message = '') {
             f('div.tt-alert-header', { innerHTML: `TTV Tools &mdash; Please see...` }),
             f('div.tt-alert-body', { innerHTML: message }),
             f('div.tt-alert-footer', {},
-                f('button', {
-                    onmousedown: ({ currentTarget }) => {
+                f('button.okay', {
+                    onmousedown({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-alert');
 
                         parent.setAttribute('value', true);
                     },
-                    onmouseup: ({ currentTarget }) => {
+                    onmouseup({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-alert'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -1700,12 +1711,9 @@ function alert(message = '') {
         value &&= parseBool(value);
 
         if(timedOut) {
-            let button = $('button', false, element),
-                mousedown = new MouseEvent('mousedown', { bubbles: true }),
-                mouseup = new MouseEvent('mouseup', { bubbles: true });
+            let button = $('button.okay', false, element);
 
-            button?.dispatchEvent(mousedown);
-            button?.dispatchEvent(mouseup);
+            phantomClick(button);
 
             return awaitOn.void;
         }
@@ -1783,13 +1791,13 @@ function confirm(message = '') {
             f('div.tt-confirm-header', { innerHTML: `TTV Tools &mdash; Please confirm...` }),
             f('div.tt-confirm-body', { innerHTML: message }),
             f('div.tt-confirm-footer', {},
-                f('button.edit', {
-                    onmousedown: ({ currentTarget }) => {
+                f('button.edit.deny', {
+                    onmousedown({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-confirm');
 
                         parent.setAttribute('value', false);
                     },
-                    onmouseup: ({ currentTarget }) => {
+                    onmouseup({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-confirm'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -1800,13 +1808,13 @@ function confirm(message = '') {
                     },
                 }, 'Cancel'),
 
-                f('button', {
-                    onmousedown: ({ currentTarget }) => {
+                f('button.okay', {
+                    onmousedown({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-confirm');
 
                         parent.setAttribute('value', true);
                     },
-                    onmouseup: ({ currentTarget }) => {
+                    onmouseup({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-confirm'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -1830,12 +1838,9 @@ function confirm(message = '') {
         value &&= parseBool(value);
 
         if(timedOut) {
-            let button = $('button', false, element),
-                mousedown = new MouseEvent('mousedown', { bubbles: true }),
-                mouseup = new MouseEvent('mouseup', { bubbles: true });
+            let button = $('button.deny', false, element);
 
-            button?.dispatchEvent(mousedown);
-            button?.dispatchEvent(mouseup);
+            phantomClick(button);
 
             return awaitOn.null;
         }
@@ -1922,15 +1927,22 @@ function prompt(message = '', defaultValue = '') {
             f('div.tt-prompt-header', { innerHTML: `TTV Tools &mdash; Please provide input...` }),
             f('div.tt-prompt-body', { innerHTML: message }),
             f('div.tt-prompt-footer', {},
-                f('input.tt-prompt-input', { type: 'text', placeholder: format }),
+                f('input.tt-prompt-input', {
+                    type: 'text', placeholder: format,
 
-                f('button.edit', {
-                    onmousedown: ({ currentTarget }) => {
+                    onkeydown({ target = null, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
+                        if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
+                            phantomClick($('.tt-prompt-footer button.okay'));
+                    }
+                }),
+
+                f('button.edit.deny', {
+                    onmousedown({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-prompt');
 
                         parent.setAttribute('value', '\0');
                     },
-                    onmouseup: ({ currentTarget }) => {
+                    onmouseup({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-prompt'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -1941,13 +1953,13 @@ function prompt(message = '', defaultValue = '') {
                     },
                 }, 'Cancel'),
 
-                f('button', {
-                    onmousedown: ({ currentTarget }) => {
+                f('button.okay', {
+                    onmousedown({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-prompt');
 
                         parent.setAttribute('value', $('.tt-prompt-input').value);
                     },
-                    onmouseup: ({ currentTarget }) => {
+                    onmouseup({ currentTarget }) {
                         let parent = currentTarget.closest('.tt-prompt'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -1971,12 +1983,9 @@ function prompt(message = '', defaultValue = '') {
             timedOut = parseBool($('.tt-prompt-time')?.getAttribute('tt-done'));
 
         if(timedOut) {
-            let button = $('button', false, element),
-                mousedown = new MouseEvent('mousedown', { bubbles: true }),
-                mouseup = new MouseEvent('mouseup', { bubbles: true });
+            let button = $('button.deny', false, element);
 
-            button?.dispatchEvent(mousedown);
-            button?.dispatchEvent(mouseup);
+            phantomClick(button);
 
             return awaitOn.null;
         }

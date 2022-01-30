@@ -500,8 +500,8 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-timed.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
-    /* content: attr(tt-time-left); */
-    content: "\23F1";
+    content: attr(tt-time-left);
+    /* content: "\23F1"; */
 
     animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) infinite 37s;
 }

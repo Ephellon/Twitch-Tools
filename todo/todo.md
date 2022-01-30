@@ -27,10 +27,20 @@
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
 10. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
+11. Live Reminders might spam notifications?
+    * Happens when re-doing a channel's reminder, as the channel is live (before being activated)
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.23)
+- Fixed issue where pressing "OK" for First in Line erases the queue
+- Minor quality of life updates
+- Fixed issue with Greedy Raiding
+- Fixed issue with double-adding Live Reminders
+- Adjusted Live Reminder logic to default to the hour the current stream started
+- Changed Up Next Boost to 5:30
+
 > [`4.22`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.22)
 - Adjusted ranking algorithm
 - Adjusted logic to ignore auto-claim in different viewing modes

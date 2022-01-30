@@ -2066,11 +2066,11 @@ let { Glyphs } = top;
 
 // Returns ordinal numbers
     // nth(n:number[, s:string]) -> string
-let nth = (n, s = 'in line') => {
+let nth = (n, s = ' in line') => {
     n += '';
 
     let c = (s, l) => {
-        switch(s) {
+        switch(s.trim()) {
             case 'in line': {
                 switch(l) {
                     case 'de': return ' Reihe';
@@ -2392,7 +2392,7 @@ try {
                 let { from, to, events, payable } = data,
                     method = Settings.prevent_raiding ?? "none";
 
-                if(!UP_NEXT_ALLOW_THIS_TAB)
+                if(!top.UP_NEXT_ALLOW_THIS_TAB)
                     break;
 
                 // "Would the user allow this raid condition?"
@@ -3170,7 +3170,15 @@ let Initialize = async(START_OVER = false) => {
                 // Also take the average amount of channel points gained per hour (320) into account?
                 // Area → (base * height) / 2
             let cult = STREAMER.data.followers ?? STREAMER.cult;
-            let base = ((+new Date(STREAMER.data.lastSeen) - +new Date(STREAMER.data.firstSeen)) / 3_600_000),
+            let epoch = new Date('16 DEC 2019 00:00Z'),
+                // epoch → when channel points where first introduced
+                // https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
+                start = +new Date(STREAMER.data.firstSeen),
+                end = +new Date(STREAMER.data.lastSeen);
+
+            start = start < epoch? epoch: start;
+
+            let base = ((end - start) / 3_600_000),
                 area = (base * cult / 2),
 
                 // Rank: how much of the triangle the user covers
@@ -4554,7 +4562,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
-    let UP_NEXT_ALLOW_THIS_TAB = true;      // Allow this tab to use Up Next
+    let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true;      // Allow this tab to use Up Next
 
     let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
@@ -4620,7 +4628,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF);
 
-                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1);
+                    ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1);
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
@@ -4731,7 +4739,7 @@ let Initialize = async(START_OVER = false) => {
 
     if(Settings.up_next__one_instance)
         Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => {
-            UP_NEXT_ALLOW_THIS_TAB = owner;
+            UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = owner;
 
             LOG('This tab is the Up Next owner', owner);
         });
@@ -4811,7 +4819,7 @@ let Initialize = async(START_OVER = false) => {
                     up_next_button?.setAttribute('speeding', parseBool(speeding));
 
                     let oneMin = 60_000,
-                        fiveMin = 5 * oneMin,
+                        fiveMin = 5.5 * oneMin,
                         tenMin = 10 * oneMin;
 
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(
@@ -4955,7 +4963,7 @@ let Initialize = async(START_OVER = false) => {
             // Load cache
             LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
                 let oneMin = 60_000,
-                    fiveMin = 5 * oneMin,
+                    fiveMin = 5.5 * oneMin,
                     tenMin = 10 * oneMin;
 
                 ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
@@ -5338,7 +5346,7 @@ let Initialize = async(START_OVER = false) => {
             if(!defined(action))
                 continue;
 
-            let { href, pathname } = parseURL(action.href),
+            let { href, pathname } = parseURL(action.href.toLowerCase()),
                 { textContent } = action,
                 uuid = UUID.from(textContent).value;
 
@@ -5558,7 +5566,7 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
         await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
             let oneMin = 60_000,
-                fiveMin = 5 * oneMin,
+                fiveMin = 5.5 * oneMin,
                 tenMin = 10 * oneMin;
 
             ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
@@ -5852,7 +5860,7 @@ let Initialize = async(START_OVER = false) => {
                             // Add the reminder...
                             if(hasReminder) {
                                 alert.timed(`You'll be notified when ${ STREAMER.name } goes live.`, 7_000);
-                                LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.projectedStopTime ?? (+new Date) + 21_600_000) + 21_600_000).floorToNearest(3_600_000));
+                                LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.actualStartTime ?? ((+new Date) - (STREAMER?.time ?? -21_600_000))) + 86_400_000).floorToNearest(3_600_000));
                             }
                             // Remove the reminder...
                             else {
@@ -5900,18 +5908,19 @@ let Initialize = async(START_OVER = false) => {
 
                 checking:
                 for(let reminderName in LiveReminders)
-                    // Only check for the stream after it's likely to be dead...
+                    // Only check for the stream when it's likely to be alive (again; so same time the next day)
                     if((+new Date) > +new Date(LiveReminders[reminderName])) {
                         let { href, name, live } = await(new Search(reminderName).then(Search.convertResults) ?? ALL_CHANNELS.find(channel => RegExp(`^${ reminderName }$`, 'i').test(channel.name)));
 
                         // The channel is live!
                         if(parseBool(live)) {
+                            // Recurring → Reminder@Tomorrow
                             delete LiveReminders[reminderName];
 
                             let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
 
                             if(defined(button))
-                                button.dispatchEvent(new MouseEvent('mouseup'));
+                                button.dispatchEvent(new MouseEvent('mouseup', { bubbles: false }));
                             else
                                 SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => {
                                     // TODO - Currently, only one option looks for notifications... I can just call it here
@@ -5925,12 +5934,12 @@ let Initialize = async(START_OVER = false) => {
 
                                         // All of the Live Reminder handlers...
                                         Handlers.first_in_line(notification);
-                                    }
 
-                                    // Show a notification
-                                    Display_phantom_notification: {
-                                        WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
-                                        alert.timed(`${ name } just went live!`, 7_000);
+                                        // Show a notification
+                                        Display_phantom_notification: {
+                                            WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
+                                            alert.timed(`${ name } just went live!`, 7_000);
+                                        }
                                     }
                                 });
                         }
@@ -6359,21 +6368,21 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
-            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?:\(?(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\)?)\b/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?:\(?(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\)?)\b/i,
             // 15:00 EST | 1500 EST
-            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
             // 3:00PM | 3PM
-            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
             // 15:00
-            /(?<![\$\#\.\-\+])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
             // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
-            /(?<![\$\#\.\-\+])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
+            /(?<![\$\#\.\+\:])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
 
             // GMT/UTC
             // GMT+05:00 | GMT-05:00 | UTC+05:00 | UTC-05:00 | GMT+0500 | GMT-0500 | UTC+0500 | UTC-0500
-            /(?<![\$\#\.\-\+])\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
+            /(?<![\$\#\.\+\:])\b(?:GMT\s*|UTC\s*)?(?<offset>[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
         ],
 
         // TODO - fix conflicting entries
@@ -6653,7 +6662,7 @@ let Initialize = async(START_OVER = false) => {
                 }
 
             title.innerHTML = title.innerHTML
-                .replace(/\{\{\?=(.+?)\}\}/g, ($0, $1, $$, $_) => `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">${ atob($1) }</span>`);
+                .replace(/\{\{\?=(.+?)\}\}/g, ($0, $1, $$, $_) => `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">${ atob($1).split('').join('&zwj;') }</span>`);
         }
 
         TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
@@ -7084,8 +7093,10 @@ let Initialize = async(START_OVER = false) => {
                 if(rank == '?')
                     return ranking?.remove() || JUDGE__STOP_WATCH('points_receipt_placement__ranking');
 
+                let place = (100 * (STREAMER.rank / STREAMER.cult)).clamp(1, 100).round() || 0;
+
                 RANK_TOOLTIP ??= new Tooltip(ranking, "", { from: 'top' });
-                RANK_TOOLTIP.innerHTML = `Top ${ (100 * (STREAMER.rank / STREAMER.cult)).round() || '?' }%`;
+                RANK_TOOLTIP.innerHTML = `You are in the top ${ place || '?' }%`;
             }, 250);
         }
 
