@@ -26,7 +26,7 @@ function parseURL(url) {
 
     url = url.toString();
 
-    let data = url.match(/^((([^:\/?#]+):)?(?:\/{2})?)(?:([^:]*):([^@]*)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
+    let data = url.match(/^((([^:\/?#]+):)?(?:\/\/)?)(?:([^:]*):([^@]*)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
         i    = 0,
         e    = "";
 
@@ -80,7 +80,7 @@ function parseURL(url) {
             return parseURL(origin + pathname + searchParameters + hash);
         },
     };
-};
+}
 
 // Create elements
     // furnish(tagname:string[, attributes:object[, ...children]]) -> Element

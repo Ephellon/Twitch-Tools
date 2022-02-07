@@ -33,6 +33,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.24)
+- Fixed Settings link for initial setup
+- Minor color wording adjustment
+- Fixed Global Event Listeners & their wording
+- Added custom context menus
+- Adjusted color mapping algorithm
+- Fixed issue with Time Zones
+- Fixed issue with Up Next & Initializer not working together
+
 > [`4.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.23)
 - Fixed issue where pressing "OK" for First in Line erases the queue
 - Minor quality of life updates

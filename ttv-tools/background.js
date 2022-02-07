@@ -184,7 +184,11 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                 respond({ events });
             });
-        };
+        } break;
+
+        case 'OPEN_OPTIONS_PAGE': {
+            Runtime.openOptionsPage();
+        } break;
     }
 
     if(refresh)

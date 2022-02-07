@@ -231,7 +231,7 @@ class UUID {
     static #BWT_SEED = new UUID()
 
     constructor() {
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
+        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ top.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
         this.native = this.value = native;
 
@@ -249,7 +249,7 @@ class UUID {
                 case 'object':
                 case 'symbol':
                 default:
-                    return this.native;
+                    return native;
             }
         };
 
@@ -277,6 +277,24 @@ class UUID {
         return p_.map(P => P.slice(-1)[0]).join('');
     }
 
+    // https://stackoverflow.com/a/52171480/4211612
+    static cyrb53(string, seed = 0) {
+        let H1 = 0xDEADBEEF ^ seed,
+            H2 = 0x41C6CE57 ^ seed;
+
+        for(let i = 0, code; i < string.length; ++i) {
+            code = string.charCodeAt(i);
+
+            H1 = Math.imul(H1 ^ code, 2654435761);
+            H2 = Math.imul(H2 ^ code, 1597334677);
+        }
+
+        H1 = Math.imul(H1 ^ (H1 >>> 16), 2246822507) ^ Math.imul(H2 ^ (H2 >>> 13), 3266489909);
+        H2 = Math.imul(H2 ^ (H2 >>> 16), 2246822507) ^ Math.imul(H1 ^ (H1 >>> 13), 3266489909);
+
+        return (4294967296 * (2097151 & H2) + (H1 >>> 0)).toString(16);
+    }
+
     static from(key = '', traceable = false) {
         key = JSON.stringify(
             (null
@@ -286,11 +304,19 @@ class UUID {
             || null
         );
 
-        let PRIVATE_KEY = (traceable? '': `private-key=${ UUID.#BWT_SEED }`),
+        let PRIVATE_KEY = (traceable? '': `private-key="${ UUID.#BWT_SEED }"`),
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+            PUBLIC_KEY = `public-key="${ Manifest.version }"`;
 
-        let hash = Uint8Array.from(btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
+        let hash = Uint8Array.from(
+                btoa(
+                    [PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY]
+                        .map(string => UUID.cyrb53(string, parseInt(UUID.#BWT_SEED, 16) * +!traceable))
+                        .join('~')
+                )
+                    .split('')
+                    .map(character => character.charCodeAt(0))
+            ),
             l = hash.length,
             i = 0;
 
@@ -314,13 +340,35 @@ class UUID {
                 case 'object':
                 case 'symbol':
                 default:
-                    return native;
+                    return this.native;
             }
         };
 
         this.toString = () => this.native;
 
         return this;
+    }
+
+    static async ergo(key = '') {
+        key = (key ?? '').toString();
+
+        // Privatize (pre-hash) the message a bit
+        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
+            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
+            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+
+        key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>'));
+
+        // Digest the message
+        // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+        const UTF8String = new TextEncoder().encode(key);                     // encode as (utf-8) Uint8Array
+        const hashBuffer = await crypto.subtle.digest('SHA-256', UTF8String); // hash the message
+        const hashString =
+            [...new Uint8Array(hashBuffer)]                                   // convert buffer to byte array
+                .map(B => B.toString(16).padStart(2, '0')).join('')           // convert bytes to hex string
+                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');        // format the string into a large UUID string
+
+        return hashString;
     }
 }
 
@@ -1355,13 +1403,11 @@ let FETCHED_DATA = { wasFetched: false };
         }
 
         DisplayContextID: {
-            let numbers = properties.context.id.split('-').map(n => parseInt(n, 16));
-
-            let flop = false,
+            let numbers = properties.context.id.split('-').map(n => parseInt(n, 16)),
                 value = 0;
 
             for(let number of numbers)
-                value += flop? -number: number;
+                value += number;
 
             properties.context.id = Math.abs(value).toString(16)
                 .slice(0, 12)

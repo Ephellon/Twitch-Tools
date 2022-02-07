@@ -740,8 +740,8 @@ class Card {
             f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0',
                 {
                     'data-a-target': "viewer-card-close-button",
-                    onmouseup: event => {
-                        $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
+                    onmouseup: ({ button = -1 }) => {
+                        !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                     },
                 },
                 f('div.tt-inline-flex.viewer-card-drag-cancel', {},
@@ -826,6 +826,78 @@ class Card {
     }
 }
 
+// Creates a Twitch-style context menu
+    // new ContextMenu({ options:array[, fineTuning:object] }) -> Element~ContextMenu
+    // options = { text:string, icon:string, shortcut:string }
+class ContextMenu {
+    static #RootCloseOnComplete = $('#root').addEventListener('mouseup', event => {
+        let { path, button = -1 } = event,
+            menu = $('.tt-contextmenu');
+
+        if(defined(menu))
+            menu.remove();
+    });
+
+    constructor({ inherit = {}, options = [], fineTuning = {} }) {
+        fineTuning.top ??= '5rem';
+        fineTuning.left ??= '5rem';
+        fineTuning.cursor ??= 'auto';
+
+        let styling = [];
+
+        for(let key in fineTuning) {
+            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)(\D+)/).filter(string => string.length);
+
+            if(!defined(value))
+                continue;
+
+            if(parseFloat(value) > -Infinity)
+                unit ??= "px";
+            else
+                unit ??= "";
+
+            styling.push(`${key}:${value}${unit}`);
+        }
+
+        styling = styling.join(';');
+
+        let f = furnish;
+
+        let container = $('#root'),
+            menu = f(`div.tt-contextmenu.tt-absolute`, { style: styling }),
+            uuid = UUID.from(options.map(Object.values).join('\n')).value;
+
+        menu.id = uuid;
+
+        // Remove current menus. Only one allowed at a time
+        $('.tt-contextmenu', true).forEach(menu => menu.remove());
+
+        menu.append(
+            f('div.tt-border-radius-large', { style: 'background:var(--color-background-alt-2); position:absolute; z-index:9999', direction: 'top-right' },
+                // The options...
+                f('div', { style: 'display:inline-block; min-width:16rem; max-width:48rem; width:max-content', role: 'dialog' },
+                    f('div', { style: ' padding: 0.25rem;' },
+                        ...options.map(({ text = "", icon = "", shortcut = "", action = () => {} }) => {
+                            if(icon?.length)
+                                icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: 16, width: 16, style: 'vertical-align:-3px' }) });
+                            if(text?.length)
+                                text = f('div', { style: 'display:block; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;', innerHTML: text });
+                            if(shortcut?.length)
+                                shortcut = f('pre', { style: 'display:inline-block; font-family:monospace!important; float:right; margin-right:1rem' }, f('code', {}, GetMacro(shortcut)));
+
+                            if(icon || text || shortcut)
+                                return f('button.tt-context-menu-option', { onmouseup: event => action({ ...event, inheritance: inherit }), style: 'border-radius:0.6rem; display:inline-block; padding:0.5rem 0 0.5rem 3rem; width:-webkit-fill-available' }, icon, shortcut, text);
+                            return f('hr', { style: 'border-top:1px solid var(--color-border-button-focus); margin: 0.25rem 0;' });
+                        })
+                    )
+                )
+            )
+        );
+
+        container.append(menu);
+    }
+}
+
 // Search Twitch for channels/categories
     // new Search([ID:string|number[, type:string]]) -> Promise~Object
 /** Returns a promised Object ->
@@ -852,6 +924,7 @@ class Search {
     );
 
     static #cache = new Map;
+    static cacheLeaseTime = 300_000;
 
     constructor(ID = null, type = 'channel', as = null) {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
@@ -916,7 +989,7 @@ class Search {
         if(type == 'channel')
             channelName = ID;
 
-        let searchID = UUID.from({ ID, type, as }).value,
+        let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value,
             searchResults;
 
         if(Search.#cache.has(searchID))
@@ -2309,6 +2382,8 @@ try {
 
     // Add message listener
     // Jumping frames...
+    REMARK(`Jumping frame data...`);
+
     top.addEventListener('message', async event => {
         if(!/\b\.?twitch\.tv\b/i.test(event.origin))
             return /* Not meant for us... */;
@@ -2431,7 +2506,175 @@ try {
                     } break;
                 }
             } break;
+
+            case 'open-options-page': {
+                Runtime.sendMessage({ action: 'OPEN_OPTIONS_PAGE' });
+            } break;
         }
+    });
+
+    // Add custom context menus
+    REMARK(`Adding context menus...`);
+
+    /* Normal - Page body
+     * Reload (Ctrl+R)
+     * ----
+     * Save as... (Ctrl+S)
+     * Print... (Ctrl+P)
+     */
+    $('main').addEventListener('contextmenu', event => {
+        if(!event.isTrusted)
+            return;
+        event.preventDefault(true);
+        // event.stopPropagation();
+
+        let extras = [];
+        let { x, y } = event,
+            { availHeight, availWidth } = screen,
+            { innerHeight, innerWidth } = window;
+
+        // Selections
+        let selectionText = getSelection(),
+            { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
+
+        selectionText = (selectionText + '').trim();
+
+        if(selectionText?.length) {
+            let email = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/i
+            if(email.test(selectionText)) {
+                let address = RegExp['$&'];
+
+                extras.push({
+                    text: `E-mail <strong>${ address }</strong>`,
+                    icon: 'chat',
+                    action: event => top.open(`mailto:${ address }`, '_blank'),
+                },{});
+            }
+
+            let phone = /(?<country>[\+]?\d{1,3})?[\.\-\s\(]{0,2}(?<area>[2-9]\d{2})[\)\.\-\s]{0,2}(?<office>[2-9][02-9]1|[2-9]1[02-9]|[2-9][02-9][02-9])[\.\-\s]?(?<line>\d{4})/;
+            if(phone.test(selectionText)) {
+                let number = RegExp['$&'];
+
+                extras.push({
+                    text: `Dial <strong>${ number }</strong>`,
+                    icon: 'chat',
+                    action: event => top.open(`tel:${ number.replace(/[^\d\+]/g, '') }`, '_blank'),
+                },{});
+            }
+
+            let website = /(https?:\/\/)?([^\/?#]+?\.\w{2,}\/)([^?#]*)(\?[^#]*)?(#.*)?/i;
+            if(website.test(selectionText)) {
+                let { protocol, host, pathname, search, hash } = parseURL(selectionText),
+                    url = [(protocol || 'https:') + '//', host, pathname, search, hash].join('');
+
+                extras.push({
+                    text: `Open link in new tab`,
+                    action: event => top.open(url, '_blank'),
+                },{
+                    text: `Copy link address`,
+                    icon: 'bolt',
+                    action: event => navigator.clipboard.writeText(url),
+                });
+            } else {
+                extras.push({
+                    text: `Search Twitch for <strong>${ selectionText }</strong>`,
+                    icon: 'twitch',
+                    action: event => top.open(`https://www.twitch.tv/search?term=${ selectionText.split(/\s+/).join(' ') }`, '_self'),
+                },{
+                    text: `Search Google for <strong>${ selectionText }</strong>`,
+                    icon: 'search',
+                    action: event => top.open(`https://www.google.com/search?q=${ selectionText.split(/\s+/).join('+') }`, '_blank'),
+                });
+            }
+        }
+
+        // Anchors
+        let hasAnchor = defined(event.target.closest('a'));
+
+        if(hasAnchor)
+            extras.push({
+                text: `Open link in new tab`,
+                action: event => top.open(event.inheritance.target.closest('a').href, '_blank'),
+            },{
+                text: `Copy link address`,
+                icon: 'bolt',
+                action: event => navigator.clipboard.writeText(event.inheritance.target.closest('a').href),
+            });
+
+        // Video
+        let isVideo = defined(event.target.closest('[data-a-target="video-player"i]'));
+
+        if(isVideo)
+            extras.push({
+                text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.name.replace(/_/g, ' ').replace(/  /g, ' - '),
+                shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X)? 'alt+shift+x': ''),
+                action: event => $('video', true).pop().copyFrame(),
+            });
+
+        // ---- ---- ---- ---- //
+        if(extras.length)
+            extras.splice(0, 0, {});
+
+        new ContextMenu({
+            inherit: event,
+
+            options: [{
+                text: `Reload page`,
+                icon: 'rerun',
+                shortcut: 'ctrl+r',
+                action: event => top.location.reload(),
+            },{
+                // break
+            },{
+                text: `Save page (HTML)`,
+                icon: 'download',
+                shortcut: 'ctrl+s',
+                action: async event => {
+                    let DOM = document.cloneNode(true);
+                    let type = DOM.contentType,
+                        name = DOM.title;
+
+                    let scripts = [...DOM.scripts].filter(script => script.src?.length);
+                    for(let script of scripts)
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(script.src)}`, { mode: 'cors' })
+                            .then(response => response.text())
+                            .then(javascript => {
+                                script.removeAttribute('src');
+                                script.innerText = javascript;
+                            });
+
+                    let styles = [...DOM.styleSheets].filter(style => style.href?.length);
+                    for(let style of styles)
+                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(style.href)}`, { mode: 'cors' })
+                            .then(response => response.text())
+                            .then(css => {
+                                style.removeAttribute('href');
+                                style.innerText = css;
+                            });
+
+                    for(let element of $('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', true, DOM))
+                        element.remove();
+
+                    let html = `<!DOCTYPE ${ DOM.doctype.name }>\n` + DOM.documentElement.outerHTML,
+                        blob = new Blob([html], { type }),
+                        link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.html`, hidden: true }, name + (new Date).toJSON());
+
+                    document.head.append(link);
+                    link.click();
+                },
+            },{
+                text: `Print...`,
+                icon: 'export',
+                shortcut: 'ctrl+p',
+                action: event => top.print(),
+            }, ...extras],
+
+            fineTuning: { top: (y > innerHeight * (0.85 - extras.length * 0.05)? innerHeight * 0.75: y), left: (x > innerWidth * (0.85 - extras.length * 0.00)? innerWidth * 0.75: x) },
+        });
+    },{
+        capture: false,
+        once: false,
+        passive: false,
     });
 } catch(error) {
     // Most likely in a child frame...
@@ -3886,8 +4129,8 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.auto_accept_mature)) {
         RegisterJob('auto_accept_mature');
 
-        $('[class*="info"i] [href] [class*="title"i]').addEventListener('mousedown', async({ isTrusted }) => {
-            (await awaitOn(() => $('.home')))?.setAttribute?.('user-intended', isTrusted);
+        $('[class*="info"i] [href] [class*="title"i]').addEventListener('mousedown', async({ isTrusted, button = -1 }) => {
+            !button && (await awaitOn(() => $('.home')))?.setAttribute?.('user-intended', isTrusted);
         });
     }
 
@@ -4224,8 +4467,8 @@ let Initialize = async(START_OVER = false) => {
 
         // Alt + A | Opt + A
         if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Away_Mode({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(altKey && key == 'a')
+            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+                if(!(ctrlKey || metaKey || shiftKey) && altKey && key == 'a')
                     $('#away-mode')?.click?.();
             });
 
@@ -4897,25 +5140,27 @@ let Initialize = async(START_OVER = false) => {
                 // TODO: Add more colors &/ better detection
                 let colors = {
                     // Extremes
-                    light: ({ S, L }) => ((L > 70 && L <= 90) || (S <= 15)),
-                    white: ({ S, L }) => (S > 90) && (L > 90),
+                    light: ({ S, L }) => (L > 70) || (S <= 15),
+                    white: ({ S, L }) => (S > 90 || S == 0) && (L > 90),
+
                     dark: ({ S, L }) => (L <= 25),
-                    black: ({ S, L }) => (S > 90 || S < 10) && (L < 10),
-                    grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) > .9) || (S <= 10),
+                    black: ({ S, L }) => (S > 90 || S < 35) && (L <= 15),
+
+                    grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) - (B > G? 0.05: G > R? 0.025: 0) > .9) || (S <= 5),
 
                     // Reds
-                    pink: ({ H }) => H > 285 && H <= 330,
-                    red: ({ H }) => H > 330 || H <= 30,
-                    orange: ({ H, S, L }) => (colors.red({ H }) && S < 90 && L < 50) || (H > 30 && H <= 45),
-                    brown: ({ H, S, L }) => (colors.orange({ H }) || colors.red({ H })) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
-                    yellow: ({ H }) => H > 45 && H <= 75,
+                    red: ({ H }) => H > 345 || H <= 10,
+                    pink: ({ H, S, L }) => ((H > 290 && H <= 345) || (colors.light({ S, L }) && colors.red({ H }))),
+                    orange: ({ H, S, L }) => (H > 10 && H <= 45) || (colors.red({ H }) && colors.yellow({ H })),
+                    yellow: ({ H }) => H > 45 && H <= 60,
+                    brown: ({ H, S, L }) => (colors.yellow({ H }) || colors.orange({ H }) || colors.red({ H })) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
 
                     // Greens
-                    green: ({ H }) => H > 75 && H <= 150,
+                    green: ({ H }) => H > 60 && H <= 170,
 
                     // Blues
-                    blue: ({ H }) => H > 150 && H <= 240,
-                    purple: ({ H }) => H > 240 && H <= 285,
+                    blue: ({ H }) => H > 170 && H <= 260,
+                    purple: ({ H }) => H > 260 && H <= 290,
                 };
 
                 let name = [];
@@ -4942,9 +5187,26 @@ let Initialize = async(START_OVER = false) => {
                         )
                     })
                     .join(' ')
+
                     .replace('light red', 'pink')
+                    .replace('dark pink', 'red')
+                    .replace('red orange', 'orange')
+                    .replace('light yellow', 'yellow')
+
                     .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
                     .replace(/(dark|light)\s+(black|white)/i, '$1')
+                    .replace(/(\w+)\s+(\w+)$/i, ($0, $1, $2, $$, $_) => {
+                        if([$1, $2].contains('light', 'dark'))
+                            return $_;
+
+                        let suffix = $1.slice(-1);
+
+                        return $1.slice(0, -1) + ({
+                            d: 'dd',
+                            e: '',
+                        }[suffix] ?? suffix) + 'ish-' + $2;
+                    })
+
                     .replace(/light$/i, 'white')
                     .replace(/dark$/i, 'black');
             }
@@ -5838,7 +6100,10 @@ let Initialize = async(START_OVER = false) => {
             f('div', { 'tt-action': 'live-reminders', 'for': reminderName, 'remind': hasReminder, 'action-origin': 'foreign', style: `animation:1s fade-in 1;` },
                 f('button', {
                     onmouseup: async event => {
-                        let { currentTarget } = event;
+                        let { currentTarget, button = -1 } = event;
+
+                        if(!!button)
+                            return /* Not the primary button */;
 
                         LoadCache('LiveReminders', async({ LiveReminders }) => {
                             LiveReminders = JSON.parse(LiveReminders || '{}');
@@ -5947,7 +6212,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
             JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 120_000);
-        }, 300_000);
+        }, 120_000);
 
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
@@ -6626,17 +6891,14 @@ let Initialize = async(START_OVER = false) => {
 
             for(let regexp of TIME_ZONE__REGEXPS)
                 while(regexp.test(titleText)) {
-                    if(TIME_ZONE__TEXT_MATCHES.contains(titleText))
-                        continue top;
-                    TIME_ZONE__TEXT_MATCHES.push(titleText);
-
                     let { hour, minute = ':00', offset = '', meridiem = '', timezone = '' } = regexp.exec(titleText).groups;
                     let now = new Date,
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
                         day = now.getDate();
 
-                    hour = parseInt(hour) + (/^p/i.test(meridiem)? 12: 0);
+                    hour = parseInt(hour);
+                    hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
 
                     if(timezone.length) {
                         timezone = timezone.toUpperCase();
@@ -6657,12 +6919,15 @@ let Initialize = async(START_OVER = false) => {
 
                     newTime = `${H}:${M}`;
 
-                    title.innerText = convertWordsToTimes(title.innerText)
+                    title.innerText = titleText = convertWordsToTimes(title.innerText)
                         .replace(regexp, `{{?=${ btoa(newTime) }}}`);
                 }
 
-            title.innerHTML = title.innerHTML
-                .replace(/\{\{\?=(.+?)\}\}/g, ($0, $1, $$, $_) => `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">${ atob($1).split('').join('&zwj;') }</span>`);
+            let regexp = /\{\{\?=(.+?)\}\}/g;
+            if(regexp.test(title.innerHTML)) {
+                title.innerHTML = title.innerHTML
+                    .replace(regexp, ($0, $1, $$, $_) => `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">${ atob($1).split('').join('&zwj;') }</span>`);
+            }
         }
 
         TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
@@ -7770,7 +8035,7 @@ let Initialize = async(START_OVER = false) => {
                         })
                     );
 
-                    $('[data-a-player-state]')?.addEventListener?.('mouseup', event => window.location.reload());
+                    $('[data-a-player-state]')?.addEventListener?.('mouseup', ({ button = -1 }) => !button && window.location.reload());
                     $('video', false, container).setAttribute('style', `display:none`);
 
                     new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
@@ -7979,7 +8244,10 @@ let Initialize = async(START_OVER = false) => {
     setTimeout(() => {
         $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
-                let { currentTarget } = event;
+                let { currentTarget, button = -1 } = event;
+
+                if(!!button)
+                    return /* Not the primary button */;
 
                 let url = parseURL(currentTarget.href),
                     UserIntent = url.pathname.replace('/', '');
@@ -8055,7 +8323,7 @@ let Initialize = async(START_OVER = false) => {
         // Alt + Shift + X | Opt + Shift + X
         if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(altKey && shiftKey && key == 'X')
+                if(!(ctrlKey || metaKey) && altKey && shiftKey && key == 'X')
                     $('video', true).pop().copyFrame()
                         .then(copied => alert.timed('Screenshot saved to clipboard!', 5_000))
                         .catch(error => alert.timed(`Failed to take screenshot: ${ error }`, 7_000));
@@ -8209,14 +8477,14 @@ setInterval(() => {
                     true
                 )
             // Watch Time
-            &&  parseBool(
-                    parseBool(Settings.watch_time_placement)?
-                        (false
-                            || defined($('#tt-watch-time'))
-                            || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
-                        ):
-                    true
-                )
+            // &&  parseBool(
+            //         parseBool(Settings.watch_time_placement)?
+            //             (false
+            //                 || defined($('#tt-watch-time'))
+            //                 || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
+            //             ):
+            //         true
+            //     )
             // Channel Points Receipt
             &&  parseBool(
                     parseBool(Settings.points_receipt_placement)?
@@ -8527,12 +8795,12 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
             // Observe the volume changes
             VolumeObserver: {
-                $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget }) => {
-                    $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
+                $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget, button = -1 }) => {
+                    !button && $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
                 });
 
-                $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget }) => {
-                    $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
+                $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget, button = -1 }) => {
+                    !button && $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
                 });
 
                 let target = $('[data-a-target^="player-volume"i] + * [style]'),
@@ -8871,7 +9139,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                             let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
 
                             alert
-                                .timed(`Please visit the <a href="${ Runtime.getURL('settings.html') }" target="_blank">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
+                                .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
                                 .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
                         }, 15_000);
                     } break;

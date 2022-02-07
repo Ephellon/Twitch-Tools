@@ -68,6 +68,24 @@ class UUID {
         return p_.map(P => P.slice(-1)[0]).join('');
     }
 
+    // https://stackoverflow.com/a/52171480/4211612
+    static cyrb53(string, seed = 0) {
+        let H1 = 0xDEADBEEF ^ seed,
+            H2 = 0x41C6CE57 ^ seed;
+
+        for(let i = 0, code; i < string.length; ++i) {
+            code = string.charCodeAt(i);
+
+            H1 = Math.imul(H1 ^ code, 2654435761);
+            H2 = Math.imul(H2 ^ code, 1597334677);
+        }
+
+        H1 = Math.imul(H1 ^ (H1 >>> 16), 2246822507) ^ Math.imul(H2 ^ (H2 >>> 13), 3266489909);
+        H2 = Math.imul(H2 ^ (H2 >>> 16), 2246822507) ^ Math.imul(H1 ^ (H1 >>> 13), 3266489909);
+
+        return (4294967296 * (2097151 & H2) + (H1 >>> 0)).toString(16);
+    }
+
     static from(key = '') {
         key = JSON.stringify(
             (null
@@ -77,11 +95,19 @@ class UUID {
             || null
         );
 
-        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
+        let PRIVATE_KEY = `private-key="${ UUID.#BWT_SEED }"`,
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key=${ Manifest.version }`;
+            PUBLIC_KEY = `public-key="${ Manifest.version }"`;
 
-        let hash = Uint8Array.from(btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>')).split('').map(character => character.charCodeAt(0))),
+        let hash = Uint8Array.from(
+                btoa(
+                    [PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY]
+                        .map(string => UUID.cyrb53(string, parseInt(UUID.#BWT_SEED, 16)))
+                        .join('~')
+                )
+                    .split('')
+                    .map(character => character.charCodeAt(0))
+            ),
             l = hash.length,
             i = 0;
 
