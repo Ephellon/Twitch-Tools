@@ -33,6 +33,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.25)
+- Fixed issue with Stay Live
+
 > [`4.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.24)
 - Fixed Settings link for initial setup
 - Minor color wording adjustment

@@ -3035,7 +3035,7 @@ let Initialize = async(START_OVER = false) => {
         // GetNextStreamer() -> Object#Channel
     function GetNextStreamer() {
         // Next channel in "Up Next"
-        if(!parseBool(Settings.first_in_line_none) && !parseBool(Settings.up_next__one_instance) && ALL_FIRST_IN_LINE_JOBS?.length)
+        if(!parseBool(Settings.first_in_line_none) && UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS?.length)
             return GetNextStreamer.cachedStreamer = (null
                 ?? ALL_CHANNELS.find(channel => channel?.href?.contains?.(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
                 ?? {
@@ -3166,17 +3166,15 @@ let Initialize = async(START_OVER = false) => {
 
             // There isn't a channel that fits the criteria
             if(parseBool(Settings.stay_live) && !defined(GetNextStreamer?.cachedStreamer) && online?.length) {
-                GetNextStreamer.cachedStreamer ??= randomChannel;
-
                 let preference = Settings.next_channel_preference,
-                    channel = GetNextStreamer.cachedStreamer,
-                    { name } = channel ?? (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1)[round(random() * online.length)]);
+                    channel = (GetNextStreamer.cachedStreamer ??= (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1)[round(random() * online.length)])),
+                    { name } = channel;
 
                 WARN(`No channel fits the "${ preference }" criteria. Assuming a random channel is desired:`, channel);
             }
         });
 
-        return GetNextStreamer.cachedStreamer;
+        return awaitOn(() => GetNextStreamer.cachedStreamer);
     }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
@@ -3497,7 +3495,7 @@ let Initialize = async(START_OVER = false) => {
         get vods() {
             let { name, sole } = STREAMER;
 
-            return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos`)}`, { mode: 'cors' })
+            return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)}`, { mode: 'cors' })
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                 .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
@@ -3547,7 +3545,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Handlers: on-raid | on-host
     STREAMER.onraid = STREAMER.onhost = async({ hosting = false, raiding = false, raided = false }) => {
-        let next = GetNextStreamer();
+        let next = await GetNextStreamer();
 
         LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
@@ -4481,7 +4479,7 @@ let Initialize = async(START_OVER = false) => {
         if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
             // If the quality controls have failed to load for 1min, leave the page
             if(!defined(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
-                let scapeGoat = GetNextStreamer();
+                let scapeGoat = await GetNextStreamer();
 
                 WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`).toNativeStack();
 
@@ -6348,7 +6346,7 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('prevent_hosting');
 
         let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]')),
-            next = GetNextStreamer(),
+            next = await GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.textContent),
             host = (STREAMER.name ?? ''),
             [guest] = host_banner.filter(name => !RegExp(name, 'i').test(host));
@@ -6417,7 +6415,7 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters,
             raided = data.referrer === 'raid',
             raiding = defined($('[data-test-selector="raid-banner"i]')),
-            next = GetNextStreamer(),
+            next = await GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.textContent),
             from = (raided? null: STREAMER.name),
             [to] = (raided? [STREAMER.name]: raid_banner.filter(name => !RegExp(name, 'i').test(from)));
@@ -6559,7 +6557,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stay_live = async() => {
         START__STOP_WATCH('stay_live');
 
-        let next = GetNextStreamer(),
+        let next = await GetNextStreamer(),
             { pathname } = window.location;
 
         try {
@@ -6574,13 +6572,12 @@ let Initialize = async(START_OVER = false) => {
         }
 
         NotLive:
-        if(
-            parseBool(Settings.stay_live__ignore_channel_reruns)?
-                (true
-                    && STREAMER.live
-                    && STREAMER.redo
-                ):
-            !STREAMER.live
+        if(false
+            || !STREAMER.live
+            || (true
+                && parseBool(Settings.stay_live__ignore_channel_reruns)
+                && STREAMER.redo
+            )
         ) {
             if(RESERVED_TWITCH_PATHNAMES.test(pathname))
                 break NotLive;
@@ -8207,7 +8204,7 @@ let Initialize = async(START_OVER = false) => {
         errorMessage = errorMessage.textContent;
 
         if(/subscribe|mature/i.test(errorMessage)) {
-            let next = GetNextStreamer();
+            let next = await GetNextStreamer();
 
             // Subscriber only, etc.
             if(defined(next))
@@ -8288,7 +8285,7 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('recover_pages');
 
         let message = error.textContent,
-            next = GetNextStreamer();
+            next = await GetNextStreamer();
 
         ERROR(message);
 
@@ -8477,14 +8474,14 @@ setInterval(() => {
                     true
                 )
             // Watch Time
-            // &&  parseBool(
-            //         parseBool(Settings.watch_time_placement)?
-            //             (false
-            //                 || defined($('#tt-watch-time'))
-            //                 || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
-            //             ):
-            //         true
-            //     )
+            &&  parseBool(
+                    parseBool(Settings.watch_time_placement)?
+                        (false
+                            || defined($('#tt-watch-time'))
+                            || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
+                        ):
+                    true
+                )
             // Channel Points Receipt
             &&  parseBool(
                     parseBool(Settings.points_receipt_placement)?
