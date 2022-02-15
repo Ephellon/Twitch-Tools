@@ -118,6 +118,11 @@
 			"Adds a", "reminder", "button in the", "about me", "panel"
 		],
 
+		"auto-follow:keep-live-reminders": [
+			"Keep Reminders",
+			"When enabled", null, "Reminders will not be automatically removed"
+		],
+
 	"kill-extensions": [
 		"Kill Extensions",
 		"Do not allow Twitch™ extensions to display over the stream"

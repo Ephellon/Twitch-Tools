@@ -17,7 +17,7 @@
 5. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
 6. Up Next sometimes goes in an irregular order
-    * Not sure why
+    * Not sure why; tentative fix `4.26`
     * It might also not list jobs immediately
 7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
@@ -33,6 +33,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.26)
+- Added Persistent Live Reminders option
+- Fixed translation errors
+- Added Tooltip functionality to Time Zones
+- Fixed Up Next re-sorting
+- Fixed Context Menu positioning
+- Adjusted Channel Rank algorithm
+- Fixed issue with Time Zones
+
 > [`4.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.25)
 - Fixed issue with Stay Live
 

@@ -66,6 +66,7 @@ let // These are option names. Anything else will be removed
             'auto_follow_time_minutes',
         'auto_follow_all',
         'live_reminders',
+        'keep_live_reminders',
         // Keep Watching
         'stay_live',
             'stay_live__ignore_channel_reruns',

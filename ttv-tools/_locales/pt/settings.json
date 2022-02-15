@@ -81,7 +81,7 @@
             "sábado"
         ],
         "footer": [
-            "Essa extensão não é de forma alguma afiliada, nem endossada pela Amazon™, Twitch™, NightDev (LLC), parceiros, afiliadas ou subsidiárias de qualquer parte"
+            "Essa extensão não é de forma alguma afiliada, nem endossada pela Amazon™, Twitch™, NightDev (LLC), parceiros, afiliadas ou subsidiárias de nenhuma das partes"
         ]
     },
     "header:automation": [
@@ -213,9 +213,15 @@
         "sobre mim",
         null
     ],
+    "auto-follow:keep-live-reminders": [
+        "Mantenha lembretes",
+        "Quando ativado",
+        null,
+        "Lembretes não serão removidos automaticamente"
+    ],
     "kill-extensions": [
         "Kill Extensions",
-        "Não permita que extensões ™ Twitch exibam sobre o fluxo"
+        "Não permita que as extensões do Twitch™ exessem sobre o fluxo"
     ],
     "next-channel-preference": [
         "Next Channel",
@@ -663,7 +669,7 @@
         "Permitir erros",
         "Exibir",
         null,
-        "($)mensagens"
+        "mensagens"
     ],
     "@console.remark": [
         "Permitir comentários",
@@ -739,9 +745,10 @@
     ],
     "@@convert-emotes": [
         "Converta emotes",
-        "Quando apresentado com emotes ™ Twitch, colete-os para uso (sem exigir uma assinatura)",
+        "Quando apresentado com emotes do Twitch™, colete-os para uso (sem exigir uma assinatura)",
         "Isso só funciona para o fluxo atual que você está visualizando",
-        "Isso não",
+        "Isso",
+        "não",
         "salvar/desbloquear o emote"
     ],
     "@@greedy-raiding": [
@@ -766,7 +773,7 @@
     ],
     "@@soft-unban:options:prevent-clips": [
         "Prevenir clipes",
-        "Ocultar clipes ™ Twitch"
+        "Ocultar clipes do Twitch™"
     ],
     "$": "[[ END OF FILE ]]"
 }

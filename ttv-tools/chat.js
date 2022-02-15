@@ -38,10 +38,10 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     // Fill STREAMER
     let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
-        sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
+        sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.src?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
     USERNAME ??= Search?.cookies?.name;
-    STREAMER ??= ({ name: (name ?? path), sole });
+    STREAMER ??= ({ name: (name ?? path.slice(1)), sole });
 
     // Fill GLOBAL_EVENT_LISTENERS
     GLOBAL_EVENT_LISTENERS ??= {};
@@ -195,6 +195,10 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Make the tooltip easier to manage
         button.tooltip.classList.add('img-container');
+
+        // Clean up leftovers from Twitch animations
+        let junk = $(`#tt-auto-claim-bonuses ${ '> :last-child'.repeat(3) }`);
+        junk && (junk.innerHTML = '');
 
         JUDGE__STOP_WATCH('auto_claim_bonuses');
     };
@@ -393,8 +397,8 @@ let Chat__Initialize = async(START_OVER = false) => {
         LOAD_BTTV_EMOTES = async(keyword, provider, ignoreCap = false) => {
             // Load some emotes (max 100 at a time)
                 // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
-                    // emote.code -> emote name
-                    // emote.id -> emote ID (src)
+                    // emote.code → emote name
+                    // emote.id → emote ID (src)
 
             // Load emotes from a certain user
             if(defined(provider))

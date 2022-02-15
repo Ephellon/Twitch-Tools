@@ -159,7 +159,7 @@
         "First in Line / Up Next",
         "Wenn ein Kanal live geht, gehe automatisch zu seinem Stream",
         "Up Next",
-        "fügt Twitch einen Warteschlangendienst hinzu™"
+        "fügt Twitch™ einen Warteschlangendienst hinzu"
     ],
     "first-in-line:disabled": [
         "Deaktiviert",
@@ -213,9 +213,15 @@
         "Über mich",
         "hinzu"
     ],
+    "auto-follow:keep-live-reminders": [
+        "Erinnerungen beibehalten",
+        "Wenn aktiviert",
+        null,
+        "Erinnerungen werden nicht automatisch entfernt"
+    ],
     "kill-extensions": [
         "Kill-Erweiterungen",
-        "Erlauben Sie nicht, dass Twitch™-Erweiterungen über den Stream angezeigt werden"
+        "Erlauben Sie nicht, dass Twitch-Erweiterungen™ über den Stream angezeigt werden"
     ],
     "next-channel-preference": [
         "Nächster Kanal",
@@ -267,8 +273,9 @@
         "Nächsten Kanal"
     ],
     "stay-live:vod-is-offline": [
-        "($)VOD",
-        "Streams als Offline-Streams behandeln"
+        null,
+        "VOD-Streams",
+        "als Offline-Streams behandeln"
     ],
     "time-zones": [
         "Zeitzonen",
@@ -390,7 +397,7 @@
     ],
     "native-reply": [
         "Native Reply",
-        "Versuchen Sie, native Twitch™ Antworten auf allen Kanälen anzuzeigen"
+        "Versuch, native Twitch-Antworten™ auf allen Kanälen anzuzeigen"
     ],
     "notification-sounds": [
         "Benachrichtigungstöne",
@@ -511,13 +518,13 @@
         "Leere Anzeigen ausblenden",
         "Wenn Twitch™ eine",
         "leere Anzeige",
-        "vorübergehend ausblenden"
+        "anzeigt, blenden Sie sie vorübergehend aus"
     ],
     "placement:points-receipt": [
         "Punkteeingang & Rang",
         "Wo soll der Text",
         "Punkteeingang",
-        "und",
+        "&",
         "Punkterangliste",
         "angezeigt werden?"
     ],
@@ -688,7 +695,7 @@
     ],
     "@fine-details": [
         "Fine Details verwenden",
-        "Erlaube der Erweiterung, Twitch™ API-Daten zu verwenden, um deine Erfahrung zu verbessern",
+        "Erlaube der Erweiterung, Twitch-API-Daten™ zu verwenden, um deine Erfahrung zu verbessern",
         "Dadurch werden keine Daten gesammelt. Es verwendet die Daten, die Twitch™ gesammelt hat"
     ],
     "@default": [
@@ -739,11 +746,11 @@
     ],
     "@@convert-emotes": [
         "Emotes konvertieren",
-        "Wenn sie mit Twitch™ Emotes angezeigt werden, sammeln Sie sie zur Verwendung (ohne dass ein Abonnement erforderlich ist)",
-        "Dies funktioniert nur für den aktuellen Stream, den Du gerade ansiehst",
-        "Dies tut",
+        "Wenn emotes mit Twitch-Emotes™ präsentiert werden, sammle sie zur Verwendung (ohne dass ein Abonnement erforderlich ist)",
+        "Dies funktioniert nur für den aktuellen Stream, den du gerade ansiehst",
+        "Dies bewirkt",
         "nicht",
-        "speichert/entsperrt das Emote"
+        "das Emote speichern/entsperren"
     ],
     "@@greedy-raiding": [
         "Greedy Raiding",
@@ -767,7 +774,7 @@
     ],
     "@@soft-unban:options:prevent-clips": [
         "Clips verhindern",
-        "Twitch ausblenden™ Clips"
+        "Twitch-Clips™ ausblenden"
     ],
     "$": "[[ END OF FILE ]]"
 }

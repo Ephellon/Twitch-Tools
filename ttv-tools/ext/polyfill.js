@@ -1359,11 +1359,11 @@ function GetMacro(keys = '', OS = null) {
         .map(key => {
             switch(OS.slice(0, 7)) {
                 /** MacOS Keys | Order of Precedence -> Ctrl Opt Shift Cmd [Key(s)]
-                 * Command (Cmd)        ⌘
-                 * Option/Alt (Opt/Alt) ⌥
-                 * Caps Lock            ⇪
                  * Control (Ctrl)       ^
+                 * Option/Alt (Opt/Alt) ⌥
                  * Shift                ⇧
+                 * Command (Cmd)        ⌘
+                 * Caps Lock            ⇪
                  */
                 case 'Mac': {
                     key = (

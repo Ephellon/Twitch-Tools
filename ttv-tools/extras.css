@@ -251,10 +251,10 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-alert-container, .tt-confirm-container, .tt-prompt-container {
-    background: var(--color-background-base);
+    background: linear-gradient(45deg, var(--user-accent-color), var(--user-complement-color));
     border-radius: 0.3em;
 
-    padding: 1em;
+    padding: 0.15em;
 
     position: absolute;
     left: 50%;
@@ -264,6 +264,11 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     min-width: 25vw;
     max-width: 35vw;
     width: fit-content;
+}
+
+:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > * {
+    background: var(--color-background-base);
+    padding: 1em;
 }
 
 .tt-alert-header, .tt-confirm-header, .tt-prompt-header {
@@ -288,7 +293,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     justify-content: center;
 
     background-color: var(--color-twitch-purple);
-    border-radius: 3px;
+    border-radius: 0.2em;
     color: var(--color-white);
     cursor: pointer;
     font-family: Roobert;
@@ -329,7 +334,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     background-clip: padding-box;
     background-color: var(--color-hinted-grey-6);
     border: 2px solid var(--color-hinted-grey-6);
-    border-radius: 3px;
+    border-radius: 0.2em;
     color: var(--color-white);
     display: block;
     font-size: 100%;
@@ -400,22 +405,12 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     transform: translate(-50%, -100%);
 }
 
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-alert-container {
-    border: 1px solid var(--user-accent-color);
-
-    --current-border-color: var(--user-accent-color);
-}
-
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-confirm-container {
-    border: 1px solid var(--user-accent-color);
-
-    --current-border-color: var(--user-accent-color);
-}
-
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-alert-container,
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-confirm-container,
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-prompt-container {
-    border: 1px solid var(--user-accent-color);
+    /* border: 1px solid var(--user-complement-color); */
 
-    --current-border-color: var(--user-accent-color);
+    --current-border-color: var(--user-complement-color);
 }
 
 .tt-silent.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
@@ -435,8 +430,8 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     transition: opacity .3s, top .6s;
     transition-delay: .3s;
 
-    background: var(--current-border-color);
-    border: 1px solid var(--current-border-color);
+    background: inherit;
+    /* border: 1px solid var(--current-border-color); */
     border-radius: 25%;
     display: inline-block;
     font-size: 1em;
@@ -458,6 +453,25 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     transform: translate(-50%, -50%);
 }
 
+.tt-silent.tt-veiled:is(.tt-alert) :is(.tt-alert-container)::before {
+    /* ⚠ */
+    content: "\26A0";
+}
+
+.tt-silent.tt-veiled:is(.tt-confirm) :is(.tt-confirm-container)::before {
+    /* ✔ */
+    content: "\2714";
+}
+
+.tt-silent.tt-veiled:is(.tt-prompt) :is(.tt-prompt-container)::before {
+    /* ⌨ */
+    content: "\2328";
+}
+
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+    top: 3px;
+}
+
 .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt):is(:hover, :focus-within) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
     opacity: 0;
     top: 3em;
@@ -465,6 +479,20 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 
 [class*="root"i][class*="theme-light"i] .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
     mix-blend-mode: lighten;
+}
+
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > * {
+    margin: -1px 0;
+}
+
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > :first-child {
+    border-top-left-radius: 0.2em;
+    border-top-right-radius: 0.2em;
+}
+
+:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > :last-child {
+    border-bottom-left-radius: 0.2em;
+    border-bottom-right-radius: 0.2em;
 }
 
 @keyframes shake {

@@ -213,9 +213,15 @@
         "acerca de mí",
         null
     ],
+    "auto-follow:keep-live-reminders": [
+        "Mantener recordatorios",
+        "Cuando esté habilitado",
+        null,
+        "Los recordatorios no se eliminarán automáticamente"
+    ],
     "kill-extensions": [
         "Kill Extensions",
-        "No permitas que las extensiones de Twitch™ se muestren sobre la transmisión"
+        "No permitas que las extensiones de Twitch™ se muestren a través de la transmisión"
     ],
     "next-channel-preference": [
         "Canal siguiente",
@@ -389,7 +395,7 @@
     ],
     "native-reply": [
         "Respuesta nativa",
-        "Intenta mostrar respuestas nativas de Twitch™ en todos los canales"
+        "Intentar mostrar respuestas nativas de Twitch™ en todos los canales"
     ],
     "notification-sounds": [
         "Sonidos de notificación",
@@ -507,15 +513,15 @@
     ],
     "hide-blank-ads": [
         "Ocultar anuncios en blanco",
-        "Cuando Twitch™ mostrar un anuncio",
-        "en blanco",
-        "ocultarlo temporalmente"
+        "Cuando Twitch™ muestra un anuncio",
+        "En blanco",
+        "Ocultarlo temporalmente"
     ],
     "placement:points-receipt": [
         "Recibo de puntos y rango",
         "Dónde debe mostrarse el texto",
         "Recibo de puntos",
-        "y",
+        "&",
         "Clasificación de puntos",
         null
     ],
@@ -685,8 +691,8 @@
         null
     ],
     "@fine-details": [
-        "Use Detalles finos",
-        "Permita que la extensión use datos de la API de Twitch™ para mejorar su experiencia",
+        "Usa Detalles finos",
+        "Permite que la extensión use datos de la API de Twitch™ para mejorar tu experiencia",
         "Esto no recopilará ningún dato. Utilizará los datos que Twitch™ ha recopilado"
     ],
     "@default": [
@@ -736,7 +742,7 @@
     ],
     "@@convert-emotes": [
         "Convertir emotes",
-        "Cuando se presenten con Twitch™ emotes, recógelos para su uso (sin requerir una suscripción)",
+        "Cuando se presenten emoticones de Twitch™, recógelos para su uso (sin necesidad de una suscripción)",
         "Esto solo funciona para la transmisión actual que estás viendo",
         "Esto hace",
         "no",

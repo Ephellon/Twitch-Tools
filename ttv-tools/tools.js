@@ -56,10 +56,10 @@ awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
  */
 
 // Displays a balloon (popup)
-    // new Balloon({ title:string, icon:string? }[, ...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }]) -> Object
-    // Balloon.prototype.add(...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }) -> Element
-    // Balloon.prototype.addButton({ [left:boolean[, icon:string=Glyphs[, onclick:function[, attributes:object]]]] }) -> Element
-    // Balloon.prototype.remove() -> undefined
+    // new Balloon({ title:string, icon:string? }[, ...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }]) → Object
+    // Balloon.prototype.add(...jobs:object={ href:string=URL, message:string?, src:string?, time:string=Date, onremove:function? }) → Element
+    // Balloon.prototype.addButton({ [left:boolean[, icon:string=Glyphs[, onclick:function[, attributes:object]]]] }) → Element
+    // Balloon.prototype.remove() → undefined
 class Balloon {
     static #BALLOONS = new Map()
 
@@ -531,9 +531,9 @@ class Balloon {
 }
 
 // Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) -> Element~Tooltip
+    // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) → Element~Tooltip
         // fineTuning:object = { left:number=pixels, top:number=pixels, from:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
-    // Tooltip.get(parent:Element) -> Element~Tooltip
+    // Tooltip.get(parent:Element) → Element~Tooltip
 class Tooltip {
     static #TOOLTIPS = new Map()
 
@@ -617,7 +617,7 @@ class Tooltip {
 }
 
 // Creates a Twitch-style chat footer
-    // new ChatFooter(title:string[, options:object]) -> Element~ChatFooter
+    // new ChatFooter(title:string[, options:object]) → Element~ChatFooter
 class ChatFooter {
     static #FOOTERS = new Map()
     static #FOOTER_TIMEOUT = -1
@@ -680,7 +680,7 @@ class ChatFooter {
 }
 
 // Creates a Twitch-style card
-    // new Card({ title:string[, subtitle:string[, fineTuning:object]] }) -> Element~Card
+    // new Card({ title:string[, subtitle:string[, fineTuning:object]] }) → Element~Card
 class Card {
     static #CARDS = new Map()
 
@@ -692,7 +692,7 @@ class Card {
         let styling = [];
 
         for(let key in fineTuning) {
-            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)(\D+)/).filter(string => string.length);
+            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
             if(!defined(value))
                 continue;
@@ -827,12 +827,12 @@ class Card {
 }
 
 // Creates a Twitch-style context menu
-    // new ContextMenu({ options:array[, fineTuning:object] }) -> Element~ContextMenu
+    // new ContextMenu({ options:array[, fineTuning:object] }) → Element~ContextMenu
     // options = { text:string, icon:string, shortcut:string }
 class ContextMenu {
     static #RootCloseOnComplete = $('#root').addEventListener('mouseup', event => {
         let { path, button = -1 } = event,
-            menu = $('.tt-contextmenu');
+            menu = $('.tt-context-menu');
 
         if(defined(menu))
             menu.remove();
@@ -846,7 +846,7 @@ class ContextMenu {
         let styling = [];
 
         for(let key in fineTuning) {
-            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)(\D+)/).filter(string => string.length);
+            let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
             if(!defined(value))
                 continue;
@@ -864,13 +864,13 @@ class ContextMenu {
         let f = furnish;
 
         let container = $('#root'),
-            menu = f(`div.tt-contextmenu.tt-absolute`, { style: styling }),
+            menu = f(`div.tt-context-menu.tt-absolute`, { style: styling }),
             uuid = UUID.from(options.map(Object.values).join('\n')).value;
 
         menu.id = uuid;
 
         // Remove current menus. Only one allowed at a time
-        $('.tt-contextmenu', true).forEach(menu => menu.remove());
+        $('.tt-context-menu', true).forEach(menu => menu.remove());
 
         menu.append(
             f('div.tt-border-radius-large', { style: 'background:var(--color-background-alt-2); position:absolute; z-index:9999', direction: 'top-right' },
@@ -899,8 +899,8 @@ class ContextMenu {
 }
 
 // Search Twitch for channels/categories
-    // new Search([ID:string|number[, type:string]]) -> Promise~Object
-/** Returns a promised Object ->
+    // new Search([ID:string|number[, type:string]]) → Promise~Object
+/** Returns a promised Object →
  * { data:object, extensions:object }
  */
 class Search {
@@ -1343,7 +1343,7 @@ class Search {
 
 // https://stackoverflow.com/a/45205645/4211612
 // Creates a CSS object that can be used to easily transform an object to a CSS string
-    // new CSSObject({ ...css-properties }) -> Object~CSSObject
+    // new CSSObject({ ...css-properties }) → Object~CSSObject
 class CSSObject {
     constructor(properties = {}) {
         for(let key in properties)
@@ -1387,7 +1387,7 @@ class Color {
     constructor() {}
 
     // Converts Hex color values to a color-object
-        // Color.HEXtoColor(hex:String~/#?RGB/i) -> Object~Color.RGBtoHSL(...)
+        // Color.HEXtoColor(hex:String~/#?RGB/i) → Object~Color.RGBtoHSL(...)
     static HEXtoColor(hex) {
         let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
 
@@ -1395,7 +1395,7 @@ class Color {
     }
 
     // Converts RGB to HSL
-        // Color.RGBtoHSL(Array=[Number~UInt8, Number~UInt8, Number~UInt8]) -> Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
+        // Color.RGBtoHSL(Array=[Number~UInt8, Number~UInt8, Number~UInt8]) → Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
     static RGBtoHSL([R, G, B]) {
         // Convert RGB to fractions of 1
         let r = R / 255,
@@ -1446,7 +1446,7 @@ class Color {
 
     // https://stackoverflow.com/a/9733420/4211612
     // Gets the luminance of a color
-        // Color.luminance(Number~UInt8, Number~Uint8, Number~Uint8) -> Number~Float@[0, 1]
+        // Color.luminance(Number~UInt8, Number~Uint8, Number~Uint8) → Number~Float@[0, 1]
     static luminance(R, G, B) {
         let l = [R, G, B].map(c => {
             c /= 255;
@@ -1463,7 +1463,7 @@ class Color {
 
     // https://stackoverflow.com/a/9733420/4211612
     // Gets the contrast of two colors
-        // Color.contrast(Array=[Number~UInt8, Number~UInt8, Number~UInt8], Array=[Number~UInt8, Number~UInt8, Number~UInt8]) -> Number@[0, 21]
+        // Color.contrast(Array=[Number~UInt8, Number~UInt8, Number~UInt8], Array=[Number~UInt8, Number~UInt8, Number~UInt8]) → Number@[0, 21]
     static contrast(C1, C2) {
         let L1 = Color.luminance(...C1),
             L2 = Color.luminance(...C2),
@@ -1485,7 +1485,7 @@ class Color {
 }
 
 // Get the current settings
-    // GetSettings() -> Object
+    // GetSettings() → Object
 function GetSettings() {
     return new Promise((resolve, reject) => {
         function ParseSettings(settings) {
@@ -1504,7 +1504,7 @@ function GetSettings() {
 }
 
 // Create an array of the current chat
-    // GetChat([lines:number[, keepEmotes:boolean]]) -> [...Object { style, author, emotes, message, mentions, element, uuid, highlighted }]
+    // GetChat([lines:number[, keepEmotes:boolean]]) → [...Object { style, author, emotes, message, mentions, element, uuid, highlighted }]
 function GetChat(lines = 250, keepEmotes = false) {
     let chat = $('[data-test-selector$="message-container"i] [data-a-target="chat-line-message"i]', true).slice(-lines),
         emotes = {},
@@ -1709,7 +1709,7 @@ Object.defineProperties(GetChat, {
 });
 
 // Pushes parameters to the URL's search
-    // PushToTopSearch(newParameters:object[, reload:boolean]) -> String#URL.Search
+    // PushToTopSearch(newParameters:object[, reload:boolean]) → String#URL.Search
 function PushToTopSearch(newParameters, reload = true) {
     let { searchParameters } = parseURL(location),
         parameters = { ...searchParameters, ...newParameters };
@@ -1725,7 +1725,7 @@ function PushToTopSearch(newParameters, reload = true) {
 }
 
 // Removevs parameters from the URL's search
-    // RemoveFromTopSearch(keys:array[, reload:boolean]) -> String#URL.Search
+    // RemoveFromTopSearch(keys:array[, reload:boolean]) → String#URL.Search
 function RemoveFromTopSearch(keys, reload = true) {
     let { searchParameters } = parseURL(location),
         parameters = { ...searchParameters };
@@ -1742,7 +1742,7 @@ function RemoveFromTopSearch(keys, reload = true) {
 }
 
 // Convert an SI number into a number
-    // parseCoin(amount:string) -> Number
+    // parseCoin(amount:string) → Number
 function parseCoin(amount = '') {
     let points = 0,
         COIN, UNIT;
@@ -1805,7 +1805,7 @@ function parseCoin(amount = '') {
 }
 
 // Get the video quality
-    // GetQuality() -> String={ auto:boolean, high:boolean, low:boolean, source:boolean }
+    // GetQuality() → String={ auto:boolean, high:boolean, low:boolean, source:boolean }
 async function GetQuality() {
     let buttons = {
         get settings() {
@@ -1879,7 +1879,7 @@ async function GetQuality() {
 }
 
 // Change the video quality
-    // SetQuality([quality:string[, backup:string]]) -> Object#{ oldValue:Object={ input:Element, label:Element }, newValue:Object={ input:Element, label:Element } }
+    // SetQuality([quality:string[, backup:string]]) → Object#{ oldValue:Object={ input:Element, label:Element }, newValue:Object={ input:Element, label:Element } }
 async function SetQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
@@ -1964,7 +1964,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 }
 
 // Get the video volume
-    // GetVolume([fromVideoElement:boolean]) -> Number#Float
+    // GetVolume([fromVideoElement:boolean]) → Number#Float
 function GetVolume(fromVideoElement = true) {
     let video = $('[data-a-target="video-player"i] video'),
         slider = $('[data-a-target*="player"i][data-a-target*="volume"i]');
@@ -1993,7 +1993,7 @@ Object.defineProperties(GetVolume, {
 });
 
 // Change the video volume
-    // SetVolume([volume:number#Float]) -> undefined
+    // SetVolume([volume:number#Float]) → undefined
 function SetVolume(volume = 0.5) {
     let video = $('[data-a-target="video-player"i] video'),
         thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
@@ -2010,7 +2010,7 @@ function SetVolume(volume = 0.5) {
 }
 
 // Get the view mode
-    // GetViewMode() -> string={ "fullscreen" | "fullwidth" | "theatre" | "default" }
+    // GetViewMode() → string={ "fullscreen" | "fullwidth" | "theatre" | "default" }
 function GetViewMode() {
     let mode = 'default',
         theatre = false,
@@ -2053,7 +2053,7 @@ function GetViewMode() {
 }
 
 // Change the view mode
-    // SetViewMode(mode:string={ "fullscreen" | "fullwidth" | "theatre" | "default" }) -> undefined
+    // SetViewMode(mode:string={ "fullscreen" | "fullwidth" | "theatre" | "default" }) → undefined
 function SetViewMode(mode = 'default') {
     let buttons = [],
         toggles = {
@@ -2098,7 +2098,7 @@ function SetViewMode(mode = 'default') {
 }
 
 // Get the current user activity
-    // GetActivity() -> Promise <String | null>
+    // GetActivity() → Promise <String | null>
 async function GetActivity() {
     return awaitOn(() => {
         let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
@@ -2116,7 +2116,7 @@ async function GetActivity() {
 }
 
 // Get the current page's language
-    // GetLanguage() -> Promise <String | null>
+    // GetLanguage() → Promise <String | null>
 async function GetLanguage() {
     return awaitOn(() => {
         let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
@@ -2138,7 +2138,7 @@ async function GetLanguage() {
 let { Glyphs } = top;
 
 // Returns ordinal numbers
-    // nth(n:number[, s:string]) -> string
+    // nth(n:number[, s:string]) → string
 let nth = (n, s = ' in line') => {
     n += '';
 
@@ -2207,12 +2207,12 @@ let nth = (n, s = ' in line') => {
 }
 
 // Returns a unique list of channels (used with `Array..filter`)
-    // uniqueChannels(channel:object#Channel, index:number, channels:array) -> boolean
+    // uniqueChannels(channel:object#Channel, index:number, channels:array) → boolean
 let uniqueChannels = (channel, index, channels) =>
     channels.filter(channel => defined(channel?.name)).findIndex(ch => ch.name === channel?.name) == index;
 
 // Returns whether or not a channel is live (used with `Array..filter`)
-    // isLive(channel:object#Channel) -> boolean
+    // isLive(channel:object#Channel) → boolean
 let isLive = channel => parseBool(channel?.live);
 
 /*** Setup (pre-init) #MARK:globals #MARK:variables
@@ -2569,6 +2569,7 @@ try {
 
                 extras.push({
                     text: `Open link in new tab`,
+                    icon: 'ne_arrow',
                     action: event => top.open(url, '_blank'),
                 },{
                     text: `Copy link address`,
@@ -2579,11 +2580,11 @@ try {
                 extras.push({
                     text: `Search Twitch for <strong>${ selectionText }</strong>`,
                     icon: 'twitch',
-                    action: event => top.open(`https://www.twitch.tv/search?term=${ selectionText.split(/\s+/).join(' ') }`, '_self'),
+                    action: event => top.open(`https://www.twitch.tv/search?term=${ encodeURIComponent(selectionText).split(/(?:%20\b)+/).join(' ') }`, '_self'),
                 },{
                     text: `Search Google for <strong>${ selectionText }</strong>`,
                     icon: 'search',
-                    action: event => top.open(`https://www.google.com/search?q=${ selectionText.split(/\s+/).join('+') }`, '_blank'),
+                    action: event => top.open(`https://www.google.com/search?q=${ encodeURIComponent(selectionText).split(/(?:%20\b)+/).join('+').replace(/%22\b/g, '"') }`, '_blank'),
                 });
             }
         }
@@ -2594,6 +2595,7 @@ try {
         if(hasAnchor)
             extras.push({
                 text: `Open link in new tab`,
+                icon: 'ne_arrow',
                 action: event => top.open(event.inheritance.target.closest('a').href, '_blank'),
             },{
                 text: `Copy link address`,
@@ -2745,10 +2747,10 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`);
+                        let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
                         if(!defined(parent))
-                            return false;
+                            return true;
 
                         let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
 
@@ -2787,7 +2789,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
 
                         if(!defined(parent))
                             return false;
@@ -2828,7 +2830,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"]`);
+                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                         if(!defined(parent))
                             return false;
@@ -2949,7 +2951,7 @@ let TWITCH_PATHNAMES = [
     RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
 
 // Intializes the extension
-    // Initialize(START_OVER:boolean) -> undefined
+    // Initialize(START_OVER:boolean) → undefined
 let Initialize = async(START_OVER = false) => {
     // Modify the logging feature via the settings
     if(!parseBool(Settings.display_in_console))
@@ -3032,7 +3034,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     // Gets the next available channel (streamer)
-        // GetNextStreamer() -> Object#Channel
+        // GetNextStreamer() → Object#Channel
     function GetNextStreamer() {
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS?.length)
@@ -3196,7 +3198,7 @@ let Initialize = async(START_OVER = false) => {
                             url = parseURL(href),
                             { pathname } = url;
 
-                            let parent = $(`.search-tray [href$="${ pathname }"]:not([href*="/search?"])`);
+                            let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
                             if(!defined(parent))
                                 return false;
@@ -3407,26 +3409,22 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get rank() {
-            // Creates a triangle with: base → time streamer has been active (divided into hours); height → number of followers
-                // Also take the average amount of channel points gained per hour (320) into account?
-                // Area → (base * height) / 2
-            let cult = STREAMER.data.followers ?? STREAMER.cult;
-            let epoch = new Date('16 DEC 2019 00:00Z'),
-                // epoch → when channel points where first introduced
-                // https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
+            let { max, sqrt, round } = Math;
+            let epoch = +new Date('16 DEC 2019 00:00Z'),
+                // epoch → when channel points where first introduced - https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
                 start = +new Date(STREAMER.data.firstSeen),
-                end = +new Date(STREAMER.data.lastSeen);
+                end = +new Date;
 
-            start = start < epoch? epoch: start;
+            start = max(start, epoch);
 
-            let base = ((end - start) / 3_600_000),
-                area = (base * cult / 2),
+            let length = ((end - start) / 60_000),
+                height = (STREAMER.data.followers ?? STREAMER.cult),
 
-                // Rank: how much of the triangle the user covers
-                size = (STREAMER.coin / area),
-                rank = cult - Math.round(size * cult**(5/3));
+                viewed = ((STREAMER.coin | 1) * 3/7/2),
+                amount = (viewed / length),
+                rank = round(height / height**amount);
 
-            return 0 | (rank > cult? cult: rank);
+            return rank.clamp(0, length);
         },
 
         get redo() {
@@ -3619,7 +3617,7 @@ let Initialize = async(START_OVER = false) => {
                                 return cache.live;
 
                             // Then the actual "does the channel show up" result
-                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
 
                             if(!defined(parent))
                                 return false;
@@ -3667,7 +3665,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
 
                             if(!defined(parent))
                                 return false;
@@ -3711,7 +3709,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"]`);
+                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                             if(!defined(parent))
                                 return false;
@@ -4033,7 +4031,7 @@ let Initialize = async(START_OVER = false) => {
                         // OBSOLETE //
                         // await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
                         //     .then(text => text.text())
-                        //     /* Conversion => Text -> HTML -> Element -> JSON */
+                        //     /* Conversion => Text → HTML → Element → JSON */
                         //     .then(html => {
                         //         let doc = (new DOMParser).parseFromString(html, 'text/html'),
                         //             body = doc.body;
@@ -4410,7 +4408,7 @@ let Initialize = async(START_OVER = false) => {
                             --STALLED_FRAMES;
 
                         if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL * .75)) {
-                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's -> ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
+                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's → ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
 
                             POLL_INTERVAL *= 1.1;
                             STALLED_FRAMES = 0;
@@ -4603,7 +4601,7 @@ let Initialize = async(START_OVER = false) => {
 
         let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
 
-        // if(init === true) ->
+        // if(init === true) →
         // Don't use above, event listeners won't work
         button.background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
         // button.icon.setAttribute('height', '20px');
@@ -4819,7 +4817,7 @@ let Initialize = async(START_OVER = false) => {
     ) | 0;
 
     // Restart the First in line que's timers
-        // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) -> undefined
+        // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) → undefined
     async function REDO_FIRST_IN_LINE_QUEUE(url) {
         if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
             return;
@@ -4833,6 +4831,7 @@ let Initialize = async(START_OVER = false) => {
         if(!defined(channel))
             return ERROR(`Unable to create job for "${ href }"`);
 
+        GetNextStreamer.cachedStreamer = channel;
         name = channel.name;
 
         FIRST_IN_LINE_HREF = href;
@@ -4841,7 +4840,7 @@ let Initialize = async(START_OVER = false) => {
         if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-        LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" -> ${ href }`, new Date);
+        LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             let timeRemaining = GET_TIME_REMAINING();
@@ -5421,7 +5420,7 @@ let Initialize = async(START_OVER = false) => {
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
 
                     // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
-                        // To create a new due date, `NEW_DUE_DATE(time)` -> `NEW_DUE_DATE()`
+                        // To create a new due date, `NEW_DUE_DATE(time)` → `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
                         // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
                         let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ channel.name }"i]`)?.getAttribute('time'));
@@ -5977,11 +5976,13 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names, 'Current streamer data:', JSON.stringify({ ...STREAMER, chat: null, jump: null, vods: null, date: new Date }))?.toNativeStack?.();
+            WARN('Twitch failed to add these channels correctly:', bad_names)?.toNativeStack?.();
 
             BAD_STREAMERS = "";
 
             SaveCache({ BAD_STREAMERS });
+
+            // RemoveFromTopSearch(['tt-err-chn']);
         } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
@@ -6022,7 +6023,7 @@ let Initialize = async(START_OVER = false) => {
 
         creating_new_events:
         for(let name of new_names) {
-            // TODID? `STREAMERS` -> `ALL_CHANNELS`
+            // TODID? `STREAMERS` → `ALL_CHANNELS`
             let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name)),
                 { searchParameters } = parseURL(location.href);
 
@@ -6086,9 +6087,11 @@ let Initialize = async(START_OVER = false) => {
                 s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                 reminderName = STREAMER.name,
                 hasReminder = defined(LiveReminders[reminderName]),
+                tense = (parseBool(Settings.keep_live_reminders)? '': ' next'),
+                stream_s = 'stream'.pluralSuffix(+!!tense),
                 [title, subtitle, icon] = [
-                    ['Remind me', `Receive a notification for ${ s(STREAMER.name) } next live stream`, 'inform'],
-                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) } next live stream`, 'checkmark']
+                    ['Remind me', `Receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'inform'],
+                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'checkmark']
                 ][+!!hasReminder];
 
             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -6109,9 +6112,11 @@ let Initialize = async(START_OVER = false) => {
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                 reminderName = STREAMER.name,
                                 hasReminder = !defined(LiveReminders[reminderName]),
+                                tense = (parseBool(Settings.keep_live_reminders)? '': ' next'),
+                                stream_s = 'stream'.pluralSuffix(+!!tense),
                                 [title, subtitle, icon] = [
-                                    ['Remind me', `Receive a notification for ${ s(STREAMER.name) } next live stream`, 'inform'],
-                                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) } next live stream`, 'checkmark']
+                                    ['Remind me', `Receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'inform'],
+                                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'checkmark']
                                 ][+!!hasReminder];
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -6177,8 +6182,10 @@ let Initialize = async(START_OVER = false) => {
 
                         // The channel is live!
                         if(parseBool(live)) {
-                            // Recurring → Reminder@Tomorrow
-                            delete LiveReminders[reminderName];
+                            if(parseBool(Settings.keep_live_reminders))
+                                LiveReminders[reminderName] = new Date(+new Date(LiveReminders[reminderName]) + 86_400_000);
+                            else
+                                delete LiveReminders[reminderName];
 
                             let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
 
@@ -6630,11 +6637,11 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
-            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?:\(?(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\)?)\b/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>(?:AOE|GMT|UTC|[A-WY]{2,4}T)\b|\(\s*(?:AOE|GMT|UTC|[A-WY]{2,4}T)\s*\))/i,
             // 15:00 EST | 1500 EST
-            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>AOE|GMT|UTC|[A-WY]{2,4}T)\b/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>(?:AOE|GMT|UTC|[A-WY]{2,4}T)\b|\(\s*(?:AOE|GMT|UTC|[A-WY]{2,4}T)\s*\))/i,
             // 3:00PM | 3PM
-            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)\b/i,
+            /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?\b)/i,
             // 15:00
             /(?<![\$\#\.\+\:])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
 
@@ -6878,6 +6885,15 @@ let Initialize = async(START_OVER = false) => {
             .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM');
     }
 
+    convertWordsToTimes.inReverse ??= string => {
+        return string
+            // .replace(/\b(06:00AM)\b/i, 'morning')
+            .replace(/\b(01:00PM)\b/i, 'evening')
+            .replace(/\b(12:00PM)\b/i, 'noon')
+            // .replace(/\b(06:00PM)\b/i, 'night')
+            .replace(/\b(12:00AM)\b/i, 'midnight');
+    };
+
     Handlers.time_zones = () => {
         let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] p, [data-a-target^="panel"i] p', true),
             rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
@@ -6898,7 +6914,7 @@ let Initialize = async(START_OVER = false) => {
                     hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
 
                     if(timezone.length) {
-                        timezone = timezone.toUpperCase();
+                        timezone = timezone.toUpperCase().replace(/\W+/g, '');
 
                         if(timezone in TIME_ZONE__CONVERSIONS)
                             timezone = TIME_ZONE__CONVERSIONS[timezone].replace(/^[+-]/, 'GMT$&');
@@ -6916,15 +6932,40 @@ let Initialize = async(START_OVER = false) => {
 
                     newTime = `${H}:${M}`;
 
+                    let same = convertWordsToTimes(title.innerText).trim() == title.innerText.trim();
+
                     title.innerText = titleText = convertWordsToTimes(title.innerText)
-                        .replace(regexp, `{{?=${ btoa(newTime) }}}`);
+                        .replace(regexp, ($0, $$, $_) => `{{?=${ btoa(newTime) }|${ btoa(same? $0: convertWordsToTimes.inReverse($0)) }}}`);
                 }
 
-            let regexp = /\{\{\?=(.+?)\}\}/g;
-            if(regexp.test(title.innerHTML)) {
-                title.innerHTML = title.innerHTML
-                    .replace(regexp, ($0, $1, $$, $_) => `<span style="color:var(--user-complement-color); text-decoration:underline 2px" contrast="${ THEME__PREFERRED_CONTRAST }">${ atob($1).split('').join('&zwj;') }</span>`);
+            let regexp = /\{\{\?=(.+?)\|(.+?)\}\}/g;
+            for(let MAX = 1000; --MAX > 0 && regexp.test(title.innerHTML);) {
+                let { $1, $2 } = RegExp,
+                    $0 = RegExp['$&'];
+
+                title.innerHTML = title.innerHTML.replace($0, `<!--!time-->`);
+                [...title.childNodes]
+                    .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent == '!time')
+                    .map(comment => {
+                        let span = furnish('span', {
+                            id: `tt-time-zone-${ (new UUID) }`,
+                            style: 'color:var(--user-complement-color); text-decoration:underline 2px',
+                            contrast: THEME__PREFERRED_CONTRAST,
+                            innerHTML: atob($1).split('').join('&zwj;'),
+
+                            'tip-text': $2,
+                        });
+
+                        comment.replaceWith(span);
+                    });
             }
+        }
+
+        for(let span of $('span[id^="tt-time-zone"i][tip-text]', true)) {
+            let tipText = span.getAttribute('tip-text');
+            span.removeAttribute('tip-text');
+
+            new Tooltip(span, atob(tipText).split('').join('&zwj;'), { from: 'top' });
         }
 
         TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
@@ -8143,10 +8184,10 @@ let Initialize = async(START_OVER = false) => {
             }
 
             if(!playing) {
-                // PAUSED -> PLAY
+                // PAUSED → PLAY
                 control.click();
             } else if(playing) {
-                // PLAYING -> PAUSE, PLAY
+                // PLAYING → PAUSE, PLAY
                 control.click();
                 control.click();
             }
