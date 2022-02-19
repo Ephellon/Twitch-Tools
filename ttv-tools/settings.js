@@ -12,7 +12,6 @@
 let $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
 let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
-let encodeHTML = string => string.replace(/([<&>])/g, ($0, $1, $$, $_) => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;' }[$1]));
 
 let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
 
@@ -1331,7 +1330,12 @@ let FETCHED_DATA = { wasFetched: false };
 (async function(installedFromWebstore) {
     let properties = {
         context: {
-            id: UUID.from(Manifest.version, true).value,
+            id: UUID.from(Manifest.version, true)
+                .toStamp()
+                .split(/(.{4})/)
+                .filter(s => !!s.length)
+                .join('-')
+                .toUpperCase(),
         },
         origin: {
             github: !installedFromWebstore,

@@ -33,6 +33,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.28)
+- Fixed Settings page
+
 > [`4.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.27)
 - Added the Live Reminders catalog
 - Added Emote Searching logic for spelling mistakes (Levenshtein distance)
