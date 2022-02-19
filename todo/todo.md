@@ -33,6 +33,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.27)
+- Added the Live Reminders catalog
+- Added Emote Searching logic for spelling mistakes (Levenshtein distance)
+- Modified Live Reminder logic to use the last confirmed online date instead of predictions
+- Adjusted `Number..suffix` to include data-oriented sizes
+- Added `encodeHTML` and `decodeHTML`
+- Adjusted color naming logic
+- Fixed Point ranking issue (graphical)
+
 > [`4.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.26)
 - Added Persistent Live Reminders option
 - Fixed translation errors

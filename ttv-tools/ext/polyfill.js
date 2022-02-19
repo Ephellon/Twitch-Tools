@@ -19,7 +19,7 @@
  *
  */
 // Parse a URL
-    // parseURL(url:string) -> Object
+    // parseURL(url:string) → Object
 function parseURL(url) {
     if(!defined(url))
         return {};
@@ -83,7 +83,7 @@ function parseURL(url) {
 }
 
 // Create elements
-    // furnish(tagname:string[, attributes:object[, ...children]]) -> Element
+    // furnish(tagname:string[, attributes:object[, ...children]]) → Element
 function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
     let u = v => v && v.length,
         R = RegExp,
@@ -134,7 +134,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
 }
 
 // Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) -> Object={ height:number, width:number, left:number, top:number, right:number, bottom:number }
+    // getOffset(element:Element) → Object={ height:number, width:number, left:number, top:number, right:number, bottom:number }
 function getOffset(element) {
     let bounds = element.getBoundingClientRect(),
         { height, width } = bounds;
@@ -151,7 +151,7 @@ function getOffset(element) {
 }
 
 // Convert milliseconds into a human-readable string
-    // toTimeString([milliseconds:number[, format:string]]) -> String
+    // toTimeString([milliseconds:number[, format:string]]) → String
 function toTimeString(milliseconds = 0, format = 'natural') {
     let second = 1000,
         minute = 60 * second,
@@ -244,7 +244,7 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 }
 
 // Convert a time-formatted string into its corresponding millisecond value
-    // parseTime([time:string]) -> Number
+    // parseTime([time:string]) → Number
 function parseTime(time = '') {
     let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
         ms = 0;
@@ -256,7 +256,7 @@ function parseTime(time = '') {
 }
 
 // Convert boolean values
-    // parseBool(value:*) -> Boolean
+    // parseBool(value:*) → Boolean
 function parseBool(value = null) {
     switch(value) {
         case "undefined":
@@ -279,6 +279,1600 @@ function parseBool(value = null) {
     }
 }
 
+// Encodes HTML to be HTML-embed friendly
+    // encodeHTML([string:string]) → String
+function encodeHTML(string = '') {
+    for(let { char, html, dec, hex } of decodeHTML.table)
+        string = string.replaceAll(char, html);
+
+    return string;
+}
+
+// Decodes HTML-embedded text
+    // decodeHTML([string:string]) → String
+function decodeHTML(string = '') {
+    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html }) => html == $0)?.char ?? $0);
+}
+
+decodeHTML.table ??= [
+    // Punctuation
+    {
+        "char": "&",
+        "html": "&amp;",
+        "dec": "&#38;",
+        "hex": "&#x26;"
+    },
+    {
+        "char": "\"",
+        "html": "&quot;",
+        "dec": "&#34;",
+        "hex": "&#x22;"
+    },
+    {
+        "char": "<",
+        "html": "&lt;",
+        "dec": "&#60;",
+        "hex": "&#x3C;"
+    },
+    {
+        "char": ">",
+        "html": "&gt;",
+        "dec": "&#62;",
+        "hex": "&#x3E;"
+    },
+    {
+        "char": "‘",
+        "html": "&lsquo;",
+        "dec": "&#8216;",
+        "hex": "&#x2018;"
+    },
+    {
+        "char": "’",
+        "html": "&rsquo;",
+        "dec": "&#8217;",
+        "hex": "&#x2019;"
+    },
+    {
+        "char": "“",
+        "html": "&ldquo;",
+        "dec": "&#8220;",
+        "hex": "&#x201C;"
+    },
+    {
+        "char": "”",
+        "html": "&rdquo;",
+        "dec": "&#8221;",
+        "hex": "&#x201D;"
+    },
+    {
+        "char": "‚",
+        "html": "&sbquo;",
+        "dec": "&#8218;",
+        "hex": "&#x201A;"
+    },
+    {
+        "char": "„",
+        "html": "&bdquo;",
+        "dec": "&#8222;",
+        "hex": "&#x201E;"
+    },
+    {
+        "char": "′",
+        "html": "&prime;",
+        "dec": "&#8242;",
+        "hex": "&#x2032;"
+    },
+    {
+        "char": "″",
+        "html": "&Prime;",
+        "dec": "&#8243;",
+        "hex": "&#x2033;"
+    },
+    {
+        "char": " ",
+        "html": "&nbsp;",
+        "dec": "&#160;",
+        "hex": "&#xA0;"
+    },
+    {
+        "char": "–",
+        "html": "&ndash;",
+        "dec": "&#8211;",
+        "hex": "&#x2013;"
+    },
+    {
+        "char": "—",
+        "html": "&mdash;",
+        "dec": "&#8212;",
+        "hex": "&#x2014;"
+    },
+    {
+        "char": " ",
+        "html": "&ensp;",
+        "dec": "&#8194;",
+        "hex": "&#x2002;"
+    },
+    {
+        "char": " ",
+        "html": "&emsp;",
+        "dec": "&#8195;",
+        "hex": "&#x2003;"
+    },
+    {
+        "char": " ",
+        "html": "&thinsp;",
+        "dec": "&#8201;",
+        "hex": "&#x2009;"
+    },
+    {
+        "char": "¦",
+        "html": "&brvbar;",
+        "dec": "&#166;",
+        "hex": "&#xA6;"
+    },
+    {
+        "char": "•",
+        "html": "&bull;",
+        "dec": "&#8226;",
+        "hex": "&#x2022;"
+    },
+    {
+        "char": "…",
+        "html": "&hellip;",
+        "dec": "&#8230;",
+        "hex": "&#x2026;"
+    },
+    {
+        "char": "ˆ",
+        "html": "&circ;",
+        "dec": "&#710;",
+        "hex": "&#x2C6;"
+    },
+    {
+        "char": "¨",
+        "html": "&uml;",
+        "dec": "&#168;",
+        "hex": "&#xA8;"
+    },
+    {
+        "char": "˜",
+        "html": "&tilde;",
+        "dec": "&#732;",
+        "hex": "&#x2DC;"
+    },
+    {
+        "char": "‹",
+        "html": "&lsaquo;",
+        "dec": "&#8249;",
+        "hex": "&#x2039;"
+    },
+    {
+        "char": "›",
+        "html": "&rsaquo;",
+        "dec": "&#8250;",
+        "hex": "&#x203A;"
+    },
+    {
+        "char": "«",
+        "html": "&laquo;",
+        "dec": "&#171;",
+        "hex": "&#xAB;"
+    },
+    {
+        "char": "»",
+        "html": "&raquo;",
+        "dec": "&#187;",
+        "hex": "&#xBB;"
+    },
+    {
+        "char": "‾",
+        "html": "&oline;",
+        "dec": "&#8254;",
+        "hex": "&#x203E;"
+    },
+    {
+        "char": "¿",
+        "html": "&iquest;",
+        "dec": "&#191;",
+        "hex": "&#xBF;"
+    },
+    {
+        "char": "¡",
+        "html": "&iexcl;",
+        "dec": "&#161;",
+        "hex": "&#xA1;"
+    },
+
+    // Latin
+    {
+        "char": "À",
+        "html": "&Agrave;",
+        "dec": "&#192;",
+        "hex": "&#xC0;"
+    },
+    {
+        "char": "Á",
+        "html": "&Aacute;",
+        "dec": "&#193;",
+        "hex": "&#xC1;"
+    },
+    {
+        "char": "Â",
+        "html": "&Acirc;",
+        "dec": "&#194;",
+        "hex": "&#xC2;"
+    },
+    {
+        "char": "Ã",
+        "html": "&Atilde;",
+        "dec": "&#195;",
+        "hex": "&#xC3;"
+    },
+    {
+        "char": "Ä",
+        "html": "&Auml;",
+        "dec": "&#196;",
+        "hex": "&#xC4;"
+    },
+    {
+        "char": "Å",
+        "html": "&Aring;",
+        "dec": "&#197;",
+        "hex": "&#xC5;"
+    },
+    {
+        "char": "Æ",
+        "html": "&AElig;",
+        "dec": "&#198;",
+        "hex": "&#xC6;"
+    },
+    {
+        "char": "Ç",
+        "html": "&Ccedil;",
+        "dec": "&#199;",
+        "hex": "&#xC7;"
+    },
+    {
+        "char": "È",
+        "html": "&Egrave;",
+        "dec": "&#200;",
+        "hex": "&#xC8;"
+    },
+    {
+        "char": "É",
+        "html": "&Eacute;",
+        "dec": "&#201;",
+        "hex": "&#xC9;"
+    },
+    {
+        "char": "Ê",
+        "html": "&Ecirc;",
+        "dec": "&#202;",
+        "hex": "&#xCA;"
+    },
+    {
+        "char": "Ë",
+        "html": "&Euml;",
+        "dec": "&#203;",
+        "hex": "&#xCB;"
+    },
+    {
+        "char": "Ì",
+        "html": "&Igrave;",
+        "dec": "&#204;",
+        "hex": "&#xCC;"
+    },
+    {
+        "char": "Í",
+        "html": "&Iacute;",
+        "dec": "&#205;",
+        "hex": "&#xCD;"
+    },
+    {
+        "char": "Î",
+        "html": "&Icirc;",
+        "dec": "&#206;",
+        "hex": "&#xCE;"
+    },
+    {
+        "char": "Ï",
+        "html": "&Iuml;",
+        "dec": "&#207;",
+        "hex": "&#xCF;"
+    },
+    {
+        "char": "Ð",
+        "html": "&ETH;",
+        "dec": "&#208;",
+        "hex": "&#xD0;"
+    },
+    {
+        "char": "Ñ",
+        "html": "&Ntilde;",
+        "dec": "&#209;",
+        "hex": "&#xD1;"
+    },
+    {
+        "char": "Ò",
+        "html": "&Ograve;",
+        "dec": "&#210;",
+        "hex": "&#xD2;"
+    },
+    {
+        "char": "Ó",
+        "html": "&Oacute;",
+        "dec": "&#211;",
+        "hex": "&#xD3;"
+    },
+    {
+        "char": "Ô",
+        "html": "&Ocirc;",
+        "dec": "&#212;",
+        "hex": "&#xD4;"
+    },
+    {
+        "char": "Õ",
+        "html": "&Otilde;",
+        "dec": "&#213;",
+        "hex": "&#xD5;"
+    },
+    {
+        "char": "Ö",
+        "html": "&Ouml;",
+        "dec": "&#214;",
+        "hex": "&#xD6;"
+    },
+    {
+        "char": "Ø",
+        "html": "&Oslash;",
+        "dec": "&#216;",
+        "hex": "&#xD8;"
+    },
+    {
+        "char": "Œ",
+        "html": "&OElig;",
+        "dec": "&#338;",
+        "hex": "&#x152;"
+    },
+    {
+        "char": "Š",
+        "html": "&Scaron;",
+        "dec": "&#352;",
+        "hex": "&#x160;"
+    },
+    {
+        "char": "Ù",
+        "html": "&Ugrave;",
+        "dec": "&#217;",
+        "hex": "&#xD9;"
+    },
+    {
+        "char": "Ú",
+        "html": "&Uacute;",
+        "dec": "&#218;",
+        "hex": "&#xDA;"
+    },
+    {
+        "char": "Û",
+        "html": "&Ucirc;",
+        "dec": "&#219;",
+        "hex": "&#xDB;"
+    },
+    {
+        "char": "Ü",
+        "html": "&Uuml;",
+        "dec": "&#220;",
+        "hex": "&#xDC;"
+    },
+    {
+        "char": "Ý",
+        "html": "&Yacute;",
+        "dec": "&#221;",
+        "hex": "&#xDD;"
+    },
+    {
+        "char": "Þ",
+        "html": "&THORN;",
+        "dec": "&#222;",
+        "hex": "&#xDE;"
+    },
+    {
+        "char": "ß",
+        "html": "&szlig;",
+        "dec": "&#223;",
+        "hex": "&#xDF;"
+    },
+    {
+        "char": "à",
+        "html": "&agrave;",
+        "dec": "&#224;",
+        "hex": "&#xE0;"
+    },
+    {
+        "char": "á",
+        "html": "&aacute;",
+        "dec": "&#225;",
+        "hex": "&#xE1;"
+    },
+    {
+        "char": "â",
+        "html": "&acirc;",
+        "dec": "&#226;",
+        "hex": "&#xE2;"
+    },
+    {
+        "char": "ã",
+        "html": "&atilde;",
+        "dec": "&#227;",
+        "hex": "&#xE3;"
+    },
+    {
+        "char": "ä",
+        "html": "&auml;",
+        "dec": "&#228;",
+        "hex": "&#xE4;"
+    },
+    {
+        "char": "å",
+        "html": "&aring;",
+        "dec": "&#229;",
+        "hex": "&#xE5;"
+    },
+    {
+        "char": "æ",
+        "html": "&aelig;",
+        "dec": "&#230;",
+        "hex": "&#xE6;"
+    },
+    {
+        "char": "ç",
+        "html": "&ccedil;",
+        "dec": "&#231;",
+        "hex": "&#xE7;"
+    },
+    {
+        "char": "è",
+        "html": "&egrave;",
+        "dec": "&#232;",
+        "hex": "&#xE8;"
+    },
+    {
+        "char": "é",
+        "html": "&eacute;",
+        "dec": "&#233;",
+        "hex": "&#xE9;"
+    },
+    {
+        "char": "ê",
+        "html": "&ecirc;",
+        "dec": "&#234;",
+        "hex": "&#xEA;"
+    },
+    {
+        "char": "ë",
+        "html": "&euml;",
+        "dec": "&#235;",
+        "hex": "&#xEB;"
+    },
+    {
+        "char": "ì",
+        "html": "&igrave;",
+        "dec": "&#236;",
+        "hex": "&#xEC;"
+    },
+    {
+        "char": "í",
+        "html": "&iacute;",
+        "dec": "&#237;",
+        "hex": "&#xED;"
+    },
+    {
+        "char": "î",
+        "html": "&icirc;",
+        "dec": "&#238;",
+        "hex": "&#xEE;"
+    },
+    {
+        "char": "ï",
+        "html": "&iuml;",
+        "dec": "&#239;",
+        "hex": "&#xEF;"
+    },
+    {
+        "char": "ð",
+        "html": "&eth;",
+        "dec": "&#240;",
+        "hex": "&#xF0;"
+    },
+    {
+        "char": "ñ",
+        "html": "&ntilde;",
+        "dec": "&#241;",
+        "hex": "&#xF1;"
+    },
+    {
+        "char": "ò",
+        "html": "&ograve;",
+        "dec": "&#242;",
+        "hex": "&#xF2;"
+    },
+    {
+        "char": "ó",
+        "html": "&oacute;",
+        "dec": "&#243;",
+        "hex": "&#xF3;"
+    },
+    {
+        "char": "ô",
+        "html": "&ocirc;",
+        "dec": "&#244;",
+        "hex": "&#xF4;"
+    },
+    {
+        "char": "õ",
+        "html": "&otilde;",
+        "dec": "&#245;",
+        "hex": "&#xF5;"
+    },
+    {
+        "char": "ö",
+        "html": "&ouml;",
+        "dec": "&#246;",
+        "hex": "&#xF6;"
+    },
+    {
+        "char": "ø",
+        "html": "&oslash;",
+        "dec": "&#248;",
+        "hex": "&#xF8;"
+    },
+    {
+        "char": "œ",
+        "html": "&oelig;",
+        "dec": "&#339;",
+        "hex": "&#x153;"
+    },
+    {
+        "char": "š",
+        "html": "&scaron;",
+        "dec": "&#353;",
+        "hex": "&#x161;"
+    },
+    {
+        "char": "ù",
+        "html": "&ugrave;",
+        "dec": "&#249;",
+        "hex": "&#xF9;"
+    },
+    {
+        "char": "ú",
+        "html": "&uacute;",
+        "dec": "&#250;",
+        "hex": "&#xFA;"
+    },
+    {
+        "char": "û",
+        "html": "&ucirc;",
+        "dec": "&#251;",
+        "hex": "&#xFB;"
+    },
+    {
+        "char": "ü",
+        "html": "&uuml;",
+        "dec": "&#252;",
+        "hex": "&#xFC;"
+    },
+    {
+        "char": "ý",
+        "html": "&yacute;",
+        "dec": "&#253;",
+        "hex": "&#xFD;"
+    },
+    {
+        "char": "ÿ",
+        "html": "&yuml;",
+        "dec": "&#255;",
+        "hex": "&#xFF;"
+    },
+    {
+        "char": "þ",
+        "html": "&thorn;",
+        "dec": "&#254;",
+        "hex": "&#xFE;"
+    },
+
+    {
+        "char": "Œ",
+        "html": "&OElig;",
+        "dec": "&#338;",
+        "hex": "&#x152;"
+    },
+    {
+        "char": "œ",
+        "html": "&oelig;",
+        "dec": "&#339;",
+        "hex": "&#x153;"
+    },
+    {
+        "char": "Š",
+        "html": "&Scaron;",
+        "dec": "&#352;",
+        "hex": "&#x160;"
+    },
+    {
+        "char": "š",
+        "html": "&scaron;",
+        "dec": "&#353;",
+        "hex": "&#x161;"
+    },
+    {
+        "char": "Ÿ",
+        "html": "&Yuml;",
+        "dec": "&#376;",
+        "hex": "&#x178;"
+    },
+
+    // Money
+    {
+        "char": "¢",
+        "html": "&cent;",
+        "dec": "&#162;",
+        "hex": "&#xA2;"
+    },
+    {
+        "char": "£",
+        "html": "&pound;",
+        "dec": "&#163;",
+        "hex": "&#xA3;"
+    },
+    {
+        "char": "¤",
+        "html": "&curren;",
+        "dec": "&#164;",
+        "hex": "&#xA4;"
+    },
+    {
+        "char": "¥",
+        "html": "&yen;",
+        "dec": "&#165;",
+        "hex": "&#xA5;"
+    },
+    {
+        "char": "€",
+        "html": "&euro;",
+        "dec": "&#8364;",
+        "hex": "&#x20AC;"
+    },
+
+    // Symbols
+    {
+        "char": "§",
+        "html": "&sect;",
+        "dec": "&#167;",
+        "hex": "&#xA7;"
+    },
+    {
+        "char": "©",
+        "html": "&copy;",
+        "dec": "&#169;",
+        "hex": "&#xA9;"
+    },
+    {
+        "char": "®",
+        "html": "&reg;",
+        "dec": "&#174;",
+        "hex": "&#xAE;"
+    },
+    {
+        "char": "™",
+        "html": "&trade;",
+        "dec": "&#8482;",
+        "hex": "&#x2122;"
+    },
+    {
+        "char": "ª",
+        "html": "&ordf;",
+        "dec": "&#170;",
+        "hex": "&#xAA;"
+    },
+    {
+        "char": "º",
+        "html": "&ordm;",
+        "dec": "&#186;",
+        "hex": "&#xBA;"
+    },
+    {
+        "char": "¬",
+        "html": "&not;",
+        "dec": "&#172;",
+        "hex": "&#xAC;"
+    },
+    {
+        "char": "­",
+        "html": "&shy;",
+        "dec": "&#173;",
+        "hex": "&#xAD;"
+    },
+    {
+        "char": "¯",
+        "html": "&macr;",
+        "dec": "&#175;",
+        "hex": "&#xAF;"
+    },
+    {
+        "char": "°",
+        "html": "&deg;",
+        "dec": "&#176;",
+        "hex": "&#xB0;"
+    },
+    {
+        "char": "†",
+        "html": "&dagger;",
+        "dec": "&#8224;",
+        "hex": "&#x2020;"
+    },
+    {
+        "char": "‡",
+        "html": "&Dagger;",
+        "dec": "&#8225;",
+        "hex": "&#x2021;"
+    },
+    {
+        "char": "¹",
+        "html": "&sup1;",
+        "dec": "&#185;",
+        "hex": "&#xB9;"
+    },
+    {
+        "char": "²",
+        "html": "&sup2;",
+        "dec": "&#178;",
+        "hex": "&#xB2;"
+    },
+    {
+        "char": "³",
+        "html": "&sup3;",
+        "dec": "&#179;",
+        "hex": "&#xB3;"
+    },
+    {
+        "char": "´",
+        "html": "&acute;",
+        "dec": "&#180;",
+        "hex": "&#xB4;"
+    },
+    {
+        "char": "µ",
+        "html": "&micro;",
+        "dec": "&#181;",
+        "hex": "&#xB5;"
+    },
+    {
+        "char": "¶",
+        "html": "&para;",
+        "dec": "&#182;",
+        "hex": "&#xB6;"
+    },
+    {
+        "char": "·",
+        "html": "&middot;",
+        "dec": "&#183;",
+        "hex": "&#xB7;"
+    },
+    {
+        "char": "¸",
+        "html": "&cedil;",
+        "dec": "&#184;",
+        "hex": "&#xB8;"
+    },
+    {
+        "char": "‍",
+        "html": "&zwj;",
+        "dec": "&#8205;",
+        "hex": "&#x200D;"
+    },
+    {
+        "char": "‌",
+        "html": "&zwnj;",
+        "dec": "&#8204;",
+        "hex": "&#x200C;"
+    },
+
+    // Fractions
+    {
+        "char": "¼",
+        "html": "&frac14;",
+        "dec": "&#188;",
+        "hex": "&#xBC;"
+    },
+    {
+        "char": "½",
+        "html": "&frac12;",
+        "dec": "&#189;",
+        "hex": "&#xBD;"
+    },
+    {
+        "char": "¾",
+        "html": "&frac34;",
+        "dec": "&#190;",
+        "hex": "&#xBE;"
+    },
+
+    // Cards
+    {
+        "char": "♠",
+        "html": "&spades;",
+        "dec": "&#9824;",
+        "hex": "&#x2660;"
+    },
+    {
+        "char": "♣",
+        "html": "&clubs;",
+        "dec": "&#9827;",
+        "hex": "&#x2663;"
+    },
+    {
+        "char": "♥",
+        "html": "&hearts;",
+        "dec": "&#9829;",
+        "hex": "&#x2665;"
+    },
+    {
+        "char": "♦",
+        "html": "&diams;",
+        "dec": "&#9830;",
+        "hex": "&#x2666;"
+    },
+
+    // Math & Logic
+    {
+        "char": "±",
+        "html": "&plusmn;",
+        "dec": "&#177;",
+        "hex": "&#xB1;"
+    },
+    {
+        "char": "×",
+        "html": "&times;",
+        "dec": "&#215;",
+        "hex": "&#xD7;"
+    },
+    {
+        "char": "÷",
+        "html": "&divide;",
+        "dec": "&#247;",
+        "hex": "&#xF7;"
+    },
+    {
+        "char": "∧",
+        "html": "&and;",
+        "dec": "&#8743;",
+        "hex": "&#x2227;"
+    },
+    {
+        "char": "∨",
+        "html": "&or;",
+        "dec": "&#8744;",
+        "hex": "&#x2228;"
+    },
+    {
+        "char": "∠",
+        "html": "&ang;",
+        "dec": "&#8736;",
+        "hex": "&#x2220;"
+    },
+    {
+        "char": "∪",
+        "html": "&cup;",
+        "dec": "&#8746;",
+        "hex": "&#x222A;"
+    },
+    {
+        "char": "∩",
+        "html": "&cap;",
+        "dec": "&#8745;",
+        "hex": "&#x2229;"
+    },
+    {
+        "char": "∅",
+        "html": "&empty;",
+        "dec": "&#8709;",
+        "hex": "&#x2205;"
+    },
+    {
+        "char": "∃",
+        "html": "&exist;",
+        "dec": "&#8707;",
+        "hex": "&#x2203;"
+    },
+    {
+        "char": "ƒ",
+        "html": "&fnof;",
+        "dec": "&#402;",
+        "hex": "&#x192;"
+    },
+    {
+        "char": "∀",
+        "html": "&forall;",
+        "dec": "&#8704;",
+        "hex": "&#x2200;"
+    },
+    {
+        "char": "⁄",
+        "html": "&frasl;",
+        "dec": "&#8260;",
+        "hex": "&#x2044;"
+    },
+    {
+        "char": "≤",
+        "html": "&le;",
+        "dec": "&#8804;",
+        "hex": "&#x2264;"
+    },
+    {
+        "char": "≥",
+        "html": "&ge;",
+        "dec": "&#8805;",
+        "hex": "&#x2265;"
+    },
+    {
+        "char": "≠",
+        "html": "&ne;",
+        "dec": "&#8800;",
+        "hex": "&#x2260;"
+    },
+    {
+        "char": "≅",
+        "html": "&cong;",
+        "dec": "&#8773;",
+        "hex": "&#x2245;"
+    },
+    {
+        "char": "≈",
+        "html": "&asymp;",
+        "dec": "&#8776;",
+        "hex": "&#x2248;"
+    },
+    {
+        "char": "≡",
+        "html": "&equiv;",
+        "dec": "&#8801;",
+        "hex": "&#x2261;"
+    },
+    {
+        "char": "∞",
+        "html": "&infin;",
+        "dec": "&#8734;",
+        "hex": "&#x221E;"
+    },
+    {
+        "char": "∫",
+        "html": "&int;",
+        "dec": "&#8747;",
+        "hex": "&#x222B;"
+    },
+    {
+        "char": "∈",
+        "html": "&isin;",
+        "dec": "&#8712;",
+        "hex": "&#x2208;"
+    },
+    {
+        "char": "∉",
+        "html": "&notin;",
+        "dec": "&#8713;",
+        "hex": "&#x2209;"
+    },
+    {
+        "char": "∋",
+        "html": "&ni;",
+        "dec": "&#8715;",
+        "hex": "&#x220B;"
+    },
+    {
+        "char": "⊂",
+        "html": "&sub;",
+        "dec": "&#8834;",
+        "hex": "&#x2282;"
+    },
+    {
+        "char": "⊄",
+        "html": "&nsub;",
+        "dec": "&#8836;",
+        "hex": "&#x2284;"
+    },
+    {
+        "char": "⊆",
+        "html": "&sube;",
+        "dec": "&#8838;",
+        "hex": "&#x2286;"
+    },
+    {
+        "char": "⊃",
+        "html": "&sup;",
+        "dec": "&#8835;",
+        "hex": "&#x2283;"
+    },
+    {
+        "char": "⊇",
+        "html": "&supe;",
+        "dec": "&#8839;",
+        "hex": "&#x2287;"
+    },
+    {
+        "char": "⟨",
+        "html": "&lang;",
+        "dec": "&#9001;",
+        "hex": "&#x2329;"
+    },
+    {
+        "char": "⟩",
+        "html": "&rang;",
+        "dec": "&#9002;",
+        "hex": "&#x232A;"
+    },
+    {
+        "char": "⌉",
+        "html": "&rceil;",
+        "dec": "&#8969;",
+        "hex": "&#x2309;"
+    },
+    {
+        "char": "⌋",
+        "html": "&rfloor;",
+        "dec": "&#8971;",
+        "hex": "&#x230B;"
+    },
+    {
+        "char": "⌈",
+        "html": "&lceil;",
+        "dec": "&#8968;",
+        "hex": "&#x2308;"
+    },
+    {
+        "char": "⌊",
+        "html": "&lfloor;",
+        "dec": "&#8970;",
+        "hex": "&#x230A;"
+    },
+    {
+        "char": "∗",
+        "html": "&lowast;",
+        "dec": "&#8727;",
+        "hex": "&#x2217;"
+    },
+    {
+        "char": "−",
+        "html": "&minus;",
+        "dec": "&#8722;",
+        "hex": "&#x2212;"
+    },
+    {
+        "char": "∇",
+        "html": "&nabla;",
+        "dec": "&#8711;",
+        "hex": "&#x2207;"
+    },
+    {
+        "char": "⊕",
+        "html": "&oplus;",
+        "dec": "&#8853;",
+        "hex": "&#x2295;"
+    },
+    {
+        "char": "⊗",
+        "html": "&otimes;",
+        "dec": "&#8855;",
+        "hex": "&#x2297;"
+    },
+    {
+        "char": "∂",
+        "html": "&part;",
+        "dec": "&#8706;",
+        "hex": "&#x2202;"
+    },
+    {
+        "char": "‰",
+        "html": "&permil;",
+        "dec": "&#8240;",
+        "hex": "&#x2030;"
+    },
+    {
+        "char": "⊥",
+        "html": "&perp;",
+        "dec": "&#8869;",
+        "hex": "&#x22A5;"
+    },
+    {
+        "char": "ϖ",
+        "html": "&piv;",
+        "dec": "&#982;",
+        "hex": "&#x3D6;"
+    },
+    {
+        "char": "∏",
+        "html": "&prod;",
+        "dec": "&#8719;",
+        "hex": "&#x220F;"
+    },
+    {
+        "char": "∑",
+        "html": "&sum;",
+        "dec": "&#8721;",
+        "hex": "&#x2211;"
+    },
+    {
+        "char": "∝",
+        "html": "&prop;",
+        "dec": "&#8733;",
+        "hex": "&#x221D;"
+    },
+    {
+        "char": "√",
+        "html": "&radic;",
+        "dec": "&#8730;",
+        "hex": "&#x221A;"
+    },
+    {
+        "char": "⋅",
+        "html": "&sdot;",
+        "dec": "&#8901;",
+        "hex": "&#x22C5;"
+    },
+    {
+        "char": "∼",
+        "html": "&sim;",
+        "dec": "&#8764;",
+        "hex": "&#x223C;"
+    },
+    {
+        "char": "∴",
+        "html": "&there4;",
+        "dec": "&#8756;",
+        "hex": "&#x2234;"
+    },
+    {
+        "char": "ϑ",
+        "html": "&thetasym;",
+        "dec": "&#977;",
+        "hex": "&#x3D1;"
+    },
+    {
+        "char": "ϒ",
+        "html": "&upsih;",
+        "dec": "&#978;",
+        "hex": "&#x3D2;"
+    },
+
+    // Arrows
+    {
+        "char": "←",
+        "html": "&larr;",
+        "dec": "&#8592;",
+        "hex": "&#x2190;"
+    },
+    {
+        "char": "→",
+        "html": "&rarr;",
+        "dec": "&#8594;",
+        "hex": "&#x2192;"
+    },
+    {
+        "char": "↑",
+        "html": "&uarr;",
+        "dec": "&#8593;",
+        "hex": "&#x2191;"
+    },
+    {
+        "char": "↓",
+        "html": "&darr;",
+        "dec": "&#8595;",
+        "hex": "&#x2193;"
+    },
+    {
+        "char": "↔",
+        "html": "&harr;",
+        "dec": "&#8596;",
+        "hex": "&#x2194;"
+    },
+    {
+        "char": "⇐",
+        "html": "&lArr;",
+        "dec": "&#8656;",
+        "hex": "&#x21D0;"
+    },
+    {
+        "char": "⇒",
+        "html": "&rArr;",
+        "dec": "&#8658;",
+        "hex": "&#x21D2;"
+    },
+    {
+        "char": "⇑",
+        "html": "&uArr;",
+        "dec": "&#8657;",
+        "hex": "&#x21D1;"
+    },
+    {
+        "char": "⇓",
+        "html": "&dArr;",
+        "dec": "&#8659;",
+        "hex": "&#x21D3;"
+    },
+    {
+        "char": "⇔",
+        "html": "&hArr;",
+        "dec": "&#8660;",
+        "hex": "&#x21D4;"
+    },
+
+    // Special
+    {
+        "char": "ℵ",
+        "html": "&alefsym;",
+        "dec": "&#8501;",
+        "hex": "&#x2135;"
+    },
+    {
+        "char": "↵",
+        "html": "&crarr;",
+        "dec": "&#8629;",
+        "hex": "&#x21B5;"
+    },
+    {
+        "char": "℘",
+        "html": "&weierp;",
+        "dec": "&#8472;",
+        "hex": "&#x2118;"
+    },
+    {
+        "char": "ℑ",
+        "html": "&image;",
+        "dec": "&#8465;",
+        "hex": "&#x2111;"
+    },
+    {
+        "char": "ℜ",
+        "html": "&real;",
+        "dec": "&#8476;",
+        "hex": "&#x211C;"
+    },
+    {
+        "char": "◊",
+        "html": "&loz;",
+        "dec": "&#9674;",
+        "hex": "&#x25CA;"
+    },
+    {
+        "char": "‎",
+        "html": "&lrm;",
+        "dec": "&#8206;",
+        "hex": "&#x200E;"
+    },
+    {
+        "char": "‏",
+        "html": "&rlm;",
+        "dec": "&#8207;",
+        "hex": "&#x200F;"
+    },
+
+    // Greek
+    {
+        "char": "Α",
+        "html": "&Alpha;",
+        "dec": "&#913;",
+        "hex": "&#x391;"
+    },
+    {
+        "char": "Β",
+        "html": "&Beta;",
+        "dec": "&#914;",
+        "hex": "&#x392;"
+    },
+    {
+        "char": "Γ",
+        "html": "&Gamma;",
+        "dec": "&#915;",
+        "hex": "&#x393;"
+    },
+    {
+        "char": "Δ",
+        "html": "&Delta;",
+        "dec": "&#916;",
+        "hex": "&#x394;"
+    },
+    {
+        "char": "Ε",
+        "html": "&Epsilon;",
+        "dec": "&#917;",
+        "hex": "&#x395;"
+    },
+    {
+        "char": "Ζ",
+        "html": "&Zeta;",
+        "dec": "&#918;",
+        "hex": "&#x396;"
+    },
+    {
+        "char": "Η",
+        "html": "&Eta;",
+        "dec": "&#919;",
+        "hex": "&#x397;"
+    },
+    {
+        "char": "Θ",
+        "html": "&Theta;",
+        "dec": "&#920;",
+        "hex": "&#x398;"
+    },
+    {
+        "char": "Ι",
+        "html": "&Iota;",
+        "dec": "&#921;",
+        "hex": "&#x399;"
+    },
+    {
+        "char": "Κ",
+        "html": "&Kappa;",
+        "dec": "&#922;",
+        "hex": "&#x39A;"
+    },
+    {
+        "char": "Λ",
+        "html": "&Lambda;",
+        "dec": "&#923;",
+        "hex": "&#x39B;"
+    },
+    {
+        "char": "Μ",
+        "html": "&Mu;",
+        "dec": "&#924;",
+        "hex": "&#x39C;"
+    },
+    {
+        "char": "Ν",
+        "html": "&Nu;",
+        "dec": "&#925;",
+        "hex": "&#x39D;"
+    },
+    {
+        "char": "Ξ",
+        "html": "&Xi;",
+        "dec": "&#926;",
+        "hex": "&#x39E;"
+    },
+    {
+        "char": "Ο",
+        "html": "&Omicron;",
+        "dec": "&#927;",
+        "hex": "&#x39F;"
+    },
+    {
+        "char": "Π",
+        "html": "&Pi;",
+        "dec": "&#928;",
+        "hex": "&#x3A0;"
+    },
+    {
+        "char": "Ρ",
+        "html": "&Rho;",
+        "dec": "&#929;",
+        "hex": "&#x3A1;"
+    },
+    {
+        "char": "Σ",
+        "html": "&Sigma;",
+        "dec": "&#931;",
+        "hex": "&#x3A3;"
+    },
+    {
+        "char": "Τ",
+        "html": "&Tau;",
+        "dec": "&#932;",
+        "hex": "&#x3A4;"
+    },
+    {
+        "char": "Υ",
+        "html": "&Upsilon;",
+        "dec": "&#933;",
+        "hex": "&#x3A5;"
+    },
+    {
+        "char": "Φ",
+        "html": "&Phi;",
+        "dec": "&#934;",
+        "hex": "&#x3A6;"
+    },
+    {
+        "char": "Χ",
+        "html": "&Chi;",
+        "dec": "&#935;",
+        "hex": "&#x3A7;"
+    },
+    {
+        "char": "Ψ",
+        "html": "&Psi;",
+        "dec": "&#936;",
+        "hex": "&#x3A8;"
+    },
+    {
+        "char": "Ω",
+        "html": "&Omega;",
+        "dec": "&#937;",
+        "hex": "&#x3A9;"
+    },
+    {
+        "char": "α",
+        "html": "&alpha;",
+        "dec": "&#945;",
+        "hex": "&#x3B1;"
+    },
+    {
+        "char": "β",
+        "html": "&beta;",
+        "dec": "&#946;",
+        "hex": "&#x3B2;"
+    },
+    {
+        "char": "γ",
+        "html": "&gamma;",
+        "dec": "&#947;",
+        "hex": "&#x3B3;"
+    },
+    {
+        "char": "δ",
+        "html": "&delta;",
+        "dec": "&#948;",
+        "hex": "&#x3B4;"
+    },
+    {
+        "char": "ε",
+        "html": "&epsilon;",
+        "dec": "&#949;",
+        "hex": "&#x3B5;"
+    },
+    {
+        "char": "ζ",
+        "html": "&zeta;",
+        "dec": "&#950;",
+        "hex": "&#x3B6;"
+    },
+    {
+        "char": "η",
+        "html": "&eta;",
+        "dec": "&#951;",
+        "hex": "&#x3B7;"
+    },
+    {
+        "char": "θ",
+        "html": "&theta;",
+        "dec": "&#952;",
+        "hex": "&#x3B8;"
+    },
+    {
+        "char": "ι",
+        "html": "&iota;",
+        "dec": "&#953;",
+        "hex": "&#x3B9;"
+    },
+    {
+        "char": "κ",
+        "html": "&kappa;",
+        "dec": "&#954;",
+        "hex": "&#x3BA;"
+    },
+    {
+        "char": "λ",
+        "html": "&lambda;",
+        "dec": "&#955;",
+        "hex": "&#x3BB;"
+    },
+    {
+        "char": "μ",
+        "html": "&mu;",
+        "dec": "&#956;",
+        "hex": "&#x3BC;"
+    },
+    {
+        "char": "ν",
+        "html": "&nu;",
+        "dec": "&#957;",
+        "hex": "&#x3BD;"
+    },
+    {
+        "char": "ξ",
+        "html": "&xi;",
+        "dec": "&#958;",
+        "hex": "&#x3BE;"
+    },
+    {
+        "char": "ο",
+        "html": "&omicron;",
+        "dec": "&#959;",
+        "hex": "&#x3BF;"
+    },
+    {
+        "char": "π",
+        "html": "&pi;",
+        "dec": "&#960;",
+        "hex": "&#x3C0;"
+    },
+    {
+        "char": "ρ",
+        "html": "&rho;",
+        "dec": "&#961;",
+        "hex": "&#x3C1;"
+    },
+    {
+        "char": "σ",
+        "html": "&sigma;",
+        "dec": "&#963;",
+        "hex": "&#x3C3;"
+    },
+    {
+        "char": "ς",
+        "html": "&sigmaf;",
+        "dec": "&#962;",
+        "hex": "&#x3C2;"
+    },
+    {
+        "char": "τ",
+        "html": "&tau;",
+        "dec": "&#964;",
+        "hex": "&#x3C4;"
+    },
+    {
+        "char": "υ",
+        "html": "&upsilon;",
+        "dec": "&#965;",
+        "hex": "&#x3C5;"
+    },
+    {
+        "char": "φ",
+        "html": "&phi;",
+        "dec": "&#966;",
+        "hex": "&#x3C6;"
+    },
+    {
+        "char": "χ",
+        "html": "&chi;",
+        "dec": "&#967;",
+        "hex": "&#x3C7;"
+    },
+    {
+        "char": "ψ",
+        "html": "&psi;",
+        "dec": "&#968;",
+        "hex": "&#x3C8;"
+    },
+    {
+        "char": "ω",
+        "html": "&omega;",
+        "dec": "&#969;",
+        "hex": "&#x3C9;"
+    },
+
+    // Dashes
+    {
+        "char": "–",
+        "html": "&ndash;",
+        "dec": "&#8211;",
+        "hex": "&#x2013;"
+    },
+    {
+        "char": "—",
+        "html": "&mdash;",
+        "dec": "&#8212;",
+        "hex": "&#x2014;"
+    },
+    {
+        "char": "−",
+        "html": "&minus;",
+        "dec": "&#8722;",
+        "hex": "&#x2212;"
+    }
+];
+
 /***
  *      _____           _        _
  *     |  __ \         | |      | |
@@ -291,13 +1885,13 @@ function parseBool(value = null) {
  */
 
 // Finds the last index using the same format as `Array..findIndex`
-    // Array..findLastIndex(predicate:function[, thisArg:object]) -> number#Integer
+    // Array..findLastIndex(predicate:function[, thisArg:object]) → number#Integer
 Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = null) {
     return (this.length - this.reverse().findIndex(predicate, thisArg)) - 1;
 };
 
 // Determines if the array contains any of the value(s)
-    // Array..contains(...values:any) -> boolean
+    // Array..contains(...values:any) → boolean
 Array.prototype.contains ??= function contains(...values) {
     let has = false;
 
@@ -310,7 +1904,7 @@ Array.prototype.contains ??= function contains(...values) {
 
 // https://stackoverflow.com/a/6117889/4211612
 // Returns the current week of the year
-    // Date..getWeek() -> number:Integer
+    // Date..getWeek() → number:Integer
 Date.prototype.getWeek = function getWeek() {
     let now = new Date(Date.UTC(
         this.getFullYear(),
@@ -328,7 +1922,7 @@ Date.prototype.getWeek = function getWeek() {
 };
 
 // Returns an element based upon its text content
-    // Element..getElementByText(searchText:string|regexp[, flags:string]) -> Element | null
+    // Element..getElementByText(searchText:string|regexp[, flags:string]) → Element | null
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': typeof searchText);
 
@@ -440,7 +2034,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
 };
 
 // Returns an array of elements that contain the text content
-    // Element..getElementsByTextContent(searchText:string|regexp[, flags:string]) -> array
+    // Element..getElementsByTextContent(searchText:string|regexp[, flags:string]) → array
 Element.prototype.getElementsByTextContent ??= function getElementsByTextContent(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': typeof searchText);
 
@@ -528,14 +2122,14 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
 // https://stackoverflow.com/a/35859991/4211612
 // Captures the current frame from a video element
-    // HTMLVideoElement..captureFrame([imageType:string[, returnType:string]]) -> String#dataURL | Object | HTMLImageElement
+    // HTMLVideoElement..captureFrame([imageType:string[, returnType:string]]) → String#dataURL | Object | HTMLImageElement
         // imageType = "image/jpeg" | "image/png" | "image/webp"
         // returnType = "img" | "element" | "HTMLImageElement"
-            // -> HTMLImageElement
+            // → HTMLImageElement
         // returnType = "json" | "object"
-            // -> Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
+            // → Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
         // returnType = "dataURI" | "dataURL" | ...
-            // -> String#dataURL
+            // → String#dataURL
 HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "image/png", returnType = "dataURL") {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -571,7 +2165,7 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write#example_of_copying_canvas_contents_to_the_clipboard
 // Copies the current frame from a video element to the clipboard
-    // HTMLVideoElement..copyFrame() -> undefined
+    // HTMLVideoElement..copyFrame() → undefined
 HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -590,14 +2184,14 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
 };
 
 // Converts SVGs to images
-    // SVGtoImage(SVG:HTMLSVGElement|string[, imageType:string[, returnType:string]]) -> String#dataURL | Object | HTMLImageElement
+    // SVGtoImage(SVG:HTMLSVGElement|string[, imageType:string[, returnType:string]]) → String#dataURL | Object | HTMLImageElement
         // imageType = "image/jpeg" | "image/png" | "image/webp"
         // returnType = "img" | "element" | "HTMLImageElement"
-            // -> HTMLImageElement
+            // → HTMLImageElement
         // returnType = "json" | "object"
-            // -> Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
+            // → Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
         // returnType = "dataURI" | "dataURL" | ...
-            // -> String#dataURL
+            // → String#dataURL
 function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
     if(typeof SVG == 'string' || SVG instanceof String)
         SVG = (SVGtoImage.DOMParser ??= new DOMParser).parseFromString(SVG + '', 'text/xml')?.querySelector('svg');
@@ -656,11 +2250,11 @@ function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
 };
 
 // Returns a number formatted using unit suffixes
-    // Number..suffix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) -> string
+    // Number..suffix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) → string
         // decimalPlaces = true | false | *:number
-            // true -> 123.456.suffix('m', true) => "123.456m"
-            // false -> 123.456.suffix('m', false) => "123m"
-            // 1 -> 123.456.suffix('m', 1) => "123.4m"
+            // true → 123.456.suffix('m', true) => "123.456m"
+            // false → 123.456.suffix('m', false) => "123m"
+            // 1 → 123.456.suffix('m', 1) => "123.4m"
         // format = "metric" | "imperial" | "readable"
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
@@ -669,7 +2263,8 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 
     number = Math.abs(number);
 
-    let system = {};
+    let system = {},
+        capacity = 1_000;
 
     switch(format.toLowerCase()) {
         case 'imperial': {
@@ -686,6 +2281,13 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
             system.small = '';
         } break;
 
+        case 'data': {
+            system.large = 'kMGTPEZY';
+            system.small = 'mμnpfazy';
+
+            capacity = 1_024;
+        } break;
+
         case 'metric':
         default: {
             system.large = 'kMGTPEZY';
@@ -695,14 +2297,14 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 
     if(number > 1) {
         for(let index = 0, units = system.large; index < units.length; ++index)
-            if(number >= 1_000) {
-                number /= 1_000;
+            if(number >= capacity) {
+                number /= capacity;
                 suffix = units[index];
             }
     } else if(number < 1 && number > 0) {
         for(let index = 0, units = system.small; index < units.length; ++index) {
             if(number < 1) {
-                number *= 1_000;
+                number *= capacity;
                 suffix = units[index];
             }
         }
@@ -718,13 +2320,13 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 };
 
 // Floors a number to the nearest X
-    // Number..floorToNearest(number) -> Number
+    // Number..floorToNearest(number) → Number
 Number.prototype.floorToNearest ??= function floorToNearest(number) {
     return this - (this % number);
 };
 
 // Clamps (keeps) a number between two points
-    // Number..clamp(min:number[, max:number]) -> Number
+    // Number..clamp(min:number[, max:number]) → Number
 Number.prototype.clamp ??= function clamp(min, max) {
     if(Number.isNaN(min))
         throw TypeError('[min] must be a number');
@@ -745,7 +2347,7 @@ Number.prototype.clamp ??= function clamp(min, max) {
 };
 
 // Adds all Math prototypes to Numbers
-    // Math... -> Number...
+    // Math... → Number...
 Number.prototype.Math = (parent => {
     let methods = Object.getOwnPropertyNames(parent);
 
@@ -764,7 +2366,7 @@ Number.prototype.Math = (parent => {
 })(Math);
 
 // Determines if the string contains any of the value(s)
-    // String..contains(...values:any) -> boolean
+    // String..contains(...values:any) → boolean
 String.prototype.contains ??= function contains(...values) {
     let has = false;
 
@@ -790,7 +2392,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
     }
     // There are X number of items
     else {
-        // Ends with a <consonant "y">, as in "century" -> "centuries"
+        // Ends with a <consonant "y">, as in "century" → "centuries"
         if(/([^aeiou])([y])$/i.test(string))
         EndsWith_Consonant_Y: {
             let { $1, $2 } = RegExp,
@@ -801,7 +2403,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
 
             string = $L + $1 + $T[$2];
         }
-        // Ends with <vowel "y">, as in "day" -> "days"
+        // Ends with <vowel "y">, as in "day" → "days"
         else if(/([aeiou])([y])$/i.test(string))
         EndsWith_Vowel_Y: {
             let { $_ } = RegExp;
@@ -1221,13 +2823,13 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
 
                 // "Normal" operations
                 default: {
-                    // "lunch" -> "lunches"
+                    // "lunch" → "lunches"
                     if(/([cs]h|[sxz])$/i.test(string))
                         string += toFormat('es', pattern);
-                    // "ellipsis" -> "ellipses"
+                    // "ellipsis" → "ellipses"
                     else if(/(is)$/i.test(string))
                         string = string.replace(RegExp.$1, toFormat('es', pattern));
-                    // "criterion" -> "criteria"
+                    // "criterion" → "criteria"
                     else if(/(on)$/i.test(string))
                         string = string.replace(RegExp.$1, toFormat('a', pattern));
                     else
@@ -1251,7 +2853,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
  *
  */
 // Returns if an item is of an object class
-    // isObj([object:*[, ...or:Function=Constructor]]) -> Boolean
+    // isObj([object:*[, ...or:Function=Constructor]]) → Boolean
 function isObj(object, ...or) {
     return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
         .find(constructor => object?.constructor === constructor || object instanceof constructor);
@@ -1300,7 +2902,7 @@ function toFormat(string, patterns) {
 
 // https://stackoverflow.com/a/19176790/4211612
 // Returns the assumed operating system
-    // GetOS() -> String
+    // GetOS() → String
 function GetOS() {
     let { userAgent } = top.navigator;
     let OSs = {
@@ -1324,7 +2926,7 @@ function GetOS() {
 }
 
 // Returns the assumed key combination
-    // GetMacro(keys:string) -> string
+    // GetMacro(keys:string) → string
 function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
     OS ??= GetOS();
@@ -1358,7 +2960,7 @@ function GetMacro(keys = '', OS = null) {
         .filter(string => !!string.length)
         .map(key => {
             switch(OS.slice(0, 7)) {
-                /** MacOS Keys | Order of Precedence -> Ctrl Opt Shift Cmd [Key(s)]
+                /** MacOS Keys | Order of Precedence → Ctrl Opt Shift Cmd [Key(s)]
                  * Control (Ctrl)       ^
                  * Option/Alt (Opt/Alt) ⌥
                  * Shift                ⇧
@@ -1379,7 +2981,7 @@ function GetMacro(keys = '', OS = null) {
                     );
                 } break;
 
-                // Windows Keys | Order of Precedence -> Meta Ctrl Alt Shift [Key(s)]
+                // Windows Keys | Order of Precedence → Meta Ctrl Alt Shift [Key(s)]
                 case 'Windows': {
                     key = (
                         /^(Cmd|\u2318)$/i.test(key)?
@@ -1401,7 +3003,7 @@ function GetMacro(keys = '', OS = null) {
 }
 
 // Logs messages (green)
-    // LOG([...messages]) -> undefined
+    // LOG([...messages]) → undefined
 function LOG(...messages) {
     let CSS = `
         background-color: #00332b;
@@ -1465,7 +3067,7 @@ function LOG(...messages) {
 };
 
 // Logs warnings (yellow)
-    // WARN([...messages]) -> undefined
+    // WARN([...messages]) → undefined
 function WARN(...messages) {
     let CSS = `
         background-color: #332b00;
@@ -1529,7 +3131,7 @@ function WARN(...messages) {
 };
 
 // Logs errors (red)
-    // ERROR([...messages]) -> undefined
+    // ERROR([...messages]) → undefined
 function ERROR(...messages) {
     let CSS = `
         background-color: #290000;
@@ -1593,7 +3195,7 @@ function ERROR(...messages) {
 };
 
 // Logs comments (blue)
-    // LOG([...messages]) -> undefined
+    // LOG([...messages]) → undefined
 function REMARK(...messages) {
     let CSS = `
         background-color: #002b55;
@@ -1668,7 +3270,7 @@ function phantomClick(...elements) {
 }
 
 // Displays an alert message
-    // alert([message:string]) -> null
+    // alert([message:string]) → null
 function alert(message = '') {
     if(defined($('.tt-alert')))
         return awaitOn(() => !defined($('.tt-alert'))? alert(message): null);
@@ -1723,7 +3325,7 @@ function alert(message = '') {
 }
 
 // Displays an alert message (silently)
-    // alert.silent([message:string]) -> null
+    // alert.silent([message:string]) → null
 alert.silent ??= (message = '') => {
     if(defined($('.tt-alert')))
         return awaitOn(() => !defined($('.tt-alert'))? alert.silent(message): null);
@@ -1741,7 +3343,7 @@ alert.silent ??= (message = '') => {
 };
 
 // Displays an alert message with a timer
-    // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> null
+    // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → null
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(defined($('.tt-alert')))
         return awaitOn(() => !defined($('.tt-alert'))? alert.timed(message, milliseconds, pausable): null);
@@ -1778,7 +3380,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 };
 
 // Displays a confirmation message
-    // confirm([message:string]) -> Boolean|null
+    // confirm([message:string]) → Boolean|null
 function confirm(message = '') {
     if(defined($('.tt-confirm')))
         return awaitOn(() => !defined($('.tt-confirm'))? confirm(message): null);
@@ -1850,7 +3452,7 @@ function confirm(message = '') {
 }
 
 // Displays a confirmation message (silently)
-    // confirm.silent([message:string]) -> Boolean|null
+    // confirm.silent([message:string]) → Boolean|null
 confirm.silent ??= (message = '') => {
     if(defined($('.tt-confirm')))
         return awaitOn(() => !defined($('.tt-confirm'))? confirm.silent(message): null);
@@ -1868,7 +3470,7 @@ confirm.silent ??= (message = '') => {
 };
 
 // Displays a confirmation message with a timer
-    // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> Boolean|null
+    // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → Boolean|null
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(defined($('.tt-confirm')))
         return awaitOn(() => !defined($('.tt-confirm'))? confirm.timed(message, milliseconds, pausable): null);
@@ -1905,7 +3507,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 };
 
 // Prompts a message
-    // prompt([message:string[, defaultValue:string]]) -> String|null
+    // prompt([message:string[, defaultValue:string]]) → String|null
 function prompt(message = '', defaultValue = '') {
     if(defined($('.tt-prompt')))
         return awaitOn(() => !defined($('.tt-prompt'))? prompt(message, defaultValue): null);
@@ -1995,7 +3597,7 @@ function prompt(message = '', defaultValue = '') {
 }
 
 // Prompts a message (silently)
-    // prompt.silent([message:string[, defaultValue:string]]) -> String|null
+    // prompt.silent([message:string[, defaultValue:string]]) → String|null
 prompt.silent ??= (message = '', defaultValue = '') => {
     if(defined($('.tt-prompt')))
         return awaitOn(() => !defined($('.tt-prompt'))? prompt.silent(message, defaultValue): null);
@@ -2013,7 +3615,7 @@ prompt.silent ??= (message = '', defaultValue = '') => {
 };
 
 // Prompts a message with a timer
-    // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) -> String|null
+    // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → String|null
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     if(defined($('.tt-prompt')))
         return awaitOn(() => !defined($('.tt-prompt'))? prompt.timed(message, milliseconds, pausable): null);

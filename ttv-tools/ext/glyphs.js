@@ -33,6 +33,7 @@
  * close
  * crown
  * globe
+ * intro
  * leave
  * music
  * party
@@ -99,6 +100,7 @@ top.Glyphs ??= {
     verified: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.5 3.5L8 2L3.5 3.5L2 8L3.5 12.5L8 14L12.5 12.5L14 8L12.5 3.5ZM7.00008 11L11.5 6.5L10 5L7.00008 8L5.5 6.5L4 8L7.00008 11Z"></path></svg>`,
 
     compass: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M8.949 7.684L14 6l-1.684 5.051a2 2 0 01-1.265 1.265L6 14l1.684-5.051a2 2 0 011.265-1.265zM11 10a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
+    dislike: `<svg fill="#bb1411"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.188 4.188L9.17 4.17A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829l5.367 5.367L10.484 11H6.538l2.65-6.812z"></path><path d="M10.154 16.846l6.674-6.674A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.091.59L9.462 9h4.055l-3.363 7.846z"></path></g></svg>`,
 
     emotes: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
     export: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 01-2 2H4a2 2 0 01-2-2zM15 7l-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"></path></g></svg>`,
@@ -122,6 +124,7 @@ top.Glyphs ??= {
     close: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 16V4H2v12h2zM13 15l-1.5-1.5L14 11H6V9h8l-2.5-2.5L13 5l5 5-5 5z"></path></g></svg>`,
     crown: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M13.798 10.456L10 6.657l-3.798 3.799L4 8.805V13h12V8.805l-2.202 1.65zM18 5v8a2 2 0 0 1-2 2H4a2.002 2.002 0 0 1-2-2V5l4 3 4-4 4 4 4-3z"></path></g></svg>`,
     globe: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M10 2c4.415 0 8 3.585 8 8s-3.585 8-8 8-8-3.585-8-8 3.585-8 8-8zm5.917 9a6.015 6.015 0 01-3.584 4.529A10 10 0 0013.95 11h1.967zm0-2a6.015 6.015 0 00-3.584-4.529A10 10 0 0113.95 9h1.967zm-3.98 0A8.002 8.002 0 0010 4.708 8.002 8.002 0 008.063 9h3.874zm-3.874 2A8.002 8.002 0 0010 15.292 8.002 8.002 0 0011.937 11H8.063zM6.05 11a10 10 0 001.617 4.529A6.014 6.014 0 014.083 11H6.05zm0-2a10 10 0 011.617-4.529A6.014 6.014 0 004.083 9H6.05z" clip-rule="evenodd"></path></g></svg>`,
+    intro: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M18 2v5.646a3 3 0 0 1-1.886 2.785L13 11.677V18h-2v-5.557L5.649 14.45a1 1 0 0 0-.649.936V18H3v-2.614a3 3 0 0 1 1.947-2.809L7 11.807V9.874A4.002 4.002 0 0 1 8 2a4 4 0 0 1 1 7.874v1.183l2.639-.99 3.732-1.493A1 1 0 0 0 16 7.646V2h2ZM8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"></path></svg>`,
     leave: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16 18h-4a2 2 0 01-2-2v-2h2v2h4V4h-4v2h-2V4a2 2 0 012-2h4a2 2 0 012 2v12a2 2 0 01-2 2z"></path><path d="M7 5l1.5 1.5L6 9h8v2H6l2.5 2.5L7 15l-5-5 5-5z"></path></g></svg>`,
     music: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 4.331a2 2 0 00-2.304-1.977l-9 1.385A2 2 0 005 5.716v7.334A2.5 2.5 0 106.95 16H7V9.692l9-1.385v2.743A2.5 2.5 0 1017.95 14H18V4.33zm-2 0L7 5.716v1.953l9-1.385V4.33z" clip-rule="evenodd"></path></g></svg>`,
     party: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 4a2 2 0 113.999.071L18 8c-.232.62-.5 1.235-.806 1.836-1.006 1.983-2.403 3.81-4.146 5.128-1.743 1.318-3.88 2.264-6.063 2.738-.661.144-1.326.244-1.985.298L4.189 5.829A2 2 0 013 4zm3.846 11.624l.004.057c.78-.186 1.55-.441 2.288-.758l2.373-7.117-1.84-.657-2.825 8.475zm.941-9.148L6.198 5.91l.297 4.445 1.292-3.878zm5.608 2.003l-1.656 4.966.103-.076c1.396-1.057 2.571-2.544 3.452-4.212l-1.9-.678z"></path></svg>`,
@@ -262,7 +265,9 @@ top.Glyphs ??= {
 
             // 6th batch
             ne_arrow: "\u{2197}",
+            dislike: "\u{1F494}",
             undread: "\u{2709}",
+            intro: "\u{1F64B}",
         });
     },
 

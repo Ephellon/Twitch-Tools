@@ -25,6 +25,34 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     background: transparent;
 }
 
+/* Misc. */
+.tt-hide-text-overflow {
+    display: block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.tt-live, .tt-offline {
+    background-color: #e91916;
+    /* border: 2px solid #0e0e0f; */
+    border-radius: 4px;
+    color: #fff;
+    display: inline-block;
+    font-family: Roobert, Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 80%;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+
+    padding: .1rem .3rem;
+}
+
+.tt-offline {
+    background-color: #8883;
+    color: var(--color-text-interactable);
+}
+
 /* Tooltips */
 [role="tooltip"].img-container { /* adjust tooltips with SVGs or IMGs */ }
 

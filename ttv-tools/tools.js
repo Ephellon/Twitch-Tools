@@ -186,7 +186,7 @@ class Balloon {
                                     role: 'dialog',
                                 },
                                 // Header
-                                f('div.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', {},
+                                f('div.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:inherit; position:sticky; top:0; z-index:99999;` },
                                     f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center', {},
                                         (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST, }, title))
                                     ),
@@ -881,7 +881,7 @@ class ContextMenu {
                             if(icon?.length)
                                 icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: 16, width: 16, style: 'vertical-align:-3px' }) });
                             if(text?.length)
-                                text = f('div', { style: 'display:block; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;', innerHTML: text });
+                                text = f('div.tt-hide-text-overflow', { innerHTML: text });
                             if(shortcut?.length)
                                 shortcut = f('pre', { style: 'display:inline-block; font-family:monospace!important; float:right; margin-right:1rem' }, f('code', {}, GetMacro(shortcut)));
 
@@ -924,7 +924,7 @@ class Search {
     );
 
     static #cache = new Map;
-    static cacheLeaseTime = 300_000;
+    static cacheLeaseTime = 150_000;
 
     constructor(ID = null, type = 'channel', as = null) {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
@@ -1204,6 +1204,60 @@ class Search {
         return searchResults;
     }
 
+    static void(ID = null, type = 'channel', as = null) {
+        let pathname = window.location.pathname.substr(1),
+            player = ({
+                type: 'site',
+                routes: {
+                    exact: ['activate', 'bits', 'bits-checkout', 'directory', 'following', 'popout', 'prime', 'store', 'subs'],
+                    start: ['bits-checkout/', 'checkout/', 'collections/', 'communities/', 'dashboard/', 'directory/', 'event/', 'prime/', 'products/', 'settings/', 'store/', 'subs/'],
+                },
+            });
+
+        let vodID = null, channelName = null;
+        if(!defined(ID) && /^auto(?:matic)?$/i.test(type)) {
+            if(true
+                && !player.routes.exact.contains(pathname)
+                && !player.routes.start.filter(route => pathname.startsWith(route)).length
+                && (
+                    // Is a VOD
+                    pathname.startsWith('videos/')?
+                        (
+                            vodID = pathname
+                                .replace('videos/', '')
+                                .replace(/\//g, '')
+                                .replace(/^v/, '')
+                        ):
+                    // Is a channel
+                    (
+                        channelName = pathname.replace(/\//g, '')
+                    )
+                )
+            )
+                /* All good */;
+            else
+                throw `Unable to parse Search data`;
+
+            if(vodID?.length) {
+                ID = vodID;
+                type = 'vod';
+            } else if(channelName?.length) {
+                ID = channelName;
+                type = 'channel';
+            }
+        }
+
+        if(type == 'vod')
+            vodID = ID;
+
+        if(type == 'channel')
+            channelName = ID;
+
+        let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value;
+
+        return Search.#cache.delete(searchID);
+    }
+
     static retrieve(query) {
         if(typeof fetch == 'function')
             return fetch('https://gql.twitch.tv/gql', query);
@@ -1263,9 +1317,14 @@ class Search {
             turbo:              'fast',
 
             display_name:       'name',
+            status:             'desc',
             live:               'live',
             href:               'href',
             profile_image:      'icon',
+        },
+        DataConversionKey = {
+            started_at:         'actualStartTime',
+            updated_at:         'lastSeen',
         },
             deeper = [];
 
@@ -1320,6 +1379,7 @@ class Search {
             } break;
         }
 
+        // Deeper levels
         let deeperLevels = {};
         for(let key in json) {
             let to = ConversionKey[key];
@@ -1335,6 +1395,26 @@ class Search {
 
             if(to?.length)
                 data[to] = deeperLevels[key];
+        }
+
+        // Deeper data levels
+        data.data ??= {};
+
+        let deeperDataLevels = {};
+        for(let key in json) {
+            let to = DataConversionKey[key];
+
+            if(to?.length)
+                data.data[to] ??= json[key];
+            if(deeper.contains(to))
+                deeperDataLevels[to] = json[key];
+        }
+
+        for(let key in deeperDataLevels) {
+            let to = DataConversionKey[key];
+
+            if(to?.length)
+                data.data[to] ??= deeperDataLevels[key];
         }
 
         return new Promise(resolve => resolve(data));
@@ -3230,6 +3310,7 @@ let Initialize = async(START_OVER = false) => {
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * cult:number*      - GETTER: the estimated number of followers
      * data:object       - extra data about the channel
+     * desc:string*      - GETTER: the status (description/title) of the stream
      * done:boolean*     - GETTER: are all of the channel point rewards purchasable
      * face:string       - GETTER: a URL to the channel points image (if applicable)
      * fiat:string*      - GETTER: returns the name of the channel points (if applicable)
@@ -3281,6 +3362,10 @@ let Initialize = async(START_OVER = false) => {
 
         // Gets values later...
         data: {},
+
+        get desc() {
+            return $('[data-a-target="stream-title"i]')?.textContent;
+        },
 
         get done() {
             return STREAMER.__done__ ?? (async() => {
@@ -3415,16 +3500,16 @@ let Initialize = async(START_OVER = false) => {
                 start = +new Date(STREAMER.data.firstSeen),
                 end = +new Date;
 
-            start = max(start, epoch);
+            start = max((start || epoch), epoch);
 
             let length = ((end - start) / 60_000),
                 height = (STREAMER.data.followers ?? STREAMER.cult),
 
                 viewed = ((STREAMER.coin | 1) * 3/7/2),
                 amount = (viewed / length),
-                rank = round(height / height**amount);
+                rank = (height / height**amount);
 
-            return rank.clamp(0, length);
+            return round(rank.clamp(0, length));
         },
 
         get redo() {
@@ -5114,6 +5199,190 @@ let Initialize = async(START_OVER = false) => {
                 },
             });
 
+            // Live Reminders
+            let live_reminders_catalog_button = FIRST_IN_LINE_BALLOON?.addButton({
+                attributes: {
+                    id: 'live-reminders-catalog',
+                    contrast: THEME__PREFERRED_CONTRAST,
+                },
+
+                icon: 'notify',
+                left: true,
+                onclick: event => {
+                    let { currentTarget } = event,
+                        parent = currentTarget.closest('[id^="tt-balloon-container"i]');
+
+                    LoadCache('LiveReminders', async({ LiveReminders }) => {
+                        LiveReminders = JSON.parse(LiveReminders || '{}');
+
+                        let f = furnish;
+                        let body = $('#tt-reminder-listing'),
+                            head = $('[up-next--header]');
+
+                        if(defined(body)) {
+                            live_reminders_catalog_button.innerHTML = Glyphs.modify('notify', { height: '20px', width: '20px' });
+                            live_reminders_catalog_button.tooltip.innerHTML = 'View Live Reminders';
+                            head.innerHTML = 'Up Next';
+
+                            return body?.remove();
+                        } else {
+                            live_reminders_catalog_button.innerHTML = Glyphs.modify('stream', { height: '20px', width: '20px' });
+                            live_reminders_catalog_button.tooltip.innerHTML = 'View Up Next';
+                            head.innerHTML = 'Live Reminders';
+                        }
+
+                        body = f('div#tt-reminder-listing', {});
+
+                        parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
+
+                        // List all reminders, in order of their last live time
+                        let { abs, random, round } = Math;
+                        let reminders = [];
+                        let now = new Date,
+                            today = now.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
+                            yesterday = new Date(+now - 86_400_000).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' });
+
+                        sorting:
+                        for(let reminderName in LiveReminders)
+                            reminders.push({ name: reminderName, time: new Date(LiveReminders[reminderName]) });
+                        reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time))? -1: +1);
+
+                        if(!reminders.length)
+                            return alert.timed('There are no Live Reminders to display', 7_000);
+
+                        listing:
+                        for(let { name, time } of reminders) {
+                            let channel = await new Search(name).then(Search.convertResults),
+                                ok = /\/jtv_user/i.test(channel.icon);
+
+                            // Search did not complete...
+                            let max = 5;
+                            while(!ok && --max > 0) {
+                                Search.void(name);
+
+                                channel = await awaitOn(() => new Search(name).then(Search.convertResults), 500);
+                                ok = /\/jtv_user/i.test(channel.icon);
+                            }
+
+                            // Legacy reminders... | v4.26 → v4.27
+                            let legacy = +now < +time;
+
+                            if(!defined(channel))
+                                continue listing;
+
+                            let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
+                                hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
+                                recent = (abs(+now - +time) / 3_600_000 < 24),
+                                since = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat).reverse().pop(),
+                                [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy],
+                                when = `<span class="tt-${ (channel.live? 'live': 'offline') }" style="min-width:3.5em">${ (channel.live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
+
+                            let { href, icon, live, desc = '' } = channel;
+                            let container = f(`div.tt-reminder`, { name, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
+                                f('div.simplebar-scroll-content',
+                                    {
+                                        style: 'overflow: hidden;',
+                                    },
+                                    f('div.simplebar-content',
+                                        {
+                                            style: 'overflow: hidden; width:100%;',
+                                        },
+                                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden',
+                                            { 'data-test-selector': 'center-window__content' },
+                                            f('div.persistent-notification.tt-relative',
+                                                {
+                                                    style: 'width:100%',
+
+                                                    'data-test-selector': 'persistent-notification',
+                                                },
+                                                f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                                    f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive',
+                                                        {
+                                                            'data-test-selector': 'persistent-notification__click',
+                                                            // Sometimes, Twitch likes to default to `_blank`
+                                                            'target': '_self',
+
+                                                            href,
+                                                        },
+                                                        f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                                            // Avatar
+                                                            f('div', {},
+                                                                f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
+                                                                    f('div.tt-aspect.tt-aspect--align-top', {},
+                                                                        f('img.tt-balloon-avatar.tt-image', { src: icon })
+                                                                    )
+                                                                )
+                                                            ),
+                                                            // Message body
+                                                            f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
+                                                                f('div.persistent-notification__body.tt-overflow-hidden',
+                                                                    {
+                                                                        'data-test-selector': 'persistent-notification__body'
+                                                                    },
+                                                                    f('span.tt-c-text-alt', {},
+                                                                        f('p.tt-balloon-message', {
+                                                                            innerHTML: (!live? name: `${ name } &bull; ${ hour }<p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
+                                                                        })
+                                                                    )
+                                                                ),
+                                                                // Subheader
+                                                                f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
+                                                                    f('div.tt-mg-l-05', {},
+                                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { style: `text-decoration:underline 2px solid ${ (live? 'var(--user-complement-color)': 'transparent') }`, innerHTML: when })
+                                                                    )
+                                                                ),
+                                                                f('div', { innerHTML: Glyphs.modify('notify', { height: '20px', width: '20px', style: `fill:var(${ (live? '--user-complement-color': '--color-background-base') }); position:absolute; right:0; top:40%;` }) })
+                                                            )
+                                                        )
+                                                    ),
+                                                    f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
+                                                        f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                                                {
+                                                                    'data-test-selector': 'persistent-notification__delete',
+                                                                    name,
+
+                                                                    onclick: event => {
+                                                                        let { currentTarget } = event,
+                                                                            name = currentTarget.getAttribute('name');
+
+                                                                        LoadCache('LiveReminders', async({ LiveReminders }) => {
+                                                                            LiveReminders = JSON.parse(LiveReminders || '{}');
+
+                                                                            $(`.tt-reminder[name="${ name }"i]`)?.remove();
+                                                                            delete LiveReminders[name];
+                                                                            alert.timed(`Reminder removed successfully!`, 5_000);
+
+                                                                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
+                                                                        });
+                                                                    },
+                                                                },
+                                                                f('span.tt-button-icon__icon', {},
+                                                                    f('div',
+                                                                        {
+                                                                            style: 'height:1.6rem; width:1.6rem',
+                                                                            innerHTML: Glyphs.x,
+                                                                        },
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            );
+
+                            body.append(container);
+                        }
+                    });
+                },
+            });
+
+            live_reminders_catalog_button.tooltip = new Tooltip(live_reminders_catalog_button, 'View Live Reminders');
+
             // Help Button
             let first_in_line_help_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
@@ -5127,6 +5396,18 @@ let Initialize = async(START_OVER = false) => {
                 [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
+            // Gets the distance between two RGB colors
+            // https://tomekdev.com/posts/sorting-colors-in-js
+            function colorDistance(C1, C2) {
+                let [R, G, B] = C1,
+                    [r, g, b] = C2;
+
+                return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
+            }
+
+            let maxDist = colorDistance([0,0,0],[255,255,255]),
+                colorMatch = (C1, C2) => colorDistance(C1, C2) / maxDist;
+
             function getColorName() {
                 let { H, S, L, R, G, B } = Color.HEXtoColor(
                     THEME == 'dark'?
@@ -5138,19 +5419,19 @@ let Initialize = async(START_OVER = false) => {
                 let colors = {
                     // Extremes
                     light: ({ S, L }) => (L > 70) || (S <= 15),
-                    white: ({ S, L }) => (S > 90 || S == 0) && (L > 90),
+                    white: ({ R, G, B, L }) => colorMatch([255, 255, 255], [R, G, B]) < 0.15 || (colors.grey({ R, G, B, S }) && (L >= 90)),
 
                     dark: ({ S, L }) => (L <= 25),
-                    black: ({ S, L }) => (S > 90 || S < 35) && (L <= 15),
+                    black: ({ R, G, B, L }) => colorMatch([0, 0, 0], [R, G, B]) < 0.15 || (colors.grey({ R, G, B, S }) && (L <= 15)),
 
-                    grey: ({ R, G, B, S }) => ((R + G + B) / 3 / Math.max(R, G, B) - (B > G? 0.05: G > R? 0.025: 0) > .9) || (S <= 5),
+                    grey: ({ R, G, B, S }) => colorMatch([B, R, G].map(C => C.floorToNearest(16)), [R, G, B]) < 0.05 || (S <= 15),
 
                     // Reds
                     red: ({ H }) => H > 345 || H <= 10,
-                    pink: ({ H, S, L }) => ((H > 290 && H <= 345) || (colors.light({ S, L }) && colors.red({ H }))),
-                    orange: ({ H, S, L }) => (H > 10 && H <= 45) || (colors.red({ H }) && colors.yellow({ H })),
+                    pink: ({ H }) => ((H > 290 && H <= 345) || (colors.light({ S, L }) && colors.red({ H }))),
+                    orange: ({ H }) => (H > 10 && H <= 45) || (colors.red({ H }) && colors.yellow({ H })),
                     yellow: ({ H }) => H > 45 && H <= 60,
-                    brown: ({ H, S, L }) => (colors.yellow({ H }) || colors.orange({ H }) || colors.red({ H })) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
+                    brown: ({ S, L }) => (colors.yellow({ H }) || colors.orange({ H }) || colors.red({ H })) && ((S > 10 && S <= 30) || (L > 10 && L <= 30)),
 
                     // Greens
                     green: ({ H }) => H > 60 && H <= 170,
@@ -5162,11 +5443,19 @@ let Initialize = async(START_OVER = false) => {
 
                 let name = [];
 
+                naming:
                 for(let key in colors) {
                     let condition = colors[key];
 
-                    if(condition({ H, S, L, R, G, B }))
+                    if(condition({ H, S, L, R, G, B })) {
                         name.push(key);
+
+                        if(/^(black|white)$/i.test(key)) {
+                            name = [key];
+
+                            break naming;
+                        }
+                    }
                 }
 
                 return name
@@ -5191,7 +5480,7 @@ let Initialize = async(START_OVER = false) => {
                     .replace('light yellow', 'yellow')
 
                     .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
-                    .replace(/(dark|light)\s+(black|white)/i, '$1')
+                    .replace(/^(light|dark)\s+(black|white)(?:\s[\s\w]+)?/i, '$1')
                     .replace(/(\w+)\s+(\w+)$/i, ($0, $1, $2, $$, $_) => {
                         if([$1, $2].contains('light', 'dark'))
                             return $_;
@@ -5464,7 +5753,7 @@ let Initialize = async(START_OVER = false) => {
                                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
-                                LOG('Removed from Up Next (first):', removed, 'Was it canceled?', event.canceled);
+                                LOG(`Removed from Up Next (${ nth(index + 1) }):`, removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
@@ -6091,7 +6380,7 @@ let Initialize = async(START_OVER = false) => {
                 stream_s = 'stream'.pluralSuffix(+!!tense),
                 [title, subtitle, icon] = [
                     ['Remind me', `Receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'inform'],
-                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'checkmark']
+                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'notify']
                 ][+!!hasReminder];
 
             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
@@ -6111,13 +6400,13 @@ let Initialize = async(START_OVER = false) => {
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                 reminderName = STREAMER.name,
-                                hasReminder = !defined(LiveReminders[reminderName]),
+                                notReminded = !defined(LiveReminders[reminderName]),
                                 tense = (parseBool(Settings.keep_live_reminders)? '': ' next'),
                                 stream_s = 'stream'.pluralSuffix(+!!tense),
                                 [title, subtitle, icon] = [
                                     ['Remind me', `Receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'inform'],
-                                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'checkmark']
-                                ][+!!hasReminder];
+                                    ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'notify']
+                                ][+!!notReminded];
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
 
@@ -6126,9 +6415,9 @@ let Initialize = async(START_OVER = false) => {
                             $('.tt-action-subtitle', false, currentTarget).textContent = subtitle;
 
                             // Add the reminder...
-                            if(hasReminder) {
+                            if(notReminded) {
                                 alert.timed(`You'll be notified when ${ STREAMER.name } goes live.`, 7_000);
-                                LiveReminders[reminderName] = new Date((+new Date(STREAMER.data?.actualStartTime ?? ((+new Date) - (STREAMER?.time ?? -21_600_000))) + 86_400_000).floorToNearest(3_600_000));
+                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): new Date);
                             }
                             // Remove the reminder...
                             else {
@@ -6136,7 +6425,7 @@ let Initialize = async(START_OVER = false) => {
                                 delete LiveReminders[reminderName];
                             }
 
-                            currentTarget.closest('[tt-action]').setAttribute('remind', hasReminder);
+                            currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
                         });
@@ -6175,49 +6464,65 @@ let Initialize = async(START_OVER = false) => {
                 LiveReminders = JSON.parse(LiveReminders || '{}');
 
                 checking:
-                for(let reminderName in LiveReminders)
-                    // Only check for the stream when it's likely to be alive (again; so same time the next day)
-                    if((+new Date) > +new Date(LiveReminders[reminderName])) {
-                        let { href, name, live } = await(new Search(reminderName).then(Search.convertResults) ?? ALL_CHANNELS.find(channel => RegExp(`^${ reminderName }$`, 'i').test(channel.name)));
+                // Only check for the stream when it's live; if the dates don't match, it just went live again
+                for(let reminderName in LiveReminders) {
+                    let channel = await new Search(reminderName).then(Search.convertResults),
+                        ok = /\/jtv_user/i.test(channel.icon);
 
-                        // The channel is live!
-                        if(parseBool(live)) {
-                            if(parseBool(Settings.keep_live_reminders))
-                                LiveReminders[reminderName] = new Date(+new Date(LiveReminders[reminderName]) + 86_400_000);
-                            else
-                                delete LiveReminders[reminderName];
+                    // Search did not complete...
+                    let max = 5;
+                    while(!ok && --max > 0) {
+                        Search.void(reminderName);
 
-                            let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
-
-                            if(defined(button))
-                                button.dispatchEvent(new MouseEvent('mouseup', { bubbles: false }));
-                            else
-                                SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => {
-                                    // TODO - Currently, only one option looks for notifications... I can just call it here
-                                    Handle_phantom_notification: {
-                                        let notification = { href, textContent: `${ name } is live [Live Reminders]` },
-                                            [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
-
-                                        // If already on the stream, break
-                                        if(page.toLowerCase() == note.toLowerCase())
-                                            break Handle_phantom_notification;
-
-                                        // All of the Live Reminder handlers...
-                                        Handlers.first_in_line(notification);
-
-                                        // Show a notification
-                                        Display_phantom_notification: {
-                                            WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
-                                            alert.timed(`${ name } just went live!`, 7_000);
-                                        }
-                                    }
-                                });
-                        }
+                        channel = await awaitOn(() => new Search(reminderName).then(Search.convertResults), 500);
+                        ok = /\/jtv_user/i.test(channel.icon);
                     }
+
+                    if(!channel.live)
+                        continue checking;
+
+                    let { name, live, icon, href, data = { actualStartTime: null, lastSeen: null } } = channel;
+                    let lastOnline = new Date((+new Date(LiveReminders[reminderName])).floorToNearest(1_000)).toJSON(),
+                        justOnline = new Date((+new Date(data.actualStartTime)).floorToNearest(1_000)).toJSON();
+
+                    // The channel just went live!
+                    if(lastOnline != justOnline) {
+                        if(parseBool(Settings.keep_live_reminders))
+                            LiveReminders[reminderName] = new Date(justOnline);
+                        else
+                            delete LiveReminders[reminderName];
+
+                        let button = $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`);
+
+                        if(defined(button))
+                            button.dispatchEvent(new MouseEvent('mouseup', { bubbles: false }));
+                        else
+                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => {
+                                // TODO - Currently, only one option looks for notifications... I can just call it here
+                                Handle_phantom_notification: {
+                                    let notification = { href, textContent: `${ name } is live [Live Reminders]` },
+                                        [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
+
+                                    // If already on the stream, break
+                                    if(page.toLowerCase() == note.toLowerCase())
+                                        break Handle_phantom_notification;
+
+                                    // All of the Live Reminder handlers...
+                                    Handlers.first_in_line(notification);
+
+                                    // Show a notification
+                                    Display_phantom_notification: {
+                                        WARN(`Live Reminders: ${ name } just went live`, new Date)?.toNativeStack();
+                                        alert.timed(`${ name } just went live!`, 7_000);
+                                    }
+                                }
+                            });
+                    }
+                }
             });
 
-            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 120_000);
-        }, 120_000);
+            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 30_000);
+        }, 30_000);
 
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
@@ -7396,7 +7701,7 @@ let Initialize = async(START_OVER = false) => {
                 if(rank == '?')
                     return ranking?.remove() || JUDGE__STOP_WATCH('points_receipt_placement__ranking');
 
-                let place = (100 * (STREAMER.rank / STREAMER.cult)).clamp(1, 100).round() || 0;
+                let place = (100 * (STREAMER.rank / STREAMER.cult)).clamp(1, 100).round() | 0;
 
                 RANK_TOOLTIP ??= new Tooltip(ranking, "", { from: 'top' });
                 RANK_TOOLTIP.innerHTML = `You are in the top ${ place || '?' }%`;
@@ -9032,6 +9337,25 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 #up-next-boost[speeding="true"i] {
                     animation: fade-in 1s alternate infinite;
                 }
+
+                /* Live Reminders */
+                #tt-reminder-listing:not(:empty) ~ [live] { display:none }
+
+                /** Old CSS...
+                #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
+                    animation: fade-in 1s 1;
+
+                    display: block;
+                    text-align: center;
+
+                    margin: 0.5em 0px;
+
+                    width: 100%;
+                }
+
+                #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
+                #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
+                */
 
                 /* Auto-Focus */
                 [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }

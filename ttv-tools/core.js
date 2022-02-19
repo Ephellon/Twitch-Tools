@@ -13,11 +13,11 @@
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
-    // new UUID() -> Object
-    // UUID.from(string:string) -> Object
-    // UUID.ergo(string;string) -> Promise#String
-    // UUID.BWT(string:string) -> String
-    // UUID.prototype.toString() -> String
+    // new UUID() → Object
+    // UUID.BWT(string:string) → String
+    // UUID.cyrb53(string:string[, seed:number]) → String
+    // UUID.from(string:string[, traceable:boolean]) → Object
+    // UUID.prototype.toString() → String
 class UUID {
     static #BWT_SEED = new UUID()
 
@@ -49,6 +49,14 @@ class UUID {
 
     toString() {
         return this.native;
+    }
+
+    toStamp() {
+        let value = 0;
+
+        this.native.split('-').map(hex => value ^= parseInt(hex, 16));
+
+        return Math.abs(value).toString(16).padStart(8, '0');
     }
 
     /* BWT Sorting Algorithm */
@@ -86,7 +94,7 @@ class UUID {
         return (4294967296 * (2097151 & H2) + (H1 >>> 0)).toString(16);
     }
 
-    static from(key = '') {
+    static from(key = '', traceable = false) {
         key = JSON.stringify(
             (null
                 ?? key?.toJSON?.()
@@ -95,14 +103,14 @@ class UUID {
             || null
         );
 
-        let PRIVATE_KEY = `private-key="${ UUID.#BWT_SEED }"`,
+        let PRIVATE_KEY = (traceable? '': `private-key="${ UUID.#BWT_SEED }"`),
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
             PUBLIC_KEY = `public-key="${ Manifest.version }"`;
 
         let hash = Uint8Array.from(
                 btoa(
                     [PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY]
-                        .map(string => UUID.cyrb53(string, parseInt(UUID.#BWT_SEED, 16)))
+                        .map(string => UUID.cyrb53(string, parseInt(UUID.#BWT_SEED, 16) * +!traceable))
                         .join('~')
                 )
                     .split('')
@@ -136,6 +144,7 @@ class UUID {
         };
 
         this.toString = () => this.native;
+        this.toStamp = () => UUID.prototype.toStamp.apply(this);
 
         return this;
     }
@@ -200,7 +209,7 @@ class LZW {
     }
 
     // A simple hashing algorithm
-        // hash(input:string[salt:string]) -> String
+        // hash(input:string[salt:string]) → String
     static hash(input = '', salt = '') {
         let output = '';
 
@@ -215,7 +224,7 @@ class LZW {
     }
 
     // Encodes a string to LZW-64 format
-        // encode64(string:string) -> String~LZW-64
+        // encode64(string:string) → String~LZW-64
     static encode64(string = '') {
         if(!string.length)
             return '';
@@ -264,7 +273,7 @@ class LZW {
     }
 
     // Decodes an LZW-64 string
-        // decode64(string:string~LZW-64) -> String
+        // decode64(string:string~LZW-64) → String
     static decode64(string = '') {
         let { B64 } = LZW,
             D64 = {};
@@ -370,7 +379,7 @@ function defined(value) {
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) -> Promise
+    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) → Promise
 async function awaitOn(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
@@ -404,7 +413,7 @@ try {
 
 // The following facilitates communication between pages
 // Get the current settings
-   // GetSettings() -> Object
+   // GetSettings() → Object
 function GetSettings() {
    return new Promise((resolve, reject) => {
        function ParseSettings(settings) {
@@ -423,7 +432,7 @@ function GetSettings() {
 }
 
 // Saves data to the page's storage
-    // SaveCache(keys:object[, callback:function]) -> undefined
+    // SaveCache(keys:object[, callback:function]) → undefined
 async function SaveCache(keys = {}, callback = () => {}) {
     let set = (key, value) => StorageSpace.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
@@ -435,7 +444,7 @@ async function SaveCache(keys = {}, callback = () => {}) {
 }
 
 // Loads data from the page's storage
-    // LoadCache(keys:string|array|object[, callback:function]) -> undefined
+    // LoadCache(keys:string|array|object[, callback:function]) → undefined
 async function LoadCache(keys = null, callback = () => {}) {
     let results = {},
         get = key => {
@@ -592,7 +601,7 @@ __STATIC__: {
     window.Unhandlers = Unhandlers;
 
     // Registers a job
-        // RegisterJob(JobName:string) -> Number=IntervalID
+        // RegisterJob(JobName:string) → Number=IntervalID
     function RegisterJob(JobName, JobReason = 'default') {
         RegisterJob.__reason__ = JobReason;
 
@@ -603,7 +612,7 @@ __STATIC__: {
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
     // Unregisters a job
-        // UnregisterJob(JobName:string) -> undefined
+        // UnregisterJob(JobName:string) → undefined
     function UnregisterJob(JobName, JobReason = 'default') {
         UnregisterJob.__reason__ = JobReason;
 
@@ -622,7 +631,7 @@ __STATIC__: {
     Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).value);
 
     // Restarts (unregisters, then registers) a job
-        // RestartJob(JobName:string) -> undefined
+        // RestartJob(JobName:string) → undefined
     function RestartJob(JobName, JobReason = 'default') {
         RestartJob.__reason__ = JobReason;
 

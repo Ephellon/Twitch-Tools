@@ -316,6 +316,38 @@ let Chat__Initialize = async(START_OVER = false) => {
                     title.innerText = title.innerText.replace(/^.*("[^]+").*?$/, `${ container.children.length } search results for $1`);
                 },
             },
+
+            getTextDistance: {
+                // Text comparison
+                // Calculates the Levenshtein's distance between two strings
+                value: function levenshtein(A = '', B = '') {
+                    let a = A.length,
+                        b = B.length;
+
+                    let track = Array(b + 1).fill(null).map(() => Array(a + 1).fill(null));
+
+                    for(let i = 0; i <= a; ++i)
+                        track[0][i] = i;
+
+                    for(let j = 0; j <= b; ++j)
+                        track[j][0] = j;
+
+                    for(let j = 1; j <= b; ++j)
+                        for(let i = 1; i <= a; ++i)
+                            track[j][i] = Math.min(
+                                // Deletion
+                                track[j][i - 1] + 1,
+
+                                // Insertion
+                                track[j - 1][i] + 1,
+
+                                // Substitution
+                                track[j - 1][i - 1] + +(A[i - 1] !== B[j - 1]),
+                            );
+
+                    return track[b][a];
+                }
+            },
         });
 
         RegisterJob('emote_searching');
@@ -730,7 +762,12 @@ let Chat__Initialize = async(START_OVER = false) => {
         EmoteSearch.onquery = async query => {
             await LOAD_BTTV_EMOTES(query, null, true).then(() => {
                 let results = [...BTTV_EMOTES]
-                    .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
+                    .filter(([key, value]) => {
+                        let pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key),
+                            distance = EmoteSearch.getTextDistance(query, key);
+
+                        return pattern || (distance < query.length / 2);
+                    })
                     .map(([name, src]) => CONVERT_TO_BTTV_EMOTE({ name, src }));
 
                     EmoteSearch.appendResults(results, 'bttv');
@@ -1023,7 +1060,12 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         EmoteSearch.onquery = query => {
             let results = [...CAPTURED_EMOTES]
-                .filter(([key, value]) => RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key))
+                .filter(([key, value]) => {
+                    let pattern = RegExp(query.replace(/(\W)/g, '\\$1'), 'i').test(key),
+                        distance = EmoteSearch.getTextDistance(query, key);
+
+                    return pattern || (distance < query.length / 2);
+                })
                 .map(([name, src]) => CONVERT_TO_CAPTURED_EMOTE({ name, src }));
 
             EmoteSearch.appendResults(results, 'captured');

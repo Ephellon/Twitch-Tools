@@ -224,10 +224,11 @@ let // These are option names. Anything else will be removed
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
-    // new UUID() -> Object
-    // UUID.from(string:string) -> Object
-    // UUID.BWT(string:string) -> String
-    // UUID.prototype.toString() -> String
+    // new UUID() → Object
+    // UUID.BWT(string:string) → String
+    // UUID.cyrb53(string:string[, seed:number]) → String
+    // UUID.from(string:string[, traceable:boolean]) → Object
+    // UUID.prototype.toString() → String
 class UUID {
     static #BWT_SEED = new UUID()
 
@@ -259,6 +260,14 @@ class UUID {
 
     toString() {
         return this.native;
+    }
+
+    toStamp() {
+        let value = 0;
+
+        this.native.split('-').map(hex => value ^= parseInt(hex, 16));
+
+        return Math.abs(value).toString(16).padStart(8, '0');
     }
 
     /* BWT Sorting Algorithm */
@@ -346,6 +355,7 @@ class UUID {
         };
 
         this.toString = () => this.native;
+        this.toStamp = () => UUID.prototype.toStamp.apply(this);
 
         return this;
     }
@@ -374,9 +384,9 @@ class UUID {
 }
 
 // Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) -> Element~Tooltip
+    // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) → Element~Tooltip
         // fineTuning:object = { left:number=pixels, top:number=pixels, direction:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
-    // Tooltip.get(parent:Element) -> Element~Tooltip
+    // Tooltip.get(parent:Element) → Element~Tooltip
 class Tooltip {
     static #TOOLTIPS = new Map()
 
@@ -464,7 +474,7 @@ class Tooltip {
 }
 
 // Creates a new Twitch-style date input
-    // new DatePicker() -> Promise~Array:Object
+    // new DatePicker() → Promise~Array:Object
 class DatePicker {
     static values = [];
     static weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ');
@@ -1340,7 +1350,7 @@ let FETCHED_DATA = { wasFetched: false };
         versionRetrivalDate ||= 0;
 
         // Only refresh if the data is older than 1h
-        // The data has expired ->
+        // The data has expired →
         __FetchingUpdates__:
         if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
             let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
@@ -1399,24 +1409,13 @@ let FETCHED_DATA = { wasFetched: false };
 
             if(build > 0) {
                 properties.version.installed += (compareVersions(`${ properties.version.installed } > ${ properties.version.github }`)? ` build ${ build }`: '');
-                properties.context.id = UUID.from(properties.version.installed, true).value;
+                properties.context.id = UUID.from(properties.version.installed, true)
+                    .toStamp()
+                    .split(/(.{4})/)
+                    .filter(s => !!s.length)
+                    .join('-')
+                    .toUpperCase();
             }
-        }
-
-        DisplayContextID: {
-            let numbers = properties.context.id.split('-').map(n => parseInt(n, 16)),
-                value = 0;
-
-            for(let number of numbers)
-                value += number;
-
-            properties.context.id = Math.abs(value).toString(16)
-                .slice(0, 12)
-                .split(/(.{4})/)
-                .filter(s => !!s.length)
-                .map(s => s.padStart(4, '0000'))
-                .join('-')
-                .toUpperCase();
         }
 
         // Modify all [set] elements
@@ -1597,7 +1596,7 @@ async function Translate(language = 'en', container = document) {
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) -> Promise
+    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) → Promise
 async function awaitOn(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
@@ -1765,9 +1764,9 @@ document.body.onload = async() => {
                     Observing:
                     for(let provider of providers) {
                         // Apply the false status to `dependent` when the `provider` is set to false
-                            // when(provider.checked === false) -> dependent.checked = false
+                            // when(provider.checked === false) → dependent.checked = false
                         // Also apply the changes to `provider` in the opposing manner when `dependent` is set to true
-                            // when(dependent.checked === true) -> provider.checked = true
+                            // when(dependent.checked === true) → provider.checked = true
                         let dependents = (provider.getAttribute('dependents') ?? '').split(',');
 
                         provider.setAttribute('dependents', [...dependents, `#${ dependent.id }`].filter(string => string.length).join(','));
