@@ -9,6 +9,7 @@ assignees: Ephellon
 
 **Language(s)**
 <!-- What is/are the destination language(s) -->
+<!-- Place an "x" in the box to mark it, i.e. "[x]" -->
 
 - [ ] български език &mdash; Bulgarian
 - [ ] čeština (český jazyk) &mdash; Czech
@@ -24,7 +25,7 @@ assignees: Ephellon
 - [ ] 한국어 &mdash; Korean
 - [ ] Flemish (Nederlands) &mdash; Dutch
 - [ ] Norsk &mdash; Norwegian
-- [ ] język polski (polszczyzna) &mdash; Polish
+- [ ] ~~język polski (polszczyzna) &mdash; Polish~~
 - [ ] Português &mdash; Portuguese
 - [ ] Moldavian (Română) &mdash; Romanian
 - [ ] русский &mdash; Russian
@@ -33,8 +34,8 @@ assignees: Ephellon
 - [ ] ภาษาไทย &mdash; Thai
 - [ ] Türkçe &mdash; Turkish
 - [ ] Tiếng Việt &mdash; Vietnamese
-- [ ] 中文 简体 (Zhōngwén jiǎntǐ) &mdash; Simplified Chinese
-- [ ] 中文 繁體 (Zhōngwén fántǐ) &mdash; Traditional Chinese
+- [ ] ~~中文 简体 (Zhōngwén jiǎntǐ) &mdash; Simplified Chinese~~
+- [ ] ~~中文 繁體 (Zhōngwén fántǐ) &mdash; Traditional Chinese~~
 
 **Proficiency**
 <!-- What is your skill level with the `Language(s)` -->
