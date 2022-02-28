@@ -25,8 +25,8 @@ assignees: Ephellon
 - [ ] 한국어 &mdash; Korean
 - [ ] Flemish (Nederlands) &mdash; Dutch
 - [ ] Norsk &mdash; Norwegian
-- [ ] ~~język polski (polszczyzna) &mdash; Polish~~
-- [ ] Português &mdash; Portuguese
+- [ ] język polski (polszczyzna) &mdash; Polish
+- [ ] ~~Português &mdash; Portuguese~~
 - [ ] Moldavian (Română) &mdash; Romanian
 - [ ] русский &mdash; Russian
 - [ ] slovenčina (slovenský jazyk) &mdash; Slovak
