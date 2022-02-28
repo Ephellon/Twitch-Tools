@@ -28,25 +28,25 @@
             "Löschen"
         ],
         "minute": [
-            "%d Minute%s"
+            "%d Minute%>n"
         ],
         "hour": [
-            "%d Stunde%s"
+            "%d Stunde%>n"
         ],
         "day": [
-            "%d Tag%s"
+            "%d Tag%>e"
         ],
         "week": [
-            "%d Woche%s"
+            "%d Woche%>n"
         ],
         "month": [
-            "%d Monat%s"
+            "%d Monat%>e"
         ],
         "year": [
-            "%d Jahr%s"
+            "%d Jahr%>e"
         ],
         "@@century": [
-            "%d Jahrhundert%s"
+            "%d Jahrhundert%>e"
         ],
         "smart-notifications": [
             "Intelligente Benachrichtigungen"
@@ -279,7 +279,7 @@
     ],
     "time-zones": [
         "Zeitzonen",
-        "Konvertieren Sie Zeiten im Titel in Ihre lokale Zeitzone"
+        "Konvertieren Sie Zeiten auf der Seite in Ihre lokale Zeitzone"
     ],
     "view-mode": [
         "Ansichtsmodus",

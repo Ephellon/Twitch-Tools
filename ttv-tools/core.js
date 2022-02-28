@@ -36,8 +36,8 @@ class UUID {
                     return NaN;
 
                 case 'default':
-                case 'string':
                 case 'object':
+                case 'string':
                 case 'symbol':
                 default:
                     return native;
@@ -135,8 +135,8 @@ class UUID {
                     return NaN;
 
                 case 'default':
-                case 'string':
                 case 'object':
+                case 'string':
                 case 'symbol':
                 default:
                     return this.native;

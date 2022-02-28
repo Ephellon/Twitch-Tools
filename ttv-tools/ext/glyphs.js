@@ -266,7 +266,7 @@ top.Glyphs ??= {
             // 6th batch
             ne_arrow: "\u{2197}",
             dislike: "\u{1F494}",
-            undread: "\u{2709}",
+            unread: "\u{2709}",
             intro: "\u{1F64B}",
         });
     },

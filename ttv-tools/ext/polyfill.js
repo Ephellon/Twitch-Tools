@@ -217,7 +217,9 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 
                     argument = argument.join('');
 
+                    // Syntax `!hour:!minutes:!seconds → ?hour → ?minutes → ?seconds` → `01:00:00 → 1 → 60 → 3600`
                     switch(command) {
+                        // Total amount
                         case '?': {
                             for(let [name, value] of times)
                                 if(argument == 'millisecond')
@@ -226,6 +228,7 @@ function toTimeString(milliseconds = 0, format = 'natural') {
                                     return Math.round(originalTime / times.get(name));
                         } break;
 
+                        // Radix amount (left over)
                         case '!': {
                             for(let [name, value] of times)
                                 if(argument == 'millisecond')
@@ -3325,8 +3328,8 @@ function alert(message = '') {
 }
 
 // Displays an alert message (silently)
-    // alert.silent([message:string]) → null
-alert.silent ??= (message = '') => {
+    // alert.silent([message:string[, veiled:boolean]]) → null
+alert.silent ??= (message = '', veiled = false) => {
     if(defined($('.tt-alert')))
         return awaitOn(() => !defined($('.tt-alert'))? alert.silent(message): null);
 
@@ -3337,7 +3340,7 @@ alert.silent ??= (message = '') => {
         return response;
 
     container.classList.add('tt-silent');
-    setTimeout(() => container.classList.add('tt-veiled'), 7_000);
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
 
     return response;
 };
@@ -3370,7 +3373,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-alert-container')))
             return time.setAttribute('due', due + 100);
 
-        time.closest('.tt-alert-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), '?seconds_s'));
+        time.closest('.tt-alert-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
     }, 100);
 
@@ -3452,8 +3455,8 @@ function confirm(message = '') {
 }
 
 // Displays a confirmation message (silently)
-    // confirm.silent([message:string]) → Boolean|null
-confirm.silent ??= (message = '') => {
+    // confirm.silent([message:string[, veiled:boolean]]) → Boolean|null
+confirm.silent ??= (message = '', veiled = false) => {
     if(defined($('.tt-confirm')))
         return awaitOn(() => !defined($('.tt-confirm'))? confirm.silent(message): null);
 
@@ -3464,7 +3467,7 @@ confirm.silent ??= (message = '') => {
         return response;
 
     container.classList.add('tt-silent');
-    setTimeout(() => container.classList.add('tt-veiled'), 7_000);
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
 
     return response;
 };
@@ -3497,7 +3500,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-confirm-container')))
             return time.setAttribute('due', due + 100);
 
-        time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), '?seconds_s'));
+        time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
     }, 100);
 
@@ -3597,8 +3600,8 @@ function prompt(message = '', defaultValue = '') {
 }
 
 // Prompts a message (silently)
-    // prompt.silent([message:string[, defaultValue:string]]) → String|null
-prompt.silent ??= (message = '', defaultValue = '') => {
+    // prompt.silent([message:string[, defaultValue:string[, veiled:boolean]]]) → String|null
+prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     if(defined($('.tt-prompt')))
         return awaitOn(() => !defined($('.tt-prompt'))? prompt.silent(message, defaultValue): null);
 
@@ -3609,7 +3612,7 @@ prompt.silent ??= (message = '', defaultValue = '') => {
         return response;
 
     container.classList.add('tt-silent');
-    setTimeout(() => container.classList.add('tt-veiled'), 7_000);
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
 
     return response;
 };
@@ -3642,7 +3645,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-prompt-container')))
             return time.setAttribute('due', due + 100);
 
-        time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), '?seconds_s'));
+        time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
     }, 100);
 
@@ -3650,3 +3653,2099 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
 
     return response;
 };
+
+/* ISO-639-1 Language Codes */
+top.ISO_639_1 ??= ({
+    "aa": {
+        "name": "Afar/Afaraf",
+        "names": [
+            "Afar"
+        ],
+        "endonyms": [
+            "Afaraf"
+        ],
+        "code": "aa",
+        "region": "Afro-Asiatic"
+    },
+    "ab": {
+        "name": "Abkhazian/%u0430%u04A7%u0441%u0443%u0430%20%u0431%u044B%u0437%u0448%u04D9%u0430",
+        "names": [
+            "Abkhazian"
+        ],
+        "endonyms": [
+            "аҧсуа бызшәа",
+            "аҧсшәа"
+        ],
+        "code": "ab",
+        "region": "Northwest Caucasian"
+    },
+    "ae": {
+        "name": "Avestan/avesta",
+        "names": [
+            "Avestan"
+        ],
+        "endonyms": [
+            "avesta"
+        ],
+        "code": "ae",
+        "region": "Indo-European"
+    },
+    "af": {
+        "name": "Afrikaans/Afrikaans",
+        "names": [
+            "Afrikaans"
+        ],
+        "endonyms": [
+            "Afrikaans"
+        ],
+        "code": "af",
+        "region": "Indo-European"
+    },
+    "ak": {
+        "name": "Akan/Akan",
+        "names": [
+            "Akan"
+        ],
+        "endonyms": [
+            "Akan"
+        ],
+        "code": "ak",
+        "region": "Niger–Congo"
+    },
+    "am": {
+        "name": "Amharic/%u12A0%u121B%u122D%u129B",
+        "names": [
+            "Amharic"
+        ],
+        "endonyms": [
+            "አማርኛ"
+        ],
+        "code": "am",
+        "region": "Afro-Asiatic"
+    },
+    "an": {
+        "name": "Aragonese/aragon%E9s",
+        "names": [
+            "Aragonese"
+        ],
+        "endonyms": [
+            "aragonés"
+        ],
+        "code": "an",
+        "region": "Indo-European"
+    },
+    "ar": {
+        "name": "Arabic/%u0627%u0644%u0639%u0631%u0628%u064A%u0629",
+        "names": [
+            "Arabic"
+        ],
+        "endonyms": [
+            "العربية"
+        ],
+        "code": "ar",
+        "region": "Afro-Asiatic"
+    },
+    "as": {
+        "name": "Assamese/%u0985%u09B8%u09AE%u09C0%u09AF%u09BC%u09BE",
+        "names": [
+            "Assamese"
+        ],
+        "endonyms": [
+            "অসমীয়া"
+        ],
+        "code": "as",
+        "region": "Indo-European"
+    },
+    "av": {
+        "name": "Avaric/%u0430%u0432%u0430%u0440%20%u043C%u0430%u0446%u04C0",
+        "names": [
+            "Avaric"
+        ],
+        "endonyms": [
+            "авар мацӀ",
+            "магӀарул мацӀ"
+        ],
+        "code": "av",
+        "region": "Northeast Caucasian"
+    },
+    "ay": {
+        "name": "Aymara/aymar%20aru",
+        "names": [
+            "Aymara"
+        ],
+        "endonyms": [
+            "aymar aru"
+        ],
+        "code": "ay",
+        "region": "Aymaran"
+    },
+    "az": {
+        "name": "Azerbaijani/az%u0259rbaycan%20dili",
+        "names": [
+            "Azerbaijani"
+        ],
+        "endonyms": [
+            "azərbaycan dili",
+            "تۆرکجه"
+        ],
+        "code": "az",
+        "region": "Turkic"
+    },
+    "ba": {
+        "name": "Bashkir/%u0431%u0430%u0448%u04A1%u043E%u0440%u0442%20%u0442%u0435%u043B%u0435",
+        "names": [
+            "Bashkir"
+        ],
+        "endonyms": [
+            "башҡорт теле"
+        ],
+        "code": "ba",
+        "region": "Turkic"
+    },
+    "be": {
+        "name": "Belarusian/%u0431%u0435%u043B%u0430%u0440%u0443%u0441%u043A%u0430%u044F%20%u043C%u043E%u0432%u0430",
+        "names": [
+            "Belarusian"
+        ],
+        "endonyms": [
+            "беларуская мова"
+        ],
+        "code": "be",
+        "region": "Indo-European"
+    },
+    "bg": {
+        "name": "Bulgarian/%u0431%u044A%u043B%u0433%u0430%u0440%u0441%u043A%u0438%20%u0435%u0437%u0438%u043A",
+        "names": [
+            "Bulgarian"
+        ],
+        "endonyms": [
+            "български език"
+        ],
+        "code": "bg",
+        "region": "Indo-European"
+    },
+    "bi": {
+        "name": "Bislama/Bislama",
+        "names": [
+            "Bislama"
+        ],
+        "endonyms": [
+            "Bislama"
+        ],
+        "code": "bi",
+        "region": "Creole"
+    },
+    "bm": {
+        "name": "Bambara/bamanankan",
+        "names": [
+            "Bambara"
+        ],
+        "endonyms": [
+            "bamanankan"
+        ],
+        "code": "bm",
+        "region": "Niger–Congo"
+    },
+    "bn": {
+        "name": "Bengali/%u09AC%u09BE%u0982%u09B2%u09BE",
+        "names": [
+            "Bengali"
+        ],
+        "endonyms": [
+            "বাংলা"
+        ],
+        "code": "bn",
+        "region": "Indo-European"
+    },
+    "bo": {
+        "name": "Tibetan/%u0F56%u0F7C%u0F51%u0F0B%u0F61%u0F72%u0F42",
+        "names": [
+            "Tibetan"
+        ],
+        "endonyms": [
+            "བོད་ཡིག"
+        ],
+        "code": "bo",
+        "region": "Sino-Tibetan"
+    },
+    "br": {
+        "name": "Breton/brezhoneg",
+        "names": [
+            "Breton"
+        ],
+        "endonyms": [
+            "brezhoneg"
+        ],
+        "code": "br",
+        "region": "Indo-European"
+    },
+    "bs": {
+        "name": "Bosnian/bosanski%20jezik",
+        "names": [
+            "Bosnian"
+        ],
+        "endonyms": [
+            "bosanski jezik"
+        ],
+        "code": "bs",
+        "region": "Indo-European"
+    },
+    "ca": {
+        "name": "Catalan/catal%E0",
+        "names": [
+            "Catalan",
+            "Valencian"
+        ],
+        "endonyms": [
+            "català",
+            "valencià"
+        ],
+        "code": "ca",
+        "region": "Indo-European"
+    },
+    "ce": {
+        "name": "Chechen/%u043D%u043E%u0445%u0447%u0438%u0439%u043D%20%u043C%u043E%u0442%u0442",
+        "names": [
+            "Chechen"
+        ],
+        "endonyms": [
+            "нохчийн мотт"
+        ],
+        "code": "ce",
+        "region": "Northeast Caucasian"
+    },
+    "ch": {
+        "name": "Chamorro/Chamoru",
+        "names": [
+            "Chamorro"
+        ],
+        "endonyms": [
+            "Chamoru"
+        ],
+        "code": "ch",
+        "region": "Austronesian"
+    },
+    "co": {
+        "name": "Corsican/corsu",
+        "names": [
+            "Corsican"
+        ],
+        "endonyms": [
+            "corsu",
+            "lingua corsa"
+        ],
+        "code": "co",
+        "region": "Indo-European"
+    },
+    "cr": {
+        "name": "Cree/%u14C0%u1426%u1403%u152D%u140D%u140F%u1423",
+        "names": [
+            "Cree"
+        ],
+        "endonyms": [
+            "ᓀᐦᐃᔭᐍᐏᐣ"
+        ],
+        "code": "cr",
+        "region": "Algic"
+    },
+    "cs": {
+        "name": "Czech/%u010De%u0161tina",
+        "names": [
+            "Czech"
+        ],
+        "endonyms": [
+            "čeština",
+            "český jazyk"
+        ],
+        "code": "cs",
+        "region": "Indo-European"
+    },
+    "cu": {
+        "name": "Church%A0Slavic/%u0469%u0437%u044B%u043A%u044A%20%u0441%u043B%u043E%u0432%u0463%u043D%u044C%u0441%u043A%u044A",
+        "names": [
+            "Church Slavic",
+            "Old Slavonic",
+            "Church Slavonic",
+            "Old Bulgarian",
+            "Old Church Slavonic"
+        ],
+        "endonyms": [
+            "ѩзыкъ словѣньскъ"
+        ],
+        "code": "cu",
+        "region": "Indo-European"
+    },
+    "cv": {
+        "name": "Chuvash/%u0447%u04D1%u0432%u0430%u0448%20%u0447%u04D7%u043B%u0445%u0438",
+        "names": [
+            "Chuvash"
+        ],
+        "endonyms": [
+            "чӑваш чӗлхи"
+        ],
+        "code": "cv",
+        "region": "Turkic"
+    },
+    "cy": {
+        "name": "Welsh/Cymraeg",
+        "names": [
+            "Welsh"
+        ],
+        "endonyms": [
+            "Cymraeg"
+        ],
+        "code": "cy",
+        "region": "Indo-European"
+    },
+    "da": {
+        "name": "Danish/dansk",
+        "names": [
+            "Danish"
+        ],
+        "endonyms": [
+            "dansk"
+        ],
+        "code": "da",
+        "region": "Indo-European"
+    },
+    "de": {
+        "name": "German/Deutsch",
+        "names": [
+            "German"
+        ],
+        "endonyms": [
+            "Deutsch"
+        ],
+        "code": "de",
+        "region": "Indo-European"
+    },
+    "dv": {
+        "name": "Divehi/%u078B%u07A8%u0788%u07AC%u0780%u07A8",
+        "names": [
+            "Divehi",
+            "Dhivehi",
+            "Maldivian"
+        ],
+        "endonyms": [
+            "ދިވެހި"
+        ],
+        "code": "dv",
+        "region": "Indo-European"
+    },
+    "dz": {
+        "name": "Dzongkha/%u0F62%u0FAB%u0F7C%u0F44%u0F0B%u0F41",
+        "names": [
+            "Dzongkha"
+        ],
+        "endonyms": [
+            "རྫོང་ཁ"
+        ],
+        "code": "dz",
+        "region": "Sino-Tibetan"
+    },
+    "ee": {
+        "name": "Ewe/E%u028Begbe",
+        "names": [
+            "Ewe"
+        ],
+        "endonyms": [
+            "Eʋegbe"
+        ],
+        "code": "ee",
+        "region": "Niger–Congo"
+    },
+    "el": {
+        "name": "Greek/%u0395%u03BB%u03BB%u03B7%u03BD%u03B9%u03BA%u03AC",
+        "names": [
+            "Greek",
+            "Modern (1453–)"
+        ],
+        "endonyms": [
+            "Ελληνικά"
+        ],
+        "code": "el",
+        "region": "Indo-European"
+    },
+    "en": {
+        "name": "English/English",
+        "names": [
+            "English"
+        ],
+        "endonyms": [
+            "English"
+        ],
+        "code": "en",
+        "region": "Indo-European"
+    },
+    "eo": {
+        "name": "Esperanto/Esperanto",
+        "names": [
+            "Esperanto"
+        ],
+        "endonyms": [
+            "Esperanto"
+        ],
+        "code": "eo",
+        "region": "Constructed"
+    },
+    "es": {
+        "name": "Spanish/Espa%F1ol",
+        "names": [
+            "Spanish",
+            "Castilian"
+        ],
+        "endonyms": [
+            "Español"
+        ],
+        "code": "es",
+        "region": "Indo-European"
+    },
+    "et": {
+        "name": "Estonian/eesti",
+        "names": [
+            "Estonian"
+        ],
+        "endonyms": [
+            "eesti",
+            "eesti keel"
+        ],
+        "code": "et",
+        "region": "Uralic"
+    },
+    "eu": {
+        "name": "Basque/euskara",
+        "names": [
+            "Basque"
+        ],
+        "endonyms": [
+            "euskara",
+            "euskera"
+        ],
+        "code": "eu",
+        "region": "Language isolate"
+    },
+    "fa": {
+        "name": "Persian/%u0641%u0627%u0631%u0633%u06CC",
+        "names": [
+            "Persian"
+        ],
+        "endonyms": [
+            "فارسی"
+        ],
+        "code": "fa",
+        "region": "Indo-European"
+    },
+    "ff": {
+        "name": "Fulah/Fulfulde",
+        "names": [
+            "Fulah"
+        ],
+        "endonyms": [
+            "Fulfulde",
+            "Pulaar",
+            "Pular"
+        ],
+        "code": "ff",
+        "region": "Niger–Congo"
+    },
+    "fi": {
+        "name": "Finnish/suomi",
+        "names": [
+            "Finnish"
+        ],
+        "endonyms": [
+            "suomi",
+            "suomen kieli"
+        ],
+        "code": "fi",
+        "region": "Uralic"
+    },
+    "fj": {
+        "name": "Fijian/vosa%20Vakaviti",
+        "names": [
+            "Fijian"
+        ],
+        "endonyms": [
+            "vosa Vakaviti"
+        ],
+        "code": "fj",
+        "region": "Austronesian"
+    },
+    "fo": {
+        "name": "Faroese/f%F8royskt",
+        "names": [
+            "Faroese"
+        ],
+        "endonyms": [
+            "føroyskt"
+        ],
+        "code": "fo",
+        "region": "Indo-European"
+    },
+    "fr": {
+        "name": "French/fran%E7ais",
+        "names": [
+            "French"
+        ],
+        "endonyms": [
+            "français"
+        ],
+        "code": "fr",
+        "region": "Indo-European"
+    },
+    "fy": {
+        "name": "Western%20Frisian/Frysk",
+        "names": [
+            "Western Frisian"
+        ],
+        "endonyms": [
+            "Frysk"
+        ],
+        "code": "fy",
+        "region": "Indo-European"
+    },
+    "ga": {
+        "name": "Irish/Gaeilge",
+        "names": [
+            "Irish"
+        ],
+        "endonyms": [
+            "Gaeilge"
+        ],
+        "code": "ga",
+        "region": "Indo-European"
+    },
+    "gd": {
+        "name": "Gaelic/G%E0idhlig",
+        "names": [
+            "Gaelic",
+            "Scottish Gaelic"
+        ],
+        "endonyms": [
+            "Gàidhlig"
+        ],
+        "code": "gd",
+        "region": "Indo-European"
+    },
+    "gl": {
+        "name": "Galician/Galego",
+        "names": [
+            "Galician"
+        ],
+        "endonyms": [
+            "Galego"
+        ],
+        "code": "gl",
+        "region": "Indo-European"
+    },
+    "gn": {
+        "name": "Guarani/Ava%F1e%27%u1EBD",
+        "names": [
+            "Guarani"
+        ],
+        "endonyms": [
+            "Avañe'ẽ"
+        ],
+        "code": "gn",
+        "region": "Tupian"
+    },
+    "gu": {
+        "name": "Gujarati/%u0A97%u0AC1%u0A9C%u0AB0%u0ABE%u0AA4%u0AC0",
+        "names": [
+            "Gujarati"
+        ],
+        "endonyms": [
+            "ગુજરાતી"
+        ],
+        "code": "gu",
+        "region": "Indo-European"
+    },
+    "gv": {
+        "name": "Manx/Gaelg",
+        "names": [
+            "Manx"
+        ],
+        "endonyms": [
+            "Gaelg",
+            "Gailck"
+        ],
+        "code": "gv",
+        "region": "Indo-European"
+    },
+    "ha": {
+        "name": "Hausa/%20%u0647%u064E%u0648%u064F%u0633%u064E",
+        "names": [
+            "Hausa"
+        ],
+        "endonyms": [
+            "(Hausa) هَوُسَ"
+        ],
+        "code": "ha",
+        "region": "Afro-Asiatic"
+    },
+    "he": {
+        "name": "Hebrew/%u05E2%u05D1%u05E8%u05D9%u05EA",
+        "names": [
+            "Hebrew"
+        ],
+        "endonyms": [
+            "עברית"
+        ],
+        "code": "he",
+        "region": "Afro-Asiatic"
+    },
+    "hi": {
+        "name": "Hindi/%u0939%u093F%u0928%u094D%u0926%u0940",
+        "names": [
+            "Hindi"
+        ],
+        "endonyms": [
+            "हिन्दी",
+            "हिंदी"
+        ],
+        "code": "hi",
+        "region": "Indo-European"
+    },
+    "ho": {
+        "name": "Hiri%20Motu/Hiri%20Motu",
+        "names": [
+            "Hiri Motu"
+        ],
+        "endonyms": [
+            "Hiri Motu"
+        ],
+        "code": "ho",
+        "region": "Austronesian"
+    },
+    "hr": {
+        "name": "Croatian/hrvatski%20jezik",
+        "names": [
+            "Croatian"
+        ],
+        "endonyms": [
+            "hrvatski jezik"
+        ],
+        "code": "hr",
+        "region": "Indo-European"
+    },
+    "ht": {
+        "name": "Haitian/Krey%F2l%20ayisyen",
+        "names": [
+            "Haitian",
+            "Haitian Creole"
+        ],
+        "endonyms": [
+            "Kreyòl ayisyen"
+        ],
+        "code": "ht",
+        "region": "Creole"
+    },
+    "hu": {
+        "name": "Hungarian/magyar",
+        "names": [
+            "Hungarian"
+        ],
+        "endonyms": [
+            "magyar"
+        ],
+        "code": "hu",
+        "region": "Uralic"
+    },
+    "hy": {
+        "name": "Armenian/%u0540%u0561%u0575%u0565%u0580%u0565%u0576",
+        "names": [
+            "Armenian"
+        ],
+        "endonyms": [
+            "Հայերեն"
+        ],
+        "code": "hy",
+        "region": "Indo-European"
+    },
+    "hz": {
+        "name": "Herero/Otjiherero",
+        "names": [
+            "Herero"
+        ],
+        "endonyms": [
+            "Otjiherero"
+        ],
+        "code": "hz",
+        "region": "Niger–Congo"
+    },
+    "ia": {
+        "name": "Interlingua%20/Interlingua",
+        "names": [
+            "Interlingua (International Auxiliary Language Association)"
+        ],
+        "endonyms": [
+            "Interlingua"
+        ],
+        "code": "ia",
+        "region": "Constructed"
+    },
+    "id": {
+        "name": "Indonesian/Bahasa%20Indonesia",
+        "names": [
+            "Indonesian"
+        ],
+        "endonyms": [
+            "Bahasa Indonesia"
+        ],
+        "code": "id",
+        "region": "Austronesian"
+    },
+    "ie": {
+        "name": "Interlingue/%20Occidental",
+        "names": [
+            "Interlingue",
+            "Occidental"
+        ],
+        "endonyms": [
+            "(originally:) Occidental",
+            "(after WWII:) Interlingue"
+        ],
+        "code": "ie",
+        "region": "Constructed"
+    },
+    "ig": {
+        "name": "Igbo/As%u1EE5s%u1EE5%20Igbo",
+        "names": [
+            "Igbo"
+        ],
+        "endonyms": [
+            "Asụsụ Igbo"
+        ],
+        "code": "ig",
+        "region": "Niger–Congo"
+    },
+    "ii": {
+        "name": "Sichuan%20Yi/%uA188%uA320%uA4BF%20Nuosuhxop",
+        "names": [
+            "Sichuan Yi",
+            "Nuosu"
+        ],
+        "endonyms": [
+            "ꆈꌠ꒿ Nuosuhxop"
+        ],
+        "code": "ii",
+        "region": "Sino-Tibetan"
+    },
+    "ik": {
+        "name": "Inupiaq/I%F1upiaq",
+        "names": [
+            "Inupiaq"
+        ],
+        "endonyms": [
+            "Iñupiaq",
+            "Iñupiatun"
+        ],
+        "code": "ik",
+        "region": "Eskimo–Aleut"
+    },
+    "io": {
+        "name": "Ido/Ido",
+        "names": [
+            "Ido"
+        ],
+        "endonyms": [
+            "Ido"
+        ],
+        "code": "io",
+        "region": "Constructed"
+    },
+    "is": {
+        "name": "Icelandic/%CDslenska",
+        "names": [
+            "Icelandic"
+        ],
+        "endonyms": [
+            "Íslenska"
+        ],
+        "code": "is",
+        "region": "Indo-European"
+    },
+    "it": {
+        "name": "Italian/Italiano",
+        "names": [
+            "Italian"
+        ],
+        "endonyms": [
+            "Italiano"
+        ],
+        "code": "it",
+        "region": "Indo-European"
+    },
+    "iu": {
+        "name": "Inuktitut/%u1403%u14C4%u1483%u144E%u1450%u1466",
+        "names": [
+            "Inuktitut"
+        ],
+        "endonyms": [
+            "ᐃᓄᒃᑎᑐᑦ"
+        ],
+        "code": "iu",
+        "region": "Eskimo–Aleut"
+    },
+    "ja": {
+        "name": "Japanese/%u65E5%u672C%u8A9E%20/%u306B%u307B%u3093%u3054",
+        "names": [
+            "Japanese"
+        ],
+        "endonyms": [
+            "日本語 (にほんご)"
+        ],
+        "code": "ja",
+        "region": "Japonic"
+    },
+    "jv": {
+        "name": "Javanese/%uA9A7%uA9B1%uA997%uA9AE",
+        "names": [
+            "Javanese"
+        ],
+        "endonyms": [
+            "ꦧꦱꦗꦮ",
+            "Basa Jawa"
+        ],
+        "code": "jv",
+        "region": "Austronesian"
+    },
+    "ka": {
+        "name": "Georgian/%u10E5%u10D0%u10E0%u10D7%u10E3%u10DA%u10D8",
+        "names": [
+            "Georgian"
+        ],
+        "endonyms": [
+            "ქართული"
+        ],
+        "code": "ka",
+        "region": "Kartvelian"
+    },
+    "kg": {
+        "name": "Kongo/Kikongo",
+        "names": [
+            "Kongo"
+        ],
+        "endonyms": [
+            "Kikongo"
+        ],
+        "code": "kg",
+        "region": "Niger–Congo"
+    },
+    "ki": {
+        "name": "Kikuyu/G%u0129k%u0169y%u0169",
+        "names": [
+            "Kikuyu",
+            "Gikuyu"
+        ],
+        "endonyms": [
+            "Gĩkũyũ"
+        ],
+        "code": "ki",
+        "region": "Niger–Congo"
+    },
+    "kj": {
+        "name": "Kuanyama/Kuanyama",
+        "names": [
+            "Kuanyama",
+            "Kwanyama"
+        ],
+        "endonyms": [
+            "Kuanyama"
+        ],
+        "code": "kj",
+        "region": "Niger–Congo"
+    },
+    "kk": {
+        "name": "Kazakh/%u049B%u0430%u0437%u0430%u049B%20%u0442%u0456%u043B%u0456",
+        "names": [
+            "Kazakh"
+        ],
+        "endonyms": [
+            "қазақ тілі"
+        ],
+        "code": "kk",
+        "region": "Turkic"
+    },
+    "kl": {
+        "name": "Kalaallisut/kalaallisut",
+        "names": [
+            "Kalaallisut",
+            "Greenlandic"
+        ],
+        "endonyms": [
+            "kalaallisut",
+            "kalaallit oqaasii"
+        ],
+        "code": "kl",
+        "region": "Eskimo–Aleut"
+    },
+    "km": {
+        "name": "Central%20Khmer/%u1781%u17D2%u1798%u17C2%u179A",
+        "names": [
+            "Central Khmer"
+        ],
+        "endonyms": [
+            "ខ្មែរ",
+            "ខេមរភាសា",
+            "ភាសាខ្មែរ"
+        ],
+        "code": "km",
+        "region": "Austroasiatic"
+    },
+    "kn": {
+        "name": "Kannada/%u0C95%u0CA8%u0CCD%u0CA8%u0CA1",
+        "names": [
+            "Kannada"
+        ],
+        "endonyms": [
+            "ಕನ್ನಡ"
+        ],
+        "code": "kn",
+        "region": "Dravidian"
+    },
+    "ko": {
+        "name": "Korean/%uD55C%uAD6D%uC5B4",
+        "names": [
+            "Korean"
+        ],
+        "endonyms": [
+            "한국어"
+        ],
+        "code": "ko",
+        "region": "Koreanic"
+    },
+    "kr": {
+        "name": "Kanuri/Kanuri",
+        "names": [
+            "Kanuri"
+        ],
+        "endonyms": [
+            "Kanuri"
+        ],
+        "code": "kr",
+        "region": "Nilo-Saharan"
+    },
+    "ks": {
+        "name": "Kashmiri/%u0915%u0949%u0936%u0941%u0930",
+        "names": [
+            "Kashmiri"
+        ],
+        "endonyms": [
+            "कॉशुर",
+            "کٲشُر"
+        ],
+        "code": "ks",
+        "region": "Indo-European"
+    },
+    "ku": {
+        "name": "Kurdish/Kurd%EE",
+        "names": [
+            "Kurdish"
+        ],
+        "endonyms": [
+            "Kurdî",
+            "کوردی"
+        ],
+        "code": "ku",
+        "region": "Indo-European"
+    },
+    "kv": {
+        "name": "Komi/%u043A%u043E%u043C%u0438%20%u043A%u044B%u0432",
+        "names": [
+            "Komi"
+        ],
+        "endonyms": [
+            "коми кыв"
+        ],
+        "code": "kv",
+        "region": "Uralic"
+    },
+    "kw": {
+        "name": "Cornish/Kernewek",
+        "names": [
+            "Cornish"
+        ],
+        "endonyms": [
+            "Kernewek"
+        ],
+        "code": "kw",
+        "region": "Indo-European"
+    },
+    "ky": {
+        "name": "Kirghiz/%u041A%u044B%u0440%u0433%u044B%u0437%u0447%u0430",
+        "names": [
+            "Kirghiz",
+            "Kyrgyz"
+        ],
+        "endonyms": [
+            "Кыргызча",
+            "Кыргыз тили"
+        ],
+        "code": "ky",
+        "region": "Turkic"
+    },
+    "la": {
+        "name": "Latin/latine",
+        "names": [
+            "Latin"
+        ],
+        "endonyms": [
+            "latine",
+            "lingua latina"
+        ],
+        "code": "la",
+        "region": "Indo-European"
+    },
+    "lb": {
+        "name": "Luxembourgish/L%EBtzebuergesch",
+        "names": [
+            "Luxembourgish",
+            "Letzeburgesch"
+        ],
+        "endonyms": [
+            "Lëtzebuergesch"
+        ],
+        "code": "lb",
+        "region": "Indo-European"
+    },
+    "lg": {
+        "name": "Ganda/Luganda",
+        "names": [
+            "Ganda"
+        ],
+        "endonyms": [
+            "Luganda"
+        ],
+        "code": "lg",
+        "region": "Niger–Congo"
+    },
+    "li": {
+        "name": "Limburgan/Limburgs",
+        "names": [
+            "Limburgan",
+            "Limburger",
+            "Limburgish"
+        ],
+        "endonyms": [
+            "Limburgs"
+        ],
+        "code": "li",
+        "region": "Indo-European"
+    },
+    "ln": {
+        "name": "Lingala/Ling%E1la",
+        "names": [
+            "Lingala"
+        ],
+        "endonyms": [
+            "Lingála"
+        ],
+        "code": "ln",
+        "region": "Niger–Congo"
+    },
+    "lo": {
+        "name": "Lao/%u0E9E%u0EB2%u0EAA%u0EB2%u0EA5%u0EB2%u0EA7",
+        "names": [
+            "Lao"
+        ],
+        "endonyms": [
+            "ພາສາລາວ"
+        ],
+        "code": "lo",
+        "region": "Tai–Kadai"
+    },
+    "lt": {
+        "name": "Lithuanian/lietuvi%u0173%20kalba",
+        "names": [
+            "Lithuanian"
+        ],
+        "endonyms": [
+            "lietuvių kalba"
+        ],
+        "code": "lt",
+        "region": "Indo-European"
+    },
+    "lu": {
+        "name": "Luba-Katanga/Kiluba",
+        "names": [
+            "Luba-Katanga"
+        ],
+        "endonyms": [
+            "Kiluba"
+        ],
+        "code": "lu",
+        "region": "Niger–Congo"
+    },
+    "lv": {
+        "name": "Latvian/latvie%u0161u%20valoda",
+        "names": [
+            "Latvian"
+        ],
+        "endonyms": [
+            "latviešu valoda"
+        ],
+        "code": "lv",
+        "region": "Indo-European"
+    },
+    "mg": {
+        "name": "Malagasy/fiteny%20malagasy",
+        "names": [
+            "Malagasy"
+        ],
+        "endonyms": [
+            "fiteny malagasy"
+        ],
+        "code": "mg",
+        "region": "Austronesian"
+    },
+    "mh": {
+        "name": "Marshallese/Kajin%20M%u0327aje%u013C",
+        "names": [
+            "Marshallese"
+        ],
+        "endonyms": [
+            "Kajin M̧ajeļ"
+        ],
+        "code": "mh",
+        "region": "Austronesian"
+    },
+    "mi": {
+        "name": "Maori/te%20reo%20M%u0101ori",
+        "names": [
+            "Maori"
+        ],
+        "endonyms": [
+            "te reo Māori"
+        ],
+        "code": "mi",
+        "region": "Austronesian"
+    },
+    "mk": {
+        "name": "Macedonian/%u043C%u0430%u043A%u0435%u0434%u043E%u043D%u0441%u043A%u0438%20%u0458%u0430%u0437%u0438%u043A",
+        "names": [
+            "Macedonian"
+        ],
+        "endonyms": [
+            "македонски јазик"
+        ],
+        "code": "mk",
+        "region": "Indo-European"
+    },
+    "ml": {
+        "name": "Malayalam/%u0D2E%u0D32%u0D2F%u0D3E%u0D33%u0D02",
+        "names": [
+            "Malayalam"
+        ],
+        "endonyms": [
+            "മലയാളം"
+        ],
+        "code": "ml",
+        "region": "Dravidian"
+    },
+    "mn": {
+        "name": "Mongolian/%u041C%u043E%u043D%u0433%u043E%u043B%20%u0445%u044D%u043B",
+        "names": [
+            "Mongolian"
+        ],
+        "endonyms": [
+            "Монгол хэл"
+        ],
+        "code": "mn",
+        "region": "Mongolic"
+    },
+    "mr": {
+        "name": "Marathi/%u092E%u0930%u093E%u0920%u0940",
+        "names": [
+            "Marathi"
+        ],
+        "endonyms": [
+            "मराठी"
+        ],
+        "code": "mr",
+        "region": "Indo-European"
+    },
+    "ms": {
+        "name": "Malay/Bahasa%20Melayu",
+        "names": [
+            "Malay"
+        ],
+        "endonyms": [
+            "Bahasa Melayu",
+            "بهاس ملايو"
+        ],
+        "code": "ms",
+        "region": "Austronesian"
+    },
+    "mt": {
+        "name": "Maltese/Malti",
+        "names": [
+            "Maltese"
+        ],
+        "endonyms": [
+            "Malti"
+        ],
+        "code": "mt",
+        "region": "Afro-Asiatic"
+    },
+    "my": {
+        "name": "Burmese/%u1017%u1019%u102C%u1005%u102C",
+        "names": [
+            "Burmese"
+        ],
+        "endonyms": [
+            "ဗမာစာ"
+        ],
+        "code": "my",
+        "region": "Sino-Tibetan"
+    },
+    "na": {
+        "name": "Nauru/Dorerin%20Naoero",
+        "names": [
+            "Nauru"
+        ],
+        "endonyms": [
+            "Dorerin Naoero"
+        ],
+        "code": "na",
+        "region": "Austronesian"
+    },
+    "nb": {
+        "name": "Norwegian%20Bokm%E5l/Norsk%20Bokm%E5l",
+        "names": [
+            "Norwegian Bokmål"
+        ],
+        "endonyms": [
+            "Norsk Bokmål"
+        ],
+        "code": "nb",
+        "region": "Indo-European"
+    },
+    "nd": {
+        "name": "North%20Ndebele/isiNdebele",
+        "names": [
+            "North Ndebele"
+        ],
+        "endonyms": [
+            "isiNdebele"
+        ],
+        "code": "nd",
+        "region": "Niger–Congo"
+    },
+    "ne": {
+        "name": "Nepali/%u0928%u0947%u092A%u093E%u0932%u0940",
+        "names": [
+            "Nepali"
+        ],
+        "endonyms": [
+            "नेपाली"
+        ],
+        "code": "ne",
+        "region": "Indo-European"
+    },
+    "ng": {
+        "name": "Ndonga/Owambo",
+        "names": [
+            "Ndonga"
+        ],
+        "endonyms": [
+            "Owambo"
+        ],
+        "code": "ng",
+        "region": "Niger–Congo"
+    },
+    "nl": {
+        "name": "Dutch/Nederlands",
+        "names": [
+            "Dutch",
+            "Flemish"
+        ],
+        "endonyms": [
+            "Nederlands",
+            "Vlaams"
+        ],
+        "code": "nl",
+        "region": "Indo-European"
+    },
+    "nn": {
+        "name": "Norwegian%20Nynorsk/Norsk%20Nynorsk",
+        "names": [
+            "Norwegian Nynorsk"
+        ],
+        "endonyms": [
+            "Norsk Nynorsk"
+        ],
+        "code": "nn",
+        "region": "Indo-European"
+    },
+    "no": {
+        "name": "Norwegian/Norsk",
+        "names": [
+            "Norwegian"
+        ],
+        "endonyms": [
+            "Norsk"
+        ],
+        "code": "no",
+        "region": "Indo-European"
+    },
+    "nr": {
+        "name": "South%20Ndebele/isiNdebele",
+        "names": [
+            "South Ndebele"
+        ],
+        "endonyms": [
+            "isiNdebele"
+        ],
+        "code": "nr",
+        "region": "Niger–Congo"
+    },
+    "nv": {
+        "name": "Navajo/Din%E9%20bizaad",
+        "names": [
+            "Navajo",
+            "Navaho"
+        ],
+        "endonyms": [
+            "Diné bizaad"
+        ],
+        "code": "nv",
+        "region": "Dené–Yeniseian"
+    },
+    "ny": {
+        "name": "Chichewa/chiChe%u0175a",
+        "names": [
+            "Chichewa",
+            "Chewa",
+            "Nyanja"
+        ],
+        "endonyms": [
+            "chiCheŵa",
+            "chinyanja"
+        ],
+        "code": "ny",
+        "region": "Niger–Congo"
+    },
+    "oc": {
+        "name": "Occitan/occitan",
+        "names": [
+            "Occitan"
+        ],
+        "endonyms": [
+            "occitan",
+            "lenga d'òc"
+        ],
+        "code": "oc",
+        "region": "Indo-European"
+    },
+    "oj": {
+        "name": "Ojibwa/%u140A%u14C2%u1511%u14C8%u142F%u14A7%u140E%u14D0",
+        "names": [
+            "Ojibwa"
+        ],
+        "endonyms": [
+            "ᐊᓂᔑᓈᐯᒧᐎᓐ"
+        ],
+        "code": "oj",
+        "region": "Algic"
+    },
+    "om": {
+        "name": "Oromo/Afaan%20Oromoo",
+        "names": [
+            "Oromo"
+        ],
+        "endonyms": [
+            "Afaan Oromoo"
+        ],
+        "code": "om",
+        "region": "Afro-Asiatic"
+    },
+    "or": {
+        "name": "Oriya/%u0B13%u0B21%u0B3C%u0B3F%u0B06",
+        "names": [
+            "Oriya"
+        ],
+        "endonyms": [
+            "ଓଡ଼ିଆ"
+        ],
+        "code": "or",
+        "region": "Indo-European"
+    },
+    "os": {
+        "name": "Ossetian/%u0438%u0440%u043E%u043D%20%u04D5%u0432%u0437%u0430%u0433",
+        "names": [
+            "Ossetian",
+            "Ossetic"
+        ],
+        "endonyms": [
+            "ирон ӕвзаг"
+        ],
+        "code": "os",
+        "region": "Indo-European"
+    },
+    "pa": {
+        "name": "Punjabi/%u0A2A%u0A70%u0A1C%u0A3E%u0A2C%u0A40",
+        "names": [
+            "Punjabi",
+            "Panjabi"
+        ],
+        "endonyms": [
+            "ਪੰਜਾਬੀ",
+            "پنجابی"
+        ],
+        "code": "pa",
+        "region": "Indo-European"
+    },
+    "pi": {
+        "name": "Pali/%u092A%u093E%u0932%u093F",
+        "names": [
+            "Pali"
+        ],
+        "endonyms": [
+            "पालि",
+            "पाळि"
+        ],
+        "code": "pi",
+        "region": "Indo-European"
+    },
+    "pl": {
+        "name": "Polish/j%u0119zyk%20polski",
+        "names": [
+            "Polish"
+        ],
+        "endonyms": [
+            "język polski",
+            "polszczyzna"
+        ],
+        "code": "pl",
+        "region": "Indo-European"
+    },
+    "ps": {
+        "name": "Pashto/%u067E%u069A%u062A%u0648",
+        "names": [
+            "Pashto",
+            "Pushto"
+        ],
+        "endonyms": [
+            "پښتو"
+        ],
+        "code": "ps",
+        "region": "Indo-European"
+    },
+    "pt": {
+        "name": "Portuguese/Portugu%EAs",
+        "names": [
+            "Portuguese"
+        ],
+        "endonyms": [
+            "Português"
+        ],
+        "code": "pt",
+        "region": "Indo-European"
+    },
+    "qu": {
+        "name": "Quechua/Runa%20Simi",
+        "names": [
+            "Quechua"
+        ],
+        "endonyms": [
+            "Runa Simi",
+            "Kichwa"
+        ],
+        "code": "qu",
+        "region": "Quechuan"
+    },
+    "rm": {
+        "name": "Romansh/Rumantsch%20Grischun",
+        "names": [
+            "Romansh"
+        ],
+        "endonyms": [
+            "Rumantsch Grischun"
+        ],
+        "code": "rm",
+        "region": "Indo-European"
+    },
+    "rn": {
+        "name": "Rundi/Ikirundi",
+        "names": [
+            "Rundi"
+        ],
+        "endonyms": [
+            "Ikirundi"
+        ],
+        "code": "rn",
+        "region": "Niger–Congo"
+    },
+    "ro": {
+        "name": "Romanian/Rom%E2n%u0103",
+        "names": [
+            "Romanian",
+            "Moldavian",
+            "Moldovan"
+        ],
+        "endonyms": [
+            "Română",
+            "Moldovenească"
+        ],
+        "code": "ro",
+        "region": "Indo-European"
+    },
+    "ru": {
+        "name": "Russian/%u0440%u0443%u0441%u0441%u043A%u0438%u0439",
+        "names": [
+            "Russian"
+        ],
+        "endonyms": [
+            "русский"
+        ],
+        "code": "ru",
+        "region": "Indo-European"
+    },
+    "rw": {
+        "name": "Kinyarwanda/Ikinyarwanda",
+        "names": [
+            "Kinyarwanda"
+        ],
+        "endonyms": [
+            "Ikinyarwanda"
+        ],
+        "code": "rw",
+        "region": "Niger–Congo"
+    },
+    "sa": {
+        "name": "Sanskrit/%u0938%u0902%u0938%u094D%u0915%u0943%u0924%u092E%u094D",
+        "names": [
+            "Sanskrit"
+        ],
+        "endonyms": [
+            "संस्कृतम्",
+            "𑌸𑌂𑌸𑍍𑌕𑍃𑌤𑌮𑍍"
+        ],
+        "code": "sa",
+        "region": "Indo-European"
+    },
+    "sc": {
+        "name": "Sardinian/sardu",
+        "names": [
+            "Sardinian"
+        ],
+        "endonyms": [
+            "sardu"
+        ],
+        "code": "sc",
+        "region": "Indo-European"
+    },
+    "sd": {
+        "name": "Sindhi/%u0938%u093F%u0902%u0927%u0940",
+        "names": [
+            "Sindhi"
+        ],
+        "endonyms": [
+            "सिंधी",
+            "سنڌي"
+        ],
+        "code": "sd",
+        "region": "Indo-European"
+    },
+    "se": {
+        "name": "Northern%20Sami/Davvis%E1megiella",
+        "names": [
+            "Northern Sami"
+        ],
+        "endonyms": [
+            "Davvisámegiella"
+        ],
+        "code": "se",
+        "region": "Uralic"
+    },
+    "sg": {
+        "name": "Sango/y%E2ng%E2%20t%EE%20s%E4ng%F6",
+        "names": [
+            "Sango"
+        ],
+        "endonyms": [
+            "yângâ tî sängö"
+        ],
+        "code": "sg",
+        "region": "Creole"
+    },
+    "si": {
+        "name": "Sinhala/%u0DC3%u0DD2%u0D82%u0DC4%u0DBD",
+        "names": [
+            "Sinhala",
+            "Sinhalese"
+        ],
+        "endonyms": [
+            "සිංහල"
+        ],
+        "code": "si",
+        "region": "Indo-European"
+    },
+    "sk": {
+        "name": "Slovak/sloven%u010Dina",
+        "names": [
+            "Slovak"
+        ],
+        "endonyms": [
+            "slovenčina",
+            "slovenský jazyk"
+        ],
+        "code": "sk",
+        "region": "Indo-European"
+    },
+    "sl": {
+        "name": "Slovenian/Slovenski%20jezik",
+        "names": [
+            "Slovenian"
+        ],
+        "endonyms": [
+            "Slovenski jezik",
+            "Slovenščina"
+        ],
+        "code": "sl",
+        "region": "Indo-European"
+    },
+    "sm": {
+        "name": "Samoan/gagana%20fa%27a%20Samoa",
+        "names": [
+            "Samoan"
+        ],
+        "endonyms": [
+            "gagana fa'a Samoa"
+        ],
+        "code": "sm",
+        "region": "Austronesian"
+    },
+    "sn": {
+        "name": "Shona/chiShona",
+        "names": [
+            "Shona"
+        ],
+        "endonyms": [
+            "chiShona"
+        ],
+        "code": "sn",
+        "region": "Niger–Congo"
+    },
+    "so": {
+        "name": "Somali/Soomaaliga",
+        "names": [
+            "Somali"
+        ],
+        "endonyms": [
+            "Soomaaliga",
+            "af Soomaali"
+        ],
+        "code": "so",
+        "region": "Afro-Asiatic"
+    },
+    "sq": {
+        "name": "Albanian/Shqip",
+        "names": [
+            "Albanian"
+        ],
+        "endonyms": [
+            "Shqip"
+        ],
+        "code": "sq",
+        "region": "Indo-European"
+    },
+    "sr": {
+        "name": "Serbian/%u0441%u0440%u043F%u0441%u043A%u0438%20%u0458%u0435%u0437%u0438%u043A",
+        "names": [
+            "Serbian"
+        ],
+        "endonyms": [
+            "српски језик"
+        ],
+        "code": "sr",
+        "region": "Indo-European"
+    },
+    "ss": {
+        "name": "Swati/SiSwati",
+        "names": [
+            "Swati"
+        ],
+        "endonyms": [
+            "SiSwati"
+        ],
+        "code": "ss",
+        "region": "Niger–Congo"
+    },
+    "st": {
+        "name": "Southern%20Sotho/Sesotho",
+        "names": [
+            "Southern Sotho"
+        ],
+        "endonyms": [
+            "Sesotho"
+        ],
+        "code": "st",
+        "region": "Niger–Congo"
+    },
+    "su": {
+        "name": "Sundanese/Basa%20Sunda",
+        "names": [
+            "Sundanese"
+        ],
+        "endonyms": [
+            "Basa Sunda"
+        ],
+        "code": "su",
+        "region": "Austronesian"
+    },
+    "sv": {
+        "name": "Swedish/Svenska",
+        "names": [
+            "Swedish"
+        ],
+        "endonyms": [
+            "Svenska"
+        ],
+        "code": "sv",
+        "region": "Indo-European"
+    },
+    "sw": {
+        "name": "Swahili/Kiswahili",
+        "names": [
+            "Swahili"
+        ],
+        "endonyms": [
+            "Kiswahili"
+        ],
+        "code": "sw",
+        "region": "Niger–Congo"
+    },
+    "ta": {
+        "name": "Tamil/%u0BA4%u0BAE%u0BBF%u0BB4%u0BCD",
+        "names": [
+            "Tamil"
+        ],
+        "endonyms": [
+            "தமிழ்"
+        ],
+        "code": "ta",
+        "region": "Dravidian"
+    },
+    "te": {
+        "name": "Telugu/%u0C24%u0C46%u0C32%u0C41%u0C17%u0C41",
+        "names": [
+            "Telugu"
+        ],
+        "endonyms": [
+            "తెలుగు"
+        ],
+        "code": "te",
+        "region": "Dravidian"
+    },
+    "tg": {
+        "name": "Tajik/%u0442%u043E%u04B7%u0438%u043A%u04E3",
+        "names": [
+            "Tajik"
+        ],
+        "endonyms": [
+            "тоҷикӣ",
+            "toçikī",
+            "تاجیکی"
+        ],
+        "code": "tg",
+        "region": "Indo-European"
+    },
+    "th": {
+        "name": "Thai/%u0E44%u0E17%u0E22",
+        "names": [
+            "Thai"
+        ],
+        "endonyms": [
+            "ไทย"
+        ],
+        "code": "th",
+        "region": "Tai–Kadai"
+    },
+    "ti": {
+        "name": "Tigrinya/%u1275%u130D%u122D%u129B",
+        "names": [
+            "Tigrinya"
+        ],
+        "endonyms": [
+            "ትግርኛ"
+        ],
+        "code": "ti",
+        "region": "Afro-Asiatic"
+    },
+    "tk": {
+        "name": "Turkmen/T%FCrkmen%E7e",
+        "names": [
+            "Turkmen"
+        ],
+        "endonyms": [
+            "Türkmençe",
+            "Türkmen dili"
+        ],
+        "code": "tk",
+        "region": "Turkic"
+    },
+    "tl": {
+        "name": "Tagalog/Wikang%20Tagalog",
+        "names": [
+            "Tagalog"
+        ],
+        "endonyms": [
+            "Wikang Tagalog"
+        ],
+        "code": "tl",
+        "region": "Austronesian"
+    },
+    "tn": {
+        "name": "Tswana/Setswana",
+        "names": [
+            "Tswana"
+        ],
+        "endonyms": [
+            "Setswana"
+        ],
+        "code": "tn",
+        "region": "Niger–Congo"
+    },
+    "to": {
+        "name": "Tonga%20/Faka%20Tonga",
+        "names": [
+            "Tonga (Tonga Islands)"
+        ],
+        "endonyms": [
+            "Faka Tonga"
+        ],
+        "code": "to",
+        "region": "Austronesian"
+    },
+    "tr": {
+        "name": "Turkish/T%FCrk%E7e",
+        "names": [
+            "Turkish"
+        ],
+        "endonyms": [
+            "Türkçe"
+        ],
+        "code": "tr",
+        "region": "Turkic"
+    },
+    "ts": {
+        "name": "Tsonga/Xitsonga",
+        "names": [
+            "Tsonga"
+        ],
+        "endonyms": [
+            "Xitsonga"
+        ],
+        "code": "ts",
+        "region": "Niger–Congo"
+    },
+    "tt": {
+        "name": "Tatar/%u0442%u0430%u0442%u0430%u0440%20%u0442%u0435%u043B%u0435",
+        "names": [
+            "Tatar"
+        ],
+        "endonyms": [
+            "татар теле",
+            "tatar tele"
+        ],
+        "code": "tt",
+        "region": "Turkic"
+    },
+    "tw": {
+        "name": "Twi/Twi",
+        "names": [
+            "Twi"
+        ],
+        "endonyms": [
+            "Twi"
+        ],
+        "code": "tw",
+        "region": "Niger–Congo"
+    },
+    "ty": {
+        "name": "Tahitian/Reo%20Tahiti",
+        "names": [
+            "Tahitian"
+        ],
+        "endonyms": [
+            "Reo Tahiti"
+        ],
+        "code": "ty",
+        "region": "Austronesian"
+    },
+    "ug": {
+        "name": "Uighur/%u0626%u06C7%u064A%u063A%u06C7%u0631%u0686%u06D5",
+        "names": [
+            "Uighur",
+            "Uyghur"
+        ],
+        "endonyms": [
+            "ئۇيغۇرچە",
+            "Uyghurche"
+        ],
+        "code": "ug",
+        "region": "Turkic"
+    },
+    "uk": {
+        "name": "Ukrainian/%u0423%u043A%u0440%u0430%u0457%u043D%u0441%u044C%u043A%u0430",
+        "names": [
+            "Ukrainian"
+        ],
+        "endonyms": [
+            "Українська"
+        ],
+        "code": "uk",
+        "region": "Indo-European"
+    },
+    "ur": {
+        "name": "Urdu/%u0627%u0631%u062F%u0648",
+        "names": [
+            "Urdu"
+        ],
+        "endonyms": [
+            "اردو"
+        ],
+        "code": "ur",
+        "region": "Indo-European"
+    },
+    "uz": {
+        "name": "Uzbek/O%u02BBzbek",
+        "names": [
+            "Uzbek"
+        ],
+        "endonyms": [
+            "Oʻzbek",
+            "Ўзбек",
+            "أۇزبېك"
+        ],
+        "code": "uz",
+        "region": "Turkic"
+    },
+    "ve": {
+        "name": "Venda/Tshiven%u1E13a",
+        "names": [
+            "Venda"
+        ],
+        "endonyms": [
+            "Tshivenḓa"
+        ],
+        "code": "ve",
+        "region": "Niger–Congo"
+    },
+    "vi": {
+        "name": "Vietnamese/Ti%u1EBFng%20Vi%u1EC7t",
+        "names": [
+            "Vietnamese"
+        ],
+        "endonyms": [
+            "Tiếng Việt"
+        ],
+        "code": "vi",
+        "region": "Austroasiatic"
+    },
+    "vo": {
+        "name": "Volap%FCk/Volap%FCk",
+        "names": [
+            "Volapük"
+        ],
+        "endonyms": [
+            "Volapük"
+        ],
+        "code": "vo",
+        "region": "Constructed"
+    },
+    "wa": {
+        "name": "Walloon/Walon",
+        "names": [
+            "Walloon"
+        ],
+        "endonyms": [
+            "Walon"
+        ],
+        "code": "wa",
+        "region": "Indo-European"
+    },
+    "wo": {
+        "name": "Wolof/Wollof",
+        "names": [
+            "Wolof"
+        ],
+        "endonyms": [
+            "Wollof"
+        ],
+        "code": "wo",
+        "region": "Niger–Congo"
+    },
+    "xh": {
+        "name": "Xhosa/isiXhosa",
+        "names": [
+            "Xhosa"
+        ],
+        "endonyms": [
+            "isiXhosa"
+        ],
+        "code": "xh",
+        "region": "Niger–Congo"
+    },
+    "yi": {
+        "name": "Yiddish/%u05D9%u05D9%u05B4%u05D3%u05D9%u05E9",
+        "names": [
+            "Yiddish"
+        ],
+        "endonyms": [
+            "ייִדיש"
+        ],
+        "code": "yi",
+        "region": "Indo-European"
+    },
+    "yo": {
+        "name": "Yoruba/Yor%F9b%E1",
+        "names": [
+            "Yoruba"
+        ],
+        "endonyms": [
+            "Yorùbá"
+        ],
+        "code": "yo",
+        "region": "Niger–Congo"
+    },
+    "za": {
+        "name": "Zhuang/Sa%u026F%20cue%u014B%u0185",
+        "names": [
+            "Zhuang",
+            "Chuang"
+        ],
+        "endonyms": [
+            "Saɯ cueŋƅ",
+            "Saw cuengh"
+        ],
+        "code": "za",
+        "region": "Tai–Kadai"
+    },
+    "zh": {
+        "name": "Chinese/%u4E2D%u6587%20",
+        "names": [
+            "Chinese"
+        ],
+        "endonyms": [
+            "中文 (Zhōngwén)",
+            "汉语",
+            "漢語"
+        ],
+        "code": "zh",
+        "region": "Sino-Tibetan"
+    },
+    "zu": {
+        "name": "Zulu/isiZulu",
+        "names": [
+            "Zulu"
+        ],
+        "endonyms": [
+            "isiZulu"
+        ],
+        "code": "zu",
+        "region": "Niger–Congo"
+    }
+});

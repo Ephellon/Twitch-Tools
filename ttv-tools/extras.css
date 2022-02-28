@@ -439,6 +439,8 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     /* border: 1px solid var(--user-complement-color); */
 
     --current-border-color: var(--user-complement-color);
+
+    min-width: 30rem;
 }
 
 .tt-silent.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
@@ -460,7 +462,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 
     background: inherit;
     /* border: 1px solid var(--current-border-color); */
-    border-radius: 25%;
+    border-radius: 0.25em;
     display: inline-block;
     font-size: 1em;
     font-weight: bold;

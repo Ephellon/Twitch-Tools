@@ -28,25 +28,25 @@
             "Borrar"
         ],
         "minute": [
-            "%d minuto%s"
+            "%d minuto%>s"
         ],
         "hour": [
-            "%d hora%s"
+            "%d hora%>s"
         ],
         "day": [
-            "%d día%s"
+            "%d día%>s"
         ],
         "week": [
-            "%d semana%s"
+            "%d semana%>s"
         ],
         "month": [
-            "%d mes%s"
+            "%d mes%>es"
         ],
         "year": [
-            "%d año%s"
+            "%d año%>s"
         ],
         "@@century": [
-            "%d siglo%s"
+            "%d siglo%>s"
         ],
         "smart-notifications": [
             "Notificaciones inteligentes"
@@ -279,7 +279,7 @@
     ],
     "time-zones": [
         "Zonas horarias",
-        "Convierta las horas del título en su zona horaria local"
+        "Convierta las horas de la página en su zona horaria local"
     ],
     "view-mode": [
         "Modo de vista",

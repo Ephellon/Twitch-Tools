@@ -1,0 +1,780 @@
+{
+    "[[SOURCE]]": "ROOT",
+    "[[ERROR]]": "Detta dokument kan innehålla översättningsfel. Om du vill hjälpa till att rätta detta dokument, besök GitHub",
+    "LANG_PACK_READY": false,
+    "?": {
+        "save": [
+            "Spara"
+        ],
+        "extras": [
+            "Extras"
+        ],
+        "options": [
+            "Alternativ"
+        ],
+        "en|dis": [
+            "Inaktivera",
+            "Aktivera"
+        ],
+        "new": [
+            "Ny"
+        ],
+        "ok": [
+            "Fortsätta"
+        ],
+        "nk": [
+            "Annullera"
+        ],
+        "rm": [
+            "Ta bort"
+        ],
+        "minute": [
+            "%d minut%>er"
+        ],
+        "hour": [
+            "%d timm%e>ar"
+        ],
+        "day": [
+            "%d dag%>ar"
+        ],
+        "week": [
+            "%d veck%a>or"
+        ],
+        "month": [
+            "%d månad%>er"
+        ],
+        "year": [
+            "%d år"
+        ],
+        "@@century": [
+            "%d århundrade%>n"
+        ],
+        "smart-notifications": [
+            "Smarta aviseringar"
+        ],
+        "title": [
+            "TTV-verktyg – Inställningar"
+        ],
+        "about": [
+            "Om TTV-verktyg"
+        ],
+        "language": [
+            "Språk"
+        ],
+        "version": [
+            "Version"
+        ],
+        "support": [
+            "Stöd"
+        ],
+        "cc-sound-notice": [
+            "Det här ljudet",
+            "är licensierat under Creative Commons Attribution License",
+            "Läs mer"
+        ],
+        "day-of-week": [
+            "Söndag",
+            "Måndag",
+            "Tisdag",
+            "Onsdag",
+            "Torsdag",
+            "Fredag",
+            "Lördag"
+        ],
+        "footer": [
+            "Denna förlängning är inte på något sätt ansluten till, eller godkänd av Amazon™, Twitch™, NightDev (LLC), någon av parternas partners, dotterbolag eller dotterbolag"
+        ]
+    },
+    "header:automation": [
+        "Automatisering"
+    ],
+    "auto-join": [
+        "Gå med automatiskt",
+        "När den presenteras med en varning om att strömmen är avsedd för",
+        "mogna målgrupper",
+        "fortsätt automatiskt",
+        "Detta kommer också att gå med i",
+        "Watch Parties",
+        "automatiskt"
+    ],
+    "away-mode": [
+        "Lat på lur",
+        "Lägger till en knapp för att växla",
+        "lurar",
+        "Kortkommandot",
+        null,
+        null,
+        "kan också användas"
+    ],
+    "away-mode:hide-chat": [
+        "Dölj chatt",
+        "Håll chatten dold medan",
+        "lurar"
+    ],
+    "away-mode:volume": [
+        "Lurande volym",
+        "Ställ in volymen på",
+        "när",
+        "lurar"
+    ],
+    "away-mode:schedule": [
+        "Schema",
+        "Välj tider"
+    ],
+    "away-mode:schedule:options": [
+        "Gånger"
+    ],
+    "away-mode:schedule:create": [
+        "Skapa ett nytt schema"
+    ],
+    "away-mode:schedule:create:frequency": [
+        "Frekvens"
+    ],
+    "away-mode:schedule:create:controls": [
+        "Använd",
+        null,
+        "eller",
+        null,
+        null,
+        "för att välja flera dagar"
+    ],
+    "away-mode:schedule:create:functionality": [
+        "Funktionalitet",
+        "på",
+        "för"
+    ],
+    "away-mode:schedule:create:hour": [
+        "%%"
+    ],
+    "away-mode:schedule:create:notice": [
+        "Tider sparas i din aktuella tidszon",
+        null
+    ],
+    "away-mode:schedule:create:add-more": [
+        "Lägga till ett annat schema"
+    ],
+    "auto-claim-bonuses": [
+        "Anspråksbonusar",
+        "När",
+        "-knappen visas klickar du på den automatiskt"
+    ],
+    "first-in-line": [
+        "Först i Rad / Upp nästa",
+        "När en kanal går live, gå till sin ström automatiskt",
+        "Up Next",
+        "lägger till en kötjänst till Twitch™"
+    ],
+    "first-in-line:disabled": [
+        "Inaktiverad",
+        "Använd inte den här funktionen"
+    ],
+    "first-in-line:notification": [
+        "När du får en avisering om en kanal som går live går du till dess stream efter"
+    ],
+    "first-in-line:appearance": [
+        "Utseende",
+        "När en kanal visas i dina följda kanaler går du till dess ström efter"
+    ],
+    "first-in-line:smart-notifications": [
+        "Automatisk",
+        "Gå till alla strömmar automatiskt efter"
+    ],
+    "up-next:extras": [
+        "En instans",
+        "Endast den första fliken som läses in",
+        "Nästa",
+        "får använda den"
+    ],
+    "auto-follow": [
+        "Följer",
+        "När du tittar på en kanal som inte följs följer du den automatiskt"
+    ],
+    "auto-follow:none": [
+        "Inaktiverad",
+        "Använd inte den här funktionen"
+    ],
+    "auto-follow:raids": [
+        "Raids",
+        "När du deltar i en raid följer du kanalen som plundras"
+    ],
+    "auto-follow:time": [
+        "Visning",
+        "När du har tittat på",
+        "av innehåll följer du kanalen"
+    ],
+    "auto-follow:all": [
+        "Automatisk",
+        "Följ alla kanaler automatiskt"
+    ],
+    "auto-follow:live-reminders": [
+        null,
+        "Påminnelser",
+        "Lägger till en",
+        "påminnelse",
+        "-knapp på",
+        "om mig",
+        "-panelen"
+    ],
+    "auto-follow:keep-live-reminders": [
+        "Behåll påminnelser",
+        "När aktiverade",
+        null,
+        null,
+        "Påminnelser tas inte bort automatiskt"
+    ],
+    "kill-extensions": [
+        "Kill Extensions",
+        "Tillåt inte att Twitch-tillägg™ visas över strömmen"
+    ],
+    "next-channel-preference": [
+        "Nästa kanal",
+        "Hur ska nästa kanal väljas när",
+        "Up Next",
+        "är tom",
+        "Detta aktiveras endast när den aktuella strömmen går offline"
+    ],
+    "next-channel-preference:options": [
+        "Inaktiverad",
+        "Gå till en slumpmässig kanal",
+        "Gå med minst tittare",
+        "Gå med flest tittare",
+        "Gå med minst kanalpoäng",
+        "Gå med flest kanalpoäng",
+        "Gå med det närmaste att ha alla kanalpoängbelöningar",
+        "Gå längst från att ha alla kanalpoängbelöningar"
+    ],
+    "prevent-hosting": [
+        "Förhindra hosting",
+        "Förhindra att vissa eller alla kanaler är värdar genom att gå till",
+        "Next Channel"
+    ],
+    "prevent-hosting:options": [
+        "Tillåt alla kanaler att vara värd",
+        "Förhindra att alla kanaler är värd",
+        "Förhindra att avföljda kanaler är värd"
+    ],
+    "prevent-raiding": [
+        "Förhindra raiding",
+        "Förhindra att vissa eller alla kanaler plundras genom att gå till",
+        "Nästa kanal"
+    ],
+    "prevent-raiding:options": [
+        "Tillåt att alla kanaler raidar",
+        "Endast raid för att samla kanalpoäng",
+        "Förhindra att alla kanaler plundrar",
+        "Förhindra att oföljda kanaler plundras"
+    ],
+    "claim-loot": [
+        "Prime Loot",
+        "Gör automatiskt anspråk på och avvisa",
+        "Prime Gaming Loot",
+        "erbjudanden när sidan laddas"
+    ],
+    "stay-live": [
+        "Håll dig live",
+        "När den aktuella strömmen är slut går du till",
+        "Nästa kanal"
+    ],
+    "stay-live:vod-is-offline": [
+        "Behandla",
+        "VOD-strömmar",
+        "som offlineströmmar"
+    ],
+    "time-zones": [
+        "Tidszoner",
+        "Konvertera tider på sidan till din lokala tidszon"
+    ],
+    "view-mode": [
+        "Visa läge",
+        "När sidan är klar med inläsningen ändrar du vyn till"
+    ],
+    "view-mode:options": [
+        "Ingenting (ändra inte)",
+        "Standardläge (banner + chatt)",
+        "Teaterläge (chatt)",
+        "Fullwidth Mode (banner)",
+        "Helskärmsläge"
+    ],
+    "header:chat-and-messaging": [
+        "Chatt och meddelanden"
+    ],
+    "bttv-emotes": [
+        "BetterTTV Emotes",
+        "Använd BetterTTV emotes",
+        "Detta kan orsaka instabilitet när du laddar emotes"
+    ],
+    "bttv-emotes:auto-load-bttv-emotes": [
+        "Ladda emotes automatiskt",
+        "Konvertera emote-text automatiskt till",
+        "BetterTTV",
+        "emotes"
+    ],
+    "bttv-emotes:channel-specific-emotes": [
+        "Kanalspecifika emotes",
+        "Ladda kanalspecifika",
+        "BetterTTV",
+        "emotes"
+    ],
+    "bttv-emotes:emote-location": [
+        "Emote Location",
+        "Ladda dessa",
+        "BetterTTV",
+        "emotes"
+    ],
+    "bttv-emotes:emote-location:options": [
+        "Mest populära (Trending)",
+        "Mest delade (delade)",
+        "Mest använda (Topp)",
+        "Mest universella (globala)"
+    ],
+    "bttv-emotes:extra-emotes": [
+        "Extra emotes",
+        "Lägg till",
+        "BetterTTV",
+        "emotes med orden"
+    ],
+    "bttv-emotes:library-size": [
+        "Biblioteksstorlek",
+        "Laddas upp till"
+    ],
+    "filter-messages": [
+        "Filtermeddelanden",
+        "Tar bort meddelanden/regler över alla kanaler",
+        "Se",
+        "TTV Tools Wiki – Filter Messages",
+        "för hjälp"
+    ],
+    "filter-messages:options": [
+        "Regler",
+        "Kanalregler",
+        "Märken",
+        "Användare",
+        "Emotes",
+        "Text",
+        null,
+        "Komma igång genom att",
+        "lägga till",
+        "vissa regler"
+    ],
+    "filter-messages:bullets-options": [
+        "Bulletiner",
+        "Raids",
+        "Dölj alla raidrelaterade bulletiner",
+        "Kanalpoäng",
+        "Dölj alla kanalpunktsrelaterade bulletiner",
+        "Prenumerationer",
+        "Dölj alla prenumerationsrelaterade bulletiner"
+    ],
+    "highlight-mentions": [
+        "Markera omnämnanden",
+        "När någon nämner dig (",
+        "@username",
+        "), gör meddelandet sticker ut genom att markera det"
+    ],
+    "highlight-mentions:options": [
+        "Allmän markering",
+        "När någon skickar ett allmänt omnämnande (",
+        "@all",
+        "@chat",
+        "@everyone",
+        ") får du meddelandet att sticka ut genom att markera det"
+    ],
+    "highlight-phrases": [
+        "Markera fraser",
+        "När någon skickar ett meddelande med någon av följande fraser får du meddelandet att sticka ut genom att markera det",
+        "Se",
+        "TTV Tools Wiki – Highlight Phrases",
+        "för hjälp"
+    ],
+    "highlight-phrases:options": [
+        "Regler",
+        "Kanalregler",
+        "Märken",
+        "Användare",
+        "Emotes",
+        "Text",
+        null,
+        "Komma igång genom att",
+        "lägga till",
+        "vissa regler"
+    ],
+    "native-reply": [
+        "Inbyggt svar",
+        "Försök att visa inbyggda Twitch-svar™ på alla kanaler"
+    ],
+    "notification-sounds": [
+        "Meddelandeljud",
+        "När ett (eller flera) av följande villkor är uppfyllda spelar du upp ett meddelandeljud"
+    ],
+    "notification-sounds:include-mentions": [
+        "Omnämnanden",
+        "När någon nämner dig (",
+        "@username",
+        ") spela upp",
+        "meddelandeljudet"
+    ],
+    "notification-sounds:include-phrases": [
+        "Fraser",
+        "När någon använder en fras från",
+        "Highlight Phrases",
+        "spela upp",
+        "meddelandeljudet"
+    ],
+    "notification-sounds:include-whispers": [
+        "Viskningar",
+        "När någon skickar en viskning till dig spelar du upp",
+        "meddelandeljudet"
+    ],
+    "notification-sounds:options": [
+        "Ljud avisering"
+    ],
+    "prevent-spam": [
+        "Förhindra skräppost",
+        "Dölj repetitiva meddelanden i chatten"
+    ],
+    "prevent-spam:options": [
+        "Meddelandehistorik",
+        "Förhindra skräppost",
+        "kommer att se tillbaka",
+        "rader för att upptäcka",
+        "plagiering",
+        "Minsta ordlängd",
+        "Förhindra skräppost",
+        "ignorerar meddelanden om det inte finns några ord längre än",
+        "tecken",
+        "Maximal förekomst",
+        "Förhindra skräppost",
+        "kommer att markera meddelanden som",
+        "repetitiva",
+        "efter att ett ord visas",
+        "eller fler gånger"
+    ],
+    "recover-chat": [
+        "Återställ chatten",
+        "Om",
+        "Stream Chat",
+        "inte laddas (eller plötsligt förstörs) försöker du återställa den"
+    ],
+    "highlight-mentions-popup": [
+        "Visa popup-fönster",
+        "När någon nämner dig (",
+        "@username",
+        ") får du meddelandet att sticka ut genom att visa ett popup-fönster"
+    ],
+    "simplify-chat": [
+        "Förenkla chatten",
+        "Använd dubbla toner för att göra chatten lättare att läsa"
+    ],
+    "simplify-chat:options": [
+        "Monotona användarnamn",
+        "Håll användarnamnsfärgerna enhetliga",
+        "Chat Font",
+        "Visa chatt i följande teckensnitt",
+        "Omvänd emotes",
+        "Konvertera emotes tillbaka till sin text och visa emote (som en",
+        "verktygstips",
+        ") endast när",
+        "hovrar",
+        "texten"
+    ],
+    "header:currencies": [
+        "Valutor"
+    ],
+    "convert-bits": [
+        "Konvertera bitar",
+        "När de presenteras med",
+        "visa det sanna",
+        "USD",
+        "belopp de representerar"
+    ],
+    "channel-points-receipt": [
+        "Inleverans av kanalpoäng",
+        "Hur ska inleveransen visa",
+        "-samlingen"
+    ],
+    "channel-points-receipt:options": [
+        "Visa det exakta insamlade beloppet",
+        "Avrunda till närmaste 100",
+        "Avrunda till närmaste 50",
+        "Avrunda till närmaste 25"
+    ],
+    "rewards-calculator": [
+        "Belöningskalkylatorn",
+        "Uppskattar hur länge en ström måste övervakas för att lösa in",
+        "belöningar"
+    ],
+    "header:customization": [
+        "Kundanpassning"
+    ],
+    "placement:away-mode": [
+        "Lat på lur",
+        "Var ska",
+        "Lat på lur",
+        "-knappen visas"
+    ],
+    "placement:away-mode:options": [
+        "Visa inte",
+        "Över videon",
+        "Under videon"
+    ],
+    "hide-blank-ads": [
+        "Dölj tomma annonser",
+        "När Twitch™ visar en",
+        "Tom annons",
+        "tillfälligt dölja den"
+    ],
+    "placement:points-receipt": [
+        "Poängkvitto och rang",
+        "Var ska",
+        "Poängkvittot",
+        "&",
+        "Punktrankning",
+        "text visas"
+    ],
+    "placement:points-receipt:options": [
+        "Visa inte",
+        "Under videon"
+    ],
+    "placement:point-watcher": [
+        "Point Watcher",
+        "Var ska",
+        "Point Watcher",
+        "-texten visas"
+    ],
+    "placement:point-watcher:options": [
+        "Visa inte",
+        "På verktygstipset"
+    ],
+    "placement:watch-time": [
+        "Visningstid",
+        "Var ska",
+        "Visningstid",
+        "visas"
+    ],
+    "placement:watch-time:options": [
+        "Visa inte",
+        "Över videon",
+        "Under videon"
+    ],
+    "accent-color": [
+        "Accentfärg",
+        "Vad ska accentfärgen vara"
+    ],
+    "color:auto": [
+        "Automatisk"
+    ],
+    "color:blue": [
+        "Blå"
+    ],
+    "color:purple": [
+        "Lila"
+    ],
+    "color:red": [
+        "Röd"
+    ],
+    "stream-preview": [
+        "Stream Preview",
+        "Visa en liveförhandsvisning av strömmar när du håller muspekaren över dem"
+    ],
+    "stream-preview:position": [
+        "Förhandsgranskningsposition",
+        "Justera förhandsgranskningens ortogonala position"
+    ],
+    "stream-preview:position-options": [
+        "Alltid överst",
+        "Normal",
+        "Alltid längst ner"
+    ],
+    "stream-preview:size": [
+        "Förhandsgranskningsstorlek",
+        "Justera storleken på förhandsgranskningen"
+    ],
+    "stream-preview:size-options": [
+        "Normal (×1)",
+        "Stor (×2)",
+        "Extra stor (×3)"
+    ],
+    "stream-preview:sound": [
+        "Förhandsgranska ljud",
+        "Justera ljudet i förhandsgranskningen"
+    ],
+    "header:networking": [
+        "Nätverkande"
+    ],
+    "networking:sync-settings": [
+        "Exportera inställningar",
+        "Om du vill",
+        "ladda ned inställningar",
+        "ange",
+        "Ladda upp ID"
+    ],
+    "networking:sync-settings:upload": [
+        "Ladda upp"
+    ],
+    "networking:sync-settings:download": [
+        "Ladda ned"
+    ],
+    "networking:sync-settings:copy": [
+        "Kopia"
+    ],
+    "header:video-recovery": [
+        "Videoåterställning"
+    ],
+    "keep-popout": [
+        "Behåll popup-fönster",
+        "När du flyttar till en annan sida förhindrar du att tillägget förstör den lilla videon (popup-fönster) i strömmen"
+    ],
+    "recover-ads": [
+        "Återställa annonser",
+        "När en annons inte spelas upp (\"fryser\") försöker du återställa den"
+    ],
+    "recover-frames": [
+        "Återställ bildrutor",
+        "När videon inte kan spelas upp (tappar bildrutor längre än",
+        "15 sekunder",
+        ") laddar du om webbsidan"
+    ],
+    "recover-frames:extras": [
+        "Försök bädda in",
+        "Försök åsidosätta videon med en inbäddad ström"
+    ],
+    "recover-pages": [
+        "Återställa sidor",
+        "Om webbsidan inte visas försöker du återställa den"
+    ],
+    "recover-stream": [
+        "Återställ stream",
+        "När strömmen inte kan spelas upp (\"fryser\") försöker du återställa den"
+    ],
+    "recover-video": [
+        "Återställ video",
+        "När videon inte kan laddas ned (svart skärm) laddar du om webbsidan"
+    ],
+    "header:developer-features": [
+        "Utvecklarfunktioner"
+    ],
+    "@console": [
+        "Visa konsolmeddelanden",
+        "Tillåt att tillägget visar meddelanden i konsolen"
+    ],
+    "@console.log": [
+        "Tillåt loggar",
+        "Visa",
+        null,
+        "-meddelanden"
+    ],
+    "@console.warn": [
+        "Tillåt varningar",
+        "Visa",
+        null,
+        "meddelanden"
+    ],
+    "@console.error": [
+        "Tillåt fel",
+        "Visa",
+        null,
+        "meddelanden"
+    ],
+    "@console.remark": [
+        "Tillåt kommentarer",
+        "Visa",
+        null,
+        "meddelanden"
+    ],
+    "@stats": [
+        "Visa statistik",
+        "Tillåt att tillägget visar statistik"
+    ],
+    "@experimental": [
+        "Experimentella funktioner",
+        "Tillåt att tillägget visas och använd experimentella funktioner",
+        "Kan orsaka dataförlust"
+    ],
+    "@keyboard-shortcuts": [
+        "Extra kortkommandon",
+        "Tillåt tillägget att lägga till extra kortkommandon",
+        "Kortkommandon kan visas genom att trycka på",
+        null
+    ],
+    "@fine-details": [
+        "Använd Fine Details",
+        "Tillåt tillägget att använda Twitch™ API-data för att förbättra din upplevelse",
+        "Detta samlar inte in några data. Den kommer att använda de data som Twitch™ har samlat in"
+    ],
+    "@default": [
+        "Visa standardvärden",
+        "Visa",
+        "Visa standardvärdena"
+    ],
+    "header:experimental-features": [
+        "Experimentella funktioner"
+    ],
+    "@@auto-focus": [
+        "Autofokus",
+        "Justera automatiskt",
+        "Upp nästa",
+        "och",
+        "Lat på lur",
+        "baserat på strömaktivitet",
+        "Detta kommer",
+        "inte",
+        "stoppa en minut timer"
+    ],
+    "@@auto-focus:options:detection-level": [
+        "Detektionsnivå",
+        "Hur mycket aktivitet ska aktivera",
+        "Auto-Focus",
+        "Automatisk",
+        "Hög aktivitet — FPS / IRL / Rytm",
+        "Blygsam aktivitet — Action / Äventyr / Plattformsspel",
+        "Säsongsaktivitet - Skräck / Pussel / Trivia",
+        "Låg aktivitet - Bara Chatting / Simulering / Strategi"
+    ],
+    "@@auto-focus:options:polling-interval": [
+        "Avsökningsintervall",
+        "Hur ofta ska strömmen avlyssnas",
+        "Varje sekund – CPU-intensiv, bra detektering",
+        "Var tredje sekund – CPU-vänlig, bra upptäckt",
+        "Var 5:e sekund – CPU-vänlig, rättvis detektering",
+        "Var tionde sekund – CPU-vänlig, dålig upptäckt"
+    ],
+    "@@auto-focus:options:image-type": [
+        "Bildtyp",
+        "Vilken bildtyp ska användas för",
+        "avsökning",
+        "JPG – CPU-vänlig, bra identifiering",
+        "PNG – CPU-intensiv, bra detektering",
+        "WebP – CPU-vänlig, bra detektering"
+    ],
+    "@@convert-emotes": [
+        "Konvertera emotes",
+        "När du presenteras med Twitch-emotes™, samla in dem för användning (utan att kräva en prenumeration)",
+        "Detta fungerar bara för den aktuella strömmen du tittar på",
+        "Detta sparar /låser upp emote"
+    ],
+    "@@greedy-raiding": [
+        "Girig raiding",
+        "Gå till",
+        "vissa kanaler",
+        "när de påbörjar en raid"
+    ],
+    "@@soft-unban": [
+        "Soft Unban",
+        "Återaktivering av chatt för kanaler som du har blivit avstängd från",
+        "Detta gör det bara möjligt att visa chatten igen"
+    ],
+    "@@soft-unban:options:fade-messages": [
+        "Tona meddelanden",
+        "Meddelanden visas för",
+        null
+    ],
+    "@@soft-unban:options:keep-bots": [
+        "Behåll robotar",
+        "Visa robotmeddelanden"
+    ],
+    "@@soft-unban:options:prevent-clips": [
+        "Förhindra klipp",
+        "Dölj Twitch-klipp™"
+    ],
+    "$": "[[ END OF FILE ]]"
+}

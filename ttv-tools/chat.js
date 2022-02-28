@@ -523,7 +523,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: false, view: window })), 1_000);
 
                         // Raw Search...
-                            // FIX-ME: new Search does not complete???
+                            // FIX-ME: New Search logic does not complete?
                         await fetch(`./${ bttvOwner }`)
                             .then(response => response.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -566,7 +566,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     new Card({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                        description: `Visit <a href="//betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } (BetterTTV)</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
+                                        description: `Visit <a href="//betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } ${ Glyphs.modify('ne_arrow', { height: 16, width: 16, style: 'vertical-align:-3px' }) }</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
 
                                         icon: {
                                             src: BTTV_EMOTES.get(bttvEmote),
@@ -677,7 +677,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 // Load extra emotes
                 for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
-                    // TODO: might cause loading issues?
+                    // FIX-ME: Adding BTTV emotes might cause loading issues?
                     await LOAD_BTTV_EMOTES(keyword);
             })
             .then(() => {
@@ -965,7 +965,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .map(img => OWNED_EMOTES.set(img.alt, shrt(img.src)));
 
                 // Close and continue...
-                // TODO: add an `onscroll` event listener to close the panel dynamically
+                // TODO: Add an `onscroll` event listener to close the emote panel dynamically...
                 setTimeout(() => {
                     $('#tt-hidden-emote-container')?.removeAttribute('id');
 
@@ -1138,7 +1138,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         return {
             text: (text.length? RegExp(`(${ text.join('|') })`, 'i'): /^[\b]$/),
             user: (user.length? RegExp(`(${ user.join('|') })`, 'i'): /^[\b]$/),
-            emote: (emote.length? RegExp(`(${ emote.join('|') })`, 'i'): /^[\b]$/),
+            emote: (emote.length? RegExp(`(${ emote.join('|').replace(/:\b|\b:/g, '') })`, 'i'): /^[\b]$/),
             badge: (badge.length? RegExp(`(${ badge.join('|') })`, 'i'): /^[\b]$/),
             channel
         }
@@ -2429,10 +2429,10 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
             [,from,] = window.location.pathname.split(/(?<!^)\//),
             [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
 
-        WARN(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`).toNativeStack();
+        WARN(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
 
         Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
-            WARN(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`).toNativeStack();
+            WARN(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
 
             let payable = defined($('[data-test-selector="balance-string"i]'));
 

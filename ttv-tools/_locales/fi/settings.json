@@ -1,0 +1,778 @@
+{
+    "[[SOURCE]]": "ROOT",
+    "[[ERROR]]": "Tämä asiakirja saattaa sisältää käännösvirheitä. Jos haluat auttaa korjaamaan tämän asiakirjan, käy GitHubissa",
+    "LANG_PACK_READY": false,
+    "?": {
+        "save": [
+            "Säästää"
+        ],
+        "extras": [
+            "Ekstrat"
+        ],
+        "options": [
+            "Asetukset"
+        ],
+        "en|dis": [
+            "Poista",
+            "Ota käyttöön"
+        ],
+        "new": [
+            "Uusi"
+        ],
+        "ok": [
+            "Jatkaa"
+        ],
+        "nk": [
+            "Perua"
+        ],
+        "rm": [
+            "Poistaa"
+        ],
+        "minute": [
+            "%d minuutti%>a"
+        ],
+        "hour": [
+            "%d tunti%>a"
+        ],
+        "day": [
+            "%d päivä%>ä"
+        ],
+        "week": [
+            "%d viikko%>a"
+        ],
+        "month": [
+            "%d kuukau%si>tta"
+        ],
+        "year": [
+            "%d vuo%si>tta"
+        ],
+        "@@century": [
+            "%d vuosisata%>a"
+        ],
+        "smart-notifications": [
+            "Älykkäät ilmoitukset"
+        ],
+        "title": [
+            "TTV-työkalut — Asetukset"
+        ],
+        "about": [
+            "Tietoja TTV-työkaluista"
+        ],
+        "language": [
+            "Kieli"
+        ],
+        "version": [
+            "Versio"
+        ],
+        "support": [
+            "Tuki"
+        ],
+        "cc-sound-notice": [
+            "Tämä ääni",
+            "on lisensoitu Creative Commons Attribution -lisenssillä",
+            "Lisätietoja"
+        ],
+        "day-of-week": [
+            "Sunnuntai",
+            "Maanantai",
+            "Tiistai",
+            "Keskiviikko",
+            "Torstai",
+            "Perjantai",
+            "Lauantai"
+        ],
+        "footer": [
+            "Tämä laajennus ei ole millään tavoin sidoksissa Amazoniin™, Twitchiin™, NightDeviin (LLC), sen kumppaneihin, tytäryhtiöihin tai tytäryhtiöihin, joita eivät tue"
+        ]
+    },
+    "header:automation": [
+        "Automaatio"
+    ],
+    "auto-join": [
+        "Automaattinen liittyminen",
+        "Kun näyttöön tulee varoitus siitä, että virta on tarkoitettu",
+        "aikuisille yleisöille",
+        "jatka automaattisesti",
+        "Tämä liittyy myös",
+        "Katselujuhliin",
+        "automaattisesti"
+    ],
+    "away-mode": [
+        "Laiska väijyminen",
+        "Lisää painikkeen vaihtaaksesi",
+        "vaanimista",
+        "Pikanäppäintä",
+        null,
+        "voidaan käyttää myös"
+    ],
+    "away-mode:hide-chat": [
+        "Piilota keskustelu",
+        "Pidä keskustelu piilossa",
+        "vaanimisen aikana"
+    ],
+    "away-mode:volume": [
+        "Väijyvä äänenvoimakkuus",
+        "Aseta äänenvoimakkuudeksi",
+        "kun",
+        "vaanii"
+    ],
+    "away-mode:schedule": [
+        "Aikataulu",
+        "Valitse ajat"
+    ],
+    "away-mode:schedule:options": [
+        "Kertaa"
+    ],
+    "away-mode:schedule:create": [
+        "Uuden aikataulun luominen"
+    ],
+    "away-mode:schedule:create:frequency": [
+        "Taajuus"
+    ],
+    "away-mode:schedule:create:controls": [
+        "Useiden päivien valitseminen käyttämällä",
+        null,
+        "tai",
+        null,
+        null
+    ],
+    "away-mode:schedule:create:functionality": [
+        "Toiminnot",
+        "at",
+        "for"
+    ],
+    "away-mode:schedule:create:hour": [
+        "%%"
+    ],
+    "away-mode:schedule:create:notice": [
+        "Ajat tallennetaan nykyiselle aikavyöhykkeellesi",
+        null
+    ],
+    "away-mode:schedule:create:add-more": [
+        "Toisen aikataulun lisääminen"
+    ],
+    "auto-claim-bonuses": [
+        "Lunasta bonukset",
+        "Kun",
+        "-painike tulee näkyviin, napsauta sitä automaattisesti"
+    ],
+    "first-in-line": [
+        "Ensin rivissä / seuraavaksi",
+        "Kun kanava julkaistaan, siirry sen virtaan automaattisesti",
+        "Seuraavaksi",
+        "lisää jonotuspalvelun Twitchiin™"
+    ],
+    "first-in-line:disabled": [
+        "Ei käytössä",
+        "Älä käytä tätä ominaisuutta"
+    ],
+    "first-in-line:notification": [
+        "Ilmoitus",
+        "Kun saat ilmoituksen kanavan reaaliaikaisesta käynnistymisesta, siirry sen virtaan"
+    ],
+    "first-in-line:appearance": [
+        "Ulkoasu",
+        "Kun kanava näkyy seuranneissa kanavissa, siirry sen virtaan"
+    ],
+    "first-in-line:smart-notifications": [
+        "Automaattinen",
+        "Siirry kaikkiin striimeihin automaattisesti"
+    ],
+    "up-next:extras": [
+        "Yksi esiintymä",
+        "Vain ensimmäinen välilehti, joka ladataan",
+        "Seuraavaksi",
+        "saa käyttää sitä"
+    ],
+    "auto-follow": [
+        "Seuraa",
+        "Kun katsot kanavaa, jota ei noudateta, seuraa sitä automaattisesti"
+    ],
+    "auto-follow:none": [
+        "Ei käytössä",
+        "Älä käytä tätä ominaisuutta"
+    ],
+    "auto-follow:raids": [
+        "Raidit",
+        "Kun osallistut hyökkäykseen, seuraa ryöstettyä kanavaa"
+    ],
+    "auto-follow:time": [
+        "Katsojamäärä",
+        "Kun olet katsellut",
+        "sisältöä, seuraa kanavaa"
+    ],
+    "auto-follow:all": [
+        "Automaattinen",
+        "Seuraa kaikkia kanavia automaattisesti"
+    ],
+    "auto-follow:live-reminders": [
+        null,
+        "Muistutukset",
+        "Lisää",
+        "muistutuspainikkeen",
+        ")-painikkeen",
+        "about me",
+        "-paneeliin"
+    ],
+    "auto-follow:keep-live-reminders": [
+        "Säilytä muistutukset",
+        "Kun se on käytössä",
+        null,
+        "Muistutuksia ei poisteta automaattisesti"
+    ],
+    "kill-extensions": [
+        "Kill Extensions",
+        "Älä salli Twitch-laajennusten™ näkyä virran aikana"
+    ],
+    "next-channel-preference": [
+        "Seuraava kanava",
+        "Miten seuraava kanava tulisi valita, kun",
+        "Up Next",
+        "on tyhjä",
+        "Tämä aktivoituu vain, kun nykyinen virta siirtyy offline-tilaan"
+    ],
+    "next-channel-preference:options": [
+        "Ei käytössä",
+        "Siirry satunnaiselle kanavalle",
+        "Siirry vähiten katsojien kanssa",
+        "Mene useimpien katsojien kanssa",
+        "Siirry vähiten kanavapisteisiin",
+        "Siirry eniten kanavapisteitä",
+        "Mene lähimpänä kaikkia kanavapistepalkintoja",
+        "Siirry kauimpana kaikista kanavapistepalkinnoista"
+    ],
+    "prevent-hosting": [
+        "Estä hosting",
+        "Estä tiettyjä tai kaikkia kanavia isännöimästä menemällä",
+        "Seuraavalle kanavalle"
+    ],
+    "prevent-hosting:options": [
+        "Salli kaikkien kanavien isännöinti",
+        "Estä kaikkia kanavia isännöimästä",
+        "Estä seuraamattomien kanavien isännöinti"
+    ],
+    "prevent-raiding": [
+        "Estä raiding",
+        "Estä tiettyjä tai kaikkia kanavia ryöstämästä menemällä",
+        "Next Channelille"
+    ],
+    "prevent-raiding:options": [
+        "Salli kaikkien kanavien hyökätä",
+        "Vain hyökkäys kerätä kanavapisteitä",
+        "Estä kaikkia kanavia ryöstämästä",
+        "Estä seuraamattomien kanavien ryöstäminen"
+    ],
+    "claim-loot": [
+        "Prime Loot",
+        "Vaadi ja hylkää automaattisesti",
+        "Prime Gaming Loot",
+        "tarjoukset, kun sivu latautuu"
+    ],
+    "stay-live": [
+        "Pysy livenä",
+        "Kun nykyinen virta on loppunut, siirry",
+        "Next Channel -kanavalle"
+    ],
+    "stay-live:vod-is-offline": [
+        "Käsittele",
+        "VOD-striimiä offline-striimeinä"
+    ],
+    "time-zones": [
+        "Aikavyöhykkeet",
+        "Sivun aikojen muuntaminen paikalliseksi aikavyöhykkeeksi"
+    ],
+    "view-mode": [
+        "Näytä tila",
+        "Kun sivun lataaminen on valmis, muuta näkymäksi"
+    ],
+    "view-mode:options": [
+        "Ei mitään (älä muuta)",
+        "Oletustila (banneri + chat)",
+        "Teatteritila (chat)",
+        "Fullwidth-tila (banneri)",
+        "Koko näytön tila"
+    ],
+    "header:chat-and-messaging": [
+        "Chat ja viestit"
+    ],
+    "bttv-emotes": [
+        "BetterTTV Hymiöt",
+        "Käytä parempiaTTV hymiöitä",
+        "Tämä voi aiheuttaa epävakautta ladattaessa hymiöitä"
+    ],
+    "bttv-emotes:auto-load-bttv-emotes": [
+        "Emojen automaattinen lataaminen",
+        "Muunna hymiöteksti automaattisesti",
+        "BetterTTV",
+        "hymiöiksi"
+    ],
+    "bttv-emotes:channel-specific-emotes": [
+        "Kanavakohtaiset hymiöt",
+        "Lataa kanavakohtaiset",
+        "BetterTTV",
+        "hymiöt"
+    ],
+    "bttv-emotes:emote-location": [
+        "Hymiön sijainti",
+        "Lataa nämä",
+        "BetterTTV",
+        "hymiöt"
+    ],
+    "bttv-emotes:emote-location:options": [
+        "Suosituin (trendikäs)",
+        "Eniten jaettu (jaettu)",
+        "Eniten käytetty (alkuun)",
+        "Yleisin (yleinen)"
+    ],
+    "bttv-emotes:extra-emotes": [
+        "Ylimääräiset hymiöt",
+        "Lisää",
+        "BetterTTV",
+        "hymiöt sanoilla"
+    ],
+    "bttv-emotes:library-size": [
+        "Kirjaston koko",
+        "Lataa enintään"
+    ],
+    "filter-messages": [
+        "Viestien suodattaminen",
+        "Viestien/sääntöjen poistaminen kaikista kanavista",
+        "Katso",
+        "TTV-työkalut Wiki – Suodata viestit",
+        "saadaksesi apua"
+    ],
+    "filter-messages:options": [
+        "Säännöt",
+        "Kanavasäännöt",
+        "Merkit",
+        "Käyttäjät",
+        "Hymiöt",
+        "Teksti",
+        null,
+        "Aloita lisäämällä",
+        "joitakin sääntöjä"
+    ],
+    "filter-messages:bullets-options": [
+        "Tiedotteet",
+        "Raidit",
+        "Piilota kaikki raidiin liittyvät tiedotteet",
+        "Kanavapisteet",
+        "Piilota kaikki kanavapisteisiin liittyvät tiedotteet",
+        "Tilaukset",
+        "Piilota kaikki tilaukseen liittyvät tiedotteet"
+    ],
+    "highlight-mentions": [
+        "Korosta Maininnat",
+        "Kun joku mainitsee sinut (",
+        "@username",
+        "), tee viesti erottumaan korostamalla se"
+    ],
+    "highlight-mentions:options": [
+        "Yleinen korostus",
+        "Kun joku lähettää yleisen maininnan (",
+        "@all",
+        "@chat",
+        "@everyone",
+        "), tee viesti erottumaan korostamalla se"
+    ],
+    "highlight-phrases": [
+        "Lauseiden korostaminen",
+        "Kun joku lähettää viestin jollakin seuraavista lauseista, tee viesti erottumaan korostamalla se",
+        "Katso",
+        "TTV-työkalut Wiki — Korosta lauseita",
+        "apua varten"
+    ],
+    "highlight-phrases:options": [
+        "Säännöt",
+        "Kanavasäännöt",
+        "Merkit",
+        "Käyttäjät",
+        "Hymiöt",
+        "Teksti",
+        null,
+        "Aloita lisäämällä",
+        "joitakin sääntöjä"
+    ],
+    "native-reply": [
+        "Alkuperäinen vastaus",
+        "Yritä näyttää alkuperäiset Twitch-vastaukset™ kaikilla kanavilla"
+    ],
+    "notification-sounds": [
+        "Ilmoitusäänet",
+        "Kun yksi (tai useampi) seuraavista ehdoista täyttyy, toista ilmoitusääni"
+    ],
+    "notification-sounds:include-mentions": [
+        "Maininnat",
+        "Kun joku mainitsee sinut (",
+        "@username",
+        ") toista",
+        "ilmoitusääni"
+    ],
+    "notification-sounds:include-phrases": [
+        "Lauseet",
+        "Kun joku käyttää lausetta",
+        "Highlight Phrases",
+        "toista",
+        "ilmoitusääni"
+    ],
+    "notification-sounds:include-whispers": [
+        "Kuiskaa",
+        "Kun joku lähettää sinulle kuiskauksen, toista",
+        "ilmoitusääni"
+    ],
+    "notification-sounds:options": [
+        "Ilmoituksen ääni"
+    ],
+    "prevent-spam": [
+        "Roskapostin estäminen",
+        "Piilota toistuvat viestit chatissa"
+    ],
+    "prevent-spam:options": [
+        "Viestihistoria",
+        "Estä roskaposti",
+        "etsii",
+        "rivejä havaitakseen",
+        "plagioinnin",
+        "Sanan vähimmäispituus",
+        "Estä roskaposti",
+        "ohittaa viestit, jos sanoja ei ole pidempiä kuin",
+        "merkkejä",
+        "Enimmäisesiintymien määrä",
+        "Roskapostin estäminen",
+        "merkitsee viestit",
+        "toistuvaksi",
+        "sanan ilmestymisen jälkeen",
+        "tai useammin"
+    ],
+    "recover-chat": [
+        "Palauta chat",
+        "Jos",
+        "Stream Chat",
+        "-keskustelua ei ole ladattu (tai yhtäkkiä tuhoutunut), yritä palauttaa se"
+    ],
+    "highlight-mentions-popup": [
+        "Näytä ponnahdusikkunat",
+        "Kun joku mainitsee sinut (",
+        "@username",
+        "), tee viesti erottumaan näyttämällä ponnahdusikkuna"
+    ],
+    "simplify-chat": [
+        "Yksinkertaista chattia",
+        "Käytä kahta sävyä, jotta chatin lukeminen on helpompaa"
+    ],
+    "simplify-chat:options": [
+        "Yksisävyiset käyttäjänimet",
+        "Pidä käyttäjänimen värit yhtenäisinä",
+        "Chat-fontti",
+        "Näytä chat seuraavassa fontissa",
+        "Käänteiset hymiöt",
+        "Muunna hymiöt takaisin tekstiinsä ja näytä hymiö (",
+        "työkaluvihjeenä",
+        ") vain silloin, kun",
+        "teksti",
+        "vie päällesi",
+        "."
+    ],
+    "header:currencies": [
+        "Valuutat"
+    ],
+    "convert-bits": [
+        "Muunna bitit",
+        "Kun ne esitetään",
+        "näyttää niiden edustama todellisen",
+        "USD",
+        "-summan"
+    ],
+    "channel-points-receipt": [
+        "Kanavapisteiden vastaanotto",
+        "Miten kuitti näyttää",
+        "-kokoelman"
+    ],
+    "channel-points-receipt:options": [
+        "Näytä tarkka kerätty summa",
+        "Pyöristä lähimpään 100",
+        "Pyöristä lähimpään 50",
+        "Pyöristä lähimpään 25:een"
+    ],
+    "rewards-calculator": [
+        "Palkintolaskuri",
+        "Arvioi, kuinka kauan suoratoistoa on katsottava",
+        "palkintojen lunastamiseksi"
+    ],
+    "header:customization": [
+        "Mukauttaminen"
+    ],
+    "placement:away-mode": [
+        "Laiska väijyminen",
+        "Missä",
+        "Laiska väijyminen",
+        "-painike tulisi näyttää"
+    ],
+    "placement:away-mode:options": [
+        "Älä näytä",
+        "Videon päälle",
+        "Videon alla"
+    ],
+    "hide-blank-ads": [
+        "Piilota tyhjät mainokset",
+        "Kun Twitch™ näyttää",
+        "tyhjän mainoksen",
+        "tilapäisesti"
+    ],
+    "placement:points-receipt": [
+        "Pisteiden vastaanotto ja sijoitus",
+        "Missä",
+        "pisteiden vastaanotto",
+        "&",
+        "Pistejärjestys",
+        "-teksti tulee näkyviin"
+    ],
+    "placement:points-receipt:options": [
+        "Älä näytä",
+        "Videon alla"
+    ],
+    "placement:point-watcher": [
+        "Pisteenvartija",
+        "Missä",
+        "Point Watcher",
+        "-teksti tulee näyttää"
+    ],
+    "placement:point-watcher:options": [
+        "Älä näytä",
+        "Työkaluvihjeessä"
+    ],
+    "placement:watch-time": [
+        "Katseluaika",
+        "Missä",
+        "Katseluaika",
+        "tulee näyttää"
+    ],
+    "placement:watch-time:options": [
+        "Älä näytä",
+        "Videon päälle",
+        "Videon alla"
+    ],
+    "accent-color": [
+        "Korostusväri",
+        "Mitä korostusvärin pitäisi olla"
+    ],
+    "color:auto": [
+        "Automaattinen"
+    ],
+    "color:blue": [
+        "Sininen"
+    ],
+    "color:purple": [
+        "Purppura"
+    ],
+    "color:red": [
+        "Punainen"
+    ],
+    "stream-preview": [
+        "Striimin esikatselu",
+        "Näytä livestriimaus, kun viet hiiren niiden päälle"
+    ],
+    "stream-preview:position": [
+        "Esikatselun sijainti",
+        "Esikatselun ortogonaalisen sijainnin säätäminen"
+    ],
+    "stream-preview:position-options": [
+        "Aina päällä",
+        "Normaali",
+        "Aina alhaalla"
+    ],
+    "stream-preview:size": [
+        "Esikatselun koon säätäminen",
+        "Esikatselun koon säätäminen"
+    ],
+    "stream-preview:size-options": [
+        "Normaali (×1)",
+        "Suuri (×2)",
+        "Erittäin suuri (×3)"
+    ],
+    "stream-preview:sound": [
+        "Esikatseluääni",
+        "Esikatselun äänen säätäminen"
+    ],
+    "header:networking": [
+        "Verkostoituminen"
+    ],
+    "networking:sync-settings": [
+        "Vie asetukset",
+        "Jos haluat",
+        "ladata asetuksia",
+        "syöttää",
+        "Lataustunnus"
+    ],
+    "networking:sync-settings:upload": [
+        "Lähettää tiedosto"
+    ],
+    "networking:sync-settings:download": [
+        "Ladata"
+    ],
+    "networking:sync-settings:copy": [
+        "Kopioida"
+    ],
+    "header:video-recovery": [
+        "Videon palautus"
+    ],
+    "keep-popout": [
+        "Pidä ponnahdusikkuna",
+        "Kun siirryt toiselle sivulle, estä laajennusta tuhoamasta virran pientä videota (ponnahdusikkunaa)"
+    ],
+    "recover-ads": [
+        "Palauta mainokset",
+        "Kun mainosta ei toisteta (\"jäätyy\"), yritä palauttaa se"
+    ],
+    "recover-frames": [
+        "Palauta kehykset",
+        "Kun videon toistaminen epäonnistuu (pudottaa kehyksiä yli",
+        "15 sekunniksi",
+        "), lataa verkkosivu uudelleen"
+    ],
+    "recover-frames:extras": [
+        "Kokeile upottaa",
+        "Yritä ohittaa video upotetulla virralla"
+    ],
+    "recover-pages": [
+        "Sivujen palauttaminen",
+        "Jos verkkosivu ei näy, yritä palauttaa se"
+    ],
+    "recover-stream": [
+        "Palauta virta",
+        "Kun suoratoisto ei toista (\"jäätyy\"), yritä palauttaa se"
+    ],
+    "recover-video": [
+        "Palauta video",
+        "Kun video ei lataudu (musta näyttö), lataa verkkosivu uudelleen"
+    ],
+    "header:developer-features": [
+        "Kehittäjän ominaisuudet"
+    ],
+    "@console": [
+        "Näytä konsolisanomat",
+        "Salli laajennuksen näyttää viestit konsolissa"
+    ],
+    "@console.log": [
+        "Salli lokit",
+        "Näytä",
+        null,
+        "-viestit"
+    ],
+    "@console.warn": [
+        "Salli varoitukset",
+        "Näytä",
+        null,
+        "-viestit"
+    ],
+    "@console.error": [
+        "Salli virheet",
+        "Näytä",
+        null,
+        "-viestit"
+    ],
+    "@console.remark": [
+        "Salli huomautukset",
+        "Näytä",
+        null,
+        "-viestit"
+    ],
+    "@stats": [
+        "Tilastojen näyttäminen",
+        "Salli laajennuksen näyttää tilastoja"
+    ],
+    "@experimental": [
+        "Kokeelliset ominaisuudet",
+        "Anna laajennuksen näyttää ja käyttää kokeellisia ominaisuuksia",
+        "Saattaa aiheuttaa tietojen menetyksen"
+    ],
+    "@keyboard-shortcuts": [
+        "Ylimääräiset pikanäppäimet",
+        "Salli laajennuksen lisätä ylimääräisiä pikanäppäimiä",
+        "Pikanäppäimiä voidaan tarkastella painamalla",
+        null
+    ],
+    "@fine-details": [
+        "Käytä hienoja yksityiskohtia",
+        "Salli laajennuksen käyttää Twitch™ API -tietoja käyttökokemuksen parantamiseksi",
+        "Tämä ei kerää mitään tietoja. Se käyttää Twitchin™ keräämiä tietoja"
+    ],
+    "@default": [
+        "Näytä oletusarvot",
+        "Näytä",
+        "Näytä oletusarvot"
+    ],
+    "header:experimental-features": [
+        "Kokeelliset ominaisuudet"
+    ],
+    "@@auto-focus": [
+        "Automaattinen kohdistus",
+        "Säädä automaattisesti",
+        "Seuraavaksi",
+        "ja",
+        "Helppo lyrk",
+        "virran aktiviteetin perusteella",
+        "Tämä",
+        "ei",
+        "pysäytä yhden minuutin ajastinta"
+    ],
+    "@@auto-focus:options:detection-level": [
+        "Havaitsemistaso",
+        "Kuinka paljon aktiivisuuden tulisi aktivoitua",
+        "Automaattinen kohdistus",
+        "Automaattinen",
+        "Korkea aktiivisuus — FPS / IRL / Rytmi",
+        "Vaatimaton toiminta - Toiminta / Seikkailu / Tasohyppely",
+        "Kausiluonteinen toiminta - Kauhu / Palapeli / Trivia",
+        "Alhainen aktiivisuus - Vain keskusteleminen / Simulointi / Strategia"
+    ],
+    "@@auto-focus:options:polling-interval": [
+        "Kyselyväli",
+        "Kuinka usein virta tulisi",
+        "kyselyyn",
+        "Joka sekunti – CPU-intensiivinen, suuri tunnistus",
+        "3 sekunnin välein - CPU-ystävällinen, hyvä tunnistus",
+        "5 sekunnin välein - CPU-ystävällinen, oikeudenmukainen tunnistus",
+        "10 sekunnin välein - CPU-ystävällinen, huono tunnistus"
+    ],
+    "@@auto-focus:options:image-type": [
+        "Kuvatyyppi",
+        "Mitä kuvatyyppiä tulisi käyttää",
+        "kyselyyn",
+        "JPG - CPU ystävällinen, hyvä tunnistus",
+        "PNG - CPU-intensiivinen, suuri tunnistus",
+        "WebP - CPU-ystävällinen, suuri tunnistus"
+    ],
+    "@@convert-emotes": [
+        "Muunna hymiöt",
+        "Kun ne esitetään Twitch-hymiöiden™ kanssa, kerää ne käytettäväksi (ilman tilausta)",
+        "Tämä toimii vain nykyisessä tarkastelemasi virrassa",
+        "Tämä ei",
+        "tallenna /avaa hymiötä"
+    ],
+    "@@greedy-raiding": [
+        "Ahne raiding",
+        "Siirry",
+        "tiettyihin kanaviin",
+        "kun he aloittavat ratsian"
+    ],
+    "@@soft-unban": [
+        "Pehmeä unban",
+        "Ota chat uudelleen käyttöön kanavilla, 50 000 metrin juoksu",
+        "Tämä mahdollistaa vain keskustelun katselun uudelleen"
+    ],
+    "@@soft-unban:options:fade-messages": [
+        "Häivytysviestit",
+        "Viestit näkyvät",
+        null
+    ],
+    "@@soft-unban:options:keep-bots": [
+        "Bottien pitäminen",
+        "Näytä bottiviestit"
+    ],
+    "@@soft-unban:options:prevent-clips": [
+        "Estä leikkeet",
+        "Piilota Twitch-leikkeet™"
+    ],
+    "$": "[[ END OF FILE ]]"
+}

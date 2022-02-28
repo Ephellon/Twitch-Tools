@@ -101,9 +101,9 @@
     --user-accent-color: var(--purple);
 
     /* Fonts */
-    --font-display: 'Inter', 'Roobert';
-    --code-font: System, Monospace, Menlo, Arial, Consolas, "Liberation Mono", Menlo, Courier, monospace;
-    --live-font: Roobert, Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --display-font: 'Inter', 'Roobert';
+    --code-font: 'System', 'Monospace', 'Menlo', 'Arial', 'Consolas', 'Liberation Mono', 'Courier';
+    --live-font: 'Roobert', 'Inter', 'Arial', 'Sans-Serif';
 
     /* Shadows */
     --normal-shadow: 0 1px 2px var(--black);
@@ -206,6 +206,11 @@ header {
     font-size: 125%;
 }
 
+html:not([lang="en"i]) header {
+    font-family: Arial;
+    font-weight: bold;
+}
+
 article {
     background-color: var(--background-dark-lit);
     border: 1px solid var(--border-light);
@@ -247,19 +252,19 @@ footer {
 
     border: 0;
     margin: 0;
-    padding: 0;
+    padding: 5rem;
 
     height: 100vh;
     width: 100vw;
 }
 
 .language-option {
-    display: block;
+    /* display: block; */
     font-size: 1.5rem;
 
-    left: 50%;
-    top: 25%;
-    transform: translate(-50%);
+    /* left: 50%; */
+    /* top: 25%; */
+    /* transform: translate(-50%); */
 }
 
 .title {
@@ -271,6 +276,11 @@ footer {
 
     height: 3rem;
     width: 13rem;
+}
+
+html:not([lang="en"i]) .title {
+    font-family: Arial;
+    font-weight: bold;
 }
 
 :is(details, .details) .title {
@@ -450,6 +460,11 @@ b {
     font-weight: normal;
 }
 
+html:not([lang="en"i]) b {
+    font-family: Arial;
+    font-weight: bold;
+}
+
 h1 {font-size: 200%}
 h2 {font-size: 150%}
 h3 {font-size: 125%}
@@ -520,6 +535,11 @@ summary {
     padding: 1rem .5rem 1rem 1rem;
 }
 
+html:not([lang="en"i]) summary {
+    font-family: Arial;
+    font-weight: bold;
+}
+
 summary:hover {
     background-color: var(--background-dark-lit-highlighted);
 }
@@ -581,6 +601,11 @@ select, .select {
     padding: 5px 10px;
 
     vertical-align: middle;
+}
+
+html:not([lang="en"i]) :is(select, .select) {
+    font-family: Arial;
+    font-weight: bold;
 }
 
 select:not([multiple]) option:checked, .select:not(.multiple) .option.checked {
@@ -675,6 +700,11 @@ button, [type="button"] {
     padding: 5px 10px;
 
     vertical-align: middle;
+}
+
+html:not([lang="en"i]) :is(button, [type="button"]) {
+    font-family: Arial;
+    font-weight: bold;
 }
 
 .remove {
@@ -1459,6 +1489,11 @@ body.popup {
     z-index: 9999;
 }
 
+html:not([lang="en"i]) .tt-tooltip {
+    font-family: Arial;
+    font-weight: bold;
+}
+
 .tt-tooltip::after, .tt-tooltip::before {
     content: '';
     position: absolute;
@@ -1616,3 +1651,32 @@ body.popup {
 [pad-bottom] {
     padding-bottom: 2rem;
 }
+
+/* Printing Only!*/
+@media print {
+    html, body {
+        background: var(--background-light);
+        color: var(--text-dark);
+    }
+
+    html {
+        overflow: auto;
+    }
+
+    body {
+        overflow: initial;
+
+        height: 100vh;
+    }
+}
+
+/* Special Warnings */
+[display-when-lang-is] {
+    display: none;
+}
+
+.tt-veiled .tt-alert-container::before { background-color:var(--yellow)!important }
+
+.tt-veiled .tt-confirm-container::before { background-color:var(--green)!important }
+
+.tt-veiled .tt-prompt-container::before { background-color:var(--baby-blue)!important }

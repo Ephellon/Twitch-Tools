@@ -17,7 +17,7 @@
 5. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
 6. Up Next sometimes goes in an irregular order
-    * Not sure why; tentative fix `4.26`
+    * Tentative fix `4.29` &mdash; Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
     * It might also not list jobs immediately
 7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
@@ -29,17 +29,34 @@
 10. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
 11. Live Reminders might spam notifications?
     * Happens when re-doing a channel's reminder, as the channel is live (before being activated)
+    * Tentative fix `4.29`
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.29)
+- Fixed First in Line sorting issue
+- Adjusted Time Zone logic to include prefixed zones
+- Minor QoL improvements
+- Adjusted Stream Preview positioning
+- Adjusted `alert` `confirm` and `prompt` styling
+- Fixed an issue where Live Reminders could remove themselves
+- Adjusted color naming logic
+- Added more language packs (**not** finalized)
+- Adjusted `DatePicker` to be language and region independent
+- Added logic to auto-detect the user's language (pre-setup)
+- Added logic to no longer zoom-in on a stream when the user zooms-out
+- Adjusted "completed correctly" logic
+- Added "PvP" with an activity score of 15
+- Fixed an issue with emote filtering
+
 > [`4.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.28)
 - Fixed Settings page
 
 > [`4.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.27)
 - Added the Live Reminders catalog
 - Added Emote Searching logic for spelling mistakes (Levenshtein distance)
-- Modified Live Reminder logic to use the last confirmed online date instead of predictions
+- Adjusted Live Reminder logic to use the last confirmed online date instead of predictions
 - Adjusted `Number..suffix` to include data-oriented sizes
 - Added `encodeHTML` and `decodeHTML`
 - Adjusted color naming logic
@@ -68,7 +85,7 @@
 
 > [`4.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.23)
 - Fixed issue where pressing "OK" for First in Line erases the queue
-- Minor quality of life updates
+- Minor QoL updates
 - Fixed issue with Greedy Raiding
 - Fixed issue with double-adding Live Reminders
 - Adjusted Live Reminder logic to default to the hour the current stream started
@@ -142,7 +159,7 @@
 
 > [`4.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.14)
 - Removed e-mail support link
-- Updated look of Up Next to better depict the drag-n-drop feature of channels
+- Adjusted look of Up Next to better depict the drag-n-drop feature of channels
 - Fixed issue where Live Reminders would not fire on followed channels
     - Changed Live Reminders to also be allowed on followed channels
 - Changed First in Line / Up Next to ignore case sensitivity when adding channels
@@ -151,7 +168,7 @@
 - Added more time zones for Time Zones
 - Added better Search logic to re-add unknown ("hidden") channels back to Up Next
 - Added logic to not hide user-generated messages in chat
-- Updated Up Next tutorial image
+- Adjusted Up Next tutorial image
 - Added the Live Reminders feature
 - Added a rudimentary que to `alert` `confirm` and `prompt`
 
@@ -191,7 +208,7 @@
 - Adjusted due date logic for Up Next
 
 > [`4.12.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.12.8)
-- Updated `scoreTagActivity` to ignore language barriers
+- Adjusted `scoreTagActivity` to ignore language barriers
 - Adjusted page checker logic to ignore reserved pathnames
 - Added more glyphs
 - Removed `class Popup`
@@ -315,7 +332,7 @@
     + Should make freezing less impactful
 
 > [`4.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.5)
-- Updated settings' version pulling functionality
+- Adjusted settings' version pulling functionality
 - Adjusted volume control release mechanic
 - Added the "Ignore VODs" sub-option to Stay Live
 
@@ -434,7 +451,7 @@
 > [`3.2.1.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1.1)
 - Added the "User Language Preference" features
     - Applicable settings will update in real time to language changes
-- Quality of life changes
+- QoL changes
     - Adjusted the "auto claim" button
         - Made it easier to toggle (CSS)
         - Fixed tooltip issue for channels with the default Channel Point icon
@@ -442,7 +459,7 @@
 > [`3.2.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2.1)
 - Adjusted the "Auto Claim" toggle button to describe its function pictorially
 - Styling adjustments to Settings page (popup)
-- Quality of life changes
+- QoL changes
     - Adjusted the "collected all points" color to accommodate the psychopaths using light mode
 
 > [`3.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.2)
@@ -455,8 +472,8 @@
 
 > [`3.1.5.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.5)
 - Fixed Tooltips (font)
-- Quality of life changes
-    - Updated settings page
+- QoL changes
+    - Adjusted settings page
 - Added `UUID.ergo` (a more secure `UUID.from`)
 
 > [`3.1.5.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.5.4)
@@ -477,9 +494,9 @@
 - Fixed Tooltips
 
 > [`3.1.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.4)
-- Updated Prevent Spam handling (can now handle bit donations)
+- Adjusted Prevent Spam handling (can now handle bit donations)
 - Added "You are banned" banner for Soft Unban
-- Modified "Rewards Calculator" logic
+- Adjusted "Rewards Calculator" logic
 
 > [`3.1.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.3)
 - Fixed an issue for message filtering
@@ -493,14 +510,14 @@
 > [`3.1.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1.1)
 - Fixed sound linking on options page
 - Added `chat.js` re-initializer
-- Quality of life changes
+- QoL changes
     - Moved Whisper Audio from `SENSITIVE_FEATURES` to reload audio independent of the frame
     - Changed "Away Mode" `enabled` color to match neighbors
-    - Updated settings page to enable/disable features that require one-another accordingly
+    - Adjusted settings page to enable/disable features that require one-another accordingly
     - Fixed input padding on settings page
 - Fixed "Collect Emotes" logic
 - Added extra options for "Display in Console"
-- Modified BTTV emote loading
+- Adjusted BTTV emote loading
 
 > [`3.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.1)
 - Added "Soft Unban"
@@ -533,7 +550,7 @@
 - Fixed "Recover Chat"
     > Fixed issue where Twitch could delete chat multiple times, preventing point collection
     - The extension will now rebuild the broken frame each time it malfunctions
-- Quality of life changes
+- QoL changes
     - Made text gold for channels where all Rewards/Challenges are redeemable
 
 > [`3.0.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/3.0.3)
@@ -552,7 +569,7 @@
     - Moved "Recover Chat" to its own feature-space
 - Fixed channel point receipt addition
 - Fixed message filtering (plagiarized and repetitious)
-- Quality of life changes
+- QoL changes
     - Added "New!" styling to the settings page
     - Made the large streamer icon draggable to "Up Next"
     - Added automatic garbage collector for cached data
@@ -567,7 +584,7 @@
 - Added searching feature (for cards) `new Search(...)`
 
 > [`2.11.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.11.4)
-- Quality of life changes
+- QoL changes
     - Added emote cards `new Card({ ... })`
     - Enhanced message filtering, esp. emotes and BTTV emotes
 
@@ -687,7 +704,7 @@
 - Corrected packages
 
 > [`2.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.8)
-- Updated `ConvertTime`
+- Adjusted `ConvertTime`
 - Added subscription type "convert"
 - Added Recover Pages feature
 - Added skeleton for view modes (e.g. "squad")
@@ -703,8 +720,8 @@
 - Fixed an issue with "Recover Video" timing
 
 > [`2.7.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.7.5)
-- Updated settings layout
-- Updated README
+- Adjusted settings layout
+- Adjusted README
 - Fixed duplicate job error
 
 > [`2.7.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/2.7.4)

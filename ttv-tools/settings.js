@@ -488,10 +488,13 @@ class DatePicker {
         let locale = SETTINGS?.user_language_preference ?? 'en';
         let preExisting = defined(defaultDate) && (defined(defaultTime) || defaultDuration > 1);
 
-        let now = new Date(date - (date % h)),
-            timezone = (now + '').replace(/[^]+\(([^]+?)\)[^]*/, '$1').replace(/[^A-Z]/g, ''),
-            timeOptions = new Array(24).fill(0).map((v, i, a) => +now + (i * h)).map(d => new Date(d).toLocaleTimeString(locale).replace(/[^\s\w][\d\W]+/, '')),
-            [timeDefault] = [defaultTime, ...timeOptions].filter(defined);
+        let now = new Date(date.floorToNearest(h)),
+            timezone = (now + '').replace(/[^]+\(([^]+?)\)[^]*/, '$1').replace(/(?<=^|\s)(.)[^\s]*/g, '$1').replace(/\s+/g, ''),
+            timeOptions = new Array(24).fill(0).map((v, i, a) => +now + (i * h)).map(d => new Date(d).getHours()),
+            [timeDefault] = [defaultTime, ...timeOptions].filter(defined),
+            [AM, PM] = [11, 23].map(h => new Date(`1970-01-01T${ h }:00:00Z`).toLocaleTimeString(locale).toLocaleUpperCase().replace(/(?:.+?)(\D*)$/, '$1').trim()),
+            startingHour = now.getHours(),
+            meridiem = (startingHour < 12? AM: PM);
 
         let durationOptions = new Array(23).fill(0).map((v, i, a) => i + 1);
 
@@ -502,12 +505,7 @@ class DatePicker {
 
         let statusOptions = new Array(2).fill(0).map((v, i, a) => !!i);
 
-        let to24H = string => string
-            .replace(/\s+/g, '')
-            .replace(/(\d+)[AP]M?/i, ($0, $1, $$, $_) => parseInt($1) + (12 * /12a|(?<!12)p/i.test($0)))
-            .replace(/^24/, 0);
-
-        timeDefault = to24H(timeDefault + '');
+        let to12H = (time, symbols = [AM, PM]) => [(time == 0? 12: time > 12? time - 12: time), symbols[+(time > 11)]].join(' ');
 
         let daySelect = f(`select.edit`, { type: 'days', value: dayDefault, multiple: true, selected: 1, onchange: ({ currentTarget }) => currentTarget.setAttribute('selected', currentTarget.selectedOptions.length) },
                 ...dayOptions.map(value => f(`option${ (value == dayDefault? '[selected]': '') }`, { value, 'tr-id': 'day-of-week' }, DatePicker.weekdays[value]))
@@ -519,8 +517,14 @@ class DatePicker {
 
             timeSelect = f(`select.edit`, { type: 'time', value: timeDefault, 'tr-id': 'away-mode:schedule:create:hour' },
                 ...timeOptions.map(value =>
-                    f(`option${ (to24H(value) == timeDefault? '[selected]': '') }`, { value: to24H(value), 'tr-id': '' },
-                        value.replace(/12[AP]M?/i, $0 => $0 + [' \u{1f31a}', ' \u{1f31e}'][+/p/i.test($0)])
+                    f(`option${ (value == timeDefault? '[selected]': '') }`, { value, 'tr-id': '' },
+                        (
+                            AM.length && PM.length?
+                                // Uses meridiem indicators
+                                to12H(value, (value % 12? [AM, PM]: [' \u{1f31a}', ' \u{1f31e}'])):
+                            // Uses 24H format only
+                            value + (value % 12? '': [' \u{1f31a}', ' \u{1f31e}'][+(value > 11)])
+                        )
                     )
                 )
             ),
@@ -669,6 +673,7 @@ let Glyphs = {
 let SETTINGS,
     TRANSLATED = false,
     INITIAL_LOAD = true;
+let SUPPORTED_LANGUAGES = ["bg","cs","da","de","el","es","fi","fr","hu","it","ja","ko","nl","no","pl","ro","ru","sk","sv","th","tr","vi"];
 
 function RedoRuleElements(rules, ruleType) {
     if(!defined(rules))
@@ -915,7 +920,7 @@ async function SaveSettings() {
             case 'user_language_preference': {
                 let preferred = extractValue($('#user_language_preference'));
 
-                SETTINGS.user_language_preference = preferred;
+                SETTINGS.user_language_preference = preferred.toLowerCase();
             } break;
 
             default:{
@@ -983,13 +988,16 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
                 } break;
 
                 case 'user_language_preference': {
-                    let preferred = SETTINGS[id] || (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLocaleLowerCase().split('-').reverse().pop();
+                    let preferred = (null
+                        ?? SETTINGS[id]
+                        ?? (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLowerCase().split('-').reverse().pop()
+                    );
 
                     assignValue(element, preferred);
 
                     if(TRANSLATED) continue loading;
 
-                    Translate(preferred);
+                    Translate(document.documentElement.lang = preferred.toLowerCase());
                 } break;
 
                 default: {
@@ -1135,11 +1143,35 @@ $('#whisper_audio_sound-test', true).map(button => button.onclick = async event 
     test_sound.onended = event => test_sound.remove();
 });
 
-$('#user_language_preference', true).map(element => element.onchange = async event => {
+$('#user_language_preference', true).map(select => {
+    let languages = SUPPORTED_LANGUAGES;
+
+    listing:
+    for(let language of languages) {
+        let ISO = top.ISO_639_1[language];
+
+        if(!defined(ISO))
+            continue listing;
+
+        let { name, code, dialect } = ISO,
+            [latin, native, regional] = unescape(name).split('/', 3);
+
+        select.append(furnish('option', { value: code, innerHTML: `${ native } (${ regional }) &mdash; ${ latin }`.replace(/\s*\(\s*(?:undefined|null)?\s*\)/i, '') }));
+    }
+
+    Storage.get({ user_language_preference }, ({ user_language_preference }) => {
+        let lang = user_language_preference.toLowerCase();
+
+        $('option[selected]', false, select)?.removeAttribute?.('selected');
+        $(`option[value="${ (select.value = lang) }"i]`, false, select).setAttribute('selected', true);
+    });
+});
+
+$('#user_language_preference', true).map(select => select.onchange = async event => {
     let { currentTarget } = event,
         preferred = currentTarget.value;
 
-    Translate(preferred);
+    Translate(document.documentElement.lang = preferred.toLowerCase());
 
     await Storage.set({ ...SETTINGS, user_language_preference: preferred });
 });
@@ -1509,8 +1541,27 @@ async function Translate(language = 'en', container = document) {
         })
         .then(text => text.json?.())
         .then(json => {
-            if(json?.LANG_PACK_READY !== true)
-                return WARN(`Translations to "${ language.toUpperCase() }" are not finalized`);
+            if(json?.LANG_PACK_READY !== true) {
+                let ISO = ISO_639_1[language];
+
+                if(!defined(ISO))
+                    return;
+
+                let [latin] = ISO.name.split('/');
+                let link = ($0, $1 = 'GitHub', $$, $_) => `<strong><a target="_blank" href="https://github.com/Ephellon/Twitch-Tools/issues/new?assignees=Ephellon&labels=enhancement%2C+help-wanted%2C+wiki&template=lang_help.md&title=Translations%3A+${ encodeURIComponent(latin) }">${ $1 }</a></strong>`;
+
+                alert.silent(`
+                    <div style=color:yellow!important>
+                        <!-- English -->
+                        <div style=text-align:center;margin:1rem>This document may contain translation errors. If you would like to help correct this document, please visit ${ link() }</div>
+                        <hr>
+                        <!-- ${ latin } -->
+                        <div style=text-align:center;margin:1rem>${
+                            json['[[ERROR]]'].replace(/(\S*GitHub\S*)/i, link)
+                        }</div>
+                    </div>
+                `, document.body.classList.contains('popup'));
+            }
 
             let lastTrID,
                 placement = {};
@@ -1559,7 +1610,7 @@ async function Translate(language = 'en', container = document) {
                         padding.start
                         + string
                             .replace(/%d\b/g, number = node.textContent.replace(/[^]*?(\d+)[^]*/, '$1'))
-                            .replace(/%s\b/g, parseInt(number) > 1? 's': '')
+                            .replace(/%([^>]*)>([^\s]*)/g, parseInt(number) > 1? '$2': '$1')
                         + padding.stop;
 
                     let slim = (string = '') => string
@@ -1644,19 +1695,41 @@ document.body.onload = async() => {
         let onmousedown = event => event.currentTarget.classList.add('chosen'),
             onmouseup = event => event.currentTarget.closest('.language-select')?.remove();
 
+        let detectedLanguage = '';
+
+        Storage.get({ user_language_preference }, ({ user_language_preference = '' }) => {
+            // if(/^[A-Z]+$/.test(user_language_preference))
+                detectedLanguage = user_language_preference;
+        });
+
         return awaitOn(() => {
             let languageOptions = $('.language-select');
 
             if(!defined(languageOptions))
                 document.body.append(
                     furnish('div.language-select', {},
-                        furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English`),
-                        furnish('button.language-option', { value: 'de', onmousedown, onmouseup }, `Deutsch`),
-                        furnish('button.language-option', { value: 'es', onmousedown, onmouseup }, `espa\u00f1ol (Espa\u00f1a)`),
-                        furnish('button.language-option', { value: 'pt', onmousedown, onmouseup }, `portugu\u00eas (Brasil)`),
-                        furnish('button.language-option', { value: 'ru', onmousedown, onmouseup }, `\u0440\u0443\u0441\u0441\u043a\u0438\u0439`),
+                        furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English (North American)`),
+                        ...(languages => {
+                            let buttons = [];
+                            for(let language of languages) {
+                                let ISO = top.ISO_639_1[language];
+
+                                if(!defined(ISO))
+                                    continue;
+
+                                let { name, code, dialect } = ISO,
+                                    [latin, native, regional] = unescape(name).split('/', 3);
+
+                                buttons.push(furnish('button.language-option', { value: code, onmousedown, onmouseup }, `${ native } (${ regional || latin })`));
+                            }
+
+                            return buttons;
+                        })(SUPPORTED_LANGUAGES),
                     )
                 );
+
+            $(`.language-option[value="${ detectedLanguage }"i]`)
+                ?.setAttribute?.('style', 'background-color:var(--baby-blue); text-decoration:underline');
 
             return $('.language-option.chosen')?.value;
         });
@@ -1665,9 +1738,9 @@ document.body.onload = async() => {
     /* Things needed before loading the page... */
         .then(async language => {
             if(defined(language))
-                await Storage.set({ user_language_preference: language });
+                await Storage.set({ user_language_preference: language.toLowerCase() });
 
-            await Storage.get(['user_language_preference'], ({ user_language_preference }) => Translate(user_language_preference));
+            await Storage.get(['user_language_preference'], ({ user_language_preference }) => Translate(document.documentElement.lang = user_language_preference.toLowerCase()));
 
             TRANSLATED = true;
         })
