@@ -243,6 +243,14 @@
         "Choďte s najbližšími, aby ste mali všetky odmeny za bodový kanál",
         "Choďte s najďalej od všetkých odmien za bodový bod kanála"
     ],
+    "parse-commands": [
+        "Vykonanie príkazov",
+        "Vykonajte","príkazy","nájdené na stránke"
+    ],
+    "parse-commands:options": [
+        "Vytvorenie prepojení",
+        "Vykonanie príkazov","zmení príkazy obsahujúce prepojenia na ich prepojenie"
+    ],
     "prevent-hosting": [
         "Zabráňte hostingu",
         "Zabráňte hosťovaniu určitých alebo všetkých kanálov tým, že prejdete na",
@@ -697,6 +705,9 @@
         "Použite jemné detaily",
         "Povoliť rozšírenie používať údaje rozhrania Twitch™ API na zlepšenie vášho zážitku",
         "Týmto sa nezhromažďuje žiadne údaje. Bude používať údaje, ktoré Twitch™ zhromaždil"
+    ],
+    "@low-data-mode": [
+        "Nízka spotreba dát","Prinúti rozšírenie využívať menej dát za hodinu","Aktuálny odhad"
     ],
     "@default": [
         "Zobraziť predvolené hodnoty",

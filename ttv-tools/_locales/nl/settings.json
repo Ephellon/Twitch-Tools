@@ -241,6 +241,14 @@
         "Ga met de beloningen die het dichtst bij alle kanaalpuntenbeloningen komen",
         "Ga met de verst verwijderd van alle kanaalpuntbeloningen"
     ],
+    "parse-commands": [
+        "Opdrachten uitvoeren",
+        "Voer de","opdrachten","op de pagina uit"
+    ],
+    "parse-commands:options": [
+        "Koppelingen maken",
+        "Opdrachten uitvoeren","zet opdrachten die koppelingen bevatten om in hun koppeling"
+    ],
     "prevent-hosting": [
         "Voorkom hosting",
         "Voorkom dat bepaalde of alle kanalen hosten door naar het",
@@ -699,6 +707,9 @@
         "Gebruik fijne details",
         "Sta de extensie toe twitch API-gegevens™ te gebruiken om je ervaring te verbeteren",
         "Dit verzamelt geen gegevens. Het zal de gegevens gebruiken die Twitch™ heeft verzameld"
+    ],
+    "@low-data-mode": [
+        "Laag gegevensgebruik","Dwingt de extensie om minder gegevens per uur te gebruiken","Huidige schatting"
     ],
     "@default": [
         "Standaardwaarden weergeven",

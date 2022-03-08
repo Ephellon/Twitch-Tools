@@ -120,7 +120,7 @@ class Balloon {
 
                                         let balloon = $(`#tt-balloon-${ connectedTo }`);
 
-                                        if(!defined(balloon))
+                                        if(nullish(balloon))
                                             return;
 
                                         let display = balloon.getAttribute('display') === 'block'? 'none': 'block';
@@ -149,7 +149,7 @@ class Balloon {
                                                         output = $(`#tt-notification-counter-output--${ uuid }`),
                                                         length = parseInt(counter?.getAttribute('length'));
 
-                                                    if(!defined(counter) || !defined(output))
+                                                    if(nullish(counter) || nullish(output))
                                                         return;
 
                                                     let visibility = counter.getAttribute('style').replace(/[^]+:/, ''),
@@ -204,7 +204,7 @@ class Balloon {
 
                                                 let balloon = $(`#tt-balloon-${ connectedTo }`);
 
-                                                if(!defined(balloon))
+                                                if(nullish(balloon))
                                                     return;
 
                                                 let display = balloon.getAttribute('display') === 'block'? 'none': 'block';
@@ -694,7 +694,7 @@ class Card {
         for(let key in fineTuning) {
             let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
-            if(!defined(value))
+            if(nullish(value))
                 continue;
 
             if(parseFloat(value) > -Infinity)
@@ -848,7 +848,7 @@ class ContextMenu {
         for(let key in fineTuning) {
             let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
 
-            if(!defined(value))
+            if(nullish(value))
                 continue;
 
             if(parseFloat(value) > -Infinity)
@@ -924,7 +924,7 @@ class Search {
     );
 
     static #cache = new Map;
-    static cacheLeaseTime = 150_000;
+    static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
 
     constructor(ID = null, type = 'channel', as = null) {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
@@ -951,7 +951,7 @@ class Search {
             });
 
         let vodID = null, channelName = null;
-        if(!defined(ID) && /^auto(?:matic)?$/i.test(type)) {
+        if(nullish(ID) && /^auto(?:matic)?$/i.test(type)) {
             if(true
                 && !player.routes.exact.contains(pathname)
                 && !player.routes.start.filter(route => pathname.startsWith(route)).length
@@ -1062,7 +1062,7 @@ class Search {
                 let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl pt pt-br ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
                 let name = channelName;
 
-                if(!defined(name) || type != 'channel')
+                if(nullish(name) || type != 'channel')
                     break;
 
                 searchResults =
@@ -1215,7 +1215,7 @@ class Search {
             });
 
         let vodID = null, channelName = null;
-        if(!defined(ID) && /^auto(?:matic)?$/i.test(type)) {
+        if(nullish(ID) && /^auto(?:matic)?$/i.test(type)) {
             if(true
                 && !player.routes.exact.contains(pathname)
                 && !player.routes.start.filter(route => pathname.startsWith(route)).length
@@ -1663,7 +1663,7 @@ function GetChat(lines = 250, keepEmotes = false) {
                 null                                         // No subject
             )($('*:first-child', false, bullet)?.textContent);
 
-        if(!defined(subject) && message.length < 1)
+        if(nullish(subject) && message.length < 1)
             continue;
 
         let raw = bullet.textContent?.trim();
@@ -1702,6 +1702,31 @@ function GetChat(lines = 250, keepEmotes = false) {
             message,
             mentions,
             element: bullet,
+        });
+    }
+
+    let commands = $('[class*="line__status"i]', true);
+
+    results.commands = [];
+
+    for(let result of commands) {
+        let raw = result.textContent,
+            uuid = UUID.from(raw).value,
+            [head, body] = raw.split(/[^\w\s\-,]+/).filter(r => r.length).map(r => r.trim());
+
+        if([head, body].filter(nullish).length)
+            continue;
+
+        let [type] = head.toLowerCase().split(/\s/).filter(r => !/^(an?d?|but|for|n?or|th(?:e|is)|yet)$/i.test(r)).map(r => r.replace(/^(\w{3})([^aeiouy s]+)?(?:.*)$/, '$1$2s')),
+            value = body.split(/[^\w\s]/).filter(r => r.length).map(r => r.trim());
+
+        results.commands.push({
+            raw,
+            uuid,
+            type,
+            head,
+            body,
+            value,
         });
     }
 
@@ -1786,6 +1811,14 @@ Object.defineProperties(GetChat, {
         },
     },
     __onwhisper__: { value: new Map() },
+
+    restrictions: {
+        set(value) {},
+
+        get() {
+            return ($('[class*="chat-restriction"i]')?.parentElement?.nextElementSibling?.textContent || '');
+        },
+    },
 });
 
 // Pushes parameters to the URL's search
@@ -1928,7 +1961,7 @@ async function GetQuality() {
 
     let current = qualities.find(({ input }) => input.checked);
 
-    if(!defined(current)) {
+    if(nullish(current)) {
         let { videoHeight = 0 } = $('[data-a-target="video-player"i] video') ?? ({});
 
         if((videoHeight |= 0) < 1)
@@ -2013,7 +2046,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     else
         desired = qualities.find(({ label }) => textOf(label).contains(quality.toLowerCase())) ?? null;
 
-    if(!defined(desired))
+    if(nullish(desired))
         /* The desired quality does not exist */
         desired = qualities.auto;
     else if(current?.uuid === desired?.uuid)
@@ -2114,7 +2147,7 @@ function GetViewMode() {
 
     let container = $(`button[data-a-target*="fullscreen"i]`)?.closest('div');
 
-    if(!defined(container))
+    if(nullish(container))
         return mode;
 
     let classes = ['', ...container.classList].join('.');
@@ -2655,10 +2688,12 @@ try {
                     break;
 
                 // "Would the user allow this raid condition?"
-                if(false
-                    || (payable && method == "greed")
-                    // || (STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)) && method == "unfollowed")
-                    // || (method == "all")
+                if(true
+                    && payable
+                    && (false
+                        || (["all", "greed"].contains(method))
+                        || (method == "unfollowed" && STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)))
+                    )
                 )
                     confirm
                         .timed(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000)
@@ -2936,7 +2971,7 @@ async function update() {
 
                         let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
-                        if(!defined(parent))
+                        if(nullish(parent))
                             return true;
 
                         let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
@@ -2978,11 +3013,11 @@ async function update() {
 
                         let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
 
-                        if(!defined(parent))
+                        if(nullish(parent))
                             return false;
 
                         let live = defined(parent)
-                                && !defined($(`[class*="--offline"i]`, false, parent));
+                                && nullish($(`[class*="--offline"i]`, false, parent));
 
                         return live;
                     },
@@ -3019,11 +3054,11 @@ async function update() {
 
                         let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
-                        if(!defined(parent))
+                        if(nullish(parent))
                             return false;
 
                         let live = defined(parent)
-                                && !defined($(`[class*="--offline"i]`, false, parent));
+                                && nullish($(`[class*="--offline"i]`, false, parent));
 
                         return live;
                     },
@@ -3056,7 +3091,7 @@ async function update() {
                     name: $('[class$="text"i]', false, element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
                 };
 
-                if(!defined(streamer.name))
+                if(nullish(streamer.name))
                     return;
 
                 element.setAttribute('draggable', true);
@@ -3259,7 +3294,7 @@ let Initialize = async(START_OVER = false) => {
             for(let channel in ChannelPoints) {
                 let [streamer] = online.filter(({ name }) => name == channel);
 
-                if(!defined(streamer))
+                if(nullish(streamer))
                     continue filtering;
 
                 let [amount, fiat, face, notEarned, pointsToEarnNext] = ChannelPoints[channel].split('|');
@@ -3354,7 +3389,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // There isn't a channel that fits the criteria
-            if(parseBool(Settings.stay_live) && !defined(GetNextStreamer?.cachedStreamer) && online?.length) {
+            if(parseBool(Settings.stay_live) && nullish(GetNextStreamer?.cachedStreamer) && online?.length) {
                 let preference = Settings.next_channel_preference,
                     channel = (GetNextStreamer.cachedStreamer ??= (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1)[round(random() * online.length)])),
                     { name } = channel;
@@ -3387,7 +3422,7 @@ let Initialize = async(START_OVER = false) => {
 
                             let parent = $(`.search-tray [href$="${ pathname }"i]:not([href*="/search?"])`);
 
-                            if(!defined(parent))
+                            if(nullish(parent))
                                 return false;
 
                             let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
@@ -3501,7 +3536,7 @@ let Initialize = async(START_OVER = false) => {
         get face() {
             let balance = $('[data-test-selector="balance-string"i]');
 
-            if(!defined(balance))
+            if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_face;
 
             let container = balance?.closest('button'),
@@ -3513,7 +3548,7 @@ let Initialize = async(START_OVER = false) => {
         get fiat() {
             let balance = $('[data-test-selector="balance-string"i]');
 
-            if(!defined(balance))
+            if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_name;
 
             let container = balance?.closest('button'),
@@ -3557,7 +3592,7 @@ let Initialize = async(START_OVER = false) => {
         get live() {
             return SPECIAL_MODE
                 || (true
-                    && defined($('[status] [class*="status-text"i]')) && !defined($(`[class*="offline-recommend"i]`))
+                    && defined($('[status] [class*="status-text"i]')) && nullish($(`[class*="offline-recommend"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`)?.textContent?.trim() ?? "")
                 )
         },
@@ -3718,7 +3753,7 @@ let Initialize = async(START_OVER = false) => {
     let StreamerMainIcon = $(`main a[href$="${ NORMALIZED_PATHNAME }"i]`),
         StreamerFilteredData = { ...STREAMER };
 
-    if(!defined(StreamerMainIcon))
+    if(nullish(StreamerMainIcon))
         return /* Leave the main function (Initialize) if there's no streamer icon... Probably not in a stream */;
 
     for(let key of 'chat coin paid ping poll tags team time __eventlisteners__'.split(' '))
@@ -3779,7 +3814,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => !defined($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => nullish($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -3811,11 +3846,11 @@ let Initialize = async(START_OVER = false) => {
                             // Then the actual "does the channel show up" result
                             let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
 
-                            if(!defined(parent))
+                            if(nullish(parent))
                                 return false;
 
                             // The "is it offline" result
-                            let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
+                            let live = defined(parent) && nullish($(`[class*="--offline"i]`, false, parent));
 
                             return live;
                         },
@@ -3859,10 +3894,10 @@ let Initialize = async(START_OVER = false) => {
 
                             let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
 
-                            if(!defined(parent))
+                            if(nullish(parent))
                                 return false;
 
-                            let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
+                            let live = defined(parent) && nullish($(`[class*="--offline"i]`, false, parent));
 
                             return live;
                         },
@@ -3903,10 +3938,10 @@ let Initialize = async(START_OVER = false) => {
 
                             let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
-                            if(!defined(parent))
+                            if(nullish(parent))
                                 return false;
 
-                            let live = defined(parent) && !defined($(`[class*="--offline"i]`, false, parent));
+                            let live = defined(parent) && nullish($(`[class*="--offline"i]`, false, parent));
 
                             return live;
                         },
@@ -3995,7 +4030,7 @@ let Initialize = async(START_OVER = false) => {
                         value = (defined(videoID)? videoID: channelName),
                         token = cookies['auth-token'];
 
-                    if(!defined(STREAMER.name))
+                    if(nullish(STREAMER.name))
                         break __FineDetails__;
 
                     /** Get Twitch analytics data
@@ -4051,6 +4086,9 @@ let Initialize = async(START_OVER = false) => {
                             await new Search(name)
                                 .then(Search.convertResults)
                                 .then(streamer => sole = streamer.sole);
+
+                        if(!sole)
+                            break __FineDetails__;
 
                         // Proper CORS requests to fetch the HTML data
                         // Stream details
@@ -4156,7 +4194,6 @@ let Initialize = async(START_OVER = false) => {
 
                                 return STREAMER.data = { ...STREAMER.data, ...data };
                             })
-                            .catch(WARN)
                             .then(data => {
                                 data = { ...data, dataRetrievedOK: defined(data?.dailyBroadcastTime), dataRetrievedAt: +new Date };
 
@@ -4189,7 +4226,6 @@ let Initialize = async(START_OVER = false) => {
 
                                 return STREAMER.data = { ...STREAMER.data, ...data };
                             })
-                            .catch(WARN)
                             .then(data => {
                                 data = { ...data, dataRetrievedOK: defined(data?.firstSeen), dataRetrievedAt: +new Date };
 
@@ -4201,7 +4237,7 @@ let Initialize = async(START_OVER = false) => {
                         //     .then(response => response.json())
                         //     .then(json => GLOBAL_TWITCH_API = JSON.parse(json.token ?? "null"))
                         //     .then(json => {
-                        //         if(!defined(json))
+                        //         if(nullish(json))
                         //             throw "Fine Detail JSON data could not be parsed...";
                         //
                         //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
@@ -4269,7 +4305,6 @@ let Initialize = async(START_OVER = false) => {
                         //
                         //         return STREAMER.data = { ...STREAMER.data, ...data };
                         //     })
-                        //     .catch(WARN)
                         //     .then(data => {
                         //         data = { ...data, dataRetrievedAt: +new Date };
                         //
@@ -4459,7 +4494,7 @@ let Initialize = async(START_OVER = false) => {
             let isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
                 video = $('video', true)[+isAdvert];
 
-            if(!defined(video))
+            if(nullish(video))
                 return;
 
             let frame = video.captureFrame(`image/${ imageType }`),
@@ -4501,7 +4536,7 @@ let Initialize = async(START_OVER = false) => {
                             let parent = $('.chat-list--default');
                             // #twilight-sticky-header-root
 
-                            if(!defined(parent))
+                            if(nullish(parent))
                                 break DisplayingAutoFocusDetails;
 
                             let { height, width } = getOffset(video),
@@ -4510,7 +4545,7 @@ let Initialize = async(START_OVER = false) => {
                             height = parseInt(height * .25);
                             width = parseInt(width * .25);
 
-                            if(!defined(diffImg)) {
+                            if(nullish(diffImg)) {
                                 diffDat = furnish('span#tt-auto-focus-stats', { style: `background: var(--color-background-tooltip); color: var(--color-text-tooltip); position: absolute; z-index: 6; width: 100%; height: 2rem; overflow: hidden; font-family: monospace; font-size: 1rem; text-align: center; padding: 0;` });
                                 diffImg = furnish('img#tt-auto-focus-differences', { style: `position: absolute; z-index: 3; width: 100%; transition: all 0.5s;` });
 
@@ -4534,7 +4569,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Lurking, pause Up Next
-                            if((!defined(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
+                            if((nullish(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
 
                                 // Pause Up Next
@@ -4567,7 +4602,7 @@ let Initialize = async(START_OVER = false) => {
                                 LOG('Positive trend detected: ' + changes.join(', '));
                             }
                             // Negative activity trend; enable Lurking, resume Up Next
-                            else if((!defined(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
+                            else if((nullish(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
                                 POSITIVE_TREND = false;
 
                                 // Resume Up Next
@@ -4662,7 +4697,7 @@ let Initialize = async(START_OVER = false) => {
             currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
 
         // Alt + A | Opt + A
-        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
+        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key, altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || shiftKey) && altKey && key == 'a')
                     $('#away-mode')?.click?.();
@@ -4674,9 +4709,9 @@ let Initialize = async(START_OVER = false) => {
          * c) There are no quality controls
          * d) The page is a search
          */
-        if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || !defined(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
+        if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || nullish(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
             // If the quality controls have failed to load for 1min, leave the page
-            if(!defined(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
+            if(nullish(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
                 let scapeGoat = await GetNextStreamer();
 
                 WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
@@ -4692,7 +4727,7 @@ let Initialize = async(START_OVER = false) => {
 
         let enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
-        if(!defined(button)) {
+        if(nullish(button)) {
             let sibling, parent, before,
                 extra = () => {},
                 container = furnish('div'),
@@ -4731,7 +4766,7 @@ let Initialize = async(START_OVER = false) => {
                 default: return JUDGE__STOP_WATCH('away_mode');
             }
 
-            if(!defined(parent) || !defined(sibling))
+            if(nullish(parent) || nullish(sibling))
                 return JUDGE__STOP_WATCH('away_mode') /* || WARN('Unable to create the Lurking button') */;
 
             container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
@@ -4782,7 +4817,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         // Enable lurking when loaded
-        if(!defined(InitialQuality)) {
+        if(nullish(InitialQuality)) {
             InitialQuality = (Handlers.away_mode.quality ??= await GetQuality());
             InitialVolume = (Handlers.away_mode.volume ??= GetVolume());
             InitialViewMode = (Handlers.away_mode.viewMode ??= GetViewMode());
@@ -4898,8 +4933,8 @@ let Initialize = async(START_OVER = false) => {
             let weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' '),
                 months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
-            let enableAwayMode,
-                currentAwayMode = parseBool(awayMode.getAttribute('tt-away-mode-enabled'));
+            let desiredStatus,
+                currentStatus = parseBool(awayMode.getAttribute('tt-away-mode-enabled'));
 
             for(let schedule of schedules) {
                 let { day, time, duration, status } = schedule;
@@ -4915,13 +4950,13 @@ let Initialize = async(START_OVER = false) => {
                 WARN(`Lurking is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
 
                 // Found at least one schedule...
-                if(defined(enableAwayMode = status))
+                if(defined(desiredStatus = status))
                     break;
             }
 
             // Scheduled state...
-            // LOG('Lurking needs to be:', enableAwayMode, 'Current status:', currentAwayMode);
-            if(defined(enableAwayMode) && enableAwayMode != currentAwayMode)
+            // LOG('Lurking needs to be:', desiredStatus, 'Currently:', currentStatus);
+            if(defined(desiredStatus) && desiredStatus != currentStatus)
                 awayMode.click();
         });
     }
@@ -5021,7 +5056,7 @@ let Initialize = async(START_OVER = false) => {
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE([href:string=URL]) → undefined
     async function REDO_FIRST_IN_LINE_QUEUE(url) {
-        if(!defined(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
+        if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
             return;
 
         url = parseURL(url);
@@ -5030,7 +5065,7 @@ let Initialize = async(START_OVER = false) => {
             name = pathname.slice(1),
             channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
 
-        if(!defined(channel))
+        if(nullish(channel))
             return ERROR(`Unable to create job for "${ href }"`);
 
         GetNextStreamer.cachedStreamer = channel;
@@ -5065,7 +5100,7 @@ let Initialize = async(START_OVER = false) => {
             confirm
                 .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
                 .then(action => {
-                    if(!defined(action))
+                    if(nullish(action))
                         return /* The event timed out... */;
 
                     let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF);
@@ -5109,7 +5144,7 @@ let Initialize = async(START_OVER = false) => {
             if(FIRST_IN_LINE_PAUSED)
                 return /* SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) }) */;
 
-            if(!defined(channel)) {
+            if(nullish(channel)) {
                 LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
 
                 let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
@@ -5192,12 +5227,12 @@ let Initialize = async(START_OVER = false) => {
     setInterval(() => {
         let job = $('[up-next--body] [name][time]');
 
-        if(!defined(job))
+        if(nullish(job))
             return;
 
         let timeRemaining = parseInt(job.getAttribute('time'));
 
-        if(timeRemaining <= 60_000 && !defined('.tt-confirm'))
+        if(timeRemaining <= 60_000 && nullish('.tt-confirm'))
             setTimeout(() => {
                 WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`)
                     ?.toNativeStack?.();
@@ -5207,7 +5242,7 @@ let Initialize = async(START_OVER = false) => {
                 confirm
                     .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
                     .then(action => {
-                        if(!defined(action))
+                        if(nullish(action))
                             return /* The event timed out... */;
 
                         // Does NOT touch the cache
@@ -5233,7 +5268,7 @@ let Initialize = async(START_OVER = false) => {
 
     let FIRST_IN_LINE_BALLOON__INSURANCE =
     setInterval(() => {
-        if(NORMAL_MODE && !defined(FIRST_IN_LINE_BALLOON)) {
+        if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
             FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
 
             // Up Next Boost Button
@@ -5250,8 +5285,8 @@ let Initialize = async(START_OVER = false) => {
 
                     speeding = !speeding;
 
-                    currentTarget.querySelector('svg[fill]')?.setAttribute('fill', '');
-                    currentTarget.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!speeding }`);
+                    currentTarget.querySelector('svg[fill]')?.setAttribute('fill', 'currentcolor');
+                    currentTarget.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!speeding }; fill:currentcolor`);
                     currentTarget.setAttribute('speeding', FIRST_IN_LINE_BOOST = speeding);
 
                     currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
@@ -5330,7 +5365,7 @@ let Initialize = async(START_OVER = false) => {
                     let { currentTarget } = event,
                         parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
-                    LoadCache('LiveReminders', async({ LiveReminders }) => {
+                    LoadCache(['LiveReminders', 'ChannelPoints'], async({ LiveReminders = null, ChannelPoints = {} }) => {
                         LiveReminders = JSON.parse(LiveReminders || '{}');
 
                         let f = furnish;
@@ -5385,7 +5420,7 @@ let Initialize = async(START_OVER = false) => {
                             // Legacy reminders... | v4.26 → v4.27
                             let legacy = +now < +time;
 
-                            if(!defined(channel))
+                            if(nullish(channel))
                                 continue listing;
 
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
@@ -5396,6 +5431,22 @@ let Initialize = async(START_OVER = false) => {
                                 when = `<span class="tt-${ (channel.live? 'live': 'offline') }" style="min-width:3.5em">${ (channel.live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
 
                             let { href, icon, live, desc = '' } = channel;
+                            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                                coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
+                                coinText =
+                                    furnish('span.tt-live-reminder-point-amount', {
+                                        'tt-earned-all': notEarned == 0,
+                                        innerHTML: amount.toLocaleString(LANGUAGE),
+                                    }).outerHTML,
+                                coinIcon = (
+                                    face?.length?
+                                        furnish('span.tt-live-reminder-point-face', {
+                                            innerHTML: furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: coinStyle.toString() }).outerHTML,
+                                        }):
+                                    furnish('span.tt-live-reminder-point-face', {
+                                        innerHTML: Glyphs.modify('channelpoints', { style: `vertical-align:bottom; ${ coinStyle.toString() }` }),
+                                    })
+                                ).outerHTML;
                             let container = f(`div.tt-reminder`, { name, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                 f('div.simplebar-scroll-content',
                                     {
@@ -5446,11 +5497,11 @@ let Initialize = async(START_OVER = false) => {
                                                                 // Subheader
                                                                 f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
                                                                     f('div.tt-mg-l-05', {},
-                                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { style: `text-decoration:underline 2px solid ${ (live? 'var(--user-complement-color)': 'transparent') }`, innerHTML: when })
+                                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: [when, coinIcon + coinText].join(' &bull; ') })
                                                                     )
                                                                 ),
-                                                                // Glyph (persistent)
-                                                                f('div', {/* innerHTML: Glyphs.modify('ne_arrow', { height: '20px', width: '20px', style: `fill:var(--user-complement-color); position:absolute; right:0; top:40%;` }) */})
+                                                                // Footer (persistent)
+                                                                f('div', {/* ... */})
                                                             )
                                                         )
                                                     ),
@@ -5470,7 +5521,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                                             $(`.tt-reminder[name="${ name }"i]`)?.remove();
                                                                             delete LiveReminders[name];
-                                                                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) });
+                                                                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
                                                                             await alert.timed(`Reminder removed successfully!`, 5_000);
                                                                         });
@@ -5544,7 +5595,7 @@ let Initialize = async(START_OVER = false) => {
                 let colors = {
                     // Extremes
                     light: ({ S, L }) => (false
-                        || (L > 85)
+                        || (L > 80)
                         || (S < 15)
                     ),
                     white: ({ R, G, B, L }) => (false
@@ -5577,7 +5628,7 @@ let Initialize = async(START_OVER = false) => {
                         || (S < 5)
                     ),
 
-                    // Reds {120°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
+                    // Reds {130°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
                     red: ({ H, S }) => (true
                         && (S >= 5)
                         && (false
@@ -5621,13 +5672,13 @@ let Initialize = async(START_OVER = false) => {
                         )
                     ),
 
-                    // Greens {120°} → (60° < Hue ≤ 175°)
+                    // Greens {115°} → (60° < Hue ≤ 175°)
                     green: ({ H, S }) => (true
                         && (S >= 5)
                         && (H > 60 && H <= 175)
                     ),
 
-                    // Blues {120°} → (175° < Hue ≤ 290°)
+                    // Blues {115°} → (175° < Hue ≤ 290°)
                     blue: ({ H, S }) => (true
                         && (S >= 5)
                         && (H > 175 && H <= 260)
@@ -5656,6 +5707,7 @@ let Initialize = async(START_OVER = false) => {
                 }
 
                 return name
+                    .sort()
                     .sort((primary, secondary) => {
                         return (
                             /^(light|dark)$/i.test(primary)?
@@ -5671,15 +5723,16 @@ let Initialize = async(START_OVER = false) => {
                     })
                     .join(' ')
 
-                    .replace('light red', 'pink')
-                    .replace('dark pink', 'red')
-                    .replace('red orange', 'orange')
-                    .replace('light yellow', 'yellow')
-                    .replace('orange brown', 'light brown')
+                    .replace(/light( pink)? red/, 'pink')
+                    .replace(/dark pink( red)?/, 'red')
+                    .replace(/red orange/, 'orange')
+                    .replace(/light yellow/, 'yellow')
+                    .replace(/orange brown/, 'light brown')
 
                     .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
-                    .replace(/^(light|dark)\s+(black|white)(?:\s[\s\w]+)?/i, '$1')
-                    .replace(/(\w+)\s+(\w+)$/i, ($0, $1, $2, $$, $_) => {
+                    .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
+                    .replace(/(\w+) (\1)/g, '$1')
+                    .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
                         if([$1, $2].contains('light', 'dark'))
                             return $_;
 
@@ -5755,7 +5808,7 @@ let Initialize = async(START_OVER = false) => {
                 // Up Next Boost
                 first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
                 first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', '');
-                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!FIRST_IN_LINE_BOOST }`);
+                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
                 first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
 
                 let up_next_button = $('[up-next--container] button');
@@ -5832,7 +5885,7 @@ let Initialize = async(START_OVER = false) => {
 
                         LOG('Adding to Up Next [ondrop]:', { href, streamer });
 
-                        if(!defined(streamer?.icon)) {
+                        if(nullish(streamer?.icon)) {
                             let name = (streamer?.name ?? parseURL(href).pathname.slice(1));
 
                             new Search(name)
@@ -5903,7 +5956,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
 
-                    if(!defined(channel))
+                    if(nullish(channel))
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
 
                     // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
@@ -5937,7 +5990,7 @@ let Initialize = async(START_OVER = false) => {
                             name = parseURL(href).pathname.slice(1),
                             channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
 
-                        if(!defined(href) || !defined(channel))
+                        if(nullish(href) || nullish(channel))
                             continue;
 
                         let { live } = channel;
@@ -6007,7 +6060,7 @@ let Initialize = async(START_OVER = false) => {
                                         intervalID = parseInt(container.getAttribute('animationID')),
                                         index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
-                                    if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                                    if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                         WARN('Creating job to avoid [Job Listing] mitigation event', channel);
@@ -6090,7 +6143,7 @@ let Initialize = async(START_OVER = false) => {
                 notification
             );
 
-            if(!defined(action))
+            if(nullish(action))
                 continue;
 
             let { href, pathname } = parseURL(action.href.toLowerCase()),
@@ -6148,7 +6201,7 @@ let Initialize = async(START_OVER = false) => {
                     name = parseURL(href).pathname.slice(1),
                     channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
 
-                if(!defined(channel))
+                if(nullish(channel))
                     continue;
 
                 let { live } = channel;
@@ -6224,7 +6277,7 @@ let Initialize = async(START_OVER = false) => {
                                 intervalID = parseInt(container.getAttribute('animationID')),
                                 index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
 
-                            if(time < 60_000 && !defined(FIRST_IN_LINE_HREF)) {
+                            if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
                                 WARN('Creating job to avoid [First in Line] mitigation event', channel);
@@ -6270,7 +6323,7 @@ let Initialize = async(START_OVER = false) => {
                 })
                     ?? [];
 
-                if(defined(FIRST_IN_LINE_WAIT_TIME) && !defined(FIRST_IN_LINE_HREF)) {
+                if(defined(FIRST_IN_LINE_WAIT_TIME) && nullish(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                     LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
@@ -6362,7 +6415,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         // Controls what's listed under the Up Next balloon
-        if(!defined(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
+        if(nullish(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
                 first = RegExp(`\\b${ href }\\b`, 'i').test(STREAMER.href),
                 channel = (null
@@ -6378,7 +6431,7 @@ let Initialize = async(START_OVER = false) => {
                     ?? new Search(parseURL(href).pathname.slice(1)).then(Search.convertResults)
                 );
 
-            if(!defined(channel) && !first) {
+            if(nullish(channel) && !first) {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
                     dead = ALL_FIRST_IN_LINE_JOBS[index];
 
@@ -6455,7 +6508,7 @@ let Initialize = async(START_OVER = false) => {
 
         NEW_STREAMERS = streamers.join(',').toLowerCase();
 
-        if(!defined(OLD_STREAMERS))
+        if(nullish(OLD_STREAMERS))
             OLD_STREAMERS = NEW_STREAMERS;
 
         let old_names = OLD_STREAMERS.split(',').filter(defined),
@@ -6472,7 +6525,7 @@ let Initialize = async(START_OVER = false) => {
             SaveCache({ BAD_STREAMERS });
 
             // RemoveFromTopSearch(['tt-err-chn']);
-        } else if(!defined($('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
+        } else if(nullish($('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
             WARN("[Followed Channels] is missing. Reloading...");
 
             SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
@@ -6516,12 +6569,12 @@ let Initialize = async(START_OVER = false) => {
             let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name)),
                 { searchParameters } = parseURL(location.href);
 
-            if(!defined(streamer) || searchParameters.obit == streamer.name)
+            if(nullish(streamer) || searchParameters.obit == streamer.name)
                 continue creating_new_events;
 
             let { href } = streamer;
 
-            if(!defined(streamer?.name?.length))
+            if(nullish(streamer?.name?.length))
                 continue creating_new_events;
 
             LOG('A channel just appeared:', name, new Date);
@@ -6561,7 +6614,7 @@ let Initialize = async(START_OVER = false) => {
         // Add the button to unfollowed channels
         let actionPanel = $('.about-section__actions');
 
-        if(!defined(actionPanel))
+        if(nullish(actionPanel))
             return JUDGE__STOP_WATCH('live_reminders');
 
         let action = $('[tt-svg-label="live-reminders"i], [tt-action="live-reminders"i]', false, actionPanel);
@@ -6600,7 +6653,7 @@ let Initialize = async(START_OVER = false) => {
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                 reminderName = STREAMER.name,
-                                notReminded = !defined(LiveReminders[reminderName]),
+                                notReminded = nullish(LiveReminders[reminderName]),
                                 tense = (parseBool(Settings.keep_live_reminders)? '': ' next'),
                                 stream_s = 'stream'.pluralSuffix(+!!tense),
                                 [title, subtitle, icon] = [
@@ -6617,19 +6670,19 @@ let Initialize = async(START_OVER = false) => {
                             // Add the reminder...
                             let message;
                             if(notReminded) {
-                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): new Date);
-                                msssage = `You'll be notified when ${ STREAMER.name } goes live.`;
+                                message = `You'll be notified when ${ STREAMER.name } goes live.`;
+                                LiveReminders[reminderName] = (STREAMER.live? new Date(STREAMER?.data?.actualStartTime): STREAMER?.data?.lastSeen ?? new Date);
                             }
                             // Remove the reminder...
                             else {
-                                delete LiveReminders[reminderName];
                                 message = `Reminder removed successfully!`;
+                                delete LiveReminders[reminderName];
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => parseBool(message) && alert.timed(message, 7_000));
+                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }) || parseBool(message) && alert.timed(message, 7_000));
                         });
                     },
                 }, f('div', {},
@@ -6716,9 +6769,13 @@ let Initialize = async(START_OVER = false) => {
                                     await alert.timed(`${ name } just went live!`, 7_000);
                                 }
                             }
+
                         });
                     }
                 }
+
+                // Send the length to the settings page
+                Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
             });
 
             JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 30_000);
@@ -6727,7 +6784,7 @@ let Initialize = async(START_OVER = false) => {
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
 
-        if(!defined(actionPanel)) {
+        if(nullish(actionPanel)) {
             actionPanel = furnish('div.about-section__actions', { style: `padding-left: 2rem; margin-bottom: 3rem; width: 24rem;` });
 
             $('.about-section')?.append?.(actionPanel);
@@ -6762,7 +6819,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.auto_follow_raids = () => {
         START__STOP_WATCH('auto_follow_raids');
 
-        if(!defined(STREAMER))
+        if(nullish(STREAMER))
             return JUDGE__STOP_WATCH('auto_follow_raids');
 
         let url = parseURL(window.location),
@@ -6842,6 +6899,155 @@ let Initialize = async(START_OVER = false) => {
         REMARK("Adding extension killer...");
 
         RegisterJob('kill_extensions');
+    }
+
+    /*** Parse Commands
+     *      _____                       _____                                          _
+     *     |  __ \                     / ____|                                        | |
+     *     | |__) |_ _ _ __ ___  ___  | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| |___
+     *     |  ___/ _` | '__/ __|/ _ \ | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` / __|
+     *     | |  | (_| | |  \__ \  __/ | |___| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
+     *     |_|   \__,_|_|  |___/\___|  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
+     *
+     *
+     */
+    Handlers.parse_commands = async() => {
+        let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] p, [data-a-target^="panel"i] p', true),
+            /** User Levels → StreamElements | NightBot
+             * Everyone         →   100 | everyone
+             * Subscriber       →   250 | subscriber
+             * Regular          →   300 | regular
+             * VIP              →   400 | twitch_vip
+             * Moderator        →   500 | moderator
+             * Super Moderator  →   1000
+             * Broadcaster      →   1500 | owner
+             */
+            COMMANDS = [];
+
+        // StreamElements
+        await fetch(`https://api.streamelements.com/kappa/v2/channels/${ STREAMER.name }`, { mode: 'cors' })
+            .then(r => r.json())
+            .then(json => json?._id)
+            .then(async id => {
+                let commands = { public: [], default: []};
+
+                if(nullish(id))
+                    return commands;
+
+                for(let type of ['public', 'default'])
+                    await fetch(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`)
+                        .then(r => r.json())
+                        .then(json => commands[type] ??= json);
+
+                return commands;
+            })
+            .then(commands => {
+                for(let metadata of [...commands.public, ...commands.default]) {
+                    let { aliases, command, reply } = metadata;
+
+                    COMMANDS.push({ aliases, command, reply });
+                }
+            });
+
+        // NightBot
+        await fetch(`https://api.nightbot.tv/1/channels/t/${ STREAMER.name }`, { mode: 'cors' })
+            .then(r => r.json())
+            .then(json => json?.channel?._id)
+            .then(async id => {
+                let commands = [];
+
+                if(nullish(id))
+                    return commands;
+
+                await fetch('https://api.nightbot.tv/1/commands', { headers: { 'nightbot-channel': id } })
+                    .then(r => r.json())
+                    .then(json => {
+                        if(!json.status.toString().startsWith('2'))
+                            return [];
+
+                        commands = [...commands, ...json.commands];
+                    });
+
+                return commands;
+            })
+            .then(commands => {
+                for(let metadata of commands) {
+                    let { name, message } = metadata,
+                        regexp = /^[!]/;
+
+                    if(!regexp.test(name))
+                        continue;
+
+                    COMMANDS.push({ aliases: [], command: name.replace(regexp, ''), reply: message });
+                }
+            });
+
+        COMMANDS = COMMANDS.sort((a, b) => a.command.length > b.command.length? -1: +1);
+
+        for(let element of elements) {
+            for(let { aliases, command, reply } of COMMANDS)
+                element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
+                    reply = reply.replace(/\$(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]+?]\])/g, ($0, $1, $2, $$, $_) => {
+                        let path = $1.replace(/^\W|\W$/g, '').split('.');
+                        let properties = ({
+                            // StreamElements
+                            user: {
+                                _: USERNAME,
+                                points: STREAMER.coin,
+                                points_rank: nth(STREAMER.rank, ''),
+                                time_online: toTimeString((STREAMER.coin / 320) * 4_000),
+                            },
+                            user1: USERNAME,
+
+                            channel: {
+                                _: STREAMER.name,
+                                alias: STREAMER.name,
+                            },
+                            user2: STREAMER.name,
+
+                            pointsname: STREAMER.fiat,
+
+                            // NightBot
+                            touser: `@${ USERNAME }`,
+                            urlfetch: `External website`,
+                        }),
+                            value;
+
+                        for(let root of path)
+                            value = properties[root]?._ || properties[root];
+
+                        return value || $_;
+                    })
+                    .replace(/^\/(?:\w\S+)/, '');
+
+                    let { href } = (/\b(?<href>https?:\/\/[^\s]+)/i.exec(reply)?.groups ?? {}),
+                        string;
+
+                    if(parseBool(Settings.parse_commands__create_links) && defined(href))
+                        string = `<a href="${ href }" target=_blank title="${ reply }">${ $1 }</a>`;
+                    else
+                        string = `<span style=text-decoration:underline title="${ reply }">${ $1 }</span>`;
+
+                    return `{{parse_commands?=${ btoa(escape(string)) }}}`;
+                });
+
+            element.innerHTML = element.innerHTML.replace(/\{\{parse_commands\?=(.+?)\}\}/g, ($0, $1, $$, $_) => unescape(atob($1)));
+        }
+    };
+    Timers.parse_commands = -2_500;
+
+    Unhandlers.parse_commands = () => {
+        let title = $('[data-a-target="stream-title"i]');
+
+        if(defined(title))
+            title.innerHTML = encodeHTML($('[data-a-target="stream-title"i]').innerText);
+    };
+
+    __ParseCommands__:
+    if(parseBool(Settings.parse_commands)) {
+        REMARK("Parsing title commands...");
+
+        RegisterJob('parse_commands');
     }
 
     /*** Stop Hosting
@@ -7142,25 +7348,25 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?)?\s*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\(\s*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\s*\))/i,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])? *(?<meridiem>[ap]m?(?!\p{L}))? *(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\))/iu,
             // 15:00 EST | 1500 EST
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])\s*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\(\s*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\s*\))/i,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9]) *(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\(\s*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\s*\))\s*(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?\b)?/i,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\)) *(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])? *(?<meridiem>[ap]m?(?!\p{L}))?/iu,
             // EST 15:00 | EST 1500
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\(\s*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?:\:?[0-5][0-9])?)?|[A-WY]{2,4}T)\s*\))\s*(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9]\b)/i,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\)) *(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9]\b)/iu,
             // 3:00PM | 3PM
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])?\s*(?<meridiem>[ap]m?\b)/i,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])? *(?<meridiem>[ap]m?(?!\p{L}))/iu,
             // 15:00
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])\s*/i,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9]) */iu,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
             // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
-            /(?<![#\$\.+:\d])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/i,
+            /(?<![#\$\.+:\d])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/iu,
 
             // GMT/UTC
             // GMT+05:00 | GMT-05:00 | GMT+0500 | GMT-0500 | GMT+05 | GMT-05 | GMT+5 | GMT-5 | UTC+05:00 | UTC-05:00 | UTC+0500 | UTC-0500 | UTC+05 | UTC-05 | UTC+5 | UTC-5
-            /(?<![#\$\.+:\d])\b(?:GMT\s*|UTC\s*)(?<offset>[+-])(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])?\b/i,
+            /(?<![#\$\.+:\d])\b(?:GMT *|UTC *)(?<offset>[+-])(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])?\b/iu,
         ],
 
         // FIX-ME: Fix conflicting Time Zone entries...
@@ -7435,28 +7641,24 @@ let Initialize = async(START_OVER = false) => {
                             continue parsing;
                     }
 
-                    let newTime = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
-                        [H, M] = [newTime.getHours(), ('00' + newTime.getMinutes()).slice(-2)];
+                    let newDate = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
+                        newTime = newDate.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
+                        noChange = convertWordsToTimes(title.innerText).trim() == title.innerText.trim();
 
-                    if(meridiem.length) {
-                        M += (H < 12? 'A': 'P') + 'M';
-                        H += (H < 1? 12: H > 12? -12: 0);
-                    }
-
-                    newTime = `${H}:${M}`;
-
-                    let same = convertWordsToTimes(title.innerText).trim() == title.innerText.trim();
-
-                    title.innerText = titleText = convertWordsToTimes(title.innerText)
-                        .replace(regexp, ($0, $$, $_) => `{{?=${ btoa(newTime) }|${ btoa(same? $0: convertWordsToTimes.inReverse($0)) }}}`);
+                    if(Number.isNaN(+newDate))
+                        title.innerText = titleText = convertWordsToTimes(title.innerText)
+                            .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape($0)) }}}`);
+                    else
+                        title.innerText = titleText = convertWordsToTimes(title.innerText)
+                            .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape(newTime)) }|${ btoa(escape(noChange? $0: convertWordsToTimes.inReverse($0))) }}}`);
                 }
 
-            let regexp = /\{\{\?=(.+?)\|(.+?)\}\}/g;
+            let regexp = /\{\{time_zones\?=(.+?)\}\}/g;
             for(let MAX = 1000; --MAX > 0 && regexp.test(title.innerHTML);) {
-                let { $1, $2 } = RegExp,
-                    $0 = RegExp['$&'];
+                let [newText, oldText] = RegExp.$1.split('|'),
+                    text = RegExp['$&'];
 
-                title.innerHTML = title.innerHTML.replace($0, `<!--!time-->`);
+                title.innerHTML = title.innerHTML.replace(text, `<!--!time-->`);
                 [...title.childNodes]
                     .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent == '!time')
                     .map(comment => {
@@ -7464,10 +7666,13 @@ let Initialize = async(START_OVER = false) => {
                             id: `tt-time-zone-${ (new UUID) }`,
                             style: 'color:var(--user-complement-color); text-decoration:underline 2px',
                             contrast: THEME__PREFERRED_CONTRAST,
-                            innerHTML: atob($1).split('').join('&zwj;'),
-
-                            'tip-text': $2,
+                            innerHTML: unescape(atob(newText)).split('').join('&zwj;'),
                         });
+
+                        if(oldText?.length)
+                            span.setAttribute('tip-text', unescape(atob(oldText)).split('').join('&zwj;'));
+                        else
+                            span.removeAttribute('style');
 
                         comment.replaceWith(span);
                     });
@@ -7476,9 +7681,8 @@ let Initialize = async(START_OVER = false) => {
 
         for(let span of $('span[id^="tt-time-zone"i][tip-text]', true)) {
             let tipText = span.getAttribute('tip-text');
-            span.removeAttribute('tip-text');
 
-            new Tooltip(span, atob(tipText).split('').join('&zwj;'), { from: 'top' });
+            new Tooltip(span, tipText, { from: 'top' });
         }
 
         TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
@@ -7778,7 +7982,7 @@ let Initialize = async(START_OVER = false) => {
         let pill = $('.whispers__pill'),
             unread = parseInt(pill?.textContent) | 0;
 
-        if(!defined(pill))
+        if(nullish(pill))
             return JUDGE__STOP_WATCH('whisper_audio'), NOTIFIED.whisper = 0;
         if(NOTIFIED.whisper >= unread)
             return JUDGE__STOP_WATCH('whisper_audio');
@@ -7879,7 +8083,7 @@ let Initialize = async(START_OVER = false) => {
                 let container = $('[data-test-selector="chat-input-buttons-container"i]'),
                     ranking = $('#tt-channel-point-ranking');
 
-                if(!defined(container))
+                if(nullish(container))
                     return JUDGE__STOP_WATCH('points_receipt_placement__ranking');
 
                 let { rank } = STREAMER,
@@ -7897,7 +8101,7 @@ let Initialize = async(START_OVER = false) => {
                     string
                 );
 
-                if(!defined(ranking))
+                if(nullish(ranking))
                     container.insertBefore(ranking = (
                         furnish('div', { style: 'animation:1s fade-in 1;' },
                             furnish('div#tt-channel-point-ranking', { style: 'display:flex; position:relative; align-items:center; vertical-align:middle; height:100%;' })
@@ -7929,7 +8133,7 @@ let Initialize = async(START_OVER = false) => {
 
             let live_time = $('.live-time');
 
-            if(!defined(live_time))
+            if(nullish(live_time))
                 return RestartJob('points_receipt_placement');
 
             let classes = element => [...element.classList].map(label => '.' + label).join('');
@@ -7953,17 +8157,17 @@ let Initialize = async(START_OVER = false) => {
                     exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
                     exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
 
-                if(!defined(points_receipt))
+                if(nullish(points_receipt))
                     return RestartJob('points_receipt_placement');
 
                 let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
 
-                if(!defined(chat)) {
+                if(nullish(chat)) {
                     let framedData = PostOffice.get('points_receipt_placement');
 
                     window.PostOffice = PostOffice;
 
-                    if(!defined(framedData))
+                    if(nullish(framedData))
                         return;
 
                     balance ??= { textContent: framedData.balance };
@@ -7990,7 +8194,7 @@ let Initialize = async(START_OVER = false) => {
                     let time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
 
                     // It's been less than 5 minutes
-                    if(!defined(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
+                    if(nullish(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
                         return;
 
                     // Continue executing...
@@ -8126,7 +8330,7 @@ let Initialize = async(START_OVER = false) => {
         // Color the balance text
         $('[data-test-selector="balance-string"i]')?.setAttribute('tt-earned-all', await STREAMER.done);
 
-        if(!defined(richTooltip))
+        if(nullish(richTooltip))
             return JUDGE__STOP_WATCH('point_watcher_placement');
 
         // Remove the old face and values...
@@ -8136,7 +8340,7 @@ let Initialize = async(START_OVER = false) => {
             footer = footers[footers.length - 1],
             target = footer?.lastElementChild;
 
-        if(!defined(subtitle)) {
+        if(nullish(subtitle)) {
             let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true),
                 rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
 
@@ -8145,7 +8349,7 @@ let Initialize = async(START_OVER = false) => {
             target = rTarget;
         }
 
-        if(!defined(title) || !defined(target))
+        if(nullish(title) || nullish(target))
             return JUDGE__STOP_WATCH('point_watcher_placement');
 
         let [name, game] = title.textContent.split(/[^\w\s]/);
@@ -8233,7 +8437,7 @@ let Initialize = async(START_OVER = false) => {
 
         let richTooltip = $('[class*="channel-tooltip"i]:not([class*="offline"i])');
 
-        if(!defined(richTooltip)) {
+        if(nullish(richTooltip)) {
             if(parseBool(Settings.stream_preview_sound) && MAINTAIN_VOLUME_CONTROL)
                 SetVolume(parseBool(Settings.away_mode__volume_control) && AwayModeStatus? Settings.away_mode__volume: InitialVolume ?? 1);
             else if(parseBool(Settings.stream_preview_sound) && defined(STREAM_PREVIEW?.element))
@@ -8244,14 +8448,14 @@ let Initialize = async(START_OVER = false) => {
 
         let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip);
 
-        if(!defined(subtitle)) {
+        if(nullish(subtitle)) {
             let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true);
 
             title = rTitle;
             subtitle = rSubtitle;
         }
 
-        if(!defined(title))
+        if(nullish(title))
             return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW?.element?.remove();
 
         let [name] = title.textContent.split(/[^\w\s]/);
@@ -8309,7 +8513,7 @@ let Initialize = async(START_OVER = false) => {
                             if(!parseBool(Settings.stream_preview_sound))
                                 return;
 
-                            if(!defined(InitialVolume))
+                            if(nullish(InitialVolume))
                                 InitialVolume = GetVolume();
 
                             let hasAudio = element =>
@@ -8322,7 +8526,7 @@ let Initialize = async(START_OVER = false) => {
                             setInterval(() => {
                                 let doc = $('.tt-stream-preview--iframe')?.contentDocument;
 
-                                if(!defined(doc))
+                                if(nullish(doc))
                                     return;
 
                                 let playingAudio = hasAudio($('video', false, doc));
@@ -8385,7 +8589,7 @@ let Initialize = async(START_OVER = false) => {
 
         let live_time = $('.live-time');
 
-        if(!defined(live_time))
+        if(nullish(live_time))
             return RestartJob('watch_time_placement');
 
         switch(placement) {
@@ -8439,7 +8643,7 @@ let Initialize = async(START_OVER = false) => {
                 let watch_time = $('#tt-watch-time'),
                     time = GET_WATCH_TIME();
 
-                if(!defined(watch_time)) {
+                if(nullish(watch_time)) {
                     clearInterval(WATCH_TIME_INTERVAL);
                     return RestartJob('watch_time_placement');
                 }
@@ -8510,7 +8714,7 @@ let Initialize = async(START_OVER = false) => {
 
         let video = $('video') ?? $('video', false, $('#tt-embedded-video')?.contentDocument);
 
-        if(!defined(video))
+        if(nullish(video))
             return JUDGE__STOP_WATCH('recover_frames');
 
         let { paused } = video,
@@ -8541,7 +8745,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let container = $('video')?.closest('[class*="container"i]');
 
-                    if(!defined(container))
+                    if(nullish(container))
                         break __RecoverFrames_Embed__;
 
                     let { name } = STREAMER,
@@ -8570,7 +8774,7 @@ let Initialize = async(START_OVER = false) => {
                                 awaitOn(() => {
                                     let doc = $('#video')?.contentDocument;
 
-                                    if(!defined(doc))
+                                    if(nullish(doc))
                                         return /* No document */;
 
                                     let loadedVideo = hasVideo($('video', false, doc));
@@ -8657,7 +8861,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_stream = (video = $('video')) => {
         START__STOP_WATCH('recover_stream');
 
-        if(!defined(video))
+        if(nullish(video))
             return JUDGE__STOP_WATCH('recover_stream');
 
         let { paused } = video,
@@ -8689,7 +8893,7 @@ let Initialize = async(START_OVER = false) => {
                 playing = control.getAttribute('data-a-player-state') !== 'paused',
                 attempts = parseInt(control.getAttribute('attempts')) | 0;
 
-            if(!defined(control)) {
+            if(nullish(control)) {
                 WARN("No video controls presented.");
 
                 break __RecoverVideoProgramatically__;
@@ -8726,7 +8930,7 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.recover_stream)) {
         let video = $('video');
 
-        if(!defined(video))
+        if(nullish(video))
             break __RecoverStream__;
 
         video.addEventListener('pause', event => Handlers.recover_stream(event.currentTarget));
@@ -8751,7 +8955,7 @@ let Initialize = async(START_OVER = false) => {
 
         let errorMessage = $('[data-a-target^="player"i][data-a-target$="content-gate"i] [data-test-selector*="text"i]');
 
-        if(!defined(errorMessage))
+        if(nullish(errorMessage))
             return JUDGE__STOP_WATCH('recover_video');
 
         if(RECOVERING_VIDEO)
@@ -8838,7 +9042,7 @@ let Initialize = async(START_OVER = false) => {
 
         let error = $('main [data-a-target="core-error-message"i]');
 
-        if(!defined(error))
+        if(nullish(error))
             return JUDGE__STOP_WATCH('recover_pages');
 
         let message = error.textContent,
@@ -8875,7 +9079,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Take screenshots of the stream
         // Alt + Shift + X | Opt + Shift + X
-        if(!defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
+        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey) && altKey && shiftKey && key == 'X')
                     $('video', true).pop().copyFrame()
@@ -8887,7 +9091,7 @@ let Initialize = async(START_OVER = false) => {
         let help = document.body.getElementByText('space/k', 'i')?.closest('tbody');
 
         let f = furnish;
-        if(defined(help) && !defined($('.tt-extra-keyboard-shortcuts', false, help)))
+        if(defined(help) && nullish($('.tt-extra-keyboard-shortcuts', false, help)))
             for(let shortcut in GLOBAL_EVENT_LISTENERS)
                 if(/^(key(?:up|down)_)/i.test(shortcut)) {
                     let name = GLOBAL_EVENT_LISTENERS[shortcut].name,
@@ -8956,8 +9160,8 @@ let Initialize = async(START_OVER = false) => {
             }
 
             [up-next--body] *:is(button, h5) {
-                color: var(--user-complement-color) !important;
-                fill: var(--user-complement-color) !important;
+                --color: var(--user-complement-color) !important;
+                --fill: var(--user-complement-color) !important;
             }
 
             /* Apply contrast correction... div[contrast="low prefer dark"] */
@@ -9057,7 +9261,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                             parseBool(Settings.auto_claim_bonuses)?
                                                 (false
                                                     || defined($('#tt-auto-claim-bonuses'))
-                                                    || !defined($('[data-test-selector="balance-string"i]'))
+                                                    || nullish($('[data-test-selector="balance-string"i]'))
                                                     || parseBool(Settings.view_mode)
                                                     || STREAMER.veto
                                                     || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
@@ -9231,7 +9435,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         }, 50, results);
                     });
 
-                if(!defined(chat))
+                if(nullish(chat))
                     break ChatObserver;
 
                 observer.observe(chat, { childList: true });
@@ -9381,7 +9585,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         });
                     });
 
-                if(!defined(target))
+                if(nullish(target))
                     break VolumeObserver;
 
                 observer.observe(target, { attributes: true, childList: false, subtree: false });

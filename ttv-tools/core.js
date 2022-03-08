@@ -81,11 +81,11 @@ class UUID {
         let H1 = 0xDEADBEEF ^ seed,
             H2 = 0x41C6CE57 ^ seed;
 
-        for(let i = 0, code; i < string.length; ++i) {
-            code = string.charCodeAt(i);
+        for(let i = 0, char; i < string.length; ++i) {
+            char = string.charCodeAt(i);
 
-            H1 = Math.imul(H1 ^ code, 2654435761);
-            H2 = Math.imul(H2 ^ code, 1597334677);
+            H1 = Math.imul(H1 ^ char, 2654435761);
+            H2 = Math.imul(H2 ^ char, 1597334677);
         }
 
         H1 = Math.imul(H1 ^ (H1 >>> 16), 2246822507) ^ Math.imul(H2 ^ (H2 >>> 13), 3266489909);
@@ -157,7 +157,7 @@ class UUID {
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
             PUBLIC_KEY = `public-key=${ Manifest.version }`;
 
-        key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>'));
+        key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('~'));
 
         // Digest the message
         // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
@@ -498,7 +498,7 @@ async function LoadCache(keys = null, callback = () => {}) {
 async function RemoveCache(keys, callback = () => {}) {
     let remove = key => StorageSpace.removeItem(`ext.twitch-tools/${ encodeURI(key) }`);
 
-    if(!defined(keys))
+    if(nullish(keys))
         return;
 
     switch(keys.constructor) {

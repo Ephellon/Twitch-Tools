@@ -84,7 +84,7 @@
                         <label for='away_mode'></label>
                     </div>
                     <p tr-id>
-                        Adds a button to toggle <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                        Adds a button to toggle <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                     </p>
                     <p tr-id>
                         The keyboard shortcut <code id='key:alt-a'>Alt + A</code> can also be used.
@@ -101,7 +101,7 @@
                                         <label for='away_mode__hide_chat'></label>
                                     </div>
                                     <p tr-id>
-                                        Keep chat hidden while <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                                        Keep chat hidden while <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                                     </p>
                                 </div>
                             </div>
@@ -114,7 +114,7 @@
                                         <label for='away_mode__volume_control'></label>
                                     </div>
                                     <p tr-id>
-                                        Set the volume to <span unit='%'><input id='away_mode__volume' type='number' value='25' min='1' max='25'/></span> when <b attention-text up-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                                        Set the volume to <span unit='%'><input id='away_mode__volume' type='number' value='25' min='1' max='25'/></span> when <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                                     </p>
                                 </div>
                             </div>
@@ -333,6 +333,37 @@
                         <option value='closest' tr-id>Go with the closest to having all channel point rewards</option>
                         <option value='furthest' tr-id>Go with the furthest from having all channel point rewards</option>
                     </select>
+                </div>
+            </section>
+
+            <!-- Parse Commands -->
+            <section new='4.30'>
+                <div class='title' tr-id='parse-commands'><span small gold glyph='extensions'></span> Parse Commands</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='parse_commands' type='checkbox'/>
+                        <label for='parse_commands'></label>
+                    </div>
+                    <p tr-id>
+                        Parses <b alert-text top-tooltip='!command'>commands</b> found on the page.
+                    </p>
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Parse Commands&quot;'>Options</summary>
+                        <div>
+                            <div text-only>
+                                <div class='title' tr-id='parse-commands:options'>Create Links</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='parse_commands__create_links' type='checkbox' checked/>
+                                        <label for='parse_commands__create_links'></label>
+                                    </div>
+                                    <p tr-id>
+                                        <b>Parse Commands</b> will turn commands that contain links into their link.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -838,7 +869,7 @@
                                 <div class='title' tr-id='prevent-spam:options'>Message History</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        <b>Prevent Spam</b> will look back <span unit='&para;'><input id='prevent_spam_look_back' type='number' value='15' min='1' max='250' step='1' set='top-tooltip:this.min &mdash; this.max'/></span> lines to detect <b attention-text up-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.
+                                        <b>Prevent Spam</b> will look back <span unit='&para;'><input id='prevent_spam_look_back' type='number' value='15' min='1' max='250' step='1' set='top-tooltip:this.min &mdash; this.max'/></span> lines to detect <b attention-text top-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.
                                     </p>
                                 </div>
                             </div>
@@ -1488,6 +1519,23 @@
                     </p>
                     <p tr-id>
                         Keyboard shortcuts can be viewed by pressing <code id='key:shift-/'>Shift + /</code>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Low Data Usage -->
+            <section new='4.30'>
+                <div class='title' tr-id='@low-data-mode'><span small glyph='stats'></span> Low Data Usage</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='low_data_mode' type='checkbox' when-off='5' when-on='15'/>
+                        <label for='low_data_mode'></label>
+                    </div>
+                    <p tr-id>
+                        Forces the extension to use less data per hour.
+                    </p>
+                    <p tr-id>
+                        Current estimate <span valid='false'><input disabled stay-visible id='est-data-usage' type='number' value='0' controller='#low_data_mode'/></span>
                     </p>
                 </div>
             </section>

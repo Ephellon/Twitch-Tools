@@ -83,6 +83,9 @@ let // These are option names. Anything else will be removed
         // Greedy Raiding
         'greedy_raiding',
             'greedy_raiding_leave_before',
+        // Parse Commands
+        'parse_commands',
+            'parse_commands__create_links',
         // Prevent Raiding
         'prevent_raiding',
         // Prevent Hosting
@@ -213,6 +216,8 @@ let // These are option names. Anything else will be removed
         'experimental_mode',
         // Extra Keyboard Shortcuts
         'extra_keyboard_shortcuts',
+        // Low Data Mode
+        'low_data_mode',
         // User Defined Settings
         'user_language_preference',
 
@@ -676,7 +681,7 @@ let SETTINGS,
 let SUPPORTED_LANGUAGES = ["bg","cs","da","de","el","es","fi","fr","hu","it","ja","ko","nl","no","pl","ro","ru","sk","sv","th","tr","vi"];
 
 function RedoRuleElements(rules, ruleType) {
-    if(!defined(rules))
+    if(nullish(rules))
         return;
 
     rules = rules.split(',').sort();
@@ -1016,7 +1021,7 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
 Object.defineProperties(LoadSettings, {
     assignValue: {
         value: (element, value) => {
-            if(!defined(value))
+            if(nullish(value))
                 return;
 
             return element[{
@@ -1150,7 +1155,7 @@ $('#user_language_preference', true).map(select => {
     for(let language of languages) {
         let ISO = top.ISO_639_1[language];
 
-        if(!defined(ISO))
+        if(nullish(ISO))
             continue listing;
 
         let { name, code, dialect } = ISO,
@@ -1184,7 +1189,7 @@ $('#save, .save', true).map(element => element.onclick = async event => {
     awaitOn(() => {
         let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
 
-        if(!defined(invalid))
+        if(nullish(invalid))
             return true;
 
         let { top, left } = getOffset(invalid),
@@ -1247,7 +1252,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                 .pushToSearch({
                     url: encodeURIComponent(
                         parseURL(`json://${ id }.settings.js/`)
-                            .pushToSearch({ json: btoa(JSON.stringify({ ...SETTINGS, SyncSettings: null, syncDate: new Date().toJSON() })) })
+                            .pushToSearch({ json: btoa(escape(JSON.stringify({ ...SETTINGS, SyncSettings: null, syncDate: new Date().toJSON() }))) })
                             .href
                     )
                 });
@@ -1297,7 +1302,7 @@ $('#sync-settings--download').onmouseup = async event => {
                 throw `Invalid Upload ID "${ syncToken.toUpperCase() }"`;
 
             try {
-                data = JSON.parse(atob(decodeURIComponent(parseURL(url).searchParameters.json)));
+                data = JSON.parse(unescape(atob(decodeURIComponent(parseURL(url).searchParameters.json))));
             } catch(error) {
                 throw error;
             }
@@ -1544,7 +1549,7 @@ async function Translate(language = 'en', container = document) {
             if(json?.LANG_PACK_READY !== true) {
                 let ISO = ISO_639_1[language];
 
-                if(!defined(ISO))
+                if(nullish(ISO))
                     return;
 
                 let [latin] = ISO.name.split('/');
@@ -1591,7 +1596,7 @@ async function Translate(language = 'en', container = document) {
                         if([TEXT_NODE].contains(nodeType))
                             return node;
 
-                        if(!defined(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
+                        if(nullish(attributes) || ('tr-id' in attributes) || ('tr-skip' in attributes))
                             return;
 
                         return node;
@@ -1689,7 +1694,7 @@ document.body.onload = async() => {
 
     /* The extension was just installed (most likely the first run) */
     await(async() => {
-        if(!defined(search.installed))
+        if(nullish(search.installed))
             return;
 
         let onmousedown = event => event.currentTarget.classList.add('chosen'),
@@ -1705,7 +1710,7 @@ document.body.onload = async() => {
         return awaitOn(() => {
             let languageOptions = $('.language-select');
 
-            if(!defined(languageOptions))
+            if(nullish(languageOptions))
                 document.body.append(
                     furnish('div.language-select', {},
                         furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English (North American)`),
@@ -1714,7 +1719,7 @@ document.body.onload = async() => {
                             for(let language of languages) {
                                 let ISO = top.ISO_639_1[language];
 
-                                if(!defined(ISO))
+                                if(nullish(ISO))
                                     continue;
 
                                 let { name, code, dialect } = ISO,
@@ -1811,6 +1816,24 @@ document.body.onload = async() => {
                     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
                 });
 
+                // All developer features
+                $('#est-data-usage', true).map(input => {
+                    let estimate = async({ currentTarget }) =>
+                        await Storage.get('LIVE_REMINDERS', ({ LIVE_REMINDERS }) => {
+                            let output = currentTarget.closest('summary, .summary').querySelector('#est-data-usage'),
+                                multiplier = currentTarget.closest('[class]').querySelector(':is([when-off], [when-on])'),
+                                off = multiplier.getAttribute('when-off'),
+                                on = multiplier.getAttribute('when-on');
+
+                            let [value, unit] = ((LIVE_REMINDERS?.length | 0) * (60 / parseFloat(multiplier.checked? on: off)) * 2**20).suffix('iB/h', false, 'data').split(/(\D+)/).filter(s => s.length);
+
+                            output.value = value;
+                            output.parentElement.setAttribute('unit', unit);
+                        });
+
+                    ($(input.getAttribute('controller')).onchange = estimate)({ currentTarget: input });
+                });
+
                 // Add the "Experimental feature" tooltip
                 $('[id=":settings--experimental"i] section > .summary :not([hidden]) input', true)
                     .map(input => input.closest(':not(input)'))
@@ -1878,7 +1901,10 @@ document.body.onload = async() => {
                     input.onfocus = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', true);
                     input.onblur = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', false);
 
-                    input.oninput = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('valid', currentTarget.checkValidity());
+                    if(input.disabled)
+                        input.closest('[unit]').setAttribute('valid', false);
+                    else
+                        input.oninput = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('valid', currentTarget.checkValidity());
                 });
             }, 1000);
         })

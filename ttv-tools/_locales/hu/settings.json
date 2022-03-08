@@ -242,6 +242,14 @@
         "Menj a legközelebb az összes csatornapont jutalmadhoz",
         "Menj a legtávolabb az összes csatornapont jutalmatól"
     ],
+    "parse-commands": [
+        "Parancsok végrehajtása",
+        "Az oldalon található","parancsokat","hajtja végre"
+    ],
+    "parse-commands:options": [
+        "Hivatkozások létrehozása",
+        "Parancsok végrehajtása","a hivatkozásokat tartalmazó parancsokat a hivatkozásukba kapcsolja"
+    ],
     "prevent-hosting": [
         "A tárhely",
         "Bizonyos vagy az összes csatorna tárhelyének megakadályozása a",
@@ -701,6 +709,9 @@
         "Finom részletek használata",
         "A bővítmény Twitch™ API-adatainak használata a felhasználói élmény fokozása érdekében",
         "Ez nem gyűjt adatokat. Felhasználja a Twitch™ által gyűjtött adatokat"
+    ],
+    "@low-data-mode": [
+        "Alacsony adathasználat","A bővítményt óránként kevesebb adathasználatra kényszeríti","Jelenlegi becslés"
     ],
     "@default": [
         "Alapértelmezett értékek megjelenítése",

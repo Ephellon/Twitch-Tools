@@ -241,6 +241,14 @@
         "Vai con il più vicino ad avere tutti i premi dei punti canale",
         "Vai con il più lontano dall'avere tutti i punti premio del canale"
     ],
+    "parse-commands": [
+        "Esegui comandi",
+        "Esegui i","comandi","che trovi nella pagina"
+    ],
+    "parse-commands:options": [
+        "Crea collegamenti",
+        "Esegui comandi","trasformerà i comandi che contengono link nel relativo link"
+    ],
     "prevent-hosting": [
         "Impedisci l'hosting",
         "Impedisci l'hosting di alcuni o tutti i canali accedendo al",
@@ -698,6 +706,9 @@
         "Usa dettagli finali",
         "Consenti all'estensione di utilizzare i dati API di Twitch™ per migliorare la tua esperienza",
         "Questo non raccoglierà alcun dato. Utilizzerà i dati raccolti da Twitch™"
+    ],
+    "@low-data-mode": [
+        "Basso utilizzo dei dati","obbliga l'estensione a utilizzare meno dati all'ora","Stima attuale"
     ],
     "@default": [
         "Mostra valori predefiniti",

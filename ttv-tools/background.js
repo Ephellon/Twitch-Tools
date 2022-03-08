@@ -195,7 +195,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         Container.tabs.query({
             url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
         }, tabs => {
-            if(!defined(tabs))
+            if(nullish(tabs))
                 return;
 
             // Reload Twitch pages

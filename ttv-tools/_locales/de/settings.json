@@ -1,6 +1,7 @@
 {
     "[[SOURCE]]": "ROOT",
-    "LANG_PACK_READY": true,
+    "[[ERROR]]": "Dieses Dokument kann Übersetzungsfehler enthalten. Wenn Sie bei der Korrektur dieses Dokuments helfen möchten, besuchen Sie GitHub",
+    "LANG_PACK_READY": false,
     "?": {
         "save": [
             "Retten"
@@ -239,6 +240,14 @@
         "Gehe mit den meisten Kanalpunkten",
         "Gehe mit dem, der allen Kanalpunktprämien am nächsten kommst",
         "Gehe mit dem am weitesten entfernten Weg zu allen Kanalpunktbelohnungen"
+    ],
+    "parse-commands": [
+        "Execute-Befehle",
+        "Führt auf der Seite gefundene","Befehle","aus"
+    ],
+    "parse-commands:options": [
+        "Opret links",
+        "Execute-Befehle","wandelt Befehle, die Links enthalten, in ihren Link um"
     ],
     "prevent-hosting": [
         "Hosting verhindern",
@@ -697,6 +706,9 @@
         "Fine Details verwenden",
         "Erlaube der Erweiterung, Twitch-API-Daten™ zu verwenden, um deine Erfahrung zu verbessern",
         "Dadurch werden keine Daten gesammelt. Es verwendet die Daten, die Twitch™ gesammelt hat"
+    ],
+    "@low-data-mode": [
+        "Niedrige Datennutzung","Zwingt die Erweiterung, weniger Daten pro Stunde zu verwenden","Aktuelle Schätzung"
     ],
     "@default": [
         "Standardwerte anzeigen",

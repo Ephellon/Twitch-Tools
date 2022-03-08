@@ -239,6 +239,14 @@
         "Đi với gần nhất để có tất cả các phần thưởng điểm kênh",
         "Đi với xa nhất từ việc có tất cả các phần thưởng điểm kênh"
     ],
+    "parse-commands": [
+        "Thực thi Lệnh",
+        "Thực thi","lệnh","tìm thấy trên trang"
+    ],
+    "parse-commands:options": [
+        "Tạo Nối kết",
+        "Lệnh Thực thi","sẽ biến các lệnh chứa nối kết thành nối kết của chúng"
+    ],
     "prevent-hosting": [
         "Ngăn chặn Lưu trữ",
         "Ngăn chặn một số hoặc tất cả các kênh lưu trữ bằng cách vào Kênh tiếp theo",
@@ -692,6 +700,9 @@
         "Sử dụng Fine Details",
         "Cho phép tiện ích mở rộng sử dụng™ dữ liệu TWITCH API để nâng cao trải nghiệm của bạn",
         "Điều này sẽ không thu thập bất kỳ dữ liệu nào. Nó sẽ sử dụng dữ liệu twitch™ đã thu thập được"
+    ],
+    "@low-data-mode": [
+        "Mức sử dụng dữ liệu thấp","Buộc tiện ích mở rộng sử dụng ít dữ liệu hơn mỗi giờ","Ước tính hiện tại"
     ],
     "@default": [
         "Hiện Giá trị Mặc định",

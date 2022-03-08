@@ -241,6 +241,14 @@
         "Mene lähimpänä kaikkia kanavapistepalkintoja",
         "Siirry kauimpana kaikista kanavapistepalkinnoista"
     ],
+    "parse-commands": [
+        "Suorita komennot",
+        "Suorittaa sivulta löytyneet","komennot",""
+    ],
+    "parse-commands:options": [
+        "Luo linkkejä",
+        "Suorita komennot","muuttaa linkkejä sisältävät komennot linkikseen"
+    ],
     "prevent-hosting": [
         "Estä hosting",
         "Estä tiettyjä tai kaikkia kanavia isännöimästä menemällä",
@@ -696,6 +704,9 @@
         "Käytä hienoja yksityiskohtia",
         "Salli laajennuksen käyttää Twitch™ API -tietoja käyttökokemuksen parantamiseksi",
         "Tämä ei kerää mitään tietoja. Se käyttää Twitchin™ keräämiä tietoja"
+    ],
+    "@low-data-mode": [
+        "Matala tiedonsiirto","pakottaa laajennuksen käyttämään vähemmän dataa tunnissa","Nykyinen arvio"
     ],
     "@default": [
         "Näytä oletusarvot",

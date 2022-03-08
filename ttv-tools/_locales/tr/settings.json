@@ -238,6 +238,14 @@
         "Tüm kanal puanı ödüllerine sahip olmaya en yakın olanla git",
         "Tüm kanal puanı ödüllerine sahip olmaktan en uzak olanla git"
     ],
+    "parse-commands": [
+        "Komutları Yürüt",
+        "Sayfada bulunan komutları","yürütün",""
+    ],
+    "parse-commands:options": [
+        "Bağlantı Oluştur",
+        "Komutları Yürüt","bağlantıları içeren komutları bağlantılarına dönüştürecek"
+    ],
     "prevent-hosting": [
         "Barındırmayı Engelle",
         "Sonraki Kanala giderek belirli veya tüm kanalların barındırmasını engelleyin"
@@ -675,6 +683,9 @@
         "İnce Ayrıntıları Kullan",
         "Uzantının deneyiminizi geliştirmek için Twitch™ API verilerini kullanmasına izin verin",
         "Bu herhangi bir veri toplamaz. Twitch'in™ topladığı verileri kullanacak"
+    ],
+    "@low-data-mode": [
+        "Düşük Veri Kullanımı","Uzantıyı saatte daha az veri kullanmaya zorlar","Mevcut tahmin"
     ],
     "@default": [
         "Varsayılan Değerleri Göster",

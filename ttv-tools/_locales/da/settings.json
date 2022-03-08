@@ -241,6 +241,14 @@
         "Gå med det tætteste på at have alle kanalpointbelønninger",
         "Gå med længst fra at have alle kanalpointbelønninger"
     ],
+    "parse-commands": [
+        "Udfør kommandoer",
+        "Udfører","kommandoer","fundet på siden"
+    ],
+    "parse-commands:options": [
+        "Opret kæder",
+        "Udfør kommandoer","vil gøre kommandoer, der indeholder kæder, til deres link"
+    ],
     "prevent-hosting": [
         "Forhindre hosting",
         "Forhindre visse eller alle kanaler i at blive hosting ved at gå til",
@@ -698,6 +706,9 @@
         "Brug fine detaljer",
         "Tillad udvidelsen at bruge Twitch™ API-data til at forbedre din oplevelse",
         "Dette indsamler ingen data. Det vil bruge de data Twitch™ har indsamlet"
+    ],
+    "@low-data-mode": [
+        "Lavt dataforbrug","Tvinger udvidelsen til at bruge færre data i timen","Aktuelt estimat"
     ],
     "@default": [
         "Vis standardværdier",

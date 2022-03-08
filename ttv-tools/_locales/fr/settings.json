@@ -241,6 +241,14 @@
         "Allez avec le plus proche d’avoir toutes les récompenses de points de chaîne",
         "Allez avec le plus loin d’avoir toutes les récompenses de points de chaîne"
     ],
+    "parse-commands": [
+        "Exécuter les commandes",
+        "Exécute les","commandes","trouvées sur la page"
+    ],
+    "parse-commands:options": [
+        "Créer des liens",
+        "Exécuter des commandes","transformera les commandes contenant des liens en leur lien"
+    ],
     "prevent-hosting": [
         "Empêcher l’hébergement",
         "Empêcher certains ou tous les canaux d’héberger en accédant au",
@@ -697,6 +705,9 @@
         "Utiliser fine details",
         "Autoriser l’extension à utiliser les données de l’API Twitch™ pour améliorer votre expérience",
         "Cela ne collectera aucune donnée. Il utilisera les données que Twitch™ a collectées"
+    ],
+    "@low-data-mode": [
+        "Faible consommation de données","Force l'extension à utiliser moins de données par heure","Estimation actuelle"
     ],
     "@default": [
         "Afficher les valeurs par défaut",

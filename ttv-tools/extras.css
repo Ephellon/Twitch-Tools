@@ -337,7 +337,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     vertical-align: middle;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) *.emove {
+:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove {
     background-color: var(--color-red);
 }
 
@@ -349,12 +349,12 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
     background-color: var(--color-twitch-purple-10);
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) *.emove:hover  {
+:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove:hover  {
     background-color: var(--color-red-darker) !important;
 }
 
 :is(.tt-alert, .tt-confirm, .tt-prompt) *.edit:hover  {
-    background-color: var(--color-hinted-grey-6) !important;
+    background-color: var(--color-hinted-grey-7) !important;
 }
 
 :is(.tt-alert, .tt-confirm, .tt-prompt) :is(textarea, input) {

@@ -110,12 +110,12 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Actual jobbing
         let button = $('#tt-auto-claim-bonuses');
 
-        if(!defined(button)) {
+        if(nullish(button)) {
             let parent    = $('[data-test-selector="community-points-summary"i]'),
                 heading   = $('.top-nav__menu > div', true).slice(-1)[0],
                 container = furnish('div');
 
-            if(!defined(parent) || !defined(heading)) {
+            if(nullish(parent) || nullish(heading)) {
                 // setTimeout(Chat__Initialize, 5000);
                 return JUDGE__STOP_WATCH('auto_claim_bonuses');
             }
@@ -151,7 +151,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             button.icon ??= $('svg, img', false, container);
 
-            if(!defined($('.channel-points-icon', false, container)))
+            if(nullish($('.channel-points-icon', false, container)))
                 button.icon.outerHTML = Glyphs.channelpoints;
 
             button.icon = $('svg, img', false, container);
@@ -300,7 +300,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let container = $('[class*="emote-picker"i] [class*="emote-picker"i][class*="block"i] > *:last-child');
 
                     for(let node of nodes) {
-                        if(!defined(node))
+                        if(nullish(node))
                             continue;
 
                         node.setAttribute(`tt-${ type }-emote-search-result`, UUID.from(node.innerHTML).value);
@@ -439,7 +439,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(json => {
                         let { channelEmotes, sharedEmotes } = json;
 
-                        if(!defined(channelEmotes ?? sharedEmotes))
+                        if(nullish(channelEmotes ?? sharedEmotes))
                             return;
 
                         let emotes = [...channelEmotes, ...sharedEmotes];
@@ -458,7 +458,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .catch(WARN);
             // Load emotes with a certain name
             else if(defined(keyword))
-                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; !allLoaded && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; !allLoaded && (keyword || '').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
                     await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -610,7 +610,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
-        if(!defined(parent))
+        if(nullish(parent))
             return JUDGE__STOP_WATCH('bttv_emotes');
 
         // Put all BTTV emotes into the emote-picker list
@@ -683,7 +683,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             .then(() => {
                 let container = $('#tt-bttv-emotes-container');
 
-                if(!defined(container))
+                if(nullish(container))
                     return;
 
                 // Put all BTTV emotes into the emote-picker list
@@ -864,13 +864,13 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
-        if(!defined(parent))
+        if(nullish(parent))
             return RestartJob('convert_emotes');
 
         // Get the streamer's emotes and make them draggable
         let streamersEmotes = $(`[class^="emote-picker"i] img[alt="${ STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
 
-        if(!defined(streamersEmotes))
+        if(nullish(streamersEmotes))
             return RegisterJob('convert_emotes');
 
         for(let lock of $('[data-test-selector*="lock"i]', true, streamersEmotes)) {
@@ -935,7 +935,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Collect emotes
         let chat_emote_button = $('[data-a-target="emote-picker-button"i]');
 
-        if(!defined(chat_emote_button))
+        if(nullish(chat_emote_button))
             break __ConvertEmotes__;
 
         function CollectEmotes() {
@@ -943,7 +943,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let chat_emote_scroll = $('.emote-picker .simplebar-scroll-content');
 
-            if(!defined(chat_emote_scroll)) {
+            if(nullish(chat_emote_scroll)) {
                 chat_emote_button.click();
                 return setTimeout(CollectEmotes, 250);
             }
@@ -1080,65 +1080,39 @@ let Chat__Initialize = async(START_OVER = false) => {
         // UPDATE_RULES(ruleType:string={ "filter" "phrase" })
     let UPDATE_RULES = (ruleType) => {
         let rules = Settings[`${ ruleType }_rules`];
-
         let channel = [], user = [], badge = [], emote = [], text = [];
 
         if(defined(rules?.length)) {
             rules = rules.split(/\s*,\s*/).map(rule => rule.trim()).filter(rule => rule.length);
 
+            let R = RegExp;
             for(let rule of rules)
                 // /channel text
                 if(/^\/[\w\-]+/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    let name, text, user, badge, emote;
-
-                    $_.replace(/^\/([\w\-]+) +([<:]([^>]+?)[:>]|(@)?[^]*?)$/, ($0, $1, $2, $3, $4, $$, $_) => {
-                        name = $1;
-
-                        if($4 ?? false)
-                            user = $2;
-                        else if($3 ?? false)
-                            if($2[0] == ':')
-                                emote = $3;
-                            else
-                                badge = $3;
-                        else
-                            text = $2;
-                    });
-
-                    channel.push({ name, text, user, badge, emote });
+                    channel.push({ ...(/^\/(?<name>[\w\-]+) +(?:<(?<badge>[^>]+)>|:(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))$/.exec(rule).groups) });
                 }
                 // @username
-                else if(/^@[\w\-]+$/.test(rule) && !['@everyone', '@chat', '@all'].contains(rule.toLowerCase())) {
-                    let { $_ } = RegExp;
-
-                    user.push($_.replace(/^@/, ''));
+                else if(/^@([\w\-]+)$/.test(rule) && !['@everyone', '@chat', '@all'].contains(rule.toLowerCase())) {
+                    user.push(R.$1);
                 }
                 // <badge>
-                else if(/^<[\w\- ]+>$/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    badge.push($_.replace(/^<|>$/g, ''));
+                else if(/^<([\w\- ]+)>$/.test(rule)) {
+                    badge.push(R.$1);
                 }
                 // :emote:
-                else if(/^:[\w\- ]+:$/.test(rule)) {
-                    let { $_ } = RegExp;
-
-                    emote.push($_.replace(/^:|:$/g, ''));
+                else if(/^:([\w\- ]+):$/.test(rule)) {
+                    emote.push(R.$1);
                 }
                 // text
                 else if(rule) {
-                    let $_ = rule;
-
-                    text.push(/^[\w\s]+$/.test($_)? `\\b${ $_.trim() }\\b`: $_);
+                    text.push(/^[\w\s]+$/.test(rule)? `\\b${ rule.trim() }\\b`: rule);
                 }
         }
 
         return {
             text: (text.length? RegExp(`(${ text.join('|') })`, 'i'): /^[\b]$/),
             user: (user.length? RegExp(`(${ user.join('|') })`, 'i'): /^[\b]$/),
-            emote: (emote.length? RegExp(`(${ emote.join('|').replace(/:\b|\b:/g, '') })`, 'i'): /^[\b]$/),
+            emote: (emote.length? RegExp(`(${ emote.join('|') })`, 'i'): /^[\b]$/),
             badge: (badge.length? RegExp(`(${ badge.join('|') })`, 'i'): /^[\b]$/),
             channel
         }
@@ -1167,6 +1141,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                 let { message, mentions, author, badges, emotes, element } = line,
                     reason;
 
+                let censoring = parseBool(element.getAttribute('tt-hidden-message'));
+
+                if(censoring)
+                    continue censoring;
+
                 let censor = parseBool(false
                     // Filter users on all channels
                     || (Filter.user.test(author)? reason = 'user': false)
@@ -1178,27 +1157,29 @@ let Chat__Initialize = async(START_OVER = false) => {
                     || (Filter.text.test(message)? reason = 'text': false)
                     // Filter messages/users on specific a channel
                     || Filter.channel.map(({ name, text, user, badge, emote }) => {
-                        if(!defined(STREAMER))
+                        if(nullish(STREAMER))
                             return;
 
                         let channel = STREAMER.name?.toLowerCase();
 
-                        return parseBool(false
-                            || channel == name.toLowerCase()
-                        ) && parseBool(false
-                            || (('@' + author) == user? reason = 'channel user': false)
-                            || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                            || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
-                            || (text?.test?.(message)? reason = 'channel text': false)
+                        return (true
+                            && (false
+                                || channel == name.toLowerCase()
+                            )
+                            && (false
+                                || (('@' + author) == user? reason = 'channel user': false)
+                                || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                                || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                                || (RegExp(text, 'i').test(message)? reason = 'channel text': false)
+                            )
                         )
                     }).contains(true)
-                ),
-                    censoring = parseBool(element.getAttribute('tt-hidden-message'));
+                );
 
-                if(censoring || !censor)
+                if(!censor)
                     continue censoring;
 
-                let hidden = element.getAttribute('tt-hidden-message') === 'true';
+                let hidden = parseBool(element.getAttribute('tt-hidden-message'));
 
                 if(hidden || mentions.contains(USERNAME))
                     continue;
@@ -1243,7 +1224,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
             existing = $('#tt-filter-rule--user, #tt-filter-rule--emote');
 
-        if(!defined(card) || defined(existing))
+        if(nullish(card) || defined(existing))
             return;
 
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
@@ -1433,7 +1414,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     || (Phrases.text.test(message)? reason = 'text': false)
                     // Phrase of messages/users on specific a channel
                     || Phrases.channel.map(({ name, text, user, badge, emote }) => {
-                        if(!defined(STREAMER))
+                        if(nullish(STREAMER))
                             return;
 
                         let channel = STREAMER.name?.toLowerCase();
@@ -1497,7 +1478,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]'),
             existing = $('#tt-highlight-rule--user, #tt-highlight-rule--emote');
 
-        if(!defined(card) || defined(existing))
+        if(nullish(card) || defined(existing))
             return;
 
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
@@ -1593,7 +1574,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.easy_helper_card_resizer = () => {
         let card = $('[data-a-target="viewer-card"i], [data-a-target="emote-card"i]');
 
-        if(!defined(card))
+        if(nullish(card))
             return;
 
         let title = $('h1,h2,h3,h4,h5,h6', false, card),
@@ -1715,7 +1696,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('native_twitch_reply');
 
         // Enter
-        if(!defined(GLOBAL_EVENT_LISTENERS.ENTER))
+        if(nullish(GLOBAL_EVENT_LISTENERS.ENTER))
             $('[data-a-target="chat-input"i]')?.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
                 if(!(altKey || ctrlKey || metaKey || shiftKey) && key == 'Enter')
                     $('#tt-close-native-twitch-reply')?.click();
@@ -1836,7 +1817,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             // Highlighter for chat elements
             AddNativeReplyButton: ({ uuid, style, handle, message, mentions, element }) => {
-                if(!defined(element))
+                if(nullish(element))
                     return;
 
                 if(defined($('.chat-line__message-container', false, element)))
@@ -1846,10 +1827,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                     return;
 
                 let parent = $('div', false, element);
-                if(!defined(parent)) return;
+                if(nullish(parent)) return;
 
                 let target = $('div', false, parent);
-                if(!defined(target)) return;
+                if(nullish(target)) return;
 
                 let highlighter = furnish('div.chat-line__message-highlight.tt-absolute.tt-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
 
@@ -2119,7 +2100,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('rewards_calculator');
 
         __GetMultiplierAmount__:
-        if(!defined(CHANNEL_POINTS_MULTIPLIER)) {
+        if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
             let button = $('[data-test-selector="community-points-summary"i] button');
 
             if(defined(button)) {
@@ -2133,13 +2114,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             }
         }
 
-        let have = parseInt(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
-            goal = parseInt($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') ?? 0),
-            need = goal - have;
+        let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.closest?.('button');
 
-        let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.parentElement;
-
-        if(!defined(container))
+        if(nullish(container))
             return JUDGE__STOP_WATCH('rewards_calculator'), REWARDS_CALCULATOR_TOOLTIP = null;
 
         // Average broadcast time is 4.5h
@@ -2147,8 +2124,15 @@ let Chat__Initialize = async(START_OVER = false) => {
         let averageBroadcastTime = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
             activeDaysPerWeek = (STREAMER.data?.activeDaysPerWeek ?? 5),
             pointsEarnedPerHour = 120 + (200 * +Settings.auto_claim_bonuses); // https://help.twitch.tv/s/article/channel-points-guide
-
         let timeLeftInBroadcast = averageBroadcastTime - (STREAMER.time / 3_600_000);
+
+        // Set the progress bar of the button
+        let have = parseFloat(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
+            este = parseFloat(timeLeftInBroadcast * pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER),
+            goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
+            need = goal - have;
+
+        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-text-live) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0)`);
 
         let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
 
@@ -2619,7 +2603,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
         let iframe = $('iframe#tt-proxy-chat'),
             div = furnish('div.tt-flex');
 
-        if(!defined(iframe))
+        if(nullish(iframe))
             return;
 
         iframe.parentElement.replaceChild(div, iframe);
@@ -2784,7 +2768,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             callback(results);
                     });
 
-                if(!defined(chat))
+                if(nullish(chat))
                     break ChatObserver;
 
                 observer.observe(chat, { childList: true });

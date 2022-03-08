@@ -241,6 +241,14 @@
         "Du-te cu cel mai aproape de a avea toate recompensele punct de canal",
         "Du-te cu cel mai îndepărtat de a avea toate recompensele punct de canal"
     ],
+    "parse-commands": [
+        "Executare comenzi",
+        "Executați","comenzile","găsite pe pagină"
+    ],
+    "parse-commands:options": [
+        "Creare link-uri",
+        "Executare comenzi","va transforma comenzile care conțin link-uri în link-ul lor"
+    ],
     "prevent-hosting": [
         "Împiedicați găzduirea",
         "Împiedicați anumite sau toate canalele să găzduiască accesând",
@@ -697,6 +705,9 @@
         "Utilizați detalii fine",
         "Permiteți extensiei să utilizeze datele API Twitch™ pentru a vă îmbunătăți experiența",
         "Acest lucru nu va colecta date. Acesta va folosi datele colectate de Twitch™"
+    ],
+    "@low-data-mode": [
+        "Utilizare scăzută a datelor","Forțează extensia să utilizeze mai puține date pe oră","Estimare curentă"
     ],
     "@default": [
         "Afișare valori implicite",

@@ -241,6 +241,14 @@
         "Idź z najbliższymi do posiadania wszystkich nagród za punkty kanału",
         "Idź z najdalej od posiadania wszystkich nagród za punkty kanału"
     ],
+    "parse-commands": [
+        "Wykonywanie poleceń",
+        "Wykonaj","polecenia","znalezione na stronie"
+    ],
+    "parse-commands:options": [
+        "Utwórz łącza",
+        "Wykonaj polecenia","zamieni polecenia zawierające łącza w ich łącza"
+    ],
     "prevent-hosting": [
         "Zapobiegaj hostingowi",
         "Zapobiegaj hostowaniu niektórych lub wszystkich kanałów, przechodząc do",
@@ -698,6 +706,9 @@
         "Użyj drobnych szczegółów",
         "Zezwól rozszerzeniu na używanie danych API Twitcha™ w celu zwiększenia twojego doświadczenia",
         "Nie będzie to zbierać żadnych danych. Wykorzysta dane zebrane przez Twitcha™"
+    ],
+    "@ow-data-mode": [
+        "Niskie użycie danych","wymusza na rozszerzeniu wykorzystanie mniejszej ilości danych na godzinę","Bieżące oszacowanie"
     ],
     "@default": [
         "Pokaż wartości domyślne",

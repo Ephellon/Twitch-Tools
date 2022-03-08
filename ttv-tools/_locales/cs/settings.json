@@ -241,6 +241,14 @@
         "Jít s nejbližšími odměnami za všechny body kanálu",
         "Jít s nejvzdálenějšími od toho, abyste měli všechny odměny za body kanálu"
     ],
+    "parse-commands": [
+        "Provádí příkazy",
+        "Provádí","příkazy","nalezené na stránce"
+    ],
+    "parse-commands:options": [
+        "Vytvořit odkazy",
+        "Spustit příkazy","změní příkazy, které obsahují odkazy, na jejich odkaz"
+    ],
     "prevent-hosting": [
         "Zabránit hostování",
         "Zabraňte některým nebo všem kanálům v hostování tím, že přejdete na",
@@ -696,6 +704,9 @@
         "Použít jemné podrobnosti",
         "Povolit rozšíření používat™ data Twitch API ke zlepšení vašeho zážitku",
         "Tím se nebudou shromažďovat žádná data. Použije data, která Twitch™ shromáždil"
+    ],
+    "@low-data-mode": [
+        "Nízké využití dat","Přinutí rozšíření používat méně dat za hodinu","Aktuální odhad"
     ],
     "@default": [
         "Zobrazit výchozí hodnoty",

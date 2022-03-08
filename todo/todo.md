@@ -30,10 +30,29 @@
 11. Live Reminders might spam notifications?
     * Happens when re-doing a channel's reminder, as the channel is live (before being activated)
     * Tentative fix `4.29`
+12. Pause First in Line when observing a raid
+13. Get better translations--or remove them altogether
+    * The translations are incorrect and more confusing
+    * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`4.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.30)
+- Adjusted message filtering logic
+- Adjusted color-naming logic
+- Added `GetChat(...).commands`
+- Adjusted Greedy Raiding logic
+- Added `get GetChat.restrictions`
+- Fixed some styling issues
+- Fixed issue with Live Reminder alerts
+- Added Parse Commands
+- Adjusted Time Zone logic
+- Adjusted Live Reminder logic
+- Added Low Data Usage
+- Added styling to "X amount of points required" buttons
+- Added support for cloud-saving non-Latin characters
+
 > [`4.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.29)
 - Fixed First in Line sorting issue
 - Adjusted Time Zone logic to include prefixed zones

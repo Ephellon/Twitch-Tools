@@ -443,7 +443,11 @@ input:not(:checked) ~ label[for$=":checked"] {
 }
 
 [disabled] {
-    opacity: .3 !important;
+    opacity: .5 !important;
+}
+
+[stay-visible], [disabled] [disabled] {
+    opacity: 1 !important;
 }
 
 [hidden] {

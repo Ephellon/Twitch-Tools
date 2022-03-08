@@ -243,6 +243,14 @@
         "Gå med det närmaste att ha alla kanalpoängbelöningar",
         "Gå längst från att ha alla kanalpoängbelöningar"
     ],
+    "parse-commands": [
+        "Kör kommandon",
+        "Utför","kommandona","som finns på sidan"
+    ],
+    "parse-commands:options": [
+        "Skapa länkar",
+        "Kör kommandon","förvandlar kommandon som innehåller länkar till länken"
+    ],
     "prevent-hosting": [
         "Förhindra hosting",
         "Förhindra att vissa eller alla kanaler är värdar genom att gå till",
@@ -700,6 +708,9 @@
         "Använd Fine Details",
         "Tillåt tillägget att använda Twitch™ API-data för att förbättra din upplevelse",
         "Detta samlar inte in några data. Den kommer att använda de data som Twitch™ har samlat in"
+    ],
+    "@low-data-mode": [
+        "Låg dataanvändning","Tvingar tillägget att använda mindre data per timme","Aktuell uppskattning"
     ],
     "@default": [
         "Visa standardvärden",

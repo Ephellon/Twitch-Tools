@@ -1,6 +1,7 @@
 {
     "[[SOURCE]]": "ROOT",
-    "LANG_PACK_READY": true,
+    "[[ERROR]]": "Este documento puede contener errores de traducción. Si desea ayudar a corregir este documento, visite GitHub",
+    "LANG_PACK_READY": false,
     "?": {
         "save": [
             "Salvar"
@@ -239,6 +240,14 @@
         "Ir con la mayor cantidad de puntos de canal",
         "Ir con el más cercano a tener todas las recompensas de puntos de canal",
         "Ir con el más lejos de tener todas las recompensas de puntos de canal"
+    ],
+    "parse-commands": [
+        "Ejecutar comandos",
+        "Ejecuta los","comandos","que se encuentran en la página"
+    ],
+    "parse-commands:options": [
+        "Crear enlaces",
+        "Ejecutar comandos","convertirá los comandos que contienen enlaces en su enlace"
     ],
     "prevent-hosting": [
         "Impedir el alojamiento",
@@ -694,6 +703,9 @@
         "Usa Detalles finos",
         "Permite que la extensión use datos de la API de Twitch™ para mejorar tu experiencia",
         "Esto no recopilará ningún dato. Utilizará los datos que Twitch™ ha recopilado"
+    ],
+    "@low-data-mode": [
+        "Bajo uso de datos","obliga a la extensión a usar menos datos por hora","Estimación actual"
     ],
     "@default": [
         "Mostrar valores predeterminados",

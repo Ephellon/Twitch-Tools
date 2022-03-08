@@ -241,6 +241,14 @@
         "Gå med nærmest å ha alle kanalpoengbelønninger",
         "Gå med lengst fra å ha alle kanalpoengbelønninger"
     ],
+    "parse-commands": [
+        "Utfør kommandoer",
+        "Utfør","kommandoene","du finner på siden"
+    ],
+    "parse-commands:options": [
+        "Opprett koblinger",
+        "Utfør kommandoer","vil gjøre kommandoer som inneholder koblinger, om til koblingen"
+    ],
     "prevent-hosting": [
         "Forhindre hosting",
         "Forhindre at bestemte eller alle kanaler er vert ved å gå til",
@@ -698,6 +706,9 @@
         "Bruk fine detaljer",
         "Tillat utvidelsen å bruke Twitch™ API-data for å forbedre opplevelsen din",
         "Dette vil ikke samle inn data. Den vil bruke dataene Twitch™ har samlet inn"
+    ],
+    "@low-data-mode": [
+        "Lavt databruk","Tvinger utvidelsen til å bruke mindre data per time","Nåværende estimat"
     ],
     "@default": [
         "Vis standardverdier",

@@ -144,6 +144,15 @@
 			"Go with the furthest from having all channel point rewards"
     	],
 
+	"parse-commands": [
+		"Parse Commands",
+		"Parses", "commands", "found on the page"
+	],
+		"parse-commands:options": [
+			"Create Links",
+			"Parse Commands", "will turn commands that contain links into their link"
+		],
+
 	"prevent-hosting": [
 		"Prevent Hosting",
 		"Prevent certain or all channels from hosting by going to the",
@@ -564,6 +573,12 @@
 		"Use Fine Details",
 		"Allow the extension to use Twitch™ API data to enhance your experience",
 		"This will not collect any data. It will use the data Twitch™ has collected"
+	],
+
+	"@low-data-mode": [
+		"Low Data Usage",
+		"Forces the extension to use less data per hour",
+		"Current estimate"
 	],
 
 	"@default": [
