@@ -322,8 +322,8 @@ function $(selector, multiple = false, container = document) {
 Object.defineProperties($, {
     html: {
         value: {
-            getElementByText: Element.prototype.getElementByText.bind(document.firstElementChild),
-            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.firstElementChild),
+            getElementByText: Element.prototype.getElementByText.bind(document.documentElement),
+            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.documentElement),
         },
 
         writable: false,
@@ -354,7 +354,7 @@ Object.defineProperties($, {
     },
 
     getElementByText: {
-        value: Element.prototype.getElementByText.bind(document.firstElementChild),
+        value: Element.prototype.getElementByText.bind(document.documentElement),
 
         writable: false,
         enumerable: false,
@@ -362,7 +362,7 @@ Object.defineProperties($, {
     },
 
     getElementsByTextContent: {
-        value: Element.prototype.getElementsByTextContent.bind(document.firstElementChild),
+        value: Element.prototype.getElementsByTextContent.bind(document.documentElement),
 
         writable: false,
         enumerable: false,

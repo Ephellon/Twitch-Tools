@@ -1957,12 +1957,19 @@ let Chat__Initialize = async(START_OVER = false) => {
             AddCustomCSSBlock('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
 
         (GetChat.defer.onnewmessage = chat => {
+            let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
+
             chat.filter(line => !line.deleted)
                 .forEach(({ element }) => {
                     let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
 
-                    if(keep)
+                    if(keep) {
                         element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
+
+                        allNodes(element)
+                            .filter(node => /\btext\b/i.test(node.nodeName))
+                            .map(text => text.nodeValue = text.nodeValue.normalize('NFKD'));
+                    }
                 });
         })(GetChat());
     };
@@ -2132,7 +2139,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
 
-        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-text-live) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0)`);
+        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-text-live) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); text-shadow:0 0 1px var(--color-background-alt);`);
 
         let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
 

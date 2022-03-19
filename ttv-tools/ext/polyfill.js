@@ -1925,9 +1925,10 @@ Date.prototype.getWeek = function getWeek() {
 };
 
 // Returns an element based upon its text content
-    // Element..getElementByText(searchText:string|regexp[, flags:string]) → Element | null
+    // Element..getElementByText(searchText:string|regexp|array[, flags:string]) → Element | null
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
-    let searchType = (searchText instanceof RegExp? 'regexp': typeof searchText);
+    let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
+        UNICODE_FLAG = false;
 
     if(!(searchText?.length ?? searchText?.source))
         throw 'Can not search for empty text';
@@ -1935,25 +1936,41 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
     let container = this,
         owner = null,
         thisIsOwner = true;
+    let { textContent } = this;
+
+    function normalize(string = '', unicode = UNICODE_FLAG) {
+        return (unicode? string.normalize('NFKD'): string);
+    }
 
     switch(searchType) {
+        case 'array': {
+            searching:
+            for(let search of searchText)
+                if(defined(owner ??= this.getElementByText(search, flags)))
+                    break searching;
+        } break;
+
         case 'regexp': {
             searchText = RegExp(searchText.source, searchText.flags || flags);
+            UNICODE_FLAG = searchText.flags.contains('u');
+
+            // Replace special characters...
+            textContent = normalize(textContent);
 
             // See if the element contains the text...
-            if(!searchText.test(this.textContent))
+            if(!searchText.test(textContent))
                 return null;
 
             searching:
             while(nullish(owner)) {
                 for(let child of container.children)
-                    if([...child.children].filter(element => searchText.test(element.textContent)).length) {
+                    if([...child.children].filter(element => searchText.test(normalize(element.textContent))).length) {
                         // A sub-child is the text container
                         container = child;
                         thisIsOwner = false;
 
                         continue searching;
-                    } else if(searchText.test(child.textContent)) {
+                    } else if(searchText.test(normalize(child.textContent))) {
                         // This is the text container
                         owner = child;
                         thisIsOwner = false;
@@ -1965,32 +1982,34 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
                 if(thisIsOwner)
                     owner = this;
             }
-
-            return owner;
         } break;
 
         default: {
             // Convert to a string...
             searchText += '';
+            UNICODE_FLAG = flags.contains('u');
+
+            // Replace special characters...
+            textContent = normalize(textContent);
 
             if(flags.contains('i')) {
                 // Ignore-case mode
                 searchText = searchText.toLowerCase();
 
                 // See if the element contains the text...
-                if(!this.textContent?.toLowerCase()?.contains(searchText))
+                if(!textContent.toLowerCase().contains(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
                     for(let child of container.children)
-                        if([...child.children].filter(element => element.textContent?.toLowerCase()?.contains(searchText)).length) {
+                        if([...child.children].filter(element => normalize(element.textContent).toLowerCase().contains(searchText)).length) {
                             // A sub-child is the text container
                             container = child;
                             thisIsOwner = false;
 
                             continue searching;
-                        } else if(child.textContent?.toLowerCase()?.contains(searchText)) {
+                        } else if(normalize(child.textContent).toLowerCase().contains(searchText)) {
                             // This is the text container
                             owner = child;
                             thisIsOwner = false;
@@ -2005,19 +2024,19 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
             } else {
                 // Normal (perfect-match) mode
                 // See if the element contains the text...
-                if(!this.textContent?.contains(searchText))
+                if(!textContent.contains(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
                     for(let child of container.children)
-                        if([...child.children].filter(element => element.textContent?.contains(searchText)).length) {
+                        if([...child.children].filter(element => normalize(element.textContent).contains(searchText)).length) {
                             // A sub-child is the text container
                             container = child;
                             thisIsOwner = false;
 
                             continue searching;
-                        } else if(child.textContent?.contains(searchText)) {
+                        } else if(normalize(child.textContent).contains(searchText)) {
                             // This is the text container
                             owner = child;
                             thisIsOwner = false;
@@ -2030,28 +2049,43 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
                         owner = this;
                 }
             }
-
-            return owner;
         } break;
     }
+
+    return owner;
 };
 
 // Returns an array of elements that contain the text content
-    // Element..getElementsByTextContent(searchText:string|regexp[, flags:string]) → array
+    // Element..getElementsByTextContent(searchText:string|regexp|array[, flags:string]) → array
 Element.prototype.getElementsByTextContent ??= function getElementsByTextContent(searchText, flags = '') {
-    let searchType = (searchText instanceof RegExp? 'regexp': typeof searchText);
+    let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
+        UNICODE_FLAG = false;
 
-    if(!(searchText?.length ?? searchText?.source))
+    if(nullish(searchText?.length ?? searchText?.source))
         throw 'Can not search for empty text';
 
     let containers = [];
+    let { textContent } = this;
+
+    function normalize(string = '', unicode = UNICODE_FLAG) {
+        return (unicode? string.normalize('NFKD'): string);
+    }
 
     switch(searchType) {
+        case 'array': {
+            for(let search of searchText)
+                containers.push(...this.getElementsByTextContent(search, flags));
+        } break;
+
         case 'regexp': {
             searchText = RegExp(searchText.source, searchText.flags || flags);
+            UNICODE_FLAG = searchText.flags.contains('u');
+
+            // Replace special characters...
+            textContent = normalize(textContent);
 
             // See if the element contains the text...
-            if(!searchText.test(this.textContent))
+            if(!searchText.test(textContent))
                 break;
             containers.push(this);
 
@@ -2060,11 +2094,11 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
             collecting:
             while(child = children.pop())
-                if([...child.children].filter(element => searchText.test(element.textContent)).length) {
+                if([...child.children].filter(element => searchText.test(normalize(element.textContent))).length) {
                     // A sub-child contains the text
                     containers.push(child);
                     children = [...new Set([...children, ...child.children])];
-                } else if(searchText.test(child.textContent)) {
+                } else if(searchText.test(normalize(child.textContent))) {
                     // This contains the text
                     containers.push(child);
                 }
@@ -2073,13 +2107,17 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
         default: {
             // Convert to a string...
             searchText += '';
+            UNICODE_FLAG = flags.contains('u');
+
+            // Replace special characters...
+            textContent = normalize(textContent);
 
             if(flags.contains('i')) {
                 // Ignore-case mode
                 searchText = searchText.toLowerCase();
 
                 // See if the element contains the text...
-                if(!this.textContent?.toLowerCase()?.contains(searchText))
+                if(!textContent.toLowerCase().contains(searchText))
                     break;
                 containers.push(this);
 
@@ -2088,18 +2126,18 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
                 collecting:
                 while(child = children.pop())
-                    if([...child.children].filter(element => element.textContent?.toLowerCase()?.contains(searchText)).length) {
+                    if([...child.children].filter(element => normalize(element.textContent).toLowerCase().contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
                         children = [...new Set([...children, ...child.children])];
-                    } else if(child.textContent?.toLowerCase()?.contains(searchText)) {
+                    } else if(normalize(child.textContent).toLowerCase().contains(searchText)) {
                         // This contains the text
                         containers.push(child);
                     }
             } else {
                 // Normal (perfect-match) mode
                 // See if the element contains the text...
-                if(!this.textContent?.contains(searchText))
+                if(!textContent.contains(searchText))
                     break;
                 containers.push(this);
 
@@ -2108,11 +2146,11 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
                 collecting:
                 while(child = children.pop())
-                    if([...child.children].filter(element => element.textContent?.contains(searchText)).length) {
+                    if([...child.children].filter(element => normalize(element.textContent).contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
                         children = [...new Set([...children, ...child.children])];
-                    } else if(child.textContent?.contains(searchText)) {
+                    } else if(normalize(child.textContent).contains(searchText)) {
                         // This contains the text
                         containers.push(child);
                     }
@@ -2121,6 +2159,17 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
     }
 
     return [...new Set(containers)];
+};
+
+// Returns a function's name as a formatted title
+    // Function..toTitle() → String
+Function.prototype.toTitle ??= function toTitle() {
+    return (this?.name || '')
+        .replace(/\$\$/g, ' | ')
+        .replace(/\$/g, '/')
+        .replace(/__/g, ' - ')
+        .replace(/_/g, ' ')
+        .trim();
 };
 
 // https://stackoverflow.com/a/35859991/4211612
@@ -2184,6 +2233,30 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     canvas?.remove();
 
     return promise;
+};
+
+// Returns an iterable range (inclusive)
+    // Number..to([end:number[, by:number]]) → @@Iterator
+Number.prototype.to ??= function to(end = 0, by = 1) {
+    let { abs } = Math;
+    let step = abs(by),
+        start = this + (this < end? -step: +step),
+        stop = end + (this < end? +step: -step),
+        SAFE = Math.min(abs(start) + abs(stop), Math.sqrt(Number.MAX_SAFE_INTEGER).floor());
+
+    return ({
+        next() {
+            start += (start < stop? +step: -step);
+
+            return ({ value: start, done: (start == stop || ++this[Symbol.unscopables] > SAFE) });
+        },
+
+        [Symbol.iterator]() {
+            return this;
+        },
+
+        [Symbol.unscopables]: 0,
+    });
 };
 
 // Converts SVGs to images
@@ -2262,7 +2335,8 @@ function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
         sign = number < 0? '-': '',
-        suffix = '';
+        suffix = '',
+        padded = false;
 
     number = Math.abs(number);
 
@@ -2271,9 +2345,10 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 
     switch(format.toLowerCase()) {
         case 'imperial': {
+            padded = true;
             system.large = 'thous m b tr quadr qunit sext sept oct non'
                 .split(' ')
-                .map((suffix, index) => ' ' + suffix + ['and', 'illion'][+!!index]);
+                .map((suffix, index) => suffix + ['and', 'illion'][+!!index]);
             system.small = system.large.map(suffix => suffix + 'ths');
         } break;
 
@@ -2313,13 +2388,18 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
         }
     }
 
-    return sign + (
-        decimalPlaces === true?
-            number:
-        decimalPlaces === false?
-            Math.round(number):
-        number.toFixed(decimalPlaces)
-    ) + suffix + unit;
+    return [''
+        + sign
+        + (
+            decimalPlaces === true?
+                number:
+            decimalPlaces === false?
+                Math.round(number):
+            number.toFixed(decimalPlaces)
+        )
+        , suffix
+        , unit
+    ].join(padded? ' ': '');
 };
 
 // Floors a number to the nearest X

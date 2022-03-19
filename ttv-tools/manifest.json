@@ -1,11 +1,11 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
 
     "name": "__MSG_name__",
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "4.30",
+    "version": "5.0",
     "minimum_chrome_version": "85",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -79,8 +79,8 @@
     ],
 
 	"background": {
-		"scripts": ["ext/polyfill.js", "background.js"],
-		"persistent": false
+		"service_worker": "background.js",
+        "type": "module"
 	},
 
     "options_page": "settings.html",
@@ -89,7 +89,7 @@
         "open_in_tab": true
     },
 
-    "browser_action": {
+    "action": {
         "default_icon": {
             "16": "16.g.png",
             "32": "32.g.png",
@@ -100,13 +100,23 @@
         "default_popup": "settings.html?popup=1"
     },
 
-    "permissions": [
+    "host_permissions": [
         "*://player.twitch.tv/*",
         "*://www.twitch.tv/*",
-        "*://twitch.tv/*",
+        "*://twitch.tv/*"
+    ],
 
+    "permissions": [
         "storage"
     ],
 
-    "web_accessible_resources": ["*.png", "aud/*.*"]
+    "web_accessible_resources": [{
+        "resources": ["*.png", "aud/*.*"],
+        "matches": [
+            "*://player.twitch.tv/*",
+            "*://www.twitch.tv/*",
+            "*://twitch.tv/*"
+        ],
+        "use_dynamic_url": false
+    }]
 }

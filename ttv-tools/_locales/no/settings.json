@@ -82,7 +82,7 @@
             "Lørdag"
         ],
         "footer": [
-            "Denne utvidelsen er på ingen måte tilknyttet, eller godkjent av Amazon™, Twitch™, NightDev (LLC), verken partenes partnere, tilknyttede selskaper eller datterselskaper."
+            "Denne utvidelsen er på ingen måte tilknyttet, eller godkjent av Amazon™, Twitch™, NightDev (LLC), verken partenes partnere, tilknyttede selskaper eller datterselskaper"
         ]
     },
     "header:automation": [
@@ -740,11 +740,13 @@
         "Lav aktivitet — Bare chatting / Simulering / Strategi"
     ],
     "@@auto-focus:options:polling-interval": [
-        "Avspørringsintervall",
-        "Hvor ofte skal strømmen polles",
-        "Hvert sekund - CPU-intensiv, flott deteksjon",
-        "Hvert tredje sekund - CPU-vennlig, god deteksjon",
-        "Hvert 5."
+        "Pollingintervall",
+        "Hvor ofte skal strømmen være", "avstemning",
+
+        "Hvert sekund — CPU-intensiv, god deteksjon",
+        "Hvert 3. sekund — CPU-vennlig, god deteksjon",
+        "Hvert 5. sekund — CPU-vennlig, rettferdig deteksjon",
+        "Hvert 10. sekund — CPU-vennlig, dårlig gjenkjenning"
     ],
     "@@auto-focus:options:image-type": [
         "Bildetype",

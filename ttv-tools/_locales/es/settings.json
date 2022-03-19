@@ -82,7 +82,7 @@
             "Sábado"
         ],
         "footer": [
-            "Esta extensión no está de ninguna manera afiliada ni respaldada por Amazon™, Twitch™, NightDev (LLC), los socios, afiliados o subsidiarias de cualquiera de las partes."
+            "Esta extensión no está de ninguna manera afiliada ni respaldada por Amazon™, Twitch™, NightDev (LLC), los socios, afiliados o subsidiarias de cualquiera de las partes"
         ]
     },
     "header:automation": [
@@ -561,7 +561,7 @@
     ],
     "accent-color": [
         "Color de acento",
-        "¿Cuál debe ser el color de acento?"
+        "¿Cuál debe ser el color de acento"
     ],
     "color:auto": [
         "Automático"

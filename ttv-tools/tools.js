@@ -68,7 +68,7 @@ class Balloon {
 
         let [P] = $('.top-nav__menu > div', true).slice(-1),
             X = $('#tt-balloon', false, P),
-            I = Extension.getURL('profile.png'),
+            I = Runtime.getURL('profile.png'),
             F, C, H, U, N;
 
         let uuid = U = UUID.from([title, JSON.stringify(jobs)].join(':')).value,
@@ -398,7 +398,7 @@ class Balloon {
 
     add(...jobs) {
         jobs = jobs.map(job => {
-            let { href, message, subheader, src = Extension.getURL('profile.png'), attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
+            let { href, message, subheader, src = Runtime.getURL('profile.png'), attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
                 { uuid } = this,
                 guid = UUID.from(href).value,
                 f = furnish;
@@ -713,7 +713,7 @@ class Card {
             card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable`, { style: styling, 'data-a-target': "viewer-card-positioner" }),
             uuid = UUID.from([title, subtitle].join('\n')).value;
 
-        icon ??= { src: Extension.getURL('profile.png'), alt: 'Profile' };
+        icon ??= { src: Runtime.getURL('profile.png'), alt: 'Profile' };
 
         card.id = uuid;
 
@@ -887,7 +887,7 @@ class ContextMenu {
 
                             if(icon || text || shortcut)
                                 return f('button.tt-context-menu-option', { onmouseup: event => action({ ...event, inheritance: inherit }), style: 'border-radius:0.6rem; display:inline-block; padding:0.5rem 0 0.5rem 3rem; width:-webkit-fill-available' }, icon, shortcut, text);
-                            return f('hr', { style: 'border-top:1px solid var(--color-border-button-focus); margin: 0.25rem 0;' });
+                            return f('hr', { style: 'border-top:1px solid var(--channel-color); margin:0.25rem 0;' });
                         })
                     )
                 )
@@ -2454,6 +2454,8 @@ let PATHNAME = window.location.pathname,
     SEARCH_CACHE = new Map(),
     // Visible, actionable notifications
     NOTIFICATIONS,
+    // All channel commands
+    COMMANDS = [],
     // All of the above
     ALL_CHANNELS;
 
@@ -2483,7 +2485,7 @@ try {
     });
 
     // Automatic garbage collection...
-    REMARK(`Removing expired cache data...`);
+    REMARK(`Removing expired cache data...`, new Date);
 
     purging:
     for(let key in StorageSpace) {
@@ -2752,13 +2754,66 @@ try {
             { availHeight, availWidth } = screen,
             { innerHeight, innerWidth } = window;
 
+        // Anchors
+        let anchor = event.target.closest('a');
+
         // Selections
         let selectionText = getSelection(),
             { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
 
-        selectionText = (selectionText + '').trim();
+        selectionText = (selectionText + '').trim().normalize('NFKD');
 
-        if(selectionText?.length) {
+        // Videos
+        let video = event.target.closest('[data-a-target="video-player"i]');
+
+        // ---- ---- START ---- ---- //
+
+        // Anchors
+        if(defined(anchor)) {
+            let { href, scheme, host } = parseURL(anchor.href),
+                text = anchor.textContent;
+
+            switch(scheme.toLowerCase()) {
+                case 'mailto': {
+                    extras.push({
+                        text: `E-mail <strong>${ text }</strong>`,
+                        icon: 'chat',
+                        action: event => top.open(href, '_blank'),
+                    },{
+                        text: `Copy e-mail address`,
+                        icon: 'bolt',
+                        action: event => navigator.clipboard.writeText(host),
+                    });
+                } break;
+
+                case 'tel': {
+                    extras.push({
+                        text: `Dial <strong>${ text }</strong>`,
+                        icon: 'chat',
+                        action: event => top.open(href, '_blank'),
+                    },{
+                        text: `Copy telephone number`,
+                        icon: 'bolt',
+                        action: event => navigator.clipboard.writeText(host),
+                    });
+                } break;
+
+                default: {
+                    extras.push({
+                        text: `Open link in new tab`,
+                        icon: 'ne_arrow',
+                        action: event => top.open(href, '_blank'),
+                    },{
+                        text: `Copy link address`,
+                        icon: 'bolt',
+                        action: event => navigator.clipboard.writeText(href),
+                    });
+                } break;
+            }
+        }
+
+        // Selections
+        else if(selectionText?.length) {
             let email = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/i
             if(email.test(selectionText)) {
                 let address = RegExp['$&'];
@@ -2808,31 +2863,18 @@ try {
             }
         }
 
-        // Anchors
-        let hasAnchor = defined(event.target.closest('a'));
-
-        if(hasAnchor)
-            extras.push({
-                text: `Open link in new tab`,
-                icon: 'ne_arrow',
-                action: event => top.open(event.inheritance.target.closest('a').href, '_blank'),
-            },{
-                text: `Copy link address`,
-                icon: 'bolt',
-                action: event => navigator.clipboard.writeText(event.inheritance.target.closest('a').href),
-            });
-
         // Video
-        let isVideo = defined(event.target.closest('[data-a-target="video-player"i]'));
-
-        if(isVideo)
+        else if(defined(video)) {
             extras.push({
-                text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.name.replace(/_/g, ' ').replace(/  /g, ' - '),
+                text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.toTitle(),
+                icon: 'bolt',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X)? 'alt+shift+x': ''),
                 action: event => $('video', true).pop().copyFrame(),
             });
+        }
 
-        // ---- ---- ---- ---- //
+        // ---- ---- STOP ---- ---- //
+
         if(extras.length)
             extras.splice(0, 0, {});
 
@@ -3450,6 +3492,7 @@ let Initialize = async(START_OVER = false) => {
     /** Streamer Array - the current streamer/channel
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
+     * coms:array*       - GETTER: returns the channel commands (if available)
      * cult:number*      - GETTER: the estimated number of followers
      * data:object       - extra data about the channel
      * desc:string*      - GETTER: the status (description/title) of the stream
@@ -3494,6 +3537,121 @@ let Initialize = async(START_OVER = false) => {
                 points = parseCoin(balance?.textContent);
 
             return points;
+        },
+
+        get coms() {
+            return(async channel => {
+                if(COMMANDS?.length > 0)
+                    return COMMANDS;
+                COMMANDS = [];
+
+                /** User Levels → StreamElements | NightBot
+                 * Everyone         →   100 | everyone
+                 * Subscriber       →   250 | subscriber
+                 * Regular          →   300 | regular
+                 * VIP              →   400 | twitch_vip
+                 * Moderator        →   500 | moderator
+                 * Super Moderator  →   1000
+                 * Broadcaster      →   1500 | owner
+                 */
+                let USER_LEVELS = ({
+                    everyone:           [100, 'everyone'],
+                    subscriber:         [250, 'subscriber'],
+                    regular:            [300, 'regular'],
+                    vip:                [400, 'twitch_vip'],
+                    moderator:          [500, 'moderator'],
+                    super_moderator:    [1000],
+                    broadcaster:        [1500, 'owner'],
+                });
+
+                let match = level => Object.keys(USER_LEVELS).find(key => USER_LEVELS[key].contains(level));
+
+                // StreamElements
+                    // accessLevel: 100
+                    // aliases: []
+                    // channel: "5f5989e007c66e281ad711ac"
+                    // command: "uptime"
+                    // cooldown: {user: 30, global: 30}
+                    // cost: 0
+                    // createdAt: "2020-09-10T02:07:05.487Z"
+                    // enabled: true
+                    // enabledOffline: true
+                    // enabledOnline: true
+                    // hidden: false
+                    // keywords: []
+                    // reply: "$(twitch $(channel) \"{{displayName}} has been live for {{uptimeLength}}\")"
+                    // type: "say"
+                    // updatedAt: "2020-09-10T02:07:05.487Z"
+                    // _id: "5f598a4986ca683315a3f402"
+                await fetch(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
+                    .then(r => r.json())
+                    .then(json => json?._id)
+                    .then(async id => {
+                        let commands = {};
+
+                        if(nullish(id))
+                            return [];
+
+                        for(let type of ['public', 'default'])
+                            await fetch(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`)
+                                .then(r => r.json())
+                                .then(json => commands[type] ??= json);
+
+                        return [...commands.public, ...commands.default];
+                    })
+                    .then(commands => {
+                        for(let metadata of commands) {
+                            let { aliases, command, reply, accessLevel, enabled, count = 0, cooldown, cost } = metadata;
+
+                            COMMANDS.push({ aliases: [...aliases, ...commands.filter(command => command.reply?.contains(command))], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
+                        }
+                    });
+
+                // NightBot
+                    // coolDown: 30
+                    // count: 0
+                    // createdAt: "2021-07-31T05:33:56.000Z"
+                    // message: "hello my cute little pogchamp kyootbHeart"
+                    // name: "hi"
+                    // updatedAt: "2021-07-31T05:33:56.305Z"
+                    // userLevel: "everyone"
+                    // _id: "6104e0c44038915692edaeed"
+                await fetch(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
+                    .then(r => r.json())
+                    .then(json => json?.channel?._id)
+                    .then(async id => {
+                        let commands = [];
+
+                        if(nullish(id))
+                            return commands;
+
+                        await fetch('https://api.nightbot.tv/1/commands', { headers: { 'nightbot-channel': id } })
+                            .then(r => r.json())
+                            .then(json => {
+                                if(!json.status.toString().startsWith('2'))
+                                    return [];
+
+                                commands = [...commands, ...json.commands];
+                            });
+
+                        return commands;
+                    })
+                    .then(commands => {
+                        for(let metadata of commands) {
+                            let { name, message, userLevel, enabled = true, count, coolDown, cost = 0 } = metadata,
+                                regexp = /^[!]/;
+
+                            if(!regexp.test(name))
+                                continue;
+
+                            COMMANDS.push({ aliases: commands.filter(command => command.message.contains(name)).map(command => command.name.replace(regexp, '')), command: name.replace(regexp, ''), reply: message, availability: match(userLevel), enabled, origin: 'NightBot', variables: { count, coolDown, cost } });
+                        }
+                    });
+
+                COMMANDS = COMMANDS.sort((a, b) => a.command.length > b.command.length? -1: +1);
+
+                return COMMANDS;
+            })(STREAMER);
         },
 
         get cult() {
@@ -5594,10 +5752,6 @@ let Initialize = async(START_OVER = false) => {
                 // TODO: Add more colors &/ better detection...
                 let colors = {
                     // Extremes
-                    light: ({ S, L }) => (false
-                        || (L > 80)
-                        || (S < 15)
-                    ),
                     white: ({ R, G, B, L }) => (false
                         || (colorDifference([255, 255, 255], [R, G, B]) < 0.05)
                         || (true
@@ -5605,8 +5759,11 @@ let Initialize = async(START_OVER = false) => {
                             && (L > 90)
                         )
                     ),
+                    light: ({ S, L }) => (false
+                        || (L > 80)
+                        || (S < 15)
+                    ),
 
-                    dark: ({ S, L }) => (L < 15),
                     black: ({ R, G, B, S, L }) => (false
                         || (colorDifference([0, 0, 0], [R, G, B]) < 0.05)
                         || (true
@@ -5622,6 +5779,7 @@ let Initialize = async(START_OVER = false) => {
                             && (L <= 1)
                         )
                     ),
+                    dark: ({ S, L }) => (L < 15),
 
                     grey: ({ R, G, B, S }) => (false
                         || (colorDifference([B, R, G].map(C => C.floorToNearest(8)), [R, G, B]) < 0.05)
@@ -5683,9 +5841,17 @@ let Initialize = async(START_OVER = false) => {
                         && (S >= 5)
                         && (H > 175 && H <= 260)
                     ),
-                    purple: ({ H, S }) => (true
-                        && (S >= 5)
-                        && (H > 260 && H <= 290)
+                    purple: ({ H, S, L }) => (false
+                        || (true
+                            && (S >= 5)
+                            && (H > 260 && H <= 290)
+                        )
+                        || (false
+                            || (true
+                                && (H >= 245 && H < 290)
+                                && (L <= 50)
+                            )
+                        )
                     ),
                 };
 
@@ -5728,6 +5894,7 @@ let Initialize = async(START_OVER = false) => {
                     .replace(/red orange/, 'orange')
                     .replace(/light yellow/, 'yellow')
                     .replace(/orange brown/, 'light brown')
+                    .replace(/blue purple/, 'purple')
 
                     .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
                     .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
@@ -6912,82 +7079,12 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.parse_commands = async() => {
-        let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] p, [data-a-target^="panel"i] p', true),
-            /** User Levels → StreamElements | NightBot
-             * Everyone         →   100 | everyone
-             * Subscriber       →   250 | subscriber
-             * Regular          →   300 | regular
-             * VIP              →   400 | twitch_vip
-             * Moderator        →   500 | moderator
-             * Super Moderator  →   1000
-             * Broadcaster      →   1500 | owner
-             */
-            COMMANDS = [];
-
-        // StreamElements
-        await fetch(`https://api.streamelements.com/kappa/v2/channels/${ STREAMER.name }`, { mode: 'cors' })
-            .then(r => r.json())
-            .then(json => json?._id)
-            .then(async id => {
-                let commands = { public: [], default: []};
-
-                if(nullish(id))
-                    return commands;
-
-                for(let type of ['public', 'default'])
-                    await fetch(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`)
-                        .then(r => r.json())
-                        .then(json => commands[type] ??= json);
-
-                return commands;
-            })
-            .then(commands => {
-                for(let metadata of [...commands.public, ...commands.default]) {
-                    let { aliases, command, reply } = metadata;
-
-                    COMMANDS.push({ aliases, command, reply });
-                }
-            });
-
-        // NightBot
-        await fetch(`https://api.nightbot.tv/1/channels/t/${ STREAMER.name }`, { mode: 'cors' })
-            .then(r => r.json())
-            .then(json => json?.channel?._id)
-            .then(async id => {
-                let commands = [];
-
-                if(nullish(id))
-                    return commands;
-
-                await fetch('https://api.nightbot.tv/1/commands', { headers: { 'nightbot-channel': id } })
-                    .then(r => r.json())
-                    .then(json => {
-                        if(!json.status.toString().startsWith('2'))
-                            return [];
-
-                        commands = [...commands, ...json.commands];
-                    });
-
-                return commands;
-            })
-            .then(commands => {
-                for(let metadata of commands) {
-                    let { name, message } = metadata,
-                        regexp = /^[!]/;
-
-                    if(!regexp.test(name))
-                        continue;
-
-                    COMMANDS.push({ aliases: [], command: name.replace(regexp, ''), reply: message });
-                }
-            });
-
-        COMMANDS = COMMANDS.sort((a, b) => a.command.length > b.command.length? -1: +1);
+        let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *', true);
 
         for(let element of elements) {
-            for(let { aliases, command, reply } of COMMANDS)
+            for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
-                    reply = reply.replace(/\$(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]+?]\])/g, ($0, $1, $2, $$, $_) => {
+                    reply = reply.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
                         let path = $1.replace(/^\W|\W$/g, '').split('.');
                         let properties = ({
                             // StreamElements
@@ -7010,6 +7107,9 @@ let Initialize = async(START_OVER = false) => {
                             // NightBot
                             touser: `@${ USERNAME }`,
                             urlfetch: `External website`,
+
+                            // Fetched...
+                            ...variables
                         }),
                             value;
 
@@ -7020,19 +7120,33 @@ let Initialize = async(START_OVER = false) => {
                     })
                     .replace(/^\/(?:\w\S+)/, '');
 
-                    let { href } = (/\b(?<href>https?:\/\/[^\s]+)/i.exec(reply)?.groups ?? {}),
+                    let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {}),
                         string;
 
                     if(parseBool(Settings.parse_commands__create_links) && defined(href))
-                        string = `<a href="${ href }" target=_blank title="${ reply }">${ $1 }</a>`;
+                        string = `<a href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank tip-text--commands="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
                     else
-                        string = `<span style=text-decoration:underline title="${ reply }">${ $1 }</span>`;
+                        string = `<span style=text-decoration:underline tip-text--commands="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
 
                     return `{{parse_commands?=${ btoa(escape(string)) }}}`;
                 });
 
             element.innerHTML = element.innerHTML.replace(/\{\{parse_commands\?=(.+?)\}\}/g, ($0, $1, $$, $_) => unescape(atob($1)));
         }
+
+        setTimeout(() => {
+            $('[tip-text--commands]', true)
+                .map(element => {
+                    let text = element.getAttribute('tip-text--commands');
+
+                    element.setAttribute('title', text);
+
+                    // TODO: correct element position if not on screen
+                    // new Tooltip(element, text, { from: 'top' });
+
+                    // element.removeAttribute('tip-text--commands');
+                });
+        }, 100);
     };
     Timers.parse_commands = -2_500;
 
@@ -7348,25 +7462,25 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])? *(?<meridiem>[ap]m?(?!\p{L}))? *(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\))/iu,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9]) *(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\))/iu,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\)) *(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])? *(?<meridiem>[ap]m?(?!\p{L}))?/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?/iu,
             // EST 15:00 | EST 1500
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T)\b|\( *(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?[0-9])(?::?[0-5][0-9])?)?|[A-WY]{2,4}T) *\)) *(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9]\b)/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d\b)/iu,
             // 3:00PM | 3PM
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9])? *(?<meridiem>[ap]m?(?!\p{L}))/iu,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?[ \t]*(?<meridiem>[ap]m?(?!\p{L}))/iu,
             // 15:00
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?[0-9])(?<minute>:[0-5][0-9]) */iu,
+            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)[ \t]*/iu,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
             // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
-            /(?<![#\$\.+:\d])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01][0-9])(?<minute>:?[0-5][0-9])\b/iu,
+            /(?<![#\$\.+:\d])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01]\d)(?<minute>:?[0-5]\d)\b/iu,
 
             // GMT/UTC
             // GMT+05:00 | GMT-05:00 | GMT+0500 | GMT-0500 | GMT+05 | GMT-05 | GMT+5 | GMT-5 | UTC+05:00 | UTC-05:00 | UTC+0500 | UTC-0500 | UTC+05 | UTC-05 | UTC+5 | UTC-5
-            /(?<![#\$\.+:\d])\b(?:GMT *|UTC *)(?<offset>[+-])(?<hour>2[0-3]|[01]?[0-9])(?<minute>:?[0-5][0-9])?\b/iu,
+            /(?<![#\$\.+:\d])\b(?:GMT[ \t]*|UTC[ \t]*)(?<offset>[+-])(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)?\b/iu,
         ],
 
         // FIX-ME: Fix conflicting Time Zone entries...
@@ -7591,8 +7705,8 @@ let Initialize = async(START_OVER = false) => {
         };
 
     // Convert text to times
-    function convertWordsToTimes(string) {
-        return string
+    function convertWordsToTimes(string = '') {
+        return string.normalize('NFKD')
             // .replace(/\b(mornings?|dawn)\b/i, '06:00AM')
             .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00PM')
             .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
@@ -7600,8 +7714,8 @@ let Initialize = async(START_OVER = false) => {
             .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM');
     }
 
-    convertWordsToTimes.inReverse ??= string => {
-        return string
+    convertWordsToTimes.inReverse ??= (string = '') => {
+        return string.normalize('NFKD')
             // .replace(/\b(06:00AM)\b/i, 'morning')
             .replace(/\b(01:00PM)\b/i, 'evening')
             .replace(/\b(12:00PM)\b/i, 'noon')
@@ -7610,16 +7724,38 @@ let Initialize = async(START_OVER = false) => {
     };
 
     Handlers.time_zones = () => {
-        let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] p, [data-a-target^="panel"i] p', true),
+        let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
+        let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]', true),
             rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
 
         parsing:
-        for(let title of [...cTitle, rTitle].filter(defined)) {
-            let titleText = convertWordsToTimes(title?.innerText ?? '');
+        for(let container of [...cTitle, rTitle].filter(defined)) {
+            let [timezone, zone, type, trigger] = (null
+                ?? (container?.innerText || '')
+                    .normalize('NFKD')
+                    .match(/(?:(?<zone>\w+)[\s\-]+)?(?:(?<type>\w+)[\s\-]+)(?<trigger>time)\b/i)
+                ?? []
+            );
+            let MASTER_TIME_ZONE = (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type, trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
 
-            for(let regexp of TIME_ZONE__REGEXPS)
-                while(regexp.test(titleText)) {
-                    let { hour, minute = ':00', offset = '', meridiem = '', timezone = '' } = regexp.exec(titleText).groups;
+            searching:
+            for(let regexp of TIME_ZONE__REGEXPS) {
+
+                replacing:
+                for(let MAX = Object.keys(TIME_ZONE__CONVERSIONS).length; --MAX > 0 && regexp.test(convertWordsToTimes(container?.innerText));) {
+                    container = container.getElementByText(regexp) ?? container.getElementByText(/\b(after\s?noons?|evenings?|noons?|lunch[\s\-]?time|mid[\s\-]?nights?)\b/iu);
+
+                    if(nullish(container))
+                        continue searching;
+
+                    let convertedText = convertWordsToTimes(container.innerText.trim()),
+                        originalText = container.innerText;
+
+                    if(convertedText.length < 1)
+                        continue searching;
+
+                    let { groups, index, length } = regexp.exec(convertedText),
+                        { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups;
                     let now = new Date,
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
@@ -7631,7 +7767,7 @@ let Initialize = async(START_OVER = false) => {
                     timezone ||= (offset.length? 'GMT': '');
 
                     if(timezone.length) {
-                        timezone = timezone.toUpperCase().replace(/[^\w\+\-]+/g, '');
+                        let name = timezone = timezone.toUpperCase().replace(/[^\w\+\-]+/g, '');
 
                         if(timezone in TIME_ZONE__CONVERSIONS)
                             timezone = TIME_ZONE__CONVERSIONS[timezone].replace(/^[+-]/, 'GMT$&');
@@ -7639,51 +7775,64 @@ let Initialize = async(START_OVER = false) => {
                             timezone = timezone.replace(/^[+-]/, 'GMT$&');
                         else
                             continue parsing;
+
+                        MASTER_TIME_ZONE ||= name;
                     }
 
                     let newDate = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
                         newTime = newDate.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
-                        noChange = convertWordsToTimes(title.innerText).trim() == title.innerText.trim();
+                        noChange = convertWordsToTimes(originalText).trim() == originalText.trim();
 
+                    // Keep original text
                     if(Number.isNaN(+newDate))
-                        title.innerText = titleText = convertWordsToTimes(title.innerText)
-                            .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape($0)) }}}`);
+                        container.innerHTML = `${ originalText.substr(0, index).split('').join('&zwj;') }{{time_zones?=${ btoa(escape(originalText.substr(index, length))) }}}${ originalText.substr(length).split('').join('&zwj;') }`;
+                    // Convert to new text
                     else
-                        title.innerText = titleText = convertWordsToTimes(title.innerText)
-                            .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape(newTime)) }|${ btoa(escape(noChange? $0: convertWordsToTimes.inReverse($0))) }}}`);
+                        container.innerText = convertedText
+                            .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape(newTime)) }|${ btoa(escape(noChange? $0.replace(/$/, (groups.timezone?.length? '': MASTER_TIME_ZONE?.length? ` (${ MASTER_TIME_ZONE })`: '')): convertWordsToTimes.inReverse($0))) }}}`);
                 }
-
-            let regexp = /\{\{time_zones\?=(.+?)\}\}/g;
-            for(let MAX = 1000; --MAX > 0 && regexp.test(title.innerHTML);) {
-                let [newText, oldText] = RegExp.$1.split('|'),
-                    text = RegExp['$&'];
-
-                title.innerHTML = title.innerHTML.replace(text, `<!--!time-->`);
-                [...title.childNodes]
-                    .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent == '!time')
-                    .map(comment => {
-                        let span = furnish('span', {
-                            id: `tt-time-zone-${ (new UUID) }`,
-                            style: 'color:var(--user-complement-color); text-decoration:underline 2px',
-                            contrast: THEME__PREFERRED_CONTRAST,
-                            innerHTML: unescape(atob(newText)).split('').join('&zwj;'),
-                        });
-
-                        if(oldText?.length)
-                            span.setAttribute('tip-text', unescape(atob(oldText)).split('').join('&zwj;'));
-                        else
-                            span.removeAttribute('style');
-
-                        comment.replaceWith(span);
-                    });
             }
         }
 
-        for(let span of $('span[id^="tt-time-zone"i][tip-text]', true)) {
-            let tipText = span.getAttribute('tip-text');
+        let TZC = [];
+        for(let MAX = 1000, regexp = /\{\{time_zones\?=(.+?)\}\}/, node; --MAX > 0 && defined(node = $.body.getElementByText(regexp));) {
+            let text = RegExp['$&'],
+                tzc = RegExp.$1;
 
-            new Tooltip(span, tipText, { from: 'top' });
+            node.innerHTML = node.innerHTML.replace(text, `<!--!time#${ TZC.push(tzc) }-->`);
         }
+
+        allNodes(document.body)
+            .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent.startsWith('!time#'))
+            .map(comment => {
+                let index = parseInt(comment.textContent.replace('!time#', '')) - 1;
+                let [newText, oldText] = TZC[index].split('|');
+
+                let span = furnish('span', {
+                    id: `tt-time-zone-${ (new UUID) }`,
+                    style: 'color:var(--user-complement-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
+                    contrast: THEME__PREFERRED_CONTRAST,
+                    innerHTML: unescape(atob(newText)).split('').join('&zwj;'),
+                });
+
+                if(oldText?.length)
+                    span.setAttribute('tip-text--timezone', oldText);
+                else
+                    span.removeAttribute('style');
+
+                comment.replaceWith(span);
+            });
+
+        setTimeout(() => {
+            $('[id^="tt-time-zone-"][tip-text--timezone]', true)
+                .map(span => {
+                    let oldText = span.getAttribute('tip-text--timezone');
+
+                    new Tooltip(span, unescape(atob(oldText)).split('').join('&zwj;'), { from: 'top' });
+
+                    // span.removeAttribute('tip-text--timezone');
+                });
+        }, 100);
 
         TIME_ZONE__TEXT_MATCHES = [...new Set(TIME_ZONE__TEXT_MATCHES)];
     };
@@ -7879,7 +8028,7 @@ let Initialize = async(START_OVER = false) => {
                 ]
                     .map(type => {
                         let types = { mp3: 'mpeg' },
-                            src = Extension.getURL(`aud/${ Settings.whisper_audio_sound ?? "goes-without-saying-608" }.${ type }`);
+                            src = Runtime.getURL(`aud/${ Settings.whisper_audio_sound ?? "goes-without-saying-608" }.${ type }`);
                         type = `audio/${ types[type] ?? type }`;
 
                         return furnish('source', { src, type }).outerHTML;
@@ -9088,24 +9237,17 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Display the enabled keyboard shortcuts
-        let help = document.body.getElementByText('space/k', 'i')?.closest('tbody');
+        let help = $.body.getElementByText('space/k', 'i')?.closest('tbody');
 
         let f = furnish;
         if(defined(help) && nullish($('.tt-extra-keyboard-shortcuts', false, help)))
             for(let shortcut in GLOBAL_EVENT_LISTENERS)
                 if(/^(key(?:up|down)_)/i.test(shortcut)) {
-                    let name = GLOBAL_EVENT_LISTENERS[shortcut].name,
+                    let name = GLOBAL_EVENT_LISTENERS[shortcut].name.toTitle(),
                         macro = GetMacro(shortcut.replace(RegExp.$1, '').toLowerCase().split('_').join('+'));
 
                     if(!name.length)
                         continue;
-
-                    name = name
-                        .replace(/\$\$/g, ' | ')
-                        .replace(/\$/g, '/')
-                        .replace(/__/g, ' - ')
-                        .replace(/_/g, ' ')
-                        .trim();
 
                     help.append(
                         f('tr.tw-table-row.tt-extra-keyboard-shortcuts', {},
@@ -9741,7 +9883,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 }
 
                 [up-next--body][empty="true"i] {
-                    background-image: url("${ Extension.getURL('up-next-tutorial.png') }");
+                    background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
                     background-repeat: no-repeat;
                     background-size: 35rem;
                     background-position: bottom center;
@@ -9752,7 +9894,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 }
 
                 [up-next--body][allowed="false"i] {
-                    background-image: url("${ Extension.getURL('256.png') }") !important;
+                    background-image: url("${ Runtime.getURL('256.png') }") !important;
                     background-repeat: repeat !important;
                     background-size: 5rem !important;
                     background-position: center center !important;
@@ -9862,6 +10004,13 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     width: max-content;
                 }
 
+                [role="tooltip"i][class*="tt-tooltip"i] {
+                    white-space: normal;
+
+                    max-width: 50em;
+                    width: max-content;
+                }
+
                 /* Bits */
                 [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
                     max-width: 45rem;
@@ -9951,7 +10100,8 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
             // Jump some frames
             FrameJumper: {
-                top.open('javascript:top.postMessage(__APOLLO_CLIENT__?.cache?.data?.data)', '_self');
+                // TODO: get this back online...
+                // top.open('javascript:top.postMessage(__APOLLO_CLIENT__?.cache?.data?.data)', '_self');
             }
         }
     }, 500);

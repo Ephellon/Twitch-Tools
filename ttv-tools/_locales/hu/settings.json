@@ -230,7 +230,7 @@
         "Hogyan kell kiválasztani a következő csatornát, ha",
         "Up Next",
         "üres",
-        "Ez csak akkor aktiválódik, ha az aktuális adatfolyam offline állapotba kerül?"
+        "Ez csak akkor aktiválódik, ha az aktuális adatfolyam offline állapotba kerül"
     ],
     "next-channel-preference:options": [
         "Letiltva",
@@ -384,7 +384,7 @@
         "@all",
         "@chat",
         "@everyone",
-        "), emelje ki az üzenetet kiemelve."
+        "), emelje ki az üzenetet kiemelve"
     ],
     "highlight-phrases": [
         "Kiemelés kifejezések",
@@ -500,7 +500,7 @@
     "channel-points-receipt": [
         "Csatornapontok bevételezése",
         "Hogyan jelenjen meg a bevételezés",
-        "gyűjtemény?"
+        "gyűjtemény"
     ],
     "channel-points-receipt:options": [
         "A pontos beszedett összeg megjelenítése",
@@ -548,7 +548,7 @@
         "Point Watcher",
         "Hol jelenjen meg a",
         "Point Watcher",
-        "szöveg?"
+        "szöveg"
     ],
     "placement:point-watcher:options": [
         "Ne jelenjen meg",
@@ -567,7 +567,7 @@
     ],
     "accent-color": [
         "Ékezetes szín",
-        "Mi legyen az ékezet színe?"
+        "Mi legyen az ékezet színe"
     ],
     "color:auto": [
         "Automatikus"
@@ -703,7 +703,7 @@
         "Extra Billentyűparancsok",
         "További billentyűparancsok hozzáadásának engedélyezése a bővítmény számára",
         "A billentyűparancsok a",
-        "billentyű megnyomásával tekinthetők meg."
+        "billentyű megnyomásával tekinthetők meg"
     ],
     "@fine-details": [
         "Finom részletek használata",

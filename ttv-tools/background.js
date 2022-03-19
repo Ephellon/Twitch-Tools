@@ -8,18 +8,20 @@
  *                            __/ |                            _/ |
  *                           |___/                            |__/
  */
+
 let $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
 let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
 
-let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
+let browser, global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
 if(browser && browser.runtime)
     BrowserNamespace = 'browser';
 else if(chrome && chrome.extension)
     BrowserNamespace = 'chrome';
 
-Container = window[BrowserNamespace];
+// Can NOT be done programmatically...
+Container = chrome;
 
 switch(BrowserNamespace) {
     case 'browser': {
@@ -75,7 +77,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
         }
 
         // Update the badge text when there's an update available
-        Container.browserAction.setBadgeText({ text: '' });
+        Container.action.setBadgeText({ text: '' });
     });
 });
 
@@ -102,7 +104,7 @@ let TabWatcherInterval = setInterval(() => {
 }, 1000);
 
 // Update the badge text when there's an update available
-Container.browserAction.setBadgeBackgroundColor({ color: '#9147ff' });
+Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
 
 Storage.onChanged.addListener(changes => {
     // Use this to set the badge text when there's an update available
@@ -119,7 +121,7 @@ Storage.onChanged.addListener(changes => {
             case 'chromeUpdateAvailable':
             case 'githubUpdateAvailable': {
                 if(newValue === true)
-                    Container.browserAction.setBadgeText({ text: '\u2191' });
+                    Container.action.setBadgeText({ text: '\u2191' });
             } break updater;
 
             default: continue updater;

@@ -82,7 +82,7 @@
             "Cumartesi"
         ],
         "footer": [
-            "Bu uzantı hiçbir şekilde Amazon™, Twitch™, NightDev (LLC), herhangi bir tarafın ortakları, bağlı kuruluşları veya yan kuruluşlarıyla bağlantılı değildir ve bunlar tarafından onaylanmamıştır."
+            "Bu uzantı hiçbir şekilde Amazon™, Twitch™, NightDev (LLC), herhangi bir tarafın ortakları, bağlı kuruluşları veya yan kuruluşlarıyla bağlantılı değildir ve bunlar tarafından onaylanmamıştır"
         ]
     },
     "header:automation": [
@@ -112,7 +112,7 @@
     ],
     "away-mode:volume": [
         "Gizlenen Birim",
-        null," gizlenirken birimi",
+        null, " gizlenirken birimi",
         "olarak ayarlayın"
     ],
     "away-mode:schedule": [
@@ -152,7 +152,7 @@
     ],
     "auto-claim-bonuses": [
         "Talep Bonusları",
-        null,"düğmesi göründüğünde, otomatik olarak tıklayın"
+        null, "düğmesi göründüğünde, otomatik olarak tıklayın"
     ],
     "first-in-line": [
         "İlk Sırada / Sıradaki",
@@ -166,11 +166,11 @@
     ],
     "first-in-line:notification": [
         "Bildirim",
-        "Canlı yayına geçen bir kanal için bildirim aldığınızda,"
+        "Canlı yayına geçen bir kanal için bildirim aldığınızda"
     ],
     "first-in-line:appearance": [
         "Görünüm",
-        "Takip Edilen Kanallarınızda bir kanal göründüğünde,"
+        "Takip Edilen Kanallarınızda bir kanal göründüğünde"
     ],
     "first-in-line:smart-notifications": [
         "Otomatik",
@@ -257,7 +257,7 @@
     ],
     "prevent-raiding": [
         "Baskını Önleme",
-        null,"Sonraki Kanala giderek belirli veya tüm kanalların baskın yapmasını engelleyin"
+        null, "Sonraki Kanala giderek belirli veya tüm kanalların baskın yapmasını engelleyin"
     ],
     "prevent-raiding:options": [
         "Tüm kanalların baskın yapmasına izin ver",
@@ -277,7 +277,7 @@
         "Sonraki Kanal"
     ],
     "stay-live:vod-is-offline": [
-        null,"VOD",
+        null, "VOD",
         "akışlarını çevrimdışı akışlar olarak ele alma"
     ],
     "time-zones": [
@@ -340,7 +340,7 @@
     "filter-messages": [
         "İletileri Filtrele",
         "Tüm kanallardaki iletileri/kuralları kaldırır",
-        "Yardım için lütfen bkz."
+        "Yardım için lütfen bkz"
     ],
     "filter-messages:options": [
         "Kurallar",
@@ -379,7 +379,7 @@
     "highlight-phrases": [
         "İfadeleri Vurgula",
         "Birisi aşağıdaki ifadelerden herhangi birini kullanarak bir mesaj gönderdiğinde, mesajı vurgulayarak öne çıkarın",
-        "Lütfen bkz."
+        "Lütfen bkz"
     ],
     "highlight-phrases:options": [
         "Kurallar",
@@ -416,7 +416,7 @@
     ],
     "notification-sounds:include-whispers": [
         "Fısıltılar",
-        "Birisi size bir fısıltı gönderdiğinde,",
+        "Birisi size bir fısıltı gönderdiğinde",
         "bildirim sesini çalın"
     ],
     "notification-sounds:options": [
@@ -472,14 +472,14 @@
     ],
     "convert-bits": [
         "Bitleri Dönüştür",
-        null," ile sunulduğunda temsil ettikleri doğru",
+        null, " ile sunulduğunda temsil ettikleri doğru",
         "USD",
         "tutarını gösterin"
     ],
     "channel-points-receipt": [
         "Kanal Puanları Alış İrsaliyesi",
         "Makbuz",
-        "koleksiyonunu nasıl görüntülemeli?"
+        "koleksiyonunu nasıl görüntülemeli"
     ],
     "channel-points-receipt:options": [
         "Toplanan tutarı tam olarak görüntüleme",
@@ -489,15 +489,15 @@
     ],
     "rewards-calculator": [
         "Ödül Hesaplayıcısı",
-        null," ödüllerini kullanmak için bir akışın ne kadar süreyle izlenmesi gerektiğini tahmin eder"
+        null, " ödüllerini kullanmak için bir akışın ne kadar süreyle izlenmesi gerektiğini tahmin eder"
     ],
     "header:customization": [
         "Özelleştirme"
     ],
     "placement:away-mode": [
         "Kolay Lurk",
-        null,"Kolay Lurk",
-        "düğmesi nerede görüntülenmelidir?"
+        null, "Kolay Lurk",
+        "düğmesi nerede görüntülenmelidir"
     ],
     "placement:away-mode:options": [
         "Görüntülemiyor",
@@ -512,10 +512,10 @@
     ],
     "placement:points-receipt": [
         "Puan Girişi & Rütbe",
-        null,"Puan Alış İrsaliyesi",
+        null, "Puan Alış İrsaliyesi",
         "ve",
         "Puan Sıralaması",
-        "metni nerede görüntülenmelidir?"
+        "metni nerede görüntülenmelidir"
     ],
     "placement:points-receipt:options": [
         "Görüntüle",
@@ -523,7 +523,7 @@
     ],
     "placement:point-watcher": [
         "Nokta İzleyicisi",
-        null,"Nokta İzleyicisi",
+        null, "Nokta İzleyicisi",
         "metni nerede görüntülenmelidir"
     ],
     "placement:point-watcher:options": [
@@ -532,8 +532,8 @@
     ],
     "placement:watch-time": [
         "İzleme Süresi",
-        null,"İzleme Süresi",
-        "nerede görüntülenmelidir?"
+        null, "İzleme Süresi",
+        "nerede görüntülenmelidir"
     ],
     "placement:watch-time:options": [
         "Görüntülemiyor",
@@ -589,7 +589,7 @@
         "Ayarları Dışarı Aktar",
         "Ayarları",
         "indirmek istiyorsanız",
-        null,"Karşıya Yükleme Kimliği"
+        null, "Karşıya Yükleme Kimliği"
     ],
     "networking:sync-settings:upload": [
         "Karşıya yükleme"

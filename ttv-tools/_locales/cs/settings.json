@@ -82,7 +82,7 @@
             "Sobota"
         ],
         "footer": [
-            "Toto rozšíření není v žádném případě spojeno ani podporováno společnostmi Amazon™, Twitch™, NightDev (LLC), partnery, přidruženými společnostmi nebo dceřinými společnostmi obou stran."
+            "Toto rozšíření není v žádném případě spojeno ani podporováno společnostmi Amazon™, Twitch™, NightDev (LLC), partnery, přidruženými společnostmi nebo dceřinými společnostmi obou stran"
         ]
     },
     "header:automation": [
@@ -505,7 +505,7 @@
     "rewards-calculator": [
         "Kalkulačka odměn",
         "Odhaduje, jak dlouho je třeba stream sledovat, aby bylo možné uplatnit",
-        "odměny."
+        "odměny"
     ],
     "header:customization": [
         "Přizpůsobení"

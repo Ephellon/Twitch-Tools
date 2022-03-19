@@ -82,7 +82,7 @@
             "Samstag"
         ],
         "footer": [
-            "Diese Erweiterung ist in keiner Weise mit Amazon™, Twitch™, NightDev (LLC), den Partnern, verbundenen Unternehmen oder Tochtergesellschaften einer der Parteien verbunden oder wird von diesen unterstützt."
+            "Diese Erweiterung ist in keiner Weise mit Amazon™, Twitch™, NightDev (LLC), den Partnern, verbundenen Unternehmen oder Tochtergesellschaften einer der Parteien verbunden oder wird von diesen unterstützt"
         ]
     },
     "header:automation": [
@@ -410,7 +410,7 @@
     ],
     "notification-sounds": [
         "Benachrichtigungstöne",
-        "Wenn eine (oder mehrere) der folgenden Bedingungen erfüllt sind, geben Sie einen Benachrichtigungston wieder."
+        "Wenn eine (oder mehrere) der folgenden Bedingungen erfüllt sind, geben Sie einen Benachrichtigungston wieder"
     ],
     "notification-sounds:include-mentions": [
         "Erwähnungen",
@@ -516,7 +516,7 @@
         "Easy Lurk",
         "Wo soll die Schaltfläche",
         "Easy Lurk",
-        "angezeigt werden?"
+        "angezeigt werden"
     ],
     "placement:away-mode:options": [
         "Nicht anzeigen",
@@ -535,7 +535,7 @@
         "Punkteeingang",
         "&",
         "Punkterangliste",
-        "angezeigt werden?"
+        "angezeigt werden"
     ],
     "placement:points-receipt:options": [
         "Nicht anzeigen",
@@ -545,7 +545,7 @@
         "Point Watcher",
         "Wo soll der",
         "Point Watcher",
-        "-Text angezeigt werden?"
+        "-Text angezeigt werden"
     ],
     "placement:point-watcher:options": [
         "Nicht anzeigen",
@@ -555,7 +555,7 @@
         "Wiedergabezeit",
         "Wo soll die",
         "Wiedergabezeit",
-        "angezeigt werden?"
+        "angezeigt werden"
     ],
     "placement:watch-time:options": [
         "Nicht anzeigen",
@@ -564,7 +564,7 @@
     ],
     "accent-color": [
         "Akzentfarbe",
-        "Was sollte die Akzentfarbe sein?"
+        "Was sollte die Akzentfarbe sein"
     ],
     "color:auto": [
         "Automatisch"

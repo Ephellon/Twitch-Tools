@@ -21,23 +21,33 @@
     * It might also not list jobs immediately
 7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
-8. `v5` will need to be made in [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
-    * Required by **Jan 2023**
-9. Dead channels get re-added to Up Next sometimes
+8. Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
-10. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
-11. Live Reminders might spam notifications?
-    * Happens when re-doing a channel's reminder, as the channel is live (before being activated)
-    * Tentative fix `4.29`
-12. Pause First in Line when observing a raid
-13. Get better translations--or remove them altogether
-    * The translations are incorrect and more confusing
+9. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
+10. Live Reminders might spam notifications?
+    * Due to `alert` not handling promises in a queue correctly...
+11. Pause First in Line when observing a raid
+12. Get better translations--or remove them altogether
+    * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.0`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.0)
+- Migrated extension to [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
+- Fixed issue with Time Zone conversions
+- Added support for special, Latin characters to Simplify Chat and Time Zones
+- Adjusted Parse Commands logic
+- Added `get STREAMER.coms`
+- Added `Function..toTitle` and `Number..to`
+- Adjusted Time Zone logic
+- Eased viewing for "X amount of points required" buttons
+- Updated `Number..suffix` logic
+
+----
+
 > [`4.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/4.30)
 - Adjusted message filtering logic
 - Adjusted color-naming logic
