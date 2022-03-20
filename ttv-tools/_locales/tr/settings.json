@@ -271,6 +271,14 @@
         "Prime Gaming Loot",
         "teklifleri"
     ],
+	"claim-prime": [
+		"Prime Aboneliği",
+        "","Prime aboneliğinizi","her ay otomatik olarak yenileyin"
+	],
+	"claim-prime:max-claims": [
+		"Maksimum abonelikler",
+        "Prime abonelikleri","aylığına tekrar abone olacaktır",""
+	],
     "stay-live": [
         "Canlı Kal",
         "Geçerli akış sona erdikten sonra",

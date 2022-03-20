@@ -276,6 +276,14 @@
         "Prime Gaming Loot",
         "-tilbud når siden lastes inn"
     ],
+	"claim-prime": [
+		"Prime-abonnement",
+        "Forny","Prime-abonnementet","ditt automatisk hver måned"
+	],
+	"claim-prime:max-claims": [
+		"Maks abonnement",
+        "Prime-abonnementer","vil abonnere igjen i","måneder"
+	],
     "stay-live": [
         "Hold deg tilkoblet",
         "Når gjeldende strøm er avsluttet, går du til",

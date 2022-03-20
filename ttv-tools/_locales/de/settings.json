@@ -276,6 +276,14 @@
         "Prime Gaming Loot",
         "Angebote beim Laden der Seite"
     ],
+	"claim-prime": [
+		"Prime-Abonnement",
+        "Verlängern Sie Ihr","Prime-Abonnement","jeden Monat automatisch"
+	],
+	"claim-prime:max-claims": [
+		"Maximale Abonnements",
+        "Prime-Abonnements","werden erneut für","Monate abonniert"
+	],
     "stay-live": [
         "Bleiben Sie live",
         "Nachdem der aktuelle Stream beendet ist, wechseln Sie zum",

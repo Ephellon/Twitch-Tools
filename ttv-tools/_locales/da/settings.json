@@ -276,6 +276,14 @@
         "Prime Gaming Loot",
         "tilbud, når siden indlæses"
     ],
+	"claim-prime": [
+		"Prime-abonnement",
+        "Forny automatisk dit","Prime-abonnement","hver måned"
+	],
+	"claim-prime:max-claims": [
+		"Maks abonnementer",
+        "Prime-abonnementer","abonnerer igen i","måneder"
+	],
     "stay-live": [
         "Stay Live",
         "Når den aktuelle stream er afsluttet, skal du gå til",

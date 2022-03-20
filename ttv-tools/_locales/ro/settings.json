@@ -276,6 +276,14 @@
         "Prime Gaming Loot",
         "oferte atunci când pagina se încarcă"
     ],
+	"claim-prime": [
+		"Abonament Prime",
+        "Reînnoiește-ți automat","abonamentul Prime","în fiecare lună"
+	],
+	"claim-prime:max-claims": [
+		"Abonamente maxime",
+        "Abonamentele Prime","se vor abona din nou timp de","luni"
+	],
     "stay-live": [
         "Rămâi live",
         "După ce se termină streamul curent, accesează",

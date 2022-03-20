@@ -277,6 +277,14 @@
         "Prime Gaming Loot",
         "ajánlatok, amikor az oldal betöltődik"
     ],
+	"claim-prime": [
+		"Prime-előfizetés",
+        "Minden hónapban automatikusan megújítja","Prime-előfizetését",""
+	],
+	"claim-prime:max-claims": [
+		"Maximális előfizetések",
+        "A Prime-előfizetések","","hónapra ismét előfizethetők"
+	],
     "stay-live": [
         "Maradjon élő",
         "Az aktuális stream befejezése után lépjen a",

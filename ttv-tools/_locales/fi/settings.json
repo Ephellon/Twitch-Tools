@@ -276,6 +276,14 @@
         "Prime Gaming Loot",
         "tarjoukset, kun sivu latautuu"
     ],
+	"claim-prime": [
+		"Prime-tilaus",
+        "Uusi","Prime-tilauksesi","automaattisesti joka kuukausi"
+	],
+	"claim-prime:max-claims": [
+		"Enimmäistilaukset",
+        "Prime-tilaukset","tilataan uudelleen","kuukaudeksi"
+	],
     "stay-live": [
         "Pysy livenä",
         "Kun nykyinen virta on loppunut, siirry",
@@ -500,7 +508,7 @@
         "Näytä tarkka kerätty summa",
         "Pyöristä lähimpään 100",
         "Pyöristä lähimpään 50",
-        "Pyöristä lähimpään 25:een"
+        "Pyöristä lähimpään 25"
     ],
     "rewards-calculator": [
         "Palkintolaskuri",

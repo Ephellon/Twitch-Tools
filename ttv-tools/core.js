@@ -379,8 +379,8 @@ function defined(value) {
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) → Promise
-async function awaitOn(callback, ms = 100) {
+    // until(callback:function[,ms:number~Integer:milliseconds]) → Promise
+async function until(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
             let value = await callback();
@@ -388,11 +388,11 @@ async function awaitOn(callback, ms = 100) {
             if(defined(value)) {
                 clearInterval(interval);
                 resolve(
-                    (value === awaitOn.null)?
+                    (value === until.null)?
                         null:
-                    (value === awaitOn.void)?
+                    (value === until.void)?
                         void undefined:
-                    (value === awaitOn.undefined)?
+                    (value === until.undefined)?
                         undefined:
                     value
                 );
@@ -402,7 +402,7 @@ async function awaitOn(callback, ms = 100) {
 }
 
 try {
-    Object.defineProperties(awaitOn, {
+    Object.defineProperties(until, {
         "null": { value: Symbol(null) },
         "void": { value: Symbol(void undefined) },
         "undefined": { value: Symbol(undefined) },

@@ -180,6 +180,15 @@
 		"Automatically claim and dismiss", "Prime Gaming Loot", "offers when the page loads"
 	],
 
+	"claim-prime": [
+		"Prime Subscription",
+		"Automatically reclaim your", "Prime Subscription", "every month"
+	],
+		"claim-prime:max-claims": [
+			"Max Resubscriptions",
+			"Prime Subscription", "will resubscribe for", "months"
+		],
+
 	"stay-live": [
 		"Stay Live",
 		"After the current stream ends, go to the", "Next Channel"

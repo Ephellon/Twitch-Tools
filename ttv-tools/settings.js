@@ -92,6 +92,9 @@ let // These are option names. Anything else will be removed
         'prevent_hosting',
         // Prime Loot
         'claim_loot',
+        // Prime Subscription
+        'claim_prime',
+            'claim_prime__max_claims',
         // Kill Extensions
         'kill_extensions',
         // Auto Accept Mature Content
@@ -654,7 +657,7 @@ class DatePicker {
 
         document.body.append(container);
 
-        return awaitOn(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
+        return until(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
     }
 }
 
@@ -1131,13 +1134,14 @@ $('#whisper_audio_sound-test', true).map(button => button.onclick = async event 
 
     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
 
+    let url = parseURL(top.location);
     let test_sound = furnish('audio#tt-test-sound', {
         style: 'display:none',
 
         innerHTML: ['mp3', 'ogg']
             .map(type => {
                 let types = { mp3: 'mpeg' },
-                    src = Runtime.getURL(`aud/${ selected.value }.${ type }`);
+                    src = (`${ url.origin }/aud/${ selected.value }.${ type }`);
                 type = `audio/${ types[type] ?? type }`;
 
                 return furnish('source', { src, type }).outerHTML;
@@ -1165,7 +1169,7 @@ $('#user_language_preference', true).map(select => {
     }
 
     Storage.get({ user_language_preference }, ({ user_language_preference }) => {
-        let lang = user_language_preference.toLowerCase();
+        let lang = user_language_preference?.toLowerCase();
 
         $('option[selected]', false, select)?.removeAttribute?.('selected');
         $(`option[value="${ (select.value = lang) }"i]`, false, select).setAttribute('selected', true);
@@ -1186,7 +1190,7 @@ $('#save, .save', true).map(element => element.onclick = async event => {
 
     currentTarget.classList.add('spin');
 
-    awaitOn(() => {
+    until(() => {
         let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
 
         if(nullish(invalid))
@@ -1247,7 +1251,7 @@ $('#sync-settings--upload').onmouseup = async event => {
             PostSyncStatus('Uploading...');
             currentTarget.classList.add('spin');
 
-            let id = parseURL(Runtime.getURL('')).host;
+            let id = parseURL(top.location).host;
             let url = parseURL(`https://www.tinyurl.com/api-create.php`)
                 .pushToSearch({
                     url: encodeURIComponent(
@@ -1656,8 +1660,8 @@ async function Translate(language = 'en', container = document) {
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-    // awaitOn(callback:function[,ms:number~Integer:milliseconds]) → Promise
-async function awaitOn(callback, ms = 100) {
+    // until(callback:function[,ms:number~Integer:milliseconds]) → Promise
+async function until(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
             let value = callback();
@@ -1665,11 +1669,11 @@ async function awaitOn(callback, ms = 100) {
             if(defined(value)) {
                 clearInterval(interval);
                 resolve(
-                    (value === awaitOn.null)?
+                    (value === until.null)?
                         null:
-                    (value === awaitOn.void)?
+                    (value === until.void)?
                         void(''):
-                    (value === awaitOn.undefined)?
+                    (value === until.undefined)?
                         undefined:
                     value
                 );
@@ -1679,7 +1683,7 @@ async function awaitOn(callback, ms = 100) {
 }
 
 try {
-    Object.defineProperties(awaitOn, {
+    Object.defineProperties(until, {
         "null": { value: Symbol(null) },
         "void": { value: Symbol(void('')) },
         "undefined": { value: Symbol(undefined) },
@@ -1707,7 +1711,7 @@ document.body.onload = async() => {
                 detectedLanguage = user_language_preference;
         });
 
-        return awaitOn(() => {
+        return until(() => {
             let languageOptions = $('.language-select');
 
             if(nullish(languageOptions))
@@ -1745,7 +1749,14 @@ document.body.onload = async() => {
             if(defined(language))
                 await Storage.set({ user_language_preference: language.toLowerCase() });
 
-            await Storage.get(['user_language_preference'], ({ user_language_preference }) => Translate(document.documentElement.lang = user_language_preference.toLowerCase()));
+            await Storage.get(['user_language_preference'], ({ user_language_preference }) => {
+                let lang = document.documentElement.lang = user_language_preference.toLowerCase();
+
+                if(lang == 'en')
+                    TRANSLATED = true;
+                else
+                    Translate(lang);
+            });
 
             TRANSLATED = true;
         })

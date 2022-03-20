@@ -31,7 +31,7 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     JUMP_DATA = {};
 
 // Populate the username field by quickly showing the menu
-awaitOn(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
+until(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
     .then(() => {
         UserMenuToggleButton.click();
         ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent ?? '';
@@ -2213,7 +2213,7 @@ function SetViewMode(mode = 'default') {
 // Get the current user activity
     // GetActivity() → Promise <String | null>
 async function GetActivity() {
-    return awaitOn(() => {
+    return until(() => {
         let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
 
         if(open) {
@@ -2231,7 +2231,7 @@ async function GetActivity() {
 // Get the current page's language
     // GetLanguage() → Promise <String | null>
 async function GetLanguage() {
-    return awaitOn(() => {
+    return until(() => {
         let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
 
         if(open) {
@@ -2524,7 +2524,12 @@ try {
             let change = changes[key],
                 { oldValue, newValue } = change;
 
-            let name = key.replace(/(^|_)([a-z])/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, ' -');
+            let name = key
+                .replace(/\$\$/g, ' | ')
+                .replace(/\$/g, '/')
+                .replace(/__/g, ' - ')
+                .replace(/_/g, ' ')
+                .trim();
 
             if(newValue === false) {
 
@@ -3440,7 +3445,7 @@ let Initialize = async(START_OVER = false) => {
             }
         });
 
-        return awaitOn(() => GetNextStreamer.cachedStreamer);
+        return until(() => GetNextStreamer.cachedStreamer);
     }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
@@ -3500,11 +3505,15 @@ let Initialize = async(START_OVER = false) => {
      * face:string       - GETTER: a URL to the channel points image (if applicable)
      * fiat:string*      - GETTER: returns the name of the channel points (if applicable)
      * follow:function   - follows the current channel
+     * from:string*      - GETTER: returns where the data was collected for the object
      * game:string*      - GETTER: the name of the current game/category
      * href:string       - link to the channel (usually the current href)
      * icon:string       - link to the channel's icon/image
+     * jump:array*       - GETTER: extra data from the Apollo data-stream
      * like:boolean*     - GETTER: is the user following the current channel
      * live:boolean*     - GETTER: is the channel currently live
+     * main:boolean*     - GETTER: returns whether the stream is the user's Prime Subscription
+     * mark:number*      - GETTER: returns an activity score based on the channel's tags
      * name:string       - the channel's username
      * paid:boolean*     - GETTER: is the user  subscribed
      * ping:boolean*     - GETTER: does the user have notifications on
@@ -3648,7 +3657,13 @@ let Initialize = async(START_OVER = false) => {
                         }
                     });
 
-                return COMMANDS = COMMANDS.sort((a, b) => a.command.length > b.command.length? -1: +1);
+                let commands = new Map;
+                for(let command of COMMANDS)
+                    commands.set(command.command, command);
+
+                return COMMANDS = [[...commands].map(([name, value]) => value)]
+                    .flat()
+                    .sort((a, b) => a.command.length > b.command.length? -1: +1);
             })(STREAMER);
         },
 
@@ -3685,7 +3700,7 @@ let Initialize = async(START_OVER = false) => {
                     return done = (notEarned == 0);
                 });
 
-                return STREAMER.__done__ = await awaitOn(() => done);
+                return STREAMER.__done__ = await until(() => done);
             })();
         },
 
@@ -3751,6 +3766,10 @@ let Initialize = async(START_OVER = false) => {
                     && defined($('[status] [class*="status-text"i]')) && nullish($(`[class*="offline-recommend"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`)?.textContent?.trim() ?? "")
                 )
+        },
+
+        get main() {
+            return STREAMER.paid && defined($('[tt-svg-label="prime-subscription"i]'))
         },
 
         get mark() {
@@ -4515,7 +4534,7 @@ let Initialize = async(START_OVER = false) => {
 
         $(`[class*="info"i] [href$="${ STREAMER.name }"i] [class*="title"i], main [href$="${ STREAMER.name }"i]`, true).map(element => {
             element.closest('div[class]').addEventListener('mousedown', async({ isTrusted, button = -1 }) => {
-                !button && (await awaitOn(() => $('.home')))?.setAttribute?.('user-intended', IGNORE_ZOOM_STATE = isTrusted);
+                !button && (await until(() => $('.home')))?.setAttribute?.('user-intended', IGNORE_ZOOM_STATE = isTrusted);
             })
         });
     }
@@ -5075,7 +5094,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         // Scheduling logic...
-        awaitOn(() => $('#away-mode'), 3_000).then(awayMode => {
+        until(() => $('#away-mode'), 3_000).then(awayMode => {
             let schedules = JSON.parse(Settings?.away_mode_schedule || '[]');
             let today = new Date(),
                 YEAR = today.getFullYear(),
@@ -5161,11 +5180,71 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.claim_loot = -5_000;
 
-    __ClaimPrime__:
+    __ClaimLoot__:
     if(parseBool(Settings.claim_loot)) {
         REMARK("Claiming Prime Gaming Loot...");
 
         RegisterJob('claim_loot');
+    }
+
+    /*** Claim Prime
+     *       _____ _       _             _____      _
+     *      / ____| |     (_)           |  __ \    (_)
+     *     | |    | | __ _ _ _ __ ___   | |__) | __ _ _ __ ___   ___
+     *     | |    | |/ _` | | '_ ` _ \  |  ___/ '__| | '_ ` _ \ / _ \
+     *     | |____| | (_| | | | | | | | | |   | |  | | | | | | |  __/
+     *      \_____|_|\__,_|_|_| |_| |_| |_|   |_|  |_|_| |_| |_|\___|
+     *
+     *
+     */
+    Handlers.claim_prime = () => {
+        LoadCache(['PrimeSubscription', 'PrimeSubscriptionReclaims'], ({ PrimeSubscription, PrimeSubscriptionReclaims }) => {
+            PrimeSubscription ??= '';
+            PrimeSubscriptionReclaims ??= 0;
+
+            // Set the current streamer for auto-renewal...
+            if(PrimeSubscription.length < 1 && STREAMER.main)
+                SaveCache({ PrimeSubscription: (PrimeSubscription = STREAMER.sole.toString(36).toUpperCase()), PrimeSubscriptionReclaims: (PrimeSubscriptionReclaims = parseInt(Settings.claim_prime__max_claims)) });
+
+            resubscribing:
+            if(PrimeSubscription.toUpperCase() == STREAMER.sole.toString(36).toUpperCase()) {
+                if(PrimeSubscriptionReclaims <= 2)
+                    confirm.timed(`Please review your settings. TTV Tools ${ ['was', 'is'][+!!PrimeSubscriptionReclaims] } still reclaiming your <strong>Prime Subscription</strong> for this channel!`)
+                        .then(answer => {
+                            // OK → Open the settings page
+                            if(answer)
+                                postMessage({ action: 'open-options-page' });
+                            // Cancel → Remove the warning
+                            else if(answer === false)
+                                /* SaveCache({ PrimeSubscription: (PrimeSubscription = ''), PrimeSubscriptionReclaims: 0 }) */;
+                        });
+
+                if(PrimeSubscriptionReclaims < 1)
+                    break resubscribing;
+
+                let button = $('[data-a-target="subscribe-button"i]');
+
+                if(nullish(button))
+                    break resubscribing;
+                button.click();
+
+                until(() => $('.channel-root .support-panel input[type="checkbox"i]:not(:checked)'))
+                    .then(input => {
+                        input.checked = true;
+                        input.closest('.support-panel').querySelector('button[state]:only-child')?.click();
+
+                        until(() => STREAMER.main? true: null).then(ok => SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims }));
+                    });
+            }
+        });
+    };
+    Timers.claim_prime = -5_000;
+
+    __ClaimLoot__:
+    if(parseBool(Settings.claim_prime)) {
+        REMARK("Claiming Prime Subscription...");
+
+        RegisterJob('claim_prime');
     }
 
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
@@ -5569,7 +5648,7 @@ let Initialize = async(START_OVER = false) => {
                             while(!ok && --max > 0) {
                                 Search.void(name);
 
-                                channel = await awaitOn(() => new Search(name).then(Search.convertResults), 500);
+                                channel = await until(() => new Search(name).then(Search.convertResults), 500);
                                 ok = /\/jtv_user/i.test(channel.icon);
                             }
 
@@ -6847,7 +6926,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }) || parseBool(message) && alert.timed(message, 7_000));
+                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7_000)).catch(WARN));
                         });
                     },
                 }, f('div', {},
@@ -6894,7 +6973,7 @@ let Initialize = async(START_OVER = false) => {
                     while(!ok && --max > 0) {
                         Search.void(reminderName);
 
-                        channel = await awaitOn(() => new Search(reminderName).then(Search.convertResults), 500);
+                        channel = await until(() => new Search(reminderName).then(Search.convertResults), 500);
                         ok = /\/jtv_user/i.test(channel.icon);
                     }
 
@@ -7082,29 +7161,55 @@ let Initialize = async(START_OVER = false) => {
         for(let element of elements) {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
-                await awaitOn(() => {
+                await until(() => {
                     element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
-                        reply = reply.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
-                            let path = $1.replace(/^\W|\W$/g, '').split('.');
+                        reply = reply?.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
+                            let path = $1.replace(/^[\(\[\{]+|[\}\]\)]+$/g, '').split('.');
                             let properties = ({
                                 // StreamElements
                                 user: {
                                     _: USERNAME,
+                                    name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
+                                    level: 100,
+
                                     points: STREAMER.coin,
-                                    points_rank: nth(STREAMER.rank, ''),
-                                    time_online: toTimeString((STREAMER.coin / 320) * 4_000),
+                                    points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                    points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                    time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                                    time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+
+                                    lastmessage: GetChat().filter(({ author }) => USERNAME.contains(author)),
+                                    lastseen: toTimeString(0, '!minute_m !second_s'),
+                                    lastactive: toTimeString(0, '!minute_m !second_s'),
+
+                                    time_online: toTimeString((parseCoin($('#tt-points-receipt').textContent) / 320) * 4_000),
+                                    time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
                                 },
                                 user1: USERNAME,
 
                                 channel: {
                                     _: STREAMER.name,
+                                    viewers: STREAMER.poll,
+                                    views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
+                                    followers: STREAMER.cult,
+                                    subs: STREAMER.poll,
+                                    display_name: STREAMER.name,
                                     alias: STREAMER.name,
                                 },
                                 user2: STREAMER.name,
 
+                                title: $('[data-a-target="stream-title"i]').textContent,
+                                status: $('[data-a-target="stream-title"i]').textContent,
+
+                                game: $('[data-a-target="stream-game-link"i]').textContent,
+
                                 pointsname: STREAMER.fiat,
 
+                                uptime: toTimeString(STREAMER.time),
+
                                 // NightBot
+                                channelid: STREAMER.sole,
+                                userlevel: 'everyone',
                                 touser: `@${ USERNAME }`,
                                 urlfetch: `External website`,
 
@@ -7118,15 +7223,15 @@ let Initialize = async(START_OVER = false) => {
 
                             return value || $_;
                         })
-                        .replace(/^\/(?:\w\S+)/, '');
+                        ?.replace(/^\/(?:\w\S+)/, '');
 
                         let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {}),
                             string;
 
                         if(parseBool(Settings.parse_commands__create_links) && defined(href))
-                            string = `<a href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank title="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
+                            string = `<a style="opacity:${ 2**-!enabled }" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank title="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
                         else
-                            string = `<span style=text-decoration:underline title="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
+                            string = `<span style="text-decoration:underline;opacity:${ 2**-!enabled }" title="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
 
                         return `<span tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
@@ -8909,7 +9014,7 @@ let Initialize = async(START_OVER = false) => {
                             onload: event => {
                                 let hasVideo = element => defined(element) && /(video)/i.test(element.tagName);
 
-                                awaitOn(() => {
+                                until(() => {
                                     let doc = $('#video')?.contentDocument;
 
                                     if(nullish(doc))
@@ -9750,9 +9855,13 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     rewind: [
                         "rewind-stream",
                     ].reverse(),
+
+                    crown: [
+                        "prime-subscription",
+                    ],
                 };
 
-                for(let container of $('#sideNav .side-nav-section[aria-label], .about-section__actions > * > *', true)) {
+                for(let container of $('#sideNav .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
                     let svg = $('svg', false, container);
 
                     comparing:

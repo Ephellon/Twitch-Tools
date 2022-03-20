@@ -3358,7 +3358,7 @@ function phantomClick(...elements) {
     // alert([message:string]) → null
 function alert(message = '') {
     if(defined($('.tt-alert')))
-        return awaitOn(() => nullish($('.tt-alert'))? alert(message): null);
+        return until(() => nullish($('.tt-alert'))? alert(message): null);
 
     let f = furnish;
 
@@ -3390,7 +3390,7 @@ function alert(message = '') {
 
     document.body.append(container);
 
-    return awaitOn(() => {
+    return until(() => {
         let element = $('.tt-alert'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-alert-time')?.getAttribute('tt-done'));
@@ -3402,10 +3402,10 @@ function alert(message = '') {
 
             phantomClick(button);
 
-            return awaitOn.void;
+            return until.void;
         }
 
-        return (value? awaitOn.void: null);
+        return (value? until.void: null);
     });
 }
 
@@ -3413,7 +3413,7 @@ function alert(message = '') {
     // alert.silent([message:string[, veiled:boolean]]) → null
 alert.silent ??= (message = '', veiled = false) => {
     if(defined($('.tt-alert')))
-        return awaitOn(() => nullish($('.tt-alert'))? alert.silent(message): null);
+        return until(() => nullish($('.tt-alert'))? alert.silent(message): null);
 
     let response = alert(message),
         container = $('.tt-alert');
@@ -3431,7 +3431,7 @@ alert.silent ??= (message = '', veiled = false) => {
     // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → null
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(defined($('.tt-alert')))
-        return awaitOn(() => nullish($('.tt-alert'))? alert.timed(message, milliseconds, pausable): null);
+        return until(() => nullish($('.tt-alert'))? alert.timed(message, milliseconds, pausable): null);
 
     let response = alert.silent(message),
         container = $('.tt-alert');
@@ -3468,7 +3468,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     // confirm([message:string]) → Boolean|null
 function confirm(message = '') {
     if(defined($('.tt-confirm')))
-        return awaitOn(() => nullish($('.tt-confirm'))? confirm(message): null);
+        return until(() => nullish($('.tt-confirm'))? confirm(message): null);
 
     let f = furnish;
 
@@ -3517,7 +3517,7 @@ function confirm(message = '') {
 
     document.body.append(container);
 
-    return awaitOn(() => {
+    return until(() => {
         let element = $('.tt-confirm'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-confirm-time')?.getAttribute('tt-done'));
@@ -3529,7 +3529,7 @@ function confirm(message = '') {
 
             phantomClick(button);
 
-            return awaitOn.null;
+            return until.null;
         }
 
         return value;
@@ -3540,7 +3540,7 @@ function confirm(message = '') {
     // confirm.silent([message:string[, veiled:boolean]]) → Boolean|null
 confirm.silent ??= (message = '', veiled = false) => {
     if(defined($('.tt-confirm')))
-        return awaitOn(() => nullish($('.tt-confirm'))? confirm.silent(message): null);
+        return until(() => nullish($('.tt-confirm'))? confirm.silent(message): null);
 
     let response = confirm(message),
         container = $('.tt-confirm');
@@ -3558,7 +3558,7 @@ confirm.silent ??= (message = '', veiled = false) => {
     // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → Boolean|null
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(defined($('.tt-confirm')))
-        return awaitOn(() => nullish($('.tt-confirm'))? confirm.timed(message, milliseconds, pausable): null);
+        return until(() => nullish($('.tt-confirm'))? confirm.timed(message, milliseconds, pausable): null);
 
     let response = confirm.silent(message),
         container = $('.tt-confirm');
@@ -3595,7 +3595,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     // prompt([message:string[, defaultValue:string]]) → String|null
 function prompt(message = '', defaultValue = '') {
     if(defined($('.tt-prompt')))
-        return awaitOn(() => nullish($('.tt-prompt'))? prompt(message, defaultValue): null);
+        return until(() => nullish($('.tt-prompt'))? prompt(message, defaultValue): null);
 
     let f = furnish;
 
@@ -3664,7 +3664,7 @@ function prompt(message = '', defaultValue = '') {
 
     $('.tt-prompt-input').value = defaultValue;
 
-    return awaitOn(() => {
+    return until(() => {
         let element = $('.tt-prompt'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-prompt-time')?.getAttribute('tt-done'));
@@ -3674,10 +3674,10 @@ function prompt(message = '', defaultValue = '') {
 
             phantomClick(button);
 
-            return awaitOn.null;
+            return until.null;
         }
 
-        return (value == '\0'? awaitOn.null: value);
+        return (value == '\0'? until.null: value);
     });
 }
 
@@ -3685,7 +3685,7 @@ function prompt(message = '', defaultValue = '') {
     // prompt.silent([message:string[, defaultValue:string[, veiled:boolean]]]) → String|null
 prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     if(defined($('.tt-prompt')))
-        return awaitOn(() => nullish($('.tt-prompt'))? prompt.silent(message, defaultValue): null);
+        return until(() => nullish($('.tt-prompt'))? prompt.silent(message, defaultValue): null);
 
     let response = prompt(message, defaultValue),
         container = $('.tt-prompt');
@@ -3703,7 +3703,7 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → String|null
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     if(defined($('.tt-prompt')))
-        return awaitOn(() => nullish($('.tt-prompt'))? prompt.timed(message, milliseconds, pausable): null);
+        return until(() => nullish($('.tt-prompt'))? prompt.timed(message, milliseconds, pausable): null);
 
     let response = prompt.silent(message),
         container = $('.tt-prompt');

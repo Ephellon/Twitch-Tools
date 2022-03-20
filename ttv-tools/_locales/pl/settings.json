@@ -276,6 +276,14 @@
         "Prime Gaming Loot",
         "oferty po załadowaniu strony"
     ],
+	"claim-prime": [
+		"Subskrypcja Prime",
+        "Automatycznie odnawiaj","subskrypcję Prime","co miesiąc"
+	],
+	"claim-prime:max-claims": [
+		"Maksymalna liczba subskrypcji",
+        "Subskrypcje Prime","będą subskrybowane ponownie na","miesiące"
+	],
     "stay-live": [
         "Pozostań na żywo",
         "Po zakończeniu bieżącej transmisji przejdź do",

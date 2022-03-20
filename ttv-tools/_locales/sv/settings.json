@@ -278,6 +278,14 @@
         "Prime Gaming Loot",
         "erbjudanden när sidan laddas"
     ],
+	"claim-prime": [
+		"Prime-prenumeration",
+        "Förnya automatiskt din","Prime-prenumeration","varje månad"
+	],
+	"claim-prime:max-claims": [
+		"Maxprenumerationer",
+        "Prime-prenumerationer","kommer att prenumerera igen i","månader"
+	],
     "stay-live": [
         "Håll dig live",
         "När den aktuella strömmen är slut går du till",

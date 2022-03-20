@@ -406,7 +406,7 @@ html:not([lang="en"i]) .title {
 /* ...::after */
 :is(.radio, .checkbox) > input:checked + label:first-of-type::before {
     background-color: var(--purple);
-    border: 0;
+    border: 6px double transparent;
 }
 
 .checkbox.left > input + label {
@@ -1055,6 +1055,10 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 /* Inputs with units */
+[unit] {
+    white-space: nowrap;
+}
+
 [unit] > input {
     border-right: 0;
     border-top-right-radius: 0;

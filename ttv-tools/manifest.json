@@ -10,12 +10,12 @@
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {
-        "16": "16.g.png",
-        "32": "32.g.png",
-        "48": "48.g.png",
-        "96": "96.g.png",
-        "128": "128.g.png",
-        "256": "256.g.png"
+        "16": "16.png",
+        "32": "32.png",
+        "48": "48.png",
+        "96": "96.png",
+        "128": "128.png",
+        "256": "256.png"
     },
 
     "content_scripts": [
@@ -91,10 +91,10 @@
 
     "action": {
         "default_icon": {
-            "16": "16.g.png",
-            "32": "32.g.png",
-            "48": "48.g.png",
-            "96": "96.g.png"
+            "16": "16.png",
+            "32": "32.png",
+            "48": "48.png",
+            "96": "96.png"
         },
         "default_title": "TTV Tools",
         "default_popup": "settings.html?popup=1"

@@ -278,6 +278,14 @@
         "Prime Gaming Loot",
         "ponuky pri načítaní stránky"
     ],
+	"claim-prime": [
+		"Prime Subscription",
+        "Automaticky obnovujte svoje","predplatné Prime","každý mesiac"
+	],
+	"claim-prime:max-claims": [
+		"Maximálny počet odberov",
+        "Odbery Prime","sa znova predplatia na","mesiace"
+	],
     "stay-live": [
         "Zostať v živom prenose",
         "Po skončení aktuálneho streamu prejdite na",

@@ -533,7 +533,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
                                     [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
 
-                                let display_name = await awaitOn(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
+                                let display_name = await until(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
                                     [language] = languages.filter(lang => !alt_languages.contains(lang)),
                                     name = display_name?.toLowerCase(),
                                     profile_image = $('meta[property$="image"i]', false, doc)?.content,

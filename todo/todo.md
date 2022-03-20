@@ -46,6 +46,9 @@
 - Eased viewing for "X amount of points required" buttons
 - Updated `Number..suffix` logic
 - Adjusted `parseURL` logic
+- Added Prime Subscription
+- Renamed `awaitOn` to `until`
+- Changed icon color to IGOR pink
 
 ----
 

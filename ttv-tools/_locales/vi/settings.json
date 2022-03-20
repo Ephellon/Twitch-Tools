@@ -274,6 +274,14 @@
         "Prime Gaming Loot",
         "cung cấp khi trang tải"
     ],
+	"claim-prime": [
+		"Đăng ký Prime",
+        "Tự động gia hạn","đăng ký Prime","của bạn hàng tháng"
+	],
+	"claim-prime:max-claims": [
+		"Đăng ký tối đa",
+        "Đăng ký chính sẽ","đăng ký lại trong","tháng"
+	],
     "stay-live": [
         "Stay Live",
         "Sau khi luồng hiện tại kết thúc, hãy đi đến",
