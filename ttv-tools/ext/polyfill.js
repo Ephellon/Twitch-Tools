@@ -26,58 +26,60 @@ function parseURL(url) {
 
     url = url.toString();
 
-    let data = url.match(/^((([^:\/?#]+):)?(?:\/\/)?)(?:([^:]*):([^@]*)@)?(([^:\/?#]*)?(?:\:(\d+))?)?([^?#]*)(\?[^#]*)?(#.*)?$/),
-        i    = 0,
-        e    = "";
+    let {
+        href,
+        origin = '',
+        protocol = '',
+        scheme = '',
+        username = '',
+        password = '',
+        host = '',
+        hostname = '',
+        port = '',
+        pathname = '',
+        search = '',
+        hash = '',
+    } = /^(?<href>(?<origin>(?<protocol>(?<scheme>[^:\/?#]+):)?(?:\/\/)?)(?:(?<username>[^:]*):(?<password>[^@]*)@)?(?<host>(?<hostname>[^:\/?#]*)?(?:\:(?<port>\d+))?)?(?<pathname>[^?#]*)(?<search>\?[^#]*)?(?<hash>#.*)?)$/
+        .exec(url)
+        .groups;
 
-    data = data || e;
+    origin += host;
 
     return {
-        href:            (data[i++] ?? e),
-        origin:          (data[i++] ?? e) + (data[i + 4] ?? e),
-        protocol:        (data[i++] ?? e),
-        scheme:          (data[i++] ?? e),
-        username:        (data[i++] ?? e),
-        password:        (data[i++] ?? e),
-        host:            (data[i++] ?? e),
-        domainPath:      (data[i]   ?? e).split('.').reverse(),
-        hostname:        (data[i++] ?? e),
-        port:            (data[i++] ?? e),
-        pathname:        (data[i++] ?? e),
-        search:          (data[i]   ?? e),
-        searchParameters: (sd => {
+        href, origin, protocol, scheme, username, password, host, hostname, port, pathname, search, hash,
+
+        domainPath: hostname.split('.').reverse(),
+        searchParameters: (data => {
+            let results = {};
+
             parsing:
-            for(var i = 0, s = {}, e = "", d = sd.slice(1, sd.length).split('&'), n, p, c; sd != e && i < d.length; i++) {
-                c = d[i].split('=');
-                n = c[0] || e;
+            for(let query of data) {
+                let [name = '', value = ''] = query.split('=', 2);
 
-                p = c.slice(1, c.length).join('=');
-
-                s[n] = (s[n] != undefined)?
-                    s[n] instanceof Array?
-                s[n].concat(p):
-                    [s[n], p]:
-                p;
+                results[name] = (
+                    defined(results[name])?
+                        results[name] instanceof Array?
+                            results[name].concat(value):
+                        [results[name], value]:
+                    value
+                );
             }
 
-            return s;
-        })(data[i++] || e),
-        hash:            (data[i++] || e),
+            return results;
+        })(search.slice(1).split('&')),
 
         pushToSearch(parameters, overwrite = false) {
             if(typeof url == 'string')
                 url = parseURL(url);
 
-            let { origin, pathname, hash, searchParameters } = url;
+            let { href, searchParameters } = url;
 
             if(overwrite)
                 searchParameters = Object.entries({ ...searchParameters, ...parameters });
             else
                 searchParameters = [searchParameters, parameters].map(Object.entries).flat();
 
-            searchParameters = '?' + searchParameters.map(parameter => parameter.join('=')).join('&');
-
-            return parseURL(origin + pathname + searchParameters + hash);
+            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.map(parameter => parameter.join('=')).join('&') }$1`));
         },
     };
 }

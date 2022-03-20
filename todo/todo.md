@@ -45,6 +45,7 @@
 - Adjusted Time Zone logic
 - Eased viewing for "X amount of points required" buttons
 - Updated `Number..suffix` logic
+- Adjusted `parseURL` logic
 
 ----
 

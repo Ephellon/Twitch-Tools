@@ -112,7 +112,7 @@ let Player__Initialize = async(START_OVER = false) => {
 
     Handlers.hide_blank_ads = () => {
         let capture = $('video').captureFrame(),
-            banner = Extension.getURL('twitch-banner.png');
+            banner = Runtime.getURL('twitch-banner.png');
 
         resemble(capture)
             .compareTo(banner)

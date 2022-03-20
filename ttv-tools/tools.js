@@ -3648,9 +3648,7 @@ let Initialize = async(START_OVER = false) => {
                         }
                     });
 
-                COMMANDS = COMMANDS.sort((a, b) => a.command.length > b.command.length? -1: +1);
-
-                return COMMANDS;
+                return COMMANDS = COMMANDS.sort((a, b) => a.command.length > b.command.length? -1: +1);
             })(STREAMER);
         },
 
@@ -7083,70 +7081,61 @@ let Initialize = async(START_OVER = false) => {
 
         for(let element of elements) {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
-                element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
-                    reply = reply.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
-                        let path = $1.replace(/^\W|\W$/g, '').split('.');
-                        let properties = ({
-                            // StreamElements
-                            user: {
-                                _: USERNAME,
-                                points: STREAMER.coin,
-                                points_rank: nth(STREAMER.rank, ''),
-                                time_online: toTimeString((STREAMER.coin / 320) * 4_000),
-                            },
-                            user1: USERNAME,
+                // Wait here to keep from lagging the page...
+                await awaitOn(() => {
+                    element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
+                        reply = reply.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
+                            let path = $1.replace(/^\W|\W$/g, '').split('.');
+                            let properties = ({
+                                // StreamElements
+                                user: {
+                                    _: USERNAME,
+                                    points: STREAMER.coin,
+                                    points_rank: nth(STREAMER.rank, ''),
+                                    time_online: toTimeString((STREAMER.coin / 320) * 4_000),
+                                },
+                                user1: USERNAME,
 
-                            channel: {
-                                _: STREAMER.name,
-                                alias: STREAMER.name,
-                            },
-                            user2: STREAMER.name,
+                                channel: {
+                                    _: STREAMER.name,
+                                    alias: STREAMER.name,
+                                },
+                                user2: STREAMER.name,
 
-                            pointsname: STREAMER.fiat,
+                                pointsname: STREAMER.fiat,
 
-                            // NightBot
-                            touser: `@${ USERNAME }`,
-                            urlfetch: `External website`,
+                                // NightBot
+                                touser: `@${ USERNAME }`,
+                                urlfetch: `External website`,
 
-                            // Fetched...
-                            ...variables
-                        }),
-                            value;
+                                // Fetched...
+                                ...variables
+                            }),
+                                value;
 
-                        for(let root of path)
-                            value = properties[root]?._ || properties[root];
+                            for(let root of path)
+                                value = properties[root]?._ || properties[root];
 
-                        return value || $_;
-                    })
-                    .replace(/^\/(?:\w\S+)/, '');
+                            return value || $_;
+                        })
+                        .replace(/^\/(?:\w\S+)/, '');
 
-                    let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {}),
-                        string;
+                        let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {}),
+                            string;
 
-                    if(parseBool(Settings.parse_commands__create_links) && defined(href))
-                        string = `<a href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank tip-text--commands="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
-                    else
-                        string = `<span style=text-decoration:underline tip-text--commands="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
+                        if(parseBool(Settings.parse_commands__create_links) && defined(href))
+                            string = `<a href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank title="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
+                        else
+                            string = `<span style=text-decoration:underline title="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
 
-                    return `{{parse_commands?=${ btoa(escape(string)) }}}`;
-                });
+                        return `<span tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
+                    });
 
-            element.innerHTML = element.innerHTML.replace(/\{\{parse_commands\?=(.+?)\}\}/g, ($0, $1, $$, $_) => unescape(atob($1)));
+                    return true;
+                }, 1);
+
+            $('[tt-parse-commands]', true).map(element => element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands'))));
         }
-
-        setTimeout(() => {
-            $('[tip-text--commands]', true)
-                .map(element => {
-                    let text = element.getAttribute('tip-text--commands');
-
-                    element.setAttribute('title', text);
-
-                    // TODO: correct element position if not on screen
-                    // new Tooltip(element, text, { from: 'top' });
-
-                    // element.removeAttribute('tip-text--commands');
-                });
-        }, 100);
     };
     Timers.parse_commands = -2_500;
 

@@ -6,7 +6,7 @@
     "default_locale": "en",
 
     "version": "5.0",
-    "minimum_chrome_version": "85",
+    "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
     "icons": {
