@@ -49,6 +49,8 @@
 - Added Prime Subscription
 - Renamed `awaitOn` to `until`
 - Changed icon color to IGOR pink
+- Adjusted Time Zone logic
+- Added logic to keep an empty Up Next queue from displaying incorrectly
 
 ----
 

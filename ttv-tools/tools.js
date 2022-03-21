@@ -5233,7 +5233,11 @@ let Initialize = async(START_OVER = false) => {
                         input.checked = true;
                         input.closest('.support-panel').querySelector('button[state]:only-child')?.click();
 
-                        until(() => STREAMER.main? true: null).then(ok => SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims }));
+                        until(() => STREAMER.main? true: null).then(ok => {
+                            SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
+
+                            WARN(`[Prime Subscription] just renewd your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`).toNativeStack();
+                        });
                     });
             }
         });
@@ -5518,11 +5522,12 @@ let Initialize = async(START_OVER = false) => {
                     let { currentTarget } = event,
                         speeding = parseBool(currentTarget.getAttribute('speeding'));
 
-                    speeding = !speeding;
+                    speeding = (FIRST_IN_LINE_BOOST = !speeding);
+                    speeding = (FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS?.length > 0 && FIRST_IN_LINE_HREF?.length > 0);
 
                     currentTarget.querySelector('svg[fill]')?.setAttribute('fill', 'currentcolor');
                     currentTarget.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!speeding }; fill:currentcolor`);
-                    currentTarget.setAttribute('speeding', FIRST_IN_LINE_BOOST = speeding);
+                    currentTarget.setAttribute('speeding', speeding);
 
                     currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
 
@@ -7804,8 +7809,11 @@ let Initialize = async(START_OVER = false) => {
             // .replace(/\b(mornings?|dawn)\b/i, '06:00AM')
             .replace(/\b(after\s?noons?|evenings?)\b/i, '01:00PM')
             .replace(/\b(noons?|lunch[\s\-]?time)\b/i, '12:00PM')
-            // .replace(/\b(nights?|dusk)\b/i, '06:00PM')
-            .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM');
+            // .replace(/\b((?:to|2)?nights?|dusk)\b/i, '06:00PM')
+            .replace(/\b(mid[\s\-]?nights?)\b/i, '12:00AM')
+
+            // Ignores shorthands → "today" "2day" "tonight" "2night" "tomorrow" "2morrow"
+            .replace(/\b(?:to|2)(?:day|night|morrow)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'));
     }
 
     convertWordsToTimes.inReverse ??= (string = '') => {
@@ -7868,7 +7876,7 @@ let Initialize = async(START_OVER = false) => {
                         else if(/[\+\-]/.test(timezone))
                             timezone = timezone.replace(/^[+-]/, 'GMT$&');
                         else
-                            continue parsing;
+                            continue searching;
 
                         MASTER_TIME_ZONE ||= name;
                     }

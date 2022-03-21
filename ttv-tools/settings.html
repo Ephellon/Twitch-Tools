@@ -448,7 +448,7 @@
                                 <div class='title' tr-id='claim-prime:max-claims'>Max Resubscriptions</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        <b>Prime Subscription</b> will resubscribe for <span unit='&#x1f522;'><input id='claim_prime__max_claims' type='number' value='3' min='1' max='12' step='1'/></span> months.
+                                        <b>Prime Subscription</b> will resubscribe for <span unit='&#x1f522;'><input id='claim_prime__max_claims' type='number' value='3' min='1' max='48' step='1'/></span> months.
                                     </p>
                                 </div>
                             </div>
@@ -1827,7 +1827,7 @@
             </footer>
         </article>
 
-        <div id='context-id' set='content=context.id'></div>
+        <div id='context-id' set='content=context.id;style->text-decoration:2px dotted underline #\context.id::int@16?8'></div>
 
         <button id='save' class='ripple'></button>
 

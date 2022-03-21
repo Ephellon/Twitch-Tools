@@ -13,6 +13,12 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
 
+function getURL(path = '') {
+    let url = parseURL(top.location);
+
+    return url.origin + path.replace(/^(?!\/)/, '/');
+}
+
 let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
 
 const PRIVATE_OBJECT_CONFIGURATION = Object.freeze({
@@ -1134,14 +1140,13 @@ $('#whisper_audio_sound-test', true).map(button => button.onclick = async event 
 
     $('#sound-href').href = parseURL($('#sound-href').href).origin + pathname;
 
-    let url = parseURL(top.location);
     let test_sound = furnish('audio#tt-test-sound', {
         style: 'display:none',
 
         innerHTML: ['mp3', 'ogg']
             .map(type => {
                 let types = { mp3: 'mpeg' },
-                    src = (`${ url.origin }/aud/${ selected.value }.${ type }`);
+                    src = getURL(`aud/${ selected.value }.${ type }`);
                 type = `audio/${ types[type] ?? type }`;
 
                 return furnish('source', { src, type }).outerHTML;
@@ -1251,7 +1256,7 @@ $('#sync-settings--upload').onmouseup = async event => {
             PostSyncStatus('Uploading...');
             currentTarget.classList.add('spin');
 
-            let id = parseURL(top.location).host;
+            let id = parseURL(getURL('')).host;
             let url = parseURL(`https://www.tinyurl.com/api-create.php`)
                 .pushToSearch({
                     url: encodeURIComponent(
@@ -1471,10 +1476,10 @@ let FETCHED_DATA = { wasFetched: false };
             let expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
 
             for(let expression of expressions) {
-                // Literal (x=y) v. Metaphorical (x:y)
+                // Literal (x=y)
                 if(/^([\w\-]+)=/.test(expression)) {
-                    let [attribute, property] = expression.split('='),
-                    value;
+                    let [attribute, property] = expression.split('=', 2),
+                        value;
 
                     property = property.split('.');
 
@@ -1486,21 +1491,86 @@ let FETCHED_DATA = { wasFetched: false };
                     }
 
                     element.setAttribute(attribute, value);
-                } else if(/^([\w\-]+):/.test(expression)) {
-                    let [attribute, property] = expression.split(':'),
-                    value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
-                        let prop = $1.split('.'),
-                        val;
+                }
+                // Metaphorical (x:y)
+                else if(/^([\w\-]+):/.test(expression)) {
+                    let [attribute, property] = expression.split(':', 2),
+                        value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
+                            let prop = $1.split('.'),
+                                val;
 
-                        // Traverse the property path...
-                        for(val = properties; prop.length;) {
-                            let [key] = prop.splice(0, 1);
+                            // Traverse the property path...
+                            for(val = properties; prop.length;) {
+                                let [key] = prop.splice(0, 1);
 
-                            val = val[key];
-                        }
+                                val = val[key];
+                            }
 
-                        return val;
-                    });
+                            return val;
+                        });
+
+                    element.setAttribute(attribute, value);
+                }
+                // Symbolic (x->y)
+                else if(/^([\w\-]+)->/.test(expression)) {
+                    let [attribute, property] = expression.split('->', 2),
+                        value = property.replace(/\\(\w+\.\w+(?:[\.\w])?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
+                            let prop = $1.split('.'),
+                                val;
+
+                            // Traverse the property path...
+                            for(val = properties; prop.length;) {
+                                let [key] = prop.splice(0, 1);
+
+                                val = val[key];
+                            }
+
+                            // Coerce to type...
+                            switch($2 = $2?.toLowerCase()) {
+                                case 'short':
+                                case 'ushort':
+                                case 'int':
+                                case 'uint':
+                                case 'long':
+                                case 'ulong':
+                                case 'float':
+                                case 'ufloat':
+                                case 'double':
+                                case 'udouble':
+                                case 'number':
+                                case 'bigint':
+                                {
+                                    let u = $2.startsWith('u'),
+                                        r = parseInt($3 || 10),
+                                        R = parseInt($4 || r),
+                                        t = parseInt($5 || 1);
+                                    val = parseFloat(val.replace(/[^a-z\d\.]+/ig, '').split('.').map(n => parseInt(n, r)).join('.'));
+
+                                    // 16b
+                                    if($2.endsWith('short'))
+                                        val = val.clamp(-(2**(15* +!u)), 2**(15+ +!u)).ceil();
+
+                                    // 32b
+                                    if($2.endsWith('int'))
+                                        if($2.startsWith('big'))
+                                            val = BigInt(val.ceil());
+                                        else
+                                            val = val.clamp(-(2**(31* +!u)), 2**(31+ +!u)).ceil();
+                                    if($2.endsWith('float'))
+                                        val = val.clamp(-(2**(31* +!u)), 2**(31+ +!u));
+
+                                    // 64b
+                                    if($2.endsWith('long'))
+                                        val = val.clamp(-(2**(63* +!u)), 2**(63+ +!u)).ceil();
+                                    if($2.endsWith('double'))
+                                        val = val.clamp(-(2**(63* +!u)), 2**(63+ +!u));
+
+                                    val = val.toString(R).padStart(t, '0');
+                                } break;
+                            }
+
+                            return val;
+                        });
 
                     element.setAttribute(attribute, value);
                 }

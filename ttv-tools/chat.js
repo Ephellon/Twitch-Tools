@@ -426,11 +426,13 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             return emoteContainer;
         },
-        LOAD_BTTV_EMOTES = async(keyword, provider, ignoreCap = false) => {
+        LOAD_BTTV_EMOTES = async(keyword = '', provider = null, ignoreCap = false) => {
             // Load some emotes (max 100 at a time)
                 // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
                     // emote.code → emote name
                     // emote.id → emote ID (src)
+            if(keyword?.length < 1)
+                return;
 
             // Load emotes from a certain user
             if(defined(provider))
@@ -2139,7 +2141,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
 
-        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-text-live) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); text-shadow:0 0 1px var(--color-background-alt);`);
+        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-text-live) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
 
         let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
 
