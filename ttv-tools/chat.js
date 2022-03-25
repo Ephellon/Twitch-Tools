@@ -431,7 +431,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 // [{ emote: { code:string, id:string, imageType:string, user: { displayName:string, id:string, name:string, providerId:string } } }]
                     // emote.code → emote name
                     // emote.id → emote ID (src)
-            if(keyword?.length < 1)
+            if((keyword || '').trim().length < 1)
                 return;
 
             // Load emotes from a certain user

@@ -54,7 +54,12 @@ function parseURL(url) {
 
             parsing:
             for(let query of data) {
-                let [name = '', value = ''] = query.split('=', 2);
+                let [name, value] = query.split('=', 2);
+
+                if(nullish(name || value))
+                    continue;
+                name ??= '';
+                value ??= '';
 
                 results[name] = (
                     defined(results[name])?
@@ -3357,8 +3362,11 @@ function phantomClick(...elements) {
 // Displays an alert message
     // alert([message:string]) → null
 function alert(message = '') {
+    if(alert.done.contains(message))
+        return alert.done.fetch(message);
+
     if(defined($('.tt-alert')))
-        return until(() => nullish($('.tt-alert'))? alert(message): null);
+        return until(() => nullish($('.tt-alert'))? true: null).then(() => alert(message));
 
     let f = furnish;
 
@@ -3390,7 +3398,7 @@ function alert(message = '') {
 
     document.body.append(container);
 
-    return until(() => {
+    let value = until(() => {
         let element = $('.tt-alert'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-alert-time')?.getAttribute('tt-done'));
@@ -3407,16 +3415,65 @@ function alert(message = '') {
 
         return (value? until.void: null);
     });
+
+    alert.done.deposit(message, value);
+    return value;
 }
+
+Object.defineProperties(alert, {
+    lifetime: {
+        value: 60_000,
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+    done: {
+        value: (map => {
+            map.convert = key => [key, (+new Date).floorToNearest(alert.lifetime).toString(36)].map(k => UUID.from(k).toStamp()).join('-').toUpperCase();
+
+            map.contains = (key = '') => {
+                key = alert.done.convert(key);
+
+                return map.has(key);
+            };
+
+            map.deposit = (key = '', value) => {
+                key = alert.done.convert(key);
+
+                map.set(key, value);
+            };
+
+            map.fetch = (key = '') => {
+                key = alert.done.convert(key);
+
+                if(map.has(key))
+                    return map.get(key);
+            };
+
+            return map;
+        })(new Map),
+
+        writable: true,
+        enumerable: false,
+        configurable: false,
+    }
+});
 
 // Displays an alert message (silently)
     // alert.silent([message:string[, veiled:boolean]]) → null
 alert.silent ??= (message = '', veiled = false) => {
+    if(alert.done.contains(message))
+        return alert.done.fetch(message);
+
     if(defined($('.tt-alert')))
-        return until(() => nullish($('.tt-alert'))? alert.silent(message): null);
+        return until(() => nullish($('.tt-alert'))? true: null).then(() => alert.silent(message, veiled));
 
     let response = alert(message),
         container = $('.tt-alert');
+
+    if(nullish(container))
+        return until.void;
 
     if(container.classList.contains('tt-silent'))
         return response;
@@ -3424,17 +3481,24 @@ alert.silent ??= (message = '', veiled = false) => {
     container.classList.add('tt-silent');
     setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
 
+    alert.done.deposit(message, response);
     return response;
 };
 
 // Displays an alert message with a timer
     // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → null
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
+    if(alert.done.contains(message))
+        return alert.done.fetch(message);
+
     if(defined($('.tt-alert')))
-        return until(() => nullish($('.tt-alert'))? alert.timed(message, milliseconds, pausable): null);
+        return until(() => nullish($('.tt-alert'))? true: null).then(() => alert.timed(message, milliseconds, pausable));
 
     let response = alert.silent(message),
         container = $('.tt-alert');
+
+    if(nullish(container))
+        return until.void;
 
     if(container.classList.contains('tt-timed'))
         return response;
@@ -3461,14 +3525,18 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 
     container.setAttribute('timedJobID', timedJobID);
 
+    alert.done.deposit(message, response);
     return response;
 };
 
 // Displays a confirmation message
     // confirm([message:string]) → Boolean|null
 function confirm(message = '') {
+    if(confirm.done.contains(message))
+        return confirm.done.fetch(message);
+
     if(defined($('.tt-confirm')))
-        return until(() => nullish($('.tt-confirm'))? confirm(message): null);
+        return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm(message));
 
     let f = furnish;
 
@@ -3517,7 +3585,7 @@ function confirm(message = '') {
 
     document.body.append(container);
 
-    return until(() => {
+    let value = until(() => {
         let element = $('.tt-confirm'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-confirm-time')?.getAttribute('tt-done'));
@@ -3534,16 +3602,65 @@ function confirm(message = '') {
 
         return value;
     });
+
+    confirm.done.deposit(message, value);
+    return value;
 }
+
+Object.defineProperties(confirm, {
+    lifetime: {
+        value: 60_000,
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+    done: {
+        value: (map => {
+            map.convert = key => [key, (+new Date).floorToNearest(confirm.lifetime).toString(36)].map(k => UUID.from(k).toStamp()).join('-').toUpperCase();
+
+            map.contains = (key = '') => {
+                key = confirm.done.convert(key);
+
+                return map.has(key);
+            };
+
+            map.deposit = (key = '', value) => {
+                key = confirm.done.convert(key);
+
+                map.set(key, value);
+            };
+
+            map.fetch = (key = '') => {
+                key = confirm.done.convert(key);
+
+                if(map.has(key))
+                    return map.get(key);
+            };
+
+            return map;
+        })(new Map),
+
+        writable: true,
+        enumerable: false,
+        configurable: false,
+    }
+});
 
 // Displays a confirmation message (silently)
     // confirm.silent([message:string[, veiled:boolean]]) → Boolean|null
 confirm.silent ??= (message = '', veiled = false) => {
+    if(confirm.done.contains(message))
+        return confirm.done.fetch(message);
+
     if(defined($('.tt-confirm')))
-        return until(() => nullish($('.tt-confirm'))? confirm.silent(message): null);
+        return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.silent(message, veiled));
 
     let response = confirm(message),
         container = $('.tt-confirm');
+
+    if(nullish(container))
+        return until.void;
 
     if(container.classList.contains('tt-silent'))
         return response;
@@ -3551,17 +3668,24 @@ confirm.silent ??= (message = '', veiled = false) => {
     container.classList.add('tt-silent');
     setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
 
+    confirm.done.deposit(message, response);
     return response;
 };
 
 // Displays a confirmation message with a timer
     // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → Boolean|null
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
+    if(confirm.done.contains(message))
+        return confirm.done.fetch(message);
+
     if(defined($('.tt-confirm')))
-        return until(() => nullish($('.tt-confirm'))? confirm.timed(message, milliseconds, pausable): null);
+        return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.timed(message, milliseconds, pausable));
 
     let response = confirm.silent(message),
         container = $('.tt-confirm');
+
+    if(nullish(container))
+        return until.void;
 
     if(container.classList.contains('tt-timed'))
         return response;
@@ -3588,14 +3712,18 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 
     container.setAttribute('timedJobID', timedJobID);
 
+    confirm.done.deposit(message, response);
     return response;
 };
 
 // Prompts a message
     // prompt([message:string[, defaultValue:string]]) → String|null
 function prompt(message = '', defaultValue = '') {
+    if(prompt.done.contains(message))
+        return prompt.done.fetch(message);
+
     if(defined($('.tt-prompt')))
-        return until(() => nullish($('.tt-prompt'))? prompt(message, defaultValue): null);
+        return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt(message));
 
     let f = furnish;
 
@@ -3664,7 +3792,7 @@ function prompt(message = '', defaultValue = '') {
 
     $('.tt-prompt-input').value = defaultValue;
 
-    return until(() => {
+    let value = until(() => {
         let element = $('.tt-prompt'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-prompt-time')?.getAttribute('tt-done'));
@@ -3679,16 +3807,65 @@ function prompt(message = '', defaultValue = '') {
 
         return (value == '\0'? until.null: value);
     });
+
+    prompt.done.deposit(message, value);
+    return value;
 }
+
+Object.defineProperties(prompt, {
+    lifetime: {
+        value: 60_000,
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+    done: {
+        value: (map => {
+            map.convert = key => [key, (+new Date).floorToNearest(prompt.lifetime).toString(36)].map(k => UUID.from(k).toStamp()).join('-').toUpperCase();
+
+            map.contains = (key = '') => {
+                key = prompt.done.convert(key);
+
+                return map.has(key);
+            };
+
+            map.deposit = (key = '', value) => {
+                key = prompt.done.convert(key);
+
+                map.set(key, value);
+            };
+
+            map.fetch = (key = '') => {
+                key = prompt.done.convert(key);
+
+                if(map.has(key))
+                    return map.get(key);
+            };
+
+            return map;
+        })(new Map),
+
+        writable: true,
+        enumerable: false,
+        configurable: false,
+    }
+});
 
 // Prompts a message (silently)
     // prompt.silent([message:string[, defaultValue:string[, veiled:boolean]]]) → String|null
 prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
+    if(prompt.done.contains(message))
+        return prompt.done.fetch(message);
+
     if(defined($('.tt-prompt')))
-        return until(() => nullish($('.tt-prompt'))? prompt.silent(message, defaultValue): null);
+        return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.silent(message, defaultValue, veiled));
 
     let response = prompt(message, defaultValue),
         container = $('.tt-prompt');
+
+    if(nullish(container))
+        return until.void;
 
     if(container.classList.contains('tt-silent'))
         return response;
@@ -3696,17 +3873,24 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     container.classList.add('tt-silent');
     setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
 
+    prompt.done.deposit(message, response);
     return response;
 };
 
 // Prompts a message with a timer
     // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → String|null
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
+    if(prompt.done.contains(message))
+        return prompt.done.fetch(message);
+
     if(defined($('.tt-prompt')))
-        return until(() => nullish($('.tt-prompt'))? prompt.timed(message, milliseconds, pausable): null);
+        return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.timed(message, milliseconds, pausable));
 
     let response = prompt.silent(message),
         container = $('.tt-prompt');
+
+    if(nullish(container))
+        return until.void;
 
     if(container.classList.contains('tt-timed'))
         return response;
@@ -3733,6 +3917,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
 
     container.setAttribute('timedJobID', timedJobID);
 
+    prompt.done.deposit(message, response);
     return response;
 };
 

@@ -1174,7 +1174,7 @@ $('#user_language_preference', true).map(select => {
     }
 
     Storage.get({ user_language_preference }, ({ user_language_preference }) => {
-        let lang = user_language_preference?.toLowerCase();
+        let lang = user_language_preference?.toLowerCase?.();
 
         $('option[selected]', false, select)?.removeAttribute?.('selected');
         $(`option[value="${ (select.value = lang) }"i]`, false, select).setAttribute('selected', true);

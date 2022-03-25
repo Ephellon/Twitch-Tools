@@ -27,14 +27,28 @@
 9. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
 10. Live Reminders might spam notifications?
     * Due to `alert` not handling promises in a queue correctly...
+    * Tentative fix `5.1`
 11. Pause First in Line when observing a raid
 12. Get better translations--or remove them altogether
     * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
+13. Toggling Easy Lurk might cause theatre-mode to activate???
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.1)
+- Fixed frame jumping logic
+- Fixed `STREAMER.coms` for non-compliant channels
+- Added command prediction logic to the chat input
+- Added `STREAMER.perm`
+- Fixed `parseCommands` logic
+- Fixed Extra Keyboard Shortcut listing
+- Removed `STREAMER.cult` language dependency
+- Adjusted Time Zone logic to handle `\d%` strings and more
+- Added search parameters to programmatically controlled opens (`?tool=...`)
+- Adjusted Up Next logic to force saving the list on ALL updates
+
 > [`5.0`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.0)
 - Migrated extension to [`manifest V3`](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-migration/)
 - Fixed issue with Time Zone conversions

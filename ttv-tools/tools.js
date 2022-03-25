@@ -28,7 +28,11 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     NORMALIZED_PATHNAME,
     // Hmm...
     JUMPED_FRAMES = false,
-    JUMP_DATA = {};
+    JUMP_DATA = {},
+    // Yes...
+    IS_TWITCH_ADMIN = false,
+    IS_CHANNEL_MODERATOR = false,
+    IS_CHANNEL_VIP = false;
 
 // Populate the username field by quickly showing the menu
 until(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
@@ -42,6 +46,14 @@ until(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
         $('[data-a-target^="language"i]')?.click();
         LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
         UserMenuToggleButton.click();
+
+        // Setting the statuses...
+        fetch(`https://api.twitchinsights.net/v1/user/status/${ USERNAME }`)
+            .then(response => response?.json())
+            .then(({ broadcasterType, createdAt, deletedAt, displayName, id, unavailableReason, updatedAt, userType }) => {
+                IS_TWITCH_ADMIN = ['admin', 'staff'].contains(userType);
+            })
+            .catch(WARN);
     });
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
@@ -1065,61 +1077,65 @@ class Search {
                 if(nullish(name) || type != 'channel')
                     break;
 
-                searchResults =
-                    fetch(`./${ name }`)
-                        .then(response => response.text())
-                        .then(html => {
-                            let parser = new DOMParser;
+                searchResults = fetch(`./${ name }`)
+                    .then(response => response.text())
+                    .then(html => {
+                        let parser = new DOMParser;
 
-                            return parser.parseFromString(html, 'text/html');
-                        })
-                        .then(async doc => {
-                            let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
-                                [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[{}]");
+                        return parser.parseFromString(html, 'text/html');
+                    })
+                    .then(async doc => {
+                        let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
+                            [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[{}]");
 
-                            let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
-                                [language] = languages.filter(lang => !alt_languages.contains(lang)),
-                                name = display_name?.trim(),
-                                profile_image = $('meta[property$="image"i]', false, doc)?.content,
-                                live = parseBool(data?.publication?.isLiveBroadcast),
-                                started_at = new Date(data?.publication?.startDate).toJSON(),
-                                status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
-                                updated_at = new Date(data?.publication?.endDate).toJSON();
+                        let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
+                            [language] = languages.filter(lang => !alt_languages.contains(lang)),
+                            name = display_name?.trim(),
+                            profile_image = $('meta[property$="image"i]', false, doc)?.content,
+                            live = parseBool(data?.publication?.isLiveBroadcast),
+                            started_at = new Date(data?.publication?.startDate).toJSON(),
+                            status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
+                            updated_at = new Date(data?.publication?.endDate).toJSON();
 
-                            let json = { display_name, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
+                        let json = { display_name, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
 
-                            Search.parseType = 'pure';
+                        Search.parseType = 'pure';
 
-                            let channelData = await Search.convertResults({ async json() { return json } });
+                        let channelData = await Search.convertResults({ async json() { return json } });
 
-                            SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
-                            ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
+                        SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
+                        ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
 
-                            return ({
-                                async arrayBuffer() {
-                                    return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
-                                },
+                        return ({
+                            async arrayBuffer() {
+                                return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
+                            },
 
-                                async blob() {
-                                    return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
-                                },
+                            async blob() {
+                                return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
+                            },
 
-                                async json() {
-                                    return json;
-                                },
+                            async json() {
+                                return json;
+                            },
 
-                                async text() {
-                                    JSON.stringify(json);
-                                },
+                            async text() {
+                                JSON.stringify(json);
+                            },
 
-                                async formData() {
-                                    let form = new FormData;
-                                    for(let key in json)
-                                        form.set(key, json[key]);
-                                    return form;
-                                },
-                            });
+                            async formData() {
+                                let form = new FormData;
+                                for(let key in json)
+                                    form.set(key, json[key]);
+                                return form;
+                            },
                         });
+                    })
+                    .catch(error => {
+                        WARN(error);
+
+                        return STREAMER.jump[name.toLowerCase()];
+                    });
 
                 Search.#cache.set(searchID, searchResults);
 
@@ -1311,13 +1327,16 @@ class Search {
             login:              'name',
             mature:             'nsfw',
             partner:            'ally',
+            primaryColorHex:    'tint',
             profileImageURL:    'icon',
             role:               'role',
             subscriber:         'paid',
             turbo:              'fast',
+            viewersCount:       'poll',
 
             display_name:       'name',
             status:             'desc',
+            title:              'desc',
             live:               'live',
             href:               'href',
             profile_image:      'icon',
@@ -1325,6 +1344,7 @@ class Search {
         DataConversionKey = {
             started_at:         'actualStartTime',
             updated_at:         'lastSeen',
+            stream:             'broadcast',
         },
             deeper = [];
 
@@ -2421,6 +2441,34 @@ let nth = (n, s = 'line-position') => {
     return n;
 }
 
+/** Adds a CSS block to the CUSTOM_CSS string
+ * AddCustomCSSBlock(name:string, block:string) → undefined
+ */
+function AddCustomCSSBlock(name, block) {
+    name = name.trim();
+
+    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/|$)`);
+
+    CUSTOM_CSS.innerHTML = CUSTOM_CSS.innerHTML.replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`);
+
+    CUSTOM_CSS?.remove();
+    $('body').append(CUSTOM_CSS);
+}
+
+/** Removes a CSS block from the CUSTOM_CSS string
+ * RemoveCustomCSSBlock(name:string[, flags:string]) → undefined
+ */
+function RemoveCustomCSSBlock(name, flags = '') {
+    name = name.trim();
+
+    let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
+
+    CUSTOM_CSS.innerHTML = CUSTOM_CSS.innerHTML.replace(regexp, '');
+
+    CUSTOM_CSS?.remove();
+    $('body').append(CUSTOM_CSS);
+}
+
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object#Channel, index:number, channels:array) → boolean
 let uniqueChannels = (channel, index, channels) =>
@@ -2606,7 +2654,7 @@ try {
 
     // Add message listener
     // Jumping frames...
-    REMARK(`Jumping frame data...`);
+    REMARK(`Listening for jumped frame data...`);
 
     top.addEventListener('message', async event => {
         if(!/\b\.?twitch\.tv\b/i.test(event.origin))
@@ -2615,12 +2663,16 @@ try {
         let R = RegExp;
         let { data } = event;
 
-        switch(data.action) {
+        switch(data?.action) {
             case 'jump': {
                 let BroadcastSettings = {},
-                    User = {},
+                    Channel = {},
+                    Badges = {},
                     Stream = {},
-                    Channel = {};
+                    User = {},
+                    Game = {},
+                    Tags = {};
+                data = data.data;
 
                 // Not jump data
                 if(!('ROOT_QUERY' in data)) {
@@ -2636,6 +2688,26 @@ try {
                             User[R.$1] = data[key];
                         else if(/^Stream:([^$]+)/.test(key))
                             Stream[R.$1] = data[key];
+                        else if(/^(Game:[^$]+)/.test(key))
+                            Game[R.$1] = data[key];
+                        else if(/^(Tag:[^$]+)/.test(key))
+                            Tags[R.$1] = data[key];
+                        else if(/^Badge:([^$]+)/.test(key)) {
+                            let [type, length, owner] = atob(R.$1).split(';'),
+                                badge = data[key],
+                                id = [owner, type, length].join('_');
+
+                            Badges[id] = ({
+                                id,
+                                type,
+                                owner,
+                                length,
+                                title: badge.title,
+                                version: badge.version,
+
+                                meta: badge,
+                            });
+                        }
 
                         JUMPED_FRAMES = true;
                     }
@@ -2661,6 +2733,8 @@ try {
                                             stream = streams[stream];
 
                                             stream.broadcaster = BroadcastSettings[channel];
+                                            stream.game = Game[stream.game?.__ref];
+                                            stream.tags = stream.tags?.map?.(({ __ref }) => Tags[__ref]?.localizedName);
 
                                             let previews = {};
                                             for(let key in stream)
@@ -2673,6 +2747,28 @@ try {
                                                 }
 
                                             stream.previewImageURL = previews;
+
+                                            let badges = { ...Badges };
+                                            for(let badge in badges) {
+                                                badge = badges[badge];
+
+                                                let max = 0;
+                                                for(let key in badge.meta)
+                                                    if(/^imageURL\b/i.test(key)) {
+                                                        let href = badge.meta[key],
+                                                            [path, version, uuid, size] = parseURL(href).pathname.slice(0).split('/');
+                                                        size = parseInt(size);
+
+                                                        if(size > max) {
+                                                            size = max;
+                                                            badge.href = href;
+                                                        }
+                                                    }
+
+                                                delete badge.meta;
+                                            }
+
+                                            stream.badges = badges;
 
                                             return stream;
                                         }
@@ -2717,7 +2813,7 @@ try {
                                     Handlers.first_in_line({ href, textContent: `${ name } is live [Greedy Raiding]` });
                                 }
 
-                                open(`./${ from }`, '_self');
+                                open(`./${ from }?tool=raid-${ method }`, '_self');
                             } else {
                                 // The user clicked "Cancel"
                                 LOG('Canceled Greedy Raiding event', { from, to });
@@ -2731,6 +2827,10 @@ try {
                         $('.tt-stream-preview').setAttribute('blank-ad', parseBool(data.purple));
                     } break;
                 }
+            } break;
+
+            case 'report-mod-status': {
+                IS_CHANNEL_MODERATOR = data.access;
             } break;
 
             case 'open-options-page': {
@@ -2748,7 +2848,7 @@ try {
      * Save as... (Ctrl+S)
      * Print... (Ctrl+P)
      */
-    $('main').addEventListener('contextmenu', event => {
+    $('main')?.addEventListener?.('contextmenu', event => {
         if(!event.isTrusted)
             return;
         event.preventDefault(true);
@@ -3552,7 +3652,7 @@ let Initialize = async(START_OVER = false) => {
             return(async channel => {
                 if(COMMANDS?.length > 0)
                     return COMMANDS;
-                COMMANDS = [];
+                COMMANDS = [{ aliases: [], command: STREAMER.name, reply: '$(channel.display_name) is streaming $(game) for $(channel.viewers) viewers', availability: 'owner', enabled: false, cost: 0 }];
 
                 /** User Levels → StreamElements | NightBot
                  * Everyone         →   100 | everyone
@@ -3560,7 +3660,7 @@ let Initialize = async(START_OVER = false) => {
                  * Regular          →   300 | regular
                  * VIP              →   400 | twitch_vip
                  * Moderator        →   500 | moderator
-                 * Super Moderator  →   1000
+                 * Super Moderator  →   1000 | admin
                  * Broadcaster      →   1500 | owner
                  */
                 let USER_LEVELS = ({
@@ -3569,7 +3669,7 @@ let Initialize = async(START_OVER = false) => {
                     regular:            [300, 'regular'],
                     vip:                [400, 'twitch_vip'],
                     moderator:          [500, 'moderator'],
-                    super_moderator:    [1000],
+                    admin:              [1000, 'admin'],
                     broadcaster:        [1500, 'owner'],
                 });
 
@@ -3593,7 +3693,7 @@ let Initialize = async(START_OVER = false) => {
                     // updatedAt: "2020-09-10T02:07:05.487Z"
                     // _id: "5f598a4986ca683315a3f402"
                 await fetch(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
-                    .then(r => r.json())
+                    .then(r => r?.json?.())
                     .then(json => json?._id)
                     .then(async id => {
                         let commands = {};
@@ -3626,7 +3726,7 @@ let Initialize = async(START_OVER = false) => {
                     // userLevel: "everyone"
                     // _id: "6104e0c44038915692edaeed"
                 await fetch(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
-                    .then(r => r.json())
+                    .then(r => r?.json?.())
                     .then(json => json?.channel?._id)
                     .then(async id => {
                         let commands = [];
@@ -3668,9 +3768,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get cult() {
-            let followers = $.getElementByText(/([\d\W]+[a-z]?) follow/i)? RegExp.$1: 0;
-
-            return parseCoin(followers);
+            return parseCoin($('.about-section span').getElementByText(/\d/)?.textContent);
         },
 
         // Gets values later...
@@ -3796,6 +3894,33 @@ let Initialize = async(START_OVER = false) => {
 
         get paid() {
             return defined($('[data-a-target="subscribed-button"i]'))
+        },
+
+        get perm() {
+            /** User Levels → StreamElements | NightBot
+             * Everyone         →   100 | everyone
+             * Subscriber       →   250 | subscriber
+             * Regular          →   300 | regular
+             * VIP              →   400 | twitch_vip
+             * Moderator        →   500 | moderator
+             * Super Moderator  →   1000 | admin
+             * Broadcaster      →   1500 | owner
+             */
+            return (
+                STREAMER.name == USERNAME?
+                    'owner':
+                IS_TWITCH_ADMIN?
+                    'admin':
+                IS_CHANNEL_MODERATOR?
+                    'moderator':
+                IS_CHANNEL_VIP?
+                    'vip':
+                STREAMER.paid?
+                    'subscriber':
+                STREAMER.ping?
+                    'regular':
+                'everyone'
+            );
         },
 
         get ping() {
@@ -4892,7 +5017,7 @@ let Initialize = async(START_OVER = false) => {
                 WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
                     ?.toNativeStack?.();
 
-                open(scapeGoat.href, '_self');
+                open(parseURL(scapeGoat.href).pushToSearch({ tool: 'away-mode--scape-goat' }).href, '_self');
             }
 
             return JUDGE__STOP_WATCH('away_mode');
@@ -5352,7 +5477,7 @@ let Initialize = async(START_OVER = false) => {
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
                             // The user clicked "OK"
-                            open(FIRST_IN_LINE_HREF, '_self');
+                            open(parseURL(FIRST_IN_LINE_HREF).pushToSearch({ tool: 'first-in-line--ok' }).href, '_self');
                         } else {
                             // The user clicked "Cancel"
                             LOG('Canceled First in Line event', FIRST_IN_LINE_HREF);
@@ -5428,7 +5553,7 @@ let Initialize = async(START_OVER = false) => {
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                open(href, '_self');
+                open(parseURL(href).pushToSearch({ tool: 'first-in-line--timeout' }).href, '_self');
             });
         }, 1000);
     }
@@ -5488,7 +5613,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(action) {
                             // The user clicked "OK"
-                            open(`./${ name }`, '_self');
+                            open(`./${ name }?tool=up-next--ok`, '_self');
                         } else {
                             // The user clicked "Cancel"
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
@@ -6218,10 +6343,10 @@ let Initialize = async(START_OVER = false) => {
                         LOG('New First in Line event:', { ...first, time });
 
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
-
-                        REDO_FIRST_IN_LINE_QUEUE(first.href);
-                        LOG('Redid First in Line queue [Sorting Handler]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                     }
+
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0].href);
+                    // LOG('Redid First in Line queue [Sorting Handler]...', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
 
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 },
@@ -6323,6 +6448,9 @@ let Initialize = async(START_OVER = false) => {
                                             // Mitigate 0 time bug?
 
                                             SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
+                                                WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
+                                                    ?.toNativeStack?.();
+
                                                 open($('a', false, container)?.href ?? '?', '_self');
                                             });
 
@@ -6541,6 +6669,8 @@ let Initialize = async(START_OVER = false) => {
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                                     SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
+                                        WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`);
+
                                         open($('a', false, container)?.href ?? '?', '_self');
                                     });
 
@@ -6579,7 +6709,7 @@ let Initialize = async(START_OVER = false) => {
                     LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                    open(FIRST_IN_LINE_HREF, '_self');
+                    open(parseURL(FIRST_IN_LINE_HREF).pushToSearch({ tool: 'first-in-line--killed' }).href, '_self');
                 }
             }
         }
@@ -6666,7 +6796,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(nullish(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = RegExp(`\\b${ href }\\b`, 'i').test(STREAMER.href),
+                first = (parseURL(STREAMER.href).pathname.toLowerCase() == parseURL(href).pathname.toLowerCase()),
                 channel = (null
                     // Attempts to find the channel via "cache"
                     ?? ALL_CHANNELS
@@ -7160,6 +7290,74 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
+    // Parses textual commands
+    function parseCommands(string = '', variables = {}) {
+        return string?.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
+            let path = $1.replace(/^[\(\[\{]+|[\}\]\)]+$/g, '').split('.');
+            let properties = ({
+                // StreamElements
+                user: {
+                    _: USERNAME,
+                    name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
+                    level: 100,
+
+                    points: STREAMER.coin,
+                    points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                    points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                    time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                    time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+
+                    lastmessage: GetChat().filter(({ author }) => USERNAME.contains(author)),
+                    lastseen: toTimeString(0, '!minute_m !second_s'),
+                    lastactive: toTimeString(0, '!minute_m !second_s'),
+
+                    time_online: toTimeString((parseCoin($('#tt-points-receipt').textContent) / 320) * 4_000),
+                    time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
+                },
+                user1: USERNAME,
+
+                channel: {
+                    _: STREAMER.name,
+                    viewers: STREAMER.poll,
+                    views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
+                    followers: STREAMER.cult,
+                    subs: STREAMER.poll,
+                    display_name: STREAMER.name,
+                    alias: STREAMER.name,
+                },
+                user2: STREAMER.name,
+
+                title: $('[data-a-target="stream-title"i]').textContent,
+                status: $('[data-a-target="stream-title"i]').textContent,
+
+                game: $('[data-a-target="stream-game-link"i]').textContent,
+
+                pointsname: STREAMER.fiat,
+
+                uptime: toTimeString(STREAMER.time),
+
+                // NightBot
+                channelid: STREAMER.sole,
+                userlevel: 'everyone',
+                touser: `@${ USERNAME }`,
+                urlfetch: `External website`,
+
+                // Fetched...
+                ...variables
+            }),
+                value = properties;
+
+            dir:
+            for(let root of path)
+                if(nullish(value = value[root]))
+                    break dir;
+            value = value?._ ?? value;
+
+            return value || $_;
+        })
+        ?.replace(/^\/(?:\w\S+)/, '');
+    }
+
     Handlers.parse_commands = async() => {
         let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *', true);
 
@@ -7168,69 +7366,9 @@ let Initialize = async(START_OVER = false) => {
                 // Wait here to keep from lagging the page...
                 await until(() => {
                     element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
-                        reply = reply?.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
-                            let path = $1.replace(/^[\(\[\{]+|[\}\]\)]+$/g, '').split('.');
-                            let properties = ({
-                                // StreamElements
-                                user: {
-                                    _: USERNAME,
-                                    name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
-                                    level: 100,
+                        reply = parseCommands(reply, variables);
 
-                                    points: STREAMER.coin,
-                                    points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                                    points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                                    time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                                    time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-
-                                    lastmessage: GetChat().filter(({ author }) => USERNAME.contains(author)),
-                                    lastseen: toTimeString(0, '!minute_m !second_s'),
-                                    lastactive: toTimeString(0, '!minute_m !second_s'),
-
-                                    time_online: toTimeString((parseCoin($('#tt-points-receipt').textContent) / 320) * 4_000),
-                                    time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
-                                },
-                                user1: USERNAME,
-
-                                channel: {
-                                    _: STREAMER.name,
-                                    viewers: STREAMER.poll,
-                                    views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
-                                    followers: STREAMER.cult,
-                                    subs: STREAMER.poll,
-                                    display_name: STREAMER.name,
-                                    alias: STREAMER.name,
-                                },
-                                user2: STREAMER.name,
-
-                                title: $('[data-a-target="stream-title"i]').textContent,
-                                status: $('[data-a-target="stream-title"i]').textContent,
-
-                                game: $('[data-a-target="stream-game-link"i]').textContent,
-
-                                pointsname: STREAMER.fiat,
-
-                                uptime: toTimeString(STREAMER.time),
-
-                                // NightBot
-                                channelid: STREAMER.sole,
-                                userlevel: 'everyone',
-                                touser: `@${ USERNAME }`,
-                                urlfetch: `External website`,
-
-                                // Fetched...
-                                ...variables
-                            }),
-                                value;
-
-                            for(let root of path)
-                                value = properties[root]?._ || properties[root];
-
-                            return value || $_;
-                        })
-                        ?.replace(/^\/(?:\w\S+)/, '');
-
-                        let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {}),
+                        let { href } = (/\b(?<href>(?:https?:\/\/\S+|(?<!\$?[\(\[\{])\w{3,}\.\w{2,}(?:\/\S*)?(?![\}\]\)])))/i.exec(reply)?.groups ?? {}),
                             string;
 
                         if(parseBool(Settings.parse_commands__create_links) && defined(href))
@@ -7261,6 +7399,288 @@ let Initialize = async(START_OVER = false) => {
         REMARK("Parsing title commands...");
 
         RegisterJob('parse_commands');
+
+        // Add the chat menu popup...
+        let CSSBlockName = `Chat-Input-Menu:${ new UUID }`,
+            AvailableCommands;
+
+        function levenshtein(A = '', B = '') {
+            let a = A.length,
+                b = B.length;
+
+            let track = Array(b + 1).fill(null).map(() => Array(a + 1).fill(null));
+
+            for(let i = 0; i <= a; ++i)
+                track[0][i] = i;
+
+            for(let j = 0; j <= b; ++j)
+                track[j][0] = j;
+
+            for(let j = 1; j <= b; ++j)
+                for(let i = 1; i <= a; ++i)
+                    track[j][i] = Math.min(
+                        // Deletion
+                        track[j][i - 1] + 1,
+
+                        // Insertion
+                        track[j - 1][i] + 1,
+
+                        // Substitution
+                        track[j - 1][i - 1] + +(A[i - 1] !== B[j - 1]),
+                    );
+
+            return track[b][a];
+        }
+
+        let AvailabilityStickers = ({
+            everyone: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
+            subscriber: ((STREAMER.jump[STREAMER.name.toLowerCase()]?.stream?.badges?.[`${ STREAMER.sole }_subscriber_0`]?.href) || ''),
+            regular: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
+            twitch_vip: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
+            moderator: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3',
+            admin: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8f57-4e4bef88af34/3',
+            owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
+        });
+
+        $('[data-a-target="chat-input"i]').addEventListener('keyup', delay(async event => {
+            let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
+                { value } = target,
+                [tray, chat] = target.closest('div:not([class])').firstElementChild.children,
+                f = furnish;
+
+            if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
+                let command = $('.tt-chat-input-suggestion')?.getAttribute('command');
+                if(code == 'Tab' && defined(command)) {
+                    let match = value.match(/!(\S+|$)/),
+                        { index } = match,
+                        [text, word] = match;
+
+                    target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+                }
+
+                tray.classList.remove('tt-chat-input-tray__open');
+
+                chat.classList.remove('tt-chat-input-container__open');
+                chat.firstElementChild.classList.remove('tt-chat-input-container__input-wrapper');
+
+                $('#tt-tcito1')?.remove();
+
+                return RemoveCustomCSSBlock(CSSBlockName);
+            }
+
+            value = value.slice(1);
+
+            let listable = (AvailableCommands ??= await STREAMER.coms)
+                .sort((a, b) => a.command.contains(value) && !b.command.contains(value)? -1: b.command.contains(value) && !a.command.contains(value)? +1: 0)
+                .slice(0, 60)
+                .map(data => ({ ...data, textDistance: levenshtein(value.toLowerCase(), data.command.toLowerCase()) }))
+                .sort((a, b) => a.textDistance < b.textDistance? -1: +1)
+                .slice(0, 5);
+
+            tray.classList.add('tt-chat-input-tray__open');
+
+            chat.classList.add('tt-chat-input-container__open');
+            chat.firstElementChild.classList.add('tt-chat-input-container__input-wrapper');
+
+            if(listable.length < 1) {
+                $('#tt-tcito1')?.remove();
+
+                tray.firstElementChild.append(
+                    f('div#tt-tcito1', {},
+                        f('div.tcito2', {},
+                            f('div.tcito3', {},
+                                f('div', { style: `max-height:3rem!important` },
+                                    f('div', { style: `padding: 00.5rem!important` },
+                                        f('span', { style: `color:var(--color-text-alt-2)!important` }, `No commands found.`)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            } else {
+                $('#tt-tcito1')?.remove();
+
+                tray.firstElementChild.append(
+                    f('div#tt-tcito1', {},
+                        f('div.tcito2', {},
+                            f('div.tcito3', {},
+                                f('div', { style: `max-height:18rem!important` },
+                                    f('div', {},
+                                        // f('div', { style: `text-align:center` },
+                                        //     f('div.tt-kb', {},
+                                        //         f('p.tt-kb-text', {}, 'Space')
+                                        //     ),
+                                        //     'insert selected command'
+                                        // ),
+                                        ...listable.map(({ aliases, command, reply, availability, enabled, origin, variables, textDistance }, index, array) => {
+                                            reply = parseCommands(reply, variables);
+
+                                            let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {});
+
+                                            if(defined(href))
+                                                reply = f('a', { href: href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`), title: reply, style: `margin-right:0.75rem` }, reply);
+
+                                            return f(`div#tt-command--${ command.replace(/[^\w\-]+/g, '') }`, {},
+                                                f('button.tcito7', {
+                                                    style: `cursor:${ ['not-allowed','auto'][+enabled] }!important; color:${ ['inherit','var(--color-text-success)'][+(textDistance < 1)] }`,
+                                                    onmouseup: ({ target, button = -1 }) => {
+                                                        if(!!button)
+                                                            return;
+
+                                                        let command = $('.tt-chat-input-suggestion', false, target.closest('[id]'))?.getAttribute('command');
+                                                        if(defined(command)) {
+                                                            let target = $('[data-a-target="chat-input"i]');
+                                                            let match = target.value.match(/!(\S+|$)/),
+                                                                { index } = match,
+                                                                [text, word] = match;
+
+                                                                target.setRangeText(`!${ command }`, index, index + text.length, 'end');
+                                                                target.focus();
+                                                        }
+
+                                                        tray.classList.remove('tt-chat-input-tray__open');
+
+                                                        chat.classList.remove('tt-chat-input-container__open');
+                                                        chat.firstElementChild.classList.remove('tt-chat-input-container__input-wrapper');
+
+                                                        $('#tt-tcito1')?.remove();
+
+                                                        return RemoveCustomCSSBlock(CSSBlockName);
+                                                    }
+                                                },
+                                                    f('div.tcito8', {},
+                                                        f('div.tcito9', {},
+                                                            f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
+                                                                f('img.chat-badge', { src: AvailabilityStickers[availability], availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
+
+                                                                `!${ command }`,
+
+                                                                f('span.tt-hide-inline-text-overflow', { style: `color:var(--color-text-alt-2); padding-right:0 0.75rem 0 0; position:absolute; right:0; max-width:50%`, title: reply },
+                                                                    reply
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        })
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            // Change the input's styling...
+            AddCustomCSSBlock(CSSBlockName,
+                `
+                .tt-chat-input-tray__open {
+                    bottom: 100%;
+                    margin: 0 -.5rem -.5rem;
+                    min-width: 100%;
+
+                    /* .bhOZBz */
+                    background-color: var(--color-background-base) !important;
+                    border: var(--border-width-default) solid var(--color-border-base) !important;
+                    border-radius: 0.6rem !important;
+                    display: block !important;
+
+                    box-shadow: var(--shadow-elevation-1) !important;
+
+                    position: absolute !important;
+                    left: 0px !important;
+                    right: 0px !important;
+                    z-index: var(--z-index-below) !important;
+
+                    padding: 0.5rem !important;
+                }
+
+                .tcito2 {
+                    position: relative !important;
+                    padding: 0.5rem 0.5rem 0 !important;
+                }
+
+                .tcito3 {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    overflow: hiden !important;
+                }
+
+                .tcito7 {
+                    border-radius: var(--border-radius-small);
+                    display: block;
+                    width: 100%;
+                    color: inherit;
+                }
+
+                .tcito7:hover {
+                    background-color: var(--color-background-interactable-hover) !important;
+                }
+
+                .tcito8 {
+                    -webkit-box-align: center !important;
+                    align-items: center !important;
+                    display: flex !important;
+                    padding-left: 0.5rem !important;
+                    padding-right: 0.5rem !important;
+                }
+
+                .tcito9 {
+                    padding: 0.5rem !important;
+                    display: flex !important;
+                    -webkit-box-pack: justify !important;
+                    justify-content: space-between !important;
+                    -webkit-box-align: center !important;
+                    align-items: center !important;
+                    -webkit-box-flex: 1 !important;
+                    flex-grow: 1 !important;
+                }
+
+                .tt-chat-input-container__open {
+                    border: 1px solid var(--color-border-base);
+                    border-top: 0;
+                    box-shadow: 0 2px 3px -1px rgba(0,0,0,.1),0 2px 2px -2px rgba(0,0,0,.02);
+                    margin: 0 -.5rem -.5rem;
+                    min-width: 100%;
+
+                    /* .exNKnb */
+                    background-color: var(--color-background-base)  !important;
+                    border-bottom-left-radius: 0.6rem !important;
+                    border-bottom-right-radius: 0.6rem !important;
+                    display: block !important;
+                    padding: 0.5rem !important;
+                }
+
+                .tt-chat-input-container__input-wrapper {
+                    margin: 0 -1px -1px;
+                }
+
+                .tt-kb {
+                    background-color: var(--color-background-alt) !important;
+                    border: var(--border-width-default) solid var(--color-border-base) !important;
+                    border-radius: 0.2rem !important;
+                    display: inline-flex !important;
+                    -webkit-box-align: center !important;
+
+                    align-items: center !important;
+                    padding: 0 0.5rem !important;
+
+                    /* .keyboard-prompt */
+                    height: 1.5rem;
+                    margin-right: .3rem;
+                }
+
+                .tt-kb-text {
+                    color: var(--color-text-alt-2) !important;
+
+                    /* .keyboard-prompt--text */
+                    font-size: 1.1rem;
+                }
+                `
+            );
+        }, 250));
     }
 
     /*** Stop Hosting
@@ -7296,7 +7716,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(streamer)) {
                     LOG(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
-                    open(streamer.href, '_self');
+                    open(parseURL(streamer.href).pushToSearch({ tool: 'host-stopper--unfollowed' }).href, '_self');
                     break host_stopper;
                 }
             }
@@ -7307,7 +7727,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                open(next.href, '_self');
+                open(parseURL(next.href).pushToSearch({ tool: 'host-stopper' }).href, '_self');
             } else {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -7393,7 +7813,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(next)) {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                    open(next.href, '_self');
+                    open(parseURL(next.href).pushToSearch({ tool: 'raid-stopper' }).href, '_self');
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -7521,7 +7941,7 @@ let Initialize = async(START_OVER = false) => {
 
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.pushToSearch?.({ from: STREAMER?.name })?.href );
 
-                open(`${ next.href }?obit=${ STREAMER?.name }`, '_self');
+                open(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`, '_self');
             } else  {
                 WARN(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
@@ -7561,25 +7981,25 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?/iu,
             // EST 15:00 | EST 1500
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d\b)/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d\b)(?!\d*(?:\p{Sc}|[%‰]))/iu,
             // 3:00PM | 3PM
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?[ \t]*(?<meridiem>[ap]m?(?!\p{L}))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}))/iu,
             // 15:00
-            /(?<![#\$\.+:\d])\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)[ \t]*/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)[ \t]*/iu,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
             // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
-            /(?<![#\$\.+:\d])\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01]\d)(?<minute>:?[0-5]\d)\b/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01]\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))\b/iu,
 
             // GMT/UTC
             // GMT+05:00 | GMT-05:00 | GMT+0500 | GMT-0500 | GMT+05 | GMT-05 | GMT+5 | GMT-5 | UTC+05:00 | UTC-05:00 | UTC+0500 | UTC-0500 | UTC+05 | UTC-05 | UTC+5 | UTC-5
-            /(?<![#\$\.+:\d])\b(?:GMT[ \t]*|UTC[ \t]*)(?<offset>[+-])(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)?\b/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?:GMT[ \t]*|UTC[ \t]*)(?<offset>[+-])(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))\b/iu,
         ],
 
         // FIX-ME: Fix conflicting Time Zone entries...
@@ -9220,7 +9640,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Subscriber only, etc.
             if(defined(next))
-                open(next.href, '_self');
+                open(parseURL(next.href).pushToSearch({ tool: 'video-recovery--non-subscriber' }).href, '_self');
         } else {
             ERROR('The stream ran into an error:', errorMessage, new Date);
 
@@ -9302,7 +9722,7 @@ let Initialize = async(START_OVER = false) => {
         ERROR(message);
 
         if(/content.*unavailable/i.test(message) && defined(next))
-            open(next.href, '_self');
+            open(parseURL(next.href).pushToSearch({ tool: 'page-recovery--content-unavailable' }).href, '_self');
         else
             location.reload();
 
@@ -9345,8 +9765,8 @@ let Initialize = async(START_OVER = false) => {
         if(defined(help) && nullish($('.tt-extra-keyboard-shortcuts', false, help)))
             for(let shortcut in GLOBAL_EVENT_LISTENERS)
                 if(/^(key(?:up|down)_)/i.test(shortcut)) {
-                    let name = GLOBAL_EVENT_LISTENERS[shortcut].name.toTitle(),
-                        macro = GetMacro(shortcut.replace(RegExp.$1, '').toLowerCase().split('_').join('+'));
+                    let name = GLOBAL_EVENT_LISTENERS[shortcut].toTitle(),
+                        macro = GetMacro(shortcut.toLowerCase().split('_').slice(1).join('+'));
 
                     if(!name.length)
                         continue;
@@ -10206,8 +10626,9 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
             // Jump some frames
             FrameJumper: {
-                // TODO: get this back online...
-                // top.open('javascript:top.postMessage(__APOLLO_CLIENT__?.cache?.data?.data)', '_self');
+                document.head.append(
+                    furnish('script', { src: Runtime.getURL('ext/jump.js'), onload() {/* Do something when the data is jumped... */} })
+                );
             }
         }
     }, 500);

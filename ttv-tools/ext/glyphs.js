@@ -93,6 +93,7 @@ top.Glyphs ??= {
     checkmark: `<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>`,
 
     calendar: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 9v2H6V9h2z"></path><path fill-rule="evenodd" d="M5 2h2v1h6V2h2v1h1a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h1V2zm11 5H4v9h12V7z" clip-rule="evenodd"></path></g></svg>`,
+    collapse: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M14 7h-2v6h2V7z"></path><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 0h12v10H4V5z" clip-rule="evenodd"></path></g></svg>`,
     download: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 10L6.5 7.5 5 9l5 5 5-5-1.5-1.5L11 10V2H9v8zM2 18v-2h16v2H2z"></path></g></svg>`,
     favorite: `<svg fill="#bb1411"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.171 4.171A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829L10 17l6.828-6.828A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.829 1.172L10 5l-.829-.829z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>`,
     ne_arrow: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M6 8h5.293L5 14.293l1.414 1.414 6.293-6.293V15h2V6H6v2z"></path></g></svg>`,
@@ -101,8 +102,11 @@ top.Glyphs ??= {
 
     compass: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M8.949 7.684L14 6l-1.684 5.051a2 2 0 01-1.265 1.265L6 14l1.684-5.051a2 2 0 011.265-1.265zM11 10a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
     dislike: `<svg fill="#bb1411"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.188 4.188L9.17 4.17A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829l5.367 5.367L10.484 11H6.538l2.65-6.812z"></path><path d="M10.154 16.846l6.674-6.674A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.091.59L9.462 9h4.055l-3.363 7.846z"></path></g></svg>`,
+    predict: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M3 9c0-.621.08-1.223.233-1.796l1.122.441.654 1.663a5 5 0 105.3-5.299l-1.664-.654-.441-1.122a7 7 0 015.014 12.985L14 16a2 2 0 012 2H4a2 2 0 012-2l.782-.782A7 7 0 013 9z"></path><path d="M7.489 4.511L10 5.5l-2.511.989L6.5 9l-.989-2.511L3 5.5l2.511-.989L6.5 2l.989 2.511zM12 9l-1.435-.565L10 7l-.565 1.435L8 9l1.435.565L10 11l.565-1.435L12 9z"></path></g></svg>`,
+    refresh: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10a6 6 0 0110.472-4H13v2h5V3h-2v1.708A8 8 0 002 10h2zM7 14H5.528A6 6 0 0016 10h2a8 8 0 01-14 5.292V17H2v-5h5v2z"></path></g></svg>`,
 
     emotes: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M7 11a1 1 0 100-2 1 1 0 000 2zM14 10a1 1 0 11-2 0 1 1 0 012 0zM10 14a2 2 0 002-2H8a2 2 0 002 2z"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
+    expand: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M14 7h-4v6h4V7z"></path><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 0h12v10H4V5z" clip-rule="evenodd"></path></g></svg>`,
     export: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 16v-3h2v3h12v-3h2v3a2 2 0 01-2 2H4a2 2 0 01-2-2zM15 7l-1.5 1.5L11 6v7H9V6L6.5 8.5 5 7l5-5 5 5z"></path></g></svg>`,
     ignore: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M16.5 18l1.5-1.5-2.5-2.5H17v-2c-1-.5-1.75-1-2-2-.095-.38-.154-.905-.221-1.506C14.49 5.936 14.048 2 10 2 7.832 2 6.698 3.128 6.068 4.568L3.5 2 2 3.5 16.5 18zm-3-6h.268a4.262 4.262 0 01-.708-1.515c-.131-.524-.212-1.25-.282-1.875-.018-.164-.035-.32-.053-.465-.098-.819-.222-1.599-.442-2.283-.22-.686-.493-1.132-.796-1.402C11.23 4.228 10.813 4 10 4c-.813 0-1.229.228-1.487.46-.303.27-.576.716-.796 1.402-.03.09-.056.18-.082.273L13.5 12z" fill-rule="evenodd" clip-rule="evenodd"></path><path d="M6.697 11.197c-.13.298-.289.564-.465.803H7.5l2 2H3v-2c1-.5 1.75-1 2-2 .031-.124.058-.264.083-.417l1.614 1.614zM11.5 16H7.997a2 2 0 003.95.448l-.449-.449z"></path></g></svg>`,
     inform: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M17 14v-2c-1-.5-1.75-1-2-2-.095-.38-.154-.905-.221-1.506C14.49 5.936 14.049 2 10 2 5.95 2 5.509 5.936 5.221 8.494 5.154 9.095 5.095 9.62 5 10c-.25 1-1 1.5-2 2v2h14zm-9.002 2h4-4zm4 0v.012V16zm-5.766-4h7.536a4.262 4.262 0 01-.708-1.515c-.129-.513-.2-1.154-.26-1.684a32.48 32.48 0 00-.009-.083c-.152-1.355-.314-2.606-.78-3.535-.21-.423-.447-.692-.703-.862C11.063 4.158 10.673 4 10 4s-1.063.158-1.308.32c-.256.171-.492.44-.704.863-.465.929-.627 2.18-.78 3.535L7.2 8.8c-.06.53-.131 1.171-.26 1.684-.15.603-.402 1.1-.708 1.515zm1.766 4a2.001 2.001 0 004 .012" clip-rule="evenodd"></path></g></svg>`,
@@ -268,6 +272,10 @@ top.Glyphs ??= {
             dislike: "\u{1F494}",
             unread: "\u{2709}",
             intro: "\u{1F64B}",
+
+            // 7th batch
+            predict: "\uD83D\uDD2E\uFE0F",
+            refresh: "\uD83D\uDD01\uFE0F",
         });
     },
 

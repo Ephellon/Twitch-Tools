@@ -207,3 +207,22 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
     return true;
 });
+
+// https://stackoverflow.com/a/6117889/4211612
+// Returns the current week of the year
+    // Date..getWeek() → number:Integer
+Date.prototype.getWeek = function getWeek() {
+    let now = new Date(Date.UTC(
+        this.getFullYear(),
+        this.getMonth(),
+        this.getDate()
+    ));
+
+    let day = now.getUTCDay() || 7;
+
+    now.setUTCDate(now.getUTCDate() + 4 - day);
+
+    let year = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+
+    return Math.ceil((((now - year) / 86_400_000) + 1) / 7);
+};

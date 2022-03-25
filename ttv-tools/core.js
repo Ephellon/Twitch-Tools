@@ -401,6 +401,17 @@ async function until(callback, ms = 100) {
     });
 }
 
+// https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
+// Delay callbacks until the user is done...
+    // delay(fn:function[, ms:number]) → undefined
+function delay(fn, ms = 0) {
+    let timer = -1;
+    return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(fn.bind(this, ...args), ms);
+    }
+}
+
 try {
     Object.defineProperties(until, {
         "null": { value: Symbol(null) },
