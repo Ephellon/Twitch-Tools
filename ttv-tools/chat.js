@@ -2418,9 +2418,14 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
             return;
         RAID_LOGGED ||= raiding;
 
+        let { current = false } = parseBool(parseURL(window.location).searchParameters);
         let raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
             [,from,] = window.location.pathname.split(/(?<!^)\//),
             [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
+
+        // Already on the channeling that's raiding...
+        if(current)
+            return;
 
         WARN(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
 
@@ -2621,6 +2626,27 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
     __SoftUnban__:
     if(parseBool(Settings.soft_unban)) {
         RegisterJob('soft_unban');
+    }
+
+    // Helpers
+    __Static_Helpers__:
+    if(top != window) {
+        if(parseBool(parseURL(window.location).searchParameters.current))
+            until(() => $('button[data-a-target*="carousel"i]'))
+                .then(button => {
+                    button.click();
+
+                    until(() => $('[data-badge-id]'))
+                        .then(() => {
+                            let IS_CHANNEL_VIP = defined($('[data-badge-id^="vip"i]')),
+                                IS_CHANNEL_MODERATOR = defined($('[data-badge-id^="mod"i]'));
+
+                            // LOG('VIP status →', IS_CHANNEL_VIP, '· Moderator status →', IS_CHANNEL_MODERATOR);
+
+                            top.postMessage({ action: 'jump', IS_CHANNEL_VIP, IS_CHANNEL_MODERATOR }, top.location.origin);
+                        })
+                        .then(() => setTimeout(button.click(), 1_000));
+                });
     }
     // End of Chat__Initialize_Safe_Mode
 };

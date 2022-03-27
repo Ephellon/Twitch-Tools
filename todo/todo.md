@@ -3,21 +3,18 @@
 # TO-DO &mdash; Known Issues
 
 1. Accessibility options?
-    * "Reverse Emotes"
-        + Sets all emotes back to their text and displays the image in a tooltip
 2. Add the **option** to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
     * Up Next does not currently allow duplicates
 3. Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
 4. Remove more language dependencies
-    * ~~`parseCoin` is language dependent - it only reads "SI" units~~
-        * Tentative fix `4.11.5`
     * All bulletin filters are language dependent - they only recognize English
 5. Add an "Auto-Spend" feature for Channel Points
     * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
 6. Up Next sometimes goes in an irregular order
-    * Tentative fix `4.29` &mdash; Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
+    * Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
+        * Tentative fix `4.29`
     * It might also not list jobs immediately
 7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
@@ -27,16 +24,23 @@
 9. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
 10. Live Reminders might spam notifications?
     * Due to `alert` not handling promises in a queue correctly...
-    * Tentative fix `5.1`
+        * Tentative fix `5.1`
 11. Pause First in Line when observing a raid
 12. Get better translations--or remove them altogether
     * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
-13. Toggling Easy Lurk might cause theatre-mode to activate???
+13. Toggling Easy Lurk might cause theatre-mode to activate?
+14. Live Reminders might re-add all live channels?
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.1.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.1.1)
+- Fixed `STREAMER.done`
+- Adjusted `STREAMER.perm`
+- Fixed issue with `STREAMER.cult`
+- Fixed issue with `GetNextStreamer`
+
 > [`5.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.1)
 - Fixed frame jumping logic
 - Fixed `STREAMER.coms` for non-compliant channels

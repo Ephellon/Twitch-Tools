@@ -30,9 +30,9 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     JUMPED_FRAMES = false,
     JUMP_DATA = {},
     // Yes...
-    IS_TWITCH_ADMIN = false,
-    IS_CHANNEL_MODERATOR = false,
-    IS_CHANNEL_VIP = false;
+    IS_TWITCH_ADMIN,
+    IS_CHANNEL_MODERATOR,
+    IS_CHANNEL_VIP;
 
 // Populate the username field by quickly showing the menu
 until(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
@@ -2672,7 +2672,11 @@ try {
                     User = {},
                     Game = {},
                     Tags = {};
-                data = data.data;
+
+                if(nullish(data))
+                    break;
+                delete data.action;
+                data = (data?.data ?? data);
 
                 // Not jump data
                 if(!('ROOT_QUERY' in data)) {
@@ -2827,10 +2831,6 @@ try {
                         $('.tt-stream-preview').setAttribute('blank-ad', parseBool(data.purple));
                     } break;
                 }
-            } break;
-
-            case 'report-mod-status': {
-                IS_CHANNEL_MODERATOR = data.access;
             } break;
 
             case 'open-options-page': {
@@ -3538,7 +3538,7 @@ let Initialize = async(START_OVER = false) => {
             // There isn't a channel that fits the criteria
             if(parseBool(Settings.stay_live) && nullish(GetNextStreamer?.cachedStreamer) && online?.length) {
                 let preference = Settings.next_channel_preference,
-                    channel = (GetNextStreamer.cachedStreamer ??= (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1)[round(random() * online.length)])),
+                    [channel] = (GetNextStreamer.cachedStreamer ??= (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1))),
                     { name } = channel;
 
                 WARN(`No channel fits the "${ preference }" criteria. Assuming a random channel is desired:`, channel);
@@ -3768,7 +3768,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get cult() {
-            return parseCoin($('.about-section span').getElementByText(/\d/)?.textContent);
+            return parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent);
         },
 
         // Gets values later...
@@ -3795,10 +3795,10 @@ let Initialize = async(START_OVER = false) => {
                         -1
                     );
 
-                    return done = (notEarned == 0);
+                    return STREAMER.__done__ = done = (notEarned == 0);
                 });
 
-                return STREAMER.__done__ = await until(() => done);
+                return await until(() => done);
             })();
         },
 
@@ -3907,17 +3907,17 @@ let Initialize = async(START_OVER = false) => {
              * Broadcaster      →   1500 | owner
              */
             return (
-                STREAMER.name == USERNAME?
+                (STREAMER.name == USERNAME)?
                     'owner':
-                IS_TWITCH_ADMIN?
+                (IS_TWITCH_ADMIN)?
                     'admin':
-                IS_CHANNEL_MODERATOR?
+                (IS_CHANNEL_MODERATOR = PostOffice.get('IS_CHANNEL_MODERATOR'))?
                     'moderator':
-                IS_CHANNEL_VIP?
+                (IS_CHANNEL_VIP = PostOffice.get('IS_CHANNEL_VIP'))?
                     'vip':
-                STREAMER.paid?
+                (STREAMER.paid)?
                     'subscriber':
-                STREAMER.ping?
+                (STREAMER.ping)?
                     'regular':
                 'everyone'
             );
@@ -6255,7 +6255,7 @@ let Initialize = async(START_OVER = false) => {
                     if(from_container) {
                         // Most likely a sorting event
                     } else {
-                        let { href } = streamer;
+                        let { href } = (streamer ??= {});
 
                         LOG('Adding to Up Next [ondrop]:', { href, streamer });
 
@@ -7365,7 +7365,7 @@ let Initialize = async(START_OVER = false) => {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
                 await until(() => {
-                    element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/\W/g, '\\$&')).join('|') }))`, 'ig'), ($0, $1, $$, $_) => {
+                    element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?:\\p{L}*))`, 'igu'), ($0, $1, $$, $_) => {
                         reply = parseCommands(reply, variables);
 
                         let { href } = (/\b(?<href>(?:https?:\/\/\S+|(?<!\$?[\(\[\{])\w{3,}\.\w{2,}(?:\/\S*)?(?![\}\]\)])))/i.exec(reply)?.groups ?? {}),
@@ -7547,7 +7547,7 @@ let Initialize = async(START_OVER = false) => {
                                                         $('#tt-tcito1')?.remove();
 
                                                         return RemoveCustomCSSBlock(CSSBlockName);
-                                                    }
+                                                    },
                                                 },
                                                     f('div.tcito8', {},
                                                         f('div.tcito9', {},
@@ -7846,7 +7846,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let GREEDY_RAIDING_FRAMES = new Map;
     Handlers.greedy_raiding = () => {
-        let online = STREAMERS.filter(isLive),
+        let online = [STREAMER, ...STREAMERS].filter(isLive),
             container = (null
                 ?? $('#tt-greedy-raiding--container')
                 ?? furnish('div#tt-greedy-raiding--container', { style: 'display:none!important' })
@@ -7857,7 +7857,7 @@ let Initialize = async(START_OVER = false) => {
             let frame = (null
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
-                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv`,
+                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ (STREAMER.name == name) }`,
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 })
