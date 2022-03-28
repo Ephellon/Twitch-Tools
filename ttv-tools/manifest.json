@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "5.2",
+    "version": "5.3",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 

@@ -3433,9 +3433,7 @@ let Initialize = async(START_OVER = false) => {
                 leastProgressNeeded = +Infinity,
                 closestToCompletion = null;
 
-            let randomChannel = online.sort(() => random() >= 0.5? +1: -1);
-
-            randomChannel = randomChannel[round(random() * randomChannel.length)];
+            let [randomChannel] = online.sort(() => random() >= 0.5? +1: -1);
 
             filtering:
             for(let channel in ChannelPoints) {
@@ -3538,7 +3536,12 @@ let Initialize = async(START_OVER = false) => {
             // There isn't a channel that fits the criteria
             if(parseBool(Settings.stay_live) && nullish(GetNextStreamer?.cachedStreamer) && online?.length) {
                 let preference = Settings.next_channel_preference,
-                    [channel] = (GetNextStreamer.cachedStreamer ??= (randomChannel ??= online.sort(() => random() >= 0.5? +1: -1))),
+                    channels = (GetNextStreamer.cachedStreamer ??= randomChannel);
+
+                if(!channels?.length)
+                    return randomChannel;
+
+                let [channel] = channels,
                     { name } = channel;
 
                 WARN(`No channel fits the "${ preference }" criteria. Assuming a random channel is desired:`, channel);

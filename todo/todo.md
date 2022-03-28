@@ -35,7 +35,10 @@
 ----
 
 # DONE &mdash; Notable Changes
-> [`5.1.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.1.1)
+> [`5.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.3)
+- Fixed issue with `GetNextStreamer`
+
+> [`5.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.2)
 - Fixed `STREAMER.done`
 - Adjusted `STREAMER.perm`
 - Fixed issue with `STREAMER.cult`
