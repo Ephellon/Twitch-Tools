@@ -1488,15 +1488,17 @@ class Color {
 
     // Converts Hex color values to a color-object
         // Color.HEXtoColor(hex:String~/#?RGB/i) → Object~Color.RGBtoHSL(...)
-    static HEXtoColor(hex) {
+    static HEXtoColor(hex = '#000') {
         let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
 
-        return Color.RGBtoHSL([R, G, B]);
+        return Color.RGBtoHSL(R, G, B);
     }
 
+    // https://stackoverflow.com/a/9493060/4211612 →
+        // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
     // Converts RGB to HSL
-        // Color.RGBtoHSL(Array=[Number~UInt8, Number~UInt8, Number~UInt8]) → Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
-    static RGBtoHSL([R, G, B]) {
+        // Color.RGBtoHSL(red:Number~UInt8, green:Number~UInt8, blue:Number~UInt8[, alpha:Number]) → Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
+    static RGBtoHSL(R, G, B, A = 1) {
         // Convert RGB to fractions of 1
         let r = R / 255,
             g = G / 255,
@@ -1530,17 +1532,70 @@ class Color {
         // Calculate saturation
         S = (delta == 0? 0: delta / (1 - Math.abs(2 * L - 1)));
 
-        S = +(S * 100).toFixed(1);
-        L = +(L * 100).toFixed(1);
+        H = +(H * 1/1).round();
+        S = +(S * 100).round();
+        L = +(L * 100).round();
+        A = A.clamp(0, 1).toFixed(1);
 
         return {
-            H, S, L,
-            hue: H, saturation: S, lightness: L,
-            HSL: `hsl(${ H },${ S }%,${ L }%)`,
+            H, S, L, A,
+            hue: H, saturation: S, lightness: L, alpha: A,
+            HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
+            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A })`,
 
             R, G, B,
-            red: r, green: g, blue: b,
+            red: R, green: G, blue: B,
             RGB: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            RGBA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://stackoverflow.com/a/9493060/4211612 →
+        // https://www.rapidtables.com/convert/color/hsl-to-rgb.html
+    // Converts HSL to RGB
+        // Color.HSLtoRGB([hue:Number~Degrees[, saturation:Number~Percentage[, lightness:Number~Percentage[, alpha:Number]]]]) → Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
+    static HSLtoRGB(hue = 0, saturation = 0, lightness = 0, alpha = 1) {
+        let H = (hue % 360),
+            S = (saturation / 100),
+            L = (lightness / 100),
+            A = alpha.clamp(0, 1).toFixed(1);
+
+        let { abs } = Math;
+        let C = (1 - abs(2*L - 1)) * S,
+            X = C * (1 - abs(((H / 60) % 2) - 1)),
+            m = L - C/2;
+
+        let [r, g, b] =
+        (H >= 0 && H < 60)?
+            [C, X, 0]:
+        (H >= 60 && H < 120)?
+            [X, C, 0]:
+        (H >= 120 && H < 180)?
+            [0, C, X]:
+        (H >= 180 && H < 240)?
+            [0, X, C]:
+        (H >= 240 && H < 300)?
+            [X, 0, C]:
+        (H >= 300 && H < 360)?
+            [C, 0, X]:
+        [0, 0, 0];
+
+        let [R, G, B] = [(r+m)*255, (g+m)*255, (b+m)*255].map(v => v.abs().round().clamp(0, 255));
+
+        H = +(H * 1/1).round();
+        S = +(S * 100).round();
+        L = +(L * 100).round();
+
+        return {
+            H, S, L, A,
+            hue, saturation, lightness, alpha: A,
+            HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
+            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A })`,
+
+            R, G, B,
+            red: R, green: G, blue: B,
+            RGB: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            RGBA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -1581,6 +1636,233 @@ class Color {
         });
 
         return value;
+    }
+
+    // Gets the distance between two RGB colors
+    // https://tomekdev.com/posts/sorting-colors-in-js
+        // Color.distance(C1:Color, C2:Color) → Number
+    static distance(C1, C2) {
+        let [R, G, B] = C1,
+            [r, g, b] = C2;
+
+        return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
+    }
+
+    // Retrns a color's name
+        // Color.getName(color:string~Color) → String
+    static getName(color = '#000') {
+        if(nullish(color))
+            return '';
+
+        color = color.toString().trim();
+
+        let colorRegExps = [
+            // #RGB #RRGGBB
+            /^(#)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i,
+
+            // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/rgb
+            // rgb(red, green, blue) rgb(red green blue) rgba(red, green, blue, alpha) rgba(red green blue / alpha)
+            /^(rgb)a?\((<red>?\d+)[\s,]+(<green>?\d+)[\s,]+(<blue>?\d+)(?:[\s,\/]+(<alpha>?[\d\.]+))?\)$/i,
+
+            // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hsl
+            // hsl(hue, saturation, lightness) hsl(hue saturation lightness) hsla(hue, saturation, lightness, alpha) hsla(hue saturation lightness / alpha)
+            /^(hsl)a?\((<hue>?\d+)(?:deg(?:rees?)?|)?[\s,]+(<saturation>?\d+)(?:[%])?[\s,]+(<lightness>?\d+)(?:[%])?(?:[\s,\/]+(<alpha>?[\d\.]+))?\)$/i,
+        ];
+
+        for(let regexp of colorRegExps)
+            if(regexp.test(color))
+                return color.replace(regexp, ($0, $1, $2, $3, $4) => {
+                    let color;
+                    switch($1) {
+                        case '#': {
+                            color = Color.HEXtoColor($0);
+                        } break;
+
+                        case 'rgb': {
+                            color = Color.RGBtoHSL($1, $2, $3);
+                        } break;
+
+                        case 'hsl': {
+                            color = Color.HSLtoRGB($1, $2, $3);
+                        } break;
+
+                        default: return;
+                    }
+
+                    // TODO: Add more colors &/ better detection...
+                    let { H, S, L, R, G, B } = color;
+                    let maxDist = Color.distance([0,0,0],[255,255,255]),
+                        colorDifference = (C1, C2) => Color.distance(C1, C2) / maxDist;
+
+                    let colors = {
+                        // Extremes
+                        white: ({ R, G, B, L }) => (false
+                            || (colorDifference([255, 255, 255], [R, G, B]) < 0.05)
+                            || (true
+                                && colors.grey({ R, G, B, S, L })
+                                && (L > 90)
+                            )
+                        ),
+                        light: ({ S, L }) => (false
+                            || (L > 80)
+                            || (S < 15)
+                        ),
+
+                        black: ({ R, G, B, S, L }) => (false
+                            || (colorDifference([0, 0, 0], [R, G, B]) < 0.05)
+                            || (true
+                                && colors.grey({ R, G, B, S })
+                                && (L < 5)
+                            )
+                            || (true
+                                && colors.green({ R, G, B, S })
+                                && (L < 5)
+                            )
+                            || (true
+                                && colors.brown({ S, L })
+                                && (L <= 1)
+                            )
+                        ),
+                        dark: ({ S, L }) => (L < 15),
+
+                        grey: ({ R, G, B, S }) => (false
+                            || (colorDifference([B, R, G].map(C => C.floorToNearest(8)), [R, G, B]) < 0.05)
+                            || (S < 5)
+                        ),
+
+                        // Reds {130°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
+                        red: ({ H, S }) => (true
+                            && (S >= 5)
+                            && (false
+                                || (H > 345)
+                                || (H <= 10)
+                            )
+                        ),
+                        pink: ({ H, S, L }) => (false
+                            || (true
+                                && (S >= 5)
+                                && (H > 290 && H <= 345)
+                            )
+                            || (true
+                                && colors.light({ S, L })
+                                && colors.red({ H, S })
+                            )
+                        ),
+                        orange: ({ H, S }) => (false
+                            || (true
+                                && (S >= 5)
+                                && (H > 10 && H <= 45)
+                            )
+                            || (true
+                                && colors.red({ H, S })
+                                && colors.yellow({ H, S })
+                            )
+                        ),
+                        yellow: ({ H, S }) => (true
+                            && (S >= 5)
+                            && (H > 45 && H <= 60)
+                        ),
+                        brown: ({ H, S, L }) => (true
+                            && (false
+                                || colors.yellow({ H, S })
+                                || colors.orange({ H, S })
+                                || colors.red({ H, S })
+                            )
+                            && (false
+                                || (S > 10 && S <= 30)
+                                || (L > 10 && L <= 30)
+                            )
+                        ),
+
+                        // Greens {110°} → (60° < Hue ≤ 170°)
+                        green: ({ H, S }) => (true
+                            && (S >= 5)
+                            && (H > 60 && H <= 170)
+                        ),
+
+                        // Blues {120°} → (170° < Hue ≤ 290°)
+                        blue: ({ H, S }) => (true
+                            && (S >= 5)
+                            && (H > 170 && H <= 260)
+                        ),
+                        purple: ({ H, S, L }) => (false
+                            || (true
+                                && (S >= 5)
+                                && (H > 260 && H <= 290)
+                            )
+                            || (false
+                                || (true
+                                    && (H >= 245 && H < 290)
+                                    && (L <= 50)
+                                )
+                            )
+                            || (true
+                                && colors.pink({ H, S, L })
+                                && (L < 30)
+                            )
+                        ),
+                    };
+
+                    let name = [];
+
+                    naming:
+                    for(let key in colors) {
+                        let condition = colors[key];
+
+                        if(condition({ H, S, L, R, G, B })) {
+                            name.push(key);
+
+                            if(/^(black|white)$/i.test(key)) {
+                                name = [key];
+
+                                break naming;
+                            }
+                        }
+                    }
+
+                    return name
+                        .sort()
+                        .sort((primary, secondary) => {
+                            return (
+                                /^(light|dark)$/i.test(primary)?
+                                    -1:
+                                /^(grey|brown)$/i.test(primary)?
+                                    +1:
+                                /^(light|dark)$/i.test(secondary)?
+                                    +1:
+                                /^(grey|brown)$/i.test(secondary)?
+                                    -1:
+                                0
+                            )
+                        })
+                        .join(' ')
+
+                        .replace(/light( pink)? red/, 'pink')
+                        .replace(/red orange/, 'orange')
+                        .replace(/light yellow/, 'yellow')
+                        .replace(/orange brown/, 'light brown')
+                        .replace(/blue purple/, 'purple')
+
+                        .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
+                        .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
+                        .replace(/(\w+) (\1)/g, '$1')
+                        .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
+                            if([$1, $2].contains('light', 'dark'))
+                                return $_;
+
+                            let suffix = $1.slice(-1);
+
+                            return $1.slice(0, -1) + ({
+                                d: 'dd',
+                                e: '',
+                            }[suffix] ?? suffix) + 'ish-' + $2;
+                        })
+
+                        .replace(/light$/i, 'white')
+                        .replace(/dark$/i, 'black');
+                });
+
+        return '';
     }
 }
 
@@ -3761,17 +4043,18 @@ let Initialize = async(START_OVER = false) => {
                     });
 
                 let commands = new Map;
-                for(let command of COMMANDS)
+                for(let command of await COMMANDS)
                     commands.set(command.command, command);
 
                 return COMMANDS = [[...commands].map(([name, value]) => value)]
                     .flat()
+                    .filter(c => defined(c.command))
                     .sort((a, b) => a.command.length > b.command.length? -1: +1);
             })(STREAMER);
         },
 
         get cult() {
-            return parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent);
+            return (STREAMER.data?.followers) || parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent);
         },
 
         // Gets values later...
@@ -3870,7 +4153,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get main() {
-            return STREAMER.paid && defined($('[tt-svg-label="prime-subscription"i]'))
+            return STREAMER.paid && defined($('[tt-svg-label="prime-subscription"i]')?.closest('button[data-a-target^="subscribe"i]'))
         },
 
         get mark() {
@@ -4007,13 +4290,9 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get tone() {
-            let color = STREAMER.tint
-                .split(/(\w{2})/)
-                .filter(v => v.length > 1)
-                .map(v => (255 - parseInt(v, 16)).toString(16).padStart(2, '0'))
-                .join('');
+            let { H, S, L } = Color.HEXtoColor(STREAMER.tint);
 
-            return (`#${ color }`).toUpperCase();
+            return Color.HSLtoRGB(H, S, (100 - L).clamp(15, 85)).RGB.toUpperCase();
         },
 
         get veto() {
@@ -5364,7 +5643,7 @@ let Initialize = async(START_OVER = false) => {
                         until(() => STREAMER.main? true: null).then(ok => {
                             SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
 
-                            WARN(`[Prime Subscription] just renewd your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`).toNativeStack();
+                            WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`).toNativeStack();
                         });
                     });
             }
@@ -5940,191 +6219,6 @@ let Initialize = async(START_OVER = false) => {
                 [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
-            // Gets the distance between two RGB colors
-            // https://tomekdev.com/posts/sorting-colors-in-js
-            function colorDistance(C1, C2) {
-                let [R, G, B] = C1,
-                    [r, g, b] = C2;
-
-                return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
-            }
-
-            let maxDist = colorDistance([0,0,0],[255,255,255]),
-                colorDifference = (C1, C2) => colorDistance(C1, C2) / maxDist;
-
-            function getColorName() {
-                let { H, S, L, R, G, B } = Color.HEXtoColor(
-                    THEME == 'dark'?
-                        THEME__CHANNEL_DARK:
-                    THEME__CHANNEL_LIGHT
-                );
-
-                // TODO: Add more colors &/ better detection...
-                let colors = {
-                    // Extremes
-                    white: ({ R, G, B, L }) => (false
-                        || (colorDifference([255, 255, 255], [R, G, B]) < 0.05)
-                        || (true
-                            && colors.grey({ R, G, B, S, L })
-                            && (L > 90)
-                        )
-                    ),
-                    light: ({ S, L }) => (false
-                        || (L > 80)
-                        || (S < 15)
-                    ),
-
-                    black: ({ R, G, B, S, L }) => (false
-                        || (colorDifference([0, 0, 0], [R, G, B]) < 0.05)
-                        || (true
-                            && colors.grey({ R, G, B, S })
-                            && (L < 5)
-                        )
-                        || (true
-                            && colors.green({ R, G, B, S })
-                            && (L < 5)
-                        )
-                        || (true
-                            && colors.brown({ S, L })
-                            && (L <= 1)
-                        )
-                    ),
-                    dark: ({ S, L }) => (L < 15),
-
-                    grey: ({ R, G, B, S }) => (false
-                        || (colorDifference([B, R, G].map(C => C.floorToNearest(8)), [R, G, B]) < 0.05)
-                        || (S < 5)
-                    ),
-
-                    // Reds {130°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
-                    red: ({ H, S }) => (true
-                        && (S >= 5)
-                        && (false
-                            || (H > 345)
-                            || (H <= 10)
-                        )
-                    ),
-                    pink: ({ H, S, L }) => (false
-                        || (true
-                            && (S >= 5)
-                            && (H > 290 && H <= 345)
-                        )
-                        || (true
-                            && colors.light({ S, L })
-                            && colors.red({ H, S })
-                        )
-                    ),
-                    orange: ({ H, S }) => (false
-                        || (true
-                            && (S >= 5)
-                            && (H > 10 && H <= 45)
-                        )
-                        || (true
-                            && colors.red({ H, S })
-                            && colors.yellow({ H, S })
-                        )
-                    ),
-                    yellow: ({ H, S }) => (true
-                        && (S >= 5)
-                        && (H > 45 && H <= 60)
-                    ),
-                    brown: ({ H, S, L }) => (true
-                        && (false
-                            || colors.yellow({ H, S })
-                            || colors.orange({ H, S })
-                            || colors.red({ H, S })
-                        )
-                        && (false
-                            || (S > 10 && S <= 30)
-                            || (L > 10 && L <= 30)
-                        )
-                    ),
-
-                    // Greens {115°} → (60° < Hue ≤ 175°)
-                    green: ({ H, S }) => (true
-                        && (S >= 5)
-                        && (H > 60 && H <= 175)
-                    ),
-
-                    // Blues {115°} → (175° < Hue ≤ 290°)
-                    blue: ({ H, S }) => (true
-                        && (S >= 5)
-                        && (H > 175 && H <= 260)
-                    ),
-                    purple: ({ H, S, L }) => (false
-                        || (true
-                            && (S >= 5)
-                            && (H > 260 && H <= 290)
-                        )
-                        || (false
-                            || (true
-                                && (H >= 245 && H < 290)
-                                && (L <= 50)
-                            )
-                        )
-                    ),
-                };
-
-                let name = [];
-
-                naming:
-                for(let key in colors) {
-                    let condition = colors[key];
-
-                    if(condition({ H, S, L, R, G, B })) {
-                        name.push(key);
-
-                        if(/^(black|white)$/i.test(key)) {
-                            name = [key];
-
-                            break naming;
-                        }
-                    }
-                }
-
-                return name
-                    .sort()
-                    .sort((primary, secondary) => {
-                        return (
-                            /^(light|dark)$/i.test(primary)?
-                                -1:
-                            /^(grey|brown)$/i.test(primary)?
-                                +1:
-                            /^(light|dark)$/i.test(secondary)?
-                                +1:
-                            /^(grey|brown)$/i.test(secondary)?
-                                -1:
-                            0
-                        )
-                    })
-                    .join(' ')
-
-                    .replace(/light( pink)? red/, 'pink')
-                    .replace(/dark pink( red)?/, 'red')
-                    .replace(/red orange/, 'orange')
-                    .replace(/light yellow/, 'yellow')
-                    .replace(/orange brown/, 'light brown')
-                    .replace(/blue purple/, 'purple')
-
-                    .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
-                    .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
-                    .replace(/(\w+) (\1)/g, '$1')
-                    .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
-                        if([$1, $2].contains('light', 'dark'))
-                            return $_;
-
-                        let suffix = $1.slice(-1);
-
-                        return $1.slice(0, -1) + ({
-                            d: 'dd',
-                            e: '',
-                        }[suffix] ?? suffix) + 'ish-' + $2;
-                    })
-
-                    .replace(/light$/i, 'white')
-                    .replace(/dark$/i, 'black');
-            }
-
             first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
 
             // Update the color name...
@@ -6133,7 +6227,7 @@ let Initialize = async(START_OVER = false) => {
                     UP_NEXT_ALLOW_THIS_TAB?
                         `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`:
                     `Up Next is disabled for this tab`
-                ).replace(/\bcolored\b/g, getColorName);
+                ).replace(/\bcolored\b/g, () => Color.getName(THEME == 'dark'? THEME__CHANNEL_DARK: THEME__CHANNEL_LIGHT));
             }, 1000);
 
             // Load cache
@@ -10418,8 +10512,12 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     background-position: bottom center;
                 }
 
-                [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                    /* background-blend-mode: difference; */
+                [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                    background-blend-mode: lighten;
+                }
+
+                [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                    background-blend-mode: darken;
                 }
 
                 [up-next--body][allowed="false"i] {
@@ -10492,11 +10590,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
                 [class*="theme"i][class*="dark"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-light) !important }
-                [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--channel-color-light) }
+                [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-light) }
                 [class*="theme"i][class*="dark"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-light) }
 
                 [class*="theme"i][class*="light"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-dark) !important }
-                [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 1px var(--channel-color-dark) }
+                [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-dark) }
                 [class*="theme"i][class*="light"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-dark) }
 
                 /* Change Up Next font color */

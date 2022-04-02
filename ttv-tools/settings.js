@@ -1939,6 +1939,28 @@ document.body.onload = async() => {
                 });
 
                 // All "required" parents
+                // Adds `top....` to the <head>
+                // function keysDeep(object) {
+                //     let keys = [];
+                //     for(let key in object)
+                //         if(object.hasOwnProperty(key)) {
+                //             let value = object[key];
+                //
+                //             if(object === value)
+                //                 continue;
+                //
+                //             if(defined(value) && isObj(value))
+                //                 keys.push(...keysDeep(value));
+                //             keys.push(key);
+                //         }
+                //
+                //     return keys;
+                // }
+                //
+                // document.head.append(
+                //     furnish(`meta.top.${ [...new Set(keysDeep(top))].join('.') }`)
+                // );
+
                 $('[requires]', true).map(dependent => {
                     let providers = $(dependent.getAttribute('requires'), true);
 

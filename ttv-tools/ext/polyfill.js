@@ -2996,6 +2996,7 @@ function toFormat(string, patterns) {
 function GetOS() {
     let { userAgent } = top.navigator;
     let OSs = {
+        'NT 11.0': 'Win 11',
         'NT 10.0': 'Win 10',
         'NT 6.3': 'Win 8.1',
         'NT 6.2': 'Win 8',
@@ -3016,7 +3017,7 @@ function GetOS() {
 }
 
 // Returns the assumed key combination
-    // GetMacro(keys:string) → string
+    // GetMacro(keys:string[, OS:string]) → string
 function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
     OS ??= GetOS();
@@ -3042,7 +3043,10 @@ function GetMacro(keys = '', OS = null) {
     // Mouse buttons (emojis)
     let Mouse = {
         AClick: 'primary_mouse_button',
+        aclick: 'Left Click',
+
         BClick: 'secondary_mouse_button',
+        bclick: 'Right Click',
     };
 
     return keys
@@ -3052,14 +3056,38 @@ function GetMacro(keys = '', OS = null) {
             switch(OS.slice(0, 7)) {
                 /** MacOS Keys | Order of Precedence → Ctrl Opt Shift Cmd [Key(s)]
                  * Control (Ctrl)       ^
-                 * Option/Alt (Opt/Alt) ⌥
+                 * Option/Alt (Opt/Alt) ⎇ / ⌥
                  * Shift                ⇧
-                 * Command (Cmd)        ⌘
+                 * Command (Cmd)        ⌘ ⊞
                  * Caps Lock            ⇪
+                 * Escape (Esc)         ⎋
+                 * Tab                  ↹
+                 * Enter / Return       ↵
+                 * Backspace            ⌫
+                 * Delete (Del)         ⌦
+                 * Print Screen (PrtSc) ⎙
+                 * Num Lock             ⇭
+                 * Scroll Lock          ⤓
                  */
                 case 'Mac': {
                     key = (
-                        /^(Win)$/i.test(key)?
+                        /^(Esc)$/i.test(key)?
+                            '\u238B':
+                        /^(Tab)$/i.test(key)?
+                            '\u21B9':
+                        /^(Enter|Return)$/i.test(key)?
+                            '\u21B5':
+                        /^(Delete)$/i.test(key)?
+                            '\u2326':
+                        /^(PrtSc)$/i.test(key)?
+                            '\u2399':
+                        /^(NumLock)$/i.test(key)?
+                            '\u21ED':
+                        /^(Backspace)$/i.test(key)?
+                            '\u232B':
+                        /^(ScrollLock)$/i.test(key)?
+                            '\u2913':
+                        /^(Win|Meta)$/i.test(key)?
                             '\u2318':
                         /^(Alt)$/i.test(key)?
                             '\u2325':
@@ -3071,9 +3099,39 @@ function GetMacro(keys = '', OS = null) {
                     );
                 } break;
 
-                // Windows Keys | Order of Precedence → Meta Ctrl Alt Shift [Key(s)]
-                case 'Windows': {
+                /** Windows & *nix Keys | Order of Precedence → Meta Ctrl Alt Shift [Key(s)]
+                 * Control (Ctrl)       ^
+                 * Option/Alt (Opt/Alt) ⎇ / ⌥
+                 * Shift                ⇧
+                 * Command (Cmd)        ⌘ ⊞
+                 * Caps Lock            ⇪
+                 * Escape (Esc)         ⎋
+                 * Tab                  ↹
+                 * Enter / Return       ↵
+                 * Backspace            ⌫
+                 * Delete (Del)         ⌦
+                 * Print Screen (PrtSc) ⎙
+                 * Num Lock             ⇭
+                 * Scroll Lock          ⤓
+                 */
+                default: {
                     key = (
+                        /^(Esc|\u238B)$/i.test(key)?
+                            'Esc':
+                        /^(Tab|\u21B9)$/i.test(key)?
+                            'Tab':
+                        /^(Enter|Return|\u21B5)$/i.test(key)?
+                            'Enter':
+                        /^(Delete|\u2326)$/i.test(key)?
+                            'Del':
+                        /^(PrtSc|\u2399)$/i.test(key)?
+                            'PrtSc':
+                        /^(NumLock|\u21ED)$/i.test(key)?
+                            'NumLk':
+                        /^(Backspace|\u232B)$/i.test(key)?
+                            'Backspace':
+                        /^(ScrollLock|\u2913)$/i.test(key)?
+                            'ScrLk':
                         /^(Cmd|\u2318)$/i.test(key)?
                             'Win':
                         /^(Alt|\u2325)$/i.test(key)?
@@ -3081,7 +3139,7 @@ function GetMacro(keys = '', OS = null) {
                         /^(Shift|\u21e7)$/i.test(key)?
                             'Shift':
                         /^([AB]Click)$/.test(key)?
-                            Glyphs.utf8[Mouse[RegExp.$1]]:
+                            Mouse[RegExp.$1.toLowerCase()]:
                         key
                     );
                 } break;

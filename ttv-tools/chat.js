@@ -460,10 +460,13 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .catch(WARN);
             // Load emotes with a certain name
             else if(defined(keyword))
-                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; !allLoaded && (keyword || '').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && (keyword || '').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
                     await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
+                            if(!emotes?.length)
+                                return;
+
                             for(let { emote, code, user, id, userId = null } of emotes) {
                                 code ??= emote?.code;
                                 user ??= emote?.user ?? {};
@@ -714,7 +717,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
                         if(parseBool(Settings.auto_load_bttv_emotes))
                             for(let word of line.message.split(/\s+/))
-                                if(!NON_EMOTE_PHRASES.has(word) && !BTTV_EMOTES.has(word) && word.length > 3 && /[a-z][A-Z]|^[A-Z]+$/.test(word))
+                                if(!NON_EMOTE_PHRASES.has(word) && !BTTV_EMOTES.has(word) && word.length > 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
                                     await LOAD_BTTV_EMOTES(word, null, true);
 
                         for(let [name, src] of BTTV_EMOTES)
