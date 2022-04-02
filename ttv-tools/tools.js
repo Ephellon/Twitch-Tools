@@ -1489,7 +1489,7 @@ class Color {
     // Converts Hex color values to a color-object
         // Color.HEXtoColor(hex:String~/#?RGB/i) → Object~Color.RGBtoHSL(...)
     static HEXtoColor(hex = '#000') {
-        let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
+        let [R, G, B, A] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)?$/i).filter(string => string.length).map(string => parseInt(string, 16));
 
         return Color.RGBtoHSL(R, G, B);
     }
@@ -1640,7 +1640,7 @@ class Color {
 
     // Gets the distance between two RGB colors
     // https://tomekdev.com/posts/sorting-colors-in-js
-        // Color.distance(C1:Color, C2:Color) → Number
+        // Color.distance(C1:Array=[R, G, B], C2:Array=[R, G, B]) → Number
     static distance(C1, C2) {
         let [R, G, B] = C1,
             [r, g, b] = C2;
@@ -1658,22 +1658,22 @@ class Color {
 
         let colorRegExps = [
             // #RGB #RRGGBB
-            /^(#)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i,
+            /^(#)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)?$/i,
 
             // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/rgb
             // rgb(red, green, blue) rgb(red green blue) rgba(red, green, blue, alpha) rgba(red green blue / alpha)
-            /^(rgb)a?\((<red>?\d+)[\s,]+(<green>?\d+)[\s,]+(<blue>?\d+)(?:[\s,\/]+(<alpha>?[\d\.]+))?\)$/i,
+            /^(rgb)a?\((?<red>\d+)[\s,]+(?<green>\d+)[\s,]+(?<blue>\d+)(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
 
             // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hsl
             // hsl(hue, saturation, lightness) hsl(hue saturation lightness) hsla(hue, saturation, lightness, alpha) hsla(hue saturation lightness / alpha)
-            /^(hsl)a?\((<hue>?\d+)(?:deg(?:rees?)?|)?[\s,]+(<saturation>?\d+)(?:[%])?[\s,]+(<lightness>?\d+)(?:[%])?(?:[\s,\/]+(<alpha>?[\d\.]+))?\)$/i,
+            /^(hsl)a?\((?<hue>\d+)(?:deg(?:rees?)?|)?[\s,]+(?<saturation>\d+)(?:[%])?[\s,]+(?<lightness>\d+)(?:[%])?(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
         ];
 
         for(let regexp of colorRegExps)
             if(regexp.test(color))
                 return color.replace(regexp, ($0, $1, $2, $3, $4) => {
                     let color;
-                    switch($1) {
+                    switch($1.toLowerCase()) {
                         case '#': {
                             color = Color.HEXtoColor($0);
                         } break;

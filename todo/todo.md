@@ -35,6 +35,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.4.1)
+- Fixed color-mapping error
+
 > [`5.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.4)
 - Adjusted color-naming logic
 - Adjusted `STREAMER.tone` → opposite lightness of `STREAMER.tint`
