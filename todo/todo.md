@@ -22,19 +22,20 @@
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
 9. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
-10. Live Reminders might spam notifications?
-    * Due to `alert` not handling promises in a queue correctly...
-        * Tentative fix `5.1`
-11. Pause First in Line when observing a raid
-12. Get better translations--or remove them altogether
+10. Pause First in Line when observing a raid
+11. Get better translations--or remove them altogether
     * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
-13. Toggling Easy Lurk might cause theatre-mode to activate?
-14. Live Reminders might re-add all live channels?
+12. Toggling Easy Lurk might cause theatre-mode to activate?
+13. Live Reminders might re-add all live channels?
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.5)
+- Fixed color-naming error
+- Updated screenshots
+
 > [`5.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.4.1)
 - Fixed color-mapping error
 

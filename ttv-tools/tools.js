@@ -1489,7 +1489,7 @@ class Color {
     // Converts Hex color values to a color-object
         // Color.HEXtoColor(hex:String~/#?RGB/i) → Object~Color.RGBtoHSL(...)
     static HEXtoColor(hex = '#000') {
-        let [R, G, B, A] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)?$/i).filter(string => string.length).map(string => parseInt(string, 16));
+        let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
 
         return Color.RGBtoHSL(R, G, B);
     }
@@ -1535,13 +1535,13 @@ class Color {
         H = +(H * 1/1).round();
         S = +(S * 100).round();
         L = +(L * 100).round();
-        A = A.clamp(0, 1).toFixed(1);
+        A = A.clamp(0, 1);
 
         return {
             H, S, L, A,
             hue: H, saturation: S, lightness: L, alpha: A,
             HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
-            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A })`,
+            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
 
             R, G, B,
             red: R, green: G, blue: B,
@@ -1558,7 +1558,7 @@ class Color {
         let H = (hue % 360),
             S = (saturation / 100),
             L = (lightness / 100),
-            A = alpha.clamp(0, 1).toFixed(1);
+            A = alpha.clamp(0, 1);
 
         let { abs } = Math;
         let C = (1 - abs(2*L - 1)) * S,
@@ -1590,7 +1590,7 @@ class Color {
             H, S, L, A,
             hue, saturation, lightness, alpha: A,
             HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
-            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A })`,
+            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
 
             R, G, B,
             red: R, green: G, blue: B,
@@ -1658,7 +1658,7 @@ class Color {
 
         let colorRegExps = [
             // #RGB #RRGGBB
-            /^(#)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)?$/i,
+            /^(#)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i,
 
             // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/rgb
             // rgb(red, green, blue) rgb(red green blue) rgba(red, green, blue, alpha) rgba(red green blue / alpha)
@@ -1671,7 +1671,7 @@ class Color {
 
         for(let regexp of colorRegExps)
             if(regexp.test(color))
-                return color.replace(regexp, ($0, $1, $2, $3, $4) => {
+                return color.replace(regexp, ($0, $1, $2, $3, $4, $5) => {
                     let color;
                     switch($1.toLowerCase()) {
                         case '#': {
@@ -1679,11 +1679,11 @@ class Color {
                         } break;
 
                         case 'rgb': {
-                            color = Color.RGBtoHSL($1, $2, $3);
+                            color = Color.RGBtoHSL(...[$2, $3, $4].map(parseFloat));
                         } break;
 
                         case 'hsl': {
-                            color = Color.HSLtoRGB($1, $2, $3);
+                            color = Color.HSLtoRGB(...[$2, $3, $4].map(parseFloat));
                         } break;
 
                         default: return;
@@ -3099,7 +3099,7 @@ try {
                                     Handlers.first_in_line({ href, textContent: `${ name } is live [Greedy Raiding]` });
                                 }
 
-                                open(`./${ from }?tool=raid-${ method }`, '_self');
+                                open(`./${ from }?tool=raid-stopper--${ method }`, '_self');
                             } else {
                                 // The user clicked "Cancel"
                                 LOG('Canceled Greedy Raiding event', { from, to });
@@ -5830,7 +5830,7 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
+            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
                 LOG('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
@@ -5915,7 +5915,7 @@ let Initialize = async(START_OVER = false) => {
     let FIRST_IN_LINE_BALLOON__INSURANCE =
     setInterval(() => {
         if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
-            FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'stream' });
+            FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'calendar' });
 
             // Up Next Boost Button
             let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
@@ -6026,7 +6026,7 @@ let Initialize = async(START_OVER = false) => {
 
                             return body?.remove();
                         } else {
-                            live_reminders_catalog_button.innerHTML = Glyphs.modify('stream', { height: '20px', width: '20px' });
+                            live_reminders_catalog_button.innerHTML = Glyphs.modify('calendar', { height: '20px', width: '20px' });
                             live_reminders_catalog_button.tooltip.innerHTML = 'View Up Next';
                             head.innerHTML = 'Live Reminders';
                         }
@@ -7813,7 +7813,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(streamer)) {
                     LOG(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
-                    open(parseURL(streamer.href).pushToSearch({ tool: 'host-stopper--unfollowed' }).href, '_self');
+                    open(parseURL(streamer.href).pushToSearch({ tool: `host-stopper--${ method }` }).href, '_self');
                     break host_stopper;
                 }
             }
@@ -7824,7 +7824,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                open(parseURL(next.href).pushToSearch({ tool: 'host-stopper' }).href, '_self');
+                open(parseURL(next.href).pushToSearch({ tool: `host-stopper--${ method }` }).href, '_self');
             } else {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -7910,7 +7910,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(next)) {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                    open(parseURL(next.href).pushToSearch({ tool: 'raid-stopper' }).href, '_self');
+                    open(parseURL(next.href).pushToSearch({ tool: `raid-stopper--${ method }` }).href, '_self');
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
