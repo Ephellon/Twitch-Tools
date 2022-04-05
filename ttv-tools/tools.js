@@ -5281,7 +5281,7 @@ let Initialize = async(START_OVER = false) => {
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey || shiftKey) && altKey && key == 'a')
+                if(!(ctrlKey || metaKey || shiftKey) && altKey && 'aA'.contains(key))
                     $('#away-mode')?.click?.();
             });
 
@@ -5566,9 +5566,13 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.claim_loot = () => {
-        let prime_loots_button = $('[data-a-target^="prime-offers"i]');
+        let container = $('.prime-offers');
 
-        prime_loots_button.click();
+        if(parseInt($('[class*="pill"i]', false, container)?.textContent || 0) <= 0)
+            return;
+        let button = $('button', false, container);
+
+        button.click();
 
         // Give the loots time to load
         let waiter = setInterval(() => {
@@ -5582,7 +5586,7 @@ let Initialize = async(START_OVER = false) => {
             $('[class*="prime-offer"i][class*="dismiss"i] button', true).map(button => button.click());
 
             // Give the loots time to be clicked
-            setTimeout(() => prime_loots_button.click(), 100 * stop);
+            setTimeout(() => button.click(), 100 * stop);
         }, 100);
     };
     Timers.claim_loot = -5_000;
@@ -6166,11 +6170,22 @@ let Initialize = async(START_OVER = false) => {
                                                                         LoadCache('LiveReminders', async({ LiveReminders }) => {
                                                                             LiveReminders = JSON.parse(LiveReminders || '{}');
 
+                                                                            let justInCase = { ...LiveReminders[name] };
+
                                                                             $(`.tt-reminder[name="${ name }"i]`)?.remove();
                                                                             delete LiveReminders[name];
                                                                             SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
-                                                                            await alert.timed(`Reminder removed successfully!`, 5_000);
+                                                                            await confirm
+                                                                                .timed(`Reminder removed successfully!`, 5_000)
+                                                                                .then(ok => {
+                                                                                    // The user pressed nothing, or pressed "OK"
+                                                                                    if(nullish(ok) || ok)
+                                                                                        return;
+
+                                                                                    // The user pressed "Cancel"
+                                                                                    SaveCache({ LiveReminders: JSON.stringify({ ...LiveReminders, [name]: justInCase }) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                                                                });
                                                                         });
                                                                     },
                                                                 },
@@ -7447,7 +7462,7 @@ let Initialize = async(START_OVER = false) => {
             dir:
             for(let root of path)
                 if(nullish(value = value[root]))
-                    break dir;
+                    return $0;
             value = value?._ ?? value;
 
             return value || $_;
@@ -7471,7 +7486,7 @@ let Initialize = async(START_OVER = false) => {
                         if(parseBool(Settings.parse_commands__create_links) && defined(href))
                             string = `<a style="opacity:${ 2**-!enabled }" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank title="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
                         else
-                            string = `<span style="text-decoration:underline;opacity:${ 2**-!enabled }" title="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
+                            string = `<span style="text-decoration:2px solid underline;opacity:${ 2**-!enabled }" title="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
 
                         return `<span tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
@@ -9849,7 +9864,7 @@ let Initialize = async(START_OVER = false) => {
         // Alt + Shift + X | Opt + Shift + X
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey) && altKey && shiftKey && key == 'X')
+                if(!(ctrlKey || metaKey) && altKey && shiftKey && 'xX'.contains(key))
                     $('video', true).pop().copyFrame()
                         .then(async copied => await alert.timed('Screenshot saved to clipboard!', 5_000))
                         .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }`, 7_000));
@@ -9950,6 +9965,99 @@ let Initialize = async(START_OVER = false) => {
                  */
             }
             `;
+    }
+
+    __GET_UPDATE_NFO__: {
+        // Getting the version information
+        setTimeout(() => {
+            let FETCHED_DATA = { wasFetched: false };
+
+            (async function(installedFromWebstore) {
+                let properties = {
+                    origin: {
+                        github: !installedFromWebstore,
+                        chrome: installedFromWebstore,
+                    },
+                    version: {
+                        installed: Manifest.version,
+                        github: '5.6',
+                        chrome: '5.6',
+                    },
+                    Glyphs,
+                };
+
+                await Storage.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
+                    buildVersion ??= properties.version.installed;
+                    versionRetrivalDate ||= 0;
+
+                    // Only refresh if the data is older than 1h
+                    // The data has expired →
+                    __FetchingUpdates__:
+                    if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
+                        let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
+
+                        await fetch(githubURL)
+                            .then(response => {
+                                if(FETCHED_DATA.wasFetched)
+                                    throw 'Data was already fetched';
+
+                                return response.json();
+                            })
+                            .then(metadata => {
+                                LOG({ ['GitHub']: metadata });
+
+                                return properties.version.github = metadata.tag_name;
+                            })
+                            .then(version => Storage.set({ githubVersion: version }))
+                            .catch(async error => {
+                                await Storage.get(['githubVersion'], ({ githubVersion }) => {
+                                    if(defined(githubVersion))
+                                        properties.version.github = githubVersion;
+                                });
+                            })
+                            .finally(() => {
+                                let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`);
+
+                                FETCHED_DATA = { ...FETCHED_DATA, ...properties };
+                                Storage.set({ githubUpdateAvailable });
+
+                                // Only applies to versions installed from the Chrome Web Store
+                                __ChromeOnly__:
+                                if(installedFromWebstore)
+                                    Storage.set({ chromeUpdateAvailable: githubUpdateAvailable });
+
+                                if((!installedFromWebstore && githubUpdateAvailable) || (installedFromWebstore && chromeUpdateAvailable))
+                                    confirm
+                                        .timed(`There is an update available for ${ Manifest.name } (${ properties.version.installed } &rarr; ${ properties.version.github })`)
+                                        .then(ok => {
+                                            if(nullish(ok))
+                                                return;
+
+                                            if(ok)
+                                                open([
+                                                    'https://github.com/Ephellon/Twitch-Tools/releases',
+                                                    'https://chrome.google.com/webstore/detail/ttv-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd',
+                                                ][+installedFromWebstore], '_blank');
+                                        });
+                            });
+
+                        // GitHub-only logic - get Chrome version information
+
+                        if(FETCHED_DATA.wasFetched === false) {
+                            FETCHED_DATA.wasFetched = true;
+                            versionRetrivalDate = +new Date;
+
+                            Storage.set({ versionRetrivalDate });
+                        }
+                    }
+                    // The data hasn't expired yet
+                    else {
+                        properties.version.github = githubVersion ?? properties.version.github;
+                        properties.version.chrome = chromeVersion ?? properties.version.chrome;
+                    }
+                });
+            })(parseURL(Runtime.getURL('profile.png')).host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
+        }, 3_600_000);
     }
 
     // End of Initialize

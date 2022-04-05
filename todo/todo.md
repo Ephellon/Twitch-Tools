@@ -32,9 +32,17 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.6)
+- Modified key event listener logic to include Caps Lock mode
+- Added ability to cancel Live Reminder deletions
+- Added update logic to `/tools.js`
+- Modified Prime Loot logic to only collect when there are claims available
+- Fixed issue with `parseCommands`
+
 > [`5.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.5)
 - Fixed color-naming error
 - Updated screenshots
+- Changed Up Next icon
 
 > [`5.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.4.1)
 - Fixed color-mapping error

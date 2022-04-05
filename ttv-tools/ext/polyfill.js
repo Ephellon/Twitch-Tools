@@ -3979,6 +3979,84 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     return response;
 };
 
+// Compares two versions and returns an integer representing their relationship
+    // compareVersions([old:string[, new:string[, return:string]]]) → Number|Boolean
+function compareVersions(oldVersion = '', newVersion = '', returnType) {
+    if(/[<=>\u2264\u2265]/.test(oldVersion)) {
+        let [oV, rT, nV] = oldVersion.split(/([<=>]{1,2}|[\u2264\u2265])/).map(s => s.trim()).filter(s => s?.length);
+
+        oldVersion = oV;
+        returnType = rT;
+        newVersion = nV;
+    }
+
+    if(/[<=>\u2264\u2265]/.test(newVersion)) {
+        let nV = returnType,
+            rT = newVersion;
+
+        returnType = rT;
+        newVersion = nV;
+    }
+
+    if(!oldVersion?.length || !newVersion?.length)
+        throw 'Unable to compare empty versions.';
+
+    oldVersion = oldVersion.split('.');
+    newVersion = newVersion.split('.');
+
+    let diff = 0;
+
+    for(let index = 0, length = Math.max(oldVersion.length, newVersion.length); index < length; ++index) {
+        let L = parseInt((oldVersion[index] ?? '').replace(/[^a-z0-9]+/gi), 36),
+            R = parseInt((newVersion[index] ?? '').replace(/[^a-z0-9]+/gi), 36);
+
+        if(L == R)
+            continue;
+
+        if(L < R)
+            diff = -1;
+        else
+            diff = +1;
+
+        break;
+    }
+
+    switch(returnType?.toLowerCase()) {
+        case 'arrow':
+            return ['\u2191', '\u2022', '\u2193'][diff + 1];
+
+        case 'symbol':
+            return ['<', '=', '>'][diff + 1];
+
+        case 'string':
+            return ['less than', 'equal to', 'greater than'][diff + 1];
+
+        case 'update':
+            return ['there is an update available', 'the installed version is the latest', 'the installed version is pre-built'][diff + 1];
+
+        case '<':
+            return diff < 0;
+
+        case '≤':
+        case '<=':
+        case '\u2264':
+            return diff <= 0;
+
+        case '=':
+            return diff == 0;
+
+        case '>':
+            return diff > 0;
+
+        case '≥':
+        case '>=':
+        case '\u2265':
+            return diff >= 0;
+    }
+
+    return diff;
+}
+
 /* ISO-639-1 Language Codes */
 top.ISO_639_1 ??= ({
     "aa": {
