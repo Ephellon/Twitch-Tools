@@ -32,6 +32,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.7)
+- Adjusted `STREAMER.tone` logic
+- Adjusted Time Zone logic
+- Adjusted theme-switching logic
+
 > [`5.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.6)
 - Modified key event listener logic to include Caps Lock mode
 - Added ability to cancel Live Reminder deletions

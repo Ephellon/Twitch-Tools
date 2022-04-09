@@ -1474,7 +1474,8 @@ class CSSObject {
     }
 }
 
-// CSS-Tricks - Jon Kantner 26 JAN 2021 @ https://css-tricks.com/converting-color-spaces-in-javascript/
+// CSS-Tricks - Jon Kantner 26 JAN 2021
+    // https://css-tricks.com/converting-color-spaces-in-javascript/
 // Creates a Color object
 class Color {
     static LOW_CONTRAST     = "LOW";
@@ -1483,6 +1484,18 @@ class Color {
     static PERFECT_CONTRAST = "PERFECT";
 
     static CONTRASTS = [Color.LOW_CONTRAST, Color.NORMAL_CONTRAST, Color.HIGH_CONTRAST, Color.PERFECT_CONTRAST];
+
+    static white    = [0xFF, 0xFF, 0xFF];
+    static black    = [0x00, 0x00, 0x00];
+    static grey     = [0x88, 0x88, 0x88];
+    static red      = [0xFF, 0x00, 0xFF];
+    static pink     = [0xFF, 0x00, 0x88];
+    static orange   = [0xFF, 0x88, 0x00];
+    static brown    = [0x44, 0x22, 0x00];
+    static yellow   = [0xFF, 0xFF, 0x00];
+    static green    = [0x00, 0xFF, 0x00];
+    static blue     = [0x00, 0x00, 0xFF];
+    static purple   = [0xFF, 0x00, 0xFF];
 
     constructor() {}
 
@@ -3346,23 +3359,16 @@ async function update() {
         .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
     // The theme
-    window.THEME = THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+    THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
     ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
     let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
         .map(Color.HEXtoColor)
-        // Sort furthest from white (descending)
+        // Primary → Closest to theme; Secondary → Furthest from theme
         .sort((C1, C2) => {
-            let background = (THEME == 'dark'? [0, 0, 0]: [255, 255, 255]);
+            let background = (THEME == 'dark'? Color.black: Color.white);
 
-            C1 = [C1.R, C1.G, C1.B];
-            C2 = [C2.R, C2.G, C2.B];
-
-            if(Color.contrast(background, C1) > Color.contrast(background, C2))
-                return +1;
-            else if(Color.contrast(background, C1) < Color.contrast(background, C2))
-                return -1;
-            return 0;
+            return Color.contrast(background, [C1.R, C1.G, C1.B]) - Color.contrast(background, [C2.R, C2.G, C2.B]);
         })
         .map(color => color.RGB);
 
@@ -3371,6 +3377,21 @@ async function update() {
 
     PRIMARY = Color.HEXtoColor(PRIMARY);
     SECONDARY = Color.HEXtoColor(SECONDARY);
+
+    if(window.THEME != THEME) {
+        RemoveCustomCSSBlock('theme-updater');
+
+        AddCustomCSSBlock('theme-updater',
+            `:root {
+                --channel-color: ${ STREAMER.tint } !important;
+                --channel-color-complement: ${ STREAMER.tone } !important;
+                --channel-color-dark: ${ THEME__CHANNEL_DARK } !important;
+                --channel-color-light: ${ THEME__CHANNEL_LIGHT } !important;
+            }`
+        );
+
+        window.THEME = THEME;
+    }
 
     let contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B])),
 
@@ -4290,9 +4311,14 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get tone() {
-            let { H, S, L } = Color.HEXtoColor(STREAMER.tint);
+            let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint),
+                base = (THEME == 'dark'? Color.black: Color.white);
 
-            return Color.HSLtoRGB(H, S, (100 - L).clamp(15, 85)).RGB.toUpperCase();
+            let [best] = [15, 30, 45, 60, 75, 90]
+                .map(l => Color.HSLtoRGB(H, S, l))
+                .sort((a, b) => Color.contrast(base, [a.R, a.G, a.B]) - Color.contrast(base, [b.R, b.G, b.B]));
+
+            return best.RGB.toUpperCase();
         },
 
         get veto() {
@@ -8367,7 +8393,7 @@ let Initialize = async(START_OVER = false) => {
             let [timezone, zone, type, trigger] = (null
                 ?? (container?.innerText || '')
                     .normalize('NFKD')
-                    .match(/(?:(?<zone>\w+)[\s\-]+)?(?:(?<type>\w+)[\s\-]+)(?<trigger>time)\b/i)
+                    .match(/(?:(?<zone>\w{3,})[\s\-]+)?(?:(?<type>\w+)[\s\-]+)(?<trigger>time)\b/i)
                 ?? []
             );
             let MASTER_TIME_ZONE = (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type, trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
@@ -9925,14 +9951,14 @@ let Initialize = async(START_OVER = false) => {
             }
 
             :root[class*="light"i] {
-                --color-colored: ${ THEME__CHANNEL_LIGHT };
-                --color-colored-complement: ${ THEME__CHANNEL_DARK };
+                --color-colored: var(--channel-color-light);
+                --color-colored-complement: var(--channel-color-dark);
             }
 
             /* The user is using the dark theme */
             :root[class*="dark"i] {
-                --color-colored: ${ THEME__CHANNEL_DARK };
-                --color-colored-complement: ${ THEME__CHANNEL_LIGHT };
+                --color-colored: var(--channel-color-dark);
+                --color-colored-complement: var(--channel-color-light);
             }
 
             [up-next--body] *:is(button, h5) {
@@ -10621,11 +10647,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 }
 
                 [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                    background-blend-mode: lighten;
+                    /* background-blend-mode: color-burn; */
                 }
 
                 [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                    background-blend-mode: darken;
+                    /* background-blend-mode: darken; */
                 }
 
                 [up-next--body][allowed="false"i] {
