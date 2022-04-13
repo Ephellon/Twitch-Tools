@@ -2179,6 +2179,42 @@ Function.prototype.toTitle ??= function toTitle() {
         .trim();
 };
 
+// Add Array methods to HTMLCollection
+HTMLCollection.prototype.contains       ??= Array.prototype.contains;
+HTMLCollection.prototype.at             ??= Array.prototype.at;
+HTMLCollection.prototype.concat         ??= Array.prototype.concat;
+HTMLCollection.prototype.constructor    ??= Array.prototype.constructor;
+HTMLCollection.prototype.copyWithin     ??= Array.prototype.copyWithin;
+HTMLCollection.prototype.entries        ??= Array.prototype.entries;
+HTMLCollection.prototype.every          ??= Array.prototype.every;
+HTMLCollection.prototype.fill           ??= Array.prototype.fill;
+HTMLCollection.prototype.filter         ??= Array.prototype.filter;
+HTMLCollection.prototype.find           ??= Array.prototype.find;
+HTMLCollection.prototype.findIndex      ??= Array.prototype.findIndex;
+HTMLCollection.prototype.findLast       ??= Array.prototype.findLast;
+HTMLCollection.prototype.findLastIndex  ??= Array.prototype.findLastIndex;
+HTMLCollection.prototype.flat           ??= Array.prototype.flat;
+HTMLCollection.prototype.flatMap        ??= Array.prototype.flatMap;
+HTMLCollection.prototype.forEach        ??= Array.prototype.forEach;
+HTMLCollection.prototype.includes       ??= Array.prototype.includes;
+HTMLCollection.prototype.indexOf        ??= Array.prototype.indexOf;
+HTMLCollection.prototype.join           ??= Array.prototype.join;
+HTMLCollection.prototype.keys           ??= Array.prototype.keys;
+HTMLCollection.prototype.lastIndexOf    ??= Array.prototype.lastIndexOf;
+HTMLCollection.prototype.map            ??= Array.prototype.map;
+HTMLCollection.prototype.pop            ??= Array.prototype.pop;
+HTMLCollection.prototype.push           ??= Array.prototype.push;
+HTMLCollection.prototype.reduce         ??= Array.prototype.reduce;
+HTMLCollection.prototype.reduceRight    ??= Array.prototype.reduceRight;
+HTMLCollection.prototype.reverse        ??= Array.prototype.reverse;
+HTMLCollection.prototype.shift          ??= Array.prototype.shift;
+HTMLCollection.prototype.slice          ??= Array.prototype.slice;
+HTMLCollection.prototype.some           ??= Array.prototype.some;
+HTMLCollection.prototype.sort           ??= Array.prototype.sort;
+HTMLCollection.prototype.splice         ??= Array.prototype.splice;
+HTMLCollection.prototype.unshift        ??= Array.prototype.unshift;
+HTMLCollection.prototype.values         ??= Array.prototype.values;
+
 // https://stackoverflow.com/a/35859991/4211612
 // Captures the current frame from a video element
     // HTMLVideoElement..captureFrame([imageType:string[, returnType:string]]) → String#dataURL | Object | HTMLImageElement

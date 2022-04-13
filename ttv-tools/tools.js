@@ -888,7 +888,7 @@ class ContextMenu {
             f('div.tt-border-radius-large', { style: 'background:var(--color-background-alt-2); position:absolute; z-index:9999', direction: 'top-right' },
                 // The options...
                 f('div', { style: 'display:inline-block; min-width:16rem; max-width:48rem; width:max-content', role: 'dialog' },
-                    f('div', { style: ' padding: 0.25rem;' },
+                    f('div', { style: 'padding:0.25rem;' },
                         ...options.map(({ text = "", icon = "", shortcut = "", action = () => {} }) => {
                             if(icon?.length)
                                 icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: 16, width: 16, style: 'vertical-align:-3px' }) });
@@ -1962,7 +1962,7 @@ function GetChat(lines = 250, keepEmotes = false) {
         });
     }
 
-    let bullets = $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i]', true).slice(-lines);
+    let bullets = $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i], [role="log"i] [data-test-selector="announcement-line"i]', true).slice(-lines);
 
     results.bullets = [];
 
@@ -1975,6 +1975,7 @@ function GetChat(lines = 250, keepEmotes = false) {
                 /\bcontinu/i.test(text)?             'keep': // Continuing a gifted subscription
                 /\bgift/i.test(text)?                'gift': // Gifting a subscription
                 /\b(re)?subs|\bconvert/i.test(text)? 'dues': // New subscription, continued subscription, or converted subscription
+                /\bannouncements?\b/i.test(text)?    'note': // Announcements
                 null                                         // No subject
             )($('*:first-child', false, bullet)?.textContent);
 
@@ -3335,7 +3336,7 @@ try {
                 action: event => top.print(),
             }, ...extras],
 
-            fineTuning: { top: (y > innerHeight * (0.85 - extras.length * 0.05)? innerHeight * 0.75: y), left: (x > innerWidth * (0.85 - extras.length * 0.00)? innerWidth * 0.75: x) },
+            fineTuning: { top: (y > innerHeight * (0.85 - extras.length * 0.05)? innerHeight * 0.7: y), left: (x > innerWidth * (0.85 - extras.length * 0.00)? innerWidth * 0.7: x) },
         });
     },{
         capture: false,
@@ -3944,14 +3945,14 @@ let Initialize = async(START_OVER = false) => {
      */
     STREAMER = window.STREAMER = {
         get chat() {
-            return GetChat();
+            return GetChat()
         },
 
         get coin() {
             let balance = $('[data-test-selector="balance-string"i]'),
                 points = parseCoin(balance?.textContent);
 
-            return points;
+            return points
         },
 
         get coms() {
@@ -4075,14 +4076,14 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get cult() {
-            return (STREAMER.data?.followers) || parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent);
+            return (STREAMER.data?.followers) || parseCoin($('.about-section span')?.getElementByText(/\d/)?.textContent)
         },
 
         // Gets values later...
         data: {},
 
         get desc() {
-            return $('[data-a-target="stream-title"i]')?.textContent;
+            return $('[data-a-target="stream-title"i]')?.textContent
         },
 
         get done() {
@@ -4118,7 +4119,7 @@ let Initialize = async(START_OVER = false) => {
             let container = balance?.closest('button'),
                 icon = $('img[alt]', false, container);
 
-            return icon?.src;
+            return icon?.src
         },
 
         get fiat() {
@@ -4130,11 +4131,11 @@ let Initialize = async(START_OVER = false) => {
             let container = balance?.closest('button'),
                 icon = $('img[alt]', false, container);
 
-            return icon?.alt ?? 'Channel Points';
+            return icon?.alt ?? 'Channel Points'
         },
 
         get from() {
-            return 'STREAMER';
+            return 'STREAMER'
         },
 
         get game() {
@@ -4146,7 +4147,7 @@ let Initialize = async(START_OVER = false) => {
                 href: { value: element?.href }
             });
 
-            return game ?? LIVE_CACHE.get('game');
+            return game ?? LIVE_CACHE.get('game')
         },
 
         get href() {
@@ -4158,7 +4159,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get jump() {
-            return JUMP_DATA;
+            return JUMP_DATA
         },
 
         get like() {
@@ -4166,11 +4167,13 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get live() {
-            return SPECIAL_MODE
+            return (false
+                || SPECIAL_MODE
                 || (true
                     && defined($('[status] [class*="status-text"i]')) && nullish($(`[class*="offline-recommend"i]`))
                     && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`)?.textContent?.trim() ?? "")
                 )
+            )
         },
 
         get main() {
@@ -4192,7 +4195,7 @@ let Initialize = async(START_OVER = false) => {
                 tags.push(href);
             });
 
-            return scoreTagActivity(...tags);
+            return scoreTagActivity(...tags)
         },
 
         get name() {
@@ -4227,7 +4230,7 @@ let Initialize = async(START_OVER = false) => {
                 (STREAMER.ping)?
                     'regular':
                 'everyone'
-            );
+            )
         },
 
         get ping() {
@@ -4235,21 +4238,23 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get plug() {
-            return defined($('[data-a-target*="ad-countdown"i]'));
+            return defined($('[data-a-target*="ad-countdown"i]'))
         },
 
         get poll() {
-            return parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) || 0
+            return (0
+                || parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, ''))
+            )
         },
 
         get rank() {
-            let { max, sqrt, round } = Math;
             let epoch = +new Date('2019-12-16T00:00:00.000Z'),
-                // epoch → when channel points where first introduced - https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
+                // epoch → when channel points where first introduced
+                    // https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
                 start = +new Date(STREAMER.data.firstSeen),
                 end = +new Date;
 
-            start = max((start || epoch), epoch);
+            start = epoch.max(start || epoch);
 
             let length = ((end - start) / 60_000),
                 height = (STREAMER.data.followers ?? STREAMER.cult),
@@ -4258,17 +4263,19 @@ let Initialize = async(START_OVER = false) => {
                 amount = (viewed / length),
                 rank = (height / height**amount);
 
-            return round(rank.clamp(0, length));
+            return rank.clamp(0, length).round()
         },
 
         get redo() {
-            return /^rerun$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? "");
+            return /^rerun$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? "")
         },
 
         get sole() {
             let [channel_id] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
 
-            return parseInt(channel_id ?? LIVE_CACHE.get('sole')) || 0;
+            return (0
+                || parseInt(channel_id ?? LIVE_CACHE.get('sole'))
+            )
         },
 
         get tags() {
@@ -4284,7 +4291,7 @@ let Initialize = async(START_OVER = false) => {
                 return name;
             });
 
-            return tags ?? LIVE_CACHE.get('tags');
+            return tags ?? LIVE_CACHE.get('tags')
         },
 
         get team() {
@@ -4295,11 +4302,11 @@ let Initialize = async(START_OVER = false) => {
                 href: { value: element?.href }
             });
 
-            return team;
+            return team
         },
 
         get time() {
-            return parseTime($('.live-time')?.textContent ?? '0');
+            return parseTime($('.live-time')?.textContent ?? '0')
         },
 
         get tint() {
@@ -4307,22 +4314,18 @@ let Initialize = async(START_OVER = false) => {
                 ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
                 ?.getPropertyValue?.('--color-accent');
 
-            return (color || '#9147FF').toUpperCase();
+            return (color || '#9147FF').toUpperCase()
         },
 
         get tone() {
             let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint),
-                base = (THEME == 'dark'? Color.black: Color.white);
+                [min, max] = [[0,30],[70,100]][+(THEME == 'light')];
 
-            let [best] = [15, 30, 45, 60, 75, 90]
-                .map(l => Color.HSLtoRGB(H, S, l))
-                .sort((a, b) => Color.contrast(base, [a.R, a.G, a.B]) - Color.contrast(base, [b.R, b.G, b.B]));
-
-            return best.RGB.toUpperCase();
+            return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).RGB.toUpperCase()
         },
 
         get veto() {
-            return !!$('[id*="banned"i], [class*="banned"i]', true).length;
+            return !!$('[id*="banned"i], [class*="banned"i]', true).length
         },
 
         get vods() {
@@ -4332,15 +4335,15 @@ let Initialize = async(START_OVER = false) => {
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                 .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
-                .catch(WARN);
+                .catch(WARN)
         },
 
         follow() {
-            $('[data-a-target="follow-button"i]')?.click?.();
+            $('[data-a-target="follow-button"i]')?.click?.()
         },
 
         unfollow() {
-            $('[data-a-target="unfollow-button"i]')?.click?.();
+            $('[data-a-target="unfollow-button"i]')?.click?.()
         },
 
         __eventlisteners__: {
@@ -4349,11 +4352,11 @@ let Initialize = async(START_OVER = false) => {
         },
 
         set onhost(job) {
-            STREAMER.__eventlisteners__.onhost.add(job);
+            STREAMER.__eventlisteners__.onhost.add(job)
         },
 
         set onraid(job) {
-            STREAMER.__eventlisteners__.onraid.add(job);
+            STREAMER.__eventlisteners__.onraid.add(job)
         },
     };
 
@@ -5673,7 +5676,7 @@ let Initialize = async(START_OVER = false) => {
                         until(() => STREAMER.main? true: null).then(ok => {
                             SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
 
-                            WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`).toNativeStack();
+                            WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)?.toNativeStack?.();
                         });
                     });
             }
@@ -5681,7 +5684,7 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.claim_prime = -5_000;
 
-    __ClaimLoot__:
+    __ClaimPrime__:
     if(parseBool(Settings.claim_prime)) {
         REMARK("Claiming Prime Subscription...");
 
@@ -6124,7 +6127,7 @@ let Initialize = async(START_OVER = false) => {
                                         innerHTML: Glyphs.modify('channelpoints', { style: `vertical-align:bottom; ${ coinStyle.toString() }` }),
                                     })
                                 ).outerHTML;
-                            let container = f(`div.tt-reminder`, { name, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
+                            let container = f(`div.tt-reminder`, { name, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                 f('div.simplebar-scroll-content',
                                     {
                                         style: 'overflow: hidden;',
@@ -6233,7 +6236,15 @@ let Initialize = async(START_OVER = false) => {
                                 )
                             );
 
-                            body.append(container);
+                            let lastOnline = $('.tt-reminder[live="true"i]', true, body).pop(),
+                                firstOffline = $('.tt-reminder[live="false"i]:first-child', false, body);
+
+                            if(defined(firstOffline) && live)
+                                firstOffline.insertAdjacentElement('beforebegin', container);
+                            else if(defined(lastOnline) && live)
+                                lastOnline.insertAdjacentElement('afterend', container);
+                            else
+                                body.append(container);
                         }
                     });
                 },
@@ -6278,7 +6289,7 @@ let Initialize = async(START_OVER = false) => {
                     tenMin = 10 * oneMin;
 
                 ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
-                FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0 && FIRST_IN_LINE_HREF?.length > 0;
+                FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length) && parseBool(FIRST_IN_LINE_HREF?.length);
                 FIRST_IN_LINE_DUE_DATE = (null
                     ?? cache.FIRST_IN_LINE_DUE_DATE
                     ?? (
@@ -6887,7 +6898,7 @@ let Initialize = async(START_OVER = false) => {
                 tenMin = 10 * oneMin;
 
             ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
-            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && ALL_FIRST_IN_LINE_JOBS.length > 0 && FIRST_IN_LINE_HREF?.length > 0;
+            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length) && parseBool(FIRST_IN_LINE_HREF?.length);
             FIRST_IN_LINE_DUE_DATE = (null
                 ?? cache.FIRST_IN_LINE_DUE_DATE
                 ?? (
@@ -7477,7 +7488,7 @@ let Initialize = async(START_OVER = false) => {
                 // NightBot
                 channelid: STREAMER.sole,
                 userlevel: 'everyone',
-                touser: `@${ USERNAME }`,
+                touser: USERNAME,
                 urlfetch: `External website`,
 
                 // Fetched...
@@ -7570,7 +7581,7 @@ let Initialize = async(START_OVER = false) => {
             return track[b][a];
         }
 
-        let AvailabilityStickers = ({
+        let TwitchRoleBadges = ({
             everyone: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
             subscriber: ((STREAMER.jump[STREAMER.name.toLowerCase()]?.stream?.badges?.[`${ STREAMER.sole }_subscriber_0`]?.href) || ''),
             regular: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
@@ -7582,7 +7593,7 @@ let Initialize = async(START_OVER = false) => {
 
         $('[data-a-target="chat-input"i]').addEventListener('keyup', delay(async event => {
             let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
-                { value } = target,
+                value = (target?.value ?? target?.textContent ?? target?.innerText),
                 [tray, chat] = target.closest('div:not([class])').firstElementChild.children,
                 f = furnish;
 
@@ -7669,7 +7680,7 @@ let Initialize = async(START_OVER = false) => {
                                                         let command = $('.tt-chat-input-suggestion', false, target.closest('[id]'))?.getAttribute('command');
                                                         if(defined(command)) {
                                                             let target = $('[data-a-target="chat-input"i]');
-                                                            let match = target.value.match(/!(\S+|$)/),
+                                                            let match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/),
                                                                 { index } = match,
                                                                 [text, word] = match;
 
@@ -7690,7 +7701,7 @@ let Initialize = async(START_OVER = false) => {
                                                     f('div.tcito8', {},
                                                         f('div.tcito9', {},
                                                             f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
-                                                                f('img.chat-badge', { src: AvailabilityStickers[availability], availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
+                                                                f('img.chat-badge', { src: TwitchRoleBadges[availability], availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
 
                                                                 `!${ command }`,
 
@@ -10095,10 +10106,10 @@ let CUSTOM_CSS,
     WAIT_FOR_PAGE;
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
-    let isProperRuntime = Manifest.version == version;
+    let isProperRuntime = Manifest.version === version;
 
     PAGE_CHECKER = !isProperRuntime?
-        ERROR(`The current runtime (v${ Manifest.version }) is not correct (${ version })`)
+        ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
             ?.toNativeStack?.():
     setInterval(WAIT_FOR_PAGE = async() => {
         let ready = (true
@@ -10107,7 +10118,10 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             // The follow button exists
             && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
             // There are channel buttons on the side
-            && $('#sideNav .side-nav-section[aria-label]', true)?.length
+            && parseBool($('#sideNav .side-nav-section[aria-label]', true)?.length)
+            // There isn't an advertisement playing
+            && nullish($('[data-a-target*="ad-countdown"i]'))
+            // There are proper containers
             && (false
                 // There is a message container
                 || defined($('[data-test-selector$="message-container"i]'))
@@ -10117,754 +10131,769 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     && defined($('[data-a-target^="threads-box-"i]'))
                 )
                 // The page is a channel viewing page
-                // || /^(ChannelWatch|SquadStream|VideoWatch)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+                // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
                 // There is an error message
                 || defined($('[data-a-target="core-error-message"i]'))
             )
         );
 
-        if(ready) {
-            LOG("Main container ready");
-
-            Settings = await GetSettings();
-
-            // Set the usre's language
-            let [documentLanguage] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLowerCase().split('-');
-
-            window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
-
-            // Give the storage 1s to perform any "catch-up"
-            setTimeout(async() => {
-                await Initialize(ready)
-                    .then(() => {
-                        // TTV Tools has the max Timer amount to initilize correctly...
-                        let REINIT_JOBS =
-                        setTimeout(() => {
-                            let NOT_LOADED_CORRECTLY = [],
-                                ALL_LOADED_CORRECTLY = (true
-                                    // Lurking
-                                    &&  parseBool(
-                                            parseBool(Settings.away_mode)?
-                                                (false
-                                                    || defined($('#away-mode'))
-                                                    || !NOT_LOADED_CORRECTLY.push('away_mode')
-                                                ):
-                                            true
-                                        )
-                                    // Auto-Claim Bonuses
-                                    && parseBool(
-                                            parseBool(Settings.auto_claim_bonuses)?
-                                                (false
-                                                    || defined($('#tt-auto-claim-bonuses'))
-                                                    || nullish($('[data-test-selector="balance-string"i]'))
-                                                    || parseBool(Settings.view_mode)
-                                                    || STREAMER.veto
-                                                    || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
-                                                ):
-                                            true
-                                        )
-                                    // Up Next
-                                    &&  parseBool(
-                                            !parseBool(Settings.first_in_line_none)?
-                                                (false
-                                                    || defined($('[up-next--container]'))
-                                                    || !NOT_LOADED_CORRECTLY.push('first_in_line')
-                                                ):
-                                            true
-                                        )
-                                    // Watch Time
-                                    &&  parseBool(
-                                            parseBool(Settings.watch_time_placement)?
-                                                (false
-                                                    || defined($('#tt-watch-time'))
-                                                    || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
-                                                ):
-                                            true
-                                        )
-                                    // Channel Points Receipt
-                                    &&  parseBool(
-                                            parseBool(Settings.points_receipt_placement)?
-                                                (false
-                                                    || defined($('#tt-points-receipt'))
-                                                    || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
-                                                ):
-                                            true
-                                        )
-                                );
-
-                            if(false
-                                // This page shouldn't be touched...
-                                || RESERVED_TWITCH_PATHNAMES.test(window.location.pathname)
-
-                                // Everything loaded just fine
-                                || ALL_LOADED_CORRECTLY
-                            )
-                                return clearInterval(REINIT_JOBS);
-
-                            WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
-
-                            if(parseBool(Settings.recover_pages))
-                                return location.reload();
-                            else
-                                for(let job of NOT_LOADED_CORRECTLY)
-                                    RestartJob(job, 'failure_to_activate');
-
-                            // Failed to activate job at...
-                            // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
-                        }, Math.max(...Object.values(Timers)));
-                    });
-            }, 1000);
-            clearInterval(PAGE_CHECKER);
-
-            window.MAIN_CONTROLLER_READY = true;
-
-            // Observe location changes
-            LocationObserver: {
-                let { body } = document,
-                    observer = new MutationObserver(mutations => {
-                        mutations.map(mutation => {
-                            if(PATHNAME !== window.location.pathname) {
-                                let OLD_HREF = PATHNAME;
-
-                                PATHNAME = window.location.pathname;
-
-                                NORMALIZED_PATHNAME = PATHNAME
-                                    // Remove common "modes"
-                                    .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
-                                    .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
-
-                                for(let [name, func] of __ONLOCATIONCHANGE__)
-                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
-                            }
-                        });
-                    });
-
-                observer.observe(body, { childList: true, subtree: true });
-            }
-
-            // Observe chat changes
-            ChatObserver: {
-                let chat = $('[data-test-selector$="message-container"i]'),
-                    observer = new MutationObserver(mutations => {
-                        let emotes = {},
-                            results = [];
-
-                        mutations = mutations.filter(({ type }) => type == 'childList');
-
-                        MutationToNode:
-                        for(let mutation of mutations) {
-                            let { addedNodes } = mutation;
-
-                            NodeToObject:
-                            for(let line of addedNodes) {
-                                let keepEmotes = true;
-
-                                let handle = $('.chat-line__username', true, line).map(element => element.textContent).toString()
-                                    author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                    message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
-                                    mentions = $('.mention-fragment', true, line).map(element => element.textContent.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-                                    badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
-                                    style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
-                                    reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
-
-                                let raw = line.textContent?.trim(),
-                                    containedEmotes = [];
-
-                                message = message
-                                    .map(element => {
-                                        let string;
-
-                                        if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
-                                            let img = $('img', false, element);
-
-                                            if(defined(img))
-                                                containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
-                                        } else {
-                                            string = element.textContent;
-                                        }
-
-                                        return string;
-                                    })
-                                    .filter(defined)
-                                    .join(' ')
-                                    .trim()
-                                    .replace(/(\s){2,}/g, '$1');
-
-                                style = style
-                                    .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                                let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
-
-                                if(defined(results.find(message => message.uuid == uuid)))
-                                    continue;
-
-                                // Replace all share URLs
-                                // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
-
-                                results.push({
-                                    raw,
-                                    uuid,
-                                    reply,
-                                    style,
-                                    author,
-                                    badges,
-                                    handle,
-                                    message,
-                                    mentions,
-                                    element: line,
-                                    emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
-                                    deleted: defined($('[class*="--deleted-notice"i]', false, line)),
-                                    highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
-                                });
-                            }
-                        }
-
-                        results.emotes = emotes;
-
-                        for(let [name, callback] of GetChat.__onnewmessage__)
-                            callback(results);
-
-                        setTimeout(async(results) => {
-                            for(let [name, callback] of GetChat.__deferredEvents__.__onnewmessage__)
-                                await callback(results);
-                        }, 50, results);
-                    });
-
-                if(nullish(chat))
-                    break ChatObserver;
-
-                observer.observe(chat, { childList: true });
-            }
-
-            // Observe whisper changes
-            WhisperObserver: {
-                let chat = $('main'),
-                    chat_observer = new MutationObserver(mutations => {
-                        mutations = mutations.filter(({ type }) => type == 'childList');
-
-                        MutationToNode:
-                        for(let mutation of mutations) {
-                            let { addedNodes } = mutation;
-
-                            NodeToObject:
-                            for(let node of addedNodes) {
-                                let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
-                                    newmessage = ["whisper-message"].contains(node.dataset.aTarget);
-
-                                if(false
-                                    || !highlighted
-                                    || !newmessage
-                                )
-                                    continue;
-
-                                async function parse(callback, { node, highlighted, newmessage }) {
-                                    if(highlighted) {
-                                        await callback({ highlighted });
-                                    } else if(newmessage) {
-                                        let keepEmotes = true;
-
-                                        let handle = $('[data-a-target="whisper-message-name"i]', false, node).textContent,
-                                            author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                            message = $('[data-test-selector="separator"i] ~ * > *', true, node),
-                                            style = node.getAttribute('style');
-
-                                        let raw = node.textContent;
-
-                                        message = message
-                                            .map(element => {
-                                                let string;
-
-                                                switch(element.dataset.aTarget) {
-                                                    case 'emote-name': {
-                                                        if(keepEmotes)
-                                                            string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
-                                                    } break;
-
-                                                    default: {
-                                                        string = element.textContent;
-                                                    } break;
-                                                }
-
-                                                return string;
-                                            })
-                                            .filter(defined)
-                                            .join(' ')
-                                            .trim()
-                                            .replace(/(\s){2,}/g, '$1');
-
-                                        style = style
-                                            .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                                        let uuid = UUID.from([author, new Date, message].join(':')).value;
-
-                                        await callback({
-                                            raw,
-                                            uuid,
-                                            style,
-                                            author,
-                                            handle,
-                                            message,
-                                            element: node,
-                                        });
-                                    }
-                                }
-
-                                for(let [name, callback] of GetChat.__onwhisper__)
-                                    parse(callback, { node, highlighted, newmessage });
-
-                                setTimeout(async({ node, highlighted, newmessage }) => {
-                                    for(let [name, callback] of GetChat.__deferredEvents__.__onwhisper__)
-                                        await parse(callback, { node, highlighted, newmessage });
-                                }, 50, { node, highlighted, newmessage });
-                            }
-                        }
-                    }),
-
-                    pill = $('[data-a-target^="threads-box-"i]')?.previousElementSibling,
-                    pill_observer = new MutationObserver(mutations => {
-                        mutations = mutations.filter(({ type }) => type == 'childList');
-
-                        // LOG('The Whisper Pill has mutated...', mutations);
-
-                        MutationToNode:
-                        for(let mutation of mutations) {
-                            let { addedNodes } = mutation;
-
-                            NodeToObject:
-                            for(let node of addedNodes) {
-                                if(!node.classList.contains('whispers__pill'))
-                                    continue;
-
-                                let unread = parseInt(node.textContent) | 0;
-
-                                for(let [name, callback] of GetChat.__onwhisper__)
-                                    callback({ unread });
-                            }
-                        }
-                    });
-
-                if(defined(chat))
-                    chat_observer.observe(chat, { childList: true });
-
-                if(defined(pill))
-                    pill_observer.observe(pill, { childList: true });
-            }
-
-            // Observe the volume changes
-            VolumeObserver: {
-                $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget, button = -1 }) => {
-                    !button && $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
-                });
-
-                $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget, button = -1 }) => {
-                    !button && $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
-                });
-
-                let target = $('[data-a-target^="player-volume"i] + * [style]'),
-                    observer = new MutationObserver(mutations => {
-                        mutations.map(mutation => {
-                            let { style = '', isTrusted = false } = mutation.target?.attributes,
-                                css = {};
-
-                            for(let rule of style.value.split(';')) {
-                                let [name, value] = rule.split(':', 2);
-
-                                if(name?.length)
-                                    css[ name.trim() ] = value?.trim();
-                            }
-
-                            let volume = parseFloat(css?.width ?? 50) / 100;
-
-                            for(let [name, callback] of GetVolume.__onchange__)
-                                callback(volume, { isTrusted: parseBool(isTrusted) });
-                        });
-                    });
-
-                if(nullish(target))
-                    break VolumeObserver;
-
-                observer.observe(target, { attributes: true, childList: false, subtree: false });
-            }
-
-            // Set the SVGs' section IDs
-            SectionLabeling: {
-                let conversions = {
-                    favorite: [
-                        "followed",
-                    ].reverse(),
-
-                    video: [
-                        "suggested",
-                        "related",
-                    ].reverse(),
-
-                    people: [
-                        "friends",
-                        "watch-channel-trailer",
-                    ].reverse(),
-
-                    inform: [
-                        "live-reminders",
-                    ].reverse(),
-
-                    checkmark: [
-                        "live-reminders",
-                    ].reverse(),
-
-                    rewind: [
-                        "rewind-stream",
-                    ].reverse(),
-
-                    crown: [
-                        "prime-subscription",
-                    ],
-                };
-
-                for(let container of $('#sideNav .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
-                    let svg = $('svg', false, container);
-
-                    comparing:
-                    for(let glyph in Glyphs)
-                        if(Glyphs.__exclusionList__.contains(glyph))
-                            continue comparing;
+        if(!ready)
+            return;
+
+        LOG("Main container ready");
+
+        Settings = await GetSettings();
+
+        // Set the usre's language
+        let [documentLanguage] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLowerCase().split('-');
+
+        window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
+
+        // Give the storage 1s to perform any "catch-up"
+        setTimeout(async() => {
+            await Initialize(ready)
+                .then(() => {
+                    // TTV Tools has the max Timer amount to initilize correctly...
+                    let REINIT_JOBS =
+                    setTimeout(() => {
+                        let NOT_LOADED_CORRECTLY = [],
+                            ALL_LOADED_CORRECTLY = (true
+                                // Lurking
+                                &&  parseBool(
+                                        parseBool(Settings.away_mode)?
+                                            (false
+                                                || defined($('#away-mode'))
+
+                                                || !NOT_LOADED_CORRECTLY.push('away_mode')
+                                            ):
+                                        true
+                                    )
+
+                                // Auto-Claim Bonuses
+                                && parseBool(
+                                        parseBool(Settings.auto_claim_bonuses)?
+                                            (false
+                                                || defined($('#tt-auto-claim-bonuses'))
+                                                || nullish($('[data-test-selector="balance-string"i]'))
+                                                || parseBool(Settings.view_mode)
+                                                || STREAMER.veto
+
+                                                || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
+                                            ):
+                                        true
+                                    )
+
+                                // Up Next
+                                &&  parseBool(
+                                        !parseBool(Settings.first_in_line_none)?
+                                            (false
+                                                || defined($('[up-next--container]'))
+
+                                                || !NOT_LOADED_CORRECTLY.push('first_in_line')
+                                            ):
+                                        true
+                                    )
+
+                                // Watch Time
+                                &&  parseBool(
+                                        parseBool(Settings.watch_time_placement)?
+                                            (false
+                                                || defined($('#tt-watch-time'))
+
+                                                || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
+                                            ):
+                                        true
+                                    )
+
+                                // Channel Points Receipt
+                                &&  parseBool(
+                                        parseBool(Settings.points_receipt_placement)?
+                                            (false
+                                                || defined($('#tt-points-receipt'))
+
+                                                || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
+                                            ):
+                                        true
+                                    )
+                            );
+
+                        if(false
+                            // This page shouldn't be touched...
+                            || RESERVED_TWITCH_PATHNAMES.test(window.location.pathname)
+
+                            // Everything loaded just fine
+                            || ALL_LOADED_CORRECTLY
+                        )
+                            return clearInterval(REINIT_JOBS);
+
+                        WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
+
+                        if(parseBool(Settings.recover_pages))
+                            return location.reload();
                         else
-                            resemble(SVGtoImage(svg))
-                                .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
-                                .ignoreColors()
-                                .scaleToSameSize()
-                                .onComplete(async data => {
-                                    let { analysisTime, misMatchPercentage } = data;
+                            for(let job of NOT_LOADED_CORRECTLY)
+                                RestartJob(job, 'failure_to_activate');
 
-                                    analysisTime = parseInt(analysisTime);
-                                    misMatchPercentage = parseFloat(misMatchPercentage);
+                        // Failed to activate job at...
+                        // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
+                    }, Math.max(...Object.values(Timers)));
+                });
+        }, 1000);
+        clearInterval(PAGE_CHECKER);
 
-                                    let matchPercentage = 100 - misMatchPercentage;
+        window.MAIN_CONTROLLER_READY = true;
 
-                                    if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
-                                        return;
+        // Observe location changes
+        LocationObserver: {
+            let { body } = document,
+                observer = new MutationObserver(mutations => {
+                    mutations.map(mutation => {
+                        if(PATHNAME !== window.location.pathname) {
+                            let OLD_HREF = PATHNAME;
 
-                                    // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+                            PATHNAME = window.location.pathname;
 
-                                    let family = conversions[glyph];
+                            NORMALIZED_PATHNAME = PATHNAME
+                                // Remove common "modes"
+                                .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
+                                .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
 
-                                    if(family?.length)
-                                        container.setAttribute('tt-svg-label', family.pop());
-                                });
-                }
-            }
+                            for(let [name, func] of __ONLOCATIONCHANGE__)
+                                func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
+                        }
+                    });
+                });
 
-            top.onlocationchange = () => {
-                WARN("[Parent] Re-initializing...");
+            observer.observe(body, { childList: true, subtree: true });
+        }
 
-                Balloon.get('Up Next')?.remove();
+        // Observe chat changes
+        ChatObserver: {
+            let chat = $('[data-test-selector$="message-container"i]'),
+                observer = new MutationObserver(mutations => {
+                    let emotes = {},
+                        results = [];
 
-                // Do NOT soft-reset ("turn off, turn on") these settings
-                // They will be destroyed, including any data they are using
-                let VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+                    mutations = mutations.filter(({ type }) => type == 'childList');
 
-                DestroyingJobs:
-                for(let job in Jobs)
-                    if(!!~VOLATILE.findIndex(name => name.test(job)))
-                        continue DestroyingJobs;
-                    else
-                        RestartJob(job);
+                    MutationToNode:
+                    for(let mutation of mutations) {
+                        let { addedNodes } = mutation;
 
-                Reinitialize:
-                if(NORMAL_MODE) {
-                    if(Settings.keep_popout) {
-                        PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
+                        NodeToObject:
+                        for(let line of addedNodes) {
+                            let keepEmotes = true;
 
-                        break Reinitialize;
+                            let handle = $('.chat-line__username', true, line).map(element => element.textContent).toString()
+                                author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
+                                message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
+                                mentions = $('.mention-fragment', true, line).map(element => element.textContent.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
+                                badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
+                                style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
+                                reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
+
+                            let raw = line.textContent?.trim(),
+                                containedEmotes = [];
+
+                            message = message
+                                .map(element => {
+                                    let string;
+
+                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
+                                        let img = $('img', false, element);
+
+                                        if(defined(img))
+                                            containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
+                                    } else {
+                                        string = element.textContent;
+                                    }
+
+                                    return string;
+                                })
+                                .filter(defined)
+                                .join(' ')
+                                .trim()
+                                .replace(/(\s){2,}/g, '$1');
+
+                            style = style
+                                .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+
+                            let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
+
+                            if(defined(results.find(message => message.uuid == uuid)))
+                                continue;
+
+                            // Replace all share URLs
+                            // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
+
+                            results.push({
+                                raw,
+                                uuid,
+                                reply,
+                                style,
+                                author,
+                                badges,
+                                handle,
+                                message,
+                                mentions,
+                                element: line,
+                                emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
+                                deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+                                highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
+                            });
+                        }
                     }
 
-                    location.reload();
-                }
+                    results.emotes = emotes;
+
+                    for(let [name, callback] of GetChat.__onnewmessage__)
+                        callback(results);
+
+                    setTimeout(async(results) => {
+                        for(let [name, callback] of GetChat.__deferredEvents__.__onnewmessage__)
+                            await callback(results);
+                    }, 50, results);
+                });
+
+            if(nullish(chat))
+                break ChatObserver;
+
+            observer.observe(chat, { childList: true });
+        }
+
+        // Observe whisper changes
+        WhisperObserver: {
+            let chat = $('main'),
+                chat_observer = new MutationObserver(mutations => {
+                    mutations = mutations.filter(({ type }) => type == 'childList');
+
+                    MutationToNode:
+                    for(let mutation of mutations) {
+                        let { addedNodes } = mutation;
+
+                        NodeToObject:
+                        for(let node of addedNodes) {
+                            let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
+                                newmessage = ["whisper-message"].contains(node.dataset.aTarget);
+
+                            if(false
+                                || !highlighted
+                                || !newmessage
+                            )
+                                continue;
+
+                            async function parse(callback, { node, highlighted, newmessage }) {
+                                if(highlighted) {
+                                    await callback({ highlighted });
+                                } else if(newmessage) {
+                                    let keepEmotes = true;
+
+                                    let handle = $('[data-a-target="whisper-message-name"i]', false, node).textContent,
+                                        author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
+                                        message = $('[data-test-selector="separator"i] ~ * > *', true, node),
+                                        style = node.getAttribute('style');
+
+                                    let raw = node.textContent;
+
+                                    message = message
+                                        .map(element => {
+                                            let string;
+
+                                            switch(element.dataset.aTarget) {
+                                                case 'emote-name': {
+                                                    if(keepEmotes)
+                                                        string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
+                                                } break;
+
+                                                default: {
+                                                    string = element.textContent;
+                                                } break;
+                                            }
+
+                                            return string;
+                                        })
+                                        .filter(defined)
+                                        .join(' ')
+                                        .trim()
+                                        .replace(/(\s){2,}/g, '$1');
+
+                                    style = style
+                                        .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+
+                                    let uuid = UUID.from([author, new Date, message].join(':')).value;
+
+                                    await callback({
+                                        raw,
+                                        uuid,
+                                        style,
+                                        author,
+                                        handle,
+                                        message,
+                                        element: node,
+                                    });
+                                }
+                            }
+
+                            for(let [name, callback] of GetChat.__onwhisper__)
+                                parse(callback, { node, highlighted, newmessage });
+
+                            setTimeout(async({ node, highlighted, newmessage }) => {
+                                for(let [name, callback] of GetChat.__deferredEvents__.__onwhisper__)
+                                    await parse(callback, { node, highlighted, newmessage });
+                            }, 50, { node, highlighted, newmessage });
+                        }
+                    }
+                }),
+
+                pill = $('[data-a-target^="threads-box-"i]')?.previousElementSibling,
+                pill_observer = new MutationObserver(mutations => {
+                    mutations = mutations.filter(({ type }) => type == 'childList');
+
+                    // LOG('The Whisper Pill has mutated...', mutations);
+
+                    MutationToNode:
+                    for(let mutation of mutations) {
+                        let { addedNodes } = mutation;
+
+                        NodeToObject:
+                        for(let node of addedNodes) {
+                            if(!node.classList.contains('whispers__pill'))
+                                continue;
+
+                            let unread = parseInt(node.textContent) | 0;
+
+                            for(let [name, callback] of GetChat.__onwhisper__)
+                                callback({ unread });
+                        }
+                    }
+                });
+
+            if(defined(chat))
+                chat_observer.observe(chat, { childList: true });
+
+            if(defined(pill))
+                pill_observer.observe(pill, { childList: true });
+        }
+
+        // Observe the volume changes
+        VolumeObserver: {
+            $('[data-a-target^="player-volume"i]')?.addEventListener('mousedown', ({ currentTarget, button = -1 }) => {
+                !button && $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', true);
+            });
+
+            $('[data-a-target^="player-volume"i]')?.addEventListener('mouseup', ({ currentTarget, button = -1 }) => {
+                !button && $('[isTrusted], [style]', false, currentTarget.nextElementSibling)?.setAttribute('isTrusted', false);
+            });
+
+            let target = $('[data-a-target^="player-volume"i] + * [style]'),
+                observer = new MutationObserver(mutations => {
+                    mutations.map(mutation => {
+                        let { style = '', isTrusted = false } = mutation.target?.attributes,
+                            css = {};
+
+                        for(let rule of style.value.split(';')) {
+                            let [name, value] = rule.split(':', 2);
+
+                            if(name?.length)
+                                css[ name.trim() ] = value?.trim();
+                        }
+
+                        let volume = parseFloat(css?.width ?? 50) / 100;
+
+                        for(let [name, callback] of GetVolume.__onchange__)
+                            callback(volume, { isTrusted: parseBool(isTrusted) });
+                    });
+                });
+
+            if(nullish(target))
+                break VolumeObserver;
+
+            observer.observe(target, { attributes: true, childList: false, subtree: false });
+        }
+
+        // Set the SVGs' section IDs
+        SectionLabeling: {
+            let conversions = {
+                favorite: [
+                    "followed",
+                ].reverse(),
+
+                video: [
+                    "suggested",
+                    "related",
+                ].reverse(),
+
+                people: [
+                    "friends",
+                    "watch-channel-trailer",
+                ].reverse(),
+
+                inform: [
+                    "live-reminders",
+                ].reverse(),
+
+                checkmark: [
+                    "live-reminders",
+                ].reverse(),
+
+                rewind: [
+                    "rewind-stream",
+                ].reverse(),
+
+                crown: [
+                    "prime-subscription",
+                ],
             };
 
-            // Add custom styling
-            CustomCSSInitializer: {
-                CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
+            for(let container of $('#sideNav .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
+                let svg = $('svg', false, container);
 
-                let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
+                comparing:
+                for(let glyph in Glyphs)
+                    if(Glyphs.__exclusionList__.contains(glyph))
+                        continue comparing;
+                    else
+                        resemble(SVGtoImage(svg))
+                            .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
+                            .ignoreColors()
+                            .scaleToSameSize()
+                            .onComplete(async data => {
+                                let { analysisTime, misMatchPercentage } = data;
 
-                CUSTOM_CSS.innerHTML =
-                `
-                :root {
-                    --user-accent-color: var(--color-${ accent });
-                    --user-complement-color: var(--color-${ accent }-${ complement });
+                                analysisTime = parseInt(analysisTime);
+                                misMatchPercentage = parseFloat(misMatchPercentage);
 
-                    /* z-index meanings */
-                    --always-on-top:    9999;
-                    --normal:           999;
-                    --always-on-bottom: 99;
-                    --baseline:         9;
+                                let matchPercentage = 100 - misMatchPercentage;
+
+                                if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
+                                    return;
+
+                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+
+                                let family = conversions[glyph];
+
+                                if(family?.length)
+                                    container.setAttribute('tt-svg-label', family.pop());
+                            });
+            }
+        }
+
+        top.onlocationchange = () => {
+            WARN("[Parent] Re-initializing...");
+
+            Balloon.get('Up Next')?.remove();
+
+            // Do NOT soft-reset ("turn off, turn on") these settings
+            // They will be destroyed, including any data they are using
+            let VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+
+            DestroyingJobs:
+            for(let job in Jobs)
+                if(!!~VOLATILE.findIndex(name => name.test(job)))
+                    continue DestroyingJobs;
+                else
+                    RestartJob(job);
+
+            Reinitialize:
+            if(NORMAL_MODE) {
+                if(Settings.keep_popout) {
+                    PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
+
+                    break Reinitialize;
                 }
 
-                /* Little fixes */
-                .social-media-link {
-                    min-width: 20rem;
-                }
+                location.reload();
+            }
+        };
 
-                /* First Run */
-                .tt-first-run {
-                    background-color: var(--color-blue);
-                    border-radius: 3px;
+        // Add custom styling
+        CustomCSSInitializer: {
+            CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
 
-                    transition: background-color 1s;
-                }
+            let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
 
-                [animationID] a { cursor: grab }
-                [animationID] a:active { cursor: grabbing }
+            CUSTOM_CSS.innerHTML =
+            `
+            :root {
+                --user-accent-color: var(--color-${ accent });
+                --user-complement-color: var(--color-${ accent }-${ complement });
 
-                [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-                [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
-
-                /* Keyborad Shortcuts */
-                .tt-extra-keyboard-shortcuts td {
-                    padding: 0.5rem;
-                }
-
-                .tt-extra-keyboard-shortcuts td:first-child {
-                    text-align: left;
-                }
-
-                .tt-extra-keyboard-shortcuts td:last-child {
-                    text-align: right;
-                }
-
-                /* Up Next */
-                [up-next--body] {
-                    background-color: var(--user-accent-color);
-                    border-radius: 0.5rem;
-                    color: var(--color-hinted-grey-${ complement });
-                }
-
-                [up-next--body][empty="true"i] {
-                    background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
-                    background-repeat: no-repeat;
-                    background-size: 35rem;
-                    background-position: bottom center;
-                }
-
-                [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                    /* background-blend-mode: color-burn; */
-                }
-
-                [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                    /* background-blend-mode: darken; */
-                }
-
-                [up-next--body][allowed="false"i] {
-                    background-image: url("${ Runtime.getURL('256.png') }") !important;
-                    background-repeat: repeat !important;
-                    background-size: 5rem !important;
-                    background-position: center center !important;
-                    background-blend-mode: soft-light !important;
-                }
-
-                #up-next-boost[speeding="true"i] {
-                    animation: fade-in 1s alternate infinite;
-                }
-
-                /* Live Reminders */
-                #tt-reminder-listing:not(:empty) ~ [live] { display:none }
-
-                .tt-time-elapsed {
-                    color: var(--color-text-live);
-
-                    float: right;
-                }
-
-                /** Old CSS...
-                #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
-                    animation: fade-in 1s 1;
-
-                    display: block;
-                    text-align: center;
-
-                    margin: 0.5em 0px;
-
-                    width: 100%;
-                }
-
-                #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
-                #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
-                */
-
-                /* Auto-Focus */
-                [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
-
-                [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
-                [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
-                [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
-
-                [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
-                [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
-
-                #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
-                    opacity: 0.7;
-                    margin-top: -100%;
-                }
-
-                .tt-emote-captured [data-test-selector="badge-button-icon"i],
-                .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-                    left: 0;
-                    top: 0;
-                }
-
-                [tt-live-status-indicator] {
-                    background-color: var(--color-hinted-grey-6);
-                    border-radius: var(--border-radius-rounded);
-                    width: 0.8rem;
-                    height: 0.8rem;
-                    display: inline-block;
-                    position: relative;
-                }
-
-                [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
-
-                [class*="theme"i][class*="dark"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-light) !important }
-                [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-light) }
-                [class*="theme"i][class*="dark"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-light) }
-
-                [class*="theme"i][class*="light"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-dark) !important }
-                [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-dark) }
-                [class*="theme"i][class*="light"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-dark) }
-
-                /* Change Up Next font color */
-                [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }
-                [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:darken */ }
-
-                /* Lurking */
-                #away-mode svg[id^="tt-away-mode"i] {
-                    display: inline-block;
-
-                    transform: translateX(0px) scale(1);
-                    transition: all 100ms ease-in;
-                }
-
-                #tt-away-mode--hide {
-                    position: absolute;
-                }
-
-                #tt-away-mode--hide, #tt-away-mode--show {
-                    fill: var(--color-text-base);
-                }
-
-                [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
-                    opacity: 0;
-                }
-
-                svg[id^="tt-away-mode"i][preview="true"i] {
-                    opacity: 1 !important;
-                    transform: translateX(0px) scale(1.2) !important;
-                }
-
-                /* Rich tooltips */
-                [role] [data-popper-placement="right-start"i] [role] {
-                    width: max-content;
-                }
-
-                [role="tooltip"i][class*="tt-tooltip"i] {
-                    white-space: normal;
-
-                    max-width: 50em;
-                    width: max-content;
-                }
-
-                /* Bits */
-                [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
-                    max-width: 45rem;
-                }
-
-                /* Stream Preview */
-                .tt-stream-preview {
-                    border-radius: 0.6rem;
-                    box-shadow: #000 0 4px 8px, #000 0 0 4px;
-                    display: block;
-                    visibility: visible;
-
-                    transition: all 0.5s ease-in;
-
-                    position: fixed;
-                    margin-left: 7rem;
-                    z-index: 999;
-
-                    height: 9rem;
-                    width: 16rem;
-                }
-
-                .tt-stream-preview--poster {
-                    background-color: #0008;
-                    background-size: cover;
-                    border-radius: inherit;
-                    display: block;
-
-                    transition: all 1.5s ease-in;
-
-                    position: absolute;
-                    margin: 0;
-                    padding: 0;
-                    left: 0;
-                    top: 0;
-                    z-index: 999;
-
-                    height: 100% !important;
-                    width: 100% !important;
-                }
-
-                .tt-stream-preview--iframe {
-                    display: block;
-                    border-radius: inherit;
-                    opacity: 1;
-                    visibility: inherit;
-                }
-
-                .invisible {
-                    opacity: 0;
-                }
-                `;
-
-                CUSTOM_CSS?.remove();
-                $('body').append(CUSTOM_CSS);
+                /* z-index meanings */
+                --always-on-top:    9999;
+                --normal:           999;
+                --always-on-bottom: 99;
+                --baseline:         9;
             }
 
-            // Update the settings
-            SettingsInitializer: {
-                switch(Settings.onInstalledReason) {
-                    // Is this the first time the extension has run?
-                    // If so, then point out what's been changed
-                    case INSTALL: {
-                        // Detect the user's desired language
-                            // Capitalizing the language code notifies the Settings page the code was not manually input
-                        let [user_language_preference] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toUpperCase().split('-');
-
-                        Storage.set({ user_language_preference });
-
-                        // Point out the newly added buttons
-                        setTimeout(() => {
-                            for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
-                                element.classList.add('tt-first-run');
-
-                            let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
-
-                            // Make sure the user goes to the Settings page
-                            alert
-                                .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
-                                .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
-                        }, 10_000);
-                    } break;
-                }
-
-                Storage.set({ onInstalledReason: null });
+            /* Little fixes */
+            .social-media-link {
+                min-width: 20rem;
             }
 
-            // Jump some frames
-            FrameJumper: {
-                document.head.append(
-                    furnish('script', { src: Runtime.getURL('ext/jump.js'), onload() {/* Do something when the data is jumped... */} })
-                );
+            /* First Run */
+            .tt-first-run {
+                background-color: var(--color-blue);
+                border-radius: 3px;
+
+                transition: background-color 1s;
             }
+
+            [animationID] a { cursor: grab }
+            [animationID] a:active { cursor: grabbing }
+
+            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+
+            /* Keyborad Shortcuts */
+            .tt-extra-keyboard-shortcuts td {
+                padding: 0.5rem;
+            }
+
+            .tt-extra-keyboard-shortcuts td:first-child {
+                text-align: left;
+            }
+
+            .tt-extra-keyboard-shortcuts td:last-child {
+                text-align: right;
+            }
+
+            /* Up Next */
+            [up-next--body] {
+                background-color: var(--user-accent-color);
+                border-radius: 0.5rem;
+                color: var(--color-hinted-grey-${ complement });
+            }
+
+            [up-next--body][empty="true"i] {
+                background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
+                background-repeat: no-repeat;
+                background-size: 35rem;
+                background-position: bottom center;
+            }
+
+            [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                /* background-blend-mode: color-burn; */
+            }
+
+            [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                /* background-blend-mode: darken; */
+            }
+
+            [up-next--body][allowed="false"i] {
+                background-image: url("${ Runtime.getURL('256.png') }") !important;
+                background-repeat: repeat !important;
+                background-size: 5rem !important;
+                background-position: center center !important;
+                background-blend-mode: soft-light !important;
+            }
+
+            #up-next-boost[speeding="true"i] {
+                animation: fade-in 1s alternate infinite;
+            }
+
+            /* Live Reminders */
+            #tt-reminder-listing:not(:empty) ~ [live] { display:none }
+
+            .tt-time-elapsed {
+                color: var(--color-text-live);
+
+                float: right;
+            }
+
+            /** Old CSS...
+            #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
+                animation: fade-in 1s 1;
+
+                display: block;
+                text-align: center;
+
+                margin: 0.5em 0px;
+
+                width: 100%;
+            }
+
+            #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
+            #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
+            */
+
+            /* Auto-Focus */
+            [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
+
+            [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
+            [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
+            [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
+
+            [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
+            [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+
+            #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
+                opacity: 0.7;
+                margin-top: -100%;
+            }
+
+            .tt-emote-captured [data-test-selector="badge-button-icon"i],
+            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                left: 0;
+                top: 0;
+            }
+
+            [tt-live-status-indicator] {
+                background-color: var(--color-hinted-grey-6);
+                border-radius: var(--border-radius-rounded);
+                width: 0.8rem;
+                height: 0.8rem;
+                display: inline-block;
+                position: relative;
+            }
+
+            [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+
+            [class*="theme"i][class*="dark"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-light) !important }
+            [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-light) }
+            [class*="theme"i][class*="dark"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-light) }
+
+            [class*="theme"i][class*="light"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-dark) !important }
+            [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-dark) }
+            [class*="theme"i][class*="light"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-dark) }
+
+            /* Change Up Next font color */
+            [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }
+            [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:darken */ }
+
+            /* Lurking */
+            #away-mode svg[id^="tt-away-mode"i] {
+                display: inline-block;
+
+                transform: translateX(0px) scale(1);
+                transition: all 100ms ease-in;
+            }
+
+            #tt-away-mode--hide {
+                position: absolute;
+            }
+
+            #tt-away-mode--hide, #tt-away-mode--show {
+                fill: var(--color-text-base);
+            }
+
+            [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
+                opacity: 0;
+            }
+
+            svg[id^="tt-away-mode"i][preview="true"i] {
+                opacity: 1 !important;
+                transform: translateX(0px) scale(1.2) !important;
+            }
+
+            /* Rich tooltips */
+            [role] [data-popper-placement="right-start"i] [role] {
+                width: max-content;
+            }
+
+            [role="tooltip"i][class*="tt-tooltip"i] {
+                white-space: normal;
+
+                max-width: 50em;
+                width: max-content;
+            }
+
+            /* Bits */
+            [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
+                max-width: 45rem;
+            }
+
+            /* Stream Preview */
+            .tt-stream-preview {
+                border-radius: 0.6rem;
+                box-shadow: #000 0 4px 8px, #000 0 0 4px;
+                display: block;
+                visibility: visible;
+
+                transition: all 0.5s ease-in;
+
+                position: fixed;
+                margin-left: 7rem;
+                z-index: 999;
+
+                height: 9rem;
+                width: 16rem;
+            }
+
+            .tt-stream-preview--poster {
+                background-color: #0008;
+                background-size: cover;
+                border-radius: inherit;
+                display: block;
+
+                transition: all 1.5s ease-in;
+
+                position: absolute;
+                margin: 0;
+                padding: 0;
+                left: 0;
+                top: 0;
+                z-index: 999;
+
+                height: 100% !important;
+                width: 100% !important;
+            }
+
+            .tt-stream-preview--iframe {
+                display: block;
+                border-radius: inherit;
+                opacity: 1;
+                visibility: inherit;
+            }
+
+            .invisible {
+                opacity: 0;
+            }
+            `;
+
+            CUSTOM_CSS?.remove();
+            $('body').append(CUSTOM_CSS);
+        }
+
+        // Update the settings
+        SettingsInitializer: {
+            switch(Settings.onInstalledReason) {
+                // Is this the first time the extension has run?
+                // If so, then point out what's been changed
+                case INSTALL: {
+                    // Detect the user's desired language
+                        // Capitalizing the language code notifies the Settings page the code was not manually input
+                    let [user_language_preference] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toUpperCase().split('-');
+
+                    Storage.set({ user_language_preference });
+
+                    // Point out the newly added buttons
+                    setTimeout(() => {
+                        for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
+                            element.classList.add('tt-first-run');
+
+                        let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+
+                        // Make sure the user goes to the Settings page
+                        alert
+                            .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
+                            .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
+                    }, 10_000);
+                } break;
+            }
+
+            Storage.set({ onInstalledReason: null });
+        }
+
+        // Jump some frames
+        FrameJumper: {
+            document.head.append(
+                furnish('script', {
+                    src: Runtime.getURL('ext/jump.js'),
+                    onload() {
+                        // Do something when the data is jumped...
+                    },
+                })
+            );
         }
     }, 500);
 });

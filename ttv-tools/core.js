@@ -378,7 +378,8 @@ function defined(value) {
     return !nullish(value);
 }
 
-// Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+// https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+// Makes a Promised setInterval
     // until(callback:function[,ms:number~Integer:milliseconds]) → Promise
 async function until(callback, ms = 100) {
     return new Promise((resolve, reject) => {

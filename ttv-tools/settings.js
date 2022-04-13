@@ -129,9 +129,10 @@ let // These are option names. Anything else will be removed
         // Filter Messages
         'filter_messages',
             'filter_rules',
-        'filter_messages__bullets_coin',
-        'filter_messages__bullets_raid',
-        'filter_messages__bullets_subs',
+            'filter_messages__bullets_coin',
+            'filter_messages__bullets_raid',
+            'filter_messages__bullets_subs',
+            'filter_messages__bullets_note',
         // BetterTTV Emotes
         'bttv_emotes',
             'auto_load_bttv_emotes',

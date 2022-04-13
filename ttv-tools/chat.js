@@ -87,12 +87,12 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         let ChannelPoints = (null
                 ?? $('[data-test-selector="community-points-summary"i] button[class*="--success"i]')
-                ?? $('[class*="bonus"i]')?.closest?.('button')
+                ?? $('[class*="bonus"i]')?.closest('button')
             ),
             Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
         if(Enabled)
-            ChannelPoints?.click?.();
+            ChannelPoints?.click();
 
         let BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
             id: 'tt-auto-claim-indicator',
@@ -112,7 +112,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(nullish(button)) {
             let parent    = $('[data-test-selector="community-points-summary"i]'),
-                heading   = $('.top-nav__menu > div', true).slice(-1)[0],
+                heading   = $('.top-nav__menu > div', true).pop(),
                 container = furnish('div');
 
             if(nullish(parent) || nullish(heading)) {
@@ -200,9 +200,17 @@ let Chat__Initialize = async(START_OVER = false) => {
         let junk = $(`#tt-auto-claim-bonuses ${ '> :last-child'.repeat(3) }`);
         junk && (junk.innerHTML = '');
 
+        // Set the Channel Point icon's color & positioning
+        $('svg:not([id])', false, button.container)
+            ?.setAttribute('style', `fill:var(--channel-color-${ ANTITHEME })`);
+
+        $('svg:not([id])', false, button.container)
+            ?.closest('div:not([class*="channel"i])')
+            ?.setAttribute('style', 'margin-top:0.1em');
+
         JUDGE__STOP_WATCH('auto_claim_bonuses');
     };
-    Timers.auto_claim_bonuses = 5_000;
+    Timers.auto_claim_bonuses = 2_500;
 
     Unhandlers.auto_claim_bonuses = () => {
         $('#tt-auto-claim-bonuses')?.remove();
@@ -1340,6 +1348,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     || (['coin'].contains(subject) && parseBool(Settings.filter_messages__bullets_coin)? reason = 'channel points': false)
                     || (['raid'].contains(subject) && parseBool(Settings.filter_messages__bullets_raid)? reason = 'raid(s)': false)
                     || (['dues', 'gift', 'keep'].contains(subject) && parseBool(Settings.filter_messages__bullets_subs)? reason = 'subscription(s)': false)
+                    || (['note'].contains(subject) && parseBool(Settings.filter_messages__bullets_note)? reason = 'announcement(s)': false)
                 ),
                     censoring = parseBool(element.getAttribute('tt-hidden-bulletin'));
 
@@ -1358,11 +1367,13 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(BULLETIN_FILTER))
             BULLETIN_FILTER(GetChat(250, true));
 
+        // Apply rules to new &/ hidden bullets...
         setInterval(() => {
             let banners = {
-                con: null,
+                coin: null,
                 raid: null,
-                subs: $('[class*="mystery"i]', true).map(bullet => bullet.closest(':is([data-a-target*="welcome"i], [tabindex]):not([tt-hidden-bulletin]) ~ *')),
+                subs: $('[role="log"i] [class*="mystery"i]', true).map(bullet => bullet.closest(':is([data-a-target*="welcome"i], [tabindex]):not([tt-hidden-bulletin]) ~ *')),
+                note: null,
             };
 
             [...new Set(banners.subs)].filter(defined).map(bullet => bullet.setAttribute('tt-hidden-bulletin', parseBool(Settings.filter_messages__bullets_subs)));
@@ -1379,7 +1390,12 @@ let Chat__Initialize = async(START_OVER = false) => {
     };
 
     __FilterBulletins__:
-    if(parseBool(Settings.filter_messages__bullets_coin) || parseBool(Settings.filter_messages__bullets_raid) || parseBool(Settings.filter_messages__bullets_subs)) {
+    if([
+        Settings.filter_messages__bullets_coin,
+        Settings.filter_messages__bullets_raid,
+        Settings.filter_messages__bullets_subs,
+        Settings.filter_messages__bullets_note,
+    ].map(parseBool).contains(true)) {
         REMARK("Adding bulletin filtering...");
 
         RegisterJob('filter_bulletins');
@@ -2662,7 +2678,7 @@ let Chat__CUSTOM_CSS,
 
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
-    let banned = STREAMER?.veto || !!$('[class*="banned"i]', true).length;
+    let banned = STREAMER?.veto || parseBool($('[class*="banned"i]', true)?.length);
 
     // Keep hidden iframes from loading resources
     let { hidden } = parseURL(window.location).searchParameters;
@@ -2682,225 +2698,236 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         // The main controller is ready
         && (false
             || parseBool(top.MAIN_CONTROLLER_READY)
-            || top == window
+            || (false
+                // This window is the main container
+                || top == window
+
+                // There is a welcome message container
+                || defined($(`[data-a-target*="welcome"i]`))
+            )
         )
-        // The welcome message exists
-        && defined($(`[data-a-target*="welcome"i]`))
-        // There is a message container
-        && defined($('[data-test-selector$="message-container"i]'))
-        // There is an error message
-        || defined($('[data-a-target="core-error-message"i]'))
+        // There isn't an advertisement playing
+        && nullish($('[data-a-target*="ad-countdown"i]'))
+        // There is at least one proper container
+        && (false
+            // There is a message container
+            || defined($('[data-test-selector$="message-container"i]'))
+
+            // There is an error message
+            || defined($('[data-a-target="core-error-message"i]'))
+        )
     );
 
-    if(ready) {
-        LOG("Child container ready");
+    if(!ready)
+        return;
 
-        Settings = await GetSettings();
+    LOG("Child container ready");
 
-        setTimeout(Chat__Initialize, 5000);
-        clearInterval(Chat__PAGE_CHECKER);
+    Settings = await GetSettings();
 
-        window.CHILD_CONTROLLER_READY = true;
+    setTimeout(Chat__Initialize, 5000);
+    clearInterval(Chat__PAGE_CHECKER);
 
-        // Only re-execute if in an iframe
-        if(top != window) {
-            // Observe [top] location changes
-            LocationObserver: {
-                let { body } = document,
-                    observer = new MutationObserver(mutations => {
-                        mutations.map(mutation => {
-                            if(PATHNAME !== top.location.pathname) {
-                                let OLD_HREF = PATHNAME;
+    window.CHILD_CONTROLLER_READY = true;
 
-                                PATHNAME = top.location.pathname;
+    // Only re-execute if in an iframe
+    if(top != window) {
+        // Observe [top] location changes
+        LocationObserver: {
+            let { body } = document,
+                observer = new MutationObserver(mutations => {
+                    mutations.map(mutation => {
+                        if(PATHNAME !== top.location.pathname) {
+                            let OLD_HREF = PATHNAME;
 
-                                for(let [name, func] of __ONLOCATIONCHANGE__)
-                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
-                            }
-                        });
-                    });
+                            PATHNAME = top.location.pathname;
 
-                observer.observe(body, { childList: true, subtree: true });
-            }
-
-            // Observe chat changes
-            ChatObserver: {
-                let chat = $('[data-test-selector$="message-container"i]'),
-                    observer = new MutationObserver(mutations => {
-                        let emotes = {},
-                            results = [];
-
-                        mutations = mutations.filter(({ type }) => type == 'childList');
-
-                        MutationToNode:
-                        for(let mutation of mutations) {
-                            let { addedNodes } = mutation;
-
-                            NodeToObject:
-                            for(let line of addedNodes) {
-                                let keepEmotes = true;
-
-                                let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
-                                    author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                    message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
-                                    mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-                                    badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
-                                    style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
-                                    reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
-
-                                let raw = line.innerText?.trim(),
-                                    containedEmotes = [];
-
-                                message = message
-                                    .map(element => {
-                                        let string;
-
-                                        if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
-                                            let img = $('img', false, element);
-
-                                            if(defined(img))
-                                                containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
-                                        } else {
-                                            string = element.innerText;
-                                        }
-
-                                        return string;
-                                    })
-                                    .filter(defined)
-                                    .join(' ')
-                                    .trim()
-                                    .replace(/(\s){2,}/g, '$1');
-
-                                style = style
-                                    .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                                let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
-
-                                if(defined(results.find(message => message.uuid == uuid)))
-                                    continue;
-
-                                // Replace all share URLs
-                                // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
-
-                                results.push({
-                                    raw,
-                                    uuid,
-                                    reply,
-                                    style,
-                                    author,
-                                    badges,
-                                    handle,
-                                    message,
-                                    mentions,
-                                    element: line,
-                                    emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
-                                    deleted: defined($('[class*="--deleted-notice"i]', false, line)),
-                                    highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
-                                });
-                            }
+                            for(let [name, func] of __ONLOCATIONCHANGE__)
+                                func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
                         }
-
-                        results.emotes = emotes;
-
-                        for(let [name, callback] of GetChat.__onnewmessage__)
-                            callback(results);
                     });
+                });
 
-                if(nullish(chat))
-                    break ChatObserver;
-
-                observer.observe(chat, { childList: true });
-            }
+            observer.observe(body, { childList: true, subtree: true });
         }
 
-        top.onlocationchange = () => {
-            WARN("[Child] Re-initializing...");
+        // Observe chat changes
+        ChatObserver: {
+            let chat = $('[data-test-selector$="message-container"i]'),
+                observer = new MutationObserver(mutations => {
+                    let emotes = {},
+                        results = [];
 
-            // Do NOT soft-reset ("turn off, turn on") these settings
-            // They will be destroyed, including any data they are using
-            let VOLATILE = top?.VOLATILE ?? [].map(AsteriskFn);
+                    mutations = mutations.filter(({ type }) => type == 'childList');
 
-            DestroyingJobs:
-            for(let job in Jobs)
-                if(!!~VOLATILE.findIndex(name => name.test(job)))
-                    continue DestroyingJobs;
-                else
-                    RestartJob(job);
+                    MutationToNode:
+                    for(let mutation of mutations) {
+                        let { addedNodes } = mutation;
 
-            Reinitialize:
-            if(NORMAL_MODE) {
-                if(Settings.keep_popout) {
-                    Chat__PAGE_CHECKER ??= setInterval(Chat__WAIT_FOR_PAGE, 500);
+                        NodeToObject:
+                        for(let line of addedNodes) {
+                            let keepEmotes = true;
 
-                    break Reinitialize;
-                }
+                            let handle = $('.chat-line__username', true, line).map(element => element.innerText).toString()
+                                author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
+                                message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
+                                mentions = $('.mention-fragment', true, line).map(element => element.innerText.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
+                                badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
+                                style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
+                                reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
 
-                // Handled by parent controller
-                // location.reload();
+                            let raw = line.innerText?.trim(),
+                                containedEmotes = [];
+
+                            message = message
+                                .map(element => {
+                                    let string;
+
+                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
+                                        let img = $('img', false, element);
+
+                                        if(defined(img))
+                                            containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
+                                    } else {
+                                        string = element.innerText;
+                                    }
+
+                                    return string;
+                                })
+                                .filter(defined)
+                                .join(' ')
+                                .trim()
+                                .replace(/(\s){2,}/g, '$1');
+
+                            style = style
+                                .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
+
+                            let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
+
+                            if(defined(results.find(message => message.uuid == uuid)))
+                                continue;
+
+                            // Replace all share URLs
+                            // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
+
+                            results.push({
+                                raw,
+                                uuid,
+                                reply,
+                                style,
+                                author,
+                                badges,
+                                handle,
+                                message,
+                                mentions,
+                                element: line,
+                                emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
+                                deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+                                highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
+                            });
+                        }
+                    }
+
+                    results.emotes = emotes;
+
+                    for(let [name, callback] of GetChat.__onnewmessage__)
+                        callback(results);
+                });
+
+            if(nullish(chat))
+                break ChatObserver;
+
+            observer.observe(chat, { childList: true });
+        }
+    }
+
+    top.onlocationchange = () => {
+        WARN("[Child] Re-initializing...");
+
+        // Do NOT soft-reset ("turn off, turn on") these settings
+        // They will be destroyed, including any data they are using
+        let VOLATILE = top?.VOLATILE ?? [].map(AsteriskFn);
+
+        DestroyingJobs:
+        for(let job in Jobs)
+            if(!!~VOLATILE.findIndex(name => name.test(job)))
+                continue DestroyingJobs;
+            else
+                RestartJob(job);
+
+        Reinitialize:
+        if(NORMAL_MODE) {
+            if(Settings.keep_popout) {
+                Chat__PAGE_CHECKER ??= setInterval(Chat__WAIT_FOR_PAGE, 500);
+
+                break Reinitialize;
             }
-        };
 
-        // Add custom styling
-        CustomCSSInitializer: {
-            Chat__CUSTOM_CSS = $('#tt-custom-chat-css') ?? furnish('style#tt-custom-chat-css', {});
+            // Handled by parent controller
+            // location.reload();
+        }
+    };
 
-            Chat__CUSTOM_CSS.innerHTML =
-            `
-            /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
+    // Add custom styling
+    CustomCSSInitializer: {
+        Chat__CUSTOM_CSS = $('#tt-custom-chat-css') ?? furnish('style#tt-custom-chat-css', {});
 
-            #tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
-            #tt-hidden-emote-container::after {
-                content: 'Collecting emotes...\\A Do not close this window';
-                text-align: center;
-                white-space: break-spaces;
+        Chat__CUSTOM_CSS.innerHTML =
+        `
+        /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
-                --background: #000e;
-                --text-align: center;
+        #tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
+        #tt-hidden-emote-container::after {
+            content: 'Collecting emotes...\\A Do not close this window';
+            text-align: center;
+            white-space: break-spaces;
 
-                position: absolute;
-                --padding-top: 100%;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
+            --background: #000e;
+            --text-align: center;
 
-                --height: 100%;
-                --width: 100%;
-            }
-            #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
+            position: absolute;
+            --padding-top: 100%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
 
-            section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
+            --height: 100%;
+            --width: 100%;
+        }
+        #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
-            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+        section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
 
-            .chat-line__message[style] a {
-                color: var(--color-text-alt);
-                text-decoration: underline;
-            }
+        [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+        [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
-            .tt-emote-captured [data-test-selector="badge-button-icon"i],
-            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-                left: 0;
-                top: 0;
-            }
-            `;
-
-            Chat__CUSTOM_CSS?.remove();
-            $('body').append(Chat__CUSTOM_CSS);
+        .chat-line__message[style] a {
+            color: var(--color-text-alt);
+            text-decoration: underline;
         }
 
-        // Update the settings
-        SettingsInitializer: {
-            switch(Settings.onInstalledReason) {
-                // Is this the first time the extension has run?
-                // If so, then point out what's been changed
-                case INSTALL: {
-                    // Alert something for the chats...
-                } break;
-            }
-
-            Storage.set({ onInstalledReason: null });
+        .tt-emote-captured [data-test-selector="badge-button-icon"i],
+        .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+            left: 0;
+            top: 0;
         }
+        `;
+
+        Chat__CUSTOM_CSS?.remove();
+        $('body').append(Chat__CUSTOM_CSS);
+    }
+
+    // Update the settings
+    SettingsInitializer: {
+        switch(Settings.onInstalledReason) {
+            // Is this the first time the extension has run?
+            // If so, then point out what's been changed
+            case INSTALL: {
+                // Alert something for the chats...
+            } break;
+        }
+
+        Storage.set({ onInstalledReason: null });
     }
 }, 500);
 

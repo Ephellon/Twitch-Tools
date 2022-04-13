@@ -27,11 +27,18 @@
     * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
 12. Toggling Easy Lurk might cause theatre-mode to activate?
+    * Tentative fix `5.8`
 13. Live Reminders might re-add all live channels?
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.8)
+- Adjusted Live Reminder logic to list live channels at the top of the listing
+- Adjusted `STREAMER.tone` logic
+- Added Announcements as a valid bulletin feature option
+- Adjusted First in Line Boost auto-off logic
+
 > [`5.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.7)
 - Adjusted `STREAMER.tone` logic
 - Adjusted Time Zone logic
