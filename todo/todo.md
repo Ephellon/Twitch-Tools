@@ -33,6 +33,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.9)
+- Fixed issue where the child container would fire before the main container
+- Adjusted `parseCommands` logic
+
 > [`5.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.8)
 - Adjusted Live Reminder logic to list live channels at the top of the listing
 - Adjusted `STREAMER.tone` logic

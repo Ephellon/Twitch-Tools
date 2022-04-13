@@ -2700,14 +2700,30 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             || parseBool(top.MAIN_CONTROLLER_READY)
             || (false
                 // This window is the main container
-                || top == window
+                || (true
+                    && top == window
+                    && top.document.readyState == 'complete'
 
-                // There is a welcome message container
-                || defined($(`[data-a-target*="welcome"i]`))
+                    // The follow button exists
+                    && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+
+                    // There are channel buttons on the side
+                    && parseBool($('#sideNav .side-nav-section[aria-label]', true)?.length)
+                )
+
+                // This window is not the main container
+                || (true
+                    && top != window
+                    && window.document.readyState == 'complete'
+
+                    // There is a welcome message container
+                    && defined($(`[data-a-target*="welcome"i]`))
+                )
             )
         )
         // There isn't an advertisement playing
         && nullish($('[data-a-target*="ad-countdown"i]'))
+
         // There is at least one proper container
         && (false
             // There is a message container

@@ -7464,6 +7464,8 @@ let Initialize = async(START_OVER = false) => {
                     time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
                 },
                 user1: USERNAME,
+                '1': USERNAME,
+                '2': STREAMER.name,
 
                 channel: {
                     _: STREAMER.name,
@@ -10103,7 +10105,8 @@ let Initialize = async(START_OVER = false) => {
 
 let CUSTOM_CSS,
     PAGE_CHECKER,
-    WAIT_FOR_PAGE;
+    WAIT_FOR_PAGE,
+    NOTIFIED_ABOUT_AD;
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version === version;
@@ -10115,30 +10118,41 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
         let ready = (true
             // There is a valid username
             && defined(USERNAME)
+
             // The follow button exists
             && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+
             // There are channel buttons on the side
             && parseBool($('#sideNav .side-nav-section[aria-label]', true)?.length)
+
             // There isn't an advertisement playing
             && nullish($('[data-a-target*="ad-countdown"i]'))
+
             // There are proper containers
             && (false
                 // There is a message container
                 || defined($('[data-test-selector$="message-container"i]'))
+
                 // There is an ongoing search
                 || (true
                     && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true))
                     && defined($('[data-a-target^="threads-box-"i]'))
                 )
+
                 // The page is a channel viewing page
                 // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+
                 // There is an error message
                 || defined($('[data-a-target="core-error-message"i]'))
             )
         );
 
-        if(!ready)
+        if(!ready) {
+            if(defined($('[data-a-target*="ad-countdown"i]')) && nullish(NOTIFIED_ABOUT_AD))
+                alert.timed(`${ Manifest.name } will resume after the advertisement`, NOTIFIED_ABOUT_AD = 5_000);
+
             return;
+        }
 
         LOG("Main container ready");
 
