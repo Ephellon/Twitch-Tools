@@ -1510,8 +1510,8 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
     // Converts RGB to HSL
-        // Color.RGBtoHSL(red:Number~UInt8, green:Number~UInt8, blue:Number~UInt8[, alpha:Number]) → Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
-    static RGBtoHSL(R, G, B, A = 1) {
+        // Color.RGBtoHSL([red:Number~UInt8[, green:Number~UInt8[, blue:Number~UInt8[, alpha:Number]]]]) → Object~{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }
+    static RGBtoHSL(R = 0, G = 0, B = 0, A = 1) {
         // Convert RGB to fractions of 1
         let r = R / 255,
             g = G / 255,
@@ -1615,7 +1615,7 @@ class Color {
     // https://stackoverflow.com/a/9733420/4211612
     // Gets the luminance of a color
         // Color.luminance(Number~UInt8, Number~Uint8, Number~Uint8) → Number~Float@[0, 1]
-    static luminance(R, G, B) {
+    static luminance(R = 0, G = 0, B = 0) {
         let l = [R, G, B].map(c => {
             c /= 255;
 
@@ -7967,7 +7967,7 @@ let Initialize = async(START_OVER = false) => {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                     // Don't leave if the raid is on this page...
-                    if(["greed"].contains(method))
+                    if(raiding && ["greed"].contains(method))
                         break stopper;
 
                     open(parseURL(next.href).pushToSearch({ tool: `raid-stopper--${ method }` }).href, '_self');

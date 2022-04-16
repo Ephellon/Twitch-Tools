@@ -132,6 +132,8 @@ Storage.onChanged.addListener(changes => {
 // Set the Up Next owner
 let UP_NEXT_OWNER = null;
 
+Storage.get(['UP_NEXT_OWNER'], data => UP_NEXT_OWNER ??= data.UP_NEXT_OWNER);
+
 Runtime.onMessage.addListener((request, sender, respond) => {
     let refresh,
         returningData;
@@ -158,6 +160,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                     respond({ owner: true });
                 }
+
+                Storage.set({ UP_NEXT_OWNER });
             });
         } break;
 
@@ -165,6 +169,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             refresh = UP_NEXT_OWNER != null;
 
             UP_NEXT_OWNER = null;
+
+            Storage.set({ UP_NEXT_OWNER });
         } break;
 
         case 'GET_VERSION': {

@@ -33,6 +33,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.11)
+- Fixed raid stopper logic
+- Fixed Up Next owner logic (MV2 → MV3)
+
 > [`5.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.10)
 - Fixed issue where the raid stopper would activate on greedy channels
 - Adjusted Claim Prime logic
