@@ -33,6 +33,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.10)
+- Fixed issue where the raid stopper would activate on greedy channels
+- Adjusted Claim Prime logic
+
 > [`5.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.9)
 - Fixed issue where the child container would fire before the main container
 - Adjusted `parseCommands` logic

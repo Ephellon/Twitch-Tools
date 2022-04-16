@@ -4107,7 +4107,7 @@ let Initialize = async(START_OVER = false) => {
                 });
 
                 return await until(() => done);
-            })();
+            })()
         },
 
         get face() {
@@ -5648,15 +5648,15 @@ let Initialize = async(START_OVER = false) => {
 
             resubscribing:
             if(PrimeSubscription.toUpperCase() == STREAMER.sole.toString(36).toUpperCase()) {
-                if(PrimeSubscriptionReclaims <= 2)
+                if(PrimeSubscriptionReclaims < 3)
                     confirm.timed(`Please review your settings. TTV Tools ${ ['was', 'is'][+!!PrimeSubscriptionReclaims] } still reclaiming your <strong>Prime Subscription</strong> for this channel!`)
                         .then(answer => {
                             // OK → Open the settings page
                             if(answer)
                                 postMessage({ action: 'open-options-page' });
-                            // Cancel → Remove the warning
+                            // Cancel → Remove the warning and reset the setting
                             else if(answer === false)
-                                /* SaveCache({ PrimeSubscription: (PrimeSubscription = ''), PrimeSubscriptionReclaims: 0 }) */;
+                                SaveCache({ PrimeSubscription: '', PrimeSubscriptionReclaims: 0 });
                         });
 
                 if(PrimeSubscriptionReclaims < 1)
@@ -7490,6 +7490,7 @@ let Initialize = async(START_OVER = false) => {
                 // NightBot
                 channelid: STREAMER.sole,
                 userlevel: 'everyone',
+                sender: USERNAME,
                 touser: USERNAME,
                 urlfetch: `External website`,
 
@@ -7506,7 +7507,7 @@ let Initialize = async(START_OVER = false) => {
 
             return value || $_;
         })
-        ?.replace(/^\/(?:\w\S+)/, '');
+        ?.replace(/^\/(?:\w\S+)\s*/, '');
     }
 
     Handlers.parse_commands = async() => {
@@ -7961,8 +7962,13 @@ let Initialize = async(START_OVER = false) => {
                 for(let job of STREAMER.__eventlisteners__.onraid)
                     job({ raided, raiding, next });
 
+                stopper:
                 if(defined(next)) {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
+
+                    // Don't leave if the raid is on this page...
+                    if(["greed"].contains(method))
+                        break stopper;
 
                     open(parseURL(next.href).pushToSearch({ tool: `raid-stopper--${ method }` }).href, '_self');
                 } else {
@@ -8908,18 +8914,19 @@ let Initialize = async(START_OVER = false) => {
                 if(nullish(container))
                     return JUDGE__STOP_WATCH('points_receipt_placement__ranking');
 
-                let { rank } = STREAMER,
+                let { cult, rank } = STREAMER,
+                    place = (100 * (rank / cult)).clamp(1, 100) | 0,
                     string = nth(rank.toLocaleString(LANGUAGE), ''),
                     color = (null
-                        ?? ['#FFD700', '#C0C0C0', '#CD7F32'][rank - 1]
+                        ?? ['#FFD700', '#C0C0C0', '#CD7F32'][place - 1]
                         ?? '#91FF47'
                     );
 
                 rank = (
-                    rank < 1?
+                    place < 1?
                         '?':
-                    rank < 4?
-                        `<span style="text-decoration:${ 4 - rank }px underline ${ color }">${ string }</span>`:
+                    place < 4?
+                        `<span style="text-decoration:${ 4 - place }px underline ${ color }">${ string }</span>`:
                     string
                 );
 
@@ -8934,8 +8941,6 @@ let Initialize = async(START_OVER = false) => {
 
                 if(rank == '?')
                     return ranking?.remove() || JUDGE__STOP_WATCH('points_receipt_placement__ranking');
-
-                let place = (100 * (STREAMER.rank / STREAMER.cult)).clamp(1, 100).round() | 0;
 
                 RANK_TOOLTIP ??= new Tooltip(ranking, "", { from: 'top' });
                 RANK_TOOLTIP.innerHTML = `You are in the top ${ place || '?' }%`;
@@ -10055,7 +10060,8 @@ let Initialize = async(START_OVER = false) => {
                                 });
                             })
                             .finally(() => {
-                                let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`);
+                                let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`),
+                                    chromeUpdateAvailable = false;
 
                                 FETCHED_DATA = { ...FETCHED_DATA, ...properties };
                                 Storage.set({ githubUpdateAvailable });
@@ -10149,7 +10155,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
         if(!ready) {
             if(defined($('[data-a-target*="ad-countdown"i]')) && nullish(NOTIFIED_ABOUT_AD))
-                alert.timed(`${ Manifest.name } will resume after the advertisement`, NOTIFIED_ABOUT_AD = 5_000);
+                alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, NOTIFIED_ABOUT_AD = 5_000);
 
             return;
         }

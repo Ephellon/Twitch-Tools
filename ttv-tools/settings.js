@@ -1015,6 +1015,12 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
                     Translate(document.documentElement.lang = preferred.toLowerCase());
                 } break;
 
+                case 'simplify_chat_font': {
+                    $(`#${ id }`).setAttribute('style', `font-family:${ SETTINGS[id] } !important`);
+
+                    assignValue(element, SETTINGS[id]);
+                } break;
+
                 default: {
                     let selected = $('[selected]', false, element);
 
@@ -1287,6 +1293,8 @@ $('#sync-settings--share').onmousedown = async event => {
 
 /* Adding new schedules */
 $('#add-time').onmouseup = event => new DatePicker().then(schedules => RedoTimeElements(JSON.stringify(schedules), 'away_mode'));
+
+$('#simplify_chat_font').onchange = event => event.target.setAttribute('style', `font-family:${ event.target.value } !important`);
 
 // $('#version').setAttribute('version', Manifest.version);
 
