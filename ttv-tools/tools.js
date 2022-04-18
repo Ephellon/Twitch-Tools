@@ -5717,7 +5717,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
     let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true,     // Allow this tab to use Up Next
-        LIVE_REMINDERS__LISTING_INTERVAL;                                // List the live time of Live Reminders
+        LIVE_REMINDERS__LISTING_INTERVAL;                               // List the live time of Live Reminders
 
     let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
@@ -7911,7 +7911,10 @@ let Initialize = async(START_OVER = false) => {
     Handlers.prevent_raiding = async() => {
         START__STOP_WATCH('prevent_raiding');
 
-        if(CONTINUE_RAIDING)
+        if(false
+            || CONTINUE_RAIDING
+            || !UP_NEXT_ALLOW_THIS_TAB
+        )
             return JUDGE__STOP_WATCH('prevent_raiding');
 
         let url = parseURL(window.location),

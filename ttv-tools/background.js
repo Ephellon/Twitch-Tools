@@ -130,13 +130,29 @@ Storage.onChanged.addListener(changes => {
 });
 
 Runtime.onMessage.addListener((request, sender, respond) => {
-    let refresh,
+    let refreshAll,
         returningData;
+
+    function refreshPages(all = false) {
+        if(!all)
+            return;
+
+        Container.tabs.query({
+            url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
+        }, tabs => {
+            if(nullish(tabs))
+                return;
+
+            // Reload Twitch pages
+            for(let tab of tabs)
+                Container.tabs.reload(tab.id);
+        });
+    }
 
     switch(request.action) {
         case 'CLAIM_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
-                let refresh = UP_NEXT_OWNER == null;
+                let refreshAll = UP_NEXT_OWNER == null;
 
                 Container.tabs.query({
                     url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
@@ -160,46 +176,18 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                     Storage.set({ UP_NEXT_OWNER });
                 });
 
-                if(refresh)
-                    Container.tabs.query({
-                        url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
-                    }, tabs => {
-                        if(nullish(tabs))
-                            return;
-
-                        // Reload Twitch pages
-                        for(let tab of tabs)
-                            Container.tabs.reload(tab.id);
-                    });
+                refreshPages(refreshAll);
             });
-
-            // Do not double refresh...
-            refresh = false;
         } break;
 
         case 'WAIVE_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
-                let refresh = UP_NEXT_OWNER != null;
+                let refreshAll = UP_NEXT_OWNER != null;
 
-                UP_NEXT_OWNER = null;
+                Storage.set({ UP_NEXT_OWNER: null });
 
-                Storage.set({ UP_NEXT_OWNER });
-
-                if(refresh)
-                    Container.tabs.query({
-                        url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
-                    }, tabs => {
-                        if(nullish(tabs))
-                            return;
-
-                        // Reload Twitch pages
-                        for(let tab of tabs)
-                            Container.tabs.reload(tab.id);
-                    });
+                refreshPages(refreshAll);
             });
-
-            // Do not double refresh...
-            refresh = false;
         } break;
 
         case 'GET_VERSION': {
@@ -228,17 +216,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
     }
 
-    if(refresh)
-        Container.tabs.query({
-            url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
-        }, tabs => {
-            if(nullish(tabs))
-                return;
-
-            // Reload Twitch pages
-            for(let tab of tabs)
-                Container.tabs.reload(tab.id);
-        });
+    refreshPages(refreshAll);
 
     return true;
 });
