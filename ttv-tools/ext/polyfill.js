@@ -301,7 +301,7 @@ function encodeHTML(string = '') {
 // Decodes HTML-embedded text
     // decodeHTML([string:string]) → String
 function decodeHTML(string = '') {
-    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html }) => html == $0)?.char ?? $0);
+    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contians($0))?.char ?? $0);
 }
 
 decodeHTML.table ??= [
@@ -313,7 +313,7 @@ decodeHTML.table ??= [
         "hex": "&#x26;"
     },
     {
-        "char": "\"",
+        "char": '"',
         "html": "&quot;",
         "dec": "&#34;",
         "hex": "&#x22;"
@@ -2063,7 +2063,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
 };
 
 // Returns an array of elements that contain the text content
-    // Element..getElementsByTextContent(searchText:string|regexp|array[, flags:string]) → array
+    // Element..getElementsByTextContent(searchText:string|regexp|array[, flags:string]) → [Element...]
 Element.prototype.getElementsByTextContent ??= function getElementsByTextContent(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         UNICODE_FLAG = false;
@@ -2179,6 +2179,17 @@ Function.prototype.toTitle ??= function toTitle() {
         .trim();
 };
 
+// Returns a string as a formatted title
+    // String..toTitle() → String
+String.prototype.toTitle ??= function toTitle() {
+    return this
+        .replace(/\$\$/g, ' | ')
+        .replace(/\$/g, '/')
+        .replace(/__/g, ' - ')
+        .replace(/_/g, ' ')
+        .trim();
+};
+
 // Add Array methods to HTMLCollection
 HTMLCollection.prototype.contains       ??= Array.prototype.contains;
 HTMLCollection.prototype.at             ??= Array.prototype.at;
@@ -2269,9 +2280,7 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
 
     context.drawImage(this, 0, 0);
 
-    let promise = new Promise((resolve, reject) => {
-        canvas.toBlob(blob => navigator.clipboard.write([ new ClipboardItem({ [blob?.type]: blob }) ]).then(resolve).catch(reject));
-    });
+    let promise = new Promise((resolve, reject) => canvas.toBlob(blob => navigator.clipboard.write([ new ClipboardItem({ [blob?.type]: blob }) ]).then(resolve).catch(reject)));
 
     canvas?.remove();
 
@@ -2377,7 +2386,7 @@ function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
         // format = "metric" | "imperial" | "readable"
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
-        sign = number < 0? '-': '',
+        sign = (number < 0? '-': ''),
         suffix = '',
         padded = false;
 
@@ -2496,9 +2505,10 @@ Number.prototype.Math = (parent => {
 String.prototype.contains ??= function contains(...values) {
     let has = false;
 
+    searching:
     for(let value of values)
         if(has ||= !!~this.indexOf(value))
-            break;
+            break searching;
 
     return has;
 };

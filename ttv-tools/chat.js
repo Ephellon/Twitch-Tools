@@ -255,9 +255,6 @@ let Chat__Initialize = async(START_OVER = false) => {
                 case 'es':
                     return 'Arrastre para usar';
 
-                case 'pt':
-                    return 'Arraste para usar';
-
                 case 'ru':
                     return 'Перетащите для использования';
 
@@ -542,7 +539,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(({ documentElement }) => documentElement)
                             .then(async doc => {
-                                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl pt pt-br ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
+                                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
                                 let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
                                     [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
 
@@ -2144,8 +2141,11 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.closest?.('button');
 
-        if(nullish(container))
-            return JUDGE__STOP_WATCH('rewards_calculator'), REWARDS_CALCULATOR_TOOLTIP = null;
+        if(nullish(container)) {
+            JUDGE__STOP_WATCH('rewards_calculator');
+
+            return REWARDS_CALCULATOR_TOOLTIP = null;
+        }
 
         // Average broadcast time is 4.5h
         // Average number of streamed days is 5 (Mon - Fri)
@@ -2160,9 +2160,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
 
-        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-text-live) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
+        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-opac-p-8) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
 
-        let tooltip = REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
+        REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
 
         let { ceil, floor, round } = Math;
 
@@ -2199,77 +2199,369 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         timeEstimated = ceil(timeEstimated);
 
-        switch(top.LANGUAGE) {
+        function estimates(language) {
+            return fetch(Runtime.getURL(`_locales/${ language }/settings.json`))
+                .then(response => response.json())
+                .then(json => {
+                    let _ = json['?'],
+                        { minute, hour, day, week, month, year, century } = _;
+
+                    minute ??= _['@@minute'];
+                    hour ??= _['@@hour'];
+                    day ??= _['@@day'];
+                    week ??= _['@@week'];
+                    month ??= _['@@month'];
+                    year ??= _['@@year'];
+                    century ??= _['@@century'];
+
+                    return { minute, hour, day, week, month, year, century };
+                });
+        }
+
+        function correct(string, number) {
+            number ??= parseInt(string.replace(/[^]*?(\d+)[^]*/, '$1'));
+
+            return string
+                .replace(/%d\b/g, comify(number))
+                .replace(/%([^>]*)>([^\s]*)/g, (number > 1? '$2': '$1'));
+        }
+
+        let T_L = top.LANGUAGE;
+        switch(T_L) {
+            case 'bg': {
+                // Adopted from /_locales/bg/settings.json
+                // Достъпно по време на този поток (33 минути)
+                // Предлага се в още 33 потока (3 седмици)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Достъпно по време на този': `Предлага се в още ${ comify(streams) }` } ${ "поток" + ["и","а"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'cs': {
+                // Adopted from /_locales/cs/settings.json
+                // Dostupné během tohoto streamu (33 minut)
+                // K dispozici v dalších 33 streamech (3 týdny)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Dostupné během tohoto': `K dispozici v dalších ${ comify(streams) }` } ${ "stream" + ["u","ech"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'da': {
+                // Adopted from /_locales
+                // Tilgængelig under denne stream (33 minutter)
+                // Tilgængelig i 33 flere streams (3 uger)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Tilgængelig ${ (streams < 1 || hours < timeLeftInBroadcast)? 'under denne': `i ${ comify(streams) } flere` } ${ "stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
             case 'de': {
+                // Adopted from /_locales/de/settings.json
                 // In diesem Strom verfügbar (30 Minuten)
                 // Erhältlich in 33 mehr Streams (3 Wochen)
 
-                estimated = ({
-                    "minute": "Minuten",
-                    "hour": "Stunden",
-                    "day": "Tage",
-                    "week": "Wochen",
-                    "month": "Monate",
-                    "year": "Jahre",
-                    "century": "Jahrhunderte",
-                }[estimated]);
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
 
-                tooltip.innerHTML =
-                    `${ (streams < 1 || hours < timeLeftInBroadcast)? 'In diesem Strom': `Erhältlich in ${ comify(streams) } mehr` } ${ "Stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated })`;
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'In diesem Strom': `Erhältlich in ${ comify(streams) } mehr` } ${ "Stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'fi': {
+                // Adopted from /_locales/fi/settings.json
+                // Saatavilla tämän streamin aikana (33 minuuttia)
+                // Saatavilla vielä 33 suorana (3 viikkoa)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Saatavilla ${ (streams < 1 || hours < timeLeftInBroadcast)? 'tämän streamin aikana': `vielä ${ comify(streams) } suorana` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'hu': {
+                // Adopted from /_locales/hu/settings.json
+                // Elérhető a stream alatt (33 perc)
+                // 33 további adatfolyamban elérhető (3 hét)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Elérhető a stream alatt': `${ comify(streams) } további adatfolyamban elérhető` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'no': {
+                // Adopted from /_locales/no/settings.json
+                // Tilgjengelig under denne strømmen (33 minutter)
+                // Tilgjengelig i 33 strømmer til (3 uker)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Tilgjengelig ${ (streams < 1 || hours < timeLeftInBroadcast)? 'under denne strømmen': `i ${ comify(streams) } strømmer til` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'pl': {
+                // Adopted from /_locales/pl/settings.json
+                // Dostępne podczas tej transmisji (33 minuty)
+                // Dostępne w 33 kolejnych strumieniach (3 tygodnie)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Dostępne ${ (streams < 1 || hours < timeLeftInBroadcast)? 'podczas tej transmisji': `w ${ comify(streams) } kolejnych strumieniach` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'sk': {
+                // Adopted from /_locales/sk/settings.json
+                // Dostupné počas tohto streamu (33 minút)
+                // Dostupné v 33 ďalších streamoch (3 týždne)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Dostupné ${ (streams < 1 || hours < timeLeftInBroadcast)? 'počas tohto': `v ${ comify(streams) }` } ${ "stream" + ["u","och"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'tr': {
+                // Adopted from /_locales/tr/settings.json
+                // Bu yayın sırasında kullanılabilir (33 dakika)
+                // 33 akışta daha mevcuttur (3 hafta)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Bu yayın sırasında kullanılabilir': `${ comify(streams) } akışta daha mevcuttur` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'el': {
+                // Adopted from /_locales/el/settings.json
+                // Διαθέσιμο κατά τη διάρκεια αυτής της ροής (33 λεπτά)
+                // Διαθέσιμο σε 33 ακόμη ροές (3 εβδομάδες)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Διαθέσιμο ${ (streams < 1 || hours < timeLeftInBroadcast)? 'κατά τη διάρκεια αυτής της': `σε ${ comify(streams) } ακόμη` } ${ "ρο" + ["ής","ές"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'fr': {
+                // Adopted from /_locales/fr/settings.json
+                // Disponible pendant ce stream (33 minutes)
+                // Disponible dans 33 flux supplémentaires (3 semaines)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'pendant ce stream': `dans ${ comify(streams) } flux supplémentaires` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'nl': {
+                // Adopted from /_locales/nl/settings.json
+                // Beschikbaar tijdens deze stream (33 minuten)
+                // Beschikbaar in nog 33 streams (3 weken)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Beschikbaar ${ (streams < 1 || hours < timeLeftInBroadcast)? 'tijdens deze': `in nog ${ comify(streams) }` } ${ "stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'it': {
+                // Adopted from /_locales/it/settings.json
+                // Disponibile durante questo streaming (33 minuti)
+                // Disponibile in altri 33 stream (3 settimane)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Disponibile ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante questo': `in altri ${ comify(streams) }` } ${ "stream" + ["ing",""][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'ro': {
+                // Adopted from /_locales/ro/settings.json
+                // Disponibil în timpul acestui flux (33 de minute)
+                // Disponibil în încă 33 de fluxuri (3 săptămâni)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Disponibil în ${ (streams < 1 || hours < timeLeftInBroadcast)? 'timpul acestui': `încă  ${ comify(streams) } de` } ${ "flux" + ["","uri"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'ja': {
+                // Adopted from /_locales/ja/settings.json
+                // このストリーム中に利用可能（33分）
+                // さらに33のストリームで利用可能（3週間）
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'このストリーム中に': `さらに${ comify(streams) }のストリームで` } ${ "利用可能" + ["_","s"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'zh-ch': {
+                // Adopted from /_locales/zh/settings.json
+                // 在此直播期间可用（33 分钟）
+                // 在另外 33 个流中可用（3 周）
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? '在此直播期间可用': `在另外 ${ comify(streams) } 个流中可用` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'zh-tw': {
+                // Adopted from /_locales/zh/settings.json
+                // 在此直播期間可用（33 分鐘）
+                // 在另外 33 個流中可用（3 週）
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? '在此直播期間可用': `在另外 ${ comify(streams) } 個流中可用` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'ko': {
+                // Adopted from /_locales/ko/settings.json
+                // 이 스트림 동안 사용 가능(33분)
+                // 33개 이상의 스트림에서 사용 가능(3주)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? '이 스트림 동안': `${ comify(streams) }개 이상의 스트림에서` } 사용 가능 (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'sv': {
+                // Adopted from /_locales/sv/settings.json
+                // Tillgänglig under denna stream (33 minuter)
+                // Tillgänglig i ytterligare 33 streams (3 veckor)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Tillgänglig ${ (streams < 1 || hours < timeLeftInBroadcast)? 'under denna': `i ytterligare ${ comify(streams) }` } ${ "stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'th': {
+                // Adopted from /_locales/th/settings.json
+                // ได้ในสตรีมนี้ (33 นาที)
+                // พร้อมให้บริการในอีก 33 สตรีม (3 สัปดาห์)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `${ (streams < 1 || hours < timeLeftInBroadcast)? 'ได้ในสตรีมนี้': `พร้อมให้บริการในอีก ${ comify(streams) } สตรีม` } (${ correct(estimated, timeEstimated) })`;
+                    });
+            } break;
+
+            case 'vi': {
+                // Adopted from /_locales/vi/settings.json
+                // Có sẵn trong luồng này (33 phút)
+                // Có sẵn trong 33 luồng khác (3 tuần)
+
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
+
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Có sẵn trong ${ (streams < 1 || hours < timeLeftInBroadcast)? '': comify(streams) } ${ "luồng " + ["này","khác"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
+                    });
             } break;
 
             case 'es': {
-                // Disponible durante este flujo (30 minutos)
+                // Adopted from /_locales/es/settings.json
+                // Disponible durante este arroyo (30 minutos)
                 // Disponible en 33 arroyos más (3 semanas)
 
-                estimated = ({
-                    "minute": "minuto",
-                    "hour": "hora",
-                    "day": "dia",
-                    "week": "semana",
-                    "month": "mese",
-                    "year": "año",
-                    "century": "siglo",
-                }[estimated]);
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
 
-                tooltip.innerHTML =
-                    `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este flujo': `en ${ comify(streams) } arroyos más` } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
-            } break;
-
-            case 'pt': {
-                // Disponível durante este fluxo (30 minutos)
-                // Disponível em 33 mais fluxos (3 semanas)
-
-                estimated = ({
-                    "minute": "minuto",
-                    "hour": "hora",
-                    "day": "dia",
-                    "week": "semana",
-                    "month": "mese",
-                    "year": "ano",
-                    "century": "século",
-                }[estimated]);
-
-                tooltip.innerHTML =
-                    `Disponível ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este': `en ${ comify(streams) } mais` } ${ "fluxo" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este arroyo': `en ${ comify(streams) } arroyos más` } (${ correct(estimated, timeEstimated) })`;
+                    });
             } break;
 
             case 'ru': {
+                // Adopted from /_locales/ru/settings.json
                 // Доступно во время этого потока (30 минут)
                 // Доступно в 33 ручьях (3 недели)
 
-                estimated = ({
-                    "minute": "минут",
-                    "hour": "часов",
-                    "day": "дней",
-                    "week": "недель",
-                    "month": "месяцев",
-                    "year": "лет",
-                    "century": "веков",
-                }[estimated]);
+                estimates(T_L)
+                    .then(estimates => {
+                        estimated = estimates[estimated].pop();
 
-                tooltip.innerHTML =
-                    `Доступно ${ (streams < 1 || hours < timeLeftInBroadcast)? 'во время этого потока': `в ${ comify(streams) } ручьях` } (${ comify(timeEstimated) } ${ estimated })`;
+                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                            `Доступно ${ (streams < 1 || hours < timeLeftInBroadcast)? 'во время этого потока': `в ${ comify(streams) } ручьях` } (${ correct(estimated, timeEstimated) })`;
+                    });
             } break;
 
             case 'en':
@@ -2277,8 +2569,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                 // Available during this stream (30 minutes)
                 // Available in 33 more streams (3 weeks)
 
-                tooltip.innerHTML =
-                    `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream" + ["","s"][+(streams > 1)] } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
+                REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                    `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream".pluralSuffix(streams, "s") } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
             } break;
         }
 

@@ -1520,7 +1520,7 @@ html:not([lang="en"i]) .tt-tooltip {
 }
 
 .tt-tooltip::after {
-    background-color: var(--white);
+    /* background-color: var(--white); */
     height: 6px;
     transform: rotate(45deg);
     width: 6px;
@@ -1529,7 +1529,7 @@ html:not([lang="en"i]) .tt-tooltip {
 
 /* Directionally aligned tooltips */
 /* Center */
-:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-center{
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-center {
     left: 50%;
     transform: translateX(-50%);
 }
@@ -1539,7 +1539,7 @@ html:not([lang="en"i]) .tt-tooltip {
     margin-left: -3px;
 }
 
-:is(.tt-tooltip--left, .tt-tooltip--right).tt-tooltip--align-center{
+:is(.tt-tooltip--left, .tt-tooltip--right).tt-tooltip--align-center {
     top: 50%;
     transform: translateY(-50%);
 }
@@ -1573,7 +1573,8 @@ html:not([lang="en"i]) .tt-tooltip {
 }
 
 .tt-tooltip--up::after {
-    border-radius: 0 0 .2rem;
+    background: linear-gradient(-40deg, #fff 0 50%, #0000 0 0);
+    border-radius: 0 0 .4rem;
     height: 6px;
     left: 6px;
     margin-top: -3px;
@@ -1589,7 +1590,8 @@ html:not([lang="en"i]) .tt-tooltip {
 }
 
 .tt-tooltip--down::after {
-    border-radius: .2rem 0 0;
+    background: linear-gradient(140deg, #fff 0 50%, #0000 0 0);
+    border-radius: .4rem 0 0;
     height: 6px;
     left: 6px;
     top: -3px;
@@ -1607,7 +1609,8 @@ html:not([lang="en"i]) .tt-tooltip {
 }
 
 .tt-tooltip--left::after {
-    border-radius: 0 .2rem 0 0;
+    background: linear-gradient(230deg, #fff 0 50%, #0000 0 0);
+    border-radius: 0 .4rem 0 0;
     left: 100%;
     margin-left: -3px;
     right: -3px;
@@ -1622,7 +1625,8 @@ html:not([lang="en"i]) .tt-tooltip {
 }
 
 .tt-tooltip--right::after {
-    border-radius: 0 0 0 .2rem;
+    background: linear-gradient(50deg, #fff 0 50%, #0000 0 0);
+    border-radius: 0 0 0 .4rem;
     left: 0;
     margin-left: -3px;
     top: 6px;

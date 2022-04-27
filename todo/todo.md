@@ -33,6 +33,19 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.12)
+- Added `STREAMER.shop`
+- Adjusted STREAMER.coin logic
+- Adjusted Tooltip styling
+- Adjusted GetChat logic
+- Adjusted STREAMER.perm logic
+- Adjusted extension-ready logic
+- Replaced antiquated logic with STREAMER.shop
+- Removed Portuguese functionalities
+- Added more languages for the Rewards Calculator tooltip
+- Added `Color.destruct([color:string])`
+- Adjusted Time Zone logic
+
 > [`5.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.11)
 - Fixed raid stopper logic
 - Fixed Up Next owner logic (MV2 → MV3)

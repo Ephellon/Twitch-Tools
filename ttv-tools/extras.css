@@ -129,7 +129,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-tooltip::after {
-    background-color: var(--color-background-tooltip);
+    /* background-color: var(--color-background-tooltip); */
 
     transform: rotate(45deg);
     z-index: -1;
@@ -148,22 +148,22 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 
 /* Directionally aligned tooltips */
 /* Center */
-.tt-tooltip--up.tt-tooltip--align-center, .tt-tooltip--down.tt-tooltip--align-center {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-center {
     left: 50%;
     transform: translateX(-50%);
 }
 
-.tt-tooltip--up.tt-tooltip--align-center::after, .tt-tooltip--down.tt-tooltip--align-center::after {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-center::after {
     left: 50%;
     margin-left: -3px;
 }
 
-.tt-tooltip--left.tt-tooltip--align-center, .tt-tooltip--right.tt-tooltip--align-center {
+:is(.tt-tooltip--left, .tt-tooltip--right).tt-tooltip--align-center {
     top: 50%;
     transform: translateY(-50%);
 }
 
-.tt-tooltip--left.tt-tooltip--align-center::after, .tt-tooltip--right.tt-tooltip--align-center::after {
+:is(.tt-tooltip--left, .tt-tooltip--right).tt-tooltip--align-center::after {
     margin-top: -3px;
     top: 50%;
 }
@@ -172,12 +172,12 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 /* ??? */
 
 /* Right */
-.tt-tooltip--up.tt-tooltip--align-right, .tt-tooltip--down.tt-tooltip--align-right {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-right {
     left: auto;
     right: 0;
 }
 
-.tt-tooltip--up.tt-tooltip--align-right::after, .tt-tooltip--down.tt-tooltip--align-right::after {
+:is(.tt-tooltip--up, .tt-tooltip--down).tt-tooltip--align-right::after {
     left: 100%;
     margin-left: -12px;
     top: 100%;
@@ -192,6 +192,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-tooltip--up::after {
+    background: linear-gradient(-40deg, #fff 0 50%, #0000 0 0);
     border-radius: 0 0 .4rem;
     height: 6px;
     left: 6px;
@@ -208,6 +209,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-tooltip--down::after {
+    background: linear-gradient(140deg, #fff 0 50%, #0000 0 0);
     border-radius: .4rem 0 0;
     height: 6px;
     left: 6px;
@@ -226,6 +228,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-tooltip--left::after {
+    background: linear-gradient(230deg, #fff 0 50%, #0000 0 0);
     border-radius: 0 .4rem 0 0;
     left: 100%;
     margin-left: -3px;
@@ -241,6 +244,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 }
 
 .tt-tooltip--right::after {
+    background: linear-gradient(50deg, #fff 0 50%, #0000 0 0);
     border-radius: 0 0 0 .4rem;
     left: 0;
     margin-left: -3px;

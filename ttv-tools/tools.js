@@ -1071,7 +1071,7 @@ class Search {
             } break;
 
             default: {
-                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl pt pt-br ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
+                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
                 let name = channelName;
 
                 if(nullish(name) || type != 'channel')
@@ -1312,7 +1312,10 @@ class Search {
     }
 
     static async convertResults(response) {
-        let json = await response.json(),
+        let json = (null
+                ?? (await response?.json?.())
+                ?? ({})
+            ),
             data = {};
 
         let ConversionKey = {
@@ -1661,13 +1664,8 @@ class Color {
         return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
     }
 
-    // Retrns a color's name
-        // Color.getName(color:string~Color) → String
-    static getName(color = '#000') {
-        if(nullish(color))
-            return '';
-
-        color = color.toString().trim();
+    static destruct(color) {
+        color = (color || '#000').toString().trim();
 
         let colorRegExps = [
             // #RGB #RRGGBB
@@ -1683,199 +1681,212 @@ class Color {
         ];
 
         for(let regexp of colorRegExps)
-            if(regexp.test(color))
-                return color.replace(regexp, ($0, $1, $2, $3, $4, $5) => {
-                    let color;
+            if(regexp.test(color)) {
+                let computed;
+                color.replace(regexp, ($0, $1, $2, $3, $4, $5) => {
                     switch($1.toLowerCase()) {
                         case '#': {
-                            color = Color.HEXtoColor($0);
+                            computed = Color.HEXtoColor($0);
                         } break;
 
                         case 'rgb': {
-                            color = Color.RGBtoHSL(...[$2, $3, $4].map(parseFloat));
+                            computed = Color.RGBtoHSL(...[$2, $3, $4].map(parseFloat));
                         } break;
 
                         case 'hsl': {
-                            color = Color.HSLtoRGB(...[$2, $3, $4].map(parseFloat));
+                            computed = Color.HSLtoRGB(...[$2, $3, $4].map(parseFloat));
                         } break;
 
                         default: return;
                     }
 
-                    // TODO: Add more colors &/ better detection...
-                    let { H, S, L, R, G, B } = color;
-                    let maxDist = Color.distance([0,0,0],[255,255,255]),
-                        colorDifference = (C1, C2) => Color.distance(C1, C2) / maxDist;
-
-                    let colors = {
-                        // Extremes
-                        white: ({ R, G, B, L }) => (false
-                            || (colorDifference([255, 255, 255], [R, G, B]) < 0.05)
-                            || (true
-                                && colors.grey({ R, G, B, S, L })
-                                && (L > 90)
-                            )
-                        ),
-                        light: ({ S, L }) => (false
-                            || (L > 80)
-                            || (S < 15)
-                        ),
-
-                        black: ({ R, G, B, S, L }) => (false
-                            || (colorDifference([0, 0, 0], [R, G, B]) < 0.05)
-                            || (true
-                                && colors.grey({ R, G, B, S })
-                                && (L < 5)
-                            )
-                            || (true
-                                && colors.green({ R, G, B, S })
-                                && (L < 5)
-                            )
-                            || (true
-                                && colors.brown({ S, L })
-                                && (L <= 1)
-                            )
-                        ),
-                        dark: ({ S, L }) => (L < 15),
-
-                        grey: ({ R, G, B, S }) => (false
-                            || (colorDifference([B, R, G].map(C => C.floorToNearest(8)), [R, G, B]) < 0.05)
-                            || (S < 5)
-                        ),
-
-                        // Reds {130°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
-                        red: ({ H, S }) => (true
-                            && (S >= 5)
-                            && (false
-                                || (H > 345)
-                                || (H <= 10)
-                            )
-                        ),
-                        pink: ({ H, S, L }) => (false
-                            || (true
-                                && (S >= 5)
-                                && (H > 290 && H <= 345)
-                            )
-                            || (true
-                                && colors.light({ S, L })
-                                && colors.red({ H, S })
-                            )
-                        ),
-                        orange: ({ H, S }) => (false
-                            || (true
-                                && (S >= 5)
-                                && (H > 10 && H <= 45)
-                            )
-                            || (true
-                                && colors.red({ H, S })
-                                && colors.yellow({ H, S })
-                            )
-                        ),
-                        yellow: ({ H, S }) => (true
-                            && (S >= 5)
-                            && (H > 45 && H <= 60)
-                        ),
-                        brown: ({ H, S, L }) => (true
-                            && (false
-                                || colors.yellow({ H, S })
-                                || colors.orange({ H, S })
-                                || colors.red({ H, S })
-                            )
-                            && (false
-                                || (S > 10 && S <= 30)
-                                || (L > 10 && L <= 30)
-                            )
-                        ),
-
-                        // Greens {110°} → (60° < Hue ≤ 170°)
-                        green: ({ H, S }) => (true
-                            && (S >= 5)
-                            && (H > 60 && H <= 170)
-                        ),
-
-                        // Blues {120°} → (170° < Hue ≤ 290°)
-                        blue: ({ H, S }) => (true
-                            && (S >= 5)
-                            && (H > 170 && H <= 260)
-                        ),
-                        purple: ({ H, S, L }) => (false
-                            || (true
-                                && (S >= 5)
-                                && (H > 260 && H <= 290)
-                            )
-                            || (false
-                                || (true
-                                    && (H >= 245 && H < 290)
-                                    && (L <= 50)
-                                )
-                            )
-                            || (true
-                                && colors.pink({ H, S, L })
-                                && (L < 30)
-                            )
-                        ),
-                    };
-
-                    let name = [];
-
-                    naming:
-                    for(let key in colors) {
-                        let condition = colors[key];
-
-                        if(condition({ H, S, L, R, G, B })) {
-                            name.push(key);
-
-                            if(/^(black|white)$/i.test(key)) {
-                                name = [key];
-
-                                break naming;
-                            }
-                        }
-                    }
-
-                    return name
-                        .sort()
-                        .sort((primary, secondary) => {
-                            return (
-                                /^(light|dark)$/i.test(primary)?
-                                    -1:
-                                /^(grey|brown)$/i.test(primary)?
-                                    +1:
-                                /^(light|dark)$/i.test(secondary)?
-                                    +1:
-                                /^(grey|brown)$/i.test(secondary)?
-                                    -1:
-                                0
-                            )
-                        })
-                        .join(' ')
-
-                        .replace(/light( pink)? red/, 'pink')
-                        .replace(/red orange/, 'orange')
-                        .replace(/light yellow/, 'yellow')
-                        .replace(/orange brown/, 'light brown')
-                        .replace(/blue purple/, 'purple')
-
-                        .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
-                        .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
-                        .replace(/(\w+) (\1)/g, '$1')
-                        .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
-                            if([$1, $2].contains('light', 'dark'))
-                                return $_;
-
-                            let suffix = $1.slice(-1);
-
-                            return $1.slice(0, -1) + ({
-                                d: 'dd',
-                                e: '',
-                            }[suffix] ?? suffix) + 'ish-' + $2;
-                        })
-
-                        .replace(/light$/i, 'white')
-                        .replace(/dark$/i, 'black');
+                    return computed;
                 });
 
-        return '';
+                return computed;
+            }
+    }
+
+    // Retrns a color's name
+        // Color.getName(color:string~Color) → String
+    static getName(color = '#000') {
+        color = Color.destruct(color);
+
+        if(nullish(color))
+            return '';
+
+        // TODO: Add more colors &/ better detection...
+        let { H, S, L, R, G, B } = color;
+        let maxDist = Color.distance([0,0,0],[255,255,255]),
+            colorDifference = (C1, C2) => Color.distance(C1, C2) / maxDist;
+
+        let colors = {
+            // Extremes
+            white: ({ R, G, B, L }) => (false
+                || (colorDifference([255, 255, 255], [R, G, B]) < 0.05)
+                || (true
+                    && colors.grey({ R, G, B, S, L })
+                    && (L > 90)
+                )
+            ),
+            light: ({ S, L }) => (false
+                || (L > 80)
+                || (S < 15)
+            ),
+
+            black: ({ R, G, B, S, L }) => (false
+                || (colorDifference([0, 0, 0], [R, G, B]) < 0.05)
+                || (true
+                    && colors.grey({ R, G, B, S })
+                    && (L < 5)
+                )
+                || (true
+                    && colors.green({ R, G, B, S })
+                    && (L < 5)
+                )
+                || (true
+                    && colors.brown({ S, L })
+                    && (L <= 1)
+                )
+            ),
+            dark: ({ S, L }) => (L < 15),
+
+            grey: ({ R, G, B, S }) => (false
+                || (colorDifference([B, R, G].map(C => C.floorToNearest(8)), [R, G, B]) < 0.05)
+                || (S < 5)
+            ),
+
+            // Reds {130°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
+            red: ({ H, S }) => (true
+                && (S >= 5)
+                && (false
+                    || (H > 345)
+                    || (H <= 10)
+                )
+            ),
+            pink: ({ H, S, L }) => (false
+                || (true
+                    && (S >= 5)
+                    && (H > 290 && H <= 345)
+                )
+                || (true
+                    && colors.light({ S, L })
+                    && colors.red({ H, S })
+                )
+            ),
+            orange: ({ H, S }) => (false
+                || (true
+                    && (S >= 5)
+                    && (H > 10 && H <= 45)
+                )
+                || (true
+                    && colors.red({ H, S })
+                    && colors.yellow({ H, S })
+                )
+            ),
+            yellow: ({ H, S }) => (true
+                && (S >= 5)
+                && (H > 45 && H <= 60)
+            ),
+            brown: ({ H, S, L }) => (true
+                && (false
+                    || colors.yellow({ H, S })
+                    || colors.orange({ H, S })
+                    || colors.red({ H, S })
+                )
+                && (false
+                    || (S > 10 && S <= 30)
+                    || (L > 10 && L <= 30)
+                )
+            ),
+
+            // Greens {110°} → (60° < Hue ≤ 170°)
+            green: ({ H, S }) => (true
+                && (S >= 5)
+                && (H > 60 && H <= 170)
+            ),
+
+            // Blues {120°} → (170° < Hue ≤ 290°)
+            blue: ({ H, S }) => (true
+                && (S >= 5)
+                && (H > 170 && H <= 260)
+            ),
+            purple: ({ H, S, L }) => (false
+                || (true
+                    && (S >= 5)
+                    && (H > 260 && H <= 290)
+                )
+                || (false
+                    || (true
+                        && (H >= 245 && H < 290)
+                        && (L <= 50)
+                    )
+                )
+                || (true
+                    && colors.pink({ H, S, L })
+                    && (L < 30)
+                )
+            ),
+        };
+
+        let name = [];
+
+        naming:
+        for(let key in colors) {
+            let condition = colors[key];
+
+            if(condition({ H, S, L, R, G, B })) {
+                name.push(key);
+
+                if(/^(black|white)$/i.test(key)) {
+                    name = [key];
+
+                    break naming;
+                }
+            }
+        }
+
+        return name
+            .sort()
+            .sort((primary, secondary) => {
+                return (
+                    /^(light|dark)$/i.test(primary)?
+                        -1:
+                    /^(grey|brown)$/i.test(primary)?
+                        +1:
+                    /^(light|dark)$/i.test(secondary)?
+                        +1:
+                    /^(grey|brown)$/i.test(secondary)?
+                        -1:
+                    0
+                )
+            })
+            .join(' ')
+
+            .replace(/light( pink)? red/, 'pink')
+            .replace(/red orange/, 'orange')
+            .replace(/light yellow/, 'yellow')
+            .replace(/orange brown/, 'light brown')
+            .replace(/dark orange/, 'brown')
+            .replace(/blue purple/, 'purple')
+
+            .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
+            .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
+            .replace(/(\w+) (\1)/g, '$1')
+            .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
+                if([$1, $2].contains('light', 'dark'))
+                    return $_;
+
+                let suffix = $1.slice(-1);
+
+                return $1.slice(0, -1) + ({
+                    d: 'dd',
+                    e: '',
+                }[suffix] ?? suffix) + 'ish-' + $2;
+            })
+
+            .replace(/light$/i, 'white')
+            .replace(/dark$/i, 'black');
     }
 }
 
@@ -1971,7 +1982,7 @@ function GetChat(lines = 250, keepEmotes = false) {
             mentions = $('.chatter-name, strong', true, bullet).map(element => element.textContent.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
             subject = (text =>
                 /\braid/i.test(text)?                'raid': // Incoming raid
-                /\bredeem/i.test(text)?              'coin': // Redeeming (spending) channel points
+                /\b(redeem|contribut)/i.test(text)?  'coin': // Redeeming (spending) channel points
                 /\bcontinu/i.test(text)?             'keep': // Continuing a gifted subscription
                 /\bgift/i.test(text)?                'gift': // Gifting a subscription
                 /\b(re)?subs|\bconvert/i.test(text)? 'dues': // New subscription, continued subscription, or converted subscription
@@ -2202,8 +2213,6 @@ function parseCoin(amount = '') {
             case 'ko': { booklet = '_ 천 백만' } break;
 
             case 'pl': { booklet = '_ TYS MIL' } break;
-
-            case 'pt': { booklet = '_ MIL' } break;
 
             case 'ru': { booklet = '_ ТЫС МИЛ' } break;
 
@@ -2589,7 +2598,6 @@ let nth = (n, s = 'line-position') => {
                     case 'nl': return 'e in de rij';
                     case 'no': return ' i rekken';
                     case 'pl': return ' w kolejce';
-                    case 'pt': return ' na linha';
                     case 'ro': return ' pe linie';
                     case 'ru': return ' в строке';
                     case 'sk': return ' v poradí';
@@ -2645,8 +2653,7 @@ let nth = (n, s = 'line-position') => {
             + c(s);
         } break;
 
-        case 'es':
-        case 'pt': {
+        case 'es': {
             // 1° 2° 3° 4° ... 11° 12° 13° ... 21° 22° 23°
 
             n = n
@@ -2964,6 +2971,7 @@ try {
                 let BroadcastSettings = {},
                     Channel = {},
                     Badges = {},
+                    Points = {},
                     Stream = {},
                     User = {},
                     Game = {},
@@ -3008,6 +3016,19 @@ try {
                                 meta: badge,
                             });
                         }
+                        else if(/^CommunityPoints(Automatic|Custom)Reward:([^$]+)/.test(key)) {
+                            let [type, id] = [R.$1, R.$2].map(s => s.toLowerCase());
+                            let store = Points[type] ??= {};
+
+                            if(type == 'automatic') {
+                                let [channel, name] = id.split(':', 2);
+
+                                if(STREAMER.sole == parseInt(channel))
+                                    store[name] = data[key];
+                            } else {
+                                store[id] = data[key];
+                            }
+                        }
 
                         JUMPED_FRAMES = true;
                     }
@@ -3036,6 +3057,7 @@ try {
                                             stream.game = Game[stream.game?.__ref];
                                             stream.tags = stream.tags?.map?.(({ __ref }) => Tags[__ref]?.localizedName);
 
+                                            // Preview images
                                             let previews = {};
                                             for(let key in stream)
                                                 if(/^previewImageURL\(([^]+)\)\s*$/i.test(key)) {
@@ -3048,6 +3070,7 @@ try {
 
                                             stream.previewImageURL = previews;
 
+                                            // Badges
                                             let badges = { ...Badges };
                                             for(let badge in badges) {
                                                 badge = badges[badge];
@@ -3069,6 +3092,15 @@ try {
                                             }
 
                                             stream.badges = badges;
+
+                                            // Community Points
+                                            if(STREAMER?.sole == stream.broadcaster.id);
+                                                stream.points = {
+                                                    ...Points,
+                                                    get balance() {
+                                                        return Channel.self?.communityPoints?.balance
+                                                    },
+                                                };
 
                                             return stream;
                                         }
@@ -3294,7 +3326,7 @@ try {
                 icon: 'download',
                 shortcut: 'ctrl+s',
                 action: async event => {
-                    await alert.timed('Saving page...', 3_000);
+                    await alert.timed('Getting ready to save page...', 7_000);
 
                     let DOM = document.cloneNode(true);
                     let type = DOM.contentType,
@@ -3928,6 +3960,7 @@ let Initialize = async(START_OVER = false) => {
      * poll:number*      - GETTER: how many viewers are watching the channel
      * rank:number*      - GETTER: what is the user's assumed rank--based on the amount of channel points they possess
      * redo:boolean*     - GETTER: is the channel streaming a rerun (VOD)
+     * shop:array*       - GETTER: returns a list (sorted, ascending price) of the channel's rewards
      * sole:number       - GETTER: the channel's ID
      * tags:array*       - GETTER: tags of the current stream
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
@@ -3952,7 +3985,7 @@ let Initialize = async(START_OVER = false) => {
             let balance = $('[data-test-selector="balance-string"i]'),
                 points = parseCoin(balance?.textContent);
 
-            return points
+            return (STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance) || points
         },
 
         get coms() {
@@ -4090,14 +4123,14 @@ let Initialize = async(START_OVER = false) => {
             return STREAMER.__done__ ?? (async() => {
                 let done;
 
-                await LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
+                await LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
                     let { name } = STREAMER,
                         [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                        allRewards = $('[data-test-selector="cost"i]', true);
+                        allRewards = (await STREAMER.shop).filter(reward => reward.available);
 
                     notEarned = (
                         (allRewards?.length)?
-                            allRewards.filter(amount => parseCoin(amount?.textContent) > STREAMER.coin).length:
+                            allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
                         (notEarned > -Infinity)?
                             notEarned:
                         -1
@@ -4268,6 +4301,49 @@ let Initialize = async(START_OVER = false) => {
 
         get redo() {
             return /^rerun$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? "")
+        },
+
+        __shop__: [],
+
+        get shop() {
+            let shop = STREAMER.jump?.[STREAMER.name.toLowerCase()]?.stream?.points;
+
+            if(nullish(shop))
+                return STREAMER.__shop__;
+
+            let { automatic = {}, custom = {} } = shop,
+                inventory = [];
+
+            let __ = { ...automatic, ...custom };
+            for(let _ in __) {
+                _ = __[_];
+
+                inventory.push({
+                    backgroundColor: (_.backgroundColor || _.defaultBackgroundColor || '#451093'),
+                    cost: (_.cost || _.defaultCost || _.minimumCost),
+                    id: _.id,
+                    image: (_.image || _.defaultImage),
+                    type: (_.type || "CUSTOM").toUpperCase(),
+
+                    enabled: _.isEnabled,
+                    available: parseBool(_.isInStock),
+                    count: parseInt(_.redemptionsRedeemedCurrentStream) | 0,
+                    hidden: (STREAMER.paid && _.isHiddenForSubs),
+                    maximum: {
+                        global: (_.maxPerStreamSetting?.maxPerStream * +!!_.maxPerStreamSetting?.isEnabled) | 0,
+                        user: (_.maxPerUserSetting?.maxPerStream * +!!_.maxPerUserSetting?.isEnabled) | 0,
+                    },
+                    paused: parseBool(_.isPaused),
+                    premium: parseBool(_.isSubOnly),
+                    prompt: (_.prompt || ""),
+                    skips: parseBool(_.shouldRedemptionsSkipRequestQueue),
+                    strict: parseBool(_.isUserInputRequired),
+                    title: (_.title || ""),
+                    updated: (_.updatedForIndicatorAt || _.globallyUpdatedForIndicatorAt),
+                });
+            }
+
+            return inventory.sort((a, b) => a.cost - b.cost)
         },
 
         get sole() {
@@ -5627,7 +5703,7 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('claim_loot');
     }
 
-    /*** Claim Prime
+    /*** Claim Prime - Still requires trusted interaction
      *       _____ _       _             _____      _
      *      / ____| |     (_)           |  __ \    (_)
      *     | |    | | __ _ _ _ __ ___   | |__) | __ _ _ __ ___   ___
@@ -7492,7 +7568,9 @@ let Initialize = async(START_OVER = false) => {
                 userlevel: 'everyone',
                 sender: USERNAME,
                 touser: USERNAME,
-                urlfetch: `External website`,
+
+                // Either...
+                customapi: `*Custom API*`,
 
                 // Fetched...
                 ...variables
@@ -7510,6 +7588,18 @@ let Initialize = async(START_OVER = false) => {
         ?.replace(/^\/(?:\w\S+)\s*/, '');
     }
 
+    function decodeMD(string = '') {
+        return string
+            .replace(/(`{3})((?:[\w\-]+\s)?)([^]+?)\1/g, '<code type="$2">$3</code>')
+            .replace(/(`{1})([^]+?)\1/g, '<code>$2</code>')
+            .replace(/([\*_]{3})([^]+?)\1/g, '<strong><em>$2</em></strong>')
+            .replace(/([\*_]{2})([^]+?)\1/g, '<strong>$2</strong>')
+            .replace(/([\*_]{1})([^]+?)\1/g, '<em>$2</em>')
+            .replace(/!\[([^\[\]]+?)\]\(([^\(\)]+?)\)/g, '<img alt="$1" src="$2"/>')
+            .replace(/\[([^\[\]]+?)\]\(([^\(\)]+?)\)/g, '<a href="$2" target="_blank">$1</a>')
+            .replace(/([~]{1})([^]+?)\1/g, '<span style="text-decoration:1px line-through!important">$2</span>');
+    }
+
     Handlers.parse_commands = async() => {
         let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *', true);
 
@@ -7524,9 +7614,9 @@ let Initialize = async(START_OVER = false) => {
                             string;
 
                         if(parseBool(Settings.parse_commands__create_links) && defined(href))
-                            string = `<a style="opacity:${ 2**-!enabled }" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank title="${ encodeHTML(reply) }">${ encodeHTML($1) }</a>`;
+                            string = `<a style="opacity:${ 2**-!enabled }" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</a>`;
                         else
-                            string = `<span style="text-decoration:2px solid underline;opacity:${ 2**-!enabled }" title="${ encodeHTML(reply) }">${ encodeHTML($1) }</span>`;
+                            string = `<span style="text-decoration:2px solid underline;opacity:${ 2**-!enabled }" title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</span>`;
 
                         return `<span tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
@@ -7620,13 +7710,38 @@ let Initialize = async(START_OVER = false) => {
                 return RemoveCustomCSSBlock(CSSBlockName);
             }
 
-            value = value.slice(1);
+            value = value.slice(1).toLowerCase();
 
             let listable = (AvailableCommands ??= await STREAMER.coms)
-                .sort((a, b) => a.command.contains(value) && !b.command.contains(value)? -1: b.command.contains(value) && !a.command.contains(value)? +1: 0)
-                .slice(0, 60)
-                .map(data => ({ ...data, textDistance: levenshtein(value.toLowerCase(), data.command.toLowerCase()) }))
-                .sort((a, b) => a.textDistance < b.textDistance? -1: +1)
+                .sort((a, b) => (
+                        (false
+                            || (true
+                                && a.command.toLowerCase().contains(value)
+                                && !b.command.toLowerCase().contains(value)
+                            )
+                            || (true
+                                && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
+                                && nullish(b.aliases.find(aka => aka.toLowerCase().contains(value)))
+                            )
+                        )?
+                            -1:
+                        (false
+                            || (true
+                                && b.command.toLowerCase().contains(value)
+                                && !a.command.toLowerCase().contains(value)
+                            )
+                            || (true
+                                && defined(b.aliases.find(aka => aka.toLowerCase().contains(value)))
+                                && nullish(a.aliases.find(aka => aka.toLowerCase().contains(value)))
+                            )
+                        )?
+                            +1:
+                        0
+                    )
+                )
+                .slice(0, 30)
+                .map(data => ({ ...data, textDistance: Math.min(...[data.command, ...data.aliases].map(string => levenshtein(value, string.toLowerCase()))) }))
+                .sort((a, b) => a.textDistance - b.textDistance)
                 .slice(0, 5);
 
             tray.classList.add('tt-chat-input-tray__open');
@@ -7666,7 +7781,7 @@ let Initialize = async(START_OVER = false) => {
                                         //     'insert selected command'
                                         // ),
                                         ...listable.map(({ aliases, command, reply, availability, enabled, origin, variables, textDistance }, index, array) => {
-                                            reply = parseCommands(reply, variables);
+                                            reply = decodeMD(parseCommands(reply, variables));
 
                                             let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {});
 
@@ -7708,9 +7823,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                                 `!${ command }`,
 
-                                                                f('span.tt-hide-inline-text-overflow', { style: `color:var(--color-text-alt-2); padding-right:0 0.75rem 0 0; position:absolute; right:0; max-width:50%`, title: reply },
-                                                                    reply
-                                                                )
+                                                                f('span.tt-hide-inline-text-overflow', { style: `color:var(--color-text-alt-2); padding:0 0.75rem 0 0; position:absolute; right:0; max-width:50%`, title: reply, innerHTML: reply })
                                                             )
                                                         )
                                                     )
@@ -8009,7 +8122,7 @@ let Initialize = async(START_OVER = false) => {
         let online = [STREAMER, ...STREAMERS].filter(isLive),
             container = (null
                 ?? $('#tt-greedy-raiding--container')
-                ?? furnish('div#tt-greedy-raiding--container', { style: 'display:none!important' })
+                ?? furnish('div#tt-greedy-raiding--container', { style: 'height:0!important; width:0!important; visibility:hidden!important; position:absolute!important; top:-100vh!important; left:-100vw!important; /*display:none!important*/' })
             );
 
         for(let channel of online) {
@@ -8444,6 +8557,7 @@ let Initialize = async(START_OVER = false) => {
                         day = now.getDate();
 
                     hour = parseInt(hour);
+                    hour -= (/^a/i.test(meridiem) && hour > 11? 12: 0);
                     hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
 
                     timezone ||= (offset.length? 'GMT': '');
@@ -9107,7 +9221,6 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let pointWatcherCounter = 0,
-        balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button'),
         hasPointsEnabled = false;
 
     Handlers.point_watcher_placement = async() => {
@@ -9120,10 +9233,10 @@ let Initialize = async(START_OVER = false) => {
         if(++pointWatcherCounter % 240) {
             pointWatcherCounter = 0;
 
-            LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
+            LoadCache(['ChannelPoints'], async({ ChannelPoints }) => {
                 let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
-                    allRewards = $('[data-test-selector="cost"i]', true),
-                    balance = $('[data-test-selector="balance-string"i]');
+                    allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
+                    balance = STREAMER.coin;
 
                 hasPointsEnabled ||= defined(balance);
 
@@ -9132,7 +9245,7 @@ let Initialize = async(START_OVER = false) => {
                 face = (STREAMER?.face ?? face ?? '');
                 notEarned = (
                     (allRewards?.length)?
-                        allRewards.filter(amount => parseCoin(amount?.textContent) > STREAMER.coin).length:
+                        allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
                     (notEarned > -Infinity)?
                         notEarned:
                     -1
@@ -9140,7 +9253,7 @@ let Initialize = async(START_OVER = false) => {
                 pointsToEarnNext = (
                     (allRewards?.length)?
                         allRewards
-                            .map(amount => (parseCoin(amount?.textContent) > STREAMER.coin? parseCoin(amount?.textContent) - STREAMER.coin: 0))
+                            .map(reward => (reward.cost > STREAMER.coin? reward.cost - STREAMER.coin: 0))
                             .sort((x, y) => (x > y? -1: +1))
                             .filter(x => x > 0)
                             .pop():
@@ -9188,15 +9301,15 @@ let Initialize = async(START_OVER = false) => {
         game = game?.trim();
 
         // Update the display
-        LoadCache(['ChannelPoints'], ({ ChannelPoints = {} }) => {
+        LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
-                allRewards = $('[data-test-selector="cost"i]', true),
+                allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
             notEarned = (
                 (allRewards?.length)?
-                    allRewards.filter(amount => parseCoin(amount?.textContent) > STREAMER.coin).length:
+                    allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
                 (notEarned > -Infinity)?
                     notEarned:
                 -1
@@ -9204,7 +9317,7 @@ let Initialize = async(START_OVER = false) => {
             pointsToEarnNext = (
                 (allRewards?.length)?
                     allRewards
-                        .map(amount => (parseCoin(amount?.textContent) > STREAMER.coin? parseCoin(amount?.textContent) - STREAMER.coin: 0))
+                        .map(({ cost = 0 }) => (cost > STREAMER.coin? cost - STREAMER.coin: 0))
                         .sort((x, y) => (x > y? -1: +1))
                         .filter(x => x > 0)
                         .pop():
@@ -9242,12 +9355,60 @@ let Initialize = async(START_OVER = false) => {
 
     __PointWatcherPlacement__:
     if(parseBool(Settings.point_watcher_placement)) {
-        RegisterJob('point_watcher_placement');
+        until(() => $('[data-test-selector="balance-string"i]')?.closest('button'))
+            .then(async balanceButton => {
+                if(defined(balanceButton))
+                    RegisterJob('point_watcher_placement');
 
-        if(defined(balanceButton)) {
-            balanceButton.click();
-            setTimeout(() => balanceButton.click(), 300);
-        }
+                let shop = (await STREAMER.shop);
+
+                if(shop.length < 1)
+                    until(() => $('[data-test-selector="balance-string"i]'))
+                        .then(balance => balance.closest('button'))
+                        .then(button => {
+                            button.click();
+
+                            for(let reward of $('[class*="reward"i][class*="item"i]', true)) {
+                                let [image, cost, title] = $('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', true, reward),
+                                    backgroundColor = (false
+                                        || $('button [style]')
+                                            ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
+                                            ?.getPropertyValue?.('background-color')
+                                        || '#9147FF'
+                                    ).toUpperCase();
+
+                                image = image.src;
+                                cost = parseCoin(cost.textContent) | 0;
+                                title = title.textContent.trim() || "";
+
+                                STREAMER.__shop__.push({
+                                    cost, image, title,
+
+                                    backgroundColor: Color.destruct(backgroundColor).RGB,
+                                    id: UUID.from([image, title, cost].join('|$|'), true).value,
+                                    type: "UNKNOWN",
+
+                                    enabled: true,
+                                    available: true,
+                                    count: 0,
+                                    hidden: false,
+                                    maximum: {
+                                        global: 0,
+                                        user: 0,
+                                    },
+                                    paused: false,
+                                    premium: false,
+                                    prompt: "",
+                                    skips: false,
+                                    strict: false,
+                                    updated: (new Date).toJSON(),
+                                });
+                            }
+
+                            until(() => STREAMER.__shop__.length > 1? true: null)
+                                .then(() => button.click());
+                        });
+            });
     }
 
     /*** Stream Preview
@@ -10014,7 +10175,7 @@ let Initialize = async(START_OVER = false) => {
             `;
     }
 
-    __GET_UPDATE_NFO__: {
+    __GET_UPDATE_INFO__: {
         // Getting the version information
         setTimeout(() => {
             let FETCHED_DATA = { wasFetched: false };
@@ -10115,7 +10276,7 @@ let Initialize = async(START_OVER = false) => {
 let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE,
-    NOTIFIED_ABOUT_AD;
+    VIDEO_AD_COUNTDOWN;
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version === version;
@@ -10156,12 +10317,16 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             )
         );
 
-        if(!ready) {
-            if(defined($('[data-a-target*="ad-countdown"i]')) && nullish(NOTIFIED_ABOUT_AD))
-                alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, NOTIFIED_ABOUT_AD = 5_000);
+        if(!ready)
+            return until(() => $('[data-a-target*="ad-countdown"i]'))
+                .then(countdown => {
+                    if(defined(VIDEO_AD_COUNTDOWN))
+                        return until.void;
 
-            return;
-        }
+                    VIDEO_AD_COUNTDOWN = parseTime(/(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups?.time) || 15_000;
+
+                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN);
+                });
 
         LOG("Main container ready");
 
@@ -10179,7 +10344,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     // TTV Tools has the max Timer amount to initilize correctly...
                     let REINIT_JOBS =
                     setTimeout(() => {
-                        let NOT_LOADED_CORRECTLY = [],
+                        let NOT_LOADED_CORRECTLY = [null],
                             ALL_LOADED_CORRECTLY = (true
                                 // Lurking
                                 &&  parseBool(
@@ -10255,7 +10420,8 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                             return location.reload();
                         else
                             for(let job of NOT_LOADED_CORRECTLY)
-                                RestartJob(job, 'failure_to_activate');
+                                if(defined(job))
+                                    RestartJob(job, 'failure_to_activate');
 
                         // Failed to activate job at...
                         // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
