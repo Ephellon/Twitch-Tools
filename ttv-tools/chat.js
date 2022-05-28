@@ -1170,16 +1170,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                         if(nullish(STREAMER))
                             return;
 
-                        let channel = STREAMER.name?.toLowerCase();
+                        let channel = (STREAMER.name || "~Anonymous");
 
                         return (true
+                            && (channel.replace(/^[^\/]/, '/$&').toLowerCase() == name.replace(/^[^\/]/, '/$&').toLowerCase())
                             && (false
-                                || channel == name.toLowerCase()
-                            )
-                            && (false
-                                || (('@' + author) == user? reason = 'channel user': false)
-                                || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                                || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                                || (author.replace(/^[^@]/, '@$&').toLowerCase() == user?.replace(/^[^@]/, '@$&')?.toLowerCase()? reason = 'channel user': false)
+                                || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? reason = 'channel badge': false)
+                                || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? reason = 'channel emote': false)
                                 || (RegExp(text, 'i').test(message)? reason = 'channel text': false)
                             )
                         )
@@ -1194,7 +1192,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(hidden || mentions.contains(USERNAME))
                     continue;
 
-                // LOG(`Censoring message because the ${ reason } matches`, line);
+                LOG(`Censoring message because the ${ reason } matches`, line);
 
                 element.setAttribute('tt-hidden-message', censor);
             }

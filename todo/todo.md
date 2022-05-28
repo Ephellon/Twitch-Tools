@@ -33,6 +33,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.13)
+- Fixed Volume Release logic
+- Fixed previewing issue
+- Fixed issue with expanded channels
+
 > [`5.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.12)
 - Added `STREAMER.shop`
 - Adjusted STREAMER.coin logic

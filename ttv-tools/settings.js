@@ -1197,12 +1197,20 @@ $('#sync-settings--upload').onmouseup = async event => {
             PostSyncStatus('Uploading...');
             currentTarget.classList.add('spin');
 
+            let CloudExport = {
+                ...SETTINGS,
+                syncDate: new Date().toJSON()
+            };
+
+            for(let key of 'LIVE_REMINDERS_SIZE LIVE_REMINDERS RaidEvents SyncSettings'.split(' '))
+                delete CloudExport[key];
+
             let id = parseURL(getURL('')).host;
             let url = parseURL(`https://www.tinyurl.com/api-create.php`)
                 .pushToSearch({
                     url: encodeURIComponent(
                         parseURL(`json://${ id }.settings.js/`)
-                            .pushToSearch({ json: btoa(escape(JSON.stringify({ ...SETTINGS, SyncSettings: null, syncDate: new Date().toJSON() }))) })
+                            .pushToSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
                             .href
                     )
                 });

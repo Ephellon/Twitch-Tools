@@ -289,1600 +289,6 @@ function parseBool(value = null) {
     }
 }
 
-// Encodes HTML to be HTML-embed friendly
-    // encodeHTML([string:string]) → String
-function encodeHTML(string = '') {
-    for(let { char, html, dec, hex } of decodeHTML.table)
-        string = string.replaceAll(char, html);
-
-    return string;
-}
-
-// Decodes HTML-embedded text
-    // decodeHTML([string:string]) → String
-function decodeHTML(string = '') {
-    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contians($0))?.char ?? $0);
-}
-
-decodeHTML.table ??= [
-    // Punctuation
-    {
-        "char": "&",
-        "html": "&amp;",
-        "dec": "&#38;",
-        "hex": "&#x26;"
-    },
-    {
-        "char": '"',
-        "html": "&quot;",
-        "dec": "&#34;",
-        "hex": "&#x22;"
-    },
-    {
-        "char": "<",
-        "html": "&lt;",
-        "dec": "&#60;",
-        "hex": "&#x3C;"
-    },
-    {
-        "char": ">",
-        "html": "&gt;",
-        "dec": "&#62;",
-        "hex": "&#x3E;"
-    },
-    {
-        "char": "‘",
-        "html": "&lsquo;",
-        "dec": "&#8216;",
-        "hex": "&#x2018;"
-    },
-    {
-        "char": "’",
-        "html": "&rsquo;",
-        "dec": "&#8217;",
-        "hex": "&#x2019;"
-    },
-    {
-        "char": "“",
-        "html": "&ldquo;",
-        "dec": "&#8220;",
-        "hex": "&#x201C;"
-    },
-    {
-        "char": "”",
-        "html": "&rdquo;",
-        "dec": "&#8221;",
-        "hex": "&#x201D;"
-    },
-    {
-        "char": "‚",
-        "html": "&sbquo;",
-        "dec": "&#8218;",
-        "hex": "&#x201A;"
-    },
-    {
-        "char": "„",
-        "html": "&bdquo;",
-        "dec": "&#8222;",
-        "hex": "&#x201E;"
-    },
-    {
-        "char": "′",
-        "html": "&prime;",
-        "dec": "&#8242;",
-        "hex": "&#x2032;"
-    },
-    {
-        "char": "″",
-        "html": "&Prime;",
-        "dec": "&#8243;",
-        "hex": "&#x2033;"
-    },
-    {
-        "char": " ",
-        "html": "&nbsp;",
-        "dec": "&#160;",
-        "hex": "&#xA0;"
-    },
-    {
-        "char": "–",
-        "html": "&ndash;",
-        "dec": "&#8211;",
-        "hex": "&#x2013;"
-    },
-    {
-        "char": "—",
-        "html": "&mdash;",
-        "dec": "&#8212;",
-        "hex": "&#x2014;"
-    },
-    {
-        "char": " ",
-        "html": "&ensp;",
-        "dec": "&#8194;",
-        "hex": "&#x2002;"
-    },
-    {
-        "char": " ",
-        "html": "&emsp;",
-        "dec": "&#8195;",
-        "hex": "&#x2003;"
-    },
-    {
-        "char": " ",
-        "html": "&thinsp;",
-        "dec": "&#8201;",
-        "hex": "&#x2009;"
-    },
-    {
-        "char": "¦",
-        "html": "&brvbar;",
-        "dec": "&#166;",
-        "hex": "&#xA6;"
-    },
-    {
-        "char": "•",
-        "html": "&bull;",
-        "dec": "&#8226;",
-        "hex": "&#x2022;"
-    },
-    {
-        "char": "…",
-        "html": "&hellip;",
-        "dec": "&#8230;",
-        "hex": "&#x2026;"
-    },
-    {
-        "char": "ˆ",
-        "html": "&circ;",
-        "dec": "&#710;",
-        "hex": "&#x2C6;"
-    },
-    {
-        "char": "¨",
-        "html": "&uml;",
-        "dec": "&#168;",
-        "hex": "&#xA8;"
-    },
-    {
-        "char": "˜",
-        "html": "&tilde;",
-        "dec": "&#732;",
-        "hex": "&#x2DC;"
-    },
-    {
-        "char": "‹",
-        "html": "&lsaquo;",
-        "dec": "&#8249;",
-        "hex": "&#x2039;"
-    },
-    {
-        "char": "›",
-        "html": "&rsaquo;",
-        "dec": "&#8250;",
-        "hex": "&#x203A;"
-    },
-    {
-        "char": "«",
-        "html": "&laquo;",
-        "dec": "&#171;",
-        "hex": "&#xAB;"
-    },
-    {
-        "char": "»",
-        "html": "&raquo;",
-        "dec": "&#187;",
-        "hex": "&#xBB;"
-    },
-    {
-        "char": "‾",
-        "html": "&oline;",
-        "dec": "&#8254;",
-        "hex": "&#x203E;"
-    },
-    {
-        "char": "¿",
-        "html": "&iquest;",
-        "dec": "&#191;",
-        "hex": "&#xBF;"
-    },
-    {
-        "char": "¡",
-        "html": "&iexcl;",
-        "dec": "&#161;",
-        "hex": "&#xA1;"
-    },
-
-    // Latin
-    {
-        "char": "À",
-        "html": "&Agrave;",
-        "dec": "&#192;",
-        "hex": "&#xC0;"
-    },
-    {
-        "char": "Á",
-        "html": "&Aacute;",
-        "dec": "&#193;",
-        "hex": "&#xC1;"
-    },
-    {
-        "char": "Â",
-        "html": "&Acirc;",
-        "dec": "&#194;",
-        "hex": "&#xC2;"
-    },
-    {
-        "char": "Ã",
-        "html": "&Atilde;",
-        "dec": "&#195;",
-        "hex": "&#xC3;"
-    },
-    {
-        "char": "Ä",
-        "html": "&Auml;",
-        "dec": "&#196;",
-        "hex": "&#xC4;"
-    },
-    {
-        "char": "Å",
-        "html": "&Aring;",
-        "dec": "&#197;",
-        "hex": "&#xC5;"
-    },
-    {
-        "char": "Æ",
-        "html": "&AElig;",
-        "dec": "&#198;",
-        "hex": "&#xC6;"
-    },
-    {
-        "char": "Ç",
-        "html": "&Ccedil;",
-        "dec": "&#199;",
-        "hex": "&#xC7;"
-    },
-    {
-        "char": "È",
-        "html": "&Egrave;",
-        "dec": "&#200;",
-        "hex": "&#xC8;"
-    },
-    {
-        "char": "É",
-        "html": "&Eacute;",
-        "dec": "&#201;",
-        "hex": "&#xC9;"
-    },
-    {
-        "char": "Ê",
-        "html": "&Ecirc;",
-        "dec": "&#202;",
-        "hex": "&#xCA;"
-    },
-    {
-        "char": "Ë",
-        "html": "&Euml;",
-        "dec": "&#203;",
-        "hex": "&#xCB;"
-    },
-    {
-        "char": "Ì",
-        "html": "&Igrave;",
-        "dec": "&#204;",
-        "hex": "&#xCC;"
-    },
-    {
-        "char": "Í",
-        "html": "&Iacute;",
-        "dec": "&#205;",
-        "hex": "&#xCD;"
-    },
-    {
-        "char": "Î",
-        "html": "&Icirc;",
-        "dec": "&#206;",
-        "hex": "&#xCE;"
-    },
-    {
-        "char": "Ï",
-        "html": "&Iuml;",
-        "dec": "&#207;",
-        "hex": "&#xCF;"
-    },
-    {
-        "char": "Ð",
-        "html": "&ETH;",
-        "dec": "&#208;",
-        "hex": "&#xD0;"
-    },
-    {
-        "char": "Ñ",
-        "html": "&Ntilde;",
-        "dec": "&#209;",
-        "hex": "&#xD1;"
-    },
-    {
-        "char": "Ò",
-        "html": "&Ograve;",
-        "dec": "&#210;",
-        "hex": "&#xD2;"
-    },
-    {
-        "char": "Ó",
-        "html": "&Oacute;",
-        "dec": "&#211;",
-        "hex": "&#xD3;"
-    },
-    {
-        "char": "Ô",
-        "html": "&Ocirc;",
-        "dec": "&#212;",
-        "hex": "&#xD4;"
-    },
-    {
-        "char": "Õ",
-        "html": "&Otilde;",
-        "dec": "&#213;",
-        "hex": "&#xD5;"
-    },
-    {
-        "char": "Ö",
-        "html": "&Ouml;",
-        "dec": "&#214;",
-        "hex": "&#xD6;"
-    },
-    {
-        "char": "Ø",
-        "html": "&Oslash;",
-        "dec": "&#216;",
-        "hex": "&#xD8;"
-    },
-    {
-        "char": "Œ",
-        "html": "&OElig;",
-        "dec": "&#338;",
-        "hex": "&#x152;"
-    },
-    {
-        "char": "Š",
-        "html": "&Scaron;",
-        "dec": "&#352;",
-        "hex": "&#x160;"
-    },
-    {
-        "char": "Ù",
-        "html": "&Ugrave;",
-        "dec": "&#217;",
-        "hex": "&#xD9;"
-    },
-    {
-        "char": "Ú",
-        "html": "&Uacute;",
-        "dec": "&#218;",
-        "hex": "&#xDA;"
-    },
-    {
-        "char": "Û",
-        "html": "&Ucirc;",
-        "dec": "&#219;",
-        "hex": "&#xDB;"
-    },
-    {
-        "char": "Ü",
-        "html": "&Uuml;",
-        "dec": "&#220;",
-        "hex": "&#xDC;"
-    },
-    {
-        "char": "Ý",
-        "html": "&Yacute;",
-        "dec": "&#221;",
-        "hex": "&#xDD;"
-    },
-    {
-        "char": "Þ",
-        "html": "&THORN;",
-        "dec": "&#222;",
-        "hex": "&#xDE;"
-    },
-    {
-        "char": "ß",
-        "html": "&szlig;",
-        "dec": "&#223;",
-        "hex": "&#xDF;"
-    },
-    {
-        "char": "à",
-        "html": "&agrave;",
-        "dec": "&#224;",
-        "hex": "&#xE0;"
-    },
-    {
-        "char": "á",
-        "html": "&aacute;",
-        "dec": "&#225;",
-        "hex": "&#xE1;"
-    },
-    {
-        "char": "â",
-        "html": "&acirc;",
-        "dec": "&#226;",
-        "hex": "&#xE2;"
-    },
-    {
-        "char": "ã",
-        "html": "&atilde;",
-        "dec": "&#227;",
-        "hex": "&#xE3;"
-    },
-    {
-        "char": "ä",
-        "html": "&auml;",
-        "dec": "&#228;",
-        "hex": "&#xE4;"
-    },
-    {
-        "char": "å",
-        "html": "&aring;",
-        "dec": "&#229;",
-        "hex": "&#xE5;"
-    },
-    {
-        "char": "æ",
-        "html": "&aelig;",
-        "dec": "&#230;",
-        "hex": "&#xE6;"
-    },
-    {
-        "char": "ç",
-        "html": "&ccedil;",
-        "dec": "&#231;",
-        "hex": "&#xE7;"
-    },
-    {
-        "char": "è",
-        "html": "&egrave;",
-        "dec": "&#232;",
-        "hex": "&#xE8;"
-    },
-    {
-        "char": "é",
-        "html": "&eacute;",
-        "dec": "&#233;",
-        "hex": "&#xE9;"
-    },
-    {
-        "char": "ê",
-        "html": "&ecirc;",
-        "dec": "&#234;",
-        "hex": "&#xEA;"
-    },
-    {
-        "char": "ë",
-        "html": "&euml;",
-        "dec": "&#235;",
-        "hex": "&#xEB;"
-    },
-    {
-        "char": "ì",
-        "html": "&igrave;",
-        "dec": "&#236;",
-        "hex": "&#xEC;"
-    },
-    {
-        "char": "í",
-        "html": "&iacute;",
-        "dec": "&#237;",
-        "hex": "&#xED;"
-    },
-    {
-        "char": "î",
-        "html": "&icirc;",
-        "dec": "&#238;",
-        "hex": "&#xEE;"
-    },
-    {
-        "char": "ï",
-        "html": "&iuml;",
-        "dec": "&#239;",
-        "hex": "&#xEF;"
-    },
-    {
-        "char": "ð",
-        "html": "&eth;",
-        "dec": "&#240;",
-        "hex": "&#xF0;"
-    },
-    {
-        "char": "ñ",
-        "html": "&ntilde;",
-        "dec": "&#241;",
-        "hex": "&#xF1;"
-    },
-    {
-        "char": "ò",
-        "html": "&ograve;",
-        "dec": "&#242;",
-        "hex": "&#xF2;"
-    },
-    {
-        "char": "ó",
-        "html": "&oacute;",
-        "dec": "&#243;",
-        "hex": "&#xF3;"
-    },
-    {
-        "char": "ô",
-        "html": "&ocirc;",
-        "dec": "&#244;",
-        "hex": "&#xF4;"
-    },
-    {
-        "char": "õ",
-        "html": "&otilde;",
-        "dec": "&#245;",
-        "hex": "&#xF5;"
-    },
-    {
-        "char": "ö",
-        "html": "&ouml;",
-        "dec": "&#246;",
-        "hex": "&#xF6;"
-    },
-    {
-        "char": "ø",
-        "html": "&oslash;",
-        "dec": "&#248;",
-        "hex": "&#xF8;"
-    },
-    {
-        "char": "œ",
-        "html": "&oelig;",
-        "dec": "&#339;",
-        "hex": "&#x153;"
-    },
-    {
-        "char": "š",
-        "html": "&scaron;",
-        "dec": "&#353;",
-        "hex": "&#x161;"
-    },
-    {
-        "char": "ù",
-        "html": "&ugrave;",
-        "dec": "&#249;",
-        "hex": "&#xF9;"
-    },
-    {
-        "char": "ú",
-        "html": "&uacute;",
-        "dec": "&#250;",
-        "hex": "&#xFA;"
-    },
-    {
-        "char": "û",
-        "html": "&ucirc;",
-        "dec": "&#251;",
-        "hex": "&#xFB;"
-    },
-    {
-        "char": "ü",
-        "html": "&uuml;",
-        "dec": "&#252;",
-        "hex": "&#xFC;"
-    },
-    {
-        "char": "ý",
-        "html": "&yacute;",
-        "dec": "&#253;",
-        "hex": "&#xFD;"
-    },
-    {
-        "char": "ÿ",
-        "html": "&yuml;",
-        "dec": "&#255;",
-        "hex": "&#xFF;"
-    },
-    {
-        "char": "þ",
-        "html": "&thorn;",
-        "dec": "&#254;",
-        "hex": "&#xFE;"
-    },
-
-    {
-        "char": "Œ",
-        "html": "&OElig;",
-        "dec": "&#338;",
-        "hex": "&#x152;"
-    },
-    {
-        "char": "œ",
-        "html": "&oelig;",
-        "dec": "&#339;",
-        "hex": "&#x153;"
-    },
-    {
-        "char": "Š",
-        "html": "&Scaron;",
-        "dec": "&#352;",
-        "hex": "&#x160;"
-    },
-    {
-        "char": "š",
-        "html": "&scaron;",
-        "dec": "&#353;",
-        "hex": "&#x161;"
-    },
-    {
-        "char": "Ÿ",
-        "html": "&Yuml;",
-        "dec": "&#376;",
-        "hex": "&#x178;"
-    },
-
-    // Money
-    {
-        "char": "¢",
-        "html": "&cent;",
-        "dec": "&#162;",
-        "hex": "&#xA2;"
-    },
-    {
-        "char": "£",
-        "html": "&pound;",
-        "dec": "&#163;",
-        "hex": "&#xA3;"
-    },
-    {
-        "char": "¤",
-        "html": "&curren;",
-        "dec": "&#164;",
-        "hex": "&#xA4;"
-    },
-    {
-        "char": "¥",
-        "html": "&yen;",
-        "dec": "&#165;",
-        "hex": "&#xA5;"
-    },
-    {
-        "char": "€",
-        "html": "&euro;",
-        "dec": "&#8364;",
-        "hex": "&#x20AC;"
-    },
-
-    // Symbols
-    {
-        "char": "§",
-        "html": "&sect;",
-        "dec": "&#167;",
-        "hex": "&#xA7;"
-    },
-    {
-        "char": "©",
-        "html": "&copy;",
-        "dec": "&#169;",
-        "hex": "&#xA9;"
-    },
-    {
-        "char": "®",
-        "html": "&reg;",
-        "dec": "&#174;",
-        "hex": "&#xAE;"
-    },
-    {
-        "char": "™",
-        "html": "&trade;",
-        "dec": "&#8482;",
-        "hex": "&#x2122;"
-    },
-    {
-        "char": "ª",
-        "html": "&ordf;",
-        "dec": "&#170;",
-        "hex": "&#xAA;"
-    },
-    {
-        "char": "º",
-        "html": "&ordm;",
-        "dec": "&#186;",
-        "hex": "&#xBA;"
-    },
-    {
-        "char": "¬",
-        "html": "&not;",
-        "dec": "&#172;",
-        "hex": "&#xAC;"
-    },
-    {
-        "char": "­",
-        "html": "&shy;",
-        "dec": "&#173;",
-        "hex": "&#xAD;"
-    },
-    {
-        "char": "¯",
-        "html": "&macr;",
-        "dec": "&#175;",
-        "hex": "&#xAF;"
-    },
-    {
-        "char": "°",
-        "html": "&deg;",
-        "dec": "&#176;",
-        "hex": "&#xB0;"
-    },
-    {
-        "char": "†",
-        "html": "&dagger;",
-        "dec": "&#8224;",
-        "hex": "&#x2020;"
-    },
-    {
-        "char": "‡",
-        "html": "&Dagger;",
-        "dec": "&#8225;",
-        "hex": "&#x2021;"
-    },
-    {
-        "char": "¹",
-        "html": "&sup1;",
-        "dec": "&#185;",
-        "hex": "&#xB9;"
-    },
-    {
-        "char": "²",
-        "html": "&sup2;",
-        "dec": "&#178;",
-        "hex": "&#xB2;"
-    },
-    {
-        "char": "³",
-        "html": "&sup3;",
-        "dec": "&#179;",
-        "hex": "&#xB3;"
-    },
-    {
-        "char": "´",
-        "html": "&acute;",
-        "dec": "&#180;",
-        "hex": "&#xB4;"
-    },
-    {
-        "char": "µ",
-        "html": "&micro;",
-        "dec": "&#181;",
-        "hex": "&#xB5;"
-    },
-    {
-        "char": "¶",
-        "html": "&para;",
-        "dec": "&#182;",
-        "hex": "&#xB6;"
-    },
-    {
-        "char": "·",
-        "html": "&middot;",
-        "dec": "&#183;",
-        "hex": "&#xB7;"
-    },
-    {
-        "char": "¸",
-        "html": "&cedil;",
-        "dec": "&#184;",
-        "hex": "&#xB8;"
-    },
-    {
-        "char": "‍",
-        "html": "&zwj;",
-        "dec": "&#8205;",
-        "hex": "&#x200D;"
-    },
-    {
-        "char": "‌",
-        "html": "&zwnj;",
-        "dec": "&#8204;",
-        "hex": "&#x200C;"
-    },
-
-    // Fractions
-    {
-        "char": "¼",
-        "html": "&frac14;",
-        "dec": "&#188;",
-        "hex": "&#xBC;"
-    },
-    {
-        "char": "½",
-        "html": "&frac12;",
-        "dec": "&#189;",
-        "hex": "&#xBD;"
-    },
-    {
-        "char": "¾",
-        "html": "&frac34;",
-        "dec": "&#190;",
-        "hex": "&#xBE;"
-    },
-
-    // Cards
-    {
-        "char": "♠",
-        "html": "&spades;",
-        "dec": "&#9824;",
-        "hex": "&#x2660;"
-    },
-    {
-        "char": "♣",
-        "html": "&clubs;",
-        "dec": "&#9827;",
-        "hex": "&#x2663;"
-    },
-    {
-        "char": "♥",
-        "html": "&hearts;",
-        "dec": "&#9829;",
-        "hex": "&#x2665;"
-    },
-    {
-        "char": "♦",
-        "html": "&diams;",
-        "dec": "&#9830;",
-        "hex": "&#x2666;"
-    },
-
-    // Math & Logic
-    {
-        "char": "±",
-        "html": "&plusmn;",
-        "dec": "&#177;",
-        "hex": "&#xB1;"
-    },
-    {
-        "char": "×",
-        "html": "&times;",
-        "dec": "&#215;",
-        "hex": "&#xD7;"
-    },
-    {
-        "char": "÷",
-        "html": "&divide;",
-        "dec": "&#247;",
-        "hex": "&#xF7;"
-    },
-    {
-        "char": "∧",
-        "html": "&and;",
-        "dec": "&#8743;",
-        "hex": "&#x2227;"
-    },
-    {
-        "char": "∨",
-        "html": "&or;",
-        "dec": "&#8744;",
-        "hex": "&#x2228;"
-    },
-    {
-        "char": "∠",
-        "html": "&ang;",
-        "dec": "&#8736;",
-        "hex": "&#x2220;"
-    },
-    {
-        "char": "∪",
-        "html": "&cup;",
-        "dec": "&#8746;",
-        "hex": "&#x222A;"
-    },
-    {
-        "char": "∩",
-        "html": "&cap;",
-        "dec": "&#8745;",
-        "hex": "&#x2229;"
-    },
-    {
-        "char": "∅",
-        "html": "&empty;",
-        "dec": "&#8709;",
-        "hex": "&#x2205;"
-    },
-    {
-        "char": "∃",
-        "html": "&exist;",
-        "dec": "&#8707;",
-        "hex": "&#x2203;"
-    },
-    {
-        "char": "ƒ",
-        "html": "&fnof;",
-        "dec": "&#402;",
-        "hex": "&#x192;"
-    },
-    {
-        "char": "∀",
-        "html": "&forall;",
-        "dec": "&#8704;",
-        "hex": "&#x2200;"
-    },
-    {
-        "char": "⁄",
-        "html": "&frasl;",
-        "dec": "&#8260;",
-        "hex": "&#x2044;"
-    },
-    {
-        "char": "≤",
-        "html": "&le;",
-        "dec": "&#8804;",
-        "hex": "&#x2264;"
-    },
-    {
-        "char": "≥",
-        "html": "&ge;",
-        "dec": "&#8805;",
-        "hex": "&#x2265;"
-    },
-    {
-        "char": "≠",
-        "html": "&ne;",
-        "dec": "&#8800;",
-        "hex": "&#x2260;"
-    },
-    {
-        "char": "≅",
-        "html": "&cong;",
-        "dec": "&#8773;",
-        "hex": "&#x2245;"
-    },
-    {
-        "char": "≈",
-        "html": "&asymp;",
-        "dec": "&#8776;",
-        "hex": "&#x2248;"
-    },
-    {
-        "char": "≡",
-        "html": "&equiv;",
-        "dec": "&#8801;",
-        "hex": "&#x2261;"
-    },
-    {
-        "char": "∞",
-        "html": "&infin;",
-        "dec": "&#8734;",
-        "hex": "&#x221E;"
-    },
-    {
-        "char": "∫",
-        "html": "&int;",
-        "dec": "&#8747;",
-        "hex": "&#x222B;"
-    },
-    {
-        "char": "∈",
-        "html": "&isin;",
-        "dec": "&#8712;",
-        "hex": "&#x2208;"
-    },
-    {
-        "char": "∉",
-        "html": "&notin;",
-        "dec": "&#8713;",
-        "hex": "&#x2209;"
-    },
-    {
-        "char": "∋",
-        "html": "&ni;",
-        "dec": "&#8715;",
-        "hex": "&#x220B;"
-    },
-    {
-        "char": "⊂",
-        "html": "&sub;",
-        "dec": "&#8834;",
-        "hex": "&#x2282;"
-    },
-    {
-        "char": "⊄",
-        "html": "&nsub;",
-        "dec": "&#8836;",
-        "hex": "&#x2284;"
-    },
-    {
-        "char": "⊆",
-        "html": "&sube;",
-        "dec": "&#8838;",
-        "hex": "&#x2286;"
-    },
-    {
-        "char": "⊃",
-        "html": "&sup;",
-        "dec": "&#8835;",
-        "hex": "&#x2283;"
-    },
-    {
-        "char": "⊇",
-        "html": "&supe;",
-        "dec": "&#8839;",
-        "hex": "&#x2287;"
-    },
-    {
-        "char": "⟨",
-        "html": "&lang;",
-        "dec": "&#9001;",
-        "hex": "&#x2329;"
-    },
-    {
-        "char": "⟩",
-        "html": "&rang;",
-        "dec": "&#9002;",
-        "hex": "&#x232A;"
-    },
-    {
-        "char": "⌉",
-        "html": "&rceil;",
-        "dec": "&#8969;",
-        "hex": "&#x2309;"
-    },
-    {
-        "char": "⌋",
-        "html": "&rfloor;",
-        "dec": "&#8971;",
-        "hex": "&#x230B;"
-    },
-    {
-        "char": "⌈",
-        "html": "&lceil;",
-        "dec": "&#8968;",
-        "hex": "&#x2308;"
-    },
-    {
-        "char": "⌊",
-        "html": "&lfloor;",
-        "dec": "&#8970;",
-        "hex": "&#x230A;"
-    },
-    {
-        "char": "∗",
-        "html": "&lowast;",
-        "dec": "&#8727;",
-        "hex": "&#x2217;"
-    },
-    {
-        "char": "−",
-        "html": "&minus;",
-        "dec": "&#8722;",
-        "hex": "&#x2212;"
-    },
-    {
-        "char": "∇",
-        "html": "&nabla;",
-        "dec": "&#8711;",
-        "hex": "&#x2207;"
-    },
-    {
-        "char": "⊕",
-        "html": "&oplus;",
-        "dec": "&#8853;",
-        "hex": "&#x2295;"
-    },
-    {
-        "char": "⊗",
-        "html": "&otimes;",
-        "dec": "&#8855;",
-        "hex": "&#x2297;"
-    },
-    {
-        "char": "∂",
-        "html": "&part;",
-        "dec": "&#8706;",
-        "hex": "&#x2202;"
-    },
-    {
-        "char": "‰",
-        "html": "&permil;",
-        "dec": "&#8240;",
-        "hex": "&#x2030;"
-    },
-    {
-        "char": "⊥",
-        "html": "&perp;",
-        "dec": "&#8869;",
-        "hex": "&#x22A5;"
-    },
-    {
-        "char": "ϖ",
-        "html": "&piv;",
-        "dec": "&#982;",
-        "hex": "&#x3D6;"
-    },
-    {
-        "char": "∏",
-        "html": "&prod;",
-        "dec": "&#8719;",
-        "hex": "&#x220F;"
-    },
-    {
-        "char": "∑",
-        "html": "&sum;",
-        "dec": "&#8721;",
-        "hex": "&#x2211;"
-    },
-    {
-        "char": "∝",
-        "html": "&prop;",
-        "dec": "&#8733;",
-        "hex": "&#x221D;"
-    },
-    {
-        "char": "√",
-        "html": "&radic;",
-        "dec": "&#8730;",
-        "hex": "&#x221A;"
-    },
-    {
-        "char": "⋅",
-        "html": "&sdot;",
-        "dec": "&#8901;",
-        "hex": "&#x22C5;"
-    },
-    {
-        "char": "∼",
-        "html": "&sim;",
-        "dec": "&#8764;",
-        "hex": "&#x223C;"
-    },
-    {
-        "char": "∴",
-        "html": "&there4;",
-        "dec": "&#8756;",
-        "hex": "&#x2234;"
-    },
-    {
-        "char": "ϑ",
-        "html": "&thetasym;",
-        "dec": "&#977;",
-        "hex": "&#x3D1;"
-    },
-    {
-        "char": "ϒ",
-        "html": "&upsih;",
-        "dec": "&#978;",
-        "hex": "&#x3D2;"
-    },
-
-    // Arrows
-    {
-        "char": "←",
-        "html": "&larr;",
-        "dec": "&#8592;",
-        "hex": "&#x2190;"
-    },
-    {
-        "char": "→",
-        "html": "&rarr;",
-        "dec": "&#8594;",
-        "hex": "&#x2192;"
-    },
-    {
-        "char": "↑",
-        "html": "&uarr;",
-        "dec": "&#8593;",
-        "hex": "&#x2191;"
-    },
-    {
-        "char": "↓",
-        "html": "&darr;",
-        "dec": "&#8595;",
-        "hex": "&#x2193;"
-    },
-    {
-        "char": "↔",
-        "html": "&harr;",
-        "dec": "&#8596;",
-        "hex": "&#x2194;"
-    },
-    {
-        "char": "⇐",
-        "html": "&lArr;",
-        "dec": "&#8656;",
-        "hex": "&#x21D0;"
-    },
-    {
-        "char": "⇒",
-        "html": "&rArr;",
-        "dec": "&#8658;",
-        "hex": "&#x21D2;"
-    },
-    {
-        "char": "⇑",
-        "html": "&uArr;",
-        "dec": "&#8657;",
-        "hex": "&#x21D1;"
-    },
-    {
-        "char": "⇓",
-        "html": "&dArr;",
-        "dec": "&#8659;",
-        "hex": "&#x21D3;"
-    },
-    {
-        "char": "⇔",
-        "html": "&hArr;",
-        "dec": "&#8660;",
-        "hex": "&#x21D4;"
-    },
-
-    // Special
-    {
-        "char": "ℵ",
-        "html": "&alefsym;",
-        "dec": "&#8501;",
-        "hex": "&#x2135;"
-    },
-    {
-        "char": "↵",
-        "html": "&crarr;",
-        "dec": "&#8629;",
-        "hex": "&#x21B5;"
-    },
-    {
-        "char": "℘",
-        "html": "&weierp;",
-        "dec": "&#8472;",
-        "hex": "&#x2118;"
-    },
-    {
-        "char": "ℑ",
-        "html": "&image;",
-        "dec": "&#8465;",
-        "hex": "&#x2111;"
-    },
-    {
-        "char": "ℜ",
-        "html": "&real;",
-        "dec": "&#8476;",
-        "hex": "&#x211C;"
-    },
-    {
-        "char": "◊",
-        "html": "&loz;",
-        "dec": "&#9674;",
-        "hex": "&#x25CA;"
-    },
-    {
-        "char": "‎",
-        "html": "&lrm;",
-        "dec": "&#8206;",
-        "hex": "&#x200E;"
-    },
-    {
-        "char": "‏",
-        "html": "&rlm;",
-        "dec": "&#8207;",
-        "hex": "&#x200F;"
-    },
-
-    // Greek
-    {
-        "char": "Α",
-        "html": "&Alpha;",
-        "dec": "&#913;",
-        "hex": "&#x391;"
-    },
-    {
-        "char": "Β",
-        "html": "&Beta;",
-        "dec": "&#914;",
-        "hex": "&#x392;"
-    },
-    {
-        "char": "Γ",
-        "html": "&Gamma;",
-        "dec": "&#915;",
-        "hex": "&#x393;"
-    },
-    {
-        "char": "Δ",
-        "html": "&Delta;",
-        "dec": "&#916;",
-        "hex": "&#x394;"
-    },
-    {
-        "char": "Ε",
-        "html": "&Epsilon;",
-        "dec": "&#917;",
-        "hex": "&#x395;"
-    },
-    {
-        "char": "Ζ",
-        "html": "&Zeta;",
-        "dec": "&#918;",
-        "hex": "&#x396;"
-    },
-    {
-        "char": "Η",
-        "html": "&Eta;",
-        "dec": "&#919;",
-        "hex": "&#x397;"
-    },
-    {
-        "char": "Θ",
-        "html": "&Theta;",
-        "dec": "&#920;",
-        "hex": "&#x398;"
-    },
-    {
-        "char": "Ι",
-        "html": "&Iota;",
-        "dec": "&#921;",
-        "hex": "&#x399;"
-    },
-    {
-        "char": "Κ",
-        "html": "&Kappa;",
-        "dec": "&#922;",
-        "hex": "&#x39A;"
-    },
-    {
-        "char": "Λ",
-        "html": "&Lambda;",
-        "dec": "&#923;",
-        "hex": "&#x39B;"
-    },
-    {
-        "char": "Μ",
-        "html": "&Mu;",
-        "dec": "&#924;",
-        "hex": "&#x39C;"
-    },
-    {
-        "char": "Ν",
-        "html": "&Nu;",
-        "dec": "&#925;",
-        "hex": "&#x39D;"
-    },
-    {
-        "char": "Ξ",
-        "html": "&Xi;",
-        "dec": "&#926;",
-        "hex": "&#x39E;"
-    },
-    {
-        "char": "Ο",
-        "html": "&Omicron;",
-        "dec": "&#927;",
-        "hex": "&#x39F;"
-    },
-    {
-        "char": "Π",
-        "html": "&Pi;",
-        "dec": "&#928;",
-        "hex": "&#x3A0;"
-    },
-    {
-        "char": "Ρ",
-        "html": "&Rho;",
-        "dec": "&#929;",
-        "hex": "&#x3A1;"
-    },
-    {
-        "char": "Σ",
-        "html": "&Sigma;",
-        "dec": "&#931;",
-        "hex": "&#x3A3;"
-    },
-    {
-        "char": "Τ",
-        "html": "&Tau;",
-        "dec": "&#932;",
-        "hex": "&#x3A4;"
-    },
-    {
-        "char": "Υ",
-        "html": "&Upsilon;",
-        "dec": "&#933;",
-        "hex": "&#x3A5;"
-    },
-    {
-        "char": "Φ",
-        "html": "&Phi;",
-        "dec": "&#934;",
-        "hex": "&#x3A6;"
-    },
-    {
-        "char": "Χ",
-        "html": "&Chi;",
-        "dec": "&#935;",
-        "hex": "&#x3A7;"
-    },
-    {
-        "char": "Ψ",
-        "html": "&Psi;",
-        "dec": "&#936;",
-        "hex": "&#x3A8;"
-    },
-    {
-        "char": "Ω",
-        "html": "&Omega;",
-        "dec": "&#937;",
-        "hex": "&#x3A9;"
-    },
-    {
-        "char": "α",
-        "html": "&alpha;",
-        "dec": "&#945;",
-        "hex": "&#x3B1;"
-    },
-    {
-        "char": "β",
-        "html": "&beta;",
-        "dec": "&#946;",
-        "hex": "&#x3B2;"
-    },
-    {
-        "char": "γ",
-        "html": "&gamma;",
-        "dec": "&#947;",
-        "hex": "&#x3B3;"
-    },
-    {
-        "char": "δ",
-        "html": "&delta;",
-        "dec": "&#948;",
-        "hex": "&#x3B4;"
-    },
-    {
-        "char": "ε",
-        "html": "&epsilon;",
-        "dec": "&#949;",
-        "hex": "&#x3B5;"
-    },
-    {
-        "char": "ζ",
-        "html": "&zeta;",
-        "dec": "&#950;",
-        "hex": "&#x3B6;"
-    },
-    {
-        "char": "η",
-        "html": "&eta;",
-        "dec": "&#951;",
-        "hex": "&#x3B7;"
-    },
-    {
-        "char": "θ",
-        "html": "&theta;",
-        "dec": "&#952;",
-        "hex": "&#x3B8;"
-    },
-    {
-        "char": "ι",
-        "html": "&iota;",
-        "dec": "&#953;",
-        "hex": "&#x3B9;"
-    },
-    {
-        "char": "κ",
-        "html": "&kappa;",
-        "dec": "&#954;",
-        "hex": "&#x3BA;"
-    },
-    {
-        "char": "λ",
-        "html": "&lambda;",
-        "dec": "&#955;",
-        "hex": "&#x3BB;"
-    },
-    {
-        "char": "μ",
-        "html": "&mu;",
-        "dec": "&#956;",
-        "hex": "&#x3BC;"
-    },
-    {
-        "char": "ν",
-        "html": "&nu;",
-        "dec": "&#957;",
-        "hex": "&#x3BD;"
-    },
-    {
-        "char": "ξ",
-        "html": "&xi;",
-        "dec": "&#958;",
-        "hex": "&#x3BE;"
-    },
-    {
-        "char": "ο",
-        "html": "&omicron;",
-        "dec": "&#959;",
-        "hex": "&#x3BF;"
-    },
-    {
-        "char": "π",
-        "html": "&pi;",
-        "dec": "&#960;",
-        "hex": "&#x3C0;"
-    },
-    {
-        "char": "ρ",
-        "html": "&rho;",
-        "dec": "&#961;",
-        "hex": "&#x3C1;"
-    },
-    {
-        "char": "σ",
-        "html": "&sigma;",
-        "dec": "&#963;",
-        "hex": "&#x3C3;"
-    },
-    {
-        "char": "ς",
-        "html": "&sigmaf;",
-        "dec": "&#962;",
-        "hex": "&#x3C2;"
-    },
-    {
-        "char": "τ",
-        "html": "&tau;",
-        "dec": "&#964;",
-        "hex": "&#x3C4;"
-    },
-    {
-        "char": "υ",
-        "html": "&upsilon;",
-        "dec": "&#965;",
-        "hex": "&#x3C5;"
-    },
-    {
-        "char": "φ",
-        "html": "&phi;",
-        "dec": "&#966;",
-        "hex": "&#x3C6;"
-    },
-    {
-        "char": "χ",
-        "html": "&chi;",
-        "dec": "&#967;",
-        "hex": "&#x3C7;"
-    },
-    {
-        "char": "ψ",
-        "html": "&psi;",
-        "dec": "&#968;",
-        "hex": "&#x3C8;"
-    },
-    {
-        "char": "ω",
-        "html": "&omega;",
-        "dec": "&#969;",
-        "hex": "&#x3C9;"
-    },
-
-    // Dashes
-    {
-        "char": "–",
-        "html": "&ndash;",
-        "dec": "&#8211;",
-        "hex": "&#x2013;"
-    },
-    {
-        "char": "—",
-        "html": "&mdash;",
-        "dec": "&#8212;",
-        "hex": "&#x2014;"
-    },
-    {
-        "char": "−",
-        "html": "&minus;",
-        "dec": "&#8722;",
-        "hex": "&#x2212;"
-    }
-];
-
 /***
  *      _____           _        _
  *     |  __ \         | |      | |
@@ -3254,7 +1660,7 @@ function LOG(...messages) {
             stack(...messages);
         },
 
-        toForeignStack(stack) {
+        toForeignStack(stack = console.log) {
             return stack(messages.join(' '));
         },
     });
@@ -3318,7 +1724,7 @@ function WARN(...messages) {
             stack(...messages);
         },
 
-        toForeignStack(stack) {
+        toForeignStack(stack = console.warn) {
             return stack(messages.join(' '));
         },
     });
@@ -3382,7 +1788,7 @@ function ERROR(...messages) {
             stack(...messages);
         },
 
-        toForeignStack(stack) {
+        toForeignStack(stack = console.error) {
             return stack(messages.join(' '));
         },
     });
@@ -3446,7 +1852,7 @@ function REMARK(...messages) {
             stack(...messages);
         },
 
-        toForeignStack(stack) {
+        toForeignStack(stack = console.log) {
             return stack(messages.join(' '));
         },
     });
@@ -6198,3 +4604,1597 @@ top.ISO_639_1 ??= ({
         "region": "Niger–Congo"
     }
 });
+
+// Encodes HTML to be HTML-embed friendly
+    // encodeHTML([string:string]) → String
+function encodeHTML(string = '') {
+    for(let { char, html, dec, hex } of decodeHTML.table)
+        string = string.replaceAll(char, html);
+
+    return string;
+}
+
+// Decodes HTML-embedded text
+    // decodeHTML([string:string]) → String
+function decodeHTML(string = '') {
+    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contians($0))?.char ?? $0);
+}
+
+decodeHTML.table ??= [
+    // Punctuation
+    {
+        "char": "&",
+        "html": "&amp;",
+        "dec": "&#38;",
+        "hex": "&#x26;"
+    },
+    {
+        "char": '"',
+        "html": "&quot;",
+        "dec": "&#34;",
+        "hex": "&#x22;"
+    },
+    {
+        "char": "<",
+        "html": "&lt;",
+        "dec": "&#60;",
+        "hex": "&#x3C;"
+    },
+    {
+        "char": ">",
+        "html": "&gt;",
+        "dec": "&#62;",
+        "hex": "&#x3E;"
+    },
+    {
+        "char": "‘",
+        "html": "&lsquo;",
+        "dec": "&#8216;",
+        "hex": "&#x2018;"
+    },
+    {
+        "char": "’",
+        "html": "&rsquo;",
+        "dec": "&#8217;",
+        "hex": "&#x2019;"
+    },
+    {
+        "char": "“",
+        "html": "&ldquo;",
+        "dec": "&#8220;",
+        "hex": "&#x201C;"
+    },
+    {
+        "char": "”",
+        "html": "&rdquo;",
+        "dec": "&#8221;",
+        "hex": "&#x201D;"
+    },
+    {
+        "char": "‚",
+        "html": "&sbquo;",
+        "dec": "&#8218;",
+        "hex": "&#x201A;"
+    },
+    {
+        "char": "„",
+        "html": "&bdquo;",
+        "dec": "&#8222;",
+        "hex": "&#x201E;"
+    },
+    {
+        "char": "′",
+        "html": "&prime;",
+        "dec": "&#8242;",
+        "hex": "&#x2032;"
+    },
+    {
+        "char": "″",
+        "html": "&Prime;",
+        "dec": "&#8243;",
+        "hex": "&#x2033;"
+    },
+    {
+        "char": " ",
+        "html": "&nbsp;",
+        "dec": "&#160;",
+        "hex": "&#xA0;"
+    },
+    {
+        "char": "–",
+        "html": "&ndash;",
+        "dec": "&#8211;",
+        "hex": "&#x2013;"
+    },
+    {
+        "char": "—",
+        "html": "&mdash;",
+        "dec": "&#8212;",
+        "hex": "&#x2014;"
+    },
+    {
+        "char": " ",
+        "html": "&ensp;",
+        "dec": "&#8194;",
+        "hex": "&#x2002;"
+    },
+    {
+        "char": " ",
+        "html": "&emsp;",
+        "dec": "&#8195;",
+        "hex": "&#x2003;"
+    },
+    {
+        "char": " ",
+        "html": "&thinsp;",
+        "dec": "&#8201;",
+        "hex": "&#x2009;"
+    },
+    {
+        "char": "¦",
+        "html": "&brvbar;",
+        "dec": "&#166;",
+        "hex": "&#xA6;"
+    },
+    {
+        "char": "•",
+        "html": "&bull;",
+        "dec": "&#8226;",
+        "hex": "&#x2022;"
+    },
+    {
+        "char": "…",
+        "html": "&hellip;",
+        "dec": "&#8230;",
+        "hex": "&#x2026;"
+    },
+    {
+        "char": "ˆ",
+        "html": "&circ;",
+        "dec": "&#710;",
+        "hex": "&#x2C6;"
+    },
+    {
+        "char": "¨",
+        "html": "&uml;",
+        "dec": "&#168;",
+        "hex": "&#xA8;"
+    },
+    {
+        "char": "˜",
+        "html": "&tilde;",
+        "dec": "&#732;",
+        "hex": "&#x2DC;"
+    },
+    {
+        "char": "‹",
+        "html": "&lsaquo;",
+        "dec": "&#8249;",
+        "hex": "&#x2039;"
+    },
+    {
+        "char": "›",
+        "html": "&rsaquo;",
+        "dec": "&#8250;",
+        "hex": "&#x203A;"
+    },
+    {
+        "char": "«",
+        "html": "&laquo;",
+        "dec": "&#171;",
+        "hex": "&#xAB;"
+    },
+    {
+        "char": "»",
+        "html": "&raquo;",
+        "dec": "&#187;",
+        "hex": "&#xBB;"
+    },
+    {
+        "char": "‾",
+        "html": "&oline;",
+        "dec": "&#8254;",
+        "hex": "&#x203E;"
+    },
+    {
+        "char": "¿",
+        "html": "&iquest;",
+        "dec": "&#191;",
+        "hex": "&#xBF;"
+    },
+    {
+        "char": "¡",
+        "html": "&iexcl;",
+        "dec": "&#161;",
+        "hex": "&#xA1;"
+    },
+
+    // Latin
+    {
+        "char": "À",
+        "html": "&Agrave;",
+        "dec": "&#192;",
+        "hex": "&#xC0;"
+    },
+    {
+        "char": "Á",
+        "html": "&Aacute;",
+        "dec": "&#193;",
+        "hex": "&#xC1;"
+    },
+    {
+        "char": "Â",
+        "html": "&Acirc;",
+        "dec": "&#194;",
+        "hex": "&#xC2;"
+    },
+    {
+        "char": "Ã",
+        "html": "&Atilde;",
+        "dec": "&#195;",
+        "hex": "&#xC3;"
+    },
+    {
+        "char": "Ä",
+        "html": "&Auml;",
+        "dec": "&#196;",
+        "hex": "&#xC4;"
+    },
+    {
+        "char": "Å",
+        "html": "&Aring;",
+        "dec": "&#197;",
+        "hex": "&#xC5;"
+    },
+    {
+        "char": "Æ",
+        "html": "&AElig;",
+        "dec": "&#198;",
+        "hex": "&#xC6;"
+    },
+    {
+        "char": "Ç",
+        "html": "&Ccedil;",
+        "dec": "&#199;",
+        "hex": "&#xC7;"
+    },
+    {
+        "char": "È",
+        "html": "&Egrave;",
+        "dec": "&#200;",
+        "hex": "&#xC8;"
+    },
+    {
+        "char": "É",
+        "html": "&Eacute;",
+        "dec": "&#201;",
+        "hex": "&#xC9;"
+    },
+    {
+        "char": "Ê",
+        "html": "&Ecirc;",
+        "dec": "&#202;",
+        "hex": "&#xCA;"
+    },
+    {
+        "char": "Ë",
+        "html": "&Euml;",
+        "dec": "&#203;",
+        "hex": "&#xCB;"
+    },
+    {
+        "char": "Ì",
+        "html": "&Igrave;",
+        "dec": "&#204;",
+        "hex": "&#xCC;"
+    },
+    {
+        "char": "Í",
+        "html": "&Iacute;",
+        "dec": "&#205;",
+        "hex": "&#xCD;"
+    },
+    {
+        "char": "Î",
+        "html": "&Icirc;",
+        "dec": "&#206;",
+        "hex": "&#xCE;"
+    },
+    {
+        "char": "Ï",
+        "html": "&Iuml;",
+        "dec": "&#207;",
+        "hex": "&#xCF;"
+    },
+    {
+        "char": "Ð",
+        "html": "&ETH;",
+        "dec": "&#208;",
+        "hex": "&#xD0;"
+    },
+    {
+        "char": "Ñ",
+        "html": "&Ntilde;",
+        "dec": "&#209;",
+        "hex": "&#xD1;"
+    },
+    {
+        "char": "Ò",
+        "html": "&Ograve;",
+        "dec": "&#210;",
+        "hex": "&#xD2;"
+    },
+    {
+        "char": "Ó",
+        "html": "&Oacute;",
+        "dec": "&#211;",
+        "hex": "&#xD3;"
+    },
+    {
+        "char": "Ô",
+        "html": "&Ocirc;",
+        "dec": "&#212;",
+        "hex": "&#xD4;"
+    },
+    {
+        "char": "Õ",
+        "html": "&Otilde;",
+        "dec": "&#213;",
+        "hex": "&#xD5;"
+    },
+    {
+        "char": "Ö",
+        "html": "&Ouml;",
+        "dec": "&#214;",
+        "hex": "&#xD6;"
+    },
+    {
+        "char": "Ø",
+        "html": "&Oslash;",
+        "dec": "&#216;",
+        "hex": "&#xD8;"
+    },
+    {
+        "char": "Œ",
+        "html": "&OElig;",
+        "dec": "&#338;",
+        "hex": "&#x152;"
+    },
+    {
+        "char": "Š",
+        "html": "&Scaron;",
+        "dec": "&#352;",
+        "hex": "&#x160;"
+    },
+    {
+        "char": "Ù",
+        "html": "&Ugrave;",
+        "dec": "&#217;",
+        "hex": "&#xD9;"
+    },
+    {
+        "char": "Ú",
+        "html": "&Uacute;",
+        "dec": "&#218;",
+        "hex": "&#xDA;"
+    },
+    {
+        "char": "Û",
+        "html": "&Ucirc;",
+        "dec": "&#219;",
+        "hex": "&#xDB;"
+    },
+    {
+        "char": "Ü",
+        "html": "&Uuml;",
+        "dec": "&#220;",
+        "hex": "&#xDC;"
+    },
+    {
+        "char": "Ý",
+        "html": "&Yacute;",
+        "dec": "&#221;",
+        "hex": "&#xDD;"
+    },
+    {
+        "char": "Þ",
+        "html": "&THORN;",
+        "dec": "&#222;",
+        "hex": "&#xDE;"
+    },
+    {
+        "char": "ß",
+        "html": "&szlig;",
+        "dec": "&#223;",
+        "hex": "&#xDF;"
+    },
+    {
+        "char": "à",
+        "html": "&agrave;",
+        "dec": "&#224;",
+        "hex": "&#xE0;"
+    },
+    {
+        "char": "á",
+        "html": "&aacute;",
+        "dec": "&#225;",
+        "hex": "&#xE1;"
+    },
+    {
+        "char": "â",
+        "html": "&acirc;",
+        "dec": "&#226;",
+        "hex": "&#xE2;"
+    },
+    {
+        "char": "ã",
+        "html": "&atilde;",
+        "dec": "&#227;",
+        "hex": "&#xE3;"
+    },
+    {
+        "char": "ä",
+        "html": "&auml;",
+        "dec": "&#228;",
+        "hex": "&#xE4;"
+    },
+    {
+        "char": "å",
+        "html": "&aring;",
+        "dec": "&#229;",
+        "hex": "&#xE5;"
+    },
+    {
+        "char": "æ",
+        "html": "&aelig;",
+        "dec": "&#230;",
+        "hex": "&#xE6;"
+    },
+    {
+        "char": "ç",
+        "html": "&ccedil;",
+        "dec": "&#231;",
+        "hex": "&#xE7;"
+    },
+    {
+        "char": "è",
+        "html": "&egrave;",
+        "dec": "&#232;",
+        "hex": "&#xE8;"
+    },
+    {
+        "char": "é",
+        "html": "&eacute;",
+        "dec": "&#233;",
+        "hex": "&#xE9;"
+    },
+    {
+        "char": "ê",
+        "html": "&ecirc;",
+        "dec": "&#234;",
+        "hex": "&#xEA;"
+    },
+    {
+        "char": "ë",
+        "html": "&euml;",
+        "dec": "&#235;",
+        "hex": "&#xEB;"
+    },
+    {
+        "char": "ì",
+        "html": "&igrave;",
+        "dec": "&#236;",
+        "hex": "&#xEC;"
+    },
+    {
+        "char": "í",
+        "html": "&iacute;",
+        "dec": "&#237;",
+        "hex": "&#xED;"
+    },
+    {
+        "char": "î",
+        "html": "&icirc;",
+        "dec": "&#238;",
+        "hex": "&#xEE;"
+    },
+    {
+        "char": "ï",
+        "html": "&iuml;",
+        "dec": "&#239;",
+        "hex": "&#xEF;"
+    },
+    {
+        "char": "ð",
+        "html": "&eth;",
+        "dec": "&#240;",
+        "hex": "&#xF0;"
+    },
+    {
+        "char": "ñ",
+        "html": "&ntilde;",
+        "dec": "&#241;",
+        "hex": "&#xF1;"
+    },
+    {
+        "char": "ò",
+        "html": "&ograve;",
+        "dec": "&#242;",
+        "hex": "&#xF2;"
+    },
+    {
+        "char": "ó",
+        "html": "&oacute;",
+        "dec": "&#243;",
+        "hex": "&#xF3;"
+    },
+    {
+        "char": "ô",
+        "html": "&ocirc;",
+        "dec": "&#244;",
+        "hex": "&#xF4;"
+    },
+    {
+        "char": "õ",
+        "html": "&otilde;",
+        "dec": "&#245;",
+        "hex": "&#xF5;"
+    },
+    {
+        "char": "ö",
+        "html": "&ouml;",
+        "dec": "&#246;",
+        "hex": "&#xF6;"
+    },
+    {
+        "char": "ø",
+        "html": "&oslash;",
+        "dec": "&#248;",
+        "hex": "&#xF8;"
+    },
+    {
+        "char": "œ",
+        "html": "&oelig;",
+        "dec": "&#339;",
+        "hex": "&#x153;"
+    },
+    {
+        "char": "š",
+        "html": "&scaron;",
+        "dec": "&#353;",
+        "hex": "&#x161;"
+    },
+    {
+        "char": "ù",
+        "html": "&ugrave;",
+        "dec": "&#249;",
+        "hex": "&#xF9;"
+    },
+    {
+        "char": "ú",
+        "html": "&uacute;",
+        "dec": "&#250;",
+        "hex": "&#xFA;"
+    },
+    {
+        "char": "û",
+        "html": "&ucirc;",
+        "dec": "&#251;",
+        "hex": "&#xFB;"
+    },
+    {
+        "char": "ü",
+        "html": "&uuml;",
+        "dec": "&#252;",
+        "hex": "&#xFC;"
+    },
+    {
+        "char": "ý",
+        "html": "&yacute;",
+        "dec": "&#253;",
+        "hex": "&#xFD;"
+    },
+    {
+        "char": "ÿ",
+        "html": "&yuml;",
+        "dec": "&#255;",
+        "hex": "&#xFF;"
+    },
+    {
+        "char": "þ",
+        "html": "&thorn;",
+        "dec": "&#254;",
+        "hex": "&#xFE;"
+    },
+
+    {
+        "char": "Œ",
+        "html": "&OElig;",
+        "dec": "&#338;",
+        "hex": "&#x152;"
+    },
+    {
+        "char": "œ",
+        "html": "&oelig;",
+        "dec": "&#339;",
+        "hex": "&#x153;"
+    },
+    {
+        "char": "Š",
+        "html": "&Scaron;",
+        "dec": "&#352;",
+        "hex": "&#x160;"
+    },
+    {
+        "char": "š",
+        "html": "&scaron;",
+        "dec": "&#353;",
+        "hex": "&#x161;"
+    },
+    {
+        "char": "Ÿ",
+        "html": "&Yuml;",
+        "dec": "&#376;",
+        "hex": "&#x178;"
+    },
+
+    // Money
+    {
+        "char": "¢",
+        "html": "&cent;",
+        "dec": "&#162;",
+        "hex": "&#xA2;"
+    },
+    {
+        "char": "£",
+        "html": "&pound;",
+        "dec": "&#163;",
+        "hex": "&#xA3;"
+    },
+    {
+        "char": "¤",
+        "html": "&curren;",
+        "dec": "&#164;",
+        "hex": "&#xA4;"
+    },
+    {
+        "char": "¥",
+        "html": "&yen;",
+        "dec": "&#165;",
+        "hex": "&#xA5;"
+    },
+    {
+        "char": "€",
+        "html": "&euro;",
+        "dec": "&#8364;",
+        "hex": "&#x20AC;"
+    },
+
+    // Symbols
+    {
+        "char": "§",
+        "html": "&sect;",
+        "dec": "&#167;",
+        "hex": "&#xA7;"
+    },
+    {
+        "char": "©",
+        "html": "&copy;",
+        "dec": "&#169;",
+        "hex": "&#xA9;"
+    },
+    {
+        "char": "®",
+        "html": "&reg;",
+        "dec": "&#174;",
+        "hex": "&#xAE;"
+    },
+    {
+        "char": "™",
+        "html": "&trade;",
+        "dec": "&#8482;",
+        "hex": "&#x2122;"
+    },
+    {
+        "char": "ª",
+        "html": "&ordf;",
+        "dec": "&#170;",
+        "hex": "&#xAA;"
+    },
+    {
+        "char": "º",
+        "html": "&ordm;",
+        "dec": "&#186;",
+        "hex": "&#xBA;"
+    },
+    {
+        "char": "¬",
+        "html": "&not;",
+        "dec": "&#172;",
+        "hex": "&#xAC;"
+    },
+    {
+        "char": "­",
+        "html": "&shy;",
+        "dec": "&#173;",
+        "hex": "&#xAD;"
+    },
+    {
+        "char": "¯",
+        "html": "&macr;",
+        "dec": "&#175;",
+        "hex": "&#xAF;"
+    },
+    {
+        "char": "°",
+        "html": "&deg;",
+        "dec": "&#176;",
+        "hex": "&#xB0;"
+    },
+    {
+        "char": "†",
+        "html": "&dagger;",
+        "dec": "&#8224;",
+        "hex": "&#x2020;"
+    },
+    {
+        "char": "‡",
+        "html": "&Dagger;",
+        "dec": "&#8225;",
+        "hex": "&#x2021;"
+    },
+    {
+        "char": "¹",
+        "html": "&sup1;",
+        "dec": "&#185;",
+        "hex": "&#xB9;"
+    },
+    {
+        "char": "²",
+        "html": "&sup2;",
+        "dec": "&#178;",
+        "hex": "&#xB2;"
+    },
+    {
+        "char": "³",
+        "html": "&sup3;",
+        "dec": "&#179;",
+        "hex": "&#xB3;"
+    },
+    {
+        "char": "´",
+        "html": "&acute;",
+        "dec": "&#180;",
+        "hex": "&#xB4;"
+    },
+    {
+        "char": "µ",
+        "html": "&micro;",
+        "dec": "&#181;",
+        "hex": "&#xB5;"
+    },
+    {
+        "char": "¶",
+        "html": "&para;",
+        "dec": "&#182;",
+        "hex": "&#xB6;"
+    },
+    {
+        "char": "·",
+        "html": "&middot;",
+        "dec": "&#183;",
+        "hex": "&#xB7;"
+    },
+    {
+        "char": "¸",
+        "html": "&cedil;",
+        "dec": "&#184;",
+        "hex": "&#xB8;"
+    },
+    {
+        "char": "‍",
+        "html": "&zwj;",
+        "dec": "&#8205;",
+        "hex": "&#x200D;"
+    },
+    {
+        "char": "‌",
+        "html": "&zwnj;",
+        "dec": "&#8204;",
+        "hex": "&#x200C;"
+    },
+
+    // Fractions
+    {
+        "char": "¼",
+        "html": "&frac14;",
+        "dec": "&#188;",
+        "hex": "&#xBC;"
+    },
+    {
+        "char": "½",
+        "html": "&frac12;",
+        "dec": "&#189;",
+        "hex": "&#xBD;"
+    },
+    {
+        "char": "¾",
+        "html": "&frac34;",
+        "dec": "&#190;",
+        "hex": "&#xBE;"
+    },
+
+    // Cards
+    {
+        "char": "♠",
+        "html": "&spades;",
+        "dec": "&#9824;",
+        "hex": "&#x2660;"
+    },
+    {
+        "char": "♣",
+        "html": "&clubs;",
+        "dec": "&#9827;",
+        "hex": "&#x2663;"
+    },
+    {
+        "char": "♥",
+        "html": "&hearts;",
+        "dec": "&#9829;",
+        "hex": "&#x2665;"
+    },
+    {
+        "char": "♦",
+        "html": "&diams;",
+        "dec": "&#9830;",
+        "hex": "&#x2666;"
+    },
+
+    // Math & Logic
+    {
+        "char": "±",
+        "html": "&plusmn;",
+        "dec": "&#177;",
+        "hex": "&#xB1;"
+    },
+    {
+        "char": "×",
+        "html": "&times;",
+        "dec": "&#215;",
+        "hex": "&#xD7;"
+    },
+    {
+        "char": "÷",
+        "html": "&divide;",
+        "dec": "&#247;",
+        "hex": "&#xF7;"
+    },
+    {
+        "char": "∧",
+        "html": "&and;",
+        "dec": "&#8743;",
+        "hex": "&#x2227;"
+    },
+    {
+        "char": "∨",
+        "html": "&or;",
+        "dec": "&#8744;",
+        "hex": "&#x2228;"
+    },
+    {
+        "char": "∠",
+        "html": "&ang;",
+        "dec": "&#8736;",
+        "hex": "&#x2220;"
+    },
+    {
+        "char": "∪",
+        "html": "&cup;",
+        "dec": "&#8746;",
+        "hex": "&#x222A;"
+    },
+    {
+        "char": "∩",
+        "html": "&cap;",
+        "dec": "&#8745;",
+        "hex": "&#x2229;"
+    },
+    {
+        "char": "∅",
+        "html": "&empty;",
+        "dec": "&#8709;",
+        "hex": "&#x2205;"
+    },
+    {
+        "char": "∃",
+        "html": "&exist;",
+        "dec": "&#8707;",
+        "hex": "&#x2203;"
+    },
+    {
+        "char": "ƒ",
+        "html": "&fnof;",
+        "dec": "&#402;",
+        "hex": "&#x192;"
+    },
+    {
+        "char": "∀",
+        "html": "&forall;",
+        "dec": "&#8704;",
+        "hex": "&#x2200;"
+    },
+    {
+        "char": "⁄",
+        "html": "&frasl;",
+        "dec": "&#8260;",
+        "hex": "&#x2044;"
+    },
+    {
+        "char": "≤",
+        "html": "&le;",
+        "dec": "&#8804;",
+        "hex": "&#x2264;"
+    },
+    {
+        "char": "≥",
+        "html": "&ge;",
+        "dec": "&#8805;",
+        "hex": "&#x2265;"
+    },
+    {
+        "char": "≠",
+        "html": "&ne;",
+        "dec": "&#8800;",
+        "hex": "&#x2260;"
+    },
+    {
+        "char": "≅",
+        "html": "&cong;",
+        "dec": "&#8773;",
+        "hex": "&#x2245;"
+    },
+    {
+        "char": "≈",
+        "html": "&asymp;",
+        "dec": "&#8776;",
+        "hex": "&#x2248;"
+    },
+    {
+        "char": "≡",
+        "html": "&equiv;",
+        "dec": "&#8801;",
+        "hex": "&#x2261;"
+    },
+    {
+        "char": "∞",
+        "html": "&infin;",
+        "dec": "&#8734;",
+        "hex": "&#x221E;"
+    },
+    {
+        "char": "∫",
+        "html": "&int;",
+        "dec": "&#8747;",
+        "hex": "&#x222B;"
+    },
+    {
+        "char": "∈",
+        "html": "&isin;",
+        "dec": "&#8712;",
+        "hex": "&#x2208;"
+    },
+    {
+        "char": "∉",
+        "html": "&notin;",
+        "dec": "&#8713;",
+        "hex": "&#x2209;"
+    },
+    {
+        "char": "∋",
+        "html": "&ni;",
+        "dec": "&#8715;",
+        "hex": "&#x220B;"
+    },
+    {
+        "char": "⊂",
+        "html": "&sub;",
+        "dec": "&#8834;",
+        "hex": "&#x2282;"
+    },
+    {
+        "char": "⊄",
+        "html": "&nsub;",
+        "dec": "&#8836;",
+        "hex": "&#x2284;"
+    },
+    {
+        "char": "⊆",
+        "html": "&sube;",
+        "dec": "&#8838;",
+        "hex": "&#x2286;"
+    },
+    {
+        "char": "⊃",
+        "html": "&sup;",
+        "dec": "&#8835;",
+        "hex": "&#x2283;"
+    },
+    {
+        "char": "⊇",
+        "html": "&supe;",
+        "dec": "&#8839;",
+        "hex": "&#x2287;"
+    },
+    {
+        "char": "⟨",
+        "html": "&lang;",
+        "dec": "&#9001;",
+        "hex": "&#x2329;"
+    },
+    {
+        "char": "⟩",
+        "html": "&rang;",
+        "dec": "&#9002;",
+        "hex": "&#x232A;"
+    },
+    {
+        "char": "⌉",
+        "html": "&rceil;",
+        "dec": "&#8969;",
+        "hex": "&#x2309;"
+    },
+    {
+        "char": "⌋",
+        "html": "&rfloor;",
+        "dec": "&#8971;",
+        "hex": "&#x230B;"
+    },
+    {
+        "char": "⌈",
+        "html": "&lceil;",
+        "dec": "&#8968;",
+        "hex": "&#x2308;"
+    },
+    {
+        "char": "⌊",
+        "html": "&lfloor;",
+        "dec": "&#8970;",
+        "hex": "&#x230A;"
+    },
+    {
+        "char": "∗",
+        "html": "&lowast;",
+        "dec": "&#8727;",
+        "hex": "&#x2217;"
+    },
+    {
+        "char": "−",
+        "html": "&minus;",
+        "dec": "&#8722;",
+        "hex": "&#x2212;"
+    },
+    {
+        "char": "∇",
+        "html": "&nabla;",
+        "dec": "&#8711;",
+        "hex": "&#x2207;"
+    },
+    {
+        "char": "⊕",
+        "html": "&oplus;",
+        "dec": "&#8853;",
+        "hex": "&#x2295;"
+    },
+    {
+        "char": "⊗",
+        "html": "&otimes;",
+        "dec": "&#8855;",
+        "hex": "&#x2297;"
+    },
+    {
+        "char": "∂",
+        "html": "&part;",
+        "dec": "&#8706;",
+        "hex": "&#x2202;"
+    },
+    {
+        "char": "‰",
+        "html": "&permil;",
+        "dec": "&#8240;",
+        "hex": "&#x2030;"
+    },
+    {
+        "char": "⊥",
+        "html": "&perp;",
+        "dec": "&#8869;",
+        "hex": "&#x22A5;"
+    },
+    {
+        "char": "ϖ",
+        "html": "&piv;",
+        "dec": "&#982;",
+        "hex": "&#x3D6;"
+    },
+    {
+        "char": "∏",
+        "html": "&prod;",
+        "dec": "&#8719;",
+        "hex": "&#x220F;"
+    },
+    {
+        "char": "∑",
+        "html": "&sum;",
+        "dec": "&#8721;",
+        "hex": "&#x2211;"
+    },
+    {
+        "char": "∝",
+        "html": "&prop;",
+        "dec": "&#8733;",
+        "hex": "&#x221D;"
+    },
+    {
+        "char": "√",
+        "html": "&radic;",
+        "dec": "&#8730;",
+        "hex": "&#x221A;"
+    },
+    {
+        "char": "⋅",
+        "html": "&sdot;",
+        "dec": "&#8901;",
+        "hex": "&#x22C5;"
+    },
+    {
+        "char": "∼",
+        "html": "&sim;",
+        "dec": "&#8764;",
+        "hex": "&#x223C;"
+    },
+    {
+        "char": "∴",
+        "html": "&there4;",
+        "dec": "&#8756;",
+        "hex": "&#x2234;"
+    },
+    {
+        "char": "ϑ",
+        "html": "&thetasym;",
+        "dec": "&#977;",
+        "hex": "&#x3D1;"
+    },
+    {
+        "char": "ϒ",
+        "html": "&upsih;",
+        "dec": "&#978;",
+        "hex": "&#x3D2;"
+    },
+
+    // Arrows
+    {
+        "char": "←",
+        "html": "&larr;",
+        "dec": "&#8592;",
+        "hex": "&#x2190;"
+    },
+    {
+        "char": "→",
+        "html": "&rarr;",
+        "dec": "&#8594;",
+        "hex": "&#x2192;"
+    },
+    {
+        "char": "↑",
+        "html": "&uarr;",
+        "dec": "&#8593;",
+        "hex": "&#x2191;"
+    },
+    {
+        "char": "↓",
+        "html": "&darr;",
+        "dec": "&#8595;",
+        "hex": "&#x2193;"
+    },
+    {
+        "char": "↔",
+        "html": "&harr;",
+        "dec": "&#8596;",
+        "hex": "&#x2194;"
+    },
+    {
+        "char": "⇐",
+        "html": "&lArr;",
+        "dec": "&#8656;",
+        "hex": "&#x21D0;"
+    },
+    {
+        "char": "⇒",
+        "html": "&rArr;",
+        "dec": "&#8658;",
+        "hex": "&#x21D2;"
+    },
+    {
+        "char": "⇑",
+        "html": "&uArr;",
+        "dec": "&#8657;",
+        "hex": "&#x21D1;"
+    },
+    {
+        "char": "⇓",
+        "html": "&dArr;",
+        "dec": "&#8659;",
+        "hex": "&#x21D3;"
+    },
+    {
+        "char": "⇔",
+        "html": "&hArr;",
+        "dec": "&#8660;",
+        "hex": "&#x21D4;"
+    },
+
+    // Special
+    {
+        "char": "ℵ",
+        "html": "&alefsym;",
+        "dec": "&#8501;",
+        "hex": "&#x2135;"
+    },
+    {
+        "char": "↵",
+        "html": "&crarr;",
+        "dec": "&#8629;",
+        "hex": "&#x21B5;"
+    },
+    {
+        "char": "℘",
+        "html": "&weierp;",
+        "dec": "&#8472;",
+        "hex": "&#x2118;"
+    },
+    {
+        "char": "ℑ",
+        "html": "&image;",
+        "dec": "&#8465;",
+        "hex": "&#x2111;"
+    },
+    {
+        "char": "ℜ",
+        "html": "&real;",
+        "dec": "&#8476;",
+        "hex": "&#x211C;"
+    },
+    {
+        "char": "◊",
+        "html": "&loz;",
+        "dec": "&#9674;",
+        "hex": "&#x25CA;"
+    },
+    {
+        "char": "‎",
+        "html": "&lrm;",
+        "dec": "&#8206;",
+        "hex": "&#x200E;"
+    },
+    {
+        "char": "‏",
+        "html": "&rlm;",
+        "dec": "&#8207;",
+        "hex": "&#x200F;"
+    },
+
+    // Greek
+    {
+        "char": "Α",
+        "html": "&Alpha;",
+        "dec": "&#913;",
+        "hex": "&#x391;"
+    },
+    {
+        "char": "Β",
+        "html": "&Beta;",
+        "dec": "&#914;",
+        "hex": "&#x392;"
+    },
+    {
+        "char": "Γ",
+        "html": "&Gamma;",
+        "dec": "&#915;",
+        "hex": "&#x393;"
+    },
+    {
+        "char": "Δ",
+        "html": "&Delta;",
+        "dec": "&#916;",
+        "hex": "&#x394;"
+    },
+    {
+        "char": "Ε",
+        "html": "&Epsilon;",
+        "dec": "&#917;",
+        "hex": "&#x395;"
+    },
+    {
+        "char": "Ζ",
+        "html": "&Zeta;",
+        "dec": "&#918;",
+        "hex": "&#x396;"
+    },
+    {
+        "char": "Η",
+        "html": "&Eta;",
+        "dec": "&#919;",
+        "hex": "&#x397;"
+    },
+    {
+        "char": "Θ",
+        "html": "&Theta;",
+        "dec": "&#920;",
+        "hex": "&#x398;"
+    },
+    {
+        "char": "Ι",
+        "html": "&Iota;",
+        "dec": "&#921;",
+        "hex": "&#x399;"
+    },
+    {
+        "char": "Κ",
+        "html": "&Kappa;",
+        "dec": "&#922;",
+        "hex": "&#x39A;"
+    },
+    {
+        "char": "Λ",
+        "html": "&Lambda;",
+        "dec": "&#923;",
+        "hex": "&#x39B;"
+    },
+    {
+        "char": "Μ",
+        "html": "&Mu;",
+        "dec": "&#924;",
+        "hex": "&#x39C;"
+    },
+    {
+        "char": "Ν",
+        "html": "&Nu;",
+        "dec": "&#925;",
+        "hex": "&#x39D;"
+    },
+    {
+        "char": "Ξ",
+        "html": "&Xi;",
+        "dec": "&#926;",
+        "hex": "&#x39E;"
+    },
+    {
+        "char": "Ο",
+        "html": "&Omicron;",
+        "dec": "&#927;",
+        "hex": "&#x39F;"
+    },
+    {
+        "char": "Π",
+        "html": "&Pi;",
+        "dec": "&#928;",
+        "hex": "&#x3A0;"
+    },
+    {
+        "char": "Ρ",
+        "html": "&Rho;",
+        "dec": "&#929;",
+        "hex": "&#x3A1;"
+    },
+    {
+        "char": "Σ",
+        "html": "&Sigma;",
+        "dec": "&#931;",
+        "hex": "&#x3A3;"
+    },
+    {
+        "char": "Τ",
+        "html": "&Tau;",
+        "dec": "&#932;",
+        "hex": "&#x3A4;"
+    },
+    {
+        "char": "Υ",
+        "html": "&Upsilon;",
+        "dec": "&#933;",
+        "hex": "&#x3A5;"
+    },
+    {
+        "char": "Φ",
+        "html": "&Phi;",
+        "dec": "&#934;",
+        "hex": "&#x3A6;"
+    },
+    {
+        "char": "Χ",
+        "html": "&Chi;",
+        "dec": "&#935;",
+        "hex": "&#x3A7;"
+    },
+    {
+        "char": "Ψ",
+        "html": "&Psi;",
+        "dec": "&#936;",
+        "hex": "&#x3A8;"
+    },
+    {
+        "char": "Ω",
+        "html": "&Omega;",
+        "dec": "&#937;",
+        "hex": "&#x3A9;"
+    },
+    {
+        "char": "α",
+        "html": "&alpha;",
+        "dec": "&#945;",
+        "hex": "&#x3B1;"
+    },
+    {
+        "char": "β",
+        "html": "&beta;",
+        "dec": "&#946;",
+        "hex": "&#x3B2;"
+    },
+    {
+        "char": "γ",
+        "html": "&gamma;",
+        "dec": "&#947;",
+        "hex": "&#x3B3;"
+    },
+    {
+        "char": "δ",
+        "html": "&delta;",
+        "dec": "&#948;",
+        "hex": "&#x3B4;"
+    },
+    {
+        "char": "ε",
+        "html": "&epsilon;",
+        "dec": "&#949;",
+        "hex": "&#x3B5;"
+    },
+    {
+        "char": "ζ",
+        "html": "&zeta;",
+        "dec": "&#950;",
+        "hex": "&#x3B6;"
+    },
+    {
+        "char": "η",
+        "html": "&eta;",
+        "dec": "&#951;",
+        "hex": "&#x3B7;"
+    },
+    {
+        "char": "θ",
+        "html": "&theta;",
+        "dec": "&#952;",
+        "hex": "&#x3B8;"
+    },
+    {
+        "char": "ι",
+        "html": "&iota;",
+        "dec": "&#953;",
+        "hex": "&#x3B9;"
+    },
+    {
+        "char": "κ",
+        "html": "&kappa;",
+        "dec": "&#954;",
+        "hex": "&#x3BA;"
+    },
+    {
+        "char": "λ",
+        "html": "&lambda;",
+        "dec": "&#955;",
+        "hex": "&#x3BB;"
+    },
+    {
+        "char": "μ",
+        "html": "&mu;",
+        "dec": "&#956;",
+        "hex": "&#x3BC;"
+    },
+    {
+        "char": "ν",
+        "html": "&nu;",
+        "dec": "&#957;",
+        "hex": "&#x3BD;"
+    },
+    {
+        "char": "ξ",
+        "html": "&xi;",
+        "dec": "&#958;",
+        "hex": "&#x3BE;"
+    },
+    {
+        "char": "ο",
+        "html": "&omicron;",
+        "dec": "&#959;",
+        "hex": "&#x3BF;"
+    },
+    {
+        "char": "π",
+        "html": "&pi;",
+        "dec": "&#960;",
+        "hex": "&#x3C0;"
+    },
+    {
+        "char": "ρ",
+        "html": "&rho;",
+        "dec": "&#961;",
+        "hex": "&#x3C1;"
+    },
+    {
+        "char": "σ",
+        "html": "&sigma;",
+        "dec": "&#963;",
+        "hex": "&#x3C3;"
+    },
+    {
+        "char": "ς",
+        "html": "&sigmaf;",
+        "dec": "&#962;",
+        "hex": "&#x3C2;"
+    },
+    {
+        "char": "τ",
+        "html": "&tau;",
+        "dec": "&#964;",
+        "hex": "&#x3C4;"
+    },
+    {
+        "char": "υ",
+        "html": "&upsilon;",
+        "dec": "&#965;",
+        "hex": "&#x3C5;"
+    },
+    {
+        "char": "φ",
+        "html": "&phi;",
+        "dec": "&#966;",
+        "hex": "&#x3C6;"
+    },
+    {
+        "char": "χ",
+        "html": "&chi;",
+        "dec": "&#967;",
+        "hex": "&#x3C7;"
+    },
+    {
+        "char": "ψ",
+        "html": "&psi;",
+        "dec": "&#968;",
+        "hex": "&#x3C8;"
+    },
+    {
+        "char": "ω",
+        "html": "&omega;",
+        "dec": "&#969;",
+        "hex": "&#x3C9;"
+    },
+
+    // Dashes
+    {
+        "char": "–",
+        "html": "&ndash;",
+        "dec": "&#8211;",
+        "hex": "&#x2013;"
+    },
+    {
+        "char": "—",
+        "html": "&mdash;",
+        "dec": "&#8212;",
+        "hex": "&#x2014;"
+    },
+    {
+        "char": "−",
+        "html": "&minus;",
+        "dec": "&#8722;",
+        "hex": "&#x2212;"
+    }
+];

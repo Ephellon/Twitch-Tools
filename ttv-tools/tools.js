@@ -3119,7 +3119,10 @@ try {
                 let { from, to, events, payable } = data,
                     method = Settings.prevent_raiding ?? "none";
 
-                if(!top.UP_NEXT_ALLOW_THIS_TAB)
+                if(false
+                    || (!top.UP_NEXT_ALLOW_THIS_TAB)
+                    || (from.toLowerCase() == STREAMER?.name?.toLowerCase())
+                )
                     break;
 
                 // "Would the user allow this raid condition?"
@@ -4885,6 +4888,11 @@ let Initialize = async(START_OVER = false) => {
                                 data = { ...data, dataRetrievedOK: defined(data?.dailyBroadcastTime), dataRetrievedAt: +new Date };
 
                                 SaveCache({ [`data/${ STREAMER.name }`]: data });
+                            })
+                            .catch(error => {
+                                WARN(error).toNativeStack();
+
+                                top.location.reload();
                             });
 
                         // Channel details
@@ -4917,7 +4925,12 @@ let Initialize = async(START_OVER = false) => {
                                 data = { ...data, dataRetrievedOK: defined(data?.firstSeen), dataRetrievedAt: +new Date };
 
                                 SaveCache({ [`data/${ STREAMER.name }`]: data });
-                            });;
+                            })
+                            .catch(error => {
+                                WARN(error).toNativeStack();
+
+                                top.location.reload();
+                            });
 
                         //  OBSOLETE //
                         // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
@@ -6485,21 +6498,22 @@ let Initialize = async(START_OVER = false) => {
                         LOG('Adding to Up Next [ondrop]:', { href, streamer });
 
                         if(nullish(streamer?.icon)) {
-                            let name = (streamer?.name ?? parseURL(href).pathname.slice(1));
+                            let name = (streamer?.name ?? parseURL(href).pathname?.slice(1));
 
-                            new Search(name)
-                                .then(Search.convertResults)
-                                .then(streamer => {
-                                    let restored = ({
-                                        from: 'SEARCH',
-                                        href,
-                                        icon: streamer.icon,
-                                        live: streamer.live,
-                                        name: streamer.name,
+                            if(defined(name))
+                                new Search(name)
+                                    .then(Search.convertResults)
+                                    .then(streamer => {
+                                        let restored = ({
+                                            from: 'SEARCH',
+                                            href,
+                                            icon: streamer.icon,
+                                            live: streamer.live,
+                                            name: streamer.name,
+                                        });
+
+                                        ALL_CHANNELS = [...ALL_CHANNELS, restored];
                                     });
-
-                                    ALL_CHANNELS = [...ALL_CHANNELS, restored];
-                                });
                         }
 
                         // Jobs are unknown. Restart timer
@@ -7130,12 +7144,21 @@ let Initialize = async(START_OVER = false) => {
 
             // RemoveFromTopSearch(['tt-err-chn']);
         } else if(nullish($('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
-            WARN("[Followed Channels] is missing. Reloading...");
+            try {
+                $('[data-a-target="side-nav-arrow"i]')
+                    .closest('[class*="expand"i]')
+                    .querySelector('button')
+                    .click();
+            } catch(error) {
+                WARN("[Followed Channels] is missing. Reloading...");
 
-            SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
+                SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
 
-            // Failed to get channel at...
-            PushToTopSearch({ 'tt-err-chn': (+new Date).toString(36) });
+                // Failed to get channel at...
+                PushToTopSearch({ 'tt-err-chn': (+new Date).toString(36) });
+            }
+
+            return /* Fail "gracefully" */;
         }
 
         if(OLD_STREAMERS == NEW_STREAMERS)
@@ -8636,7 +8659,7 @@ let Initialize = async(START_OVER = false) => {
 
     __TimeZones__:
     if(parseBool(Settings.time_zones)) {
-        REMARK('Converting times in the title...');
+        REMARK('Converting times...');
 
         RegisterJob('time_zones');
     }
@@ -9449,9 +9472,18 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(title))
             return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW?.element?.remove();
 
-        let [name] = title.textContent.split(/[^\w\s]/);
+        let [alias] = title.textContent.split(/[^\p{L}*\w\s]/u);
 
-        name = name?.trim();
+        alias = alias?.trim();
+
+        let name = (null
+            ?? ALL_CHANNELS.find(({ name }) => (
+                (name.contains('(') && name.contains(')'))?
+                    name.contains(alias):
+                name == alias
+            ))
+            ?? { name: alias.normalize('NFKD') }
+        )?.name?.replace(/[^]*\(([^\(\)]+)\)[^]*/, '$1');
 
         // There is already a preview of the hovered tooltip
         if([STREAMER?.name, STREAM_PREVIEW?.name].contains(name))
@@ -10122,7 +10154,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Miscellaneous: {
         // Better styling. Will match the user's theme choice as best as possible
-        CUSTOM_CSS.innerHTML +=
+        AddCustomCSSBlock('better-themed-styling',
             `
             /* The user is using the light theme (like a crazy person) */
             :root {
@@ -10172,7 +10204,7 @@ let Initialize = async(START_OVER = false) => {
                  * text-shadow: 0 0 5px #fff;
                  */
             }
-            `;
+            `);
     }
 
     __GET_UPDATE_INFO__: {
@@ -10323,16 +10355,22 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     if(defined(VIDEO_AD_COUNTDOWN))
                         return until.void;
 
-                    VIDEO_AD_COUNTDOWN = parseTime(/(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups?.time) || 15_000;
+                    let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
 
-                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN);
+                    if('00:00'.contains(time))
+                        return;
+
+                    count = parseInt(count);
+                    time = parseTime(time);
+
+                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
                 });
 
         LOG("Main container ready");
 
         Settings = await GetSettings();
 
-        // Set the usre's language
+        // Set the user's language
         let [documentLanguage] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLowerCase().split('-');
 
         window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
@@ -10688,6 +10726,8 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         }
 
                         let volume = parseFloat(css?.width ?? 50) / 100;
+
+                        isTrusted ||= defined($('[data-a-target^="player-volume"i]:hover'));
 
                         for(let [name, callback] of GetVolume.__onchange__)
                             callback(volume, { isTrusted: parseBool(isTrusted) });
