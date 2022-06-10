@@ -548,6 +548,13 @@ class Balloon {
     // Tooltip.get(parent:Element) → Element~Tooltip
 class Tooltip {
     static #TOOLTIPS = new Map()
+    static #CLEANER = setInterval(() => {
+        $('[tt-last-accessed]', true)
+            .map(tooltip => {
+                if(+new Date(tooltip.getAttribute('tt-last-accessed')) < +new Date - 1000)
+                    tooltip.closest('.tooltip-layer').remove();
+            });
+    }, 1000)
 
     constructor(parent, text = '', fineTuning = {}) {
         let existing = Tooltip.#TOOLTIPS.get(parent);
@@ -564,9 +571,12 @@ class Tooltip {
             return existing;
 
         let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text }),
-            uuid = UUID.from(text).value;
+            uuid = (null
+                || parent.getAttribute('tt-tooltip-id')
+                || UUID.from(getDOMPath(parent, true)).value
+            );
 
-        tooltip.id = uuid;
+        parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
 
         parent.addEventListener('mouseenter', event => {
             let { currentTarget } = event,
@@ -587,7 +597,7 @@ class Tooltip {
                                 //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
 
                                 case 'down':
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 9999;`;
 
                                 // case 'left':
                                 //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
@@ -596,7 +606,7 @@ class Tooltip {
                                 //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
 
                                 default:
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 9999;`;
                             }
 
                             return style;
@@ -612,10 +622,11 @@ class Tooltip {
             tooltip.setAttribute('style', (fineTuning.style ?? ''));
         });
 
-        parent.addEventListener('mouseleave', event => {
-            $('div#root .tt-tooltip-layer.tooltip-layer')?.remove();
+        parent.addEventListener('mouseleave', ({ target }) => {
+            let tooltip = $(`[id="${ target.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
 
-            tooltip?.closest('[show]')?.setAttribute('show', false);
+            tooltip?.setAttribute('show', false);
+            tooltip?.setAttribute('tt-last-accessed', (new Date).toJSON());
         });
 
         Tooltip.#TOOLTIPS.set(parent, tooltip);
@@ -3023,7 +3034,7 @@ try {
                             if(type == 'automatic') {
                                 let [channel, name] = id.split(':', 2);
 
-                                if(STREAMER.sole == parseInt(channel))
+                                if(STREAMER?.sole == parseInt(channel))
                                     store[name] = data[key];
                             } else {
                                 store[id] = data[key];
@@ -3329,7 +3340,7 @@ try {
                 icon: 'download',
                 shortcut: 'ctrl+s',
                 action: async event => {
-                    await alert.timed('Getting ready to save page...', 7_000);
+                    await alert.timed('Getting ready to save page...', 7000);
 
                     let DOM = document.cloneNode(true);
                     let type = DOM.contentType,
@@ -4123,7 +4134,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get done() {
-            return STREAMER.__done__ ?? (async() => {
+            return STREAMER.__done__ || (async() => {
                 let done;
 
                 await LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
@@ -4139,7 +4150,7 @@ let Initialize = async(START_OVER = false) => {
                         -1
                     );
 
-                    return STREAMER.__done__ = done = (notEarned == 0);
+                    return STREAMER.__done__ ||= done = (notEarned == 0);
                 });
 
                 return await until(() => done);
@@ -4295,11 +4306,11 @@ let Initialize = async(START_OVER = false) => {
             let length = ((end - start) / 60_000),
                 height = (STREAMER.data.followers ?? STREAMER.cult),
 
-                viewed = ((STREAMER.coin | 1) * 3/7/2),
-                amount = (viewed / length),
+                actual = ((STREAMER.coin | 1) * 3/6/2),
+                amount = (actual / length),
                 rank = (height / height**amount);
 
-            return rank.clamp(0, length).round()
+            return rank.clamp(0, height).round()
         },
 
         get redo() {
@@ -4309,7 +4320,7 @@ let Initialize = async(START_OVER = false) => {
         __shop__: [],
 
         get shop() {
-            let shop = STREAMER.jump?.[STREAMER.name.toLowerCase()]?.stream?.points;
+            let shop = STREAMER.jump?.[STREAMER.name?.toLowerCase?.()]?.stream?.points;
 
             if(nullish(shop))
                 return STREAMER.__shop__;
@@ -5051,7 +5062,7 @@ let Initialize = async(START_OVER = false) => {
             (IGNORE_ZOOM_STATE? '': '.home:not([user-intended="true"i]) [data-a-target^="home"i]')
         ].filter(s => s.length).join(','))?.click();
     };
-    Timers.auto_accept_mature = 5_000;
+    Timers.auto_accept_mature = 5000;
 
     __AutoMatureAccept__:
     if(parseBool(Settings.auto_accept_mature)) {
@@ -5354,7 +5365,7 @@ let Initialize = async(START_OVER = false) => {
             }, 100);
         }, POLL_INTERVAL);
     };
-    Timers.auto_focus = -1_000;
+    Timers.auto_focus = -1000;
 
     Unhandlers.auto_focus = () => {
         if(RestartJob.__reason__ !== 'modify')
@@ -5494,7 +5505,7 @@ let Initialize = async(START_OVER = false) => {
                 tooltip: new Tooltip(container, `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
             };
 
-            button.tooltip.id = new UUID().toString().replace(/-/g, '');
+            // button.tooltip.id = new UUID().toString().replace(/-/g, '');
             button.container.setAttribute('tt-away-mode-enabled', enabled);
 
             button.icon ??= $('svg', false, container);
@@ -5594,7 +5605,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('away_mode');
     };
-    Timers.away_mode = 1_000;
+    Timers.away_mode = 1000;
 
     Unhandlers.away_mode = () => {
         $('#away-mode')?.remove();
@@ -5619,7 +5630,7 @@ let Initialize = async(START_OVER = false) => {
         };
 
         // Scheduling logic...
-        until(() => $('#away-mode'), 3_000).then(awayMode => {
+        until(() => $('#away-mode'), 3000).then(awayMode => {
             let schedules = JSON.parse(Settings?.away_mode_schedule || '[]');
             let today = new Date(),
                 YEAR = today.getFullYear(),
@@ -5707,7 +5718,7 @@ let Initialize = async(START_OVER = false) => {
             setTimeout(() => button.click(), 100 * stop);
         }, 100);
     };
-    Timers.claim_loot = -5_000;
+    Timers.claim_loot = -5000;
 
     __ClaimLoot__:
     if(parseBool(Settings.claim_loot)) {
@@ -5771,7 +5782,7 @@ let Initialize = async(START_OVER = false) => {
             }
         });
     };
-    Timers.claim_prime = -5_000;
+    Timers.claim_prime = -5000;
 
     __ClaimPrime__:
     if(parseBool(Settings.claim_prime)) {
@@ -6170,7 +6181,7 @@ let Initialize = async(START_OVER = false) => {
                         reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time))? -1: +1);
 
                         if(!reminders.length)
-                            return await alert.timed('There are no Live Reminders to display', 7_000);
+                            return await alert.timed('There are no Live Reminders to display', 7000);
 
                         listing:
                         for(let { name, time } of reminders) {
@@ -6295,7 +6306,7 @@ let Initialize = async(START_OVER = false) => {
                                                                             SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
                                                                             await confirm
-                                                                                .timed(`Reminder removed successfully!`, 5_000)
+                                                                                .timed(`Reminder removed successfully!`, 5000)
                                                                                 .then(ok => {
                                                                                     // The user pressed nothing, or pressed "OK"
                                                                                     if(nullish(ok) || ok)
@@ -6339,7 +6350,7 @@ let Initialize = async(START_OVER = false) => {
                 },
             });
 
-            live_reminders_catalog_button.tooltip = new Tooltip(live_reminders_catalog_button, 'View Live Reminders');
+            live_reminders_catalog_button.tooltip ??= new Tooltip(live_reminders_catalog_button, 'View Live Reminders');
 
             LIVE_REMINDERS__LISTING_INTERVAL ??=
             setInterval(() => {
@@ -6360,7 +6371,7 @@ let Initialize = async(START_OVER = false) => {
                 [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
-            first_in_line_help_button.tooltip = new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
+            first_in_line_help_button.tooltip ??= new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
 
             // Update the color name...
             setInterval(() => {
@@ -6412,7 +6423,7 @@ let Initialize = async(START_OVER = false) => {
                 if(FIRST_IN_LINE_BOOST) {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_TIME_REMAINING(), fiveMin));
 
-                    setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)), 5_000);
+                    setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)), 5000);
 
                     SaveCache({ FIRST_IN_LINE_DUE_DATE });
                 }
@@ -6421,7 +6432,7 @@ let Initialize = async(START_OVER = false) => {
                 first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
                 first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', '');
                 first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
-                first_in_line_boost_button.tooltip = new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
+                first_in_line_boost_button.tooltip ??= new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
 
                 let up_next_button = $('[up-next--container] button');
 
@@ -6429,7 +6440,7 @@ let Initialize = async(START_OVER = false) => {
                 up_next_button?.setAttribute('speeding', parseBool(FIRST_IN_LINE_BOOST));
 
                 // Pause
-                first_in_line_pause_button.tooltip = new Tooltip(first_in_line_pause_button, `Pause the timer`);
+                first_in_line_pause_button.tooltip ??= new Tooltip(first_in_line_pause_button, `Pause the timer`);
             });
         }
 
@@ -6681,7 +6692,7 @@ let Initialize = async(START_OVER = false) => {
                                         return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                                     }
 
-                                    if(time < 1_000)
+                                    if(time < 1000)
                                         setTimeout(() => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
@@ -6901,7 +6912,7 @@ let Initialize = async(START_OVER = false) => {
                                 return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                             }
 
-                            if(time < 1_000)
+                            if(time < 1000)
                                 setTimeout(() => {
                                     LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
@@ -6962,7 +6973,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('first_in_line');
     };
-    Timers.first_in_line = 1_000;
+    Timers.first_in_line = 1000;
 
     Unhandlers.first_in_line = () => {
         if(defined(FIRST_IN_LINE_JOB))
@@ -7215,7 +7226,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('first_in_line_plus');
     };
-    Timers.first_in_line_plus = 1_000;
+    Timers.first_in_line_plus = 1000;
 
     Unhandlers.first_in_line_plus = Unhandlers.first_in_line;
 
@@ -7309,7 +7320,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7_000)).catch(WARN));
+                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
                 }, f('div', {},
@@ -7364,8 +7375,8 @@ let Initialize = async(START_OVER = false) => {
                         continue checking;
 
                     let { name, live, icon, href, data = { actualStartTime: null, lastSeen: null } } = channel;
-                    let lastOnline = new Date((+new Date(LiveReminders[reminderName])).floorToNearest(1_000)).toJSON(),
-                        justOnline = new Date((+new Date(data.actualStartTime)).floorToNearest(1_000)).toJSON();
+                    let lastOnline = new Date((+new Date(LiveReminders[reminderName])).floorToNearest(1000)).toJSON(),
+                        justOnline = new Date((+new Date(data.actualStartTime)).floorToNearest(1000)).toJSON();
 
                     // The channel just went live!
                     if(lastOnline != justOnline) {
@@ -7393,7 +7404,7 @@ let Initialize = async(START_OVER = false) => {
                                 // Show a notification
                                 Display_phantom_notification: {
                                     WARN(`Live Reminders: ${ name } just went live`, new Date);
-                                    await alert.timed(`${ name } just went live!`, 7_000);
+                                    await alert.timed(`${ name } just went live!`, 7000);
                                 }
                             }
 
@@ -7460,7 +7471,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('auto_follow_raids');
     };
-    Timers.auto_follow_raids = 1_000;
+    Timers.auto_follow_raids = 1000;
 
     __AutoFollowRaid__:
     if(parseBool(Settings.auto_follow_raids) || parseBool(Settings.auto_follow_all)) {
@@ -7485,7 +7496,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('auto_follow_time');
     };
-    Timers.auto_follow_time = 1_000;
+    Timers.auto_follow_time = 1000;
 
     __AutoFollowTime__:
     if(parseBool(Settings.auto_follow_time) || parseBool(Settings.auto_follow_all)) {
@@ -7512,7 +7523,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('kill_extensions');
     };
-    Timers.kill_extensions = 5_000;
+    Timers.kill_extensions = 5000;
 
     Unhandlers.kill_extensions = () => {
         let extension_views = $('[class^="extension-view"i]', true);
@@ -7540,75 +7551,87 @@ let Initialize = async(START_OVER = false) => {
      */
     // Parses textual commands
     function parseCommands(string = '', variables = {}) {
-        return string?.replace(/\$?(\([^\)]+?\)|\{[^\}]+?\}|\[[^\]]+?\])/g, ($0, $1, $$, $_) => {
-            let path = $1.replace(/^[\(\[\{]+|[\}\]\)]+$/g, '').split('.');
-            let properties = ({
-                // StreamElements
-                user: {
-                    _: USERNAME,
-                    name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
-                    level: 100,
+        for(let MAX_ITER = 3 * string.count('$'), regexp = /\$?(\([^\(\)]+?\)|\{[^\{\}]+?\}|\[[^\[\]]+?\])/; regexp.test(string) && --MAX_ITER > 0;)
+            string = string.replace(regexp, ($0, $1, $$, $_) => {
+                let path = $1.replace(/^[\(\[\{]|[\}\]\)]$/g, '').split(/[\s\.]+/).filter(string => !!string.length);
 
-                    points: STREAMER.coin,
-                    points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                    points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                    time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
-                    time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                let gameText = $('[data-a-target="stream-game-link"i]').textContent;
+                let properties = ({
+                    // StreamElements
+                    user: {
+                        _: USERNAME,
+                        name: USERNAME.toLocaleLowerCase(top.LANGUAGE),
+                        level: 100,
 
-                    lastmessage: GetChat().filter(({ author }) => USERNAME.contains(author)),
-                    lastseen: toTimeString(0, '!minute_m !second_s'),
-                    lastactive: toTimeString(0, '!minute_m !second_s'),
+                        points: STREAMER.coin,
+                        points_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                        points_alltime_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                        time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
+                        time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
 
-                    time_online: toTimeString((parseCoin($('#tt-points-receipt').textContent) / 320) * 4_000),
-                    time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
-                },
-                user1: USERNAME,
-                '1': USERNAME,
-                '2': STREAMER.name,
+                        lastmessage: GetChat().filter(({ author }) => USERNAME.contains(author)),
+                        lastseen: toTimeString(0, '!minute_m !second_s'),
+                        lastactive: toTimeString(0, '!minute_m !second_s'),
 
-                channel: {
-                    _: STREAMER.name,
-                    viewers: STREAMER.poll,
-                    views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
-                    followers: STREAMER.cult,
-                    subs: STREAMER.poll,
-                    display_name: STREAMER.name,
-                    alias: STREAMER.name,
-                },
-                user2: STREAMER.name,
+                        time_online: toTimeString((parseCoin($('#tt-points-receipt')?.textContent) / 320) * 4000),
+                        time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
+                    },
+                    user1: USERNAME,
+                    '2': USERNAME,
+                    user2: STREAMER.name,
+                    '1': STREAMER.name,
 
-                title: $('[data-a-target="stream-title"i]').textContent,
-                status: $('[data-a-target="stream-title"i]').textContent,
+                    channel: {
+                        _: STREAMER.name,
+                        [STREAMER.name]: STREAMER.name,
+                        [USERNAME]: USERNAME,
+                        viewers: STREAMER.poll,
+                        views: (STREAMER.cult * (1 + (STREAMER.poll / STREAMER.cult))).floor(),
+                        followers: STREAMER.cult,
+                        subs: STREAMER.poll,
+                        display_name: STREAMER.name,
+                        alias: STREAMER.name,
+                    },
+                    user2: STREAMER.name,
 
-                game: $('[data-a-target="stream-game-link"i]').textContent,
+                    title: $('[data-a-target="stream-title"i]').textContent,
+                    status: $('[data-a-target="stream-title"i]').textContent,
 
-                pointsname: STREAMER.fiat,
+                    game: {
+                        _: gameText,
+                        [STREAMER.name]: gameText,
+                        [USERNAME]: gameText,
+                    },
 
-                uptime: toTimeString(STREAMER.time),
+                    pointsname: STREAMER.fiat,
 
-                // NightBot
-                channelid: STREAMER.sole,
-                userlevel: 'everyone',
-                sender: USERNAME,
-                touser: USERNAME,
+                    uptime: toTimeString(STREAMER.time),
 
-                // Either...
-                customapi: `*Custom API*`,
+                    // NightBot
+                    channelid: STREAMER.sole,
+                    userlevel: 'everyone',
+                    sender: USERNAME,
+                    touser: USERNAME,
 
-                // Fetched...
-                ...variables
-            }),
-                value = properties;
+                    // Either...
+                    customapi: `*Custom API*`,
 
-            dir:
-            for(let root of path)
-                if(nullish(value = value[root]))
-                    return $0;
-            value = value?._ ?? value;
+                    // Fetched...
+                    ...variables
+                }),
+                    value = properties;
 
-            return value || $_;
-        })
-        ?.replace(/^\/(?:\w\S+)\s*/, '');
+                dir:
+                for(let root of path)
+                    if(nullish(value = value[root]))
+                        return $0;
+                value = value?._ ?? value;
+
+                return value || $_;
+            })
+            ?.replace(/^\/(?:\w\S+)\s*/, '');
+
+        return string;
     }
 
     function decodeMD(string = '') {
@@ -8025,7 +8048,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('prevent_hosting');
     };
-    Timers.prevent_hosting = 5_000;
+    Timers.prevent_hosting = 5000;
 
     __PreventHosting__:
     if(Settings.prevent_hosting != "none") {
@@ -8066,7 +8089,7 @@ let Initialize = async(START_OVER = false) => {
 
         raid_stopper:
         if(raiding || raided) {
-            top.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5_000);
+            top.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5000);
 
             // Ignore followed channels
             if(["greed", "unfollowed"].contains(method)) {
@@ -8168,7 +8191,7 @@ let Initialize = async(START_OVER = false) => {
         if(![...document.body.children].contains(container))
             document.body.append(container);
     };
-    Timers.greedy_raiding = 5_000;
+    Timers.greedy_raiding = 5000;
 
     Unhandlers.greedy_raiding = () => {
         for(let [name, frame] of GREEDY_RAIDING_FRAMES)
@@ -8252,7 +8275,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('stay_live');
     };
-    Timers.stay_live = 7_000;
+    Timers.stay_live = 7000;
 
     __StayLive__:
     if(parseBool(Settings.stay_live)) {
@@ -8877,7 +8900,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('mention_audio');
     };
-    Timers.mention_audio = 1_000;
+    Timers.mention_audio = 1000;
 
     Unhandlers.mention_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -8910,7 +8933,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('phrase_audio');
     };
-    Timers.phrase_audio = 1_000;
+    Timers.phrase_audio = 1000;
 
     Unhandlers.phrase_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -8960,7 +8983,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('whisper_audio');
     };
-    Timers.whisper_audio = 1_000;
+    Timers.whisper_audio = 1000;
 
     Unhandlers.whisper_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -9083,8 +9106,11 @@ let Initialize = async(START_OVER = false) => {
                     return ranking?.remove() || JUDGE__STOP_WATCH('points_receipt_placement__ranking');
 
                 RANK_TOOLTIP ??= new Tooltip(ranking, "", { from: 'top' });
-                RANK_TOOLTIP.innerHTML = `You are in the top ${ place || '?' }%`;
-            }, 250);
+                let placementString = `You are in the top ${ place || '?' }%`;
+
+                if(RANK_TOOLTIP.innerHTML != placementString)
+                    RANK_TOOLTIP.innerHTML = placementString;
+            }, 5000);
         }
 
         JUDGE__STOP_WATCH('points_receipt_placement__ranking');
@@ -9116,7 +9142,7 @@ let Initialize = async(START_OVER = false) => {
 
             parent.append(points_receipt);
 
-            RECEIPT_TOOLTIP = new Tooltip(points_receipt);
+            RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
 
             COUNTING_POINTS = setInterval(async() => {
                 let points_receipt = $('#tt-points-receipt'),
@@ -9252,12 +9278,10 @@ let Initialize = async(START_OVER = false) => {
 
         let richTooltip = $('[class*="channel-tooltip"i]');
 
-        // Update the points (every minute)
-        if(++pointWatcherCounter % 240) {
-            pointWatcherCounter = 0;
-
-            LoadCache(['ChannelPoints'], async({ ChannelPoints }) => {
-                let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
+        // Update the points (every 30s)
+        if(++pointWatcherCounter % 120)
+            LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
+                let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
                     balance = STREAMER.coin;
 
@@ -9291,13 +9315,12 @@ let Initialize = async(START_OVER = false) => {
 
                 SaveCache({ ChannelPoints });
             });
-        }
 
         // Color the balance text
         $('[data-test-selector="balance-string"i]')?.setAttribute('tt-earned-all', await STREAMER.done);
 
         if(nullish(richTooltip))
-            return JUDGE__STOP_WATCH('point_watcher_placement');
+            return JUDGE__STOP_WATCH('point_watcher_placement', 30_000);
 
         // Remove the old face and values...
         $('.tt-point-amount, .tt-point-face', true).map(element => element?.remove());
@@ -9316,34 +9339,21 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(nullish(title) || nullish(target))
-            return JUDGE__STOP_WATCH('point_watcher_placement');
+            return JUDGE__STOP_WATCH('point_watcher_placement', 2_600);
 
         let [name, game] = title.textContent.split(/[^\w\s]/);
 
         name = name?.trim();
         game = game?.trim();
 
-        // Update the display
+        // Update the rich tooltip display
         LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
-                allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
-            notEarned = (
-                (allRewards?.length)?
-                    allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
-                (notEarned > -Infinity)?
-                    notEarned:
-                -1
-            );
-            pointsToEarnNext = (
-                (allRewards?.length)?
-                    allRewards
-                        .map(({ cost = 0 }) => (cost > STREAMER.coin? cost - STREAMER.coin: 0))
-                        .sort((x, y) => (x > y? -1: +1))
-                        .filter(x => x > 0)
-                        .pop():
+            notEarned = parseInt(notEarned);
+            pointsToEarnNext = parseInt(
                 (notEarned > -Infinity)?
                     pointsToEarnNext:
                 0
@@ -9351,7 +9361,7 @@ let Initialize = async(START_OVER = false) => {
 
             let text = furnish('span.tt-point-amount', {
                     'tt-earned-all': notEarned == 0,
-                    innerHTML: amount.toLocaleString(LANGUAGE),
+                    innerHTML: amount,
                 }),
                 icon = face?.length?
                     furnish('span.tt-point-face', {
@@ -9367,7 +9377,7 @@ let Initialize = async(START_OVER = false) => {
             target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
         });
 
-        JUDGE__STOP_WATCH('point_watcher_placement');
+        JUDGE__STOP_WATCH('point_watcher_placement', 2_700);
     };
     Timers.point_watcher_placement = 250;
 
@@ -9652,7 +9662,7 @@ let Initialize = async(START_OVER = false) => {
             f(`${ live_time.tagName }#tt-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
 
-        WATCH_TIME_TOOLTIP = new Tooltip(watch_time);
+        WATCH_TIME_TOOLTIP ??= new Tooltip(watch_time);
 
         parent.append(watch_time);
 
@@ -9682,7 +9692,7 @@ let Initialize = async(START_OVER = false) => {
             }, 1000);
         }).then(() => SaveCache({ Watching: NORMALIZED_PATHNAME }));
     };
-    Timers.watch_time_placement = -1_000;
+    Timers.watch_time_placement = -1000;
 
     Unhandlers.watch_time_placement = () => {
         clearInterval(WATCH_TIME_INTERVAL);
@@ -9858,7 +9868,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('recover_frames');
     };
-    Timers.recover_frames = 1_000;
+    Timers.recover_frames = 1000;
 
     __RecoverFrames__:
     if(parseBool(Settings.recover_frames)) {
@@ -10002,7 +10012,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('recover_video');
     };
-    Timers.recover_video = 5_000;
+    Timers.recover_video = 5000;
 
     __RecoverVideo__:
     if(parseBool(Settings.recover_video)) {
@@ -10080,7 +10090,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('recover_pages');
     };
-    Timers.recover_pages = 5_000;
+    Timers.recover_pages = 5000;
 
     __RecoverPages__:
     if(parseBool(Settings.recover_pages)) {
@@ -10106,12 +10116,12 @@ let Initialize = async(START_OVER = false) => {
             document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey) && altKey && shiftKey && 'xX'.contains(key))
                     $('video', true).pop().copyFrame()
-                        .then(async copied => await alert.timed('Screenshot saved to clipboard!', 5_000))
-                        .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }`, 7_000));
+                        .then(async copied => await alert.timed('Screenshot saved to clipboard!', 5000))
+                        .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }`, 7000));
             });
 
         // Display the enabled keyboard shortcuts
-        let help = $.body.getElementByText('space/k', 'i')?.closest('tbody');
+        let [help] = $.body.getElementsByTextContent('space/k', 'i').filter(element => element.tagName == 'TBODY');
 
         let f = furnish;
         if(defined(help) && nullish($('.tt-extra-keyboard-shortcuts', false, help)))

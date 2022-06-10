@@ -50,7 +50,6 @@ let Chat__Initialize = async(START_OVER = false) => {
     let STOP_WATCHES = new Map,
         JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
             let { abs } = Math;
-
             let start = STOP_WATCHES.get(JobName),
                 stop = +new Date,
                 span = abs(start - stop),
@@ -145,7 +144,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`, { top: -10 }),
             };
 
-            button.tooltip.id = new UUID().toString();
+            // button.tooltip.id = new UUID().toString();
             button.text.innerHTML = '+' + BonusChannelPointsSVG;
             button.container.setAttribute('tt-auto-claim-enabled', true);
 
@@ -530,7 +529,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         top -= 150;
 
-                        let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: false, view: window })), 1_000);
+                        let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: false, view: window })), 1000);
 
                         // Raw Search...
                             // FIX-ME: New Search logic does not complete?
@@ -1149,7 +1148,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             censoring:
             for(let line of chat) {
                 let { message, mentions, author, badges, emotes, element } = line,
-                    reason;
+                    reason, match;
 
                 let censoring = parseBool(element.getAttribute('tt-hidden-message'));
 
@@ -1158,13 +1157,13 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 let censor = parseBool(false
                     // Filter users on all channels
-                    || (Filter.user.test(author)? reason = 'user': false)
+                    || (Filter.user.test(author)? (match = author, reason = 'user'): false)
                     // Filter badges on all channels
-                    || (Filter.badge.test(badges)? reason = 'badge': false)
+                    || (Filter.badge.test(badges)? (match = badges, reason = 'badge'): false)
                     // Filter emotes on all channels
-                    || (Filter.emote.test(emotes)? reason = 'emote': false)
+                    || (Filter.emote.test(emotes)? (match = emotes, reason = 'emote'): false)
                     // Filter messges (RegExp) on all channels
-                    || (Filter.text.test(message)? reason = 'text': false)
+                    || (Filter.text.test(message)? (match = message, reason = 'text'): false)
                     // Filter messages/users on specific a channel
                     || Filter.channel.map(({ name, text, user, badge, emote }) => {
                         if(nullish(STREAMER))
@@ -1175,10 +1174,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                         return (true
                             && (channel.replace(/^[^\/]/, '/$&').toLowerCase() == name.replace(/^[^\/]/, '/$&').toLowerCase())
                             && (false
-                                || (author.replace(/^[^@]/, '@$&').toLowerCase() == user?.replace(/^[^@]/, '@$&')?.toLowerCase()? reason = 'channel user': false)
-                                || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? reason = 'channel badge': false)
-                                || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? reason = 'channel emote': false)
-                                || (RegExp(text, 'i').test(message)? reason = 'channel text': false)
+                                || (author.replace(/^[^@]/, '@$&').toLowerCase() == user?.replace(/^[^@]/, '@$&')?.toLowerCase()? (match = author, reason = 'channel user'): false)
+                                || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? (match = badges, reason = 'channel badge'): false)
+                                || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? (match = emotes, reason = 'channel emote'): false)
+                                || (RegExp(text, 'i').test(message)? (match = text, reason = 'channel text'): false)
                             )
                         )
                     }).contains(true)
@@ -1192,7 +1191,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(hidden || mentions.contains(USERNAME))
                     continue;
 
-                LOG(`Censoring message because the ${ reason } matches`, line);
+                LOG(`Censoring message because the ${ reason } matches: ${ match }`, line);
 
                 element.setAttribute('tt-hidden-message', censor);
             }
@@ -1863,7 +1862,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('native_twitch_reply');
     };
-    Timers.native_twitch_reply = 1_000;
+    Timers.native_twitch_reply = 1000;
 
     __NativeTwitchReply__:
     if(parseBool(Settings.native_twitch_reply)) {
@@ -1942,7 +1941,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('prevent_spam');
     };
-    Timers.prevent_spam = -1_000;
+    Timers.prevent_spam = -1000;
 
     __PreventSpam__:
     if(parseBool(Settings.prevent_spam)) {
@@ -2097,7 +2096,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('convert_bits');
     };
-    Timers.convert_bits = 1_000;
+    Timers.convert_bits = 1000;
 
     __ConvertBits__:
     if(parseBool(Settings.convert_bits)) {
@@ -2618,7 +2617,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, top.location.origin);
     };
-    Timers.points_receipt_placement_framed_helper = 1_000;
+    Timers.points_receipt_placement_framed_helper = 1000;
 
     __PointsReceiptPlacement__:
     if(parseBool(Settings.points_receipt_placement)) {
@@ -2746,7 +2745,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
             top.postMessage({ action: 'raid', from, to, events, payable }, top.location.origin);
         });
     };
-    Timers.greedy_raiding = 5_000;
+    Timers.greedy_raiding = 5000;
 
     Unhandlers.greedy_raiding = () => {};
 
@@ -2954,7 +2953,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
                             top.postMessage({ action: 'jump', IS_CHANNEL_VIP, IS_CHANNEL_MODERATOR }, top.location.origin);
                         })
-                        .then(() => setTimeout(button.click(), 1_000));
+                        .then(() => setTimeout(button.click(), 1000));
                 });
     }
     // End of Chat__Initialize_Safe_Mode

@@ -1186,7 +1186,7 @@ function clearSyncStatus() {
 
 clearSyncStatus.clearID = -1;
 
-setTimeout(clearSyncStatus, 1_000);
+setTimeout(clearSyncStatus, 1000);
 
 $('#sync-settings--upload').onmouseup = async event => {
     let syncToken = $('#sync-token'),
@@ -1865,11 +1865,6 @@ document.body.onload = async() => {
 
                     ($(input.getAttribute('controller')).onchange = estimate)({ currentTarget: input });
                 });
-
-                // Add the "Experimental feature" tooltip
-                $('[id=":settings--experimental"i] section > .summary :not([hidden]) input', true)
-                    .map(input => input.closest(':not(input)'))
-                    // .map(container => container.setAttribute('right-tooltip', 'Experimental feature'));
 
                 $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
                     let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),

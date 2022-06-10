@@ -33,6 +33,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.14)
+- Fixed helper menu
+- Fixed preview point watcher
+
 > [`5.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.13)
 - Fixed Volume Release logic
 - Fixed previewing issue

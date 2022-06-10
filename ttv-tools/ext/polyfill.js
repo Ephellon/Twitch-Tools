@@ -281,12 +281,53 @@ function parseBool(value = null) {
         case "":
         case []:
         case {}:
+        case 0n:
         case 0:
             return false;
 
         default:
             return (["bigint", "number"].contains(typeof value)? !Number.isNaN(value): true);
     }
+}
+
+// Returns the DOM path of an element
+    // getDOMPath(element:Element[, shorten:boolean]) → String
+// https://stackoverflow.com/a/16742828/4211612
+function getDOMPath(element, shorten = false) {
+    if(nullish(element))
+        throw 'Unable to get path of non-element';
+
+    let path = [];
+    while(defined(element.parentNode)) {
+        let parent = element.parentNode,
+            children = parent.childNodes;
+
+        let siblingCount = 0, siblingIndex = 0;
+        for(let index = 0; index < children.length; ++index) {
+            let sibling = children[index];
+
+            if(sibling.nodeName == element.nodeName) {
+                if(sibling === element)
+                    siblingIndex = siblingCount;
+                ++siblingCount;
+            }
+        }
+
+        if(element.hasAttribute('id') && element.id.length > 0)
+            path.unshift(`${ element.nodeName.toLowerCase() }#${ element.id }`);
+        else if(siblingCount > 1 && siblingIndex > 0)
+            path.unshift(`${ element.nodeName.toLowerCase() }:nth-child(${ siblingIndex + 1 })`);
+        else
+            path.unshift(element.nodeName.toLowerCase());
+
+        element = parent;
+    }
+
+    path = (shorten? path.slice(1): path).join('>');
+    for(let regexp = />(?:(\w+)>\1)+/; shorten && regexp.test(path);)
+        path = path.replace(regexp, ' $1');
+
+    return path;
 }
 
 /***
@@ -596,11 +637,19 @@ String.prototype.toTitle ??= function toTitle() {
         .trim();
 };
 
+// Counts the number of elements in the string
+    // String..count(...searches:string) → Number:integer
+String.prototype.count = function count(...searches) {
+    let count = 0;
+    for(let search of searches)
+        count += this.split(search).length - 1;
+    return count;
+};
+
 // Add Array methods to HTMLCollection
 HTMLCollection.prototype.contains       ??= Array.prototype.contains;
 HTMLCollection.prototype.at             ??= Array.prototype.at;
 HTMLCollection.prototype.concat         ??= Array.prototype.concat;
-HTMLCollection.prototype.constructor    ??= Array.prototype.constructor;
 HTMLCollection.prototype.copyWithin     ??= Array.prototype.copyWithin;
 HTMLCollection.prototype.entries        ??= Array.prototype.entries;
 HTMLCollection.prototype.every          ??= Array.prototype.every;
@@ -799,7 +848,7 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
     number = Math.abs(number);
 
     let system = {},
-        capacity = 1_000;
+        capacity = 1000;
 
     switch(format.toLowerCase()) {
         case 'imperial': {
@@ -1898,7 +1947,7 @@ function alert(message = '') {
 
                         parent.classList.add('tt-done');
                         setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1_000);
+                        setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     }
                 }, 'OK')
@@ -1989,7 +2038,7 @@ alert.silent ??= (message = '', veiled = false) => {
         return response;
 
     container.classList.add('tt-silent');
-    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7000);
 
     alert.done.deposit(message, response);
     return response;
@@ -2068,7 +2117,7 @@ function confirm(message = '') {
 
                         parent.classList.add('tt-done');
                         setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1_000);
+                        setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
                 }, 'Cancel'),
@@ -2085,7 +2134,7 @@ function confirm(message = '') {
 
                         parent.classList.add('tt-done');
                         setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1_000);
+                        setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
                 }, 'OK')
@@ -2176,7 +2225,7 @@ confirm.silent ??= (message = '', veiled = false) => {
         return response;
 
     container.classList.add('tt-silent');
-    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7000);
 
     confirm.done.deposit(message, response);
     return response;
@@ -2273,7 +2322,7 @@ function prompt(message = '', defaultValue = '') {
 
                         parent.classList.add('tt-done');
                         setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1_000);
+                        setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
                 }, 'Cancel'),
@@ -2290,7 +2339,7 @@ function prompt(message = '', defaultValue = '') {
 
                         parent.classList.add('tt-done');
                         setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1_000);
+                        setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
                 }, 'OK')
@@ -2381,7 +2430,7 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
         return response;
 
     container.classList.add('tt-silent');
-    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7_000);
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7000);
 
     prompt.done.deposit(message, response);
     return response;
