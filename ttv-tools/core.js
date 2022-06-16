@@ -13,11 +13,11 @@
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
-    // new UUID() → Object
-    // UUID.BWT(string:string) → String
-    // UUID.cyrb53(string:string[, seed:number]) → String
-    // UUID.from(string:string[, traceable:boolean]) → Object
-    // UUID.prototype.toString() → String
+    // new UUID() → object
+    // UUID.BWT(string:string) → string
+    // UUID.cyrb53(string:string, seed:number?) → string
+    // UUID.from(string:string, traceable:boolean?) → object
+    // UUID.prototype.toString() → string
 class UUID {
     static #BWT_SEED = new UUID()
 
@@ -174,7 +174,7 @@ class UUID {
 
 // The LZW Library
 class LZW {
-    /** LZW base64 codec functionality
+    /** LZW (base64) codec functionality
      * @author      GitHub@antonylesuisse
      * @timestamp   05 APR 2021 21:15 MDT
      * @url         https://gist.github.com/revolunet/843889#gistcomment-3694417
@@ -209,7 +209,7 @@ class LZW {
     }
 
     // A simple hashing algorithm
-        // hash(input:string[salt:string]) → String
+        // hash(input:string, salt:string?) → string
     static hash(input = '', salt = '') {
         let output = '';
 
@@ -223,8 +223,72 @@ class LZW {
         return output;
     }
 
+    // Encodes a string to LZW format
+        // encode(string:string?) → String<LZW>
+    static encode(string = '') {
+        if(!string.length)
+            return '';
+
+        string = unescape(encodeURIComponent(string)).split('');
+
+        let dictionary = new Map,
+            [word] = string,
+            index = 256,
+            output = [],
+            key;
+
+        function push(word) {
+            output.push(word.length > 1? dictionary.get(word): word.charCodeAt(0));
+        }
+
+        for(let i = 1; i < string.length; ++i) {
+            let char = string[i];
+
+            if(dictionary.has(word + char)) {
+                word += char;
+            } else {
+                dictionary.set(word + char, index++);
+
+                push(word);
+
+                word = char;
+            }
+        }
+
+        push(word);
+
+        return output.map(charCode => String.fromCharCode(charCode)).join('');
+    }
+
+    // Decodes an LZW string
+        // decode(string:string<LZW>?) → string
+    static decode(string = '') {
+        let dictionary = new Map,
+            [word] = string,
+            index = 256,
+            output = [word],
+            last = word;
+
+        for(let i = 1; i < string.length; ++i) {
+            let key = string.charCodeAt(i);
+
+            word = (
+                key < 256?
+                    String.fromCharCode(key):
+                dictionary.has(key)?
+                    dictionary.get(key):
+                word + word.charAt(0)
+            );
+
+            output.push(word);
+            dictionary.set(index++, last + (last = word).charAt(0));
+        }
+
+        return output.join('');
+    }
+
     // Encodes a string to LZW-64 format
-        // encode64(string:string) → String~LZW-64
+        // encode64(string:string?) → String<LZW-64>
     static encode64(string = '') {
         if(!string.length)
             return '';
@@ -273,7 +337,7 @@ class LZW {
     }
 
     // Decodes an LZW-64 string
-        // decode64(string:string~LZW-64) → String
+        // decode64(string:string<LZW-64>?) → string
     static decode64(string = '') {
         let { B64 } = LZW,
             D64 = {};
@@ -380,7 +444,7 @@ function defined(value) {
 
 // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
 // Makes a Promised setInterval
-    // until(callback:function[,ms:number~Integer:milliseconds]) → Promise
+    // until(callback:function,ms:number~Integer:milliseconds?) → Promise<any>
 async function until(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
@@ -402,9 +466,16 @@ async function until(callback, ms = 100) {
     });
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
+// Waits to execute a function
+    // wait(delay:number<integer>?) → Promise
+function wait(delay) {
+    return new Promise(resolve => setTimeout(resolve, delay));
+}
+
 // https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
 // Delay callbacks until the user is done...
-    // delay(fn:function[, ms:number]) → undefined
+    // delay(fn:function, ms:number?) → undefined
 function delay(fn, ms = 0) {
     let timer = -1;
     return function(...args) {
@@ -425,7 +496,7 @@ try {
 
 // The following facilitates communication between pages
 // Get the current settings
-   // GetSettings() → Object
+   // GetSettings() → object
 function GetSettings() {
    return new Promise((resolve, reject) => {
        function ParseSettings(settings) {
@@ -444,7 +515,7 @@ function GetSettings() {
 }
 
 // Saves data to the page's storage
-    // SaveCache(keys:object[, callback:function]) → undefined
+    // SaveCache(keys:object, callback:function?) → undefined
 async function SaveCache(keys = {}, callback = () => {}) {
     let set = (key, value) => StorageSpace.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
@@ -456,7 +527,7 @@ async function SaveCache(keys = {}, callback = () => {}) {
 }
 
 // Loads data from the page's storage
-    // LoadCache(keys:string|array|object[, callback:function]) → undefined
+    // LoadCache(keys:string|array|object, callback:function?) → undefined
 async function LoadCache(keys = null, callback = () => {}) {
     let results = {},
         get = key => {
@@ -506,7 +577,7 @@ async function LoadCache(keys = null, callback = () => {}) {
 }
 
 // Removes data from the page's storage
-    // RemoveCache(keys:string|array[, callback:function])
+    // RemoveCache(keys:string|array, callback:function?)
 async function RemoveCache(keys, callback = () => {}) {
     let remove = key => StorageSpace.removeItem(`ext.twitch-tools/${ encodeURI(key) }`);
 
@@ -613,7 +684,7 @@ __STATIC__: {
     window.Unhandlers = Unhandlers;
 
     // Registers a job
-        // RegisterJob(JobName:string) → Number=IntervalID
+        // RegisterJob(JobName:string) → Number<IntervalID>
     function RegisterJob(JobName, JobReason = 'default') {
         RegisterJob.__reason__ = JobReason;
 

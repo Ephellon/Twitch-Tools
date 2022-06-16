@@ -79,7 +79,8 @@ let Player__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i]')?.click();
+        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i], [data-test-selector*="mute"i][data-test-selector*="dismiss"i]', true)
+            .map(button => button.click());
     };
     Timers.auto_accept_mature = -1_000;
 
@@ -143,15 +144,91 @@ let Player__Initialize = async(START_OVER = false) => {
         RegisterJob('hide_blank_ads');
     }
 
-    // Extras
-    __UnmuteEmbed__: {
-        let { channel, controls, muted, parent, quality } = parseURL(window.location).searchParameters;
+    /*** Networking
+     *      _   _      _                      _    _
+     *     | \ | |    | |                    | |  (_)
+     *     |  \| | ___| |___      _____  _ __| | ___ _ __   __ _
+     *     | . ` |/ _ \ __\ \ /\ / / _ \| '__| |/ / | '_ \ / _` |
+     *     | |\  |  __/ |_ \ V  V / (_) | |  |   <| | | | | (_| |
+     *     |_| \_|\___|\__| \_/\_/ \___/|_|  |_|\_\_|_| |_|\__, |
+     *                                                      __/ |
+     *                                                     |___/
+     */
+    /*** Video Clips
+     *     __      ___     _               _____ _ _
+     *     \ \    / (_)   | |             / ____| (_)
+     *      \ \  / / _  __| | ___  ___   | |    | |_ _ __  ___
+     *       \ \/ / | |/ _` |/ _ \/ _ \  | |    | | | '_ \/ __|
+     *        \  /  | | (_| |  __/ (_) | | |____| | | |_) \__ \
+     *         \/   |_|\__,_|\___|\___/   \_____|_|_| .__/|___/
+     *                                              | |
+     *                                              |_|
+     */
+    Handlers.auto_dvr = () => {
+        let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
 
-        controls = parseBool(controls);
-        muted = parseBool(muted);
+        if(action.toLowerCase() != 'dvr')
+            return;
 
-        if(!controls && !muted)
+        let video = $('video');
+        let live = nullish($('[class*="channel-status"i][class*="offline"i]'));
+
+        if(nullish(video) || !live)
+            return (
+                parseBool(autosave)?
+                    video.stopRecording():
+                null
+            );
+
+        if(defined(video.__recorder__))
+            return;
+
+        video.startRecording(Infinity, { mimeType: `video/${ filetype }` })
+            .then(chunks => {
+                let blob = new Blob(chunks, { type: chunks.type });
+                let link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ top.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
+
+                document.head.append(link);
+                link.click();
+            })
+            .catch(WARN)
+            .finally(() => {
+                let link = $(`#${ slug }`);
+
+                // Free up the memory
+                URL.revokeObjectURL(link?.href);
+                link?.remove();
+
+                parent.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, parent.location.origin);
+            });
+    };
+    Timers.auto_dvr = 500;
+
+    __Hide_Blank_Ads__:
+    if(true || parseBool(Settings?.auto_dvr)) {
+        RegisterJob('auto_dvr');
+    }
+
+    /*** Miscellaneous
+     *      __  __ _              _ _
+     *     |  \/  (_)            | | |
+     *     | \  / |_ ___  ___ ___| | | __ _ _ __   ___  ___  _   _ ___
+     *     | |\/| | / __|/ __/ _ \ | |/ _` | '_ \ / _ \/ _ \| | | / __|
+     *     | |  | | \__ \ (_|  __/ | | (_| | | | |  __/ (_) | |_| \__ \
+     *     |_|  |_|_|___/\___\___|_|_|\__,_|_| |_|\___|\___/ \__,_|___/
+     *
+     *
+     */
+    Miscellaneous: {
+        __UnmuteEmbed__: {
+            let { channel, controls, muted, parent, quality } = parseURL(window.location).searchParameters;
+
+            controls = parseBool(controls);
+            muted = parseBool(muted);
+
+            if(!controls && !muted)
             $('figure[tt-svg-label~="unmute"i]')?.click();
+        }
     }
 
     // End of Player__Initialize

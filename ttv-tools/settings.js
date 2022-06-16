@@ -198,6 +198,12 @@ let // These are option names. Anything else will be removed
         // Fine Details
         'fine_details',
 
+        // DVR Settings
+        'video_clips__file_type',
+        'video_clips__quality',
+        'video_clips__length',
+        'video_clips__dvr',
+
         /* Error Recovery */
         // Recover Video
         'recover_video',
@@ -238,11 +244,11 @@ let // These are option names. Anything else will be removed
 // https://stackoverflow.com/a/2117523/4211612
 // https://gist.github.com/jed/982883
 // Creates a random UUID
-    // new UUID() → Object
-    // UUID.BWT(string:string) → String
-    // UUID.cyrb53(string:string[, seed:number]) → String
-    // UUID.from(string:string[, traceable:boolean]) → Object
-    // UUID.prototype.toString() → String
+    // new UUID() → object
+    // UUID.BWT(string:string) → string
+    // UUID.cyrb53(string:string, seed:number?) → string
+    // UUID.from(string:string, traceable:boolean?) → object
+    // UUID.prototype.toString() → string
 class UUID {
     static #BWT_SEED = new UUID()
 
@@ -398,9 +404,8 @@ class UUID {
 }
 
 // Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element[, text:string[, fineTuning:object]]) → Element~Tooltip
-        // fineTuning:object = { left:number=pixels, top:number=pixels, direction:string := "up"|"right"|"down"|"left", lean:string := "center"|"right"|"left" }
-    // Tooltip.get(parent:Element) → Element~Tooltip
+    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, direction:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
+    // Tooltip.get(parent:Element) → Element<Tooltip>
 class Tooltip {
     static #TOOLTIPS = new Map()
 
@@ -417,8 +422,14 @@ class Tooltip {
         if(defined(existing))
             return existing;
 
-        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.direction || 'down' }`, { role: 'tooltip', innerHTML: text }),
-            uuid = UUID.from(text).value;
+        let uuid;
+        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
+
+        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(getDOMPath(parent, true)).value];
+        for(let value, index = 0; nullish(value) && index < values.length; ++index) {
+            value = values[index];
+            uuid = value + (['', ':tooltip'][index] || '');
+        }
 
         tooltip.id = uuid;
 
@@ -488,7 +499,7 @@ class Tooltip {
 }
 
 // Creates a new Twitch-style date input
-    // new DatePicker() → Promise~Array:Object
+    // new DatePicker() → Promise<array[object]>
 class DatePicker {
     static values = [];
     static weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ');
@@ -873,7 +884,7 @@ async function SaveSettings() {
 
                 for(let rule of $('#filter_rules code', true))
                     rules.push(rule.textContent);
-                rules = [...new Set(rules)].filter(rule => rule.length);
+                rules = rules.isolate().filter(rule => rule.length);
 
                 SETTINGS.filter_rules = rules.sort().join(',');
 
@@ -889,7 +900,7 @@ async function SaveSettings() {
 
                 for(let rule of $('#phrase_rules code', true))
                     rules.push(rule.textContent);
-                rules = [...new Set(rules)].filter(rule => rule.length);
+                rules = rules.isolate().filter(rule => rule.length);
 
                 SETTINGS.phrase_rules = rules.sort().join(',');
 
@@ -921,7 +932,7 @@ async function SaveSettings() {
                     validTimes.push(object);
                 }
 
-                SETTINGS.away_mode_schedule = JSON.stringify([...new Set(validTimes)]);
+                SETTINGS.away_mode_schedule = JSON.stringify(validTimes.isolate());
 
                 RedoTimeElements(SETTINGS.away_mode_schedule, 'away_mode');
             } break;
@@ -1207,10 +1218,10 @@ $('#sync-settings--upload').onmouseup = async event => {
 
             let id = parseURL(getURL('')).host;
             let url = parseURL(`https://www.tinyurl.com/api-create.php`)
-                .pushToSearch({
+                .addSearch({
                     url: encodeURIComponent(
                         parseURL(`json://${ id }.settings.js/`)
-                            .pushToSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
+                            .addSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
                             .href
                     )
                 });
@@ -1562,6 +1573,67 @@ $('[new]', true).map(element => {
 // Any keys that need "translating"
 $('[id^="key:"i]', true).map(element => element.textContent = GetMacro(element.textContent));
 
+// Get the supported video types here...
+$('#video_clips__file_type option', true).filter(o => !furnish('video').supports(`video/${ o.value }`)).map(o => o.remove());
+
+// Set the browser storage usage...
+until(() => SETTINGS)
+    .then(() => {
+        Storage.getBytesInUse(BYTES_IN_USE => {
+            let MAX_BYTES = Storage.QUOTA_BYTES,
+                PERC_IN_USE = (100 * (BYTES_IN_USE / MAX_BYTES)).toFixed(3);
+
+            $('[id*="data-usage"i][id*="browser-storage"i][type="number"i]', true).map(input => {
+                let [amount, unit] = BYTES_IN_USE.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
+
+                input.value = amount;
+                input.closest('[unit]')?.setAttribute('unit', unit);
+            });
+
+            $('[id*="data-usage"i][id*="browser-storage"i][type="range"i]', true).map(input => {
+                input.value = PERC_IN_USE;
+
+                // new Tooltip(input, `${ PERC_IN_USE }%`, { direction: 'left' });
+            });
+
+            $('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]', true).map(table => {
+                let allcBytes = 0,
+                    miscBytes = 0;
+
+                for(let key in SETTINGS)
+                    if(usable_settings.contains(key))
+                        allcBytes += JSON.stringify({ [key]: SETTINGS[key] }).length;
+                    else
+                        miscBytes += JSON.stringify({ [key]: SETTINGS[key] }).length;
+
+                let total = allcBytes + miscBytes;
+                let [value, unit] = total.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
+
+                let f = furnish;
+                let body = f('tbody', {},
+                    f('tr', {},
+                        f('td', {}, `Settings`),
+                        f('td', {}, allcBytes.suffix('B', 2)),
+                        f('td', {}, (100 * (allcBytes / total)).suffix('%', 1))
+                    ),
+                    f('tr', {},
+                        f('td', {}, `Miscellaneous`),
+                        f('td', {}, miscBytes.suffix('B', 2)),
+                        f('td', {}, (100 * (miscBytes / total)).suffix('%', 1))
+                    ),
+
+                    f('tr', {},
+                        f('td', {}, `Total`),
+                        f('td', {}, total.suffix('B', false) + ' of ' + MAX_BYTES.suffix('B')),
+                        f('td', {}, (100 * (total / MAX_BYTES)).suffix('%', 1))
+                    )
+                );
+
+                table.append(body);
+            });
+        });
+    });
+
 async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
@@ -1681,7 +1753,7 @@ async function Translate(language = 'en', container = document) {
 }
 
 // Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-    // until(callback:function[,ms:number~Integer:milliseconds]) → Promise
+    // until(callback:function, ms:number<integer>?) → Promise
 async function until(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
@@ -1857,7 +1929,7 @@ document.body.onload = async() => {
                                 off = multiplier.getAttribute('when-off'),
                                 on = multiplier.getAttribute('when-on');
 
-                            let [value, unit] = ((LIVE_REMINDERS?.length | 0) * (60 / parseFloat(multiplier.checked? on: off)) * 2**20).suffix('iB/h', false, 'data').split(/(\D+)/).filter(s => s.length);
+                            let [value, unit] = ((LIVE_REMINDERS?.length | 0) * (60 / parseFloat(multiplier.checked? on: off)) * 2**20).suffix('B/h', false).split(/(\D+)/).filter(s => s.length);
 
                             output.value = value;
                             output.parentElement.setAttribute('unit', unit);
@@ -1904,7 +1976,7 @@ document.body.onload = async() => {
                 // }
                 //
                 // document.head.append(
-                //     furnish(`meta.top.${ [...new Set(keysDeep(top))].join('.') }`)
+                //     furnish(`meta.top.${ keysDeep(top).isolate().join('.') }`)
                 // );
 
                 $('[requires]', true).map(dependent => {
@@ -1951,7 +2023,7 @@ document.body.onload = async() => {
                     input.onblur = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', false);
 
                     if(input.disabled)
-                        input.closest('[unit]').setAttribute('valid', false);
+                        input.closest('[unit]').setAttribute('valid', true);
                     else
                         input.oninput = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('valid', currentTarget.checkValidity());
                 });

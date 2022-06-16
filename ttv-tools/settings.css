@@ -102,7 +102,7 @@
 
     /* Fonts */
     --display-font: 'Inter', 'Roobert';
-    --code-font: 'System', 'Monospace', 'Menlo', 'Arial', 'Consolas', 'Liberation Mono', 'Courier';
+    --code-font: 'Liberation Mono', 'Courier', 'Consolas', 'Monospace', 'System-UI', 'Arial';
     --live-font: 'Roobert', 'Inter', 'Arial', 'Sans-Serif';
 
     /* Shadows */
@@ -125,12 +125,12 @@
 }
 
 *::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
     background-color: #CCC;
 }
 
 *::-webkit-scrollbar:horizontal {
-    height: 6px;
+    height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -140,19 +140,21 @@
 }
 
 *::-webkit-scrollbar-thumb {
-    background-color: #1F1F23;
-    border: 1px solid #EFEFEF20;
+    background-color: #0000;
+    border: 1px solid #0000;
     border-radius: 7px;
+
+    transition: background-color .3s, border-color .3s;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-    background-color: #1F1F23;
-    border: 1px solid #EFEFEF40;
+    background-color: #EFEFEF60 !important;
+    border: 1px solid #EFEFEF60 !important;
 }
 
-*::-webkit-scrollbar-thumb:active {
-    background-color: #1F1F23;
-    border: 1px solid #EFEFEF40;
+*:hover::-webkit-scrollbar-thumb {
+    background-color: #EFEFEF40;
+    border-color: #EFEFEF40;
 }
 
 * {
@@ -442,12 +444,12 @@ input:not(:checked) ~ label[for$=":checked"] {
     display: none;
 }
 
-[disabled] {
+[disabled]:not([visible]) {
     opacity: .5 !important;
 }
 
-[stay-visible], [disabled] [disabled] {
-    opacity: 1 !important;
+[disabled] [disabled]:not([visible]) {
+    opacity: .1 !important;
 }
 
 [hidden] {
@@ -480,6 +482,19 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: normal !important;
 
     line-height: 1.25 !important;
+}
+
+table {
+    background-color: var(--background-dark-lit);
+    border: 1px solid var(--border-light);
+    border-spacing: 0;
+    border-radius: .25rem;
+
+    padding: .25rem;
+}
+
+tr:nth-child(even) {
+    background-color: #EEE2;
 }
 
 details, .details {
@@ -1023,11 +1038,11 @@ input[type="number"]::-webkit-inner-spin-button {
     display: none;
 }
 
-input[type="text"i]:not(:valid), input[type="number"i]:not(:valid), input[type="date"i]:not(:valid), input[type="time"i]:not(:valid) {
+input[type="text"i]:not(:valid):not([disabled]), input[type="number"i]:not(:valid):not([disabled]), input[type="date"i]:not(:valid):not([disabled]), input[type="time"i]:not(:valid):not([disabled]) {
     border-color: var(--yellow) !important;
 }
 
-input[type="date"i]:not(:valid)::-webkit-datetime-edit, input[type="time"i]:not(:valid)::-webkit-datetime-edit {
+input[type="date"i]:not(:valid):not([disabled])::-webkit-datetime-edit, input[type="time"i]:not(:valid):not([disabled])::-webkit-datetime-edit {
     display: none;
 }
 
@@ -1044,7 +1059,7 @@ input[type="date"i]:valid::-webkit-calendar-picker-indicator, input[type="time"i
     width: 20%;
 }
 
-input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="time"i]:not(:valid)::-webkit-calendar-picker-indicator {
+input[type="date"i]:not(:valid):not([disabled])::-webkit-calendar-picker-indicator, input[type="time"i]:not(:valid):not([disabled])::-webkit-calendar-picker-indicator {
     filter: invert(1);
 
     margin: 0;
@@ -1056,6 +1071,14 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 
     height: 1.5rem;
     width: 1.5rem;
+}
+
+input[type="range"i] {
+    width: 100%;
+}
+
+input[disabled][type="range"i]::-webkit-slider-thumb {
+    opacity: 0 !important;
 }
 
 /* Inputs with units */
@@ -1248,7 +1271,7 @@ input[type="date"i]:not(:valid)::-webkit-calendar-picker-indicator, input[type="
 }
 
 [from-github="false"i]:not(:hover), [from-chrome="false"i]:not(:hover) {
-    opacity: .1;
+    opacity: .5;
 }
 
 .cc-container {
@@ -1696,3 +1719,14 @@ html:not([lang="en"i]) .tt-tooltip {
 .tt-veiled .tt-confirm-container::before { background-color:var(--green)!important }
 
 .tt-veiled .tt-prompt-container::before { background-color:var(--baby-blue)!important }
+
+/* Animations */
+@keyframes fade-in {
+    from { opacity: 0 }
+    to { opacity: 1 }
+}
+
+@keyframes fade-out {
+    from { opacity: 1 }
+    to { opacity: 0 }
+}

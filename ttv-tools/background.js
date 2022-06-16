@@ -47,7 +47,7 @@ switch(BrowserNamespace) {
 let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
 // Update the tab(s) when a new version is installed
-// reason:string - install | update | chrome_update | shared_module_update
+    // ({ reason:string<"install" | "update" | "chrome_update" | "shared_module_update">, previousVersion:string?, id:string? }) → undefined
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
         url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
@@ -82,7 +82,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 });
 
 // Update the tab(s) when they unload
-// `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
+    // `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
 let UnloadedTabs = new Set();
 
 let TabWatcherInterval = setInterval(() => {
@@ -223,7 +223,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
 // https://stackoverflow.com/a/6117889/4211612
 // Returns the current week of the year
-    // Date..getWeek() → number:Integer
+    // Date..getWeek() → number<integer>
 Date.prototype.getWeek = function getWeek() {
     let now = new Date(Date.UTC(
         this.getFullYear(),

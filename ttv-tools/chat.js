@@ -382,7 +382,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let f = furnish;
 
             let emoteContainer =
-            f('div.tt-emote-bttv.tt-pd-x-05.tt-relative', {},
+            f(`div#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`, {},
                 f('div.emote-button', {},
                     f('div.tt-inline-flex', {},
                         f('button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center',
@@ -1370,7 +1370,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 note: null,
             };
 
-            [...new Set(banners.subs)].filter(defined).map(bullet => bullet.setAttribute('tt-hidden-bulletin', parseBool(Settings.filter_messages__bullets_subs)));
+            banners.subs.isolate().filter(defined).map(bullet => bullet.setAttribute('tt-hidden-bulletin', parseBool(Settings.filter_messages__bullets_subs)));
         }, 250);
 
         JUDGE__STOP_WATCH('filter_bulletins');
@@ -1934,7 +1934,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 new Promise(resolve => {
                     resolve(spamChecker(message, author));
                 }).then(message => {
-                    SPAM = [...new Set([...SPAM, message])];
+                    SPAM = [...SPAM, message].isolate();
                 });
             })
         })(GetChat());
@@ -2863,7 +2863,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
         let f = furnish;
 
         let { name, fiat } = (STREAMER ?? { name: top.location.pathname.split(/\W/, 2)[1], fiat: 'Channel Points' }),
-            url = parseURL(`https://nightdev.com/hosted/obschat/`).pushToSearch({
+            url = parseURL(`https://nightdev.com/hosted/obschat/`).addSearch({
                 theme: `bttv_${ THEME }`,
                 channel: name,
                 fade: parseBool(Settings.soft_unban_fade_old_messages),
@@ -3126,7 +3126,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 message,
                                 mentions,
                                 element: line,
-                                emotes: [...new Set(containedEmotes.map(string => string.replace(/^:|:$/g, '')))],
+                                emotes: containedEmotes.map(string => string.replace(/^:|:$/g, '')).isolate(),
                                 deleted: defined($('[class*="--deleted-notice"i]', false, line)),
                                 highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
                             });

@@ -220,11 +220,11 @@
                                 </div>
                             </div>
 
-                            <div text-only>
+                            <div disabled text-only>
                                 <div class='title' tr-id='auto-follow:live-reminders'><span class='live'>LIVE</span> Reminders</div>
                                 <div class='summary'>
                                     <div class='toggle'>
-                                        <input id='live_reminders' type='checkbox'/>
+                                        <input id='live_reminders' type='checkbox' disabled checked/>
                                         <label for='live_reminders'></label>
                                     </div>
                                     <p tr-id>
@@ -1015,7 +1015,7 @@
                                 <div class='title' tr-id>Reverse Emotes</div>
                                 <div class='summary'>
                                     <div class='toggle'>
-                                        <input id='simplify_chat_reverse_emotes' type='checkbox'/>
+                                        <input id='simplify_chat_reverse_emotes' type='checkbox' disabled/>
                                         <label for='simplify_chat_reverse_emotes'></label>
                                     </div>
                                     <p tr-id>
@@ -1188,7 +1188,7 @@
             </section>
 
             <!-- Stream Preview -->
-            <section new='4.2.0'>
+            <section new='5.15'>
                 <div class='title' tr-id='stream-preview'><span small gold glyph='video'></span> Stream Preview</div>
                 <div class='summary'>
                     <div class='toggle'>
@@ -1196,7 +1196,7 @@
                         <label for='stream_preview'></label>
                     </div>
                     <p tr-id>
-                        Display a live preview of streams when hovering over them.
+                        Display a preview of broadcasts when hovering over channels.
                     </p>
                     <details>
                         <summary tr-id='extras' subtitle='Adjust settings for &quot;Stream Preview&quot;'>Extras</summary>
@@ -1303,6 +1303,76 @@
                         <span small glyph='bolt'></span>
                         <span tr-id='networking:sync-settings:copy'>Copy</span>
                     </button>
+                </div>
+            </section>
+
+            <section new='5.15'>
+                <div class='title' tr-id='networking:video-clips'><span small glyph='export'></span> Video Clips</div>
+                <div class='summary' style='width:fit-content'>
+                    <p tr-id>
+                        Record portions of streams. Use <code id='key:alt-z'>Alt + Z</code> to start/stop recording.
+                    </p>
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust settings for &quot;Video Clips&quot;'>Options</summary>
+                        <div>
+                            <div disabled text-only>
+                                <div class='title' tr-id='video-clips:file-type'>File Type</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        What file type should <b>Video Clips</b> be?
+                                    </p>
+                                    <select disabled id='video_clips__file_type'>
+                                        <option value='mp4' selected tr-id='video-clips:file-type-options'>Most compatible (MP4)</option>
+                                        <option value='x-msvideo' tr-id>Most supported (AVI)</option>
+                                        <option value='webm' tr-id>Most efficient (WebM)</option>
+                                        <option value='x-matroska' tr-id>Most shareable (MKV)</option>
+                                        <option value='ogg' tr-id>Most workable (OGV)</option>
+                                        <option value='3gpp' tr-id>Most mobile-friendly (3GP)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='video-clips:quality'>Quality</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        What quality should <b>Video Clips</b> be?
+                                    </p>
+                                    <select id='video_clips__quality'>
+                                        <option value='auto' selected tr-id='video-clips:quality-options'>Auto</option>
+                                        <option value='source' tr-id>Source</option>
+                                        <option value='1080p' tr-id>1080p</option>
+                                        <option value='720p' tr-id>720p</option>
+                                        <option value='480p' tr-id>480p</option>
+                                        <option value='360p' tr-id>360p</option>
+                                        <option value='160p' tr-id>160p</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='video-clips:length'>Default Length</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        <b>Video Clips</b> should be <span unit='sec'><input id='video_clips__length' type='number' value='60' step='15' min='15' max='300'/></span> by default.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div text-only>
+                                <div class='title' tr-id='video-clips:dvr'>DVR</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Automatically record (and save) certain channel's streams. Channels marked as <b>DVR</b> will skip and pause the <b>First in Line</b> queue.
+                                    </p>
+                                    <div class='toggle'>
+                                        <input id='video_clips__dvr' type='checkbox'/>
+                                        <label for='video_clips__dvr'></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -1575,7 +1645,7 @@
                         Forces the extension to use less data per hour.
                     </p>
                     <p tr-id>
-                        Current estimate <span valid='false'><input disabled stay-visible id='est-data-usage' type='number' value='0' controller='#low_data_mode'/></span>
+                        Current estimate <span><input disabled visible id='est-data-usage' type='number' value='0' controller='#low_data_mode'/></span>
                     </p>
                 </div>
             </section>
@@ -1809,6 +1879,17 @@
             </section>
 
             <section>
+                <div class='title' tr-id='data-usage--browser-storage'><span small glyph='poll'></span> Data Usage</div>
+                <div class='summary'>
+                    <p>
+                        <table id='data-usage--browser-storage-itemized'>
+                            <thead><tr><th colspan=999><input id='data-usage--browser-storage-range' disabled visible type='range' min='0' max='100'/></th></tr></thead>
+                        </table>
+                    </p>
+                </div>
+            </section>
+
+            <section>
                 <div class='title' tr-id='support'><span small glyph='info'></span> Support</div>
                 <div class='summary'>
                     <a type='button' href='https://github.com/ephellon/twitch-tools' top-tooltip='Fastest communication method' github>
@@ -1819,10 +1900,10 @@
                         <span small glyph='chrome'></span>
                         Chrome Web Store
                     </a>
-                    <!-- <a type='button' href='mailto:minkcbos@gmail.com?subject=Twitch%20Tools' top-tooltip='Slowest communication method'>
-                        <span small glyph='chat'></span>
+                    <a disabled type='button' href='#mailto:minkcbos@gmail.com?subject=Twitch%20Tools' top-tooltip='Slowest communication method'>
+                        <span small glyph='unread'></span>
                         e-mail
-                    </a> -->
+                    </a>
                 </div>
             </section>
 

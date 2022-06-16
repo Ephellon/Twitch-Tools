@@ -459,7 +459,7 @@
 
 	"stream-preview": [
 		"Stream Preview",
-		"Display a live preview of streams when hovering over them"
+		"Display a preview of broadcasts when hovering over a channel"
 	],
 		"stream-preview:position": [
 			"Preview Position",

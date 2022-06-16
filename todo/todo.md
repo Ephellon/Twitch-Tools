@@ -26,6 +26,7 @@
 11. Get better translations--or remove them altogether
     * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
+    * Tentative removal `v5.30`
 12. Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `5.8`
 13. Live Reminders might re-add all live channels?
@@ -33,6 +34,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.15)
+- Fixed `parseBool` logic
+- Fixed reloading issue with low viewership channels
+- Changed Stream Preview to work with offline channels
+- Added a recording feature
+- Added a news system (for notices)
+- Added `top.MIME_Types` `ClipName` `Array..isolate` `wait` `parseURL(...).{ addSearch | subSearch }` `Date..getAbsoluteDay` `HTMLVideoElement..{ getRecording | hasRecording | stopRecording | pauseRecording | startRecording | cancelRecording | removeRecording | resumeRecording }`
+- Modified `toFormat` `GetOS` `Tooltip`
+
 > [`5.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.14)
 - Fixed helper menu
 - Fixed preview point watcher
@@ -52,7 +62,7 @@
 - Replaced antiquated logic with STREAMER.shop
 - Removed Portuguese functionalities
 - Added more languages for the Rewards Calculator tooltip
-- Added `Color.destruct([color:string])`
+- Added `Color.destruct(color:string?)`
 - Adjusted Time Zone logic
 
 > [`5.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.11)

@@ -19,7 +19,7 @@
  *
  */
 // Parse a URL
-    // parseURL(url:string) → Object
+    // parseURL(url:string) → object
 function parseURL(url) {
     if(nullish(url))
         return {};
@@ -73,7 +73,7 @@ function parseURL(url) {
             return results;
         })(search.slice(1).split('&')),
 
-        pushToSearch(parameters, overwrite = false) {
+        addSearch(parameters, overwrite = false) {
             if(typeof url == 'string')
                 url = parseURL(url);
 
@@ -86,11 +86,23 @@ function parseURL(url) {
 
             return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.map(parameter => parameter.join('=')).join('&') }$1`));
         },
+
+        subSearch(parameters) {
+            if(typeof url == 'string')
+                url = parseURL(url);
+
+            let { href, searchParameters } = url;
+
+            for(let parameter of parameters)
+                delete searchParameters[parameter];
+
+            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.map(parameter => parameter.join('=')).join('&') }$1`));
+        },
     };
 }
 
 // Create elements
-    // furnish(tagname:string[, attributes:object[, ...children]]) → Element
+    // furnish(tagname:string, attributes:object?, ...children) → Element
 function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
     let u = v => v && v.length,
         R = RegExp,
@@ -141,7 +153,7 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
 }
 
 // Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) → Object={ height:number, width:number, left:number, top:number, right:number, bottom:number }
+    // getOffset(element:Element) → Object<{ height:number, width:number, left:number, top:number, right:number, bottom:number }>
 function getOffset(element) {
     let bounds = element.getBoundingClientRect(),
         { height, width } = bounds;
@@ -158,7 +170,7 @@ function getOffset(element) {
 }
 
 // Convert milliseconds into a human-readable string
-    // toTimeString([milliseconds:number[, format:string]]) → String
+    // toTimeString(milliseconds:number?, format:string?) → string
 function toTimeString(milliseconds = 0, format = 'natural') {
     let second = 1000,
         minute = 60 * second,
@@ -254,7 +266,7 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 }
 
 // Convert a time-formatted string into its corresponding millisecond value
-    // parseTime([time:string]) → Number
+    // parseTime(time:string) → number
 function parseTime(time = '') {
     let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
         ms = 0;
@@ -266,32 +278,34 @@ function parseTime(time = '') {
 }
 
 // Convert boolean values
-    // parseBool(value:*) → Boolean
+    // parseBool(value:any) → boolean
 function parseBool(value = null) {
-    switch(value) {
-        case "undefined":
+    let stringified;
+    try {
+        stringified = JSON.stringify(value);
+    } catch(error) {
+        stringified = value.toString();
+    }
+
+    stringified = stringified.trim().replace(/^"([^"]*?)"$/, '$1');
+
+    switch(stringified) {
         case undefined:
-        case "false":
-        case "null":
-        case false:
-        case null:
-        case "[]":
-        case "{}":
-        case "0":
-        case "":
-        case []:
-        case {}:
-        case 0n:
-        case 0:
+        case 'false':
+        case 'null':
+        case '[]':
+        case '{}':
+        case '0':
+        case '':
             return false;
 
         default:
-            return (["bigint", "number"].contains(typeof value)? !Number.isNaN(value): true);
+            return (["bigint","number"].contains(typeof value)? !Number.isNaN(value): true);
     }
 }
 
 // Returns the DOM path of an element
-    // getDOMPath(element:Element[, shorten:boolean]) → String
+    // getDOMPath(element:Element, shorten:boolean?) → string
 // https://stackoverflow.com/a/16742828/4211612
 function getDOMPath(element, shorten = false) {
     if(nullish(element))
@@ -342,7 +356,7 @@ function getDOMPath(element, shorten = false) {
  */
 
 // Finds the last index using the same format as `Array..findIndex`
-    // Array..findLastIndex(predicate:function[, thisArg:object]) → number#Integer
+    // Array..findLastIndex(predicate:function, thisArg:object?) → number<integer>
 Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = null) {
     return (this.length - this.reverse().findIndex(predicate, thisArg)) - 1;
 };
@@ -359,17 +373,22 @@ Array.prototype.contains ??= function contains(...values) {
     return has;
 };
 
+// Returns an array of purely unique elements
+    // Array..isolate() → array<Set>
+Array.prototype.isolate ??= function isolate() {
+    return [...new Set(this)];
+};
+
 // https://stackoverflow.com/a/6117889/4211612
 // Returns the current week of the year
-    // Date..getWeek() → number:Integer
+    // Date..getWeek() → number<integer>
 Date.prototype.getWeek = function getWeek() {
-    let now = new Date(Date.UTC(
+    let now = Date.UTC(
         this.getFullYear(),
         this.getMonth(),
         this.getDate()
-    ));
-
-    let day = now.getUTCDay() || 7;
+    ),
+    day = now.getUTCDay() || 7;
 
     now.setUTCDate(now.getUTCDate() + 4 - day);
 
@@ -378,8 +397,19 @@ Date.prototype.getWeek = function getWeek() {
     return Math.ceil((((now - year) / 86_400_000) + 1) / 7);
 };
 
+// https://stackoverflow.com/a/8619946/4211612
+// Returns the current day of the year
+    // Date..getAbsoluteDay() → number<integer>
+Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
+    let start = new Date(this.getFullYear(), 0, 0);
+    let day = 86_400_000,
+        offset = (this - start) + ((start.getTimezoneOffset() - this.getTimezoneOffset()) * 60_000);
+
+    return (offset / day).floor();
+};
+
 // Returns an element based upon its text content
-    // Element..getElementByText(searchText:string|regexp|array[, flags:string]) → Element | null
+    // Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         UNICODE_FLAG = false;
@@ -510,7 +540,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
 };
 
 // Returns an array of elements that contain the text content
-    // Element..getElementsByTextContent(searchText:string|regexp|array[, flags:string]) → [Element...]
+    // Element..getElementsByTextContent(searchText:string|regexp|array, flags:string?) → [Element...]
 Element.prototype.getElementsByTextContent ??= function getElementsByTextContent(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         UNICODE_FLAG = false;
@@ -551,7 +581,7 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
                 if([...child.children].filter(element => searchText.test(normalize(element.textContent))).length) {
                     // A sub-child contains the text
                     containers.push(child);
-                    children = [...new Set([...children, ...child.children])];
+                    children = [...children, ...child.children].isolate();
                 } else if(searchText.test(normalize(child.textContent))) {
                     // This contains the text
                     containers.push(child);
@@ -583,7 +613,7 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
                     if([...child.children].filter(element => normalize(element.textContent).toLowerCase().contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
-                        children = [...new Set([...children, ...child.children])];
+                        children = [...children, ...child.children].isolate();
                     } else if(normalize(child.textContent).toLowerCase().contains(searchText)) {
                         // This contains the text
                         containers.push(child);
@@ -603,7 +633,7 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
                     if([...child.children].filter(element => normalize(element.textContent).contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
-                        children = [...new Set([...children, ...child.children])];
+                        children = [...children, ...child.children].isolate();
                     } else if(normalize(child.textContent).contains(searchText)) {
                         // This contains the text
                         containers.push(child);
@@ -612,11 +642,11 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
         } break;
     }
 
-    return [...new Set(containers)];
+    return containers.isolate();
 };
 
 // Returns a function's name as a formatted title
-    // Function..toTitle() → String
+    // Function..toTitle() → string
 Function.prototype.toTitle ??= function toTitle() {
     return (this?.name || '')
         .replace(/\$\$/g, ' | ')
@@ -627,7 +657,7 @@ Function.prototype.toTitle ??= function toTitle() {
 };
 
 // Returns a string as a formatted title
-    // String..toTitle() → String
+    // String..toTitle() → string
 String.prototype.toTitle ??= function toTitle() {
     return this
         .replace(/\$\$/g, ' | ')
@@ -638,7 +668,7 @@ String.prototype.toTitle ??= function toTitle() {
 };
 
 // Counts the number of elements in the string
-    // String..count(...searches:string) → Number:integer
+    // String..count(...searches:string) → number<integer>
 String.prototype.count = function count(...searches) {
     let count = 0;
     for(let search of searches)
@@ -683,14 +713,14 @@ HTMLCollection.prototype.values         ??= Array.prototype.values;
 
 // https://stackoverflow.com/a/35859991/4211612
 // Captures the current frame from a video element
-    // HTMLVideoElement..captureFrame([imageType:string[, returnType:string]]) → String#dataURL | Object | HTMLImageElement
+    // HTMLVideoElement..captureFrame(imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
         // imageType = "image/jpeg" | "image/png" | "image/webp"
         // returnType = "img" | "element" | "HTMLImageElement"
             // → HTMLImageElement
         // returnType = "json" | "object"
-            // → Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
+            // → object<{ type=imageType, data:string, height:number<integer>, width:number<integer> }>
         // returnType = "dataURI" | "dataURL" | ...
-            // → String#dataURL
+            // → string<dataURL>
 HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "image/png", returnType = "dataURL") {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -724,6 +754,136 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     return data;
 };
 
+// https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
+// Records a video element
+    // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
+HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = {}) {
+    let key = UUID.from(options?.key ?? 'DEFAULT_RECORDER').value;
+
+    delete options.key;
+
+    this.recorders ??= {};
+
+    if(defined(this?.recorders?.[key]))
+        throw `There is already an active recording (${ this.recorders[key].stream.id }). You must delete the previous recording: HTMLVideoElement.prototype.removeRecording("${ key }")`;
+
+    let STREAM = this.captureStream(),
+        RECORDER = this.recorders[key] = new MediaRecorder(STREAM, options),
+        DATA = (this.__Recording__ ??= []);
+
+    Object.defineProperties(RECORDER, {
+        data: {
+            get() {
+                return DATA.slice(RECORDER.start);
+            },
+
+            set(value) {
+                return RECORDER.data;
+            },
+        },
+
+        slice: { value: DATA.length },
+        creationTime: { value: +new Date },
+    });
+
+    RECORDER.ondataavailable = event => {
+        this.mimeType ??= RECORDER.mimeType;
+
+        this.__Recording__.push(event.data);
+    };
+    RECORDER.start(1000);
+
+    this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', true);
+
+    let halt = new Promise((resolve, reject) => {
+        RECORDER.onstop = resolve;
+        RECORDER.onerror = event => reject(event);
+    });
+
+    let stop;
+
+    if(Number.isFinite(maxTime))
+        stop = wait(maxTime).then(() => this.stopRecording());
+
+    return Promise.all([halt, stop]).then(() => DATA);
+};
+
+// Gets a recording of a video element
+    // HTMLVideoElement..getRecording(key:string?) → MediaRecorder
+HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDER') {
+    return this?.recorders?.[ UUID.from(key).value ];
+};
+
+// Determines if there is a recording of a video element
+    // HTMLVideoElement..hasRecording(key:string?) → boolean
+HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDER') {
+    return defined(this?.recorders?.[ UUID.from(key).value ]);
+};
+
+// Removes a recording of a video element
+    // HTMLVideoElement..removeRecording(key:string?) → HTMLVideoElement
+HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDER') {
+    delete this?.recorders?.[ UUID.from(key).value ];
+
+    return this;
+};
+
+// Pauses a recording of a video element
+    // HTMLVideoElement..pauseRecording(key:string?) → HTMLVideoElement
+HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDER') {
+    this?.recorders?.[ UUID.from(key).value ]?.pause();
+
+    return this;
+};
+
+// Resumes a recording of a video element
+    // HTMLVideoElement..resumeRecording(key:string?) → HTMLVideoElement
+HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDER') {
+    this?.recorders?.[ UUID.from(key).value ]?.resume();
+
+    return this;
+};
+
+// Cancels a recording of a video element
+    // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
+HTMLVideoElement.prototype.cancelRecording ??= function removeRecording(key = 'DEFAULT_RECORDER') {
+    let recorder = this?.recorders?.[ UUID.from(key).value ];
+
+    if(defined(recorder))
+        recorder.slice = Infinity;
+
+    return this;
+};
+
+// https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
+// Stops recording a video element
+    // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
+HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDER') {
+    let recorder = this?.recorders?.[ UUID.from(key).value ],
+        stream = recorder?.stream;
+
+    if(nullish(stream))
+        throw `There are no active recordings with the key "${ key }". You must create a recording: HTMLVideoElement.prototype.startRecording(maxTime:number?, options:object?)`;
+
+    recorder.stop();
+    stream.getTracks().map(track => track.stop());
+
+    let isActive = false;
+    for(let guid in this.recorders)
+        if(isActive ||= (this.recorders[guid].state == "recording"))
+            break;
+
+    this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', isActive);
+
+    return this;
+};
+
+// Returns the confidence level of the machine's ability to play the specified media type
+    // HTMLVideoElement..supports(MIMEType:string?) → number<{ 0 | 0.5 | 1 }>
+HTMLVideoElement.prototype.supports ??= function supports(MIMEType = '') {
+    return (this.canPlayType(MIMEType).length / 6).floorToNearest(0.5);
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write#example_of_copying_canvas_contents_to_the_clipboard
 // Copies the current frame from a video element to the clipboard
     // HTMLVideoElement..copyFrame() → undefined
@@ -743,7 +903,7 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
 };
 
 // Returns an iterable range (inclusive)
-    // Number..to([end:number[, by:number]]) → @@Iterator
+    // Number..to(end:number?, by:number?) → @@Iterator
 Number.prototype.to ??= function to(end = 0, by = 1) {
     let { abs } = Math;
     let step = abs(by),
@@ -767,14 +927,14 @@ Number.prototype.to ??= function to(end = 0, by = 1) {
 };
 
 // Converts SVGs to images
-    // SVGtoImage(SVG:HTMLSVGElement|string[, imageType:string[, returnType:string]]) → String#dataURL | Object | HTMLImageElement
+    // SVGtoImage(SVG:HTMLSVGElement|string, imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
         // imageType = "image/jpeg" | "image/png" | "image/webp"
         // returnType = "img" | "element" | "HTMLImageElement"
             // → HTMLImageElement
         // returnType = "json" | "object"
-            // → Object#{ type=imageType, data:string, height:number#integer, width:number#integer }
+            // → object<{ type=imageType, data:string, height:number#integer, width:number#integer }>
         // returnType = "dataURI" | "dataURL" | ...
-            // → String#dataURL
+            // → string<dataURL>
 function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
     if(typeof SVG == 'string' || SVG instanceof String)
         SVG = (SVGtoImage.DOMParser ??= new DOMParser).parseFromString(SVG + '', 'text/xml')?.querySelector('svg');
@@ -833,7 +993,7 @@ function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
 };
 
 // Returns a number formatted using unit suffixes
-    // Number..suffix([unit:string[, decimalPlaces:boolean|number[, format:string]]]) → string
+    // Number..suffix(unit:string?, decimalPlaces:boolean|number?, format:string?) → string
         // decimalPlaces = true | false | *:number
             // true → 123.456.suffix('m', true) => "123.456m"
             // false → 123.456.suffix('m', false) => "123m"
@@ -910,13 +1070,13 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
 };
 
 // Floors a number to the nearest X
-    // Number..floorToNearest(number) → Number
+    // Number..floorToNearest(number:number) → number
 Number.prototype.floorToNearest ??= function floorToNearest(number) {
     return this - (this % number);
 };
 
 // Clamps (keeps) a number between two points
-    // Number..clamp(min:number[, max:number]) → Number
+    // Number..clamp(min:number, max:number?) → number
 Number.prototype.clamp ??= function clamp(min, max) {
     if(Number.isNaN(min))
         throw TypeError('[min] must be a number');
@@ -1444,7 +1604,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
  *
  */
 // Returns if an item is of an object class
-    // isObj([object:*[, ...or:Function=Constructor]]) → Boolean
+    // isObj([object:any, ...or<Function>?) → boolean
 function isObj(object, ...or) {
     return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
         .find(constructor => object?.constructor === constructor || object instanceof constructor);
@@ -1456,45 +1616,89 @@ function comify(number, locale = top.LANGUAGE) {
 }
 
 // Returns a string reformatted
-    // toFormat(string:string, pattern:string)
+    // toFormat(string:string|array, pattern:string)
 function toFormat(string, patterns) {
     patterns = patterns.split('-');
 
-    let nonWords = /[\s\-\+]+/;
-    for(let pattern of patterns)
-        switch(pattern) {
-            case 'capped': {
-                string = string.toLowerCase().replace(/(\w)/, ($0, $1, $$, $_) => $1.toUpperCase());
-            } break;
+    let nonWords = /[\s\.\-\+]+/;
+    if(string instanceof Array)
+        for(let pattern of patterns)
+            switch(pattern) {
+                case 'capped': {
+                    string = string.map(s => s.toLowerCase().replace(/(\w)/, ($0, $1, $$, $_) => $1.toUpperCase()));
+                } break;
 
-            case 'upper': {
-                string = string.toUpperCase();
-            } break;
+                case 'upper': {
+                    string = string.map(s => s.toUpperCase());
+                } break;
 
-            case 'lower': {
-                string = string.toLowerCase();
-            } break;
+                case 'lower': {
+                    string = string.map(s => s.toLowerCase());
+                } break;
 
-            case 'dotted': {
-                string = string.split(nonWords).join('.');
-            } break;
+                case 'dotted': {
+                    string = string.join('.');
+                } break;
 
-            case 'dashed': {
-                string = string.split(nonWords).join('-');
-            } break;
+                case 'dashed': {
+                    string = string.join('-');
+                } break;
 
-            case 'spaced': {
-                string = string.split(nonWords).join(' ');
-            } break;
-        }
+                case 'plused': {
+                    string = string.join('+');
+                } break;
+
+                case 'spaced': {
+                    string = string.join(' ');
+                } break;
+
+                case 'padded': {
+                    string = string.replace(/([\s\.\-\+])+/g, ' $1 ').replace(/^\s+|\s+$/g, '');
+                } break;
+            }
+    else
+        for(let pattern of patterns)
+            switch(pattern) {
+                case 'capped': {
+                    string = string.toLowerCase().replace(/(\w)/, ($0, $1, $$, $_) => $1.toUpperCase());
+                } break;
+
+                case 'upper': {
+                    string = string.toUpperCase();
+                } break;
+
+                case 'lower': {
+                    string = string.toLowerCase();
+                } break;
+
+                case 'dotted': {
+                    string = string.split(nonWords).join('.');
+                } break;
+
+                case 'dashed': {
+                    string = string.split(nonWords).join('-');
+                } break;
+
+                case 'plused': {
+                    string = string.split(nonWords).join('+');
+                } break;
+
+                case 'spaced': {
+                    string = string.split(nonWords).join(' ');
+                } break;
+
+                case 'padded': {
+                    string = string.replace(/([^\w\s])+/g, ' $1 ').replace(/^\s+|\s+$/g, '');
+                } break;
+            }
 
     return string;
 }
 
 // https://stackoverflow.com/a/19176790/4211612
 // Returns the assumed operating system
-    // GetOS() → String
-function GetOS() {
+    // GetOS(is:string?) → string | boolean
+function GetOS(is = null) {
     let { userAgent } = top.navigator;
     let OSs = {
         'NT 11.0': 'Win 11',
@@ -1510,15 +1714,16 @@ function GetOS() {
         'Linux': 'Linux',
     };
 
+    let os = 'Unknown';
     for(let OS in OSs)
         if(userAgent.contains(OS))
-            return OSs[OS].replace(/^Win/, 'Windows');
+            os = OSs[OS].replace(/^Win/, 'Windows');
 
-    return 'Unknown';
+    return (defined(is)? os.toLowerCase().startsWith(is.toLowerCase()): os);
 }
 
 // Returns the assumed key combination
-    // GetMacro(keys:string[, OS:string]) → string
+    // GetMacro(keys:string, OS:string?) → string
 function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
     OS ??= GetOS();
@@ -1532,12 +1737,18 @@ function GetMacro(keys = '', OS = null) {
             'lower':
         ''
     ,
-        /[a-z]\.[a-z\.]/i.test(keys)?
+        /[\S]\s*\.\s*[\S]/i.test(keys)?
             'dotted':
-        /[a-z]\-[a-z\-]/i.test(keys)?
+        /[\S]\s*\-\s*[\S]/i.test(keys)?
             'dashed':
-        /[a-z]\s[a-z\-]/i.test(keys)?
+        /[\S]\s*\+\s*[\S]/i.test(keys)?
+            'plused':
+        /[\S]\s+[\S]/i.test(keys)?
             'spaced':
+        ''
+    ,
+        /[\S]\s+[\S]/i.test(keys)?
+            'padded':
         ''
     ].filter(string => string.length).join('-');
 
@@ -1550,9 +1761,30 @@ function GetMacro(keys = '', OS = null) {
         bclick: 'Right Click',
     };
 
-    return keys
-        .split(/([\s\-\+]+)/)
+    keys = keys
+        .split(/[\s\-\+\.]+/)
         .filter(string => !!string.length)
+        .sort((keyA, keyB) => {
+            let map;
+            switch(OS) {
+                case 'Mac': {
+                    map = 'ctrl opt shift cmd'.split(' ');
+                } break;
+
+                default: {
+                    map = 'meta ctrl alt shift'.split(' ');
+                } break;
+            }
+
+            keyA = keyA.toLowerCase();
+            keyB = keyB.toLowerCase();
+
+            if(!map.contains(keyA) && map.contains(keyB))
+                return +1;
+            if(map.contains(keyA) && !map.contains(keyB))
+                return -1;
+            return map.indexOf(keyA.toLowerCase()) - map.indexOf(keyB.toLowerCase());
+        })
         .map(key => {
             switch(OS.slice(0, 7)) {
                 /** MacOS Keys | Order of Precedence → Ctrl Opt Shift Cmd [Key(s)]
@@ -1571,7 +1803,7 @@ function GetMacro(keys = '', OS = null) {
                  * Scroll Lock          ⤓
                  */
                 case 'Mac': {
-                    key = (
+                    return (
                         /^(Esc)$/i.test(key)?
                             '\u238B':
                         /^(Tab)$/i.test(key)?
@@ -1616,7 +1848,7 @@ function GetMacro(keys = '', OS = null) {
                  * Scroll Lock          ⤓
                  */
                 default: {
-                    key = (
+                    return (
                         /^(Esc|\u238B)$/i.test(key)?
                             'Esc':
                         /^(Tab|\u21B9)$/i.test(key)?
@@ -1645,14 +1877,13 @@ function GetMacro(keys = '', OS = null) {
                     );
                 } break;
             };
+        });
 
-            return toFormat(key, pattern);
-        })
-        .join('');
+    return toFormat(keys, pattern);
 }
 
 // Logs messages (green)
-    // LOG([...messages]) → undefined
+    // LOG(...messages:any) → undefined
 function LOG(...messages) {
     let CSS = `
         background-color: #00332b;
@@ -1716,7 +1947,7 @@ function LOG(...messages) {
 };
 
 // Logs warnings (yellow)
-    // WARN([...messages]) → undefined
+    // WARN(...messages:any) → undefined
 function WARN(...messages) {
     let CSS = `
         background-color: #332b00;
@@ -1780,7 +2011,7 @@ function WARN(...messages) {
 };
 
 // Logs errors (red)
-    // ERROR([...messages]) → undefined
+    // ERROR(...messages:any) → undefined
 function ERROR(...messages) {
     let CSS = `
         background-color: #290000;
@@ -1844,7 +2075,7 @@ function ERROR(...messages) {
 };
 
 // Logs comments (blue)
-    // LOG([...messages]) → undefined
+    // LOG(...messages:any) → undefined
 function REMARK(...messages) {
     let CSS = `
         background-color: #002b55;
@@ -1919,7 +2150,7 @@ function phantomClick(...elements) {
 }
 
 // Displays an alert message
-    // alert([message:string]) → null
+    // alert(message:string?) → Promise
 function alert(message = '') {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -1928,20 +2159,43 @@ function alert(message = '') {
         return until(() => nullish($('.tt-alert'))? true: null).then(() => alert(message));
 
     let f = furnish;
+    let $DOM = (alert.parser ??= new DOMParser).parseFromString(message, 'text/html'),
+        $CNT = $('[controller]', false, $DOM);
+
+    let title = (null
+        ?? $CNT?.getAttribute('title')
+        ?? `TTV Tools &mdash; Please see...`
+    ),
+    icon = (null
+        ?? $CNT?.getAttribute('icon')
+        ?? ''
+    ),
+    okay = decodeHTML(null
+        ?? $CNT?.getAttribute('okay')
+        ?? 'OK'
+    );
 
     let container =
-    f('div.tt-alert', {},
+    f('div.tt-alert', { uuid: UUID.from(message).value },
         f('div.tt-alert-container', {},
-            f('div.tt-alert-header', { innerHTML: `TTV Tools &mdash; Please see...` }),
+            f('div.tt-alert-header', { innerHTML: title }),
             f('div.tt-alert-body', { innerHTML: message }),
             f('div.tt-alert-footer', {},
                 f('button.okay', {
-                    onmousedown({ currentTarget }) {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-alert').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-alert');
 
                         parent.setAttribute('value', true);
                     },
-                    onmouseup({ currentTarget }) {
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-alert').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-alert'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -1949,8 +2203,10 @@ function alert(message = '') {
                         setTimeout(() => parent.classList.remove('tt-veiled'), 500);
                         setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
-                    }
-                }, 'OK')
+                    },
+
+                    innerHTML: okay,
+                })
             )
         )
     );
@@ -2020,7 +2276,7 @@ Object.defineProperties(alert, {
 });
 
 // Displays an alert message (silently)
-    // alert.silent([message:string[, veiled:boolean]]) → null
+    // alert.silent(message:string?, veiled:boolean?) → Promise
 alert.silent ??= (message = '', veiled = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -2045,7 +2301,7 @@ alert.silent ??= (message = '', veiled = false) => {
 };
 
 // Displays an alert message with a timer
-    // alert.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → null
+    // alert.timed(message:string?, milliseconds:number?, pausable:boolean?) → Promise
 alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
@@ -2089,7 +2345,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 };
 
 // Displays a confirmation message
-    // confirm([message:string]) → Boolean|null
+    // confirm(message:string?) → boolean | null
 function confirm(message = '') {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
@@ -2098,20 +2354,47 @@ function confirm(message = '') {
         return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm(message));
 
     let f = furnish;
+    let $DOM = (confirm.parser ??= new DOMParser).parseFromString(message, 'text/html'),
+        $CNT = $('[controller]', false, $DOM);
+
+    let title = (null
+        ?? $CNT?.getAttribute('title')
+        ?? `TTV Tools &mdash; Please confirm...`
+    ),
+    icon = (null
+        ?? $CNT?.getAttribute('icon')
+        ?? ''
+    ),
+    okay = decodeHTML(null
+        ?? $CNT?.getAttribute('okay')
+        ?? 'OK'
+    ),
+    deny = decodeHTML(null
+        ?? $CNT?.getAttribute('deny')
+        ?? 'Cancel'
+    );
 
     let container =
-    f('div.tt-confirm', {},
+    f('div.tt-confirm', { uuid: UUID.from(message).value },
         f('div.tt-confirm-container', {},
-            f('div.tt-confirm-header', { innerHTML: `TTV Tools &mdash; Please confirm...` }),
+            f('div.tt-confirm-header', { innerHTML: title }),
             f('div.tt-confirm-body', { innerHTML: message }),
             f('div.tt-confirm-footer', {},
                 f('button.edit.deny', {
-                    onmousedown({ currentTarget }) {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-confirm');
 
                         parent.setAttribute('value', false);
                     },
-                    onmouseup({ currentTarget }) {
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-confirm'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -2120,15 +2403,25 @@ function confirm(message = '') {
                         setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
-                }, 'Cancel'),
+
+                    innerHTML: deny,
+                }),
 
                 f('button.okay', {
-                    onmousedown({ currentTarget }) {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-confirm');
 
                         parent.setAttribute('value', true);
                     },
-                    onmouseup({ currentTarget }) {
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-confirm'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -2137,7 +2430,9 @@ function confirm(message = '') {
                         setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
-                }, 'OK')
+
+                    innerHTML: okay,
+                })
             )
         )
     );
@@ -2207,7 +2502,7 @@ Object.defineProperties(confirm, {
 });
 
 // Displays a confirmation message (silently)
-    // confirm.silent([message:string[, veiled:boolean]]) → Boolean|null
+    // confirm.silent(message:string?, veiled:boolean?) → boolean | null
 confirm.silent ??= (message = '', veiled = false) => {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
@@ -2232,7 +2527,7 @@ confirm.silent ??= (message = '', veiled = false) => {
 };
 
 // Displays a confirmation message with a timer
-    // confirm.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → Boolean|null
+    // confirm.timed(message:string?, milliseconds:number?, pausable:boolean?) → boolean | null
 confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
@@ -2276,7 +2571,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 };
 
 // Prompts a message
-    // prompt([message:string[, defaultValue:string]]) → String|null
+    // prompt(message:string?, defaultValue:string?) → string | null
 function prompt(message = '', defaultValue = '') {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
@@ -2285,24 +2580,58 @@ function prompt(message = '', defaultValue = '') {
         return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt(message));
 
     let f = furnish;
+    let $DOM = (prompt.parser ??= new DOMParser).parseFromString(message, 'text/html'),
+        $CNT = $('[controller]', false, $DOM);
 
-    let format = (null
-        ?? $('[format]', false, (new DOMParser).parseFromString(message, 'text/html'))?.textContent
+    let title = (null
+        ?? $CNT?.getAttribute('title')
+        ?? `TTV Tools &mdash; Please provide input...`
+    ),
+    icon = (null
+        ?? $CNT?.getAttribute('icon')
+        ?? ''
+    ),
+    okay = decodeHTML(null
+        ?? $CNT?.getAttribute('okay')
+        ?? 'OK'
+    ),
+    deny = decodeHTML(null
+        ?? $CNT?.getAttribute('deny')
+        ?? 'Cancel'
+    ),
+    type = (null
+        ?? $CNT?.getAttribute('type')
+        ?? (
+            /\p{N}/u.test(defaultValue)?
+                'number':
+            /^\*{4,}$/.test(defaultValue)?
+                'password':
+            'text'
+        )
+    ),
+    placeholder = (null
+        ?? $CNT?.getAttribute('placeholder')
+        ?? $CNT?.getAttribute('format')
         ?? (
             parseBool(defaultValue)?
                 `Default: ${ defaultValue }`:
             ''
         )
+    ),
+    pattern = (null
+        ?? $CNT?.getAttribute('pattern')
+        ?? $CNT?.getAttribute('regexp')
+        ?? ''
     );
 
     let container =
-    f('div.tt-prompt', {},
-        f('div.tt-prompt-container', {},
-            f('div.tt-prompt-header', { innerHTML: `TTV Tools &mdash; Please provide input...` }),
+    f('div.tt-prompt', { uuid: UUID.from(message).value },
+        f('div.tt-prompt-container', { ['icon'.repeat(+!!icon.length)]: icon },
+            f('div.tt-prompt-header', { innerHTML: title }),
             f('div.tt-prompt-body', { innerHTML: message }),
             f('div.tt-prompt-footer', {},
                 f('input.tt-prompt-input', {
-                    type: 'text', placeholder: format,
+                    type, pattern, placeholder,
 
                     onkeydown({ target = null, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
                         if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
@@ -2311,12 +2640,20 @@ function prompt(message = '', defaultValue = '') {
                 }),
 
                 f('button.edit.deny', {
-                    onmousedown({ currentTarget }) {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-prompt');
 
                         parent.setAttribute('value', '\0');
                     },
-                    onmouseup({ currentTarget }) {
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-prompt'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -2325,15 +2662,25 @@ function prompt(message = '', defaultValue = '') {
                         setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
-                }, 'Cancel'),
+
+                    innerHTML: deny,
+                }),
 
                 f('button.okay', {
-                    onmousedown({ currentTarget }) {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-prompt');
 
                         parent.setAttribute('value', $('.tt-prompt-input').value);
                     },
-                    onmouseup({ currentTarget }) {
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                            return;
+
                         let parent = currentTarget.closest('.tt-prompt'),
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
@@ -2342,7 +2689,9 @@ function prompt(message = '', defaultValue = '') {
                         setTimeout(() => parent.remove(), 1000);
                         clearInterval(timedJobID);
                     },
-                }, 'OK')
+
+                    innerHTML: okay,
+                })
             )
         )
     );
@@ -2412,7 +2761,7 @@ Object.defineProperties(prompt, {
 });
 
 // Prompts a message (silently)
-    // prompt.silent([message:string[, defaultValue:string[, veiled:boolean]]]) → String|null
+    // prompt.silent(message:string?, defaultValue:string?, veiled:boolean?) → string | null
 prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
@@ -2437,7 +2786,7 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
 };
 
 // Prompts a message with a timer
-    // prompt.timed([message:string[, milliseconds:number[, pausable:boolean]]]) → String|null
+    // prompt.timed(message:string?, milliseconds:number?, pausable:boolean?) → string | null
 prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
@@ -2481,7 +2830,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
 };
 
 // Compares two versions and returns an integer representing their relationship
-    // compareVersions([old:string[, new:string[, return:string]]]) → Number|Boolean
+    // compareVersions(old:string?, new:string?, return:string?) → number | boolean
 function compareVersions(oldVersion = '', newVersion = '', returnType) {
     if(/[<=>\u2264\u2265]/.test(oldVersion)) {
         let [oV, rT, nV] = oldVersion.split(/([<=>]{1,2}|[\u2264\u2265])/).map(s => s.trim()).filter(s => s?.length);
@@ -2557,6 +2906,91 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
     return diff;
 }
+
+/* Common MIME Types */
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+top.MIME_Types ??= ({
+    // type: extension
+    find(type = '') {
+        let [head] = type.toLowerCase().split(';');
+
+        return top.MIME_Types[head] ?? type;
+    },
+
+	"application/epub+zip": "epub",
+	"application/gzip": "gz",
+	"application/java-archive": "jar",
+	"application/json": "json",
+	"application/ld+json": "jsonld",
+	"application/msword": "doc",
+	"application/octet-stream": "bin",
+	"application/ogg": "ogx",
+	"application/pdf": "pdf",
+	"application/rtf": "rtf",
+	"application/vnd.amazon.ebook": "azw",
+	"application/vnd.apple.installer+xml": "mpkg",
+	"application/vnd.mozilla.xul+xml": "xul",
+	"application/vnd.ms-excel": "xls",
+	"application/vnd.ms-fontobject": "eot",
+	"application/vnd.ms-powerpoint": "ppt",
+	"application/vnd.oasis.opendocument.presentation": "odp",
+	"application/vnd.oasis.opendocument.spreadsheet": "ods",
+	"application/vnd.oasis.opendocument.text": "odt",
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+	"application/vnd.rar": "rar",
+	"application/vnd.visio": "vsd",
+	"application/x-7z-compressed": "7z",
+	"application/x-abiword": "abw",
+	"application/x-bzip": "bz",
+	"application/x-bzip2": "bz2",
+	"application/x-cdf": "cda",
+	"application/x-csh": "csh",
+	"application/x-freearc": "arc",
+	"application/x-httpd-php": "php",
+	"application/x-sh": "sh",
+	"application/x-shockwave-flash": "swf",
+	"application/x-tar": "tar",
+	"application/xhtml+xml": "xhtml",
+	"application/xml": "xml",
+	"application/zip": "zip",
+	"audio/aac": "aac",
+	"audio/midi": "mid",
+	"audio/mpeg": "mp3",
+	"audio/ogg": "oga",
+	"audio/opus": "opus",
+	"audio/wav": "wav",
+	"audio/webm": "weba",
+	"font/otf": "otf",
+	"font/ttf": "ttf",
+	"font/woff": "woff",
+	"font/woff2": "woff2",
+	"image/avif": "avif",
+	"image/bmp": "bmp",
+	"image/gif": "gif",
+	"image/jpeg": "jpeg",
+	"image/png": "png",
+	"image/svg+xml": "svg",
+	"image/tiff": "tiff",
+	"image/vnd.microsoft.icon": "ico",
+	"image/webp": "webp",
+	"text/calendar": "ics",
+	"text/css": "css",
+	"text/csv": "csv",
+	"text/html": "html",
+	"text/javascript": "mjs",
+	"text/plain": "txt",
+	"video/3gpp": "3gp",
+	"video/3gpp2": "3g2",
+	"video/mp2t": "ts",
+	"video/mp4": "mp4",
+	"video/mpeg": "mpeg",
+	"video/ogg": "ogv",
+	"video/webm": "webm",
+    "video/x-matroska": "mkv",
+	"video/x-msvideo": "avi",
+});
 
 /* ISO-639-1 Language Codes */
 top.ISO_639_1 ??= ({
@@ -4655,7 +5089,7 @@ top.ISO_639_1 ??= ({
 });
 
 // Encodes HTML to be HTML-embed friendly
-    // encodeHTML([string:string]) → String
+    // encodeHTML(string:string?) → string
 function encodeHTML(string = '') {
     for(let { char, html, dec, hex } of decodeHTML.table)
         string = string.replaceAll(char, html);
@@ -4664,7 +5098,7 @@ function encodeHTML(string = '') {
 }
 
 // Decodes HTML-embedded text
-    // decodeHTML([string:string]) → String
+    // decodeHTML(string:string) → string
 function decodeHTML(string = '') {
     return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contians($0))?.char ?? $0);
 }
