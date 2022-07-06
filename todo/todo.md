@@ -30,10 +30,25 @@
 12. Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `5.8`
 13. Live Reminders might re-add all live channels?
+14. Get `redo:boolean` from URL and control First in Line accordingly (commented-out)
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.16)
+- Fixed issue with `parseURL(...).subSearch`
+- Added cloud saving v2 skeleton
+- Added Card loading animation (`Card.deferred`)
+- Added `Element..getPath`
+- Modified `Element..getElementsByInnerText`
+- Fixed issue with recording
+- Modified Live Reminder logic to list live channels first
+- Improved `furnish` logic
+- Fixed News logic
+- Added `Element..isVisible`
+- Added Claim Rewards logic (on by default)
+- Fixed Time Zones
+
 > [`5.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.15)
 - Fixed `parseBool` logic
 - Fixed reloading issue with low viewership channels

@@ -90,7 +90,7 @@ class Balloon {
             return existing;
 
         if(defined(X)) {
-            if(!Queue.balloons.map(balloon => balloon.uuid).contains(uuid)) {
+            if(Queue.balloons.map(balloon => balloon.uuid).missing(uuid)) {
                 let interval = setInterval(() => {
                     let existing = $('#tt-balloon');
 
@@ -112,7 +112,7 @@ class Balloon {
 
         let p =
         f('div.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
-            f('div', {},
+            f.div(
                 f('div.tt-relative', {},
                     // Navigation Icon
                     N = f('div',
@@ -228,7 +228,7 @@ class Balloon {
                                     )
                                 ),
                                 // Body
-                                ...jobs.map(job => {
+                                ...jobs.map((job, index) => {
                                     let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
                                         guid = guid = UUID.from([href, message].join(':')).value;
 
@@ -274,7 +274,7 @@ class Balloon {
                                                                 },
                                                                 f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                                                     // Avatar
-                                                                    f('div', {},
+                                                                    f.div(
                                                                         f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
                                                                             f('div.tt-aspect.tt-aspect--align-top', {},
                                                                                 f('img.tt-balloon-avatar.tt-image', { src })
@@ -301,7 +301,38 @@ class Balloon {
                                                                     )
                                                                 )
                                                             ),
-                                                            f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
+                                                            // Repeat mini-button
+                                                            // f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                                            //     f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                            //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                                            //             {
+                                                            //                 'data-test-selector': 'persistent-notification__delete',
+                                                            //                 'connected-to': `${ U }--${ guid }`,
+                                                            //
+                                                            //                 onclick: event => {
+                                                            //                     let { currentTarget } = event,
+                                                            //                         connectedTo = currentTarget.getAttribute('connected-to');
+                                                            //
+                                                            //                     let element = $(`#tt-balloon-job-${ connectedTo }`),
+                                                            //                         thisJob = $('a', false, element),
+                                                            //                         repeat = parseBool(parseURL(thisJob.href).searchParameters.redo);
+                                                            //
+                                                            //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
+                                                            //                 },
+                                                            //             },
+                                                            //             f('span.tt-button-icon__icon', {},
+                                                            //                 f('div',
+                                                            //                     {
+                                                            //                         style: 'height:1.6rem; width:1.6rem',
+                                                            //                         innerHTML: Glyphs.refresh,
+                                                            //                     },
+                                                            //                 )
+                                                            //             )
+                                                            //         )
+                                                            //     )
+                                                            // ),
+                                                            // Delete mini-button
+                                                            f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                                                 f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                                         {
@@ -366,7 +397,7 @@ class Balloon {
         for(let key of 'body icon header parent container'.split(' '))
             this[key].setAttribute(`${ cssName }--${ key }`, (+new Date).toString(36));
 
-        this.tooltip = furnish('div.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
+        this.tooltip ??= f('div.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
 
         Balloon.#BALLOONS.set(title, this);
 
@@ -409,7 +440,7 @@ class Balloon {
     }
 
     add(...jobs) {
-        jobs = jobs.map(job => {
+        jobs = jobs.map((job, index) => {
             let { href, message, subheader, src = Runtime.getURL('profile.png'), attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
                 { uuid } = this,
                 guid = UUID.from(href).value,
@@ -462,7 +493,7 @@ class Balloon {
                                         },
                                         f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                             // Avatar
-                                            f('div', {},
+                                            f.div(
                                                 f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
                                                     f('div.tt-aspect.tt-aspect--align-top', {},
                                                         f('img.tt-balloon-avatar.tt-image', { src })
@@ -489,7 +520,38 @@ class Balloon {
                                             )
                                         )
                                     ),
-                                    f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
+                                    // Repeat mini-button
+                                    // f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                    //     f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                    //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                    //             {
+                                    //                 'data-test-selector': 'persistent-notification__delete',
+                                    //                 'connected-to': `${ uuid }--${ guid }`,
+                                    //
+                                    //                 onclick: event => {
+                                    //                     let { currentTarget } = event,
+                                    //                         connectedTo = currentTarget.getAttribute('connected-to');
+                                    //
+                                    //                     let element = $(`#tt-balloon-job-${ connectedTo }`),
+                                    //                         thisJob = $('a', false, element),
+                                    //                         repeat = parseBool(parseURL(thisJob.href).searchParameters.redo);
+                                    //
+                                    //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
+                                    //                 },
+                                    //             },
+                                    //             f('span.tt-button-icon__icon', {},
+                                    //                 f('div',
+                                    //                     {
+                                    //                         style: 'height:1.6rem; width:1.6rem',
+                                    //                         innerHTML: Glyphs.refresh,
+                                    //                     },
+                                    //                 )
+                                    //             )
+                                    //         )
+                                    //     )
+                                    // ),
+                                    // Remove mini-button
+                                    f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                         f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                 {
@@ -572,7 +634,7 @@ class Tooltip {
         let uuid;
         let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(getDOMPath(parent, true)).value];
+        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
             value = values[index];
             uuid = value + (['', ':tooltip'][index] || '');
@@ -672,7 +734,7 @@ class ChatFooter {
                     `
                 },
 
-                f('button.tt-align-items-center tt-align-middle tt-border-bottom-left-radius-medium tt-border-bottom-right-radius-medium tt-border-top-left-radius-medium tt-border-top-right-radius-medium tt-core-button tt-core-button--overlay tt-core-button--text tt-inline-flex tt-interactive tt-justify-content-center tt-overflow-hidden tt-relative', { style: 'padding: 0.5rem 1rem;', ...options },
+                f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-core-button.tt-core-button--overlay.tt-core-button--text.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative', { style: 'padding: 0.5rem 1rem;', ...options },
                     f('div.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0', {},
                         f('div.tt-flex-grow-0', {
                             innerHTML: title
@@ -722,7 +784,7 @@ class Card {
             if(nullish(value))
                 continue;
 
-            if(parseFloat(value) > -Infinity)
+            if(parseFloat(value) >= -Infinity)
                 unit ??= "px";
             else
                 unit ??= "";
@@ -749,7 +811,7 @@ class Card {
         let iconElement = f('img.emote-card__big-emote.tt-image', { ...icon, 'data-test-selector': "big-emote" });
 
         card.append(
-            f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1 [data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
+            f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
                 f('div.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
                     f('div.tt-inline-flex.viewer-card-drag-cancel', {},
                         f('div.tt-inline.tt-relative.tt-tooltip__container', { 'data-a-target': "emote-name" },
@@ -794,11 +856,11 @@ class Card {
             $('div', false, card).append(
                 // Tiny banner (live status)
                 f('div.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
-                    f('div', {},
+                    f.div(
                         f('div.tt-align-items-center.tt-align-self-start.tt-mg-b-05', {},
                             f('div.tt-align-items-center.tt-flex', {},
                                 f('div.tt-align-items-center.tt-flex.tt-mg-r-1', {},
-                                    f('a.tt-link [rel="noopener noreferrer" target="_blank"]', { href: footer.href },
+                                    f('a.tt-link[rel="noopener noreferrer" target="_blank"]', { href: footer.href },
                                         f('div.tt-flex', {
                                             innerHTML: `${
                                                 Glyphs.modify('video', { height: '20px', width: '20px' })
@@ -849,6 +911,89 @@ class Card {
     static get(title) {
         return Card.#CARDS.get(title);
     }
+
+    static deferred = class deferred {
+        constructor(fineTuning = {}) {
+            fineTuning.top ??= '7rem';
+            fineTuning.left ??= '0px';
+            fineTuning.cursor ??= 'auto';
+            fineTuning.padding ??= '1rem';
+
+            let styling = [];
+
+            for(let key in fineTuning) {
+                let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
+
+                if(nullish(value))
+                    continue;
+
+                if(parseFloat(value) >= -Infinity)
+                    unit ??= "px";
+                else
+                    unit ??= "";
+
+                styling.push(`${key}:${value}${unit}`);
+            }
+
+            styling = styling.join(';');
+
+            let f = furnish;
+
+            let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
+                card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable`, { style: styling, 'data-a-target': "viewer-card-positioner" },
+                    f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0',
+                        {
+                            'data-a-target': "viewer-card-close-button",
+                            onmouseup: ({ button = -1 }) => {
+                                !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
+                            },
+                        },
+                        f('div.tt-inline-flex.viewer-card-drag-cancel', {},
+                            f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button', {
+                                'aria-label': "Hide",
+                                'data-test-selector': "close-viewer-card",
+                            },
+                                f('span.tt-button-icon__icon', {},
+                                    f('div[style="width: 2rem; height: 2rem;"]', {},
+                                        f('div.tt-icon', {},
+                                            f('div.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
+                                        )
+                                    )
+                                )
+                            ),
+                        )
+                    )
+                );
+
+            // Remove current cards. Only one allowed at a time
+            [...container.children].forEach(child => child.remove());
+
+            // Furnish the card
+            card.append(
+                f('div.tt-spinner')
+            );
+
+            // Add the card
+            container.append(card);
+
+            let uuid = UUID.from(card.getPath()).value;
+
+            card.id = uuid;
+            card.classList.add('tt-c-background-base');
+
+            this.body = card;
+            this.uuid = uuid;
+            this.container = container;
+
+            return this;
+        }
+
+        post(state) {
+            this.body.remove();
+
+            return new Card(state);
+        }
+    }
 }
 
 // Creates a Twitch-style context menu
@@ -876,7 +1021,7 @@ class ContextMenu {
             if(nullish(value))
                 continue;
 
-            if(parseFloat(value) > -Infinity)
+            if(parseFloat(value) >= -Infinity)
                 unit ??= "px";
             else
                 unit ??= "";
@@ -908,7 +1053,7 @@ class ContextMenu {
                             if(text?.length)
                                 text = f('div.tt-hide-text-overflow', { innerHTML: text });
                             if(shortcut?.length)
-                                shortcut = f('pre', {}, f('code', {}, GetMacro(shortcut)));
+                                shortcut = f.pre( f.code( GetMacro(shortcut)));
 
                             if(icon || text || shortcut)
                                 return f('button.tt-context-menu-option', { onmouseup: event => action({ ...event, inheritance: inherit }), style: 'border-radius:0.6rem; display:inline-block; padding:0.5rem 0 0.5rem 3rem; width:-webkit-fill-available' }, icon, shortcut, text);
@@ -978,7 +1123,7 @@ class Search {
         let vodID = null, channelName = null;
         if(nullish(ID) && /^auto(?:matic)?$/i.test(type)) {
             if(true
-                && !player.routes.exact.contains(pathname)
+                && player.routes.exact.missing(pathname)
                 && !player.routes.start.filter(route => pathname.startsWith(route)).length
                 && (
                     // Is a VOD
@@ -1102,7 +1247,7 @@ class Search {
                             [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[{}]");
 
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
-                            [language] = languages.filter(lang => !alt_languages.contains(lang)),
+                            [language] = languages.filter(lang => alt_languages.missing(lang)),
                             name = display_name?.trim(),
                             profile_image = $('meta[property$="image"i]', false, doc)?.content,
                             live = parseBool(data?.publication?.isLiveBroadcast),
@@ -1246,7 +1391,7 @@ class Search {
         let vodID = null, channelName = null;
         if(nullish(ID) && /^auto(?:matic)?$/i.test(type)) {
             if(true
-                && !player.routes.exact.contains(pathname)
+                && player.routes.exact.missing(pathname)
                 && !player.routes.start.filter(route => pathname.startsWith(route)).length
                 && (
                     // Is a VOD
@@ -1459,7 +1604,7 @@ class Search {
 
 // https://stackoverflow.com/a/45205645/4211612
 // Creates a CSS object that can be used to easily transform an object to a CSS string
-    // new CSSObject({ ...css-properties }) → object<CSSObject>
+    // new CSSObject({ ...css-properties }) → Object<CSSObject>
 class CSSObject {
     constructor(properties = {}) {
         for(let key in properties)
@@ -1516,7 +1661,7 @@ class Color {
     constructor() {}
 
     // Converts Hex color values to a color-object
-        // Color.HEXtoColor(hex:string<CSS-Color>) → object<Color>
+        // Color.HEXtoColor(hex:string<CSS-Color>) → Object<Color>
     static HEXtoColor(hex = '#000') {
         let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
 
@@ -1526,7 +1671,7 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
     // Converts RGB to HSL
-        // Color.RGBtoHSL(red:number<uint8>?, green:number<uint8>?, blue:number<uint8>?, alpha:number<Percentage>?) → object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+        // Color.RGBtoHSL(red:number<uint8>?, green:number<uint8>?, blue:number<uint8>?, alpha:number<Percentage>?) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
     static RGBtoHSL(R = 0, G = 0, B = 0, A = 1) {
         // Convert RGB to fractions of 1
         let r = R / 255,
@@ -1582,7 +1727,7 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/hsl-to-rgb.html
     // Converts HSL to RGB
-        // Color.HSLtoRGB(hue:number<Degrees>?, saturation:number<Percentage>?, lightness:number<Percentage>?, alpha:number<Percentage>?) → object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+        // Color.HSLtoRGB(hue:number<Degrees>?, saturation:number<Percentage>?, lightness:number<Percentage>?, alpha:number<Percentage>?) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
     static HSLtoRGB(hue = 0, saturation = 0, lightness = 0, alpha = 1) {
         let H = (hue % 360),
             S = (saturation / 100),
@@ -2358,7 +2503,7 @@ async function GetQuality() {
 }
 
 // Change the video quality
-    // SetQuality(quality:string?, backup:string?) → object<{ oldValue:object<{ input:Element, label:Element }>, newValue:object<{ input:Element, label:Element }> }>
+    // SetQuality(quality:string?, backup:string?) → Object<{ oldValue:object<{ input:Element, label:Element }>, newValue:object<{ input:Element, label:Element }> }>
 async function SetQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
@@ -3162,7 +3307,7 @@ try {
 
                 if(false
                     || (!top.UP_NEXT_ALLOW_THIS_TAB)
-                    || (from.toLowerCase() == STREAMER?.name?.toLowerCase())
+                    || (from.equals(STREAMER?.name))
                 )
                     break;
 
@@ -3425,9 +3570,9 @@ try {
                     for(let script of scripts)
                         await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(script.src)}`, { mode: 'cors' })
                             .then(response => response.text())
-                            .then(javascript => {
+                            .then(js => {
                                 script.removeAttribute('src');
-                                script.innerText = javascript;
+                                script.textContent = js;
                             });
 
                     let styles = [...DOM.styleSheets].filter(style => style.href?.length);
@@ -3436,7 +3581,7 @@ try {
                             .then(response => response.text())
                             .then(css => {
                                 style.removeAttribute('href');
-                                style.innerText = css;
+                                style.textContent = css;
                             });
 
                     for(let element of $('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', true, DOM))
@@ -3828,7 +3973,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     // Gets the next available channel (streamer)
-        // GetNextStreamer() → object<Channel>
+        // GetNextStreamer() → Object<Channel>
     function GetNextStreamer() {
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS?.length)
@@ -4109,7 +4254,7 @@ let Initialize = async(START_OVER = false) => {
                     // aliases: []
                     // channel: "5f5989e007c66e281ad711ac"
                     // command: "uptime"
-                    // cooldown: {user: 30, global: 30}
+                    // cooldown: { user: 30, global: 30 }
                     // cost: 0
                     // createdAt: "2020-09-10T02:07:05.487Z"
                     // enabled: true
@@ -4220,7 +4365,7 @@ let Initialize = async(START_OVER = false) => {
                     notEarned = (
                         (allRewards?.length)?
                             allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
-                        (notEarned > -Infinity)?
+                        (notEarned >= -Infinity)?
                             notEarned:
                         -1
                     );
@@ -4293,7 +4438,7 @@ let Initialize = async(START_OVER = false) => {
                 || SPECIAL_MODE
                 || (true
                     && defined($('[status] [class*="status-text"i]')) && nullish($(`[class*="offline-recommend"i]`))
-                    && !/^offline$/i.test($(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`)?.textContent?.trim() ?? "")
+                    && !/^offline$/i.test($.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`).first?.textContent?.trim() ?? "")
                 )
             )
         },
@@ -4422,11 +4567,11 @@ let Initialize = async(START_OVER = false) => {
                         global: (_.maxPerStreamSetting?.maxPerStream * +!!_.maxPerStreamSetting?.isEnabled) | 0,
                         user: (_.maxPerUserSetting?.maxPerStream * +!!_.maxPerUserSetting?.isEnabled) | 0,
                     },
+                    needsInput: parseBool(_.isUserInputRequired),
                     paused: parseBool(_.isPaused),
                     premium: parseBool(_.isSubOnly),
                     prompt: (_.prompt || ""),
                     skips: parseBool(_.shouldRedemptionsSkipRequestQueue),
-                    strict: parseBool(_.isUserInputRequired),
                     title: (_.title || ""),
                     updated: (_.updatedForIndicatorAt || _.globallyUpdatedForIndicatorAt),
                 });
@@ -4837,33 +4982,21 @@ let Initialize = async(START_OVER = false) => {
                     if(nullish(STREAMER.name))
                         break __FineDetails__;
 
-                    /** Get Twitch analytics data
-                     * activeDaysPerWeek:number     - the average number of days the channel is live (per week)
-                     * actualStartTime:Date         - the time (date) when the stream started
-                     * dailyBroadcastTime:number    - the average number of hours streamed (per day)
-                     * dailyStartTimes:array~string - an object of usual start times for the stream (strings are formatted as 24h time strings)
-                     * dailyStopTimes:array~string  - an object of usual stop times for the stream (strings are formatted as 24h time strings)
-                     * dataRetrievedAt:Date         - when was the data last retrieved (successfully)
-                     * dataRetrievedOK:boolean      - was the data retrieval successful
-                     * daysStreaming:array~string   - abbreviated names of days the stream is normally live
-                     * projectedLastCall:Date       - the assumed last time to activate First in Line according to the user's settings
-                     * projectedWindDownPeriod:Date - the assumed "dying down" period before the stream ends (90% of the stream will have passed)
-                     * projectedStopTime:Date       - the assumed time (date) when the stream will end
-                     * usualStartTime:string        - the normal start time for the stream on the current day (formatted as 24h time string)
-                     * usualStopTime:string         - the normal stop time for the stream on the current day (formatted as 24h time string)
+                    // Get Twitch analytics data
+                        // activeDaysPerWeek:number         → the average number of days the channel is live (per week)
+                        // actualStartTime:Date             → the time (date) when the stream started
+                        // dailyBroadcastTime:number        → the average number of hours streamed (per day)
+                        // dailyStartTimes:array<string>    → an object of usual start times for the stream (strings are formatted as 24h time strings)
+                        // dailyStopTimes:array<string>     → an object of usual stop times for the stream (strings are formatted as 24h time strings)
+                        // dataRetrievedAt:Date             → when was the data last retrieved (successfully)
+                        // dataRetrievedOK:boolean          → was the data retrieval successful
+                        // daysStreaming:array<string>      → abbreviated names of days the stream is normally live
+                        // projectedLastCall:Date           → the assumed last time to activate First in Line according to the user's settings
+                        // projectedWindDownPeriod:Date     → the assumed "dying down" period before the stream ends (90% of the stream will have passed)
+                        // projectedStopTime:Date           → the assumed time (date) when the stream will end
+                        // usualStartTime:string            → the normal start time for the stream on the current day (formatted as 24h time string)
+                        // usualStopTime:string             → the normal stop time for the stream on the current day (formatted as 24h time string)
 
-                        activeDaysPerWeek: 6
-                        actualStartTime: "2021-06-11T20:49:47.997Z"
-                        dailyBroadcastTime: 18566233
-                        dailyStartTimes: { 0: "15:45", 1: "15:45", 2: "14:45", 3: "14:45", 4: "14:45", 5: "15:45", Mon: "15:45", Tue: "15:45", Wed: "14:45", … }
-                        dailyStopTimes: { 0: "20:45", 1: "20:45", 2: "19:45", 3: "19:45", 4: "19:45", 5: "20:45", Mon: "20:45", Tue: "20:45", Wed: "19:45", … }
-                        dataRetrievedAt: 1623458262999
-                        dataRetrievedOK: true
-                        daysStreaming: (6) ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-                        projectedStopTime: "2021-06-12T01:59:14.230Z"
-                        usualStartTime: "14:45"
-                        usualStopTime: "19:45"
-                     */
                     // First, attempt to retrieve the cached data (no older than 4h)
                     try {
                         await LoadCache(`data/${ STREAMER.name }`, cache => {
@@ -4899,238 +5032,416 @@ let Initialize = async(START_OVER = false) => {
                             ?? []
                         );
 
-                        // Proper CORS requests to fetch the HTML data
-                        // Stream details
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'cors' })
-                            .then(response => response.json())
-                            .then(json => {
-                                let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
-                                    today = new Date;
+                        let FETCHED_OK = false;
 
-                                let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
+                        // You have to make proper CORS requests to fetch HTML data! //
 
-                                let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
+                        /***
+                         *      _______       _ _       _       __  __      _        _
+                         *     |__   __|     (_) |     | |     |  \/  |    | |      (_)
+                         *        | |_      ___| |_ ___| |__   | \  / | ___| |_ _ __ _  ___ ___
+                         *        | \ \ /\ / / | __/ __| '_ \  | |\/| |/ _ \ __| '__| |/ __/ __|
+                         *        | |\ V  V /| | || (__| | | | | |  | |  __/ |_| |  | | (__\__ \
+                         *        |_| \_/\_/ |_|\__\___|_| |_| |_|  |_|\___|\__|_|  |_|\___|___/
+                         *
+                         *
+                         */
+                        // Stream details (JSON) → /Ayrun
+                            // activeDaysPerWeek: 3
+                            // actualStartTime: "2022-06-17T18:56:13.249Z"
+                            // dailyBroadcastTime: 17522433
+                            // dailyStartTimes: { 0: "07:30", 1: "08:15", 2: "09:15", 3: "08:00", 4: "08:15", 5: "10:00", 6: "08:15", Sun: "07:30", … }
+                            // dailyStopTimes: { 0: "11:15", 1: "12:00", 2: "13:00", 3: "12:45", 4: "12:00", 5: "14:45", 6: "12:00", Sun: "11:15", … }
+                            // dataRetrievedAt: 1655493917250
+                            // dataRetrievedOK: true
+                            // daysStreaming: ["Mon", "Wed", "Fri"]
+                            // projectedLastCall: "2022-06-17T23:33:15.682Z"
+                            // projectedStopTime: "2022-06-17T23:48:15.682Z"
+                            // projectedWindDownPeriod: "2022-06-17T23:19:03.438Z"
+                            // usualStartTime: "10:00"
+                            // usualStopTime: "14:45"
+                        if(!FETCHED_OK) {
+                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/stream_time_values`)}`, { mode: 'cors' })
+                                .then(response => response.json())
+                                .then(json => {
+                                    let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
+                                        today = new Date;
 
-                                let daysWithStreams = new Set(),
-                                    totalStreamHistory = (json ?? [])
-                                        // All except today
-                                        .slice(0, -1)
-                                        // Last 2 weeks (excluding today)
-                                        // .slice(-14)
-                                        .reverse()
-                                        .map(([start, stop]) => {
-                                            let date = new Date(start.toUpperCase());
+                                    let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
 
-                                            if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
-                                                daysWithStreams.add(date.getDay());
+                                    let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
 
-                                            return [start, stop];
-                                        })
-                                        .reverse()
-                                        .map(([start, stop]) => {
-                                            // Set the average start/stop times (overall)
-                                            let [S_, _S] = [start, stop].map(date => new Date(date));
+                                    let daysWithStreams = new Set(),
+                                        totalStreamHistory = (json ?? [])
+                                            // All except today
+                                            .slice(0, -1)
+                                            // Last 2 weeks (excluding today)
+                                            // .slice(-14)
+                                            .reverse()
+                                            .map(([start, stop]) => {
+                                                let date = new Date(start.toUpperCase());
 
-                                            avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
-                                            avgStreamSpan.push(Math.abs(+S_ - +_S));
-                                            avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
+                                                if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
+                                                    daysWithStreams.add(date.getDay());
 
-                                            return [start, stop];
-                                        });
+                                                return [start, stop];
+                                            })
+                                            .reverse()
+                                            .map(([start, stop]) => {
+                                                // Set the average start/stop times (overall)
+                                                let [S_, _S] = [start, stop].map(date => new Date(date));
 
-                                // Set the daily start time
-                                avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
+                                                avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
+                                                avgStreamSpan.push(Math.abs(+S_ - +_S));
+                                                avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
 
-                                for(let day in dlyStartTime) {
-                                    let avgH = 0, avgM = 0;
+                                                return [start, stop];
+                                            });
 
-                                    dlyStartTime[day]
-                                        .map(([h, m]) => { avgH += h; avgM += m })
-                                        .filter((v, i, a) => !i)
-                                        .map(() => {
-                                            let { length } = dlyStartTime[day];
+                                    // Set the daily start time
+                                    avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
 
-                                            avgH = Math.round(avgH / length);
-                                            avgM = (avgM / length).floorToNearest(15);
+                                    for(let day in dlyStartTime) {
+                                        let avgH = 0, avgM = 0;
 
-                                            data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
-                                        });
-                                }
+                                        dlyStartTime[day]
+                                            .map(([h, m]) => { avgH += h; avgM += m })
+                                            .filter((v, i, a) => !i)
+                                            .map(() => {
+                                                let { length } = dlyStartTime[day];
 
-                                // Set the average stream length
-                                avgStreamSpan.map(t => data.dailyBroadcastTime += t);
-                                data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
+                                                avgH = Math.round(avgH / length);
+                                                avgM = (avgM / length).floorToNearest(15);
 
-                                // Set the daily stop time
-                                avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
+                                                data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                            });
+                                    }
 
-                                for(let day in dlyStartTime) {
-                                    let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
+                                    // Set the average stream length
+                                    avgStreamSpan.map(t => data.dailyBroadcastTime += t);
+                                    data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
 
-                                    data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
-                                        data.dailyStartTimes[day]
-                                            .split(':')
-                                            .map(parseFloat)
-                                            .map((v, i) => ([H, M][i] + v) % [24, 60][i])
-                                            .map((v, i) => !!i? v.floorToNearest(15): v)
-                                            .map(t => ('00' + t).slice(-2))
-                                            .join(':');
-                                }
+                                    // Set the daily stop time
+                                    avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
 
-                                // Set today's start/stop times
-                                data.usualStartTime = data.dailyStartTimes[today.getDay()];
-                                data.usualStopTime = data.dailyStopTimes[today.getDay()];
+                                    for(let day in dlyStartTime) {
+                                        let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
 
-                                data.daysStreaming = getWeekDays(...daysWithStreams);
-                                data.activeDaysPerWeek = data.daysStreaming.length;
+                                        data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
+                                            data.dailyStartTimes[day]
+                                                .split(':')
+                                                .map(parseFloat)
+                                                .map((v, i) => ([H, M][i] + v) % [24, 60][i])
+                                                .map((v, i) => !!i? v.floorToNearest(15): v)
+                                                .map(t => ('00' + t).slice(-2))
+                                                .join(':');
+                                    }
 
-                                data.actualStartTime = new Date(+new Date - STREAMER.time);
-                                data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
-                                data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
-                                data.projectedLastCall = new Date(+data.projectedStopTime - (
-                                    (
-                                        parseBool(Settings.first_in_line)?
-                                            Settings.first_in_line_time_minutes:
-                                        parseBool(Settings.first_in_line_plus)?
-                                            Settings.first_in_line_plus_time_minutes:
-                                        parseBool(Settings.first_in_line_all)?
-                                            Settings.first_in_line_all_time_minutes:
-                                        15
-                                    ) * 60_000
-                                ));
+                                    // Set today's start/stop times
+                                    data.usualStartTime = data.dailyStartTimes[today.getDay()];
+                                    data.usualStopTime = data.dailyStopTimes[today.getDay()];
 
-                                REMARK(`Stream details about "${ STREAMER.name }"`, data);
+                                    data.daysStreaming = getWeekDays(...daysWithStreams);
+                                    data.activeDaysPerWeek = data.daysStreaming.length;
 
-                                return STREAMER.data = { ...STREAMER.data, ...data };
-                            })
-                            .then(data => {
-                                data = { ...data, dataRetrievedOK: defined(data?.dailyBroadcastTime), dataRetrievedAt: +new Date };
+                                    data.actualStartTime = new Date(+new Date - STREAMER.time);
+                                    data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
+                                    data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
+                                    data.projectedLastCall = new Date(+data.projectedStopTime - (
+                                        (
+                                            parseBool(Settings.first_in_line)?
+                                                Settings.first_in_line_time_minutes:
+                                            parseBool(Settings.first_in_line_plus)?
+                                                Settings.first_in_line_plus_time_minutes:
+                                            parseBool(Settings.first_in_line_all)?
+                                                Settings.first_in_line_all_time_minutes:
+                                            15
+                                        ) * 60_000
+                                    ));
 
-                                SaveCache({ [`data/${ STREAMER.name }`]: data });
-                            })
-                            .catch(error => {
-                                WARN(`Failed to get STREAM details. ${ error }`).toNativeStack();
+                                    REMARK(`Stream details about "${ STREAMER.name }"`, data);
 
-                                if(!ErrGet.length)
-                                    PushToTopSearch({ 'tt-err-get': 'stream' }, false);
-                            });
+                                    return STREAMER.data = { ...STREAMER.data, ...data };
+                                })
+                                .then(data => {
+                                    data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
 
-                        // Channel details
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }`)}`, { mode: 'cors' })
-                            .then(response => response.text())
-                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                            .then(DOM => {
-                                let data = {};
+                                    SaveCache({ [`data/${ STREAMER.name }`]: data });
+                                })
+                                .catch(error => {
+                                    WARN(`Failed to get STREAM details. ${ error }`)
+                                        // .toNativeStack();
 
-                                $('dt+dd', true, DOM).map(dd => {
-                                    let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
-                                        value = dd.textContent.trim();
-
-                                    value = (
-                                        /^(followers)$/i.test(name)?
-                                            parseInt(value.replace(/\D/g, '')):
-                                        /^((first|last)seen)$/i.test(name)?
-                                            new Date($('time', false, dd).getAttribute('datetime')):
-                                        value
-                                    );
-
-                                    data[name] = value;
+                                    if(!ErrGet.length)
+                                        PushToTopSearch({ 'tt-err-get': 'st-tw-metrics' }, false);
                                 });
 
-                                REMARK(`Channel details about "${ STREAMER.name }"`, data);
+                            // Channel details (HTML → JSON)
+                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }`)}`, { mode: 'cors' })
+                                .then(response => response.text())
+                                .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                .then(DOM => {
+                                    let data = {};
 
-                                return STREAMER.data = { ...STREAMER.data, ...data };
-                            })
-                            .then(data => {
-                                data = { ...data, dataRetrievedOK: defined(data?.firstSeen), dataRetrievedAt: +new Date };
+                                    $('dt+dd', true, DOM).map(dd => {
+                                        let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
+                                            value = dd.textContent.trim();
 
-                                SaveCache({ [`data/${ STREAMER.name }`]: data });
-                            })
-                            .catch(error => {
-                                WARN(`Failed to get CHANNEL details. ${ error }`).toNativeStack();
+                                        value = (
+                                            /^(followers)$/i.test(name)?
+                                                parseInt(value.replace(/\D/g, '')):
+                                            /^((first|last)seen)$/i.test(name)?
+                                                new Date($('time', false, dd).getAttribute('datetime')):
+                                            value
+                                        );
 
-                                if(!ErrGet.length)
-                                    PushToTopSearch({ 'tt-err-get': 'channel' }, false);
-                            });
+                                        data[name] = value;
+                                    });
 
-                        //  OBSOLETE //
-                        // await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
-                        //     .then(response => response.json())
-                        //     .then(json => GLOBAL_TWITCH_API = JSON.parse(json.token ?? "null"))
-                        //     .then(json => {
-                        //         if(nullish(json))
-                        //             throw "Fine Detail JSON data could not be parsed...";
-                        //
-                        //         REMARK('Getting fine details...', { [type]: value, cookies }, json);
-                        //
-                        //         let conversion = {
-                        //             paid: 'subscriber',
-                        //
-                        //             ally: 'partner',
-                        //             fast: 'turbo',
-                        //             nsfw: 'mature',
-                        //             sole: 'channel_id',
-                        //         };
-                        //
-                        //         for(let key in conversion)
-                        //             STREAMER[key] = GLOBAL_TWITCH_API[conversion[key]];
-                        //     })
-                        //     .catch(ERROR);
+                                    REMARK(`Channel details about "${ STREAMER.name }"`, data);
 
-                        // OBSOLETE //
-                        // await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
-                        //     .then(text => text.text())
-                        //     /* Conversion => Text → HTML → Element → JSON */
-                        //     .then(html => {
-                        //         let doc = (new DOMParser).parseFromString(html, 'text/html'),
-                        //             body = doc.body;
+                                    return STREAMER.data = { ...STREAMER.data, ...data };
+                                })
+                                .then(data => {
+                                    data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+
+                                    SaveCache({ [`data/${ STREAMER.name }`]: data });
+                                })
+                                .catch(error => {
+                                    WARN(`Failed to get CHANNEL details. ${ error }`)
+                                        // .toNativeStack();
+
+                                    if(!ErrGet.length)
+                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-metrics' }, false);
+                                });
+                        }
+
+                        /***
+                         *      _______       _ _       _        _____ _        _
+                         *     |__   __|     (_) |     | |      / ____| |      | |
+                         *        | |_      ___| |_ ___| |__   | (___ | |_ __ _| |_ ___
+                         *        | \ \ /\ / / | __/ __| '_ \   \___ \| __/ _` | __/ __|
+                         *        | |\ V  V /| | || (__| | | |  ____) | || (_| | |_\__ \
+                         *        |_| \_/\_/ |_|\__\___|_| |_| |_____/ \__\__,_|\__|___/
+                         *
+                         *
+                         */
+                        // Channel details (HTML → JSON) → /Ayrun
+                            // TEAMS: ""
+                            // averageViewers: 2373
+                            // averageViewersRanked: 3808
+                            // firstSeen: Tue Aug 23 2016 00:00:00 GMT-0600 (Mountain Daylight Time)
+                            // followers: 243155
+                            // followersRanked: 2174
+                            // games: { "Dead by Daylight": 36000000, "Dying Light 2: Stay Human": 1240000, "Video Horror Society": 5120000, "Propnight": 120000, "Nemesis: Distress": 3060000 }
+                            // highestViewers: 4926
+                            // highestViewersRanked: 6907
+                            // lastSeen: Fri Jun 17 2022 14:10:52 GMT-0600 (Mountain Daylight Time)
+                            // streamLang: "en"
+                            // subCount: 2400
+                            // totalViews: 4344374
+                            // totalViewsRanked: 4885
+                        if(!FETCHED_OK)
+                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchstats.net/streamer/${ name }`)}`, { mode: 'cors' })
+                                .then(response => response.text())
+                                .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                .then(dom => {
+                                    let children = $('.conta > :not(:first-child, :last-child)', true, dom);
+                                    let obj = { games: {} };
+
+                                    let parse = (string = '') =>
+                                        (
+                                            /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)?
+                                                parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00')):
+                                            /^([-])$/.test(string)?
+                                                0:
+                                            /^\d/.test(string)?
+                                                parseFloat(string.replace(/[^\d\.]+/g, '')):
+                                            /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)?
+                                                new Date(string):
+                                            string
+                                        );
+
+                                    parsing:
+                                    for(let child of children)
+                                        if(nullish($('#allgames', false, child)))
+                                            parsing_stats: for(let grandChild of child.children) {
+                                                let [key, val, ...etc] = grandChild.children;
+
+                                                key = key?.textContent?.trim();
+                                                val = val?.textContent?.trim();
+
+                                                if(!parseBool(key?.length))
+                                                    continue parsing_stats;
+
+                                                key = (key).replace(/\s+/g, '').replace(/^(?:[A-Z][a-z])/, ($0) => $0.toLowerCase());
+                                                val = parse(val);
+
+                                                switch(key) {
+                                                    case 'accStart': {
+                                                        key = 'firstSeen';
+                                                    } break;
+
+                                                    case 'lastOnline': {
+                                                        key = 'lastSeen';
+
+                                                        if(/\bnow\b/i.test(val))
+                                                            val = new Date;
+                                                        else
+                                                            val = new Date((+new Date) - val);
+                                                    } break;
+                                                }
+
+                                                obj[key] = val;
+
+                                                for(let e of etc) {
+                                                    let [k, v] = e.textContent.split(/\s+/);
+
+                                                    obj[key + k] = parse(v);
+                                                }
+                                            }
+                                        else
+                                            parsing_games: for(let game of $('#allgames > *', true, child)) {
+                                                let [name, time] = game.children;
+
+                                                obj.games[name.textContent] = parse(time.textContent);
+                                            }
+
+                                    return obj;
+                                })
+                                .then(data => {
+                                    data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+
+                                    SaveCache({ [`data/${ STREAMER.name }`]: data });
+                                })
+                                .catch(error => {
+                                    WARN(`Failed to get CHANNEL details. ${ error }`)
+                                        // .toNativeStack();
+
+                                    if(!ErrGet.length)
+                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-stats' }, false);
+                                });
+
+                        /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
+                         *      _______       _ _       _       _______             _
+                         *     |__   __|     (_) |     | |     |__   __|           | |
+                         *        | |_      ___| |_ ___| |__      | |_ __ __ _  ___| | _____ _ __
+                         *        | \ \ /\ / / | __/ __| '_ \     | | '__/ _` |/ __| |/ / _ \ '__|
+                         *        | |\ V  V /| | || (__| | | |    | | | | (_| | (__|   <  __/ |
+                         *        |_| \_/\_/ |_|\__\___|_| |_|    |_|_|  \__,_|\___|_|\_\___|_|
+                         *
+                         *
+                         */
+                        // Channel details (Text → HTML → JSON)
+                        // if(!FETCHED_OK)
+                        //     await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/${ STREAMER.name }/statistics`)}`, { mode: 'cors' })
+                        //         .then(text => text.text())
+                        //         .then(html => {
+                        //             let doc = (new DOMParser).parseFromString(html, 'text/html'),
+                        //                 body = doc.body;
                         //
-                        //         let data = {};
+                        //             let data = {};
                         //
-                        //         [...doc.querySelectorAll('#report .table tr')]
-                        //             .map(tr => {
-                        //                 let [name, value] = tr.querySelectorAll('td');
+                        //             [...doc.querySelectorAll('#report .table tr')]
+                        //                 .map(tr => {
+                        //                     let [name, value] = tr.querySelectorAll('td');
                         //
-                        //                 /* Set initial name */
-                        //                 name = name
-                        //                     .textContent
-                        //                     .toLowerCase();
+                        //                     /* Set initial name */
+                        //                     name = name
+                        //                         .textContent
+                        //                         .toLowerCase();
                         //
-                        //                 /* Set initial value, and adjust name */
-                        //                 value = value
-                        //                     .textContent
-                        //                     .trim()
-                        //                     .replace(/\s+/g, ' ')
-                        //                     .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
-                        //                         name += " per " + $1;
+                        //                     /* Set initial value, and adjust name */
+                        //                     value = value
+                        //                         .textContent
+                        //                         .trim()
+                        //                         .replace(/\s+/g, ' ')
+                        //                         .replace(/\s*\/(\w+)/, ($0, $1, $$, $_) => {
+                        //                             name += " per " + $1;
                         //
-                        //                         return '';
-                        //                     });
+                        //                             return '';
+                        //                         });
                         //
-                        //                 /* Set final value */
-                        //                 value = (
-                        //                     /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
-                        //                         parseFloat(value):
-                        //                     value
-                        //                 );
+                        //                     /* Set final value */
+                        //                     value = (
+                        //                         /^([\d\.]+|[\d\.]+\s*(?:min|hr|day)s)$/.test(value)?
+                        //                             parseFloat(value):
+                        //                         value
+                        //                     );
                         //
-                        //                 /* Set final name */
-                        //                 name = name
-                        //                     .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
+                        //                     /* Set final name */
+                        //                     name = name
+                        //                         .replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
                         //
-                        //                 /* Set property */
-                        //                 data[name] = value;
-                        //             });
+                        //                     /* Set property */
+                        //                     data[name] = value;
+                        //                 });
                         //
-                        //         REMARK(`Details about "${ STREAMER.name }"`, data/*, { bearer, clientID }*/);
+                        //             REMARK(`Details about "${ STREAMER.name }"`, data/*, { bearer, clientID }*/);
                         //
-                        //         return STREAMER.data = { ...STREAMER.data, ...data };
-                        //     })
-                        //     .then(data => {
-                        //         data = { ...data, dataRetrievedAt: +new Date };
+                        //             return data;
+                        //         })
+                        //         .then(data => {
+                        //             data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.streamDuration)), dataRetrievedAt: +new Date };
                         //
-                        //         SaveCache({ [`data/${ STREAMER.name }`]: data });
-                        //     });
+                        //             SaveCache({ [`data/${ STREAMER.name }`]: data });
+                        //         })
+                        //         .catch(error => {
+                        //             WARN(`Failed to get CHANNEL details. ${ error }`)
+                        //                 .toNativeStack();
+                        //
+                        //             if(!ErrGet.length)
+                        //                 PushToTopSearch({ 'tt-err-get': 'ch-tw-tracker' }, false);
+                        //         });
+
+                        /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
+                         *      _______       _ _       _
+                         *     |__   __|     (_) |     | |
+                         *        | |_      ___| |_ ___| |__
+                         *        | \ \ /\ / / | __/ __| '_ \
+                         *        | |\ V  V /| | || (__| | | |
+                         *        |_| \_/\_/ |_|\__\___|_| |_|
+                         *
+                         *
+                         */
+                        // Channel details (JSON) →
+                        // if(!FETCHED_OK)
+                        //     await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
+                        //         .then(response => response.json())
+                        //         .then(json => JSON.parse(json.token ?? "null"))
+                        //         .then(json => {
+                        //             if(nullish(json))
+                        //                 throw "Fine Detail JSON data could not be parsed...";
+                        //
+                        //             REMARK('Getting fine details...', { [type]: value, cookies }, json);
+                        //
+                        //             let conversion = {
+                        //                 paid: 'subscriber',
+                        //
+                        //                 ally: 'partner',
+                        //                 fast: 'turbo',
+                        //                 nsfw: 'mature',
+                        //                 sole: 'channel_id',
+                        //             };
+                        //
+                        //             let data = {};
+                        //             for(let key in conversion)
+                        //                 data[key] = json[conversion[key]];
+                        //
+                        //             return data;
+                        //         })
+                        //         .then(data => {
+                        //             data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.ally)), dataRetrievedAt: +new Date };
+                        //
+                        //             SaveCache({ [`data/${ STREAMER.name }`]: data });
+                        //         })
+                        //         .catch(error => {
+                        //             WARN(`Failed to get CHANNEL details. ${ error }`)
+                        //                 .toNativeStack();
+                        //
+                        //             if(!ErrGet.length)
+                        //                 PushToTopSearch({ 'tt-err-get': 'ch-tw' }, false);
+                        //         });
                     }
                 }
             };
@@ -5551,7 +5862,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(button)) {
             let sibling, parent, before,
                 extra = () => {},
-                container = furnish('div'),
+                container = furnish(),
                 placement = (Settings.away_mode_placement ??= "null");
 
             switch(placement) {
@@ -5857,7 +6168,7 @@ let Initialize = async(START_OVER = false) => {
                 SaveCache({ PrimeSubscription: (PrimeSubscription = STREAMER.sole.toString(36).toUpperCase()), PrimeSubscriptionReclaims: (PrimeSubscriptionReclaims = parseInt(Settings.claim_prime__max_claims)) });
 
             resubscribing:
-            if(PrimeSubscription.toUpperCase() == STREAMER.sole.toString(36).toUpperCase()) {
+            if(PrimeSubscription.equals(STREAMER.sole.toString(36))) {
                 if(PrimeSubscriptionReclaims < 3)
                     confirm.timed(`Please review your settings. TTV Tools ${ ['was', 'is'][+!!PrimeSubscriptionReclaims] } still reclaiming your <strong>Prime Subscription</strong> for this channel!`)
                         .then(answer => {
@@ -5899,6 +6210,165 @@ let Initialize = async(START_OVER = false) => {
         REMARK("Claiming Prime Subscription...");
 
         RegisterJob('claim_prime');
+    }
+
+    /*** Claim Reward
+     *       _____ _       _             _____                            _
+     *      / ____| |     (_)           |  __ \                          | |
+     *     | |    | | __ _ _ _ __ ___   | |__) |_____      ____ _ _ __ __| |
+     *     | |    | |/ _` | | '_ ` _ \  |  _  // _ \ \ /\ / / _` | '__/ _` |
+     *     | |____| | (_| | | | | | | | | | \ \  __/\ V  V / (_| | | | (_| |
+     *      \_____|_|\__,_|_|_| |_| |_| |_|  \_\___| \_/\_/ \__,_|_|  \__,_|
+     *
+     *
+     */
+    let CLAIM_REWARDS_HANDLER;
+
+    Handlers.claim_reward = () => {
+        LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
+            AutoClaimRewards ??= {};
+
+            for(let sole in AutoClaimRewards)
+                if(sole == STREAMER.sole)
+                    for(let rewardID of AutoClaimRewards[sole])
+                        await STREAMER.shop
+                            .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
+                            .filter(({ id }) => id.equals(rewardID))
+                            .map(async({ cost, title, needsInput }) => {
+                                await until(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i]'))
+                                    .then(button => button.click() || button)
+                                    .then(async button => {
+                                        purchasing:
+                                        if(STREAMER.coin >= cost) {
+                                            let item = $('.rewards-list')?.getElementByText(title)?.closest('.reward-list-item')?.querySelector('button');
+
+                                            if(nullish(item))
+                                                break purchasing;
+
+                                            await until(() => $('#tt-auto-claim-reward-handler'))
+                                                .then(handler => {
+                                                    handler.click();
+                                                    item.click();
+                                                })
+                                                .then(async() => {
+                                                    if(!needsInput) {
+                                                        await until(() => $('.rewards-center-body button'))
+                                                            .then(button => button.click());
+                                                    } else {
+                                                        // The input will automatically gain focus...
+                                                    }
+                                                });
+                                        }
+
+                                        return button;
+                                    })
+                                    .finally(button => button?.click())
+                            });
+        });
+    };
+    Timers.claim_reward = 30_000;
+
+    Unhandlers.claim_reward = () => {
+        clearInterval(CLAIM_REWARDS_HANDLER);
+    };
+
+    __ClaimReward__:
+    // On by Default (ObD; v5.16)
+    if(true || parseBool(Settings.claim_reward)) {
+        RegisterJob('claim_reward');
+
+        CLAIM_REWARDS_HANDLER = setInterval(() => {
+            let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), [state][disabled] [data-test-selector="RequiredPoints"i]:empty')?.closest?.('button'),
+                handler = $('#tt-auto-claim-reward-handler');
+
+            if(nullish(container) || defined(handler))
+                return;
+
+            let f = furnish;
+
+            LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
+                AutoClaimRewards ??= {};
+
+                let [head, body] = container.closest('.reward-center__content').children,
+                    $title = ($('#channel-points-reward-center-header', false, head)?.textContent || '').trim(),
+                    $prompt = ($('.reward-center-body p', false, body)?.textContent || '').trim(),
+                    $image = $('.reward-icon img', false, body).src,
+                    [$cost] = $('[state]', false, body).innerText.split(/\s/).map(parseCoin);
+
+                let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
+                    (false
+                        || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
+                        || (title.equals($title) && (cost == $cost || image.url.equals($image.url)))
+                    )
+                );
+
+                if(nullish(item))
+                    return;
+
+                let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []),
+                    rewardID = item.id;
+
+                let textContent = (
+                    itemIDs.contains(rewardID)?
+                        'Do not buy':
+                    'Buy when available'
+                );
+
+                container.insertAdjacentElement('afterend',
+                    f(`#tt-auto-claim-reward-handler[data-tt-reward-id=${ rewardID }]`, {},
+                        f('.tt-inline-flex.tt-relative', {},
+                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                {
+                                    style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(container).width.ceil() }px!important`,
+
+                                    async onmouseup({ currentTarget }) {
+                                        let rewardID = currentTarget.closest('[data-tt-reward-id]').dataset.ttRewardId;
+                                        let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
+
+                                        if(nullish(item))
+                                            return;
+
+                                        LoadCache('AutoClaimRewards', ({ AutoClaimRewards }) => {
+                                            AutoClaimRewards ??= {};
+
+                                            let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []);
+                                            let index = itemIDs.indexOf(rewardID);
+
+                                            if(!!~index)
+                                                itemIDs.splice(index, 1);
+                                            else
+                                                itemIDs.push(rewardID);
+                                            itemIDs = itemIDs.filter(defined);
+
+                                            if(!itemIDs.length)
+                                                delete AutoClaimRewards[STREAMER.sole];
+                                            else
+                                                AutoClaimRewards[STREAMER.sole] = itemIDs;
+
+                                            let [node] = [...currentTarget.childNodes].filter(node => node.nodeName.equals('#text'));
+
+                                            node.textContent = (
+                                                !~index?
+                                                    'Do not buy':
+                                                'Buy when available'
+                                            );
+
+                                            SaveCache({ AutoClaimRewards });
+                                        });
+                                    },
+                                },
+
+                                f('[style=height:2rem; width:2rem]', {
+                                    innerHTML: Glyphs.modify('wallet', { style: 'padding-right:.2rem' })
+                                }),
+
+                                textContent
+                            )
+                        )
+                    )
+                );
+            });
+        }, 300);
     }
 
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
@@ -5943,7 +6413,7 @@ let Initialize = async(START_OVER = false) => {
     ) | 0;
 
     // Restart the First in line que's timers
-        // REDO_FIRST_IN_LINE_QUEUE(href:string<URL>?) → undefined
+        // REDO_FIRST_IN_LINE_QUEUE(url:string<URL>?) → <Promise>?undefined
     async function REDO_FIRST_IN_LINE_QUEUE(url) {
         if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
             return;
@@ -5957,10 +6427,10 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(channel))
             return ERROR(`Unable to create job for "${ href }"`);
 
+        FIRST_IN_LINE_HREF = href;
         GetNextStreamer.cachedStreamer = channel;
         name = channel.name;
 
-        FIRST_IN_LINE_HREF = href;
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
         if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
@@ -5987,15 +6457,19 @@ let Initialize = async(START_OVER = false) => {
             LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
             confirm
-                .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
+                .timed(`Coming up next: <a href="${ FIRST_IN_LINE_HREF }">${ GetNextStreamer.cachedStreamer.name }</a>`, timeRemaining)
                 .then(action => {
                     if(nullish(action))
                         return /* The event timed out... */;
 
-                    let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF);
+                    let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
+                        [removed] = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1),
+                        name = parseURL(removed).pathname.slice(1);
 
-                    ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1);
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+
+                    if(parseBool(parseURL(removed).searchParameters?.redo))
+                        Handlers.first_in_line({ href: removed, textContent: `${ name } is going live again [Redo @ Confirmation OK]` });
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
@@ -6052,7 +6526,7 @@ let Initialize = async(START_OVER = false) => {
                             name: streamer.name,
                         });
 
-                        ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
@@ -6126,7 +6600,7 @@ let Initialize = async(START_OVER = false) => {
                 WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`)
                     ?.toNativeStack?.();
 
-                let name = $('[up-next--body] [name][time]').name;
+                let { name } = GetNextStreamer.cachedStreamer;
 
                 confirm
                     .timed(`Coming up next: <a href='./${ name }'>${ name }</a>`, timeRemaining)
@@ -6258,6 +6732,8 @@ let Initialize = async(START_OVER = false) => {
                     LoadCache(['LiveReminders', 'ChannelPoints'], async({ LiveReminders = null, ChannelPoints = {} }) => {
                         LiveReminders = JSON.parse(LiveReminders || '{}');
 
+                        let oldHash = UUID.from(JSON.stringify(LiveReminders)).value;
+
                         let f = furnish;
                         let body = $('#tt-reminder-listing'),
                             head = $('[up-next--header]');
@@ -6319,7 +6795,7 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                since = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat).reverse().pop(),
+                                [since] = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy],
                                 when = `<span class="tt-${ (channel.live? 'live': 'offline') }" style="min-width:3.5em">${ (channel.live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
 
@@ -6340,6 +6816,7 @@ let Initialize = async(START_OVER = false) => {
                                         innerHTML: Glyphs.modify('channelpoints', { style: `vertical-align:bottom; ${ coinStyle.toString() }` }),
                                     })
                                 ).outerHTML;
+
                             let container = f(`div.tt-reminder`, { name, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                 f('div.simplebar-scroll-content',
                                     {
@@ -6368,7 +6845,7 @@ let Initialize = async(START_OVER = false) => {
                                                         },
                                                         f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                                             // Avatar
-                                                            f('div', {},
+                                                            f.div(
                                                                 f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
                                                                     f('div.tt-aspect.tt-aspect--align-top', {},
                                                                         f('img.tt-balloon-avatar.tt-image', { src: icon })
@@ -6458,7 +6935,21 @@ let Initialize = async(START_OVER = false) => {
                                 lastOnline.insertAdjacentElement('afterend', container);
                             else
                                 body.append(container);
+
+                            // And remember kids, never ask a question on S.O.
+                            // If anyone besides me ever reads this, I answered my own question eventually
+                            // Remember to take breaks and tackle the problem at a later date
+                                // https://stackoverflow.com/q/72803095/4211612
+                            // Move the channels around to prioritize live ones...
+                            if(channel.live) {
+                                delete LiveReminders[name];
+
+                                LiveReminders = { [name]: time.toJSON(), ...LiveReminders };
+                            }
                         }
+
+                        if(oldHash != UUID.from(JSON.stringify(LiveReminders)).value)
+                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                     });
                 },
             });
@@ -6536,7 +7027,7 @@ let Initialize = async(START_OVER = false) => {
                 if(FIRST_IN_LINE_BOOST) {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_TIME_REMAINING(), fiveMin));
 
-                    setTimeout(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)), 5000);
+                    wait(5000).then(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)));
 
                     SaveCache({ FIRST_IN_LINE_DUE_DATE });
                 }
@@ -6606,7 +7097,7 @@ let Initialize = async(START_OVER = false) => {
                                         name: search.name,
                                     });
 
-                                    ALL_CHANNELS = [...ALL_CHANNELS, found].filter(uniqueChannels);
+                                    ALL_CHANNELS = [...ALL_CHANNELS, found].filter(defined).filter(uniqueChannels);
 
                                     return found;
                                 })
@@ -6636,7 +7127,7 @@ let Initialize = async(START_OVER = false) => {
                                             name: streamer.name,
                                         });
 
-                                        ALL_CHANNELS = [...ALL_CHANNELS, restored];
+                                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
                                     });
                         }
 
@@ -6740,12 +7231,15 @@ let Initialize = async(START_OVER = false) => {
                             subheader: `Coming up next`,
                             onremove: event => {
                                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                                    name = parseURL(removed).pathname.slice(1);
 
                                 LOG(`Removed from Up Next (${ nth(index + 1) }):`, removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
+                                // else if(parseBool(parseURL(removed).searchParameters?.redo))
+                                //     Handlers.first_in_line({ href: removed, textContent: `${ name } is going live again [Redo @ Balloon.onremove]` });
 
                                 if(index > 0) {
                                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -6778,7 +7272,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     let timeRemaining = GET_TIME_REMAINING();
 
-                                    timeRemaining = timeRemaining < 0? 0: timeRemaining
+                                    timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
                                     /* First in Line is paused */
                                     if(FIRST_IN_LINE_PAUSED) {
@@ -6795,7 +7289,17 @@ let Initialize = async(START_OVER = false) => {
 
                                     let time = timeRemaining,
                                         intervalID = parseInt(container.getAttribute('animationID')),
-                                        index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
+                                        index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container),
+                                        anchor = $('a[connected-to]', true, container.parentElement)[index];
+
+                                    if(anchor.hasAttribute('new-href')) {
+                                        let href = anchor.getAttribute('new-href');
+
+                                        anchor.removeAttribute('new-href');
+                                        ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
+
+                                        SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                                    }
 
                                     if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
@@ -6903,7 +7407,7 @@ let Initialize = async(START_OVER = false) => {
             LOG('Received an actionable notification:', textContent, new Date);
 
             if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
-                if(![...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].contains(href)) {
+                if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
                     LOG('Pushing to First in Line:', href, new Date);
 
                     // LOG('Accessing here... #2');
@@ -6956,12 +7460,15 @@ let Initialize = async(START_OVER = false) => {
                     subheader: `Coming up next`,
                     onremove: event => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
-                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                            [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            name = parseURL(removed).pathname.slice(1);
 
                         LOG('Removed from Up Next:', removed, 'Was it canceled?', event.canceled);
 
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
+                        // else if(parseBool(parseURL(removed).searchParameters?.redo))
+                        //     Handlers.first_in_line({ href: removed, textContent: `${ name } is going live again [Redo @ AddBalloon.onremove]` });
 
                         if(index > 0) {
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
@@ -7015,7 +7522,17 @@ let Initialize = async(START_OVER = false) => {
 
                             let time = timeRemaining,
                                 intervalID = parseInt(container.getAttribute('animationID')),
-                                index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container);
+                                index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container),
+                                anchor = $('a[connected-to]', true, container.parentElement)[index];
+
+                            if(anchor.hasAttribute('new-href')) {
+                                let href = anchor.getAttribute('new-href');
+
+                                anchor.removeAttribute('new-href');
+                                ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
+
+                                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                            }
 
                             if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
@@ -7159,7 +7676,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(nullish(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = (parseURL(STREAMER.href).pathname.toLowerCase() == parseURL(href).pathname.toLowerCase()),
+                first = (parseURL(STREAMER.href).pathname.equals(parseURL(href).pathname)),
                 channel = (null
                     // Attempts to find the channel via "cache"
                     ?? ALL_CHANNELS
@@ -7194,17 +7711,20 @@ let Initialize = async(START_OVER = false) => {
                             name: streamer.name,
                         });
 
-                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(uniqueChannels);
+                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
 
                         REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
                     })
                     .catch(error => {
-                        let [killed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                            name = parseURL(killed).pathname.slice(1);
+                        let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            name = parseURL(removed).pathname.slice(1);
+
+                            if(parseBool(parseURL(removed).searchParameters?.redo))
+                                Handlers.first_in_line({ href: removed, textContent: `${ name } is going live again [Redo @ Necromancer]` });
 
                         SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
-                            WARN(`Unable to perform search for "${ name }" - ${ error }`, killed);
+                            WARN(`Unable to perform search for "${ name }" - ${ error }`, removed);
                         });
                     });
 
@@ -7215,12 +7735,16 @@ let Initialize = async(START_OVER = false) => {
                 // WARN('Forcing queue update for', href);
                 REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
             } else if(first) {
-                let [popped] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1);
+                let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1),
+                    name = parseURL(removed).pathname.slice(1);
+
+                if(parseBool(parseURL(removed).searchParameters?.redo))
+                    Handlers.first_in_line({ href: removed, textContent: `${ name } is going live again [Redo @ Doppleganger]` });
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                 SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
-                    WARN('Removed duplicate job', popped);
+                    WARN('Removed duplicate job', removed);
                 });
             }
         }
@@ -7289,8 +7813,8 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('first_in_line_plus'), SaveCache({ OLD_STREAMERS });
 
         new_names = new_names
-            .filter(name => !old_names.contains(name))
-            .filter(name => !bad_names.contains(name));
+            .filter(name => old_names.missing(name))
+            .filter(name => bad_names.missing(name));
 
         if(new_names.length < 1)
             return JUDGE__STOP_WATCH('first_in_line_plus'), SaveCache({ OLD_STREAMERS });
@@ -7436,9 +7960,9 @@ let Initialize = async(START_OVER = false) => {
                             SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
-                }, f('div', {},
+                }, f.div(
                     f('div.tt-action-icon', { innerHTML: icon }),
-                    f('div', {},
+                    f.div(
                         f('p.tw-title.tt-action-title', {}, title),
                         f('p.tt-action-subtitle', {}, subtitle)
                     )
@@ -7458,7 +7982,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __Live_Reminders__:
-    // Will now be on by default (v5.15)
+    // On by Default (ObD; v5.15)
     if(true || parseBool(Settings.live_reminders)) {
         REMARK('Adding Live Reminders...');
 
@@ -7509,7 +8033,7 @@ let Initialize = async(START_OVER = false) => {
                                     [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
 
                                 // If already on the stream, break
-                                if(page.toLowerCase() == note.toLowerCase())
+                                if(page.equals(note))
                                     break Handle_phantom_notification;
 
                                 // All of the Live Reminder handlers...
@@ -7637,7 +8161,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('kill_extensions');
     };
-    Timers.kill_extensions = 5000;
+    Timers.kill_extensions = -2_500;
 
     Unhandlers.kill_extensions = () => {
         let extension_views = $('[class^="extension-view"i]', true);
@@ -7774,9 +8298,9 @@ let Initialize = async(START_OVER = false) => {
                             string;
 
                         if(parseBool(Settings.parse_commands__create_links) && defined(href))
-                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; opacity:${ 2**-!enabled }" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
+                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
                         else
-                            string = `<code tt-code style="opacity:${ 2**-!enabled }" title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
+                            string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
 
                         return `<span tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
@@ -7891,7 +8415,7 @@ let Initialize = async(START_OVER = false) => {
                         (false
                             || (true
                                 && a.command.toLowerCase().contains(value)
-                                && !b.command.toLowerCase().contains(value)
+                                && b.command.toLowerCase().missing(value)
                             )
                             || (true
                                 && defined(a.aliases.find(aka => aka.toLowerCase().contains(value)))
@@ -7902,7 +8426,7 @@ let Initialize = async(START_OVER = false) => {
                         (false
                             || (true
                                 && b.command.toLowerCase().contains(value)
-                                && !a.command.toLowerCase().contains(value)
+                                && a.command.toLowerCase().missing(value)
                             )
                             || (true
                                 && defined(b.aliases.find(aka => aka.toLowerCase().contains(value)))
@@ -7947,7 +8471,7 @@ let Initialize = async(START_OVER = false) => {
                         f('div.tcito2', {},
                             f('div.tcito3', {},
                                 f('div', { style: `max-height:18rem!important` },
-                                    f('div', {},
+                                    f.div(
                                         // f('div', { style: `text-align:center` },
                                         //     f('div.tt-kb', {},
                                         //         f('p.tt-kb-text', {}, 'Space')
@@ -8217,7 +8741,7 @@ let Initialize = async(START_OVER = false) => {
 
         raid_stopper:
         if(raiding || raided) {
-            top.onlocationchange = () => setTimeout(() => CONTINUE_RAIDING = false, 5000);
+            top.onlocationchange = () => wait(5000).then(() => CONTINUE_RAIDING = false);
 
             // Ignore followed channels
             if(["greed", "unfollowed"].contains(method)) {
@@ -8269,7 +8793,7 @@ let Initialize = async(START_OVER = false) => {
             };
 
             // Leave the raided channel after 2mins to ensure points were collected
-            CONTINUE_RAIDING = !!setTimeout(leaveStream, 120_000 * +["greed"].contains(method));
+            CONTINUE_RAIDING = !setTimeout(leaveStream, 120_000 * +["greed"].missing(method));
         }
 
         JUDGE__STOP_WATCH('prevent_raiding');
@@ -8296,7 +8820,7 @@ let Initialize = async(START_OVER = false) => {
         let online = [STREAMER, ...STREAMERS].filter(isLive),
             container = (null
                 ?? $('#tt-greedy-raiding--container')
-                ?? furnish('div#tt-greedy-raiding--container', { style: 'height:0!important; width:0!important; visibility:hidden!important; position:absolute!important; top:-100vh!important; left:-100vw!important; /*display:none!important*/' })
+                ?? furnish('div#tt-greedy-raiding--container', { style: 'height:0!important; width:0!important; visibility:hidden!important; position:absolute!important; top:-100vh!important; left:-100vw!important; display:none!important' })
             );
 
         for(let channel of online) {
@@ -8312,11 +8836,11 @@ let Initialize = async(START_OVER = false) => {
 
             GREEDY_RAIDING_FRAMES.set(channel.name, frame);
 
-            if(![...container.children].contains(frame))
+            if([...container.children].missing(frame))
                 container.append(frame);
         }
 
-        if(![...document.body.children].contains(container))
+        if([...document.body.children].missing(container))
             document.body.append(container);
     };
     Timers.greedy_raiding = 5000;
@@ -8427,7 +8951,7 @@ let Initialize = async(START_OVER = false) => {
         // Time-zone RegExps
         TIME_ZONE__REGEXPS = [
             // Natural
-            // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST
+            // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST | 3:00PM (EST) | 3PM (EST) | 3:00P (EST) | 3P (EST) | 3:00 (EST) | 3 (EST)
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
@@ -8730,6 +9254,9 @@ let Initialize = async(START_OVER = false) => {
                         month = now.getMonth() + 1,
                         day = now.getDate();
 
+                    if(offset.length > 0 && isNaN(parseInt(offset)))
+                        continue;
+
                     hour = parseInt(hour);
                     hour -= (/^a/i.test(meridiem) && hour > 11? 12: 0);
                     hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
@@ -8751,15 +9278,18 @@ let Initialize = async(START_OVER = false) => {
 
                     let newDate = new Date(`${ [year, month, day].join(' ') } ${ offset }${ hour + minute } ${ timezone }`),
                         newTime = newDate.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
-                        noChange = convertWordsToTimes(originalText).trim() == originalText.trim();
+                        noChange = convertWordsToTimes(originalText).equals(originalText);
 
-                    // Keep original text
-                    if(Number.isNaN(+newDate))
+                    if(Number.isNaN(+newDate)) {
+                        // Keep original text
+                        let { groups, index, length } = regexp.exec(originalText);
+
                         container.innerHTML = `${ originalText.substr(0, index).split('').join('&zwj;') }{{time_zones?=${ btoa(escape(originalText.substr(index, length))) }}}${ originalText.substr(length).split('').join('&zwj;') }`;
-                    // Convert to new text
-                    else
+                    } else {
+                        // Convert to new text
                         container.innerText = convertedText
                             .replace(regexp, ($0, $$, $_) => `{{time_zones?=${ btoa(escape(newTime)) }|${ btoa(escape(noChange? $0.replace(/$/, (groups.timezone?.length? '': MASTER_TIME_ZONE?.length? ` (${ MASTER_TIME_ZONE })`: '')): convertWordsToTimes.inReverse($0))) }}}`);
+                    }
                 }
             }
         }
@@ -8798,7 +9328,7 @@ let Initialize = async(START_OVER = false) => {
                 .map(span => {
                     let oldText = span.getAttribute('tip-text--timezone');
 
-                    new Tooltip(span, unescape(atob(oldText)).split('').join('&zwj;'), { from: 'top' });
+                    new Tooltip(span, unescape(atob(oldText)), { from: 'top' });
 
                     // span.removeAttribute('tip-text--timezone');
                 });
@@ -8810,7 +9340,7 @@ let Initialize = async(START_OVER = false) => {
 
     __TimeZones__:
     if(parseBool(Settings.time_zones)) {
-        REMARK('Converting times...');
+        REMARK('Converting time zones...');
 
         RegisterJob('time_zones');
     }
@@ -8960,6 +9490,18 @@ let Initialize = async(START_OVER = false) => {
      *     |_| \_|\__,_|\__|_| \_/ \___|    |_| \_/\_/ |_|\__\___|_| |_| |_|  \_\___| .__/|_|\__, |
      *                                                                              | |       __/ |
      *                                                                              |_|      |___/
+     */
+    // /chat.js
+
+    /*** Link maker
+     *      _      _       _      __  __       _
+     *     | |    (_)     | |    |  \/  |     | |
+     *     | |     _ _ __ | | __ | \  / | __ _| | _____ _ __
+     *     | |    | | '_ \| |/ / | |\/| |/ _` | |/ / _ \ '__|
+     *     | |____| | | | |   <  | |  | | (_| |   <  __/ |
+     *     |______|_|_| |_|_|\_\ |_|  |_|\__,_|_|\_\___|_|
+     *
+     *
      */
     // /chat.js
 
@@ -9264,9 +9806,9 @@ let Initialize = async(START_OVER = false) => {
 
             let f = furnish;
             let points_receipt =
-            f(`${ container.tagName }${ classes(container) }`, { style: 'min-width:7rem; text-align:center' },
-                f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0, innerHTML: `${ Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } 0 &uarr;` })
-            );
+                f(`${ container.tagName }${ classes(container) }`, { style: 'min-width:7rem; text-align:center' },
+                    f(`${ live_time.tagName }#tt-points-receipt${ classes(live_time).replace(/\blive-time\b/gi, 'points-receipt') }`, { receipt: 0, innerHTML: `${ Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }) } 0 &uarr;` })
+                );
 
             parent.append(points_receipt);
 
@@ -9407,7 +9949,7 @@ let Initialize = async(START_OVER = false) => {
         // Update the points (every 30s)
         if(++pointWatcherCounter % 120)
             LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
-                let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[STREAMER.name] ?? 0).toString().split('|'),
+                let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
                     balance = STREAMER.coin;
 
@@ -9419,7 +9961,7 @@ let Initialize = async(START_OVER = false) => {
                 notEarned = (
                     (allRewards?.length)?
                         allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
-                    (notEarned > -Infinity)?
+                    (notEarned >= -Infinity)?
                         notEarned:
                     -1
                 );
@@ -9430,7 +9972,7 @@ let Initialize = async(START_OVER = false) => {
                             .sort((x, y) => (x > y? -1: +1))
                             .filter(x => x > 0)
                             .pop():
-                    (notEarned > -Infinity)?
+                    (notEarned >= -Infinity)?
                         pointsToEarnNext:
                     0
                 );
@@ -9482,7 +10024,7 @@ let Initialize = async(START_OVER = false) => {
 
             notEarned = parseInt(notEarned);
             pointsToEarnNext = parseInt(
-                (notEarned > -Infinity)?
+                (notEarned >= -Infinity)?
                     pointsToEarnNext:
                 0
             );
@@ -9543,7 +10085,8 @@ let Initialize = async(START_OVER = false) => {
                                 title = title.textContent.trim() || "";
 
                                 STREAMER.__shop__.push({
-                                    cost, image, title,
+                                    title, cost,
+                                    image: { url: image },
 
                                     backgroundColor: Color.destruct(backgroundColor).RGB,
                                     id: UUID.from([image, title, cost].join('|$|'), true).value,
@@ -9599,7 +10142,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         let [title, subtitle] = $('[class*="channel-tooltip"i] > *', true, richTooltip),
-            isOnline = !parseBool(richTooltip.classList?.value?.contains('offline'));
+            isOnline = parseBool(richTooltip.classList?.value?.missing('offline'));
 
         if(nullish(subtitle)) {
             let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true);
@@ -9717,7 +10260,7 @@ let Initialize = async(START_OVER = false) => {
 
         document.body.append(STREAM_PREVIEW.element);
 
-        setTimeout(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'), 100);
+        wait(100).then(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'));
 
         JUDGE__STOP_WATCH('stream_preview');
     };
@@ -9955,7 +10498,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 delete DVRChannels[DVR_ID];
 
-                                MASTER_VIDEO.cancelRecording().stopRecording().removeRecording();
+                                MASTER_VIDEO.cancelRecording().stopRecording();
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
@@ -9964,9 +10507,9 @@ let Initialize = async(START_OVER = false) => {
                             SaveCache({ DVRChannels: JSON.stringify(DVRChannels) }, () => Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
-                }, f('div', {},
+                }, f.div(
                     f('div.tt-action-icon', { innerHTML: icon }),
-                    f('div', {},
+                    f.div(
                         f('p.tw-title.tt-action-title', {}, title),
                         f('p.tt-action-subtitle', {}, subtitle)
                     )
@@ -10031,13 +10574,18 @@ let Initialize = async(START_OVER = false) => {
 
                     let slug = DVRChannels[DVR_ID];
                     let { name, live, icon, href, data = { actualStartTime: null } } = channel;
-                    let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).toLowerCase() == name.toLowerCase())),
+                    let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
                         job = ALL_FIRST_IN_LINE_JOBS[index];
 
                     if(defined(job) && name.toLowerCase() != STREAMER.name.toLowerCase()) {
                         // Skip the queue!
-                        ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+                        let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                            name = parseURL(removed).pathname.slice(1);
+
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+
+                        if(parseBool(parseURL(removed).searchParameters?.redo))
+                            Handlers.first_in_line({ href: removed, textContent: `${ name } is going live again [Redo @ Skipper]` });
 
                         REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
@@ -10097,7 +10645,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
-                                    MASTER_VIDEO.stopRecording().removeRecording();
+                                    MASTER_VIDEO.stopRecording();
                                 };
                             });
                 }
@@ -10229,7 +10777,7 @@ let Initialize = async(START_OVER = false) => {
                     if(state == "playing") {
                         $('button[data-a-player-state]').click();
 
-                        setTimeout(() => $('button[data-a-player-state]').click(), 1000);
+                        wait(1000).then(() => $('button[data-a-player-state]').click());
                     }
                 }
             }
@@ -10616,7 +11164,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Display the enabled keyboard shortcuts
-        let [help] = $.body.getElementsByTextContent('space/k', 'i').filter(element => element.tagName == 'TBODY');
+        let [help] = $.body.getElementsByInnerText('space/k', 'i').filter(element => element.tagName == 'TBODY');
 
         let f = furnish;
         if(defined(help) && nullish($('.tt-extra-keyboard-shortcuts', false, help)))
@@ -10631,10 +11179,10 @@ let Initialize = async(START_OVER = false) => {
                     help.append(
                         f('tr.tw-table-row.tt-extra-keyboard-shortcuts', {},
                             f('td.tw-tabel-cell', {},
-                                f('p', {}, name)
+                                f.p( name)
                             ),
                             f('td.tw-table-cell', {},
-                                f('span', {}, macro)
+                                f.span( macro)
                             )
                         )
                     );
@@ -11251,7 +11799,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                         NodeToObject:
                         for(let node of addedNodes) {
-                            if(!node.classList.contains('whispers__pill'))
+                            if(node.classList?.missing?.('whispers__pill'))
                                 continue;
 
                             let unread = parseInt(node.textContent) | 0;
@@ -11695,7 +12243,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
         // Alerts for users
         LoadCache('ReadNews', async({ ReadNews }) => {
             let TTVToolsNewsURL = 'https://github.com/Ephellon/Twitch-Tools/wiki/News',
-                TTVToolsNewsArticles = JSON.parse(ReadNews || '[]');
+                TTVToolsNewsArticles = ReadNews || [];
 
             await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(TTVToolsNewsURL)}`, { mode: 'cors' })
                 .then(r => r.text())
@@ -11705,7 +12253,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     return $('#wiki-body', false, dom)?.children;
                 })
                 .then(([main, footer]) => {
-                    let articles = main.getElementsByTextContent(/(\d{4}-\d{2}-\d{2})/)
+                    let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
                         .filter(({ tagName }) => /^h\d$/i.test(tagName))
                         .map(header => {
                             let content = [];
@@ -11717,15 +12265,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                             }
 
                             return { header, content };
-                        });
-
-                    confirm.silent([
-                        `<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div>`,
-                        ...articles.map(({ header, content }) => {
+                        }).map(({ header, content }) => {
                             let articleID = UUID.from(header.textContent, true).value;
 
                             if(TTVToolsNewsArticles.contains(articleID))
-                                return '';
+                                return;
                             TTVToolsNewsArticles.push(articleID);
 
                             let article = furnish(`div#tt-news-${ articleID }`, {},
@@ -11736,11 +12280,14 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                             return article.outerHTML;
                         })
-                    ].join(''))
-                    .then(ok => {
-                        if(ok)
-                            SaveCache({ ReadNews: JSON.parse(ReadNews || '[]').concat(...TTVToolsNewsArticles).isolate() });
-                    });
+                        .filter(defined);
+
+                    if(articles.length)
+                        confirm.silent([
+                            `<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div>`,
+                            ...articles
+                        ].join(''))
+                        .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
                 });
         });
     }, 500);

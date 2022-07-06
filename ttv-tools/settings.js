@@ -142,6 +142,8 @@ let // These are option names. Anything else will be removed
             'bttv_emotes_extras',
         // Convert Emotes*
         'convert_emotes',
+        // Link Maker (chat)
+        'link_maker__chat',
         // Native Twitch Replies
         'native_twitch_reply',
         // Notification Sounds
@@ -425,7 +427,7 @@ class Tooltip {
         let uuid;
         let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(getDOMPath(parent, true)).value];
+        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
             value = values[index];
             uuid = value + (['', ':tooltip'][index] || '');
@@ -1217,29 +1219,55 @@ $('#sync-settings--upload').onmouseup = async event => {
                 delete CloudExport[key];
 
             let id = parseURL(getURL('')).host;
-            let url = parseURL(`https://www.tinyurl.com/api-create.php`)
-                .addSearch({
-                    url: encodeURIComponent(
-                        parseURL(`json://${ id }.settings.js/`)
-                            .addSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
-                            .href
-                    )
-                });
 
-            await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(url.href) }`/*, { mode: 'cors' } */)
-                .then(response => response.text())
-                .then(token => {
-                    let { pathname } = parseURL(token);
+            if(compareVersions(`${ Manifest.version } < 99`)) {
+                let url = parseURL(`https://www.tinyurl.com/api-create.php`)
+                    .addSearch({
+                        url: encodeURIComponent(
+                            parseURL(`json://${ id }.settings.js/`)
+                                .addSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
+                                .href
+                        )
+                    });
 
-                    if(!pathname.length)
-                        throw `Unable to upload`;
+                await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(url.href) }`/*, { mode: 'cors' } */)
+                    .then(response => response.text())
+                    .then(token => {
+                        let { pathname } = parseURL(token);
 
-                    return `Uploaded. Your Upload ID is ${ (syncToken.value = pathname.slice(1)).toUpperCase() }`;
-                })
-                .then(PostSyncStatus.success)
-                .then(SaveSettings)
-                .catch(PostSyncStatus.warning)
-                .finally(() => currentTarget.classList.remove('spin'));
+                        if(!pathname.length)
+                            throw `Unable to upload`;
+
+                        return `Uploaded. Your Upload ID is ${ (syncToken.value = pathname.slice(1)).toUpperCase() }`;
+                    })
+                    .then(PostSyncStatus.success)
+                    .then(SaveSettings)
+                    .catch(PostSyncStatus.warning)
+                    .finally(() => currentTarget.classList.remove('spin'));
+            } else {
+                let url = parseURL(`https://is.gd/create.php`)
+                    .addSearch({
+                        format: 'json',
+                        url: encodeURIComponent(
+                            parseURL(`https://${ id }.settings.js/v2`)
+                                .addSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
+                                .href
+                        )
+                    });
+
+                await fetch(url.href)
+                    .then(response => response.json())
+                    .then(({ shorturl, errorcode, errormessage }) => {
+                        if(parseInt(errorcode) > 0)
+                            throw `Unable to upload. ${ errormessage }`;
+
+                        return `Uploaded. Your Upload ID is ${ (syncToken.value = shorturl) }`;
+                    })
+                    .then(PostSyncStatus.success)
+                    .then(SaveSettings)
+                    .catch(PostSyncStatus.warning)
+                    .finally(() => currentTarget.classList.remove('spin'));
+            }
         })
         .catch(PostSyncStatus.warning);
 };
@@ -1254,48 +1282,96 @@ $('#sync-settings--download').onmouseup = async event => {
     PostSyncStatus('Downloading...');
     currentTarget.classList.add('spin');
 
-    await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(`https://preview.tinyurl.com/${ syncToken }`) }`/*, { mode: 'cors' } */)
-        .then(response => response.text())
-        .catch(PostSyncStatus.warning)
-        .then(html => {
-            let parser = new DOMParser;
-            let doc = parser.parseFromString(html, 'text/html');
+    try {
+        if(compareVersions(`${ Manifest.version } < 99`))
+            throw 'ID-v2 not supported';
 
-            return doc?.documentElement?.getElementByText('json://');
-        })
-        .then(element => {
-            let url = element?.textContent,
-                data;
+        await fetch(`https://is.gd/forward.php?format=json&shorturl=${ syncToken }`)
+            .then(response => response.json())
+            .catch(PostSyncStatus.warning)
+            .then(({ url, errorcode, errormessage }) => {
+                if(!url?.length) {
+                    if(errorcode == 1)
+                        throw '';
+                    if(errorcode > 1)
+                        throw `Invalid Upload ID "${ syncToken }"`;
+                }
 
-            if(!url?.length)
-                throw `Invalid Upload ID "${ syncToken.toUpperCase() }"`;
+                let data;
+                try {
+                    data = JSON.parse(unescape(atob(decodeURIComponent(parseURL(url).searchParameters.json))));
+                } catch(error) {
+                    throw error;
+                }
 
-            try {
-                data = JSON.parse(unescape(atob(decodeURIComponent(parseURL(url).searchParameters.json))));
-            } catch(error) {
-                throw error;
-            }
+                return data;
+            })
+            .then(async settings => {
+                await LoadSettings({ ...settings, 'sync-token': syncToken })
+                    .then(() => {
+                        let messages = ['Downloaded. Ready to save'],
+                            uploadAge = +new Date() - +new Date(settings.syncDate);
 
-            return data;
-        })
-        .then(async settings => {
-            await LoadSettings({ ...settings, 'sync-token': syncToken })
-                .then(() => {
-                    let messages = ['Downloaded. Ready to save'],
-                        uploadAge = +new Date() - +new Date(settings.syncDate);
+                        if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
+                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '?days days') } old</span>`);
 
-                    if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
-                        messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '?days days') } old</span>`);
+                            LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
+                        }
 
-                        LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
-                    }
+                        PostSyncStatus.success(messages.join('. '));
+                    })
+                    .catch(PostSyncStatus.warning);
+            })
+            .catch(error => {
+                if(error.length < 1)
+                    throw 'Non-existent';
+                PostSyncStatus.warning(error);
+            });
+    } catch(error) {
+        await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(`https://preview.tinyurl.com/${ syncToken }`) }`/*, { mode: 'cors' } */)
+            .then(response => response.text())
+            .catch(PostSyncStatus.warning)
+            .then(html => {
+                let parser = new DOMParser;
+                let doc = parser.parseFromString(html, 'text/html');
 
-                    PostSyncStatus.success(messages.join('. '));
-                })
-                .catch(PostSyncStatus.warning);
-        })
-        .catch(PostSyncStatus.warning)
-        .finally(() => currentTarget.classList.remove('spin'));
+                return doc?.documentElement?.getElementByText('json://');
+            })
+            .then(element => {
+                let url = element?.textContent,
+                    data;
+
+                if(!url?.length)
+                    throw `Invalid Upload ID "${ syncToken.toUpperCase() }"`;
+
+                try {
+                    data = JSON.parse(unescape(atob(decodeURIComponent(parseURL(url).searchParameters.json))));
+                } catch(error) {
+                    throw error;
+                }
+
+                return data;
+            })
+            .then(async settings => {
+                await LoadSettings({ ...settings, 'sync-token': syncToken })
+                    .then(() => {
+                        let messages = ['Downloaded. Ready to save'],
+                            uploadAge = +new Date() - +new Date(settings.syncDate);
+
+                        if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
+                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '?days days') } old</span>`);
+
+                            LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
+                        }
+
+                        PostSyncStatus.success(messages.join('. '));
+                    })
+                    .catch(PostSyncStatus.warning);
+            })
+            .catch(PostSyncStatus.warning);
+    } finally {
+        currentTarget.classList.remove('spin');
+    }
 };
 
 $('#sync-settings--share').onmousedown = async event => {
@@ -1579,9 +1655,10 @@ $('#video_clips__file_type option', true).filter(o => !furnish('video').supports
 // Set the browser storage usage...
 until(() => SETTINGS)
     .then(() => {
-        Storage.getBytesInUse(BYTES_IN_USE => {
-            let MAX_BYTES = Storage.QUOTA_BYTES,
-                PERC_IN_USE = (100 * (BYTES_IN_USE / MAX_BYTES)).toFixed(3);
+        Storage.getBytesInUse(async BYTES_IN_USE => {
+            let ESTIMATE = await navigator?.storage?.estimate?.();
+            let MAX_BYTES = (Storage.QUOTA_BYTES || ESTIMATE?.quota),
+                PERC_IN_USE = (100 * ((BYTES_IN_USE || ESTIMATE?.usage) / MAX_BYTES)).toFixed(3);
 
             $('[id*="data-usage"i][id*="browser-storage"i][type="number"i]', true).map(input => {
                 let [amount, unit] = BYTES_IN_USE.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
@@ -1610,22 +1687,21 @@ until(() => SETTINGS)
                 let [value, unit] = total.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
 
                 let f = furnish;
-                let body = f('tbody', {},
-                    f('tr', {},
-                        f('td', {}, `Settings`),
-                        f('td', {}, allcBytes.suffix('B', 2)),
-                        f('td', {}, (100 * (allcBytes / total)).suffix('%', 1))
+                let body = f.tbody(
+                    f.tr(
+                        f.td( `Settings`),
+                        f.td( allcBytes.suffix('B', 2)),
+                        f.td( (100 * (allcBytes / total)).suffix('%', 1))
                     ),
-                    f('tr', {},
-                        f('td', {}, `Miscellaneous`),
-                        f('td', {}, miscBytes.suffix('B', 2)),
-                        f('td', {}, (100 * (miscBytes / total)).suffix('%', 1))
+                    f.tr(
+                        f.td( `Miscellaneous`),
+                        f.td( miscBytes.suffix('B', 2)),
+                        f.td( (100 * (miscBytes / total)).suffix('%', 1))
                     ),
 
-                    f('tr', {},
-                        f('td', {}, `Total`),
-                        f('td', {}, total.suffix('B', false) + ' of ' + MAX_BYTES.suffix('B')),
-                        f('td', {}, (100 * (total / MAX_BYTES)).suffix('%', 1))
+                    f.tr(
+                        f.td( `Total`),
+                        f.td( total.suffix('B', 2))
                     )
                 );
 

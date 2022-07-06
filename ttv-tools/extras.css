@@ -821,3 +821,30 @@ caption {
     from { border-color: var(--color-yellow) }
     to { border-color: transparent }
 }
+
+/* Loading / Spinner */
+.tt-spinner {
+    animation: 150ms ease 300ms 1 fade-in;
+}
+
+.tt-spinner::after {
+    content: "";
+
+    border: 2px solid #ffffff26;
+    border-radius: 50%;
+    border-left-color: #dedee3;
+    display: block;
+
+    height: 2rem;
+    width: 2rem;
+
+    position: relative;
+    transform: translateZ(0);
+
+    animation: 1s linear infinite spinner;
+}
+
+@keyframes spinner {
+    0% { transform: rotate(0) }
+    100% { transform: rotate(360deg) }
+}

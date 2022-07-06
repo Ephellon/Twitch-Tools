@@ -112,10 +112,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(button)) {
             let parent    = $('[data-test-selector="community-points-summary"i]'),
                 heading   = $('.top-nav__menu > div', true).pop(),
-                container = furnish('div');
+                container = furnish();
 
             if(nullish(parent) || nullish(heading)) {
-                // setTimeout(Chat__Initialize, 5000);
+                // wait(5000).then(Chat__Initialize);
                 return JUDGE__STOP_WATCH('auto_claim_bonuses');
             }
 
@@ -407,7 +407,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 },
                             },
 
-                            f('figure', {},
+                            f.figure(
                                 /*
                                 <div class="emote-button__lock tt-absolute tt-border-radius-small tt-c-background-overlay tt-c-text-overlay tt-inline-flex tt-justify-content-center tt-z-above" data-test-selector="badge-button-lock">
                                     <figure class="ScFigure-sc-1j5mt50-0 laJGEQ tt-svg">
@@ -530,6 +530,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         top -= 150;
 
                         let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: false, view: window })), 1000);
+                        let resultCard = new Card.deferred({ top });
 
                         // Raw Search...
                             // FIX-ME: New Search logic does not complete?
@@ -543,7 +544,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
 
                                 let display_name = await until(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
-                                    [language] = languages.filter(lang => !alt_languages.contains(lang)),
+                                    [language] = languages.filter(lang => alt_languages.missing(lang)),
                                     name = display_name?.toLowerCase(),
                                     profile_image = $('meta[property$="image"i]', false, doc)?.content,
                                     live = parseBool(data?.publication?.isLiveBroadcast),
@@ -572,7 +573,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         )
                                     ).map(div => div.outerHTML).join('');
 
-                                    new Card({
+                                    resultCard.post({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
                                         description: `Visit <a href="//betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } ${ Glyphs.modify('ne_arrow', { height: 16, width: 16, style: 'vertical-align:-3px' }) }</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
@@ -592,7 +593,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 .catch(error => {
                                     WARN(error);
 
-                                    new Card({
+                                    resultCard.post({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
 
@@ -833,7 +834,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 },
                             },
 
-                            furnish('figure', {},
+                            furnish.figure(
                                 /*
                                 <div class="emote-button__lock tt-absolute tt-border-radius-small tt-c-background-overlay tt-c-text-overlay tt-inline-flex tt-justify-content-center tt-z-above" data-test-selector="badge-button-lock">
                                     <figure class="ScFigure-sc-1j5mt50-0 laJGEQ tt-svg">
@@ -954,7 +955,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(nullish(chat_emote_scroll)) {
                 chat_emote_button.click();
-                return setTimeout(CollectEmotes, 250);
+                return wait(250).then(CollectEmotes);
             }
 
             // Set the ID to display the "Hold on..." message
@@ -987,27 +988,27 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(chat_emote_button))
             CollectEmotes();
         else
-            setTimeout(CollectEmotes, 250);
+            wait(250).then(CollectEmotes);
 
         REMARK("Adding emote event listener...");
 
         // Run the emote catcher on pre-populated messages
-        (GetChat.onnewmessage = chat => {
+        (GetChat.onnewmessage = excerpt => {
             let regexp;
 
-            for(let emote in chat.emotes)
+            for(let emote in excerpt.emotes)
                 if(!OWNED_EMOTES.has(emote) && !CAPTURED_EMOTES.has(emote) && !BTTV_EMOTES.has(emote)) {
                     // LOG(`Adding emote "${ emote }"`);
 
-                    CAPTURED_EMOTES.set(emote, chat.emotes[emote]);
+                    CAPTURED_EMOTES.set(emote, excerpt.emotes[emote]);
 
-                    let capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: chat.emotes[emote] });
+                    let capturedEmote = CONVERT_TO_CAPTURED_EMOTE({ name: emote, src: excerpt.emotes[emote] });
 
                     if(defined(capturedEmote))
                         $('#tt-captured-emotes-container')?.append?.(capturedEmote);
                 }
 
-            for(let line of chat) {
+            for(let line of excerpt) {
                 // Replace emotes for the last 30 chat messages
                 if(Queue.emotes.contains(line.uuid))
                     continue;
@@ -1101,7 +1102,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     channel.push({ ...(/^\/(?<name>[\w\-]+) +(?:<(?<badge>[^>]+)>|:(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))$/.exec(rule).groups) });
                 }
                 // @username
-                else if(/^@([\w\-]+)$/.test(rule) && !['@everyone', '@chat', '@all'].contains(rule.toLowerCase())) {
+                else if(/^@([\w\-]+)$/.test(rule) && ['@everyone', '@chat', '@all'].missing(rule.toLowerCase())) {
                     user.push(R.$1);
                 }
                 // <badge>
@@ -1142,11 +1143,11 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.filter_messages = () => {
         START__STOP_WATCH('filter_messages');
 
-        MESSAGE_FILTER ??= GetChat.onnewmessage = chat => {
+        MESSAGE_FILTER ??= GetChat.onnewmessage = excerpt => {
             let Filter = UPDATE_RULES('filter');
 
             censoring:
-            for(let line of chat) {
+            for(let line of excerpt) {
                 let { message, mentions, author, badges, emotes, element } = line,
                     reason, match;
 
@@ -1172,9 +1173,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                         let channel = (STREAMER.name || "~Anonymous");
 
                         return (true
-                            && (channel.replace(/^[^\/]/, '/$&').toLowerCase() == name.replace(/^[^\/]/, '/$&').toLowerCase())
+                            && (channel.replace(/^[^\/]/, '/$&').equals(name.replace(/^[^\/]/, '/$&')))
                             && (false
-                                || (author.replace(/^[^@]/, '@$&').toLowerCase() == user?.replace(/^[^@]/, '@$&')?.toLowerCase()? (match = author, reason = 'channel user'): false)
+                                || (author.replace(/^[^@]/, '@$&').equals(user?.replace(/^[^@]/, '@$&'))? (match = author, reason = 'channel user'): false)
                                 || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? (match = badges, reason = 'channel badge'): false)
                                 || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? (match = emotes, reason = 'channel emote'): false)
                                 || (RegExp(text, 'i').test(message)? (match = text, reason = 'channel text'): false)
@@ -1410,11 +1411,11 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.highlight_phrases = () => {
         START__STOP_WATCH('highlight_phrases');
 
-        PHRASE_HIGHLIGHTER ??= GetChat.onnewmessage = chat => {
+        PHRASE_HIGHLIGHTER ??= GetChat.onnewmessage = excerpt => {
             let Phrases = UPDATE_RULES('phrase');
 
             highlighting:
-            for(let line of chat) {
+            for(let line of excerpt) {
                 let { message, mentions, author, badges, emotes, element } = line,
                     reason;
 
@@ -1616,16 +1617,16 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_mentions = () => {
-        (GetChat.onnewmessage = chat => {
+        (GetChat.onnewmessage = excerpt => {
             let usernames = [USERNAME];
 
             if(parseBool(Settings.highlight_mentions_extra))
                 usernames.push('all', 'chat', 'everyone');
 
-            chat = chat.filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
+            excerpt = excerpt.filter(line => !!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)));
 
-            for(let line of chat)
-                if(!Queue.messages.contains(line.uuid)) {
+            for(let line of excerpt)
+                if(Queue.messages.missing(line.uuid)) {
                     Queue.messages.push(line.uuid);
 
                     let { author, message, reply } = line;
@@ -1654,11 +1655,11 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/                                         |_|         |_|
      */
     Handlers.highlight_mentions_popup = () => {
-        (GetChat.onnewmessage = chat => {
-            chat = chat.filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
+        (GetChat.onnewmessage = excerpt => {
+            excerpt = excerpt.filter(line => !!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)));
 
-            for(let line of chat)
-                if(!Queue.message_popups.contains(line.uuid)) {
+            for(let line of excerpt)
+                if(Queue.message_popups.missing(line.uuid)) {
                     Queue.message_popups.push(line.uuid);
 
                     let { author, message, reply } = line;
@@ -1858,7 +1859,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         GetChat().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
-        GetChat.onnewmessage = chat => chat.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
+        GetChat.onnewmessage = excerpt => excerpt.map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
         JUDGE__STOP_WATCH('native_twitch_reply');
     };
@@ -1869,6 +1870,203 @@ let Chat__Initialize = async(START_OVER = false) => {
         REMARK("Adding native reply buttons...");
 
         RegisterJob('native_twitch_reply');
+    }
+
+    /*** Link maker
+     *      _      _       _      __  __       _
+     *     | |    (_)     | |    |  \/  |     | |
+     *     | |     _ _ __ | | __ | \  / | __ _| | _____ _ __
+     *     | |    | | '_ \| |/ / | |\/| |/ _` | |/ / _ \ '__|
+     *     | |____| | | | |   <  | |  | | (_| |   <  __/ |
+     *     |______|_|_| |_|_|\_\ |_|  |_|\__,_|_|\_\___|_|
+     *
+     *
+     */
+    let LINK_MAKER_ENABLED,
+        CHAT_CARDIFIED = new Map;
+
+    Handlers.link_maker__chat = () => {
+        (GetChat.onnewmessage = excerpt => {
+            if(!LINK_MAKER_ENABLED)
+                return;
+
+            let HTMLParser = new DOMParser;
+
+            excerpt.map(async line => {
+
+                cardifying:
+                for(let line of excerpt) {
+                    let { message, mentions, author, element } = line;
+
+                    if(!element.isVisible())
+                        continue cardifying;
+
+                    if(parseURL.pattern.test(message)) {
+                        let { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL.pattern.exec(message).groups;
+
+                        href = href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim();
+
+                        if(CHAT_CARDIFIED.has(href)) {
+                            element.insertAdjacentElement('afterend', CHAT_CARDIFIED.get(href));
+
+                            continue cardifying;
+                        }
+
+                        await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
+                            .then(response => response.text())
+                            .then(html => {
+                                html = html.replace(/(<\w+\s+([^>]+?)>)/g, ($0, $1, $2 = '', $$, $_) => {
+                                    let attributes = {};
+
+                                    let attr = '', val = '',
+                                        isVal = false, delim = null,
+                                        skip = false;
+
+                                    for(let char of $2) {
+                                        if(!isVal) {
+                                            if(isVal = (char == '='))
+                                                continue;
+
+                                            attr += char;
+                                        } else {
+                                            if(skip) {
+                                                val += char;
+                                                skip = false;
+                                                continue;
+                                            }
+
+                                            if(char == '\\') {
+                                                val += char;
+                                                skip = true;
+                                                continue;
+                                            }
+
+                                            if(nullish(delim)) {
+                                                delim = (
+                                                    /["']/.test(char)?
+                                                        char:
+                                                    ' '
+                                                );
+
+                                                continue;
+                                            }
+
+                                            if(char == delim) {
+                                                attributes[attr.trim()] ??= `"${ val }"`;
+
+                                                isVal = false;
+                                                delim = null;
+                                                skip = false;
+                                                attr = '';
+                                                val = '';
+                                                continue;
+                                            }
+
+                                            val += char;
+                                        }
+                                    }
+
+                                    let defaults = {
+                                        crossorigin: 'anonymous',
+                                    };
+
+                                    for(let [name, value] of Object.entries(attributes))
+                                        attributes[name] ??= JSON.stringify(defaults[name]);
+
+                                    return $1.replace($2, Object.entries(attributes).map(([name, value]) => [name, value].join('=')).join(' '));
+                                });
+
+                                return html;
+                            })
+                            .then(html => HTMLParser.parseFromString(html, 'text/html'))
+                            .catch(WARN)
+                            .then(DOM => {
+                                if(nullish(DOM))
+                                    throw TypeError(`No DOM available. Page not loaded`);
+
+                                let f = furnish;
+                                let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i]`)?.getAttribute('content');
+
+                                let [title, description, image] = ["title", "description", "image"].map(get),
+                                    error = DOM.querySelector('parsererror')?.textContent;
+
+                                LOG(`Loaded page ${ href }`, { title, description, image, DOM });
+
+                                if(!title?.length || !image?.length) {
+                                    CHAT_CARDIFIED.set(href, f.span());
+
+                                    if(!error?.length)
+                                        return;
+                                    else
+                                        throw error;
+                                }
+
+                                let card = f('div.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
+                                    f('div.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
+                                        f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
+                                            f('div.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
+                                                // Preview image
+                                                f('div.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {},
+                                                    f('div.tt-card-image', {},
+                                                        f('div.tt-aspect', {},
+                                                            f('div', {}),
+                                                            f('img.tt-image', { alt: title, src: image, height: 45, style: 'max-height:45px' })
+                                                        )
+                                                    )
+                                                ),
+                                                // Title & Subtitle
+                                                f('div.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
+                                                    f('div.tt-full-width.tt-pd-l-1', {},
+                                                        // Title
+                                                        f('div.chat-card__title.tt-ellipsis', {},
+                                                            f('p.tt-strong.tt-ellipsis', { 'data-test-selector': 'chat-card-title' }, title)
+                                                        ),
+                                                        // Subtitle
+                                                        f('div.tt-ellipsis', {},
+                                                            f('p.tt-c-text-alt-2.tt-ellipsis', { 'data-test-selector': 'chat-card-description' }, description)
+                                                        ),
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                );
+
+                                let container = f(`div#card-${ UUID.from(href).toStamp() }.chat-line__message`, { 'data-a-target': 'chat-line-message', 'data-test-selector': 'chat-line-message' },
+                                    f('div.tt-relative', {},
+                                        f('div.tt-relative.chat-line__message-container', {},
+                                            f('div', {},
+                                                f('div.chat-line__no-background.tt-inline', {},
+                                                    card
+                                                )
+                                            )
+                                        )
+                                    )
+                                );
+
+                                CHAT_CARDIFIED.set(href, container);
+                                element.insertAdjacentElement('afterend', container);
+                            })
+                            .catch(ERROR);
+                    }
+                }
+            });
+        })(GetChat());
+    };
+    Timers.link_maker__chat = -500;
+
+    Unhandlers.link_maker__chat = () => {
+        LINK_MAKER_ENABLED = false;
+
+        $('.tt-iframe-card', true)
+            .map(card => card.remove());
+    };
+
+    __LinkMaker__:
+    if(LINK_MAKER_ENABLED = parseBool(Settings.link_maker__chat)) {
+        REMARK("Adding link maker (chat)...");
+
+        RegisterJob('link_maker__chat');
     }
 
     /*** Prevent spam
@@ -1886,8 +2084,8 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.prevent_spam = () => {
         START__STOP_WATCH('prevent_spam');
 
-        (GetChat.onnewmessage = chat => {
-            chat.forEach(async line => {
+        (GetChat.onnewmessage = excerpt => {
+            excerpt.forEach(async line => {
                 let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
                     minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
                     minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
@@ -2127,6 +2325,11 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(defined(button)) {
                 button.click();
+
+                $('.reward-center-body [href*="//help.twitch.tv/"i]')
+                    ?.closest('.reward-center-body')
+                    ?.querySelector('button')
+                    ?.click();
 
                 CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText) || 1;
 
@@ -2830,7 +3033,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
         if(defined(balanceButton)) {
             balanceButton.click();
-            setTimeout(() => balanceButton.click(), 300);
+            wait(300).then(() => balanceButton.click());
         }
     }
 
@@ -2953,7 +3156,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
                             top.postMessage({ action: 'jump', IS_CHANNEL_VIP, IS_CHANNEL_MODERATOR }, top.location.origin);
                         })
-                        .then(() => setTimeout(button.click(), 1000));
+                        .then(() => wait(1000).then(button.click()));
                 });
     }
     // End of Chat__Initialize_Safe_Mode
@@ -2976,7 +3179,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         if(!parseBool(hidden))
             WARN('[NON_FATAL] Child container unavailable. Reason:', { banned, hidden });
 
-        setTimeout(Chat__Initialize_Safe_Mode, 5000);
+        wait(5000).then(Chat__Initialize_Safe_Mode);
         clearInterval(Chat__PAGE_CHECKER);
 
         return Settings = await GetSettings();
@@ -3030,7 +3233,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
     Settings = await GetSettings();
 
-    setTimeout(Chat__Initialize, 5000);
+    wait(5000).then(Chat__Initialize);
     clearInterval(Chat__PAGE_CHECKER);
 
     window.CHILD_CONTROLLER_READY = true;

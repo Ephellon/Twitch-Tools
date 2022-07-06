@@ -96,46 +96,153 @@ function parseURL(url) {
             for(let parameter of parameters)
                 delete searchParameters[parameter];
 
-            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.map(parameter => parameter.join('=')).join('&') }$1`));
+            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ Object.entries({ ...searchParameters }).map(parameter => parameter.join('=')).join('&') }$1`));
         },
     };
 }
 
+Object.defineProperties(parseURL, {
+    pattern: { value: /(?<href>(?<origin>(?<protocol>(?<scheme>https?):)\/\/)?(?<host>(?<hostname>[^:\/?#\s]{3,}\.[^:\/?#\s]{2,})(?:\:(?<port>\d+))?)(?<pathname>[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^$\s]*)?)/ },
+});
+
 // Create elements
-    // furnish(tagname:string, attributes:object?, ...children) → Element
-function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
-    let u = v => v && v.length,
-        R = RegExp,
-        name = TAGNAME,
-        attributes = ATTRIBUTES,
-        children = CHILDREN;
-
-    if( !u(name) )
-        throw TypeError(`TAGNAME cannot be ${ (name === '')? 'unknown': name }`);
-
-    let options = attributes.is === true? { is: true }: null;
+    // furnish(tagname:string?, attributes:object?, ...children<Element>) → Element
+function furnish(tagname = 'div', attributes = null, ...children) {
+    let options = (attributes ??= {}).is === true? { is: true }: null;
 
     delete attributes.is;
 
-    name = name.split(/([#\.][^#\.\[\]]+)/).filter( u );
+    let esc = false,
+        name = '',
+        value = '';
 
-    if(name.length <= 1)
-        name = name[0].split(/^([^\[\]]+)(\[.+\])/).filter( u );
+    let context, climate, element;
 
-    if(name.length > 1)
-        for(let n = name, i = 1, l = n.length, t, v; i < l; i++)
-            if((v = n[i].slice(1, n[i].length)) && (t = n[i][0]) == '#')
-                attributes.id = v;
-            else if(t == '.')
-                attributes.classList = [].slice.call(attributes.classList ?? []).concat(v);
-            else if(/\[(.+)\]/.test(n[i]))
-                R.$1.split('][').forEach(N => attributes[(N = N.replace(/\s*=\s*(?:("?)([^]*)\1)?/, '=$2').split('=', 2))[0]] = N[1] || '');
-    name = name[0];
+    parsing:
+    for(let index = 0, length = tagname?.length | 0; index <= length; ++index) {
+        let char = tagname[index] || '',
+            last = index == length;
 
-    let element = document.createElement(name, options);
+        if(last || (climate != context)) {
+            if((defined(context) && nullish(climate)) || (context?.startsWith?.(climate) === false)) {
+                name = '';
+                value = '';
+            }
 
-    if(attributes.classList instanceof Array)
-        attributes.classList = attributes.classList.join(' ');
+            climate = context;
+        }
+
+        switch(context) {
+            case 'attribute': {
+                if(char == '=') {
+                    context = 'attribute-value';
+                    continue;
+                }
+
+                name += char;
+
+                if(last)
+                    attributes[name] = value;
+            } break;
+
+            case 'attribute-value': {
+                if(esc || char == '\\') {
+                    esc = !esc;
+
+                    if(esc)
+                        continue;
+                } else if(!esc) {
+                    if(char == ']') {
+                        attributes[name] = value;
+
+                        context = null;
+                        continue;
+                    }
+                }
+
+                value += char;
+
+                if(last)
+                    attributes[name] = value;
+            } break;
+
+            case 'class': {
+                if(esc || char == '\\') {
+                    esc = !esc;
+
+                    if(esc)
+                        continue;
+                } else if(!esc) {
+                    if(char == '#') {
+                        element.classList.add(value.trim());
+
+                        context = 'id';
+                        continue;
+                    } if(char == '[') {
+                        element.classList.add(value.trim());
+
+                        context = 'attribute';
+                        continue;
+                    } if(char == '.') {
+                        element.classList.add(value.trim());
+
+                        value = '';
+                        continue;
+                    }
+                }
+
+                value += char;
+
+                if(last)
+                    element.classList.add(value.trim());
+            } break;
+
+            case 'id': {
+                if(esc || char == '\\') {
+                    esc = !esc;
+
+                    if(esc)
+                        continue;
+                } else if(!esc) {
+                    if(char == '.') {
+                        element.setAttribute(context, value.trim());
+
+                        context = 'class';
+                        continue;
+                    } if(char == '[') {
+                        element.setAttribute(context, value.trim());
+
+                        context = 'attribute';
+                        continue;
+                    }
+                }
+
+                value += char;
+
+                if(last)
+                    element.setAttribute(context, value.trim());
+            } break;
+
+            default: {
+                if(nullish(element)) {
+                    // https://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#syntax-tag-name
+                    if(/[0-9a-zA-Z]/.test(char)) {
+                        name += char;
+                    } else {
+                        if(char == '#')
+                            context = 'id';
+                        if(char == '.')
+                            context = 'class';
+                        if(char == '[')
+                            context = 'attribute';
+
+                        if(last || defined(context))
+                            element = document.createElement((name || 'div'), options);
+                    }
+                }
+            } break;
+        }
+    }
 
     Object.entries(attributes).forEach(
         ([name, value]) => (/^(on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
@@ -146,11 +253,127 @@ function furnish(TAGNAME, ATTRIBUTES = {}, ...CHILDREN) {
     );
 
     children
-        .filter( defined )
-        .forEach( child => element.append(child) );
+        .filter(defined)
+        .forEach(child => element.append(child));
 
     return element;
 }
+
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Element
+Object.defineProperties(furnish, {
+    "a": { value: function Anchor(...children) { return furnish('a', null, ...children) } },
+    "abbr": { value: function Abbreviation(...children) { return furnish('abbr', null, ...children) } },
+    "address": { value: function Address(...children) { return furnish('address', null, ...children) } },
+    "area": { value: function Area(...children) { return furnish('area', null, ...children) } },
+    "article": { value: function Article(...children) { return furnish('article', null, ...children) } },
+    "aside": { value: function Aside(...children) { return furnish('aside', null, ...children) } },
+    "audio": { value: function Audio(...children) { return furnish('audio', null, ...children) } },
+    "b": { value: function Bold(...children) { return furnish('b', null, ...children) } },
+    "base": { value: function Base(...children) { return furnish('base', null, ...children) } },
+    "bdi": { value: function BidirectionalTextInsertion(...children) { return furnish('bdi', null, ...children) } },
+    "bdo": { value: function BidirectionalTextOverride(...children) { return furnish('bdo', null, ...children) } },
+    "blockquote": { value: function BlockQuote(...children) { return furnish('blockquote', null, ...children) } },
+    "body": { value: function Body(...children) { return furnish('body', null, ...children) } },
+    "br": { value: function Break(...children) { return furnish('br', null, ...children) } },
+    "button": { value: function Button(...children) { return furnish('button', null, ...children) } },
+    "canvas": { value: function Canvas(...children) { return furnish('canvas', null, ...children) } },
+    "caption": { value: function Caption(...children) { return furnish('caption', null, ...children) } },
+    "cite": { value: function Cite(...children) { return furnish('cite', null, ...children) } },
+    "code": { value: function Code(...children) { return furnish('code', null, ...children) } },
+    "col": { value: function Column(...children) { return furnish('col', null, ...children) } },
+    "colgroup": { value: function ColumnGroup(...children) { return furnish('colgroup', null, ...children) } },
+    "data": { value: function Data(...children) { return furnish('data', null, ...children) } },
+    "datalist": { value: function DataList(...children) { return furnish('datalist', null, ...children) } },
+    "dd": { value: function Description(...children) { return furnish('dd', null, ...children) } },
+    "del": { value: function Deleted(...children) { return furnish('del', null, ...children) } },
+    "details": { value: function Details(...children) { return furnish('details', null, ...children) } },
+    "dfn": { value: function Definition(...children) { return furnish('dfn', null, ...children) } },
+    "dialog": { value: function Dialog(...children) { return furnish('dialog', null, ...children) } },
+    "div": { value: function Divider(...children) { return furnish('div', null, ...children) } },
+    "dl": { value: function DescriptionList(...children) { return furnish('dl', null, ...children) } },
+    "dt": { value: function DescriptionTerm(...children) { return furnish('dt', null, ...children) } },
+    "em": { value: function Emphasis(...children) { return furnish('em', null, ...children) } },
+    "embed": { value: function Embed(...children) { return furnish('embed', null, ...children) } },
+    "fieldset": { value: function Fieldset(...children) { return furnish('fieldset', null, ...children) } },
+    "figcaption": { value: function FigureCaption(...children) { return furnish('figcaption', null, ...children) } },
+    "figure": { value: function Figure(...children) { return furnish('figure', null, ...children) } },
+    "footer": { value: function Footer(...children) { return furnish('footer', null, ...children) } },
+    "form": { value: function Form(...children) { return furnish('form', null, ...children) } },
+    "h1": { value: function HeaderSize1(...children) { return furnish('h1', null, ...children) } },
+    "h2": { value: function HeaderSize2(...children) { return furnish('h2', null, ...children) } },
+    "h3": { value: function HeaderSize3(...children) { return furnish('h3', null, ...children) } },
+    "h4": { value: function HeaderSize4(...children) { return furnish('h4', null, ...children) } },
+    "h5": { value: function HeaderSize5(...children) { return furnish('h5', null, ...children) } },
+    "h6": { value: function HeaderSize6(...children) { return furnish('h6', null, ...children) } },
+    "head": { value: function Head(...children) { return furnish('head', null, ...children) } },
+    "header": { value: function Header(...children) { return furnish('header', null, ...children) } },
+    "hr": { value: function Horizontal(...children) { return furnish('hr', null, ...children) } },
+    "html": { value: function HTML(...children) { return furnish('html', null, ...children) } },
+    "i": { value: function Italics(...children) { return furnish('i', null, ...children) } },
+    "iframe": { value: function Iframe(...children) { return furnish('iframe', null, ...children) } },
+    "img": { value: function Image(...children) { return furnish('img', null, ...children) } },
+    "input": { value: function Input(...children) { return furnish('input', null, ...children) } },
+    "ins": { value: function Insertion(...children) { return furnish('ins', null, ...children) } },
+    "kbd": { value: function Keyboard(...children) { return furnish('kbd', null, ...children) } },
+    "label": { value: function Label(...children) { return furnish('label', null, ...children) } },
+    "legend": { value: function Legend(...children) { return furnish('legend', null, ...children) } },
+    "li": { value: function ListItem(...children) { return furnish('li', null, ...children) } },
+    "link": { value: function Link(...children) { return furnish('link', null, ...children) } },
+    "main": { value: function Main(...children) { return furnish('main', null, ...children) } },
+    "map": { value: function Map(...children) { return furnish('map', null, ...children) } },
+    "mark": { value: function Mark(...children) { return furnish('mark', null, ...children) } },
+    "menu": { value: function Menu(...children) { return furnish('menu', null, ...children) } },
+    "meta": { value: function Metadata(...children) { return furnish('meta', null, ...children) } },
+    "meter": { value: function Meter(...children) { return furnish('meter', null, ...children) } },
+    "nav": { value: function Navigation(...children) { return furnish('nav', null, ...children) } },
+    "noscript": { value: function Noscript(...children) { return furnish('noscript', null, ...children) } },
+    "object": { value: function Object(...children) { return furnish('object', null, ...children) } },
+    "ol": { value: function OrderedList(...children) { return furnish('ol', null, ...children) } },
+    "optgroup": { value: function OptionGroup(...children) { return furnish('optgroup', null, ...children) } },
+    "option": { value: function Option(...children) { return furnish('option', null, ...children) } },
+    "output": { value: function Output(...children) { return furnish('output', null, ...children) } },
+    "p": { value: function Paragraph(...children) { return furnish('p', null, ...children) } },
+    "picture": { value: function Picture(...children) { return furnish('picture', null, ...children) } },
+    "portal": { value: function Portal(...children) { return furnish('portal', null, ...children) } },
+    "pre": { value: function Preformatted(...children) { return furnish('pre', null, ...children) } },
+    "progress": { value: function Progress(...children) { return furnish('progress', null, ...children) } },
+    "q": { value: function Quote(...children) { return furnish('q', null, ...children) } },
+    "rp": { value: function RubyParenthesis(...children) { return furnish('rp', null, ...children) } },
+    "rt": { value: function RubyText(...children) { return furnish('rt', null, ...children) } },
+    "ruby": { value: function Ruby(...children) { return furnish('ruby', null, ...children) } },
+    "s": { value: function Strikethrough(...children) { return furnish('s', null, ...children) } },
+    "samp": { value: function Sample(...children) { return furnish('samp', null, ...children) } },
+    "script": { value: function Script(...children) { return furnish('script', null, ...children) } },
+    "section": { value: function Section(...children) { return furnish('section', null, ...children) } },
+    "select": { value: function Select(...children) { return furnish('select', null, ...children) } },
+    "slot": { value: function Slot(...children) { return furnish('slot', null, ...children) } },
+    "small": { value: function Small(...children) { return furnish('small', null, ...children) } },
+    "source": { value: function Source(...children) { return furnish('source', null, ...children) } },
+    "span": { value: function Span(...children) { return furnish('span', null, ...children) } },
+    "strong": { value: function Strong(...children) { return furnish('strong', null, ...children) } },
+    "style": { value: function Style(...children) { return furnish('style', null, ...children) } },
+    "sub": { value: function Subscript(...children) { return furnish('sub', null, ...children) } },
+    "summary": { value: function Summary(...children) { return furnish('summary', null, ...children) } },
+    "sup": { value: function Superscript(...children) { return furnish('sup', null, ...children) } },
+    "svg": { value: function SVG(...children) { return furnish('svg', null, ...children) } },
+    "table": { value: function Table(...children) { return furnish('table', null, ...children) } },
+    "tbody": { value: function TableBody(...children) { return furnish('tbody', null, ...children) } },
+    "td": { value: function TableData(...children) { return furnish('td', null, ...children) } },
+    "template": { value: function Template(...children) { return furnish('template', null, ...children) } },
+    "textarea": { value: function Textarea(...children) { return furnish('textarea', null, ...children) } },
+    "tfoot": { value: function TableFooter(...children) { return furnish('tfoot', null, ...children) } },
+    "th": { value: function TableHeaderCell(...children) { return furnish('th', null, ...children) } },
+    "thead": { value: function TableHeader(...children) { return furnish('thead', null, ...children) } },
+    "time": { value: function Time(...children) { return furnish('time', null, ...children) } },
+    "title": { value: function Title(...children) { return furnish('title', null, ...children) } },
+    "tr": { value: function TableRow(...children) { return furnish('tr', null, ...children) } },
+    "track": { value: function Track(...children) { return furnish('track', null, ...children) } },
+    "u": { value: function Underline(...children) { return furnish('u', null, ...children) } },
+    "ul": { value: function UnorderedList(...children) { return furnish('ul', null, ...children) } },
+    "var": { value: function Variable(...children) { return furnish('var', null, ...children) } },
+    "video": { value: function Video(...children) { return furnish('video', null, ...children) } },
+    "wbr": { value: function WBR(...children) { return furnish('wbr', null, ...children) } }
+});
 
 // Gets the X and Y offset (in pixels)
     // getOffset(element:Element) → Object<{ height:number, width:number, left:number, top:number, right:number, bottom:number }>
@@ -161,11 +384,13 @@ function getOffset(element) {
     return {
         height, width,
 
-        left:   bounds.left + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        top:    bounds.top  + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+        center: [bounds.left + (width / 2), bounds.top + (height / 2)],
 
-        right:  bounds.right  + (top.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        bottom: bounds.bottom + (top.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+        left:   bounds.left + (window.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
+        top:    bounds.top  + (window.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+
+        right:  bounds.right  + (window.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
+        bottom: bounds.bottom + (window.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
     };
 }
 
@@ -327,12 +552,14 @@ function getDOMPath(element, shorten = false) {
             }
         }
 
+        let nodeName =  element.nodeName.toLowerCase();
+
         if(element.hasAttribute('id') && element.id.length > 0)
-            path.unshift(`${ element.nodeName.toLowerCase() }#${ element.id }`);
+            path.unshift(`${ nodeName }#${ element.id }`);
         else if(siblingCount > 1 && siblingIndex > 0)
-            path.unshift(`${ element.nodeName.toLowerCase() }:nth-child(${ siblingIndex + 1 })`);
+            path.unshift(`${ nodeName }:nth-child(${ siblingIndex + 1 })`);
         else
-            path.unshift(element.nodeName.toLowerCase());
+            path.unshift(nodeName);
 
         element = parent;
     }
@@ -373,6 +600,12 @@ Array.prototype.contains ??= function contains(...values) {
     return has;
 };
 
+// Determines if the array is missing all of the value(s)
+    // Array..missing(...values:any) → boolean
+Array.prototype.missing ??= function missing(...values) {
+    return !this.contains(...values);
+};
+
 // Returns an array of purely unique elements
     // Array..isolate() → array<Set>
 Array.prototype.isolate ??= function isolate() {
@@ -408,7 +641,7 @@ Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
     return (offset / day).floor();
 };
 
-// Returns an element based upon its text content
+// Returns an element based upon its text
     // Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
@@ -420,7 +653,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
     let container = this,
         owner = null,
         thisIsOwner = true;
-    let { textContent } = this;
+    let { innerText } = this;
 
     function normalize(string = '', unicode = UNICODE_FLAG) {
         return (unicode? string.normalize('NFKD'): string);
@@ -439,22 +672,22 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
             UNICODE_FLAG = searchText.flags.contains('u');
 
             // Replace special characters...
-            textContent = normalize(textContent);
+            innerText = normalize(innerText);
 
             // See if the element contains the text...
-            if(!searchText.test(textContent))
+            if(!searchText.test(innerText))
                 return null;
 
             searching:
             while(nullish(owner)) {
                 for(let child of container.children)
-                    if([...child.children].filter(element => searchText.test(normalize(element.textContent))).length) {
+                    if([...child.children].filter(element => searchText.test(normalize(element.innerText))).length) {
                         // A sub-child is the text container
                         container = child;
                         thisIsOwner = false;
 
                         continue searching;
-                    } else if(searchText.test(normalize(child.textContent))) {
+                    } else if(searchText.test(normalize(child.innerText))) {
                         // This is the text container
                         owner = child;
                         thisIsOwner = false;
@@ -474,26 +707,26 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
             UNICODE_FLAG = flags.contains('u');
 
             // Replace special characters...
-            textContent = normalize(textContent);
+            innerText = normalize(innerText);
 
             if(flags.contains('i')) {
                 // Ignore-case mode
                 searchText = searchText.toLowerCase();
 
                 // See if the element contains the text...
-                if(!textContent.toLowerCase().contains(searchText))
+                if(innerText.toLowerCase().missing(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
                     for(let child of container.children)
-                        if([...child.children].filter(element => normalize(element.textContent).toLowerCase().contains(searchText)).length) {
+                        if([...child.children].filter(element => normalize(element.innerText).toLowerCase().contains(searchText)).length) {
                             // A sub-child is the text container
                             container = child;
                             thisIsOwner = false;
 
                             continue searching;
-                        } else if(normalize(child.textContent).toLowerCase().contains(searchText)) {
+                        } else if(normalize(child.innerText).toLowerCase().contains(searchText)) {
                             // This is the text container
                             owner = child;
                             thisIsOwner = false;
@@ -508,19 +741,19 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
             } else {
                 // Normal (perfect-match) mode
                 // See if the element contains the text...
-                if(!textContent.contains(searchText))
+                if(innerText.missing(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
                     for(let child of container.children)
-                        if([...child.children].filter(element => normalize(element.textContent).contains(searchText)).length) {
+                        if([...child.children].filter(element => normalize(element.innerText).contains(searchText)).length) {
                             // A sub-child is the text container
                             container = child;
                             thisIsOwner = false;
 
                             continue searching;
-                        } else if(normalize(child.textContent).contains(searchText)) {
+                        } else if(normalize(child.innerText).contains(searchText)) {
                             // This is the text container
                             owner = child;
                             thisIsOwner = false;
@@ -539,9 +772,9 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
     return owner;
 };
 
-// Returns an array of elements that contain the text content
-    // Element..getElementsByTextContent(searchText:string|regexp|array, flags:string?) → [Element...]
-Element.prototype.getElementsByTextContent ??= function getElementsByTextContent(searchText, flags = '') {
+// Returns an array of elements that contain the text
+    // Element..getElementsByInnerText(searchText:string|regexp|array, flags:string?) → [Element...]
+Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         UNICODE_FLAG = false;
 
@@ -549,7 +782,7 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
         throw 'Can not search for empty text';
 
     let containers = [];
-    let { textContent } = this;
+    let { innerText } = this;
 
     function normalize(string = '', unicode = UNICODE_FLAG) {
         return (unicode? string.normalize('NFKD'): string);
@@ -558,7 +791,7 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
     switch(searchType) {
         case 'array': {
             for(let search of searchText)
-                containers.push(...this.getElementsByTextContent(search, flags));
+                containers.push(...this.getElementsByInnerText(search, flags));
         } break;
 
         case 'regexp': {
@@ -566,10 +799,10 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
             UNICODE_FLAG = searchText.flags.contains('u');
 
             // Replace special characters...
-            textContent = normalize(textContent);
+            innerText = normalize(innerText);
 
             // See if the element contains the text...
-            if(!searchText.test(textContent))
+            if(!searchText.test(innerText))
                 break;
             containers.push(this);
 
@@ -578,11 +811,11 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
             collecting:
             while(child = children.pop())
-                if([...child.children].filter(element => searchText.test(normalize(element.textContent))).length) {
+                if([...child.children].filter(element => searchText.test(normalize(element.innerText))).length) {
                     // A sub-child contains the text
                     containers.push(child);
                     children = [...children, ...child.children].isolate();
-                } else if(searchText.test(normalize(child.textContent))) {
+                } else if(searchText.test(normalize(child.innerText))) {
                     // This contains the text
                     containers.push(child);
                 }
@@ -594,14 +827,14 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
             UNICODE_FLAG = flags.contains('u');
 
             // Replace special characters...
-            textContent = normalize(textContent);
+            innerText = normalize(innerText);
 
             if(flags.contains('i')) {
                 // Ignore-case mode
                 searchText = searchText.toLowerCase();
 
                 // See if the element contains the text...
-                if(!textContent.toLowerCase().contains(searchText))
+                if(innerText.toLowerCase().missing(searchText))
                     break;
                 containers.push(this);
 
@@ -610,18 +843,18 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
                 collecting:
                 while(child = children.pop())
-                    if([...child.children].filter(element => normalize(element.textContent).toLowerCase().contains(searchText)).length) {
+                    if([...child.children].filter(element => normalize(element.innerText).toLowerCase().contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
                         children = [...children, ...child.children].isolate();
-                    } else if(normalize(child.textContent).toLowerCase().contains(searchText)) {
+                    } else if(normalize(child.innerText).toLowerCase().contains(searchText)) {
                         // This contains the text
                         containers.push(child);
                     }
             } else {
                 // Normal (perfect-match) mode
                 // See if the element contains the text...
-                if(!textContent.contains(searchText))
+                if(innerText.missing(searchText))
                     break;
                 containers.push(this);
 
@@ -630,11 +863,11 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
 
                 collecting:
                 while(child = children.pop())
-                    if([...child.children].filter(element => normalize(element.textContent).contains(searchText)).length) {
+                    if([...child.children].filter(element => normalize(element.innerText).contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
                         children = [...children, ...child.children].isolate();
-                    } else if(normalize(child.textContent).contains(searchText)) {
+                    } else if(normalize(child.innerText).contains(searchText)) {
                         // This contains the text
                         containers.push(child);
                     }
@@ -643,6 +876,249 @@ Element.prototype.getElementsByTextContent ??= function getElementsByTextContent
     }
 
     return containers.isolate();
+};
+
+
+// Gets the DOM path of an element
+    // Element..getPath(shorten:boolean?) → string
+Element.prototype.getPath ??= function getPath(shorten = false) {
+    return getDOMPath(this, shorten);
+};
+
+// https://stackoverflow.com/a/41698614/4211612
+// Determines if the element is visible to the user or not
+    // Element..isVisible() → boolean
+Element.prototype.isVisible ??= function isVisible() {
+    // Styling...
+    let style = getComputedStyle(this),
+        { display = 'none', visibility = 'hidden', opacity = 0 } = style;
+
+    if(false
+        || (display == 'none')
+        || (visibility != 'visible')
+        || (opacity < 0.1)
+    ) return false;
+
+    // Positioning...
+    let { height, width, center, left, top, right, bottom } = getOffset(this),
+        [x, y] = center,
+        w = (document.documentElement.clientWidth ?? window.innerWidth ?? 0) | 0,
+        h = (document.documentElement.clientHeight ?? window.innerHeight ?? 0) | 0;
+
+    if(false
+        || (x < 0)
+        || (x > w)
+        || (y < 0)
+        || (y > h)
+        || !(0
+            + this.offsetWidth
+            + this.offsetHeight
+            + height
+            + width
+        )
+    ) return false;
+
+    return document.elementsFromPoint(x, y).contains(this);
+};
+
+// Returns an array of elements in the order they're queried
+    // Element..queryBy(selectors:string|array|Element, container:Node?) → Element
+Element.prototype.queryBy ??= function queryBy(selectors, container = document) {
+	let properties = { writable: false, enumerable: false, configurable: false },
+		media;
+
+	if(selectors instanceof Element) {
+		media = selectors;
+
+		for(let key of 'first last child parent empty'.split(' '))
+			if(key in media && media[key] instanceof Function)
+				return media;
+
+		Object.defineProperties(media, {
+			first: {
+				value: media,
+				...properties
+			},
+			last: {
+				value: media,
+				...properties
+			},
+			child: {
+				value: index => [...media.children][index - 1],
+				...properties
+			},
+			parent: {
+				value: selector => media.closest(selector),
+				...properties
+			},
+			empty: {
+				value: !media.length,
+				...properties
+			},
+		});
+	} else if(selectors instanceof Array) {
+		media = selectors.map(object => container.queryBy(object));
+
+		Object.defineProperties(media, {
+			first: {
+				value: media[0],
+				...properties
+			},
+			last: {
+				value: media[media.length - 1],
+				...properties
+			},
+			child: {
+				value: index => media[index - 1],
+				...properties
+			},
+			parent: {
+				value: selector => media.closest(selector),
+				...properties
+			},
+			empty: {
+				value: !media.length,
+				...properties
+			},
+		});
+	} else {
+		// Helpers
+		let copy  = array => [...array],
+			query = (SELECTORS, CONTAINER = container) => (CONTAINER instanceof Array? CONTAINER.map(C => C.querySelectorAll(SELECTORS)) : CONTAINER.querySelectorAll(SELECTORS));
+
+		// Get rid of enclosing syntaxes: [...] and (...)
+		let regexp = /(\([^\(\)]+?\)|\[[^\[\]]+?\])/g,
+			pulled = [],
+			index, length;
+
+		media = [];
+
+		// The index shouldn't be longer than the length of the selector's string
+		// Keep this to prevent infinite loops
+		for(index = 0, length = selectors.length; index++ < length && regexp.test(selectors);)
+			selectors = selectors.replace(regexp, ($0, $1, $$, $_) => '\b--' + pulled.push($1) + '\b');
+
+		let order	    = selectors.split(','),
+			dummy	    = copy(order),
+			output	    = [],
+			generations = 0,
+			cousins		= 0;
+
+		// Replace those syntaxes (they were ignored)
+		for(index = 0, length = dummy.length, order = [], regexp = /[\b]--(\d+)[\b]/gi; index < length; index++)
+			order.push(dummy[index].replace(regexp, ($0, $1, $$, $_) => pulled[+$1 - 1]));
+
+		// Make sure to put the elements in order
+		// Handle the :parent (pseudo) selector
+		for(index = 0, length = order.length; index < length; generations = 0, cousins = 0, index++) {
+			let selector = order[index], ancestor, cousin;
+
+			selector = selector
+			// siblings
+				.replace(/\:nth-sibling\((\d+)\)/gi, ($0, $1, $$, $_) => (cousins += +$1, ''))
+				.replace(/(\:{1,2}(next-|previous-)?sibling)/gi, ($0, $1, $2, $$, $_) => (cousins += ($2 == 'next'? 1: -1), ''))
+			// parents
+				.replace(/\:nth-parent\((\d+)\)/gi, ($0, $1, $$, $_) => (generations -= +$1, ''))
+				.replace(/(\:{1,2}parent\b|<\s*(\s*(,|$)))/gi, ($0, $$, $_) => (--generations, ''))
+				.replace(/<([^<,]+)?/gi, ($0, $1, $$, $_) => (ancestor = $1, --generations, ''))
+			// miscellaneous
+				.replace(/^\s+|\s+$/gi, '');
+
+			let elements = [].slice.call(query(selector)),
+				parents = [], parent,
+				siblings = [], sibling;
+
+			// Parents
+			for(; generations < 0; generations++)
+				elements = elements.map(element => {
+					let P = element, Q = (P? P.parentElement: {}), R = (Q? Q.parentElement: {}),
+						E = C => [...query(ancestor, C)],
+						F, G;
+
+					for(let I = 0, L = -generations; ancestor && !!R && !!Q && !!P && I < L; I++)
+						parent = E(R).contains(Q)? Q: G;
+
+					for(let I = 0, L = -generations; !ancestor && !!Q && !!P && I < L; I++)
+						Q = (parent = P = Q).parentElement;
+
+					if((generations === 0 || /\*$/.test(ancestor)) && parents.missing(parent))
+						parents.push(parent);
+
+					return parent;
+				});
+
+			// Siblings
+			if(cousins === 0)
+				/* Do nothing */;
+			else if(cousins < 0)
+				for(; cousins < 0; cousins++)
+					elements = elements.map(element => {
+						let P = element, Q = (P? P.previousElementSibling: {}),
+							F, G;
+
+						for(let I = 0, L = -cousins; !!Q && !!P && I < L; I++)
+							Q = (sibling = P = Q).previousElementSibling;
+
+						if(cousins === 0 && siblings.missing(sibling))
+							siblings.push(sibling);
+
+						return sibling;
+					});
+			else
+				for(; cousins > 0; cousins--)
+					elements = elements.map(element => {
+						let P = element, Q = (P? P.nextElementSibling: {}),
+							F, G;
+
+						for(let I = 0, L = -cousins; !!Q && !!P && I > L; I--)
+							Q = (sibling = P = Q).nextElementSibling;
+
+						if(cousins === 0 && siblings.missing(sibling))
+							siblings.push(sibling);
+
+						return sibling;
+					});
+
+			media.push(parents.length? parents: elements);
+			media.push(siblings.length? siblings: elements);
+			order.splice(index, 1, selector);
+		}
+
+		// Create a continuous array from the sub-arrays
+		for(index = 1, length = media.length; index < length; index++)
+			media.splice(0, 1, copy(media[0]).concat( copy(media[index]) ));
+		output = [].slice.call(media[0]).filter( value => value );
+
+		// Remove repeats
+		for(index = 0, length = output.length, media = []; index < length; index++)
+			if(media.missing(output[index]))
+				media.push(output[index]);
+
+		Object.defineProperties(media, {
+			first: {
+				value: media[0],
+				...properties
+			},
+			last: {
+				value: media[media.length - 1],
+				...properties
+			},
+			child: {
+				value: index => media[index - 1],
+				...properties
+			},
+			parent: {
+				value: selector => media.closest(selector),
+				...properties
+			},
+			empty: {
+				value: !media.length,
+				...properties
+			},
+		});
+	}
+
+	return media;
 };
 
 // Returns a function's name as a formatted title
@@ -669,11 +1145,19 @@ String.prototype.toTitle ??= function toTitle() {
 
 // Counts the number of elements in the string
     // String..count(...searches:string) → number<integer>
-String.prototype.count = function count(...searches) {
+String.prototype.count ??= function count(...searches) {
     let count = 0;
     for(let search of searches)
         count += this.split(search).length - 1;
     return count;
+};
+
+// Compares a string
+    // String..equals(value:any, caseSensitive:boolean?) → boolean
+String.prototype.equals ??= function equals(value, caseSensitive = false) {
+    if(!caseSensitive)
+        return this.trim().toLowerCase() == value?.trim()?.toLowerCase();
+    return this.trim() == value?.trim();
 };
 
 // Add Array methods to HTMLCollection
@@ -718,7 +1202,7 @@ HTMLCollection.prototype.values         ??= Array.prototype.values;
         // returnType = "img" | "element" | "HTMLImageElement"
             // → HTMLImageElement
         // returnType = "json" | "object"
-            // → object<{ type=imageType, data:string, height:number<integer>, width:number<integer> }>
+            // → Object<{ type=imageType, data:string, height:number<integer>, width:number<integer> }>
         // returnType = "dataURI" | "dataURL" | ...
             // → string<dataURL>
 HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "image/png", returnType = "dataURL") {
@@ -774,7 +1258,7 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
     Object.defineProperties(RECORDER, {
         data: {
             get() {
-                return DATA.slice(RECORDER.start);
+                return DATA.slice(RECORDER.slice);
             },
 
             set(value) {
@@ -932,7 +1416,7 @@ Number.prototype.to ??= function to(end = 0, by = 1) {
         // returnType = "img" | "element" | "HTMLImageElement"
             // → HTMLImageElement
         // returnType = "json" | "object"
-            // → object<{ type=imageType, data:string, height:number#integer, width:number#integer }>
+            // → Object<{ type=imageType, data:string, height:number#integer, width:number#integer }>
         // returnType = "dataURI" | "dataURL" | ...
             // → string<dataURL>
 function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
@@ -1120,12 +1604,17 @@ Number.prototype.Math = (parent => {
 String.prototype.contains ??= function contains(...values) {
     let has = false;
 
-    searching:
     for(let value of values)
         if(has ||= !!~this.indexOf(value))
-            break searching;
+            break;
 
     return has;
+};
+
+// Determines if the string is missing all of the value(s)
+    // String..missing(...values:any) → boolean
+String.prototype.missing ??= function missing(...values) {
+    return !this.contains(...values);
 };
 
 // Returns a properly formatted string depending on the number given
@@ -1611,7 +2100,7 @@ function isObj(object, ...or) {
 }
 
 // Returns a number formatted with commas
-function comify(number, locale = top.LANGUAGE) {
+function comify(number, locale = window.LANGUAGE) {
     return parseFloat(number).toLocaleString(locale);
 }
 
@@ -1699,7 +2188,7 @@ function toFormat(string, patterns) {
 // Returns the assumed operating system
     // GetOS(is:string?) → string | boolean
 function GetOS(is = null) {
-    let { userAgent } = top.navigator;
+    let { userAgent } = window.navigator;
     let OSs = {
         'NT 11.0': 'Win 11',
         'NT 10.0': 'Win 10',
@@ -1779,11 +2268,11 @@ function GetMacro(keys = '', OS = null) {
             keyA = keyA.toLowerCase();
             keyB = keyB.toLowerCase();
 
-            if(!map.contains(keyA) && map.contains(keyB))
+            if(map.missing(keyA) && map.contains(keyB))
                 return +1;
-            if(map.contains(keyA) && !map.contains(keyB))
+            if(map.contains(keyA) && map.missing(keyB))
                 return -1;
-            return map.indexOf(keyA.toLowerCase()) - map.indexOf(keyB.toLowerCase());
+            return map.indexOf(keyA) - map.indexOf(keyB);
         })
         .map(key => {
             switch(OS.slice(0, 7)) {
@@ -2145,7 +2634,7 @@ function phantomClick(...elements) {
             mouseup = new MouseEvent('mouseup', { bubbles: true });
 
         element?.dispatchEvent(mousedown);
-        setTimeout(() => element?.dispatchEvent(mouseup), 30);
+        wait(30).then(() => element?.dispatchEvent(mouseup));
     }
 }
 
@@ -2200,8 +2689,8 @@ function alert(message = '') {
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
                         parent.classList.add('tt-done');
-                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1000);
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
                         clearInterval(timedJobID);
                     },
 
@@ -2334,7 +2823,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-alert-container')))
             return time.setAttribute('due', due + 100);
 
-        time.closest('.tt-alert-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
+        time.closest('.tt-alert-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
     }, 100);
 
@@ -2399,8 +2888,8 @@ function confirm(message = '') {
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
                         parent.classList.add('tt-done');
-                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1000);
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
                         clearInterval(timedJobID);
                     },
 
@@ -2426,8 +2915,8 @@ function confirm(message = '') {
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
                         parent.classList.add('tt-done');
-                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1000);
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
                         clearInterval(timedJobID);
                     },
 
@@ -2560,7 +3049,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-confirm-container')))
             return time.setAttribute('due', due + 100);
 
-        time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
+        time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
     }, 100);
 
@@ -2658,8 +3147,8 @@ function prompt(message = '', defaultValue = '') {
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
                         parent.classList.add('tt-done');
-                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1000);
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
                         clearInterval(timedJobID);
                     },
 
@@ -2685,8 +3174,8 @@ function prompt(message = '', defaultValue = '') {
                             timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
 
                         parent.classList.add('tt-done');
-                        setTimeout(() => parent.classList.remove('tt-veiled'), 500);
-                        setTimeout(() => parent.remove(), 1000);
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
                         clearInterval(timedJobID);
                     },
 
@@ -2819,7 +3308,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-prompt-container')))
             return time.setAttribute('due', due + 100);
 
-        time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.textContent = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
+        time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
     }, 100);
 
@@ -2909,12 +3398,12 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
 
 /* Common MIME Types */
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
-top.MIME_Types ??= ({
+window.MIME_Types ??= ({
     // type: extension
     find(type = '') {
         let [head] = type.toLowerCase().split(';');
 
-        return top.MIME_Types[head] ?? type;
+        return window.MIME_Types[head] ?? type;
     },
 
 	"application/epub+zip": "epub",
@@ -2993,7 +3482,7 @@ top.MIME_Types ??= ({
 });
 
 /* ISO-639-1 Language Codes */
-top.ISO_639_1 ??= ({
+window.ISO_639_1 ??= ({
     "aa": {
         "name": "Afar/Afaraf",
         "names": [
@@ -5100,7 +5589,7 @@ function encodeHTML(string = '') {
 // Decodes HTML-embedded text
     // decodeHTML(string:string) → string
 function decodeHTML(string = '') {
-    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contians($0))?.char ?? $0);
+    return string.replace(/&(#x?\d+|[a-z]+);/ig, ($0, $1, $$, $_) => decodeHTML.table.find(({ html, dec, hex }) => [html, dec, hex].contains($0))?.char ?? $0);
 }
 
 decodeHTML.table ??= [

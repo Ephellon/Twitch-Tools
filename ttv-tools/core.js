@@ -16,6 +16,7 @@
     // new UUID() → object
     // UUID.BWT(string:string) → string
     // UUID.cyrb53(string:string, seed:number?) → string
+    // UUID.ergo(key:string?) → <async>string
     // UUID.from(string:string, traceable:boolean?) → object
     // UUID.prototype.toString() → string
 class UUID {
@@ -377,6 +378,7 @@ class LZW {
 };
 
 // The following is just shared logic
+    // $(selector:string, multiple:boolean?, container:Node?) → Array|Element
 function $(selector, multiple = false, container = document) {
     return multiple?
         [...container?.querySelectorAll(selector)]:
@@ -387,7 +389,7 @@ Object.defineProperties($, {
     html: {
         value: {
             getElementByText: Element.prototype.getElementByText.bind(document.documentElement),
-            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.documentElement),
+            getElementsByInnerText: Element.prototype.getElementsByInnerText.bind(document.documentElement),
         },
 
         writable: false,
@@ -398,7 +400,7 @@ Object.defineProperties($, {
     head: {
         value: {
             getElementByText: Element.prototype.getElementByText.bind(document.head),
-            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.head),
+            getElementsByInnerText: Element.prototype.getElementsByInnerText.bind(document.head),
         },
 
         writable: false,
@@ -409,7 +411,7 @@ Object.defineProperties($, {
     body: {
         value: {
             getElementByText: Element.prototype.getElementByText.bind(document.body),
-            getElementsByTextContent: Element.prototype.getElementsByTextContent.bind(document.body),
+            getElementsByInnerText: Element.prototype.getElementsByInnerText.bind(document.body),
         },
 
         writable: false,
@@ -425,8 +427,16 @@ Object.defineProperties($, {
         configurable: false,
     },
 
-    getElementsByTextContent: {
-        value: Element.prototype.getElementsByTextContent.bind(document.documentElement),
+    getElementsByInnerText: {
+        value: Element.prototype.getElementsByInnerText.bind(document.documentElement),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    queryBy: {
+        value: Element.prototype.queryBy.bind(document.documentElement),
 
         writable: false,
         enumerable: false,
@@ -434,17 +444,21 @@ Object.defineProperties($, {
     },
 });
 
+// Returns whether a value is nullish or not
+    // nullish(value:any?) → boolean
 function nullish(value) {
     return value === undefined || value === null;
 }
 
+// Returns whether a value is nullish or not
+    // defined(value:any?) → boolean
 function defined(value) {
     return !nullish(value);
 }
 
 // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
 // Makes a Promised setInterval
-    // until(callback:function,ms:number~Integer:milliseconds?) → Promise<any>
+    // until(callback:function, ms:number<milliseconds>?) → Promise<any>
 async function until(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {

@@ -254,7 +254,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 
         Settings = await GetSettings();
 
-        setTimeout(Player__Initialize_Safe_Mode, 5000);
+        wait(5000).then(Player__Initialize_Safe_Mode);
         clearInterval(Player__PAGE_CHECKER);
     }
 
@@ -272,7 +272,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 
         Settings = await GetSettings();
 
-        setTimeout(Player__Initialize, 5000);
+        wait(5000).then(Player__Initialize);
         clearInterval(Player__PAGE_CHECKER);
 
         parent.FRAMED_CONTROLLER_READY = true;
