@@ -73,7 +73,7 @@
     --baby-blue: #387aff;
     --baby-pink: #f5009b;
 
-    --purple: #9147ff;
+    --purple: #6262c2;
     --purple-dark: #4700b3;
     --purple-highlighted: #a970ff;
     --color-twitch-purple: var(--purple);
@@ -516,22 +516,23 @@ details, .details {
 }
 
 summary::before {
-    background: url(chevron.png) no-repeat;
-    background-size: contain;
-    background-position: center;
+    background: var(--purple);
+    border: 1px solid var(--purple);
+    border-radius: 1rem;
     content: "";
-    display: inline-block;
-    float: right;
+    display: block;
 
-    margin: 0 1rem;
+    margin: 0;
 
-    vertical-align: middle;
+    position: absolute;
+    left: 50%;
+    top: calc(100% - .5rem - 2px);
 
-    height: 2rem;
-    width: 1rem;
+    height: .25rem;
+    width: 3rem;
 
-    transform: rotate(180deg);
-    transition: .1s;
+    transform: translate(-50%);
+    transition: .25s;
 }
 
 summary:not([subtitle])::before {
@@ -539,7 +540,7 @@ summary:not([subtitle])::before {
 }
 
 details[open] > summary::before {
-    transform: rotate(0);
+    width: .25rem;
 }
 
 summary {

@@ -35,6 +35,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.17)
+- Modified `UUID.from` logic
+- Modified Link Maker logic
+
 > [`5.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.16)
 - Fixed issue with `parseURL(...).subSearch`
 - Added cloud saving v2 skeleton
@@ -48,6 +52,7 @@
 - Added `Element..isVisible`
 - Added Claim Rewards logic (on by default)
 - Fixed Time Zones
+- Added Link Maker
 
 > [`5.15`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.15)
 - Fixed `parseBool` logic

@@ -6232,7 +6232,7 @@ let Initialize = async(START_OVER = false) => {
                 if(sole == STREAMER.sole)
                     for(let rewardID of AutoClaimRewards[sole])
                         await STREAMER.shop
-                            .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
+                            .filter(({ enabled, hidden, premium }) => enabled && !(hidden || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
                             .map(async({ cost, title, needsInput }) => {
                                 await until(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i]'))
@@ -6293,7 +6293,7 @@ let Initialize = async(START_OVER = false) => {
                     $title = ($('#channel-points-reward-center-header', false, head)?.textContent || '').trim(),
                     $prompt = ($('.reward-center-body p', false, body)?.textContent || '').trim(),
                     $image = $('.reward-icon img', false, body).src,
-                    [$cost] = $('[state]', false, body).innerText.split(/\s/).map(parseCoin);
+                    [$cost] = $('[state]', false, body).innerText.split(/\s/).map(parseCoin).filter(n => n > 0);
 
                 let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
                     (false
@@ -12258,11 +12258,9 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         .map(header => {
                             let content = [];
 
-                            let e = header.nextElementSibling;
-                            while(defined(e) && !/^h\d$/i.test(e.tagName)) {
+                            let e = header;
+                            while(defined(e = e.nextElementSibling) && !/^h\d$/i.test(e.tagName))
                                 content.push(e);
-                                e = e.nextElementSibling;
-                            }
 
                             return { header, content };
                         }).map(({ header, content }) => {

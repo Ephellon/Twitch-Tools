@@ -1981,7 +1981,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             .then(html => HTMLParser.parseFromString(html, 'text/html'))
                             .catch(WARN)
                             .then(DOM => {
-                                if(nullish(DOM))
+                                if(!(DOM instanceof Document))
                                     throw TypeError(`No DOM available. Page not loaded`);
 
                                 let f = furnish;
@@ -2010,7 +2010,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                     f('div.tt-card-image', {},
                                                         f('div.tt-aspect', {},
                                                             f('div', {}),
-                                                            f('img.tt-image', { alt: title, src: image, height: 45, style: 'max-height:45px' })
+                                                            f('img.tt-image', { alt: title, src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`), height: 45, style: 'max-height:45px' })
                                                         )
                                                     )
                                                 ),

@@ -338,7 +338,7 @@ class UUID {
 
         let PRIVATE_KEY = (traceable? '': `private-key="${ UUID.#BWT_SEED }"`),
             CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key="${ Manifest.version }"`;
+            PUBLIC_KEY = `public-key="${ Manifest.name }"`;
 
         let hash = Uint8Array.from(
                 btoa(
