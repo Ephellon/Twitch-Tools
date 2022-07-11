@@ -102,7 +102,7 @@ function parseURL(url) {
 }
 
 Object.defineProperties(parseURL, {
-    pattern: { value: /(?<href>(?<origin>(?<protocol>(?<scheme>https?):)\/\/)?(?<host>(?<hostname>[^:\/?#\s]{3,}\.[^:\/?#\s]{2,})(?:\:(?<port>\d+))?)(?<pathname>[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^$\s]*)?)/ },
+    pattern: { value: /(?<href>(?<origin>(?<protocol>(?<scheme>https?):)\/\/)?(?<host>(?<hostname>[^\.:\/?#\s]{3,}\.(?:[^\.:\/?#\s]+|\.[^\.:\/?#\s]+))(?:\:(?<port>\d+))?)(?<pathname>[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^$\s]*)?)/ },
 });
 
 // Create elements
@@ -539,33 +539,33 @@ function getDOMPath(element, shorten = false) {
     let path = [];
     while(defined(element.parentNode)) {
         let parent = element.parentNode,
-            children = parent.childNodes;
+            siblings = parent.childNodes;
 
-        let siblingCount = 0, siblingIndex = 0;
-        for(let index = 0; index < children.length; ++index) {
-            let sibling = children[index];
+        let nthChild = 0;
+        nth: for(let index = 0; index < siblings.length; ++index) {
+            let sibling = siblings[index];
 
-            if(sibling.nodeName == element.nodeName) {
-                if(sibling === element)
-                    siblingIndex = siblingCount;
-                ++siblingCount;
+            if(sibling === element) {
+                nthChild = index;
+
+                break nth;
             }
         }
 
-        let nodeName =  element.nodeName.toLowerCase();
+        let nodeName = element.nodeName.toLowerCase();
 
-        if(element.hasAttribute('id') && element.id.length > 0)
+        if(element.id.length)
             path.unshift(`${ nodeName }#${ element.id }`);
-        else if(siblingCount > 1 && siblingIndex > 0)
-            path.unshift(`${ nodeName }:nth-child(${ siblingIndex + 1 })`);
+        else if(nthChild > 1)
+            path.unshift(`${ nodeName }:nth-child(${ nthChild + 1 })`);
         else
             path.unshift(nodeName);
 
         element = parent;
     }
 
-    path = (shorten? path.slice(1): path).join('>');
-    for(let regexp = />(?:(\w+)>\1)+/; shorten && regexp.test(path);)
+    path = path.slice(+!!shorten).join('>');
+    for(let regexp = /[> ](?:(\w+)[> ]\1[^#:])+/; shorten && regexp.test(path);)
         path = path.replace(regexp, ' $1');
 
     return path;

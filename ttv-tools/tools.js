@@ -4357,7 +4357,9 @@ let Initialize = async(START_OVER = false) => {
             return STREAMER.__done__ || (async() => {
                 let done;
 
-                await LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
+                await LoadCache(['ChannelPoints'], async({ ChannelPoints }) => {
+                    ChannelPoints ??= {};
+
                     let { name } = STREAMER,
                         [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                         allRewards = (await STREAMER.shop).filter(reward => reward.available);
@@ -6240,15 +6242,16 @@ let Initialize = async(START_OVER = false) => {
                                     .then(async button => {
                                         purchasing:
                                         if(STREAMER.coin >= cost) {
-                                            let item = $('.rewards-list')?.getElementByText(title)?.closest('.reward-list-item')?.querySelector('button');
+                                            let button = $('.rewards-list')?.getElementByText(title)?.closest('.reward-list-item')?.querySelector('button');
 
-                                            if(nullish(item))
+                                            if(nullish(button))
                                                 break purchasing;
 
-                                            await until(() => $('#tt-auto-claim-reward-handler'))
+                                            // Purchase and remove
+                                            await until(() => $('#tt-auto-claim-reward-handler button'))
                                                 .then(handler => {
                                                     handler.click();
-                                                    item.click();
+                                                    button.click();
                                                 })
                                                 .then(async() => {
                                                     if(!needsInput) {
@@ -6280,6 +6283,32 @@ let Initialize = async(START_OVER = false) => {
         CLAIM_REWARDS_HANDLER = setInterval(() => {
             let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), [state][disabled] [data-test-selector="RequiredPoints"i]:empty')?.closest?.('button'),
                 handler = $('#tt-auto-claim-reward-handler');
+
+            Wallet_Display: {
+                let rewards = $('.rewards-list .reward-list-item:not([tt-wallet])', true);
+
+                if(rewards.length < 1)
+                    break Wallet_Display;
+
+                LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
+                    AutoClaimRewards ??= {};
+
+                    rewards.map(async reward => {
+                        let $image = $('img', false, reward).src,
+                            $cost = parseCoin($('[data-test-selector="cost"i]', false, reward).textContent),
+                            $title = ($('button ~ * [title]', false, reward)?.textContent || '').trim();
+
+                        let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
+                            (false
+                                || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
+                                || (title.equals($title) && (cost == $cost || image.url.equals($image.url)))
+                            )
+                        );
+
+                        reward.setAttribute('tt-wallet', (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id));
+                    });
+                });
+            }
 
             if(nullish(container) || defined(handler))
                 return;
@@ -8747,7 +8776,7 @@ let Initialize = async(START_OVER = false) => {
             if(["greed", "unfollowed"].contains(method)) {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
-                if(method == "greed" && raiding) {
+                if(raiding && method == "greed") {
                     LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid' }, true).href);
 
                     CONTINUE_RAIDING = true;
@@ -9948,7 +9977,9 @@ let Initialize = async(START_OVER = false) => {
 
         // Update the points (every 30s)
         if(++pointWatcherCounter % 120)
-            LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
+            LoadCache(['ChannelPoints'], async({ ChannelPoints }) => {
+                ChannelPoints ??= {};
+
                 let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
                     balance = STREAMER.coin;
@@ -11009,6 +11040,10 @@ let Initialize = async(START_OVER = false) => {
      *                                                       __/ |
      *                                                      |___/
      */
+    let RECOVER_PAGE_FROM_LAG,
+        RECOVER_PAGE_FROM_LAG__EXACT,
+        RECOVER_PAGE_FROM_LAG__WARNINGS = 0;
+
     Handlers.recover_pages = async() => {
         START__STOP_WATCH('recover_pages');
 
@@ -11031,9 +11066,31 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.recover_pages = 5000;
 
+    Unhandlers.recover_pages = () => {
+        clearInterval(RECOVER_PAGE_FROM_LAG);
+    };
+
     __RecoverPages__:
     if(parseBool(Settings.recover_pages)) {
         RegisterJob('recover_pages');
+
+        RECOVER_PAGE_FROM_LAG__EXACT = performance.now();
+
+        RECOVER_PAGE_FROM_LAG = setInterval(() => {
+            let now = performance.now(),
+                span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
+
+            // The time has drifted by more than 25%
+            if(span > (Timers.recover_pages * 1.25))
+                WARN(`The page seems to be lagging... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
+            else if(span < (Timers.recover_pages * 1.05) && RECOVER_PAGE_FROM_LAG__WARNINGS > 0)
+                --RECOVER_PAGE_FROM_LAG__WARNINGS;
+
+            if(RECOVER_PAGE_FROM_LAG__WARNINGS > 4)
+                location.reload();
+
+            RECOVER_PAGE_FROM_LAG__EXACT = now;
+        }, Timers.recover_pages);
     }
 
     /*** Developer Features

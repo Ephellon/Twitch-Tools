@@ -73,9 +73,10 @@
     --baby-blue: #387aff;
     --baby-pink: #f5009b;
 
-    --purple: #6262c2;
+    --purple: #9147ff;
     --purple-dark: #4700b3;
     --purple-highlighted: #a970ff;
+    --soft-purple: #6262c2;
     --color-twitch-purple: var(--purple);
     --color-twitch-purple-10: var(--purple-highlighted);
 

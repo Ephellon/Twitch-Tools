@@ -1886,36 +1886,39 @@ let Chat__Initialize = async(START_OVER = false) => {
         CHAT_CARDIFIED = new Map;
 
     Handlers.link_maker__chat = () => {
-        (GetChat.onnewmessage = excerpt => {
+        (GetChat.onnewmessage = async excerpt => {
             if(!LINK_MAKER_ENABLED)
                 return;
 
             let HTMLParser = new DOMParser;
 
-            excerpt.map(async line => {
+            cardifying:
+            for(let line of excerpt) {
+                let { message, mentions, author, element } = line;
 
-                cardifying:
-                for(let line of excerpt) {
-                    let { message, mentions, author, element } = line;
+                for(let { pattern } = parseURL, { length } = message, index = 0; pattern.test(message) && index < length | 0; ++index) {
+                    let parsed = pattern.exec(message),
+                        [match] = parsed,
+                        { index, groups } = parsed,
+                        { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
-                    if(!element.isVisible())
+                    message = message.slice(index + match.length);
+
+                    href = href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim();
+
+                    if(CHAT_CARDIFIED.has(href)) {
+                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, false, element)))
+                            element.insertAdjacentElement('beforeend', CHAT_CARDIFIED.get(href));
+
                         continue cardifying;
+                    }
 
-                    if(parseURL.pattern.test(message)) {
-                        let { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL.pattern.exec(message).groups;
-
-                        href = href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim();
-
-                        if(CHAT_CARDIFIED.has(href)) {
-                            element.insertAdjacentElement('afterend', CHAT_CARDIFIED.get(href));
-
-                            continue cardifying;
-                        }
-
-                        await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
-                            .then(response => response.text())
-                            .then(html => {
-                                html = html.replace(/(<\w+\s+([^>]+?)>)/g, ($0, $1, $2 = '', $$, $_) => {
+                    await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
+                        .then(response => response.text())
+                        .then(html => {
+                            html = html
+                                .replace(/[^]*(<head\W[^]*?<\/head>)[^]*/i, '<html>$1<body></body></html>')
+                                .replace(/(<\w+\s+([^>]+?)>)/g, ($0, $1, $2 = '', $$, $_) => {
                                     let attributes = {};
 
                                     let attr = '', val = '',
@@ -1976,81 +1979,80 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     return $1.replace($2, Object.entries(attributes).map(([name, value]) => [name, value].join('=')).join(' '));
                                 });
 
-                                return html;
-                            })
-                            .then(html => HTMLParser.parseFromString(html, 'text/html'))
-                            .catch(WARN)
-                            .then(DOM => {
-                                if(!(DOM instanceof Document))
-                                    throw TypeError(`No DOM available. Page not loaded`);
+                            return html;
+                        })
+                        .then(html => HTMLParser.parseFromString(html, 'text/html'))
+                        .catch(WARN)
+                        .then(DOM => {
+                            if(!(DOM instanceof Document))
+                                throw TypeError(`No DOM available. Page not loaded`);
 
-                                let f = furnish;
-                                let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i]`)?.getAttribute('content');
+                            let f = furnish;
+                            let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i]`)?.getAttribute('content');
 
-                                let [title, description, image] = ["title", "description", "image"].map(get),
-                                    error = DOM.querySelector('parsererror')?.textContent;
+                            let [title, description, image] = ["title", "description", "image"].map(get),
+                                error = DOM.querySelector('parsererror')?.textContent;
 
-                                LOG(`Loaded page ${ href }`, { title, description, image, DOM });
+                            LOG(`Loaded page ${ href }`, { title, description, image, DOM });
 
-                                if(!title?.length || !image?.length) {
-                                    CHAT_CARDIFIED.set(href, f.span());
+                            if(!title?.length || !image?.length) {
+                                CHAT_CARDIFIED.set(href, f.span());
 
-                                    if(!error?.length)
-                                        return;
-                                    else
-                                        throw error;
-                                }
+                                if(!error?.length)
+                                    return;
+                                else
+                                    throw error;
+                            }
 
-                                let card = f('div.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
-                                    f('div.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
-                                        f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
-                                            f('div.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
-                                                // Preview image
-                                                f('div.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {},
-                                                    f('div.tt-card-image', {},
-                                                        f('div.tt-aspect', {},
-                                                            f('div', {}),
-                                                            f('img.tt-image', { alt: title, src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`), height: 45, style: 'max-height:45px' })
-                                                        )
+                            let card = f('div.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
+                                f('div.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
+                                    f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
+                                        f('div.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
+                                            // Preview image
+                                            f('div.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {},
+                                                f('div.tt-card-image', {},
+                                                    f('div.tt-aspect', {},
+                                                        f('div', {}),
+                                                        f('img.tt-image', { alt: title, src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`), height: 45, style: 'max-height:45px' })
                                                     )
-                                                ),
-                                                // Title & Subtitle
-                                                f('div.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
-                                                    f('div.tt-full-width.tt-pd-l-1', {},
-                                                        // Title
-                                                        f('div.chat-card__title.tt-ellipsis', {},
-                                                            f('p.tt-strong.tt-ellipsis', { 'data-test-selector': 'chat-card-title' }, title)
-                                                        ),
-                                                        // Subtitle
-                                                        f('div.tt-ellipsis', {},
-                                                            f('p.tt-c-text-alt-2.tt-ellipsis', { 'data-test-selector': 'chat-card-description' }, description)
-                                                        ),
-                                                    )
+                                                )
+                                            ),
+                                            // Title & Subtitle
+                                            f('div.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
+                                                f('div.tt-full-width.tt-pd-l-1', {},
+                                                    // Title
+                                                    f('div.chat-card__title.tt-ellipsis', {},
+                                                        f('p.tt-strong.tt-ellipsis', { 'data-test-selector': 'chat-card-title' }, title)
+                                                    ),
+                                                    // Subtitle
+                                                    f('div.tt-ellipsis', {},
+                                                        f('p.tt-c-text-alt-2.tt-ellipsis', { 'data-test-selector': 'chat-card-description' }, description)
+                                                    ),
                                                 )
                                             )
                                         )
                                     )
-                                );
+                                )
+                            );
 
-                                let container = f(`div#card-${ UUID.from(href).toStamp() }.chat-line__message`, { 'data-a-target': 'chat-line-message', 'data-test-selector': 'chat-line-message' },
-                                    f('div.tt-relative', {},
-                                        f('div.tt-relative.chat-line__message-container', {},
-                                            f('div', {},
-                                                f('div.chat-line__no-background.tt-inline', {},
-                                                    card
-                                                )
+                            let container = f(`div#card-${ UUID.from(href).toStamp() }.chat-line__message`, { 'data-a-target': 'chat-line-message', 'data-test-selector': 'chat-line-message' },
+                                f('div.tt-relative', {},
+                                    f('div.tt-relative.chat-line__message-container', {},
+                                        f('div', {},
+                                            f('div.chat-line__no-background.tt-inline', {},
+                                                card
                                             )
                                         )
                                     )
-                                );
+                                )
+                            );
 
-                                CHAT_CARDIFIED.set(href, container);
-                                element.insertAdjacentElement('afterend', container);
-                            })
-                            .catch(ERROR);
-                    }
+                            CHAT_CARDIFIED.set(href, container);
+                            element.insertAdjacentElement('beforeend', container);
+                        })
+                        .catch(ERROR);
                 }
-            });
+            }
         })(GetChat());
     };
     Timers.link_maker__chat = -500;

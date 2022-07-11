@@ -35,9 +35,17 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.18)
+- Modified `parseURL.pattern`
+- Modified Card laying logic
+- Modified `getDOMPath` logic
+- Modified Auto Claim logic
+- Fixed Channel Point logic
+
 > [`5.17`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.17)
 - Modified `UUID.from` logic
 - Modified Link Maker logic
+- Modified Claim Rewards logic
 
 > [`5.16`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.16)
 - Fixed issue with `parseURL(...).subSearch`
