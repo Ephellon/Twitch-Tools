@@ -137,6 +137,11 @@ function furnish(tagname = 'div', attributes = null, ...children) {
                 if(char == '=') {
                     context = 'attribute-value';
                     continue;
+                } else if(char == ']') {
+                    attributes[name] = value;
+
+                    context = null;
+                    continue;
                 }
 
                 name += char;
@@ -239,6 +244,13 @@ function furnish(tagname = 'div', attributes = null, ...children) {
                         if(last || defined(context))
                             element = document.createElement((name || 'div'), options);
                     }
+                } else {
+                    if(char == '#')
+                        context = 'id';
+                    if(char == '.')
+                        context = 'class';
+                    if(char == '[')
+                        context = 'attribute';
                 }
             } break;
         }
@@ -1120,6 +1132,12 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 
 	return media;
 };
+
+// Modifies an attribute (combines get + set)
+    // Element..modAttribute(attribute:string, value:any?) → undefined
+Element.prototype.modAttribute ??= function modAttribute(attribute, value = '') {
+    this.setAttribute(attribute, [this.getAttribute(attribute), value].join(''));
+}
 
 // Returns a function's name as a formatted title
     // Function..toTitle() → string

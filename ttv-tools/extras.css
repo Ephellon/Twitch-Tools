@@ -1,6 +1,12 @@
 /* Globals */
 button[class*="tt-"i]:hover { background-color: #fff3 }
 
+:root {
+    /* https://www.facemediagroup.co.uk/resources/a-to-z-guides/a-to-z-of-colours/ */
+    /* Red Amber Ivory Nevgan Blue Orchid Wisteria */
+    --rainbow: linear-gradient(from 0, #ff0000, #ffbf00, #fffff0, #29752a, #0000ff, #da70d6, #c9a0dc);
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar {
     width: .6rem;
@@ -852,14 +858,12 @@ caption {
 /* In Wallet */
 /* https://www.bram.us/2021/01/29/animating-a-css-gradient-border/ */
 [tt-wallet="true"i] [data-test-selector="cost"i] {
-    --angle: 0deg;
-
     box-sizing: content-box;
 
     border: 1px solid;
-    border-image: conic-gradient(from var(--angle), var(--channel-color), var(--channel-color-complement)) 1;
+    border-image: conic-gradient(from var(--angle), red, orange, yellow, green, blue, indigo, violet, violet, indigo, blue, green, yellow, orange, red) 1;
 
-    animation: 1s linear infinite spinning-border;
+    animation: 2s linear infinite spinning-border;
 }
 
 @keyframes spinning-border {
@@ -870,4 +874,37 @@ caption {
     syntax: '<angle>';
     initial-value: 0deg;
     inherits: false;
+}
+
+/* Picture-in-Picture */
+[tt-pip], #tt-exit-pip {
+    background: var(--color-background-button-secondary-default);
+    border: 1px solid #0000;
+    border-radius: .3rem;
+    display: inline-block;
+    text-align: center;
+
+    margin: .15rem;
+    padding: 1rem 1rem 0;
+    vertical-align: top;
+
+    transition: background .3s;
+}
+
+:is([tt-pip], #tt-exit-pip):hover {
+    background: var(--color-background-button-secondary-hover);
+}
+
+[tt-pip]::after {
+    content: "MINI";
+
+    display: block;
+    font-size: xx-small;
+}
+
+#tt-exit-pip::after {
+    content: "EXIT";
+
+    display: block;
+    font-size: xx-small;
 }

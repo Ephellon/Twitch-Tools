@@ -71,7 +71,7 @@ top.Glyphs ??= {
     /** The Chromium Authors (c) 2015. All rights reserved.
      * "Exit Picture in Picture," and "Picture in Picture" by The Chromium Authors
      */
-    exit_picture_in_picture: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 22 18" x="0px" y="0px"><g fill="none" fill-rule="evenodd" opacity=".87"><path d="M18 4H4v10h14V4zm4 12V1.98C22 .88 21.1 0 20 0H2C.9 0 0 .88 0 1.98V16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H2V1.97h18v14.05z" fill="WindowText" fill-rule="nonzero"/><path d="M-1-3h24v24H-1z"/></g></svg>`,
+    exit_picture_in_picture: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 22 18" x="0px" y="0px"><g fill="none" fill-rule="evenodd" opacity=".87"><path d="M18 4H4v10h14V4zm4 12V1.98C22 .88 21.1 0 20 0H2C.9 0 0 .88 0 1.98V16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H2V1.97h18v14.05z" fill="currentcolor" fill-rule="nonzero"/><path d="M-1-3h24v24H-1z"/></g></svg>`,
     picture_in_picture:      `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 24 24" x="0px" y="0px"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>`,
 
     /** Licensed under the Creative Commons license
@@ -92,6 +92,7 @@ top.Glyphs ??= {
 
     checkmark: `<svg fill="#22fa7c" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>`,
     translate: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 27 26" x="0px" y="0px"><path d="M20.859 9.2L26.787 26h-3.822l-1.214-3.983h-6.1L14.439 26h-3.822l5.905-16.8h4.338zm-2.152 2.598c-.252.975-.973 3.39-2.163 7.244h4.36L19.01 12.92c-.14-.474-.242-.847-.303-1.122zM9.622 0a5.153 5.153 0 00-.1 1.021v1.021h3.987c.81.01 1.621-.03 2.428-.117v3.029c-.737-.067-1.39-.1-2.376-.1a13.167 13.167 0 01-1.145 3.232c-.497.98-1.121 1.891-1.857 2.707a14.381 14.381 0 003.14 1.387l-1.062 3.022a19.389 19.389 0 01-4.37-2.351 21.456 21.456 0 01-6.661 3.079A9.699 9.699 0 000 12.968a18.235 18.235 0 005.94-2.191 14.565 14.565 0 01-2.158-3.062c-.484-.911-.871-1.87-1.155-2.862-.988 0-1.556.034-2.393.1V1.926c.806.087 1.616.126 2.426.117H6.36V1.038A5.08 5.08 0 006.259 0zm.652 4.853H5.84a9.543 9.543 0 002.342 4.049 9.434 9.434 0 002.092-4.049z" fill-rule="nonzero"></path></svg>`,
+    incognito: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 120 120" x="0px" y="0px"><g fill="none" fill-rule="evenodd"><path d="M0 0h120v120H0z"/><path fill="#dadce0" d="M60 0c33.137 0 60 26.863 60 60s-26.863 60-60 60S0 93.137 0 60 26.863 0 60 0zm17.5 64.837c-6.456 0-11.822 4.502-13.222 10.516-3.267-1.397-6.3-1.009-8.556-.039C54.283 69.3 48.917 64.837 42.5 64.837c-7.506 0-13.611 6.092-13.611 13.582C28.889 85.908 34.994 92 42.5 92c7.156 0 12.95-5.51 13.494-12.495 1.167-.815 4.24-2.328 8.012.078C64.628 86.529 70.383 92 77.5 92c7.506 0 13.611-6.092 13.611-13.581 0-7.49-6.105-13.582-13.611-13.582zm-35 3.88c5.367 0 9.722 4.347 9.722 9.702 0 5.355-4.355 9.7-9.722 9.7-5.367 0-9.722-4.345-9.722-9.7 0-5.355 4.355-9.701 9.722-9.701zm35 0c5.367 0 9.722 4.347 9.722 9.702 0 5.355-4.355 9.7-9.722 9.7-5.367 0-9.722-4.345-9.722-9.7 0-5.355 4.355-9.701 9.722-9.701zM95 57H25v4h70v-4zM72.874 29.34c-.8-1.82-2.866-2.78-4.785-2.143L60 29.914l-8.128-2.717-.192-.058c-1.928-.533-3.954.51-4.669 2.387L38.144 53h43.712L72.95 29.526z"/></g></svg>`,
 
     calendar: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 9v2H6V9h2z"></path><path fill-rule="evenodd" d="M5 2h2v1h6V2h2v1h1a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h1V2zm11 5H4v9h12V7z" clip-rule="evenodd"></path></g></svg>`,
     collapse: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M14 7h-2v6h2V7z"></path><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 0h12v10H4V5z" clip-rule="evenodd"></path></g></svg>`,
@@ -299,6 +300,9 @@ top.Glyphs ??= {
 
             // 8th batch
             ghost: "\uD83D\uDC7B\uFE0F",
+
+            // 9th batch
+            incognito: "\uD83D\uDD75\uFE0F",
         });
     },
 

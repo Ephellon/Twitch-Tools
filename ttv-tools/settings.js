@@ -1650,7 +1650,7 @@ $('[new]', true).map(element => {
 $('[id^="key:"i]', true).map(element => element.textContent = GetMacro(element.textContent));
 
 // Get the supported video types here...
-$('#video_clips__file_type option', true).filter(o => !furnish('video').supports(`video/${ o.value }`)).map(o => o.remove());
+$('#video_clips__file_type option', true).filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
 
 // Set the browser storage usage...
 until(() => SETTINGS)
@@ -1689,19 +1689,19 @@ until(() => SETTINGS)
                 let f = furnish;
                 let body = f.tbody(
                     f.tr(
-                        f.td( `Settings`),
-                        f.td( allcBytes.suffix('B', 2)),
-                        f.td( (100 * (allcBytes / total)).suffix('%', 1))
+                        f.td(`Settings`),
+                        f.td(allcBytes.suffix('B', 2)),
+                        f.td((100 * (allcBytes / total)).suffix('%', 1))
                     ),
                     f.tr(
-                        f.td( `Miscellaneous`),
-                        f.td( miscBytes.suffix('B', 2)),
-                        f.td( (100 * (miscBytes / total)).suffix('%', 1))
+                        f.td(`Miscellaneous`),
+                        f.td(miscBytes.suffix('B', 2)),
+                        f.td((100 * (miscBytes / total)).suffix('%', 1))
                     ),
 
                     f.tr(
-                        f.td( `Total`),
-                        f.td( total.suffix('B', 2))
+                        f.td(`Total`),
+                        f.td(total.suffix('B', 2))
                     )
                 );
 

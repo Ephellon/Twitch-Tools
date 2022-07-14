@@ -1053,7 +1053,7 @@ class ContextMenu {
                             if(text?.length)
                                 text = f('div.tt-hide-text-overflow', { innerHTML: text });
                             if(shortcut?.length)
-                                shortcut = f.pre( f.code( GetMacro(shortcut)));
+                                shortcut = f.pre(f.code(GetMacro(shortcut)));
 
                             if(icon || text || shortcut)
                                 return f('button.tt-context-menu-option', { onmouseup: event => action({ ...event, inheritance: inherit }), style: 'border-radius:0.6rem; display:inline-block; padding:0.5rem 0 0.5rem 3rem; width:-webkit-fill-available' }, icon, shortcut, text);
@@ -3675,9 +3675,11 @@ async function update() {
     window.SEARCH = SEARCH = [
         ...SEARCH,
         // Current (followed) streamers
-        ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ PATHNAME }"i])`, true)
+        ...$(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let channel = {
+                    element,
+
                     from: 'SEARCH',
                     href: element.href,
                     icon: $('img', false, element)?.src,
@@ -4129,9 +4131,11 @@ let Initialize = async(START_OVER = false) => {
      */
     SEARCH = [
         // Current (followed) streamers
-        ...$(`.search-tray a:not([href*="/search?"]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])`, true)
+        ...$(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"i])`, true)
             .map(element => {
                 let channel = {
+                    element,
+
                     from: 'SEARCH',
                     href: element.href,
                     icon: $('img', false, element)?.src,
@@ -4354,7 +4358,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get done() {
-            return STREAMER.__done__ || (async() => {
+            return (async() => {
                 let done;
 
                 await LoadCache(['ChannelPoints'], async({ ChannelPoints }) => {
@@ -4372,7 +4376,7 @@ let Initialize = async(START_OVER = false) => {
                         -1
                     );
 
-                    return STREAMER.__done__ ||= done = (notEarned == 0);
+                    return done = (notEarned == 0);
                 });
 
                 return await until(() => done);
@@ -6236,36 +6240,31 @@ let Initialize = async(START_OVER = false) => {
                         await STREAMER.shop
                             .filter(({ enabled, hidden, premium }) => enabled && !(hidden || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
-                            .map(async({ cost, title, needsInput }) => {
-                                await until(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i]'))
-                                    .then(button => button.click() || button)
+                            .map(async({ id, cost, title, needsInput }) => {
+                                await until(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i] button'))
                                     .then(async button => {
-                                        purchasing:
-                                        if(STREAMER.coin >= cost) {
-                                            let button = $('.rewards-list')?.getElementByText(title)?.closest('.reward-list-item')?.querySelector('button');
+                                        if(STREAMER.coin < cost)
+                                            return;
 
-                                            if(nullish(button))
-                                                break purchasing;
+                                        // Purchase and remove
+                                        await until(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
+                                            .then(async button => {
+                                                button.click();
 
-                                            // Purchase and remove
-                                            await until(() => $('#tt-auto-claim-reward-handler button'))
-                                                .then(handler => {
-                                                    handler.click();
-                                                    button.click();
-                                                })
-                                                .then(async() => {
-                                                    if(!needsInput) {
-                                                        await until(() => $('.rewards-center-body button'))
-                                                            .then(button => button.click());
-                                                    } else {
-                                                        // The input will automatically gain focus...
-                                                    }
-                                                });
-                                        }
+                                                await until(() => $('.reward-center-body button'))
+                                                    .then(button => button.click());
+                                            })
+                                            .finally(() => {
+                                                AutoClaimRewards[sole] = AutoClaimRewards[sole].join(',').replace(id, '').split(',').filter(s => s.length);
+                                            });
 
                                         return button;
                                     })
-                                    .finally(button => button?.click())
+                                    .finally(button => {
+                                        button?.click();
+
+                                        SaveCache({ AutoClaimRewards });
+                                    });
                             });
         });
     };
@@ -6294,8 +6293,8 @@ let Initialize = async(START_OVER = false) => {
                     AutoClaimRewards ??= {};
 
                     rewards.map(async reward => {
-                        let $image = $('img', false, reward).src,
-                            $cost = parseCoin($('[data-test-selector="cost"i]', false, reward).textContent),
+                        let $image = $('img', false, reward)?.src,
+                            $cost = parseCoin($('[data-test-selector="cost"i]', false, reward)?.textContent),
                             $title = ($('button ~ * [title]', false, reward)?.textContent || '').trim();
 
                         let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
@@ -6305,6 +6304,8 @@ let Initialize = async(START_OVER = false) => {
                             )
                         );
 
+                        // Variable animataion speed depending on "completion" percentage
+                        $('[data-test-selector="cost"i]', false, reward).setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
                         reward.setAttribute('tt-wallet', (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id));
                     });
                 });
@@ -6321,8 +6322,8 @@ let Initialize = async(START_OVER = false) => {
                 let [head, body] = container.closest('.reward-center__content').children,
                     $title = ($('#channel-points-reward-center-header', false, head)?.textContent || '').trim(),
                     $prompt = ($('.reward-center-body p', false, body)?.textContent || '').trim(),
-                    $image = $('.reward-icon img', false, body).src,
-                    [$cost] = $('[state]', false, body).innerText.split(/\s/).map(parseCoin).filter(n => n > 0);
+                    $image = $('.reward-icon img', false, body)?.src,
+                    [$cost] = $('[state]', false, body)?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0);
 
                 let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
                     (false
@@ -8857,7 +8858,7 @@ let Initialize = async(START_OVER = false) => {
             let frame = (null
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
-                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ (STREAMER.name == name) }`,
+                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ (STREAMER.name == name) }&allow=greedy_raiding`,
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 })
@@ -10024,7 +10025,7 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('point_watcher_placement', 30_000);
 
         // Remove the old face and values...
-        $('.tt-point-amount, .tt-point-face', true).map(element => element?.remove());
+        // $('.tt-point-amount, .tt-point-face', true).map(element => element?.remove());
 
         let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip),
             footer = footers[footers.length - 1],
@@ -10060,22 +10061,28 @@ let Initialize = async(START_OVER = false) => {
                 0
             );
 
-            let text = furnish('span.tt-point-amount', {
-                    'tt-earned-all': notEarned == 0,
-                    innerHTML: amount,
-                }),
-                icon = face?.length?
+            let amounter = $('.tt-point-amount', false, target);
+            if(defined(amounter)) {
+                amounter.setAttribute('tt-earned-all', notEarned == 0);
+                amounter.innerHTML = amount;
+            } else {
+                let text = furnish('span.tt-point-amount', {
+                        'tt-earned-all': notEarned == 0,
+                        innerHTML: amount,
+                    }),
+                    icon = face?.length?
+                        furnish('span.tt-point-face', {
+                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
+                        }):
                     furnish('span.tt-point-face', {
-                        innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
-                    }):
-                furnish('span.tt-point-face', {
-                    innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
-                });
+                        innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
+                    });
 
-            target.append(icon);
-            target.append(text);
+                target.append(icon);
+                target.append(text);
 
-            target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
+                target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
+            }
         });
 
         JUDGE__STOP_WATCH('point_watcher_placement', 2_700);
@@ -10131,11 +10138,11 @@ let Initialize = async(START_OVER = false) => {
                                         global: 0,
                                         user: 0,
                                     },
+                                    needsInput: false,
                                     paused: false,
                                     premium: false,
                                     prompt: "",
                                     skips: false,
-                                    strict: false,
                                     updated: (new Date).toJSON(),
                                 });
                             }
@@ -11018,6 +11025,102 @@ let Initialize = async(START_OVER = false) => {
         });
     }, 1000);
 
+    /*** Private Viewing - NOT A SETTING. Create a "private viewing" button for live, searched streams
+     *      _____      _            _        __      ___               _
+     *     |  __ \    (_)          | |       \ \    / (_)             (_)
+     *     | |__) | __ ___   ____ _| |_ ___   \ \  / / _  _____      ___ _ __   __ _
+     *     |  ___/ '__| \ \ / / _` | __/ _ \   \ \/ / | |/ _ \ \ /\ / / | '_ \ / _` |
+     *     | |   | |  | |\ V / (_| | ||  __/    \  /  | |  __/\ V  V /| | | | | (_| |
+     *     |_|   |_|  |_| \_/ \__,_|\__\___|     \/   |_|\___| \_/\_/ |_|_| |_|\__, |
+     *                                                                          __/ |
+     *                                                                         |___/
+     */
+    setInterval(() => {
+        $('.search-tray [role="cell"i] [data-a-target="nav-search-item"i]', true)
+            .map(element => {
+                let [thumbnail, searchTerm] = element.children;
+                let image = $('img', false, thumbnail)?.src,
+                    name = searchTerm.textContent.trim(),
+                    live = defined($('[data-test-selector="live-badge"i]', false, element));
+
+                if(!live)
+                    return;
+
+                let f = furnish;
+                let button = $('[tt-pip]', false, element.closest('[role]'));
+
+                if(defined(button))
+                    return;
+
+                let anchor = element.closest('[href]'),
+                    mods = { height: 20, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' };
+
+                anchor.setAttribute('style', 'display:inline-block;width:calc(100% - 5rem)');
+                anchor.insertAdjacentElement('afterend', f(`button[tt-pip]`, {
+                    name, live, image,
+
+                    onmousedown({ currentTarget }) {
+                        let name = currentTarget.getAttribute('name'),
+                            src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=160p&private=true`;
+
+                        let pbyp = $('.picture-by-picture-player video'),
+                            pip = $('#tt-pip-player');
+
+                        $('#tt-exit-pip')?.remove();
+                        $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed');
+
+                        if(nullish(pbyp))
+                            $('.stream-chat').insertAdjacentElement('beforebegin',
+                                f('.picture-by-picture-player--background[data-test-selector=picture-by-picture-player-background]', {},
+                                    f('.picture-by-picture-player.picture-by-picture-player--collapsed[data-test-selector=picture-by-picture-player-container]', {},
+                                        f('.tw-aspect', {},
+                                            f.div(),
+                                            f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
+                                                pbyp = f('video[webkit-playsinline][playsinline]', {
+                                                    oncontextmenu: () => false,
+                                                })
+                                            )
+                                        )
+                                    )
+                                )
+                            );
+
+                        if(defined(pip))
+                            pip.src = src;
+                        else
+                            pip = f('iframe#tt-pip-player', {
+                                src,
+
+                                style: 'height:-webkit-fill-available;width:-webkit-fill-available',
+                            });
+
+                        pip.remove();
+                        pbyp.insertAdjacentElement('afterend', pip);
+
+                        $('.stream-chat-header').insertAdjacentElement('afterbegin',
+                            f('button#tt-exit-pip', {
+                                style: 'position:absolute;left:0;margin-left:1rem;',
+
+                                onmousedown(event) {
+                                    $('#tt-exit-pip').modAttribute('style', 'transition:opacity .5s;opacity:0;');
+                                    $('.picture-by-picture-player')?.classList?.add('picture-by-picture-player--collapsed');
+
+                                    wait(500).then(() => {
+                                        $('#tt-exit-pip')?.remove();
+                                        $('.picture-by-picture-player iframe[src*="player.twitch.tv"i]')?.remove();
+                                    });
+                                },
+
+                                innerHTML: Glyphs.modify('exit_picture_in_picture', { height: 15, width: 20 }),
+                            })
+                        );
+                    },
+
+                    innerHTML: Glyphs.modify('picture_in_picture', mods),
+                }));
+            });
+    }, 300);
+
     /*** Recover Chat
      *      _____                                 _____ _           _
      *     |  __ \                               / ____| |         | |
@@ -11074,15 +11177,15 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.recover_pages)) {
         RegisterJob('recover_pages');
 
-        RECOVER_PAGE_FROM_LAG__EXACT = performance.now();
+        RECOVER_PAGE_FROM_LAG__EXACT = +(new Date);
 
         RECOVER_PAGE_FROM_LAG = setInterval(() => {
-            let now = performance.now(),
+            let now = +(new Date),
                 span = (now - RECOVER_PAGE_FROM_LAG__EXACT);
 
             // The time has drifted by more than 25%
             if(span > (Timers.recover_pages * 1.25))
-                WARN(`The page seems to be lagging... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
+                WARN(`The page seems to be lagging... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS, '') } warning. Offending site: ${ location.href }`);
             else if(span < (Timers.recover_pages * 1.05) && RECOVER_PAGE_FROM_LAG__WARNINGS > 0)
                 --RECOVER_PAGE_FROM_LAG__WARNINGS;
 
@@ -11236,10 +11339,10 @@ let Initialize = async(START_OVER = false) => {
                     help.append(
                         f('tr.tw-table-row.tt-extra-keyboard-shortcuts', {},
                             f('td.tw-tabel-cell', {},
-                                f.p( name)
+                                f.p(name)
                             ),
                             f('td.tw-table-cell', {},
-                                f.span( macro)
+                                f.span(macro)
                             )
                         )
                     );
@@ -11262,7 +11365,7 @@ let Initialize = async(START_OVER = false) => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     recorder = video.getRecording(EVENT_NAME);
 
-                element.innerHTML = toTimeString((+new Date) - recorder?.creationTime, 'clock');
+                element.closest('[icon]').setAttribute('icon', element.innerHTML = toTimeString((+new Date) - recorder?.creationTime, 'clock'));
             });
 
         // Gets the clip's dimensions
@@ -11554,7 +11657,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     // TTV Tools has the max Timer amount to initilize correctly...
                     let REINIT_JOBS =
                     setTimeout(() => {
-                        let NOT_LOADED_CORRECTLY = [null],
+                        let NOT_LOADED_CORRECTLY = [],
                             ALL_LOADED_CORRECTLY = (true
                                 // Lurking
                                 &&  parseBool(
@@ -12150,12 +12253,18 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
             [class*="theme"i][class*="dark"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-light) !important }
-            [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-light) }
-            [class*="theme"i][class*="dark"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-light) }
+            [class*="theme"i][class*="dark"i] [role="dialog"i] [tt-earned-all="true"i], [class*="theme"i][class*="dark"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] {
+                animation: 2s linear infinite spinning-border;
+                border-bottom: 2px solid;
+                border-image: conic-gradient(from var(--angle), red, orange, yellow, green, blue, indigo, violet, violet, indigo, blue, green, yellow, orange, red) 1;
+            }
 
             [class*="theme"i][class*="light"i] [tt-in-up-next="true"i] { border: 1px solid var(--channel-color-dark) !important }
-            [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i] { text-decoration: underline 2px var(--channel-color-dark) }
-            [class*="theme"i][class*="light"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] { text-decoration: underline 3px var(--channel-color-dark) }
+            [class*="theme"i][class*="light"i] [role="dialog"i] [tt-earned-all="true"i], [class*="theme"i][class*="light"i] [data-test-selector="balance-string"i][tt-earned-all="true"i] {
+                animation: 2s conic infinite spinning-border;
+                border-bottom: 2px solid;
+                border-image: conic-gradient(from var(--angle), red, orange, yellow, green, blue, indigo, violet, violet, indigo, blue, green, yellow, orange, red) 1;
+            }
 
             /* Change Up Next font color */
             [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }

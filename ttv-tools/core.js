@@ -387,10 +387,7 @@ function $(selector, multiple = false, container = document) {
 
 Object.defineProperties($, {
     html: {
-        value: {
-            getElementByText: Element.prototype.getElementByText.bind(document.documentElement),
-            getElementsByInnerText: Element.prototype.getElementsByInnerText.bind(document.documentElement),
-        },
+        value: document.documentElement,
 
         writable: false,
         enumerable: false,
@@ -398,10 +395,7 @@ Object.defineProperties($, {
     },
 
     head: {
-        value: {
-            getElementByText: Element.prototype.getElementByText.bind(document.head),
-            getElementsByInnerText: Element.prototype.getElementsByInnerText.bind(document.head),
-        },
+        value: document.head,
 
         writable: false,
         enumerable: false,
@@ -409,10 +403,7 @@ Object.defineProperties($, {
     },
 
     body: {
-        value: {
-            getElementByText: Element.prototype.getElementByText.bind(document.body),
-            getElementsByInnerText: Element.prototype.getElementsByInnerText.bind(document.body),
-        },
+        value: document.body,
 
         writable: false,
         enumerable: false,

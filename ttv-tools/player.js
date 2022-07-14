@@ -188,7 +188,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 let blob = new Blob(chunks, { type: chunks.type });
                 let link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ top.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
 
-                document.head.append(link);
+                $.head.append(link);
                 link.click();
             })
             .catch(WARN)
@@ -236,6 +236,20 @@ let Player__Initialize = async(START_OVER = false) => {
 // End of Player__Initialize
 
 let Player__Initialize_Safe_Mode = async(START_OVER = false) => {
+    /*** Miscellaneous
+     *      __  __ _              _ _
+     *     |  \/  (_)            | | |
+     *     | \  / |_ ___  ___ ___| | | __ _ _ __   ___  ___  _   _ ___
+     *     | |\/| | / __|/ __/ _ \ | |/ _` | '_ \ / _ \/ _ \| | | / __|
+     *     | |  | | \__ \ (_|  __/ | | (_| | | | |  __/ (_) | |_| \__ \
+     *     |_|  |_|_|___/\___\___|_|_|\__,_|_| |_|\___|\___/ \__,_|___/
+     *
+     *
+     */
+    Miscellaneous: {
+        // ...
+    }
+
     // End of Player__Initialize_Safe_Mode
 };
 // End of Player__Initialize_Safe_Mode

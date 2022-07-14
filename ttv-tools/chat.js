@@ -372,6 +372,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         BTTV_LOADED_INDEX = 0,
         BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30),
         NON_EMOTE_PHRASES = new Set,
+        QUEUED_EMOTES = new Set,
         CONVERT_TO_BTTV_EMOTE = (emote, makeTooltip = true) => {
             let { name, src } = emote,
                 existing = $(`img.bttv[alt="${ name }"i]`);
@@ -437,6 +438,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                     // emote.id → emote ID (src)
             if((keyword || '').trim().length < 1)
                 return;
+
+            if(QUEUED_EMOTES.has(keyword) || NON_EMOTE_PHRASES.has(keyword))
+                return BTTV_EMOTES.get(keyword);
+            QUEUED_EMOTES.add(keyword);
 
             // Load emotes from a certain user
             if(defined(provider))
@@ -517,7 +522,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let { bttvEmote } = emote.dataset,
                         tooltip = new Tooltip(emote, bttvEmote);
 
-                    emote.addEventListener('mousedown', async event => {
+                    emote.addEventListener('mouseup', async event => {
                         let { currentTarget, isTrusted = false } = event,
                             { bttvEmote, bttvOwner, bttvOwnerId } = currentTarget.dataset,
                             { top } = getOffset(currentTarget),
@@ -529,7 +534,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         top -= 150;
 
-                        let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: false, cancelable: false, view: window })), 1000);
+                        let redoSearch = !isTrusted? -1: setTimeout(() => currentTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: false, cancelable: false, view: window })), 5000);
                         let resultCard = new Card.deferred({ top });
 
                         // Raw Search...
@@ -722,7 +727,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
                         if(parseBool(Settings.auto_load_bttv_emotes))
                             for(let word of line.message.split(/\s+/))
-                                if(!NON_EMOTE_PHRASES.has(word) && !BTTV_EMOTES.has(word) && word.length > 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
+                                if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !BTTV_EMOTES.has(word) && word.length > 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
                                     await LOAD_BTTV_EMOTES(word, null, true);
 
                         for(let [name, src] of BTTV_EMOTES)
@@ -1904,16 +1909,31 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     message = message.slice(index + match.length);
 
-                    href = href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim();
+                    let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
+                        [topDom, secDom, ...subDom] = url.domainPath;
+
+                    // Ignore pre-cardified links
+                    if(subDom.contains('clips'))
+                        continue;
+
+                    // Mobilize laggy URLs
+                    if('instagram twitter'.contains(secDom.toLowerCase()))
+                        topDom = 'mobile';
+
+                    href = url.href.replace(url.hostname, [...subDom, secDom, topDom].join('.'));
 
                     if(CHAT_CARDIFIED.has(href)) {
-                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, false, element)))
-                            element.insertAdjacentElement('beforeend', CHAT_CARDIFIED.get(href));
+                        let card = CHAT_CARDIFIED.get(href);
+
+                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, false, element)) && defined(card))
+                            element.insertAdjacentElement('beforeend', card);
 
                         continue cardifying;
                     }
 
-                    await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
+                    CHAT_CARDIFIED.set(href, null);
+
+                    /*await*/ fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
                         .then(response => response.text())
                         .then(html => {
                             html = html
@@ -3348,6 +3368,25 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 break ChatObserver;
 
             observer.observe(chat, { childList: true });
+        }
+
+        // Override variables
+        Overrides: {
+            window.ALLOWED_JOBS ??= (parseURL(window.location).searchParameters?.allow || '').split(',');
+
+            // Registers a job
+                // @override RegisterJob(JobName:string) → Number<IntervalID>
+            window.RegisterJob = function RegisterJob(JobName, JobReason = 'default') {
+                RegisterJob.__reason__ = JobReason;
+
+                // Prevent disallowed jobs...
+                if(ALLOWED_JOBS.length && ALLOWED_JOBS.missing(JobName))
+                    return;
+
+                return Jobs[JobName] ??= Timers[JobName] > 0?
+                    setInterval(Handlers[JobName], Timers[JobName]):
+                -setTimeout(Handlers[JobName], -Timers[JobName]);
+            }
         }
     }
 

@@ -31,10 +31,20 @@
     * Tentative fix `5.8`
 13. Live Reminders might re-add all live channels?
 14. Get `redo:boolean` from URL and control First in Line accordingly (commented-out)
+15. The page will freeze when loading either an Instagram or Twitter card
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.19)
+- Increased visibility of bordered/underlined text
+- Fixed issue where some rewards could not be "walleted"
+- Fixed issue with `furnish` not parsing multiple attributes
+- Added Private Viewing (on by default)
+- Fixed issue for auto-purchasing
+- Modified BTTV emote loading logic
+- Added some optimizations
+
 > [`5.18`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.18)
 - Modified `parseURL.pattern`
 - Modified Card laying logic
