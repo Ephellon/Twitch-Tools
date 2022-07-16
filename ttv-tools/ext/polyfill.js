@@ -1260,9 +1260,11 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 // Records a video element
     // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
 HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = {}) {
-    let key = UUID.from(options?.key ?? 'DEFAULT_RECORDER').value;
+    let key = UUID.from(options?.key ?? 'DEFAULT_RECORDER').value,
+        { private = false } = options;
 
-    delete options.key;
+    for(let key of ['key', 'private'])
+        delete options[key];
 
     this.recorders ??= {};
 
@@ -1271,8 +1273,9 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
 
     let STREAM = this.captureStream(),
         RECORDER = this.recorders[key] = new MediaRecorder(STREAM, options),
-        DATA = (this.__Recording__ ??= []);
+        DATA = (this.__Recording__ = []);
 
+    let configurable = false, writable = false, enumerable = false;
     Object.defineProperties(RECORDER, {
         data: {
             get() {
@@ -1285,7 +1288,8 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
         },
 
         slice: { value: DATA.length },
-        creationTime: { value: +new Date },
+        private: { value: private, configurable, writable },
+        creationTime: { value: +new Date, configurable, writable },
     });
 
     RECORDER.ondataavailable = event => {
@@ -1293,9 +1297,9 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
 
         this.__Recording__.push(event.data);
     };
-    RECORDER.start(1000);
+    RECORDER.start(10);
 
-    this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', true);
+    this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', !private);
 
     let halt = new Promise((resolve, reject) => {
         RECORDER.onstop = resolve;

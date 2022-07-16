@@ -1888,7 +1888,8 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     let LINK_MAKER_ENABLED,
-        CHAT_CARDIFIED = new Map;
+        CHAT_CARDIFIED = new Map,
+        CHAT_CARDIFYING_TIMERS = new Map;
 
     Handlers.link_maker__chat = () => {
         (GetChat.onnewmessage = async excerpt => {
@@ -1918,7 +1919,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     // Mobilize laggy URLs
                     if('instagram twitter'.contains(secDom.toLowerCase()))
-                        topDom = 'mobile';
+                        continue; // subDom = ['mobile'];
 
                     href = url.href.replace(url.hostname, [...subDom, secDom, topDom].join('.'));
 
@@ -1932,6 +1933,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     }
 
                     CHAT_CARDIFIED.set(href, null);
+                    CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
                     /*await*/ fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
                         .then(response => response.text())
@@ -2013,7 +2015,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             let [title, description, image] = ["title", "description", "image"].map(get),
                                 error = DOM.querySelector('parsererror')?.textContent;
 
-                            LOG(`Loaded page ${ href }`, { title, description, image, DOM });
+                            LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: toTimeString(+new Date - CHAT_CARDIFYING_TIMERS.get(href)) });
 
                             if(!title?.length || !image?.length) {
                                 CHAT_CARDIFIED.set(href, f.span());

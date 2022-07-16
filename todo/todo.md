@@ -31,11 +31,16 @@
     * Tentative fix `5.8`
 13. Live Reminders might re-add all live channels?
 14. Get `redo:boolean` from URL and control First in Line accordingly (commented-out)
-15. The page will freeze when loading either an Instagram or Twitter card
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.20)
+- Fixed issue mobilizing URLs (now ignores those URLs)
+- Added logic to set the video's quality according to its height
+- Modified recording logic to be smoother
+- Fixed issue where all recordings would merge
+
 > [`5.19`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.19)
 - Increased visibility of bordered/underlined text
 - Fixed issue where some rewards could not be "walleted"

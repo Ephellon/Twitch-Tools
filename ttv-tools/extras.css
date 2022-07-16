@@ -818,9 +818,12 @@ caption {
 }
 
 [up-next--container] button[allowed="true"i][speeding="true"i] {
-    animation: up-next-speeding 1s alternate infinite;
+    box-sizing: content-box;
 
-    border: 1px solid var(--color-yellow);
+    border: 1px solid;
+    border-image: conic-gradient(from var(--angle), #0000, var(--color-yellow)) 1;
+
+    animation: 2s linear infinite spinning-border;
 }
 
 @keyframes up-next-speeding {

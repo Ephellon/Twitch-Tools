@@ -5868,7 +5868,6 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(button)) {
             let sibling, parent, before,
                 extra = () => {},
-                container = furnish(),
                 placement = (Settings.away_mode_placement ??= "null");
 
             switch(placement) {
@@ -5907,8 +5906,10 @@ let Initialize = async(START_OVER = false) => {
             if(nullish(parent) || nullish(sibling))
                 return JUDGE__STOP_WATCH('away_mode') /* || WARN('Unable to create the Lurking button') */;
 
-            container.innerHTML = sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1');
-            container.id = 'away-mode';
+            let container = furnish('#away-mode', {
+                innerHTML: sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1'),
+            });
+
             // TODO: Add an animation for the Away Mode button appearing?
             // container.setAttribute('style', 'animation:1s fade-in-from-zero 1;');
 
@@ -5992,7 +5993,32 @@ let Initialize = async(START_OVER = false) => {
             // Return control when Lurking is engaged
             MAINTAIN_VOLUME_CONTROL = true;
 
-            await SetQuality(['auto','low'][+enabled])
+            // Sets the size according to the video's physical size
+            let size = getOffset($('video')).height.floorToNearest(100);
+
+            switch(size) {
+                case 0:
+                case 100:
+                    { size = '160p' } break;
+
+                case 200:
+                case 300:
+                    { size = '360p' } break;
+
+                case 400:
+                case 500:
+                    { size = '480p' } break;
+
+                case 600:
+                case 700:
+                case 800:
+                    { size = '720p' } break;
+
+                default:
+                    { size = 'auto' } break;
+            }
+
+            await SetQuality([size,'low'][+enabled])
                 .then(() => {
                     if(parseBool(Settings.away_mode__volume_control))
                         SetVolume([InitialVolume, Settings.away_mode__volume][+enabled]);
@@ -10536,7 +10562,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 delete DVRChannels[DVR_ID];
 
-                                MASTER_VIDEO.cancelRecording().stopRecording();
+                                MASTER_VIDEO.cancelRecording().stopRecording().removeRecording();
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
@@ -10683,7 +10709,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
-                                    MASTER_VIDEO.stopRecording();
+                                    MASTER_VIDEO.stopRecording().removeRecording();
                                 };
                             });
                 }
@@ -11061,7 +11087,7 @@ let Initialize = async(START_OVER = false) => {
 
                     onmousedown({ currentTarget }) {
                         let name = currentTarget.getAttribute('name'),
-                            src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=160p&private=true`;
+                            src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=360p&private=true`;
 
                         let pbyp = $('.picture-by-picture-player video'),
                             pip = $('#tt-pip-player');
