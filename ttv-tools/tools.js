@@ -2462,13 +2462,14 @@ async function GetQuality() {
     let source = current.uuid == qualities.find(({ label }) => /source/i.test(textOf(label)))?.uuid,
         auto   = current.uuid == qualities.find(({ label }) => /auto/i.test(textOf(label)))?.uuid,
         high   = current.uuid == qualities.find(({ label }) => !/auto|source/i.test(textOf(label)))?.uuid,
-        low    = current.uuid == qualities[qualities.length - 1]?.uuid;
+        low    = current.uuid == qualities[qualities.length - 1]?.uuid,
+        lock   = { configurable: false, enumerable: true, writable: false };
 
     Object.defineProperties(quality, {
-        auto:   { value: auto },
-        high:   { value: high },
-        low:    { value: low },
-        source: { value: source },
+        auto:   { value: auto, ...lock },
+        high:   { value: high, ...lock },
+        low:    { value: low, ...lock },
+        source: { value: source, ...lock },
     });
 
     if(defined(buttons.options))
@@ -2549,8 +2550,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
     return new Promise((resolve, reject) => {
         let checker = setInterval(() => {
-            isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
-            video = $('video', true)[+isAdvert],
+            video = $('video', true).pop(),
             computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
@@ -3508,26 +3508,28 @@ try {
                     let time = VideoClips.length,
                         video = $('video', true).pop();
 
-                    video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME });
+                    SetQuality('auto').then(() => {
+                        video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME });
 
-                    alert.timed(`Recording ${ STREAMER.name }...`, time)
-                        .then(() => {
-                            let video = $('video', true).pop(),
-                                chunks = (video?.getRecording(EVENT_NAME)?.data ?? []);
+                        alert.timed(`Recording ${ STREAMER.name }...`, time)
+                            .then(() => {
+                                let video = $('video', true).pop(),
+                                    chunks = (video?.getRecording(EVENT_NAME)?.data ?? []);
 
-                            if(chunks.length < 1)
-                                throw `Unable to save clip. No recording data available.`;
+                                if(chunks.length < 1)
+                                    throw `Unable to save clip. No recording data available.`;
 
-                            let name = new ClipName;
-                            let blob = new Blob(chunks, { type: chunks.type });
-                            let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(video.mimeType) }` }, name);
+                                let name = new ClipName;
+                                let blob = new Blob(chunks, { type: chunks.type });
+                                let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(video.mimeType) }` }, name);
 
-                            video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
+                                video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
 
-                            return link;
-                        })
-                        .then(link => alert.silent(`Clip available! ${ link.outerHTML }`))
-                        .catch(alert.silent);
+                                return link;
+                            })
+                            .then(link => alert.silent(`Clip available! ${ link.outerHTML }`))
+                            .catch(alert.silent);
+                    });
                 },
             });
         }
@@ -5624,8 +5626,7 @@ let Initialize = async(START_OVER = false) => {
             CAPTURE_HISTORY.shift();
 
         CAPTURE_INTERVAL = setInterval(() => {
-            let isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
-                video = $('video', true)[+isAdvert];
+            let video = $('video', true).pop();
 
             if(nullish(video))
                 return;
@@ -6373,7 +6374,7 @@ let Initialize = async(START_OVER = false) => {
                                     style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(container).width.ceil() }px!important`,
 
                                     async onmouseup({ currentTarget }) {
-                                        let rewardID = currentTarget.closest('[data-tt-reward-id]').dataset.ttRewardId;
+                                        let rewardID = currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
                                         let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
 
                                         if(nullish(item))
@@ -10835,20 +10836,16 @@ let Initialize = async(START_OVER = false) => {
                             width: '100%',
 
                             onload: event => {
-                                let hasVideo = element => defined(element) && /(video)/i.test(element.tagName);
-
                                 until(() => {
-                                    let doc = $('#video')?.contentDocument;
+                                    let doc = $('#tt-embedded-video')?.contentDocument;
 
                                     if(nullish(doc))
                                         return /* No document */;
 
-                                    let loadedVideo = hasVideo($('video', false, doc));
-
-                                    if(!loadedVideo)
-                                        return /* No video */;
-
                                     let video = $('video', false, doc);
+
+                                    if(nullish(video))
+                                        return /* No video */;
 
                                     if((video.currentTime || 0) <= 0)
                                         return /* Video not loading */;
@@ -10866,9 +10863,7 @@ let Initialize = async(START_OVER = false) => {
                 } else {
                     WARN(`Attempting to pause/play the video`);
 
-                    let state = $('button[data-a-player-state]')?.getAttribute('data-a-player-state')?.toLowerCase?.();
-
-                    if(state == "playing") {
+                    if($('button[data-a-player-state]')?.dataset?.aPlayerState?.equals('playing')) {
                         $('button[data-a-player-state]').click();
 
                         wait(1000).then(() => $('button[data-a-player-state]').click());
@@ -10956,8 +10951,8 @@ let Initialize = async(START_OVER = false) => {
             ERROR(error);
 
             let control = $('button[data-a-player-state]'),
-                playing = control.getAttribute('data-a-player-state') !== 'paused',
-                attempts = parseInt(control.getAttribute('attempts')) | 0;
+                playing = control.dataset?.aPlayerState?.equals('playing'),
+                attempts = control.dataset?.recoveryAttempts | 0;
 
             if(nullish(control)) {
                 WARN("No video controls presented.");
@@ -10978,13 +10973,13 @@ let Initialize = async(START_OVER = false) => {
                 control.click();
             }
 
-            control.setAttribute('attempts', ++attempts);
+            control.dataset.recoveryAttempts = ++attempts;
 
             setTimeout(() => {
                 let control = $('button[data-a-player-state]'),
-                    attempts = parseInt(control.getAttribute('attempts')) | 0;
+                    attempts = control.dataset?.recoveryAttempts | 0;
 
-                control.setAttribute('attempts', --attempts);
+                control.dataset.recoveryAttempts = --attempts;
             }, 5000);
         }
 
@@ -11030,7 +11025,7 @@ let Initialize = async(START_OVER = false) => {
 
         errorMessage = errorMessage.textContent;
 
-        if(/subscribe|mature/i.test(errorMessage)) {
+        if(/\b(subscribe|mature)\b/i.test(errorMessage)) {
             let next = await GetNextStreamer();
 
             // Subscriber only, etc.
@@ -11286,7 +11281,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let body = `<div hidden controller
                         icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
-                        placeholder="${ __ClipName__ }"
+                        placeholder="${ DEFAULT_CLIP_NAME }"
                         pattern="${
                             GetOS('Windows')?
                                 '^(?!(^|PRN|AUX|CLOCK\\$|NUL|CON|(COM|LPT)[1-9])(\\..*)?$)[^\\x00-\\x1f\\\\?*:\\x22;|\\/]+$':
@@ -11304,7 +11299,7 @@ let Initialize = async(START_OVER = false) => {
                             <tbody>
                                 <tr>
                                     <td>Slug</td>
-                                    <td><code>${ __ClipName__ }</code></td>
+                                    <td><code>${ DEFAULT_CLIP_NAME }</code></td>
                                 </tr>
                                 <tr>
                                     <td>Length</td>
@@ -11344,7 +11339,7 @@ let Initialize = async(START_OVER = false) => {
                             .then(chunks => {
                                 let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
                                     halt = parseBool(feed?.getAttribute('halt')),
-                                    name = (feed?.getAttribute('value') || __ClipName__);
+                                    name = (feed?.getAttribute('value') || DEFAULT_CLIP_NAME);
 
                                 if(halt)
                                     return;
@@ -11363,7 +11358,7 @@ let Initialize = async(START_OVER = false) => {
                                 alert.timed(error, 7000);
                             })
                             .finally(href => {
-                                __ClipName__ = new ClipName;
+                                DEFAULT_CLIP_NAME = new ClipName;
 
                                 video.removeRecording(EVENT_NAME);
 
@@ -11411,8 +11406,8 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('extra_keyboard_shortcuts');
     }
 
-    let __ClipName__ = new ClipName;
-    let __ClipTimer__ = setInterval(() => {
+    let DEFAULT_CLIP_NAME = new ClipName;
+    let GLOBAL_CLIP_HANDLER = setInterval(() => {
         let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
 
         // Maintains a timer of the clip
@@ -11639,7 +11634,8 @@ let Initialize = async(START_OVER = false) => {
 let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE,
-    VIDEO_AD_COUNTDOWN;
+    VIDEO_AD_COUNTDOWN,
+    NORMALIZED_AD = false;
 
 Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
     let isProperRuntime = Manifest.version === version;
@@ -11653,7 +11649,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             (Settings = await GetSettings())[UUID.from(top.location).value] = true;
 
         // Set the ad volume, if applicable
-        SetVolume(Settings.away_mode__volume);
+        if(!NORMALIZED_AD) {
+            NORMALIZED_AD = true;
+
+            SetVolume(Settings.away_mode__volume);
+        }
 
         let ready = (true
             // There is a valid username
@@ -12494,7 +12494,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
         // Alerts for users
         LoadCache('ReadNews', async({ ReadNews }) => {
-            let TTVToolsNewsURL = 'https://github.com/Ephellon/Twitch-Tools/wiki/News',
+            let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
                 TTVToolsNewsArticles = ReadNews || [];
 
             await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(TTVToolsNewsURL)}`, { mode: 'cors' })
@@ -12533,10 +12533,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         .filter(defined);
 
                     if(articles.length)
-                        confirm.silent([
-                            `<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div>`,
-                            ...articles
-                        ].join(''))
+                        confirm.silent(`<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div> ${ articles.join('<br>') }`)
                         .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
                 });
         });

@@ -256,12 +256,14 @@ function furnish(tagname = 'div', attributes = null, ...children) {
         }
     }
 
-    Object.entries(attributes).forEach(
+    Object.entries(attributes)
+        .filter(([name, value]) => name?.length)
+        .forEach(
         ([name, value]) => (/^(@|data-|on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
             (/^on/.test(name))?
                 element.addEventListener(name.replace(/^on/, ''), value):
             (/^(@|data-)/.test(name))?
-                element.dataset[name.replace('@', '').replace(/-(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())] = value:
+                element.dataset[name.replace(/^(@|data-)/, '').replace(/-(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())] = value:
             element[name] = value:
         element.setAttribute(name, value)
     );
@@ -2728,7 +2730,7 @@ function alert(message = '') {
 
     let container =
     f('div.tt-alert', { uuid: UUID.from(message).value },
-        f('div.tt-alert-container', {},
+        f('div.tt-alert-container', { ['icon'.repeat(+!!icon.length)]: icon },
             f('div.tt-alert-header', { innerHTML: title }),
             f('div.tt-alert-body', { innerHTML: message }),
             f('div.tt-alert-footer', {},
@@ -2927,7 +2929,7 @@ function confirm(message = '') {
 
     let container =
     f('div.tt-confirm', { uuid: UUID.from(message).value },
-        f('div.tt-confirm-container', {},
+        f('div.tt-confirm-container', { ['icon'.repeat(+!!icon.length)]: icon },
             f('div.tt-confirm-header', { innerHTML: title }),
             f('div.tt-confirm-body', { innerHTML: message }),
             f('div.tt-confirm-footer', {},

@@ -30,11 +30,16 @@
 12. Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `5.8`
 13. Live Reminders might re-add all live channels?
-14. Get `redo:boolean` from URL and control First in Line accordingly (commented-out)
+14. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.22`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.22)
+- Fixed issue with Recover Frames
+- Modified Stream Recording logic
+- Fixed issue with `furnish`
+
 > [`5.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.21)
 - Fixed issue with BTTV emote display
 - Fixed `STREAMER.done` logic
