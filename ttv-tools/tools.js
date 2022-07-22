@@ -115,11 +115,9 @@ class Balloon {
             f.div(
                 f('div.tt-relative', {},
                     // Navigation Icon
-                    N = f('div',
+                    N = f(`div[@test-selector=toggle-balloon-wrapper__mouse-enter-detector]`,
                         {
                             style: 'display:inherit',
-
-                            'data-test-selector': 'toggle-balloon-wrapper__mouse-enter-detector',
                         },
                         f('div.tt-inline-flex.tt-relative', {},
                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
@@ -151,9 +149,7 @@ class Balloon {
 
                                 // Notification counter
                                 F = f(`div#tt-notification-counter--${ U }.tt-absolute.tt-right-0.tt-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
-                                    f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in', {
-                                            'data-a-target': 'tt-animation-target'
-                                        },
+                                    f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in[@a-target=tt-animation-target]', {},
                                         f('div.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
                                             f(`div#tt-notification-counter-output--${ U }.tt-number-badge__badge.tt-relative`, {
                                                 'interval-id': setInterval(() => {
@@ -241,18 +237,15 @@ class Balloon {
                                                 {
                                                     style: 'overflow: hidden; width:100%;',
                                                 },
-                                                f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden',
-                                                    { 'data-test-selector': 'center-window__content' },
-                                                    f('div.persistent-notification.tt-relative',
+                                                f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]',
+                                                    {},
+                                                    f('div.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                                         {
                                                             style: 'width:100%',
-
-                                                            'data-test-selector': 'persistent-notification',
                                                         },
                                                         f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
-                                                            f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive',
+                                                            f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                                                 {
-                                                                    'data-test-selector': 'persistent-notification__click',
                                                                     'connected-to': `${ U }--${ guid }`,
                                                                     // Sometimes, Twitch likes to default to `_blank`
                                                                     'target': '_self',
@@ -283,10 +276,7 @@ class Balloon {
                                                                     ),
                                                                     // Message body
                                                                     f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                                        f('div.persistent-notification__body.tt-overflow-hidden',
-                                                                            {
-                                                                                'data-test-selector': 'persistent-notification__body'
-                                                                            },
+                                                                        f('div.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                                             f('span.tt-c-text-alt', {},
                                                                                 f('p.tt-balloon-message', { innerHTML: message })
                                                                             )
@@ -304,9 +294,8 @@ class Balloon {
                                                             // Repeat mini-button
                                                             // f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
                                                             //     f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
-                                                            //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                                            //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                             //             {
-                                                            //                 'data-test-selector': 'persistent-notification__delete',
                                                             //                 'connected-to': `${ U }--${ guid }`,
                                                             //
                                                             //                 onclick: event => {
@@ -334,9 +323,8 @@ class Balloon {
                                                             // Delete mini-button
                                                             f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                                                 f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
-                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                         {
-                                                                            'data-test-selector': 'persistent-notification__delete',
                                                                             'connected-to': `${ U }--${ guid }`,
 
                                                                             onclick: event => {
@@ -462,18 +450,14 @@ class Balloon {
                         {
                             style: 'overflow: hidden; width:100%;',
                         },
-                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden',
-                            { 'data-test-selector': 'center-window__content' },
-                            f('div.persistent-notification.tt-relative',
+                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
+                            f('div.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                 {
                                     style: 'width:100%',
-
-                                    'data-test-selector': 'persistent-notification',
                                 },
                                 f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
-                                    f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive',
+                                    f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                         {
-                                            'data-test-selector': 'persistent-notification__click',
                                             'connected-to': `${ uuid }--${ guid }`,
 
                                             href,
@@ -502,10 +486,7 @@ class Balloon {
                                             ),
                                             // Message body
                                             f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                f('div.persistent-notification__body.tt-overflow-hidden',
-                                                    {
-                                                        'data-test-selector': 'persistent-notification__body'
-                                                    },
+                                                f('div.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                     f('span.tt-c-text-alt', {},
                                                         f('p.tt-balloon-message', { innerHTML: message })
                                                     )
@@ -523,9 +504,8 @@ class Balloon {
                                     // Repeat mini-button
                                     // f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
                                     //     f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
-                                    //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                    //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                     //             {
-                                    //                 'data-test-selector': 'persistent-notification__delete',
                                     //                 'connected-to': `${ uuid }--${ guid }`,
                                     //
                                     //                 onclick: event => {
@@ -553,9 +533,8 @@ class Balloon {
                                     // Remove mini-button
                                     f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                         f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
-                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                 {
-                                                    'data-test-selector': 'persistent-notification__delete',
                                                     'connected-to': `${ uuid }--${ guid }`,
 
                                                     onclick: event => {
@@ -797,7 +776,7 @@ class Card {
         let f = furnish;
 
         let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-            card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable`, { style: styling, 'data-a-target': "viewer-card-positioner" }),
+            card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@a-target=viewer-card-positioner]`, { style: styling }),
             uuid = UUID.from([title, subtitle].join('\n')).value;
 
         icon ??= { src: Runtime.getURL('profile.png'), alt: 'Profile' };
@@ -808,33 +787,31 @@ class Card {
         [...container.children].forEach(child => child.remove());
 
         // Furnish the card
-        let iconElement = f('img.emote-card__big-emote.tt-image', { ...icon, 'data-test-selector': "big-emote" });
+        let iconElement = f('img.emote-card__big-emote.tt-image[@test-selector=big-emote]', { ...icon });
 
         card.append(
             f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
                 f('div.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
                     f('div.tt-inline-flex.viewer-card-drag-cancel', {},
-                        f('div.tt-inline.tt-relative.tt-tooltip__container', { 'data-a-target': "emote-name" },
+                        f('div.tt-inline.tt-relative.tt-tooltip__container[@a-target=emote-name]', {},
                             iconElement
                         )
                     ),
                     f('div.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1', {},
-                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong', { 'data-test-selector': "emote-code-header" }, title),
-                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6', { 'data-test-selector': "emote-type-copy" }, subtitle)
+                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong[@test-selector=emote-code-header]', {}, title),
+                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6[@test-selector=emote-type-copy]', {}, subtitle)
                     )
                 )
             ),
-            f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0',
+            f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@a-target=viewer-card-close-button]',
                 {
-                    'data-a-target': "viewer-card-close-button",
                     onmouseup: ({ button = -1 }) => {
                         !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                     },
                 },
                 f('div.tt-inline-flex.viewer-card-drag-cancel', {},
-                    f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button', {
+                    f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@test-selector=close-viewer-card]', {
                         'aria-label': "Hide",
-                        'data-test-selector': "close-viewer-card",
                     },
                         f('span.tt-button-icon__icon', {},
                             f('div[style="width: 2rem; height: 2rem;"]', {},
@@ -886,7 +863,7 @@ class Card {
                 ),
 
                 // "This useer has X emotes"
-                f('div', { 'data-a-test-selector': "emote-card-content-description", style: 'padding:0 1rem; margin-bottom: 1rem', innerHTML: description })
+                f('div[@a-test-selector=emote-card-content-description]', { style: 'padding:0 1rem; margin-bottom: 1rem', innerHTML: description })
             );
 
         card.classList.add('tt-c-background-base');
@@ -940,18 +917,16 @@ class Card {
             let f = furnish;
 
             let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-                card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable`, { style: styling, 'data-a-target': "viewer-card-positioner" },
-                    f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0',
+                card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@a-target=viewer-card-positioner]`, { style: styling },
+                    f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@a-target=viewer-card-close-button]',
                         {
-                            'data-a-target': "viewer-card-close-button",
                             onmouseup: ({ button = -1 }) => {
                                 !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                             },
                         },
                         f('div.tt-inline-flex.viewer-card-drag-cancel', {},
-                            f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button', {
+                            f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@test-selector=close-viewer-card]', {
                                 'aria-label': "Hide",
-                                'data-test-selector': "close-viewer-card",
                             },
                                 f('span.tt-button-icon__icon', {},
                                     f('div[style="width: 2rem; height: 2rem;"]', {},
@@ -2758,6 +2733,21 @@ async function GetLanguage() {
     });
 }
 
+// Reloads the webpage
+    // ReloadPage(onlineOnly:boolean?) → undefined
+function ReloadPage(onlineOnly = true) {
+    // Navigaotr is offline, do not reload
+    if(true
+        && onlineOnly
+        && (false
+            || navigator.connection?.type?.equals('none')
+            || navigator.onLine === false
+        )
+    ) return;
+
+    window.location.reload();
+}
+
 // Import the glyphs
 let { Glyphs } = top;
 
@@ -2938,9 +2928,10 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/|$)`);
 
-    CUSTOM_CSS.innerHTML = CUSTOM_CSS.innerHTML.replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`);
-
+    CUSTOM_CSS?.setHTML((CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     CUSTOM_CSS?.remove();
+
+    // Force styling update
     $('body').append(CUSTOM_CSS);
 }
 
@@ -2952,9 +2943,10 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    CUSTOM_CSS.innerHTML = CUSTOM_CSS.innerHTML.replace(regexp, '');
-
+    CUSTOM_CSS?.setHTML((CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, ''));
     CUSTOM_CSS?.remove();
+
+    // Force styling update
     $('body').append(CUSTOM_CSS);
 }
 
@@ -3133,7 +3125,7 @@ try {
         }
 
         if(reload)
-            return location.reload();
+            return ReloadPage();
 
         for(let job of refresh) {
             RestartJob(job, 'modify');
@@ -3552,7 +3544,7 @@ try {
                 text: `Reload page`,
                 icon: 'rerun',
                 shortcut: 'ctrl+r',
-                action: event => top.location.reload(),
+                action: event => top.ReloadPage(),
             },{
                 // break
             },{
@@ -3932,7 +3924,10 @@ let Initialize = async(START_OVER = false) => {
     // Initialize all settings/features //
 
     let GLOBAL_TWITCH_API = (window.GLOBAL_TWITCH_API ??= {}),
-        GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {});
+        GLOBAL_EVENT_LISTENERS = (window.GLOBAL_EVENT_LISTENERS ??= {
+            KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
+            KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
+        });
 
     SPECIAL_MODE = defined($('[data-test-selector="exit-button"i]'));
     NORMAL_MODE = !SPECIAL_MODE;
@@ -4370,7 +4365,7 @@ let Initialize = async(START_OVER = false) => {
 
                     notEarned = (
                         (allRewards?.length)?
-                            allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
+                            allRewards.filter(({ available = false, enabled = false, cost = 0 }) => available && enabled? cost > STREAMER.coin: null).filter(defined).length:
                         (notEarned >= -Infinity)?
                             notEarned:
                         -1
@@ -5836,8 +5831,8 @@ let Initialize = async(START_OVER = false) => {
 
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey || shiftKey) && altKey && 'aA'.contains(key))
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+                if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('a'))
                     $('#away-mode')?.click?.();
             });
 
@@ -6354,7 +6349,7 @@ let Initialize = async(START_OVER = false) => {
                 let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
                     (false
                         || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
-                        || (title.equals($title) && (cost == $cost || image.url.equals($image.url)))
+                        || (title.equals($title) && (cost == $cost || image?.url?.equals($image?.url)))
                     )
                 );
 
@@ -6882,18 +6877,14 @@ let Initialize = async(START_OVER = false) => {
                                         {
                                             style: 'overflow: hidden; width:100%;',
                                         },
-                                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden',
-                                            { 'data-test-selector': 'center-window__content' },
-                                            f('div.persistent-notification.tt-relative',
+                                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
+                                            f('div.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                                 {
                                                     style: 'width:100%',
-
-                                                    'data-test-selector': 'persistent-notification',
                                                 },
                                                 f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
-                                                    f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive',
+                                                    f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                                         {
-                                                            'data-test-selector': 'persistent-notification__click',
                                                             // Sometimes, Twitch likes to default to `_blank`
                                                             'target': '_self',
 
@@ -6910,10 +6901,7 @@ let Initialize = async(START_OVER = false) => {
                                                             ),
                                                             // Message body
                                                             f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                                f('div.persistent-notification__body.tt-overflow-hidden',
-                                                                    {
-                                                                        'data-test-selector': 'persistent-notification__body'
-                                                                    },
+                                                                f('div.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                                     f('span.tt-c-text-alt', {},
                                                                         f('p.tt-balloon-message', {
                                                                             innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ name }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
@@ -6933,9 +6921,8 @@ let Initialize = async(START_OVER = false) => {
                                                     ),
                                                     f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
                                                         f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
-                                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                 {
-                                                                    'data-test-selector': 'persistent-notification__delete',
                                                                     name,
 
                                                                     onclick: event => {
@@ -7288,7 +7275,7 @@ let Initialize = async(START_OVER = false) => {
                             onremove: event => {
                                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                                    name = parseURL(removed).pathname.slice(1);
+                                    name = parseURL(removed).pathname?.slice(1);
 
                                 LOG(`Removed from Up Next (${ nth(index + 1) }):`, removed, 'Was it canceled?', event.canceled);
 
@@ -8750,7 +8737,7 @@ let Initialize = async(START_OVER = false) => {
             } else {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
-                // location.reload();
+                // ReloadPage();
             }
         }
 
@@ -8844,7 +8831,7 @@ let Initialize = async(START_OVER = false) => {
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
-                    location.reload();
+                    ReloadPage();
                 }
             };
 
@@ -9308,10 +9295,13 @@ let Initialize = async(START_OVER = false) => {
                     let now = new Date,
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
-                        day = now.getDate();
+                        day = now.getDate(),
+                        autoMeridiem = new Date(STREAMER.data?.actualStartTime || now).getHours();
 
                     if(offset.length > 0 && isNaN(parseInt(offset)))
                         continue;
+
+                    meridiem ||= 'ap'[+(autoMeridiem < 7 || autoMeridiem > 19)];
 
                     hour = parseInt(hour);
                     hour -= (/^a/i.test(meridiem) && hour > 11? 12: 0);
@@ -10194,7 +10184,8 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stream_preview = async() => {
         START__STOP_WATCH('stream_preview');
 
-        let richTooltip = $(`[class*="channel-tooltip"i]`);
+        let richTooltips = $(`[class*="channel-tooltip"i][class*="body"i]`, true),
+            [richTooltip] = richTooltips;
 
         if(nullish(richTooltip)) {
             if(parseBool(Settings.stream_preview_sound) && MAINTAIN_VOLUME_CONTROL)
@@ -10249,13 +10240,13 @@ let Initialize = async(START_OVER = false) => {
         STREAM_PREVIEW = {
             name,
             element:
-                furnish('div.tt-stream-preview.invisible', {
+                furnish(`div.tt-stream-preview.invisible[@position=${ (top + height / 2 < body.height / 2)? 'below': 'above' }][@vods=${ richTooltips.length > 1 }]`, {
                         style: (
                             (top + height / 2 < body.height / 2)?
                                 // Below tooltip
-                                `--below: tooltip; top: calc(${ bottom }px + 0.5em);`:
+                                `top: calc(${ bottom }px + 0.5em);`:
                             // Above tooltip
-                            `--above: tooltip; top: calc(${ top }px - 0.5em - (15rem * ${ scale }));`
+                            `top: calc(${ top }px - 0.5em - (15rem * ${ scale }));`
                         ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width: video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale }); z-index: ${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 0)) };`,
                     },
                     furnish('div.tt-stream-preview--poster', {
@@ -10264,7 +10255,7 @@ let Initialize = async(START_OVER = false) => {
                             // Do something if the stream's live preview poster doesn't load...
                         },
                     }),
-                    furnish(`iframe.tt-stream-preview--iframe`, {
+                    furnish(`iframe.tt-stream-preview--iframe[@index=0][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
                         allow: 'autoplay',
                         src: parseURL(`https://player.twitch.tv/`).addSearch(
                             isOnline?
@@ -10288,7 +10279,7 @@ let Initialize = async(START_OVER = false) => {
 
                         onload: event => {
                             $('.tt-stream-preview--poster')?.classList?.add('invisible');
-                            $('[class*="channel-tooltip"i]')?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME == 'light'? 6: 0) })`);
+                            $('[class*="channel-tooltip"i]', true).at($('.tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME == 'light'? 6: 0) })`);
 
                             if(!parseBool(Settings.stream_preview_sound))
                                 return;
@@ -10339,6 +10330,45 @@ let Initialize = async(START_OVER = false) => {
         REMARK('Adding Stream previews...');
 
         top.onlocationchange = Unhandlers.stream_preview;
+
+        // Add key event listeners to the card
+        $.body.addEventListener('keyup', ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+            if(altKey || ctrlKey || metaKey || shiftKey)
+                return;
+
+            if(!/^Arrow(Up|Down)$/i.test(key))
+                return;
+
+            let richTooltips = $(`[class*="channel-tooltip"i]`, true),
+                { length } = richTooltips,
+                iframe = $('.tt-stream-preview--iframe'),
+                { index = 0, controls = false, muted = true, quality = 'auto' } = iframe.dataset;
+
+            index |= 0;
+            controls = parseBool(controls);
+            muted = parseBool(muted);
+
+            richTooltips.at(index)?.closest('[href^="/videos/"i]')?.removeAttribute('style');
+
+            if(key.equals('ArrowUp'))
+                --index;
+            else if(key.equals('ArrowDown'))
+                ++index;
+
+            if(index < 0)
+                index = length - 1;
+            else if(index >= length)
+                index = 0;
+
+            iframe.dataset.index = index;
+            iframe.src = parseURL(`https://player.twitch.tv/`).addSearch({
+                video: `v${ richTooltips[index].closest('[href^="/videos/"i]').href.split('/').pop() }`,
+                parent: 'twitch.tv',
+                autoplay: true,
+
+                controls, muted, quality,
+            }).href;
+        });
 
         RegisterJob('stream_preview');
     }
@@ -10829,7 +10859,7 @@ let Initialize = async(START_OVER = false) => {
                         })
                     );
 
-                    $('[data-a-player-state]')?.addEventListener?.('mouseup', ({ button = -1 }) => !button && window.location.reload());
+                    $('[data-a-player-state]')?.addEventListener?.('mouseup', ({ button = -1 }) => !button && ReloadPage());
                     $('video', false, container).setAttribute('style', `display:none`);
 
                     new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
@@ -10867,7 +10897,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(SECONDS_PAUSED_UNSAFELY > 15)
-            location.reload();
+            ReloadPage();
 
         JUDGE__STOP_WATCH('recover_frames');
     };
@@ -10875,7 +10905,7 @@ let Initialize = async(START_OVER = false) => {
 
     __RecoverFrames__:
     if(parseBool(Settings.recover_frames)) {
-        document.addEventListener('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
+        $.on('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
 
         RegisterJob('recover_frames');
 
@@ -11189,7 +11219,7 @@ let Initialize = async(START_OVER = false) => {
         if(/content.*unavailable/i.test(message) && defined(next))
             open(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }).href, '_self');
         else
-            location.reload();
+            ReloadPage();
 
         JUDGE__STOP_WATCH('recover_pages');
     };
@@ -11216,7 +11246,7 @@ let Initialize = async(START_OVER = false) => {
                 --RECOVER_PAGE_FROM_LAG__WARNINGS;
 
             if(RECOVER_PAGE_FROM_LAG__WARNINGS > 4)
-                location.reload();
+                ReloadPage();
 
             RECOVER_PAGE_FROM_LAG__EXACT = now;
         }, Timers.recover_pages);
@@ -11238,8 +11268,8 @@ let Initialize = async(START_OVER = false) => {
         // Take screenshots of the stream
         // Alt + Shift + X | Opt + Shift + X
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey) && altKey && shiftKey && 'xX'.contains(key))
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+                if(!(ctrlKey || metaKey) && altKey && shiftKey && key.equals('x'))
                     $('video', true).pop().copyFrame()
                         .then(async copied => await alert.timed(`Screenshot saved to clipboard!<p tt-x>${ (new UUID).value }</p>`, 5000))
                         .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }<p tt-x>${ (new UUID).value }</p>`, 7000));
@@ -11248,8 +11278,8 @@ let Initialize = async(START_OVER = false) => {
         // Begin recording the stream
         // Alt + Z | Opt + Z
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
-            document.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key, altKey, ctrlKey, metaKey, shiftKey }) {
-                if(!(ctrlKey || metaKey || shiftKey) && altKey && 'zZ'.contains(key)) {
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+                if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('z')) {
                     let video = $('video', true).pop();
 
                     video.setAttribute('uuid', video.uuid ??= (new UUID).value);
@@ -11618,6 +11648,13 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
         ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
             ?.toNativeStack?.():
     setInterval(WAIT_FOR_PAGE = async() => {
+        // Ensure settings are loaded
+        if(!parseBool(Settings[UUID.from(top.location).value]))
+            (Settings = await GetSettings())[UUID.from(top.location).value] = true;
+
+        // Set the ad volume, if applicable
+        SetVolume(Settings.away_mode__volume);
+
         let ready = (true
             // There is a valid username
             && defined(USERNAME)
@@ -11668,8 +11705,6 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 });
 
         LOG("Main container ready");
-
-        Settings = await GetSettings();
 
         // Set the user's language
         let [documentLanguage] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLowerCase().split('-');
@@ -11756,7 +11791,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
 
                         if(parseBool(Settings.recover_pages))
-                            return location.reload();
+                            return ReloadPage();
                         else
                             for(let job of NOT_LOADED_CORRECTLY)
                                 if(defined(job))
@@ -12132,7 +12167,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                     break Reinitialize;
                 }
 
-                location.reload();
+                ReloadPage();
             }
         };
 
@@ -12383,6 +12418,31 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
             .invisible {
                 opacity: 0;
+            }
+
+            .tt-stream-preview[data-vods="true"i][data-position="above"i]::after, .tt-stream-preview[data-vods="true"i][data-position="below"i]::before {
+                content: "Choose VOD (↑ / ↓)";
+
+                background-color: var(--color-background-tooltip);
+                border-radius: .4rem;
+                color: var(--color-text-tooltip);
+                display: inline-block;
+                font-family: inherit;
+                font-size: 100%;
+                font-weight: 600;
+                line-height: 1.2;
+                padding: .5rem;
+                pointer-events: none;
+                text-align: left;
+                user-select: none;
+                white-space: nowrap;
+
+                position: absolute;
+                left: 50%;
+                transform: translate(-50%,0);
+                z-index: 9999;
+
+                animation: 1s fade-out 1 forwards 7s;
             }
             `;
 

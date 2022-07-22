@@ -410,6 +410,16 @@ Object.defineProperties($, {
         configurable: false,
     },
 
+    on: {
+        value: function on(type, listener, options = null) {
+            return document.addEventListener(type, listener, options);
+        },
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
     getElementByText: {
         value: Element.prototype.getElementByText.bind(document.documentElement),
 

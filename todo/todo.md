@@ -35,6 +35,18 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.21`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.21)
+- Fixed issue with BTTV emote display
+- Fixed `STREAMER.done` logic
+- Added `ReloadPage` and adjusted applicable logic
+- Fixed issue auto-reloading offline tabs
+- Added ability to choose highlighted VOD for previews
+- Added QoL improvements:
+    + Set initial ad-volume to the Away Mode volume
+    + Auto-calculate a time zone's meridiem
+    + Added `furnish...and` `furnish...with`
+    + Other minor improvements
+
 > [`5.20`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.20)
 - Fixed issue mobilizing URLs (now ignores those URLs)
 - Added logic to set the video's quality according to its height

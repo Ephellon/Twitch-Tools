@@ -303,7 +303,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 
                                 PATHNAME = parent.location.pathname;
 
-                                for(let [name, func] of __ONLOCATIONCHANGE__)
+                                for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
                                     func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
                             }
                         });

@@ -257,9 +257,11 @@ function furnish(tagname = 'div', attributes = null, ...children) {
     }
 
     Object.entries(attributes).forEach(
-        ([name, value]) => (/^(on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
+        ([name, value]) => (/^(@|data-|on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
             (/^on/.test(name))?
                 element.addEventListener(name.replace(/^on/, ''), value):
+            (/^(@|data-)/.test(name))?
+                element.dataset[name.replace('@', '').replace(/-(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())] = value:
             element[name] = value:
         element.setAttribute(name, value)
     );
@@ -267,6 +269,44 @@ function furnish(tagname = 'div', attributes = null, ...children) {
     children
         .filter(defined)
         .forEach(child => element.append(child));
+
+    /* furnish('div').and('figure').with('svg').and('figure').with('svg') → div > figure > svg ~ figure > svg */
+    Object.defineProperties(element, {
+        // Add a child; immediately after the root `this`
+        and: {
+            value: function(tagname = 'div', attributes = null, ...children) {
+                let child = furnish(tagname, attributes, ...children),
+                    last = UUID.from('last-child-in-chain').value;
+
+                this.append(this[last] = child);
+
+                return this;
+            },
+
+            writable: false,
+            enumerable: true,
+            configurable: false,
+        },
+
+        // Add a child; chains down the tree
+        with: {
+            value: function(tagname = 'div', attributes = null, ...children) {
+                let child = furnish(tagname, attributes, ...children),
+                    last = UUID.from('last-child-in-chain').value;
+
+                (this[last] || this).append(this[last] = child);
+
+                return this;
+            },
+
+            writable: false,
+            enumerable: true,
+            configurable: false,
+        },
+    });
+
+    element.and?.bind?.(element);
+    element.with?.bind?.(element);
 
     return element;
 }

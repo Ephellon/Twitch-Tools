@@ -1,19 +1,32 @@
 /*** Available SVG glyphs
+ * exit_picture_in_picture
+ * secondary_mouse_button
+ * primary_mouse_button
  * bonuschannelpoints
+ * picture_in_picture
  * add_to_calendar
  * more_horizontal
  * more_vertical
  * channelpoints
+ * extensions
  * navigation
  * checkmark
+ * translate
+ * incognito
  * calendar
+ * collapse
  * download
  * favorite
  * ne_arrow
  * streamer
  * verified
  * compass
+ * dislike
+ * predict
+ * refresh
+ * station
  * emotes
+ * expand
  * export
  * ignore
  * inform
@@ -25,14 +38,18 @@
  * stream
  * thread
  * trophy
+ * twitch
  * unmute
  * unread
  * upload
  * wallet
+ * mouse
  * audio
+ * alert
  * close
  * crown
  * globe
+ * ghost
  * intro
  * leave
  * music
@@ -41,24 +58,31 @@
  * reply
  * rerun
  * stats
+ * sword
  * trash
  * unfav
  * video
  * bits
  * bolt
- * game
+ * clip
  * chat
+ * game
  * gift
  * help
  * hide
+ * home
+ * host
+ * info
  * lock
  * loot
  * moon
  * play
+ * plus
  * poll
  * raid
  * show
  * star
+ * warn
  * fav
  * map
  * mod

@@ -13,6 +13,26 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
 
+// Reloads the tab
+    // ReloadTab(tab:object<Tab>, onlineOnly:boolean?) → undefined
+function ReloadTab(tab, onlineOnly = true) {
+    // Tab is offline, do not reload
+    if(onlineOnly && TabIsOffline(tab))
+        return;
+
+    Container.tabs.reload(tab.id);
+}
+
+// Determines if a tab is offline
+    // TabIsOffline(tab:object<Tab>) → boolean
+function TabIsOffline(tab) {
+    return (false
+        || tab.pendingUrl?.length
+        || tab.title.endsWith('.twitch.tv')
+        || tab.status.toLowerCase() == 'unloaded'
+    );
+}
+
 let browser, global, window, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
 if(browser && browser.runtime)
@@ -72,7 +92,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
                 // Most settings will reload Twitch pages when needed
                 for(let tab of tabs)
-                    Container.tabs.reload(tab.id);
+                    ReloadTab(tab);
             } break;
         }
 
@@ -87,21 +107,20 @@ let UnloadedTabs = new Set();
 
 let TabWatcherInterval = setInterval(() => {
     try {
-        Container.tabs.query({
-            url: "*://www.twitch.tv/*",
-            status: "unloaded",
-        }, (tabs = []) => {
+        Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
             for(let tab of tabs)
-                if(UnloadedTabs.has(tab.id))
-                    Container.tabs.reload(tab.id);
-                else
+                if(!TabIsOffline(tab))
+                    continue;
+                else if(!UnloadedTabs.has(tab.id))
                     UnloadedTabs.add(tab.id);
+                else
+                    ReloadTab(tab);
         });
     } catch(error) {
         // Suppress query errors...
         // console.warn(error);
     }
-}, 1000);
+}, 5000);
 
 // Update the badge text when there's an update available
 Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
@@ -130,10 +149,10 @@ Storage.onChanged.addListener(changes => {
 });
 
 Runtime.onMessage.addListener((request, sender, respond) => {
-    let refreshAll,
+    let reloadAll,
         returningData;
 
-    function refreshPages(all = false) {
+    function reloadTabs(all = false) {
         if(!all)
             return;
 
@@ -145,14 +164,14 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             // Reload Twitch pages
             for(let tab of tabs)
-                Container.tabs.reload(tab.id);
+                ReloadTab(tab);
         });
     }
 
     switch(request.action) {
         case 'CLAIM_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
-                let refreshAll = UP_NEXT_OWNER == null;
+                let reloadAll = UP_NEXT_OWNER == null;
 
                 Container.tabs.query({
                     url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
@@ -176,17 +195,17 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                     Storage.set({ UP_NEXT_OWNER });
                 });
 
-                refreshPages(refreshAll);
+                reloadTabs(reloadAll);
             });
         } break;
 
         case 'WAIVE_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
-                let refreshAll = UP_NEXT_OWNER != null;
+                let reloadAll = UP_NEXT_OWNER != null;
 
                 Storage.set({ UP_NEXT_OWNER: null });
 
-                refreshPages(refreshAll);
+                reloadTabs(reloadAll);
             });
         } break;
 
@@ -216,7 +235,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         } break;
     }
 
-    refreshPages(refreshAll);
+    reloadTabs(reloadAll);
 
     return true;
 });

@@ -911,3 +911,11 @@ caption {
     display: block;
     font-size: xx-small;
 }
+
+/* BetterTTV Emotes */
+.tt-emote-bttv {
+    display: inline-flex;
+
+    height: 4rem;
+    width: 4rem;
+}

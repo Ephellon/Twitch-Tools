@@ -8,19 +8,33 @@
  *                             _/ |
  *                            |__/
  */
+/** Adds a CSS block to the CUSTOM_CSS string
+ * AddCustomCSSBlock(name:string, block:string) → undefined
+ */
 function AddCustomCSSBlock(name, block) {
-    Chat__CUSTOM_CSS.innerHTML += `/*${ name }*/${ block }/*#${ name }*/`;
+    name = name.trim();
 
+    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/|$)`);
+
+    Chat__CUSTOM_CSS?.setHTML((Chat__CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     Chat__CUSTOM_CSS?.remove();
+
+    // Force styling update
     $('body').append(Chat__CUSTOM_CSS);
 }
 
+/** Removes a CSS block from the Chat__CUSTOM_CSS string
+ * RemoveCustomCSSBlock(name:string, flags:string?) → undefined
+ */
 function RemoveCustomCSSBlock(name, flags = '') {
+    name = name.trim();
+
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    Chat__CUSTOM_CSS.innerHTML = Chat__CUSTOM_CSS.innerHTML.replace(regexp, '');
-
+    Chat__CUSTOM_CSS?.setHTML((Chat__CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, ''));
     Chat__CUSTOM_CSS?.remove();
+
+    // Force styling update
     $('body').append(Chat__CUSTOM_CSS);
 }
 
@@ -386,12 +400,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             f(`div#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`, {},
                 f('div.emote-button', {},
                     f('div.tt-inline-flex', {},
-                        f('button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center',
+                        f(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@test-selector=emote-button-clickable][@a-target=${name}]`,
                             {
-                                'data-test-selector': 'emote-button-clickable',
                                 'aria-label': name,
                                 name,
-                                'data-a-target': name,
 
                                 onclick: event => {
                                     let name = event.currentTarget.getAttribute('name'),
@@ -416,7 +428,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                f('div.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above', { 'data-test-selector': 'badge-button-icon' },
+                                f('div.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]', {},
                                     f('figure.tt-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
                                 f('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
@@ -439,7 +451,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if((keyword || '').trim().length < 1)
                 return;
 
-            if(QUEUED_EMOTES.has(keyword) || NON_EMOTE_PHRASES.has(keyword))
+            if(QUEUED_EMOTES.has(keyword) || NON_EMOTE_PHRASES.has(keyword) || BTTV_EMOTES.has(keyword))
                 return BTTV_EMOTES.get(keyword);
             QUEUED_EMOTES.add(keyword);
 
@@ -566,8 +578,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         f = furnish;
 
                                     let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
-                                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                                            f('span', { 'data-a-target': 'emote-name' },
+                                        f('div.chat-line__message--emote-button[@test-selector=emote-button]', {},
+                                            f('span[@a-target=emote-name]', {},
                                                 f('div.class.chat-image__container.tt-align-center.tt-inline-block', {},
                                                     f('img.bttv.chat-image.chat-line__message--emote', {
                                                         src: BTTV_EMOTES.get(emote),
@@ -661,7 +673,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 furnish('div#tt-bttv-emotes-container.tt-flex.tt-flex-wrap',
                     {
                         class: 'tt-scrollbar-area',
-                        style: 'max-height: 15rem; overflow: hidden scroll;',
+                        style: 'max-height: 15rem; overflow: hidden scroll; display: flex; flex-wrap: wrap;',
                     },
                     ...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE)
                 )
@@ -727,7 +739,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
                         if(parseBool(Settings.auto_load_bttv_emotes))
                             for(let word of line.message.split(/\s+/))
-                                if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !BTTV_EMOTES.has(word) && word.length > 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
+                                if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !BTTV_EMOTES.has(word) && word.length >= 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
                                     await LOAD_BTTV_EMOTES(word, null, true);
 
                         for(let [name, src] of BTTV_EMOTES)
@@ -739,8 +751,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                                 let f = furnish;
                                 let img =
-                                f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                                    f('span', { 'data-a-target': 'emote-name' },
+                                f('div.chat-line__message--emote-button[@test-selector=emote-button]', {},
+                                    f('span[@a-target=emote-name]', {},
                                         f('div.class.chat-image__container.tt-align-center.tt-inline-block', {},
                                             f('img.bttv.chat-image.chat-line__message--emote', {
                                                 alt, src,
@@ -754,7 +766,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 alt = alt.replace(/\s+/g, '_');
 
                                 $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                                    let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-bttv-emote': alt, 'data-bttv-owner': own, 'data-bttv-owner-id': pid, innerHTML: img.innerHTML }),
+                                    let container = furnish(`div.chat-line__message--emote-button[@test-selector=emote-button][@bttv-emote=${alt}][@bttv-owner=${own}][@bttv-owner-id=${pid}]`, { innerHTML: img.innerHTML }),
                                         converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                                     converted.push(alt);
@@ -817,12 +829,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             furnish('div.tt-emote-captured.tt-pd-x-05.tt-relative', {},
                 furnish('div.emote-button', {},
                     furnish('div.tt-inline-flex', {},
-                        furnish('button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center',
+                        furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@test-selector=emote-button-clickable][@a-target=${name}]`,
                             {
-                                'data-test-selector': 'emote-button-clickable',
                                 'aria-label': name,
                                 name,
-                                'data-a-target': name,
 
                                 onclick: event => {
                                     let name = event.currentTarget.getAttribute('name'),
@@ -847,7 +857,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                furnish('div.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above', { 'data-test-selector': 'badge-button-icon' },
+                                furnish('div.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]', {},
                                     furnish('figure.tt-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
                                 furnish('img.emote-picker__image', { src, alt: name })
@@ -1034,8 +1044,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         let f = furnish;
                         let img =
-                        f('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button' },
-                            f('span', { 'data-a-target': 'emote-name' },
+                        f('div.chat-line__message--emote-button[@test-selector=emote-button]', {},
+                            f('span[@a-target=emote-name]', {},
                                 f('div.class.chat-image__container.tt-align-center.tt-inline-block', {},
                                     f('img.chat-image.chat-line__message--emote', {
                                         srcset, alt, src,
@@ -1049,7 +1059,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         alt = alt.replace(/\s+/g, '_');
 
                         $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                            let container = furnish('div.chat-line__message--emote-button', { 'data-test-selector': 'emote-button', 'data-captured-emote': alt, innerHTML: img.innerHTML }),
+                            let container = furnish(`div.chat-line__message--emote-button[@test-selector=emote-button][@captured-emote=${alt}]`, { innerHTML: img.innerHTML }),
                                 converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                             converted.push(alt);
@@ -1742,10 +1752,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                 };
 
                 return f('div.chat-line__reply-icon.tt-absolute.tt-border-radius-medium.tt-c-background-base.tt-elevation-1', {},
-                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=chat-reply-button]',
                         {
-                            'data-test-selector': 'chat-reply-button',
-
                             onclick: event => {
                                 let { currentTarget } = event,
                                     messageElement = currentTarget.closest('div').previousElementSibling,
@@ -1763,11 +1771,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     chatContainerChild.classList.add(...addedClasses.chatContainerChild);
 
                                     bubbleContainer.append(
-                                        f(`div#tt-native-twitch-reply.tt-align-items-start.tt-flex.tt-flex-row.tt-pd-0`,
-                                            {
-                                                'data-test-selector': 'chat-input-tray',
-                                            },
-
+                                        f(`div#tt-native-twitch-reply.tt-align-items-start.tt-flex.tt-flex-row.tt-pd-0[@test-selector=chat-input-tray]`, {},
                                             f('div.tt-align-center.tt-mg-05', {},
                                                 f('div.tt-align-items-center.tt-flex', { innerHTML: Glyphs.modify('reply', { height: '24px', width: '24px' }) })
                                             ),
@@ -1809,11 +1813,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     );
 
                                     bubbleContainer.append(
-                                        f('div#tt-native-twitch-reply-message.font-scale--default.tt-pd-x-1.tt-pd-y-05.chat-line__message',
-                                            {
-                                                'data-a-target': 'chat-line-message',
-                                                'data-test-selector': 'chat-line-message',
-                                            },
+                                        f('div#tt-native-twitch-reply-message.font-scale--default.tt-pd-x-1.tt-pd-y-05.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]',{},
                                             f('div.tt-relative', { innerHTML: messageElement.outerHTML })
                                         )
                                     );
@@ -1853,7 +1853,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 let target = $('div', false, parent);
                 if(nullish(target)) return;
 
-                let highlighter = furnish('div.chat-line__message-highlight.tt-absolute.tt-border-radius-medium', { 'data-test-selector': 'chat-message-highlight' });
+                let highlighter = furnish('div.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@test-selector=chat-message-highlight]', {});
 
                 target.classList.add('chat-line__message-container');
 
@@ -2015,7 +2015,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             let [title, description, image] = ["title", "description", "image"].map(get),
                                 error = DOM.querySelector('parsererror')?.textContent;
 
-                            LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: toTimeString(+new Date - CHAT_CARDIFYING_TIMERS.get(href)) });
+                            LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
 
                             if(!title?.length || !image?.length) {
                                 CHAT_CARDIFIED.set(href, f.span());
@@ -2044,11 +2044,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                 f('div.tt-full-width.tt-pd-l-1', {},
                                                     // Title
                                                     f('div.chat-card__title.tt-ellipsis', {},
-                                                        f('p.tt-strong.tt-ellipsis', { 'data-test-selector': 'chat-card-title' }, title)
+                                                        f('p.tt-strong.tt-ellipsis[@test-selector=chat-card-title]', {}, title)
                                                     ),
                                                     // Subtitle
                                                     f('div.tt-ellipsis', {},
-                                                        f('p.tt-c-text-alt-2.tt-ellipsis', { 'data-test-selector': 'chat-card-description' }, description)
+                                                        f('p.tt-c-text-alt-2.tt-ellipsis[@test-selector=chat-card-description]', {}, description)
                                                     ),
                                                 )
                                             )
@@ -2057,7 +2057,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 )
                             );
 
-                            let container = f(`div#card-${ UUID.from(href).toStamp() }.chat-line__message`, { 'data-a-target': 'chat-line-message', 'data-test-selector': 'chat-line-message' },
+                            let container = f(`div#card-${ UUID.from(href).toStamp() }.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]`, {},
                                 f('div.tt-relative', {},
                                     f('div.tt-relative.chat-line__message-container', {},
                                         f('div', {},
@@ -2119,7 +2119,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 let spam_placeholder = "chat-deleted-message-placeholder";
 
                 function markAsSpam(element, type = 'spam', message) {
-                    let span = furnish(`span.chat-line__message--deleted-notice.tiwtch-tools__spam-filter-${ type }`, { 'data-a-target': spam_placeholder, 'data-test-selector': spam_placeholder }, `message marked as ${ type }.`);
+                    let span = furnish(`span.chat-line__message--deleted-notice.tiwtch-tools__spam-filter-${ type }[@a-target=${spam_placeholder}][@test-selector=${spam_placeholder}]`, {}, `message marked as ${ type }.`);
 
                     $('[data-test-selector="chat-message-separator"i] ~ * > *', true, element).forEach(sibling => sibling.remove());
                     $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.append(span);
@@ -3102,7 +3102,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
                 f('div#tt-banned-banner.tt-pd-b-2.tt-pd-x-2', {},
                     f('div.tt-border-t.tt-pd-b-1.tt-pd-x-2'),
                     f('div.tt-align-center', {},
-                        f('p.tt-c-text.tt-strong', { 'data-test-selector': "current-user-timed-out-text" },
+                        f('p.tt-c-text.tt-strong[@test-selector=current-user-timed-out-text]', {},
                             `Messages from ${ name } chat.`
                         ),
                         f('p.tt-c-text-alt-2', {},
@@ -3274,7 +3274,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                             PATHNAME = top.location.pathname;
 
-                            for(let [name, func] of __ONLOCATIONCHANGE__)
+                            for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
                                 func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
                         }
                     });
@@ -3415,54 +3415,53 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             }
 
             // Handled by parent controller
-            // location.reload();
+            // ReloadPage();
         }
     };
 
     // Add custom styling
     CustomCSSInitializer: {
-        Chat__CUSTOM_CSS = $('#tt-custom-chat-css') ?? furnish('style#tt-custom-chat-css', {});
+        Chat__CUSTOM_CSS = $('#tt-custom-chat-css') ?? furnish('style#tt-custom-chat-css', {
+            innerHTML: `
+            /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
-        Chat__CUSTOM_CSS.innerHTML =
-        `
-        /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
+            #tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
+            #tt-hidden-emote-container::after {
+                content: 'Collecting emotes...\\A Do not close this window';
+                text-align: center;
+                white-space: break-spaces;
 
-        #tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
-        #tt-hidden-emote-container::after {
-            content: 'Collecting emotes...\\A Do not close this window';
-            text-align: center;
-            white-space: break-spaces;
+                --background: #000e;
+                --text-align: center;
 
-            --background: #000e;
-            --text-align: center;
+                position: absolute;
+                --padding-top: 100%;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
 
-            position: absolute;
-            --padding-top: 100%;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
+                --height: 100%;
+                --width: 100%;
+            }
+            #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
 
-            --height: 100%;
-            --width: 100%;
-        }
-        #tt-hidden-emote-container .simplebar-scroll-content { visibility: hidden }
+            section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
 
-        section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
+            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
-        [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-        [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+            .chat-line__message[style] a {
+                color: var(--color-text-alt);
+                text-decoration: underline;
+            }
 
-        .chat-line__message[style] a {
-            color: var(--color-text-alt);
-            text-decoration: underline;
-        }
-
-        .tt-emote-captured [data-test-selector="badge-button-icon"i],
-        .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-            left: 0;
-            top: 0;
-        }
-        `;
+            .tt-emote-captured [data-test-selector="badge-button-icon"i],
+            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                left: 0;
+                top: 0;
+            }
+            `
+        });
 
         Chat__CUSTOM_CSS?.remove();
         $('body').append(Chat__CUSTOM_CSS);
