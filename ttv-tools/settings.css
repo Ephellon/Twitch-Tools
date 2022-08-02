@@ -706,6 +706,10 @@ select[multiple] [option]:checked::before, .select.multiple .option.checked::bef
     width: .7rem;
 }
 
+select[type="days"] {
+    background-image: none;
+}
+
 button, [type="button"] {
     align-items: center;
     display: inline-block;
@@ -1674,11 +1678,19 @@ html:not([lang="en"i]) .tt-tooltip {
     width: 100vw;
 }
 
+body.popup .tt-modal-wrapper {
+    padding: 0 5vw;
+}
+
 .tt-modal-body {
     background: var(--background-dark);
     border-radius: .3rem;
 
     padding: 1rem;
+}
+
+body.popup .tt-modal-body {
+    height: fit-content;
 }
 
 .tt-modal-content {
@@ -1691,6 +1703,10 @@ html:not([lang="en"i]) .tt-tooltip {
 
 [pad-bottom] {
     padding-bottom: 2rem;
+}
+
+body.popup [pad-bottom] {
+    padding-bottom: 1rem;
 }
 
 /* Printing Only!*/

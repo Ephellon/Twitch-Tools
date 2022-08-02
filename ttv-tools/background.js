@@ -125,6 +125,8 @@ let TabWatcherInterval = setInterval(() => {
 // Update the badge text when there's an update available
 Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
 
+let REPORTS = new Map;
+
 Storage.onChanged.addListener(changes => {
     // Use this to set the badge text when there's an update available
         // if installed from Chrome, update the badge text, and wait for an auto-update
@@ -233,12 +235,45 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         case 'OPEN_OPTIONS_PAGE': {
             Runtime.openOptionsPage();
         } break;
+
+        case 'BEGIN_REPORT': {
+            let { tab } = sender;
+
+            REPORTS.set(tab.id, new Date);
+        } break;
     }
 
     reloadTabs(reloadAll);
 
     return true;
 });
+
+let LAG_REPORTER = setInterval(() => {
+    for(let [tabID, tabDOB] of REPORTS)
+        Container.tabs.get(tabID)
+            .then(tab => {
+                Container.tabs.sendMessage(tab.id, { action: 'report-back' }, response => {
+                    if(response?.ok || tab.discarded || tab.status == "loading")
+                        return;
+
+                    Container.tabs.sendMessage(tab.id, { action: 'report-back' }, response => {
+                        if(response?.ok)
+                            return;
+
+                        let error = `Tab #${ tab.id } did not respond. Discarded`;
+
+                        Container.tabs.duplicate(tab.id);
+                        Container.tabs.discard(tab.id);
+                        Container.tabs.remove(tab.id);
+
+                        console.warn(error);
+                    });
+                });
+            })
+            .catch(error => {
+                REPORTS.delete(tabID);
+            });
+}, 15_000);
 
 // https://stackoverflow.com/a/6117889/4211612
 // Returns the current week of the year

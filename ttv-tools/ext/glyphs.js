@@ -33,6 +33,7 @@
  * latest
  * notify
  * people
+ * popout
  * rewind
  * search
  * stream
@@ -66,6 +67,7 @@
  * bolt
  * clip
  * chat
+ * flag
  * game
  * gift
  * help
@@ -90,7 +92,7 @@
  * x
  */
 
-top.Glyphs ??= {
+window.Glyphs ??= {
     bonuschannelpoints: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>`,
     /** The Chromium Authors (c) 2015. All rights reserved.
      * "Exit Picture in Picture," and "Picture in Picture" by The Chromium Authors
@@ -140,6 +142,7 @@ top.Glyphs ??= {
     latest: `<svg fill="#e6cb00"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13.39 4.305L12 5l1.404.702a2 2 0 01.894.894L15 8l.702-1.404a2 2 0 01.894-.894L18 5l-1.418-.709a2 2 0 01-.881-.869L14.964 2l-.668 1.385a2 2 0 01-.907.92z"></path><path fill-rule="evenodd" d="M5.404 9.298a2 2 0 00.894-.894L8 5h1l1.702 3.404a2 2 0 00.894.894L15 11v1l-3.404 1.702a2 2 0 00-.894.894L9 18H8l-1.702-3.404a2 2 0 00-.894-.894L2 12v-1l3.404-1.702zm2.683 0l.413-.826.413.826a4 4 0 001.789 1.789l.826.413-.826.413a4 4 0 00-1.789 1.789l-.413.826-.413-.826a4 4 0 00-1.789-1.789l-.826-.413.826-.413a4 4 0 001.789-1.789z" clip-rule="evenodd"></path></g></svg>`,
     notify: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M3 14v-2c1-.5 1.75-1 2-2 .095-.38.154-.905.221-1.506C5.51 5.936 5.951 2 10 2c4.05 0 4.491 3.936 4.779 6.494.067.601.126 1.126.221 1.506.25 1 1 1.5 2 2v2H3zM9.998 18a2 2 0 01-2-2h4v.012a2 2 0 01-2 1.988z"></path></g></svg>`,
     people: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7 2a4 4 0 00-1.015 7.87c-.098.64-.651 1.13-1.318 1.13A2.667 2.667 0 002 13.667V18h2v-4.333c0-.368.298-.667.667-.667.908 0 1.732-.363 2.333-.953.601.59 1.425.953 2.333.953.369 0 .667.299.667.667V18h2v-4.333A2.667 2.667 0 009.333 11c-.667 0-1.22-.49-1.318-1.13A4.002 4.002 0 007 2zM5 6a2 2 0 104 0 2 2 0 00-4 0z" clip-rule="evenodd"></path><path d="M14 11.83V18h4v-3.75c0-.69-.56-1.25-1.25-1.25a.75.75 0 01-.75-.75v-.42a3.001 3.001 0 10-2 0z"></path></g></svg>`,
+    popout: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 4h2.586L9.293 9.293l1.414 1.414L16 5.414V8h2V2h-6v2z"></path><path d="M4 4h6v2H4v10h10v-6h2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z"></path></g></svg>`,
     rewind: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5.757 14.243A6 6 0 105.527 6H7v2H2V3h2v1.708a8 8 0 11.343 10.949l1.414-1.414z"></path><path d="M11 10.414l1.707-1.707-1.414-1.414L9 9.586V14h2v-3.586z"></path></g></svg>`,
     search: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M13.192 14.606a7 7 0 111.414-1.414l3.101 3.1-1.414 1.415-3.1-3.1zM14 9A5 5 0 114 9a5 5 0 0110 0z" clip-rule="evenodd"></path></g></svg>`,
     stream: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>`,
@@ -174,6 +177,7 @@ top.Glyphs ??= {
     bolt: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.91 2.073L13 9l1.88 1.071a1 1 0 01.036 1.717l-9.825 6.14L7 11 5.12 9.929a1 1 0 01-.035-1.717l9.824-6.14zm-6.784 11.6L9 10 7 9l4.874-2.672L11 10l2 1-4.874 2.673z" clip-rule="evenodd"></path></g></svg>`,
     clip: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M14.594 4.495l-.585-1.91L15.922 2l.585 1.91-1.913.585zM11.14 3.46l.585 1.911 1.913-.584-.585-1.91-1.913.583zM8.856 6.247l-.584-1.91 1.912-.584.585 1.91-1.913.584zM5.403 5.213l.584 1.91L7.9 6.54l-.585-1.911-1.912.584zM2.534 6.09L3.118 8l1.913-.584-.585-1.91-1.912.583zM5 9H3v7a2 2 0 002 2h10a2 2 0 002-2V9h-2v7H5V9z"></path><path d="M8 9H6v2h2V9zM9 9h2v2H9V9zM14 9h-2v2h2V9z"></path></g></svg>`,
     chat: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>`,
+    flag: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 2l-4 6 4 6H4v4H2V2h16zM4 12h10.263l-2.667-4 2.667-4H4v8z" clip-rule="evenodd"></path></g></svg>`,
     game: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M6 8h2v1h1v2H8v1H6v-1H5V9h1V8zM15 10h-2V8h-2v2h2v2h2v-2z"></path><path fill-rule="evenodd" d="M9 2h2v2h5a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h5V2zm7 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>`,
     gift: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16 6h2v6h-1v6H3v-6H2V6h2V4.793c0-2.507 3.03-3.762 4.803-1.99.131.131.249.275.352.429L10 4.5l.845-1.268a2.81 2.81 0 01.352-.429C12.969 1.031 16 2.286 16 4.793V6zM6 4.793V6h2.596L7.49 4.341A.814.814 0 006 4.793zm8 0V6h-2.596l1.106-1.659a.814.814 0 011.49.451zM16 8v2h-5V8h5zm-1 8v-4h-4v4h4zM9 8v2H4V8h5zm0 4H5v4h4v-4z" clip-rule="evenodd"></path></g></svg>`,
     help: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8a1 1 0 011-1h.146a.87.87 0 01.854.871c0 .313-.179.6-.447.735A2.81 2.81 0 009 11.118V12h2v-.882a.81.81 0 01.447-.724A2.825 2.825 0 0013 7.871C13 6.307 11.734 5 10.146 5H10a3 3 0 00-3 3h2zM9 14a1 1 0 112 0 1 1 0 01-2 0z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8 6a6 6 0 110-12 6 6 0 010 12z"></path></g></svg>`,
@@ -199,12 +203,12 @@ top.Glyphs ??= {
 
     x: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>`,
 
-    __exclusionList__: ["__exclusionList__", "DOMParser", "modify", "utf8", "base64", "__base64__", "dataURI", "__dataURI__"],
+    __exclusionList__: ["__exclusionList__", "DOMParser", "modify", "utf8", "base64", "__base64__", "dataURI", "__dataURI__", "pathData", "__pathData__"],
 
     modify(glyph, attributes, element = 'svg') {
-        let XMLParser = Glyphs.DOMParser ??= new DOMParser;
+        let XMLParser = window.Glyphs.DOMParser ??= new DOMParser;
 
-        let XML = XMLParser.parseFromString((glyph in Glyphs? Glyphs[glyph]: glyph), 'text/xml'),
+        let XML = XMLParser.parseFromString((glyph in window.Glyphs? window.Glyphs[glyph]: glyph), 'text/xml'),
             ele = $(element, false, XML);
 
         for(let attribute in attributes) {
@@ -327,36 +331,52 @@ top.Glyphs ??= {
 
             // 9th batch
             incognito: "\uD83D\uDD75\uFE0F",
+            flag: "\uD83D\uDEA9\uFE0F",
         });
     },
 
     get base64() {
         return (() => {
-            let exclusions = top.Glyphs.__exclusionList__,
-                __base64__ = top.Glyphs.__base64__ ?? {};
+            let exclusions = window.Glyphs.__exclusionList__,
+                __base64__ = window.Glyphs.__base64__ ?? {};
 
-            for(let glyph in top.Glyphs)
+            for(let glyph in window.Glyphs)
                 if(!!~exclusions.indexOf(glyph))
                     continue;
                 else
-                    __base64__[glyph] ??= btoa(top.Glyphs[glyph]);
+                    __base64__[glyph] ??= btoa(window.Glyphs[glyph]);
 
-            return top.Glyphs.__base64__ ??= __base64__;
+            return window.Glyphs.__base64__ ??= __base64__;
         })();
     },
 
     get dataURI() {
         return (() => {
-            let exclusions = top.Glyphs.__exclusionList__,
-                __dataURI__ = top.Glyphs.__dataURI__ ?? {};
+            let exclusions = window.Glyphs.__exclusionList__,
+                __dataURI__ = window.Glyphs.__dataURI__ ?? {};
 
-            for(let glyph in top.Glyphs)
+            for(let glyph in window.Glyphs)
                 if(!!~exclusions.indexOf(glyph))
                     continue;
                 else
-                    __dataURI__[glyph] ??= SVGtoImage(top.Glyphs[glyph]);
+                    __dataURI__[glyph] ??= SVGtoImage(window.Glyphs[glyph]);
 
-            return top.Glyphs.__dataURI__ ??= __dataURI__;
+            return window.Glyphs.__dataURI__ ??= __dataURI__;
+        })();
+    },
+
+    get pathData() {
+        return (() => {
+            let exclusions = window.Glyphs.__exclusionList__,
+                __pathData__ = window.Glyphs.__pathData__ ?? {};
+
+            for(let glyph in window.Glyphs)
+                if(!!~exclusions.indexOf(glyph))
+                    continue;
+                else
+                    __pathData__[glyph] ??= [...window.Glyphs.modify(glyph).asNode.querySelectorAll('path')].map(path => path.getAttribute('d')).join(';');
+
+            return window.Glyphs.__pathData__ ??= __pathData__;
         })();
     },
 };

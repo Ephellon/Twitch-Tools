@@ -35,6 +35,17 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.23)
+- Added logic to detect when a tab freezes
+- Modified anchor-cardifying logic
+- Modified initial volume control logic
+- Modified channel ranking logic
+- Modified recording frequency to 1Hz (was 100Hz)
+- Fixed issue with `parseCoin`
+- Renamed `until` to `when.defined`; `unitl.*` → `when.*`
+- Adjusted Volume Observer logic
+- Added Game Overview Card (on by default)
+
 > [`5.22`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.22)
 - Fixed issue with Recover Frames
 - Modified Stream Recording logic

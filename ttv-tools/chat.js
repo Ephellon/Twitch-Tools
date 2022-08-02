@@ -560,7 +560,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
                                     [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
 
-                                let display_name = await until(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
+                                let display_name = await when.defined(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
                                     [language] = languages.filter(lang => alt_languages.missing(lang)),
                                     name = display_name?.toLowerCase(),
                                     profile_image = $('meta[property$="image"i]', false, doc)?.content,
@@ -1729,7 +1729,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Enter
         if(nullish(GLOBAL_EVENT_LISTENERS.ENTER))
             $('[data-a-target="chat-input"i]')?.addEventListener('keydown', GLOBAL_EVENT_LISTENERS.ENTER = ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
-                if(!(altKey || ctrlKey || metaKey || shiftKey) && key == 'Enter')
+                if(!(altKey || ctrlKey || metaKey || shiftKey) && key.equals('enter'))
                     $('#tt-close-native-twitch-reply')?.click();
             });
 
@@ -1914,7 +1914,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         [topDom, secDom, ...subDom] = url.domainPath;
 
                     // Ignore pre-cardified links
-                    if(subDom.contains('clips'))
+                    if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
                         continue;
 
                     // Mobilize laggy URLs
@@ -1926,8 +1926,12 @@ let Chat__Initialize = async(START_OVER = false) => {
                     if(CHAT_CARDIFIED.has(href)) {
                         let card = CHAT_CARDIFIED.get(href);
 
-                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, false, element)) && defined(card))
+                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, false, element)) && defined(card)) {
                             element.insertAdjacentElement('beforeend', card);
+
+                            if(nullish($('[class*="chat-paused"i]')))
+                                card.scrollIntoViewIfNeeded(true);
+                        }
 
                         continue cardifying;
                     }
@@ -1937,72 +1941,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     /*await*/ fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
                         .then(response => response.text())
-                        .then(html => {
-                            html = html
-                                .replace(/[^]*(<head\W[^]*?<\/head>)[^]*/i, '<html>$1<body></body></html>')
-                                .replace(/(<\w+\s+([^>]+?)>)/g, ($0, $1, $2 = '', $$, $_) => {
-                                    let attributes = {};
-
-                                    let attr = '', val = '',
-                                        isVal = false, delim = null,
-                                        skip = false;
-
-                                    for(let char of $2) {
-                                        if(!isVal) {
-                                            if(isVal = (char == '='))
-                                                continue;
-
-                                            attr += char;
-                                        } else {
-                                            if(skip) {
-                                                val += char;
-                                                skip = false;
-                                                continue;
-                                            }
-
-                                            if(char == '\\') {
-                                                val += char;
-                                                skip = true;
-                                                continue;
-                                            }
-
-                                            if(nullish(delim)) {
-                                                delim = (
-                                                    /["']/.test(char)?
-                                                        char:
-                                                    ' '
-                                                );
-
-                                                continue;
-                                            }
-
-                                            if(char == delim) {
-                                                attributes[attr.trim()] ??= `"${ val }"`;
-
-                                                isVal = false;
-                                                delim = null;
-                                                skip = false;
-                                                attr = '';
-                                                val = '';
-                                                continue;
-                                            }
-
-                                            val += char;
-                                        }
-                                    }
-
-                                    let defaults = {
-                                        crossorigin: 'anonymous',
-                                    };
-
-                                    for(let [name, value] of Object.entries(attributes))
-                                        attributes[name] ??= JSON.stringify(defaults[name]);
-
-                                    return $1.replace($2, Object.entries(attributes).map(([name, value]) => [name, value].join('=')).join(' '));
-                                });
-
-                            return html;
-                        })
+                        .then(DOMParser.stripBody)
                         .then(html => HTMLParser.parseFromString(html, 'text/html'))
                         .catch(WARN)
                         .then(DOM => {
@@ -2035,7 +1974,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                 f('div.tt-card-image', {},
                                                     f('div.tt-aspect', {},
                                                         f('div', {}),
-                                                        f('img.tt-image', { alt: title, src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`), height: 45, style: 'max-height:45px' })
+                                                        f('img.tt-image', {
+                                                            alt: title,
+                                                            src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
+                                                            height: 45,
+                                                            style: 'max-height:45px',
+
+                                                            onerror({ currentTarget }) { currentTarget.src = STREAMER.icon }
+                                                        })
                                                     )
                                                 )
                                             ),
@@ -2071,6 +2017,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             CHAT_CARDIFIED.set(href, container);
                             element.insertAdjacentElement('beforeend', container);
+
+                            if(nullish($('[class*="chat-paused"i]')))
+                                container.scrollIntoViewIfNeeded(true);
                         })
                         .catch(ERROR);
                 }
@@ -3167,11 +3116,11 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
     __Static_Helpers__:
     if(top != window) {
         if(parseBool(parseURL(window.location).searchParameters.current))
-            until(() => $('button[data-a-target*="carousel"i]'))
+            when.defined(() => $('button[data-a-target*="carousel"i]'))
                 .then(button => {
                     button.click();
 
-                    until(() => $('[data-badge-id]'))
+                    when.defined(() => $('[data-badge-id]'))
                         .then(() => {
                             let IS_CHANNEL_VIP = defined($('[data-badge-id^="vip"i]')),
                                 IS_CHANNEL_MODERATOR = defined($('[data-badge-id^="mod"i]'));

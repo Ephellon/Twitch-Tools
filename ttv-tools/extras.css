@@ -4,7 +4,7 @@ button[class*="tt-"i]:hover { background-color: #fff3 }
 :root {
     /* https://www.facemediagroup.co.uk/resources/a-to-z-guides/a-to-z-of-colours/ */
     /* Red Amber Ivory Nevgan Blue Orchid Wisteria */
-    --rainbow: linear-gradient(from 0, #ff0000, #ffbf00, #fffff0, #29752a, #0000ff, #da70d6, #c9a0dc);
+    --rainbow: linear-gradient(0, #ff0000, #ffbf00, #fffff0, #29752a, #0000ff, #da70d6, #c9a0dc);
 }
 
 /* Scrollbars */
@@ -821,7 +821,7 @@ caption {
     box-sizing: content-box;
 
     border: 1px solid;
-    border-image: conic-gradient(from var(--angle), #0000, var(--color-yellow)) 1;
+    border-image: conic-gradient(from var(--border-angle), #0000, var(--color-yellow)) 1;
 
     animation: 2s linear infinite spinning-border;
 }
@@ -860,23 +860,67 @@ caption {
 
 /* In Wallet */
 /* https://www.bram.us/2021/01/29/animating-a-css-gradient-border/ */
-[tt-wallet="true"i] [data-test-selector="cost"i] {
+[rainbow-border]:not([rainbow-border="false"i]) {
     box-sizing: content-box;
 
     border: 1px solid;
-    border-image: conic-gradient(from var(--angle), red, orange, yellow, green, blue, indigo, violet, violet, indigo, blue, green, yellow, orange, red) 1;
+    border-image: conic-gradient(from var(--border-angle), red, orange, yellow, green, blue, indigo, violet, violet, indigo, blue, green, yellow, orange, red) 1;
+}
 
+[rainbow-border="true"i] {
     animation: 2s linear infinite spinning-border;
 }
 
-@keyframes spinning-border {
-    to { --angle: 360deg }
+[rainbow-border][top-only] {
+	border-bottom: 0;
+	border-left: 0;
+	border-right: 0;
 }
 
-@property --angle {
+[rainbow-border][bottom-only] {
+	border-left: 0;
+	border-right: 0;
+	border-top: 0;
+}
+
+[rainbow-border][left-only] {
+	border-right: 0;
+	border-top: 0;
+	border-bottom: 0;
+}
+
+[rainbow-border][right-only] {
+	border-top: 0;
+	border-bottom: 0;
+	border-left: 0;
+}
+
+@keyframes spinning-border {
+    from { --border-angle: 0deg }
+    to { --border-angle: 360deg }
+}
+
+@property --border-angle {
     syntax: '<angle>';
     initial-value: 0deg;
     inherits: false;
+}
+
+[rainbow-text]:not([rainbow-text="false"i]) {
+    background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet, violet, indigo, blue, green, yellow, orange, red);
+    background-position-x: 0;
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: #fff8;
+}
+
+[rainbow-text="true"i] {
+    animation: 2s ease-in-out infinite spinning-background;
+}
+
+@keyframes spinning-background {
+    0% { background-position-x: 0% }
+    100% { background-position-x: 200% }
 }
 
 /* Picture-in-Picture */

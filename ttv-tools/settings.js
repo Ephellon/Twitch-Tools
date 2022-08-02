@@ -19,6 +19,67 @@ function getURL(path = '') {
     return url.origin + path.replace(/^(?!\/)/, '/');
 }
 
+// Makes a Promised setInterval
+    // when(callback:function<boolean>, ms:number<milliseconds>?) → Promise<any>
+async function when(callback, ms = 100) {
+    return new Promise((resolve, reject) => {
+        let interval = setInterval(async() => {
+            let value = await callback();
+
+            if(parseBool(value) !== false) {
+                clearInterval(interval);
+                resolve(
+                    (value === when.false)?
+                        false:
+                    (value === when.true)?
+                        true:
+                    value
+                );
+            }
+        }, ms);
+    });
+}
+
+try {
+    Object.defineProperties(when, {
+        "false": { value: Symbol(false) },
+        "true": { value: Symbol(true) },
+
+        "null": { value: Symbol(null) },
+        "void": { value: Symbol(void undefined) },
+        "undefined": { value: Symbol(undefined) },
+
+        "defined": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.defined(callback:function, ms:number<milliseconds>?) → Promise<any>
+            async function(callback, ms = 100) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async() => {
+                        let value = await callback();
+
+                        if(defined(value)) {
+                            clearInterval(interval);
+                            resolve(
+                                (value === when.null)?
+                                    null:
+                                (value === when.void)?
+                                    void undefined:
+                                (value === when.undefined)?
+                                    undefined:
+                                value
+                            );
+                        }
+                    }, ms);
+                });
+            },
+        },
+    });
+} catch(error) {
+    /* Ignore the error... */
+}
+
 let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
 
 const PRIVATE_OBJECT_CONFIGURATION = Object.freeze({
@@ -677,7 +738,7 @@ class DatePicker {
 
         document.body.append(container);
 
-        return until(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
+        return when.defined(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
     }
 }
 
@@ -1149,7 +1210,7 @@ $('#save, .save', true).map(element => element.onclick = async event => {
 
     currentTarget.classList.add('spin');
 
-    until(() => {
+    when.defined(() => {
         let invalid = $(usable_settings.map(name => '#' + name + ':invalid').join(', '));
 
         if(nullish(invalid))
@@ -1653,7 +1714,7 @@ $('[id^="key:"i]', true).map(element => element.textContent = GetMacro(element.t
 $('#video_clips__file_type option', true).filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
 
 // Set the browser storage usage...
-until(() => SETTINGS)
+when.defined(() => SETTINGS)
     .then(() => {
         Storage.getBytesInUse(async BYTES_IN_USE => {
             let ESTIMATE = await navigator?.storage?.estimate?.();
@@ -1828,39 +1889,6 @@ async function Translate(language = 'en', container = document) {
         });
 }
 
-// Makes a Promised setInterval - https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-    // until(callback:function, ms:number<integer>?) → Promise
-async function until(callback, ms = 100) {
-    return new Promise((resolve, reject) => {
-        let interval = setInterval(async() => {
-            let value = callback();
-
-            if(defined(value)) {
-                clearInterval(interval);
-                resolve(
-                    (value === until.null)?
-                        null:
-                    (value === until.void)?
-                        void(''):
-                    (value === until.undefined)?
-                        undefined:
-                    value
-                );
-            }
-        }, ms);
-    });
-}
-
-try {
-    Object.defineProperties(until, {
-        "null": { value: Symbol(null) },
-        "void": { value: Symbol(void('')) },
-        "undefined": { value: Symbol(undefined) },
-    });
-} catch(error) {
-    /* Ignore the error... */
-}
-
 document.body.onload = async() => {
     let url = parseURL(location.href),
         search = url.searchParameters;
@@ -1880,7 +1908,7 @@ document.body.onload = async() => {
                 detectedLanguage = user_language_preference;
         });
 
-        return until(() => {
+        return when.defined(() => {
             let languageOptions = $('.language-select');
 
             if(nullish(languageOptions))

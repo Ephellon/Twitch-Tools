@@ -23,7 +23,7 @@ class UUID {
     static #BWT_SEED = new UUID()
 
     constructor() {
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ top.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
+        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
         this.native = this.value = native;
 
@@ -457,28 +457,65 @@ function defined(value) {
     return !nullish(value);
 }
 
-// https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
 // Makes a Promised setInterval
-    // until(callback:function, ms:number<milliseconds>?) → Promise<any>
-async function until(callback, ms = 100) {
+    // when(callback:function<boolean>, ms:number<milliseconds>?) → Promise<any>
+async function when(callback, ms = 100) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async() => {
             let value = await callback();
 
-            if(defined(value)) {
+            if(parseBool(value) !== false) {
                 clearInterval(interval);
                 resolve(
-                    (value === until.null)?
-                        null:
-                    (value === until.void)?
-                        void undefined:
-                    (value === until.undefined)?
-                        undefined:
+                    (value === when.false)?
+                        false:
+                    (value === when.true)?
+                        true:
                     value
                 );
             }
         }, ms);
     });
+}
+
+try {
+    Object.defineProperties(when, {
+        "false": { value: Symbol(false) },
+        "true": { value: Symbol(true) },
+
+        "null": { value: Symbol(null) },
+        "void": { value: Symbol(void undefined) },
+        "undefined": { value: Symbol(undefined) },
+
+        "defined": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.defined(callback:function, ms:number<milliseconds>?) → Promise<any>
+            async function(callback, ms = 100) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async() => {
+                        let value = await callback();
+
+                        if(defined(value)) {
+                            clearInterval(interval);
+                            resolve(
+                                (value === when.null)?
+                                    null:
+                                (value === when.void)?
+                                    void undefined:
+                                (value === when.undefined)?
+                                    undefined:
+                                value
+                            );
+                        }
+                    }, ms);
+                });
+            },
+        },
+    });
+} catch(error) {
+    /* Ignore the error... */
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
@@ -497,16 +534,6 @@ function delay(fn, ms = 0) {
         clearTimeout(timer);
         timer = setTimeout(fn.bind(this, ...args), ms);
     }
-}
-
-try {
-    Object.defineProperties(until, {
-        "null": { value: Symbol(null) },
-        "void": { value: Symbol(void undefined) },
-        "undefined": { value: Symbol(undefined) },
-    });
-} catch(error) {
-    /* Ignore the error... */
 }
 
 // The following facilitates communication between pages
@@ -640,7 +667,7 @@ __STATIC__: {
     else if(defined(chrome?.extension))
         BrowserNamespace = 'chrome';
 
-    Container = top[BrowserNamespace];
+    Container = window[BrowserNamespace];
 
     switch(BrowserNamespace) {
         case 'browser': {

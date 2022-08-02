@@ -695,6 +695,73 @@ Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
     return (offset / day).floor();
 };
 
+// Strips the HTML body from a document
+    // DOMParser.stripBody(html:string?) → string<html>
+DOMParser.stripBody ??= function stripBody(html = '') {
+    return html
+        .replace(/[^]*(<head\W[^]*?<\/head>)[^]*/i, '<html>$1<body></body></html>')
+        .replace(/(<\w+\s+([^>]+?)>)/g, ($0, $1, $2 = '', $$, $_) => {
+            let attributes = {};
+
+            let attr = '', val = '',
+                isVal = false, delim = null,
+                skip = false;
+
+            for(let char of $2) {
+                if(!isVal) {
+                    if(isVal = (char == '='))
+                        continue;
+
+                    attr += char;
+                } else {
+                    if(skip) {
+                        val += char;
+                        skip = false;
+                        continue;
+                    }
+
+                    if(char == '\\') {
+                        val += char;
+                        skip = true;
+                        continue;
+                    }
+
+                    if(nullish(delim)) {
+                        delim = (
+                            /["']/.test(char)?
+                                char:
+                            ' '
+                        );
+
+                        continue;
+                    }
+
+                    if(char == delim) {
+                        attributes[attr.trim()] ??= `"${ val }"`;
+
+                        isVal = false;
+                        delim = null;
+                        skip = false;
+                        attr = '';
+                        val = '';
+                        continue;
+                    }
+
+                    val += char;
+                }
+            }
+
+            let defaults = {
+                crossorigin: 'anonymous',
+            };
+
+            for(let [name, value] of Object.entries(attributes))
+                attributes[name] ??= JSON.stringify(defaults[name]);
+
+            return $1.replace($2, Object.entries(attributes).map(([name, value]) => [name, value].join('=')).join(' '));
+        });
+};
+
 // Returns an element based upon its text
     // Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
@@ -1220,6 +1287,14 @@ String.prototype.equals ??= function equals(value, caseSensitive = false) {
     return this.trim() == value?.trim();
 };
 
+// Compares a string
+    // String..unlike(value:any, caseSensitive:boolean?) → boolean
+String.prototype.unlike ??= function unlike(value, caseSensitive = false) {
+    if(!caseSensitive)
+        return this.trim().toLowerCase() != value?.trim()?.toLowerCase();
+    return this.trim() != value?.trim();
+};
+
 // Add Array methods to HTMLCollection
 HTMLCollection.prototype.contains       ??= Array.prototype.contains;
 HTMLCollection.prototype.at             ??= Array.prototype.at;
@@ -1339,7 +1414,7 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
 
         this.__Recording__.push(event.data);
     };
-    RECORDER.start(10);
+    RECORDER.start(1000);
 
     this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', !private);
 
@@ -1570,7 +1645,7 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
         // Common US shorthands (used on Twitch)
         case 'natural':
         case 'readable': {
-            system.large = 'KMBTQ';
+            system.large = 'kMBTQ';
             system.small = '';
         } break;
 
@@ -1610,6 +1685,8 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
                 number:
             decimalPlaces === false?
                 Math.round(number):
+            (format.equals('readable') || format.equals('natural'))?
+                (Math.abs(this) > 999? number.toFixed(decimalPlaces).replace(/\.0+$/, ''): Math.round(number)):
             number.toFixed(decimalPlaces)
         )
         , suffix
@@ -2709,7 +2786,7 @@ function alert(message = '') {
         return alert.done.fetch(message);
 
     if(defined($('.tt-alert')))
-        return until(() => nullish($('.tt-alert'))? true: null).then(() => alert(message));
+        return when.defined(() => nullish($('.tt-alert'))? true: null).then(() => alert(message));
 
     let f = furnish;
     let $DOM = (alert.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -2766,7 +2843,7 @@ function alert(message = '') {
 
     document.body.append(container);
 
-    let value = until(() => {
+    let value = when.defined(() => {
         let element = $('.tt-alert'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-alert-time')?.getAttribute('tt-done'));
@@ -2778,10 +2855,10 @@ function alert(message = '') {
 
             phantomClick(button);
 
-            return until.void;
+            return when.void;
         }
 
-        return (value? until.void: null);
+        return (value? when.void: null);
     });
 
     alert.done.deposit(message, value);
@@ -2835,13 +2912,13 @@ alert.silent ??= (message = '', veiled = false) => {
         return alert.done.fetch(message);
 
     if(defined($('.tt-alert')))
-        return until(() => nullish($('.tt-alert'))? true: null).then(() => alert.silent(message, veiled));
+        return when.defined(() => nullish($('.tt-alert'))? true: null).then(() => alert.silent(message, veiled));
 
     let response = alert(message),
         container = $('.tt-alert');
 
     if(nullish(container))
-        return until.void;
+        return when.void;
 
     if(container.classList.contains('tt-silent'))
         return response;
@@ -2860,13 +2937,13 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         return alert.done.fetch(message);
 
     if(defined($('.tt-alert')))
-        return until(() => nullish($('.tt-alert'))? true: null).then(() => alert.timed(message, milliseconds, pausable));
+        return when.defined(() => nullish($('.tt-alert'))? true: null).then(() => alert.timed(message, milliseconds, pausable));
 
     let response = alert.silent(message),
         container = $('.tt-alert');
 
     if(nullish(container))
-        return until.void;
+        return when.void;
 
     if(container.classList.contains('tt-timed'))
         return response;
@@ -2904,7 +2981,7 @@ function confirm(message = '') {
         return confirm.done.fetch(message);
 
     if(defined($('.tt-confirm')))
-        return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm(message));
+        return when.defined(() => nullish($('.tt-confirm'))? true: null).then(() => confirm(message));
 
     let f = furnish;
     let $DOM = (confirm.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -2992,7 +3069,7 @@ function confirm(message = '') {
 
     document.body.append(container);
 
-    let value = until(() => {
+    let value = when.defined(() => {
         let element = $('.tt-confirm'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-confirm-time')?.getAttribute('tt-done'));
@@ -3004,7 +3081,7 @@ function confirm(message = '') {
 
             phantomClick(button);
 
-            return until.null;
+            return when.null;
         }
 
         return value;
@@ -3061,13 +3138,13 @@ confirm.silent ??= (message = '', veiled = false) => {
         return confirm.done.fetch(message);
 
     if(defined($('.tt-confirm')))
-        return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.silent(message, veiled));
+        return when.defined(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.silent(message, veiled));
 
     let response = confirm(message),
         container = $('.tt-confirm');
 
     if(nullish(container))
-        return until.void;
+        return when.void;
 
     if(container.classList.contains('tt-silent'))
         return response;
@@ -3086,13 +3163,13 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         return confirm.done.fetch(message);
 
     if(defined($('.tt-confirm')))
-        return until(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.timed(message, milliseconds, pausable));
+        return when.defined(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.timed(message, milliseconds, pausable));
 
     let response = confirm.silent(message),
         container = $('.tt-confirm');
 
     if(nullish(container))
-        return until.void;
+        return when.void;
 
     if(container.classList.contains('tt-timed'))
         return response;
@@ -3130,7 +3207,7 @@ function prompt(message = '', defaultValue = '') {
         return prompt.done.fetch(message);
 
     if(defined($('.tt-prompt')))
-        return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt(message));
+        return when.defined(() => nullish($('.tt-prompt'))? true: null).then(() => prompt(message));
 
     let f = furnish;
     let $DOM = (prompt.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -3253,7 +3330,7 @@ function prompt(message = '', defaultValue = '') {
 
     $('.tt-prompt-input').value = defaultValue;
 
-    let value = until(() => {
+    let value = when.defined(() => {
         let element = $('.tt-prompt'),
             value = element?.getAttribute('value'),
             timedOut = parseBool($('.tt-prompt-time')?.getAttribute('tt-done'));
@@ -3263,10 +3340,10 @@ function prompt(message = '', defaultValue = '') {
 
             phantomClick(button);
 
-            return until.null;
+            return when.null;
         }
 
-        return (value == '\0'? until.null: value);
+        return (value == '\0'? when.null: value);
     });
 
     prompt.done.deposit(message, value);
@@ -3320,13 +3397,13 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
         return prompt.done.fetch(message);
 
     if(defined($('.tt-prompt')))
-        return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.silent(message, defaultValue, veiled));
+        return when.defined(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.silent(message, defaultValue, veiled));
 
     let response = prompt(message, defaultValue),
         container = $('.tt-prompt');
 
     if(nullish(container))
-        return until.void;
+        return when.void;
 
     if(container.classList.contains('tt-silent'))
         return response;
@@ -3345,13 +3422,13 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
         return prompt.done.fetch(message);
 
     if(defined($('.tt-prompt')))
-        return until(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.timed(message, milliseconds, pausable));
+        return when.defined(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.timed(message, milliseconds, pausable));
 
     let response = prompt.silent(message),
         container = $('.tt-prompt');
 
     if(nullish(container))
-        return until.void;
+        return when.void;
 
     if(container.classList.contains('tt-timed'))
         return response;

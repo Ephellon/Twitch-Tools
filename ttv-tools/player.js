@@ -23,7 +23,7 @@ let {
     }),
 
     GLOBAL_EVENT_LISTENERS,
-} = top;
+} = window;
 
 function AddCustomCSSBlock(name, block) {
     Player__CUSTOM_CSS.innerHTML += `/*${ name }*/${ block }/*#${ name }*/`;
@@ -53,7 +53,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 max = abs(JobTime) * 1.1;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ parent.location.pathname }`)
+                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ window.location.pathname }`)
                     ?.toNativeStack?.();
         },
         START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
@@ -134,7 +134,7 @@ let Player__Initialize = async(START_OVER = false) => {
 
                 // WARN(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
 
-                parent.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, parent.location.origin);
+                window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, window.location.origin);
             });
     };
     Timers.hide_blank_ads = 500;
@@ -186,7 +186,7 @@ let Player__Initialize = async(START_OVER = false) => {
         video.startRecording(Infinity, { mimeType: `video/${ filetype }` })
             .then(chunks => {
                 let blob = new Blob(chunks, { type: chunks.type });
-                let link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ top.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
+                let link = furnish(`a#${ slug }`, { href: URL.createObjectURL(blob), download: `${ slug }.${ window.MIME_Types.find(video.mimeType) }`, hidden: true }, slug);
 
                 $.head.append(link);
                 link.click();
@@ -199,7 +199,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 URL.revokeObjectURL(link?.href);
                 link?.remove();
 
-                parent.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, parent.location.origin);
+                window.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, window.location.origin);
             });
     };
     Timers.auto_dvr = 500;
@@ -275,7 +275,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is NOT banned
     let ready = (true
         // The main controller is ready
-        && parseBool(parent.MAIN_CONTROLLER_READY)
+        && parseBool(window.MAIN_CONTROLLER_READY)
 
         // There is an error message
         || defined($('[data-test-selector^="content-overlay-gate"i]'))
@@ -289,7 +289,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
         wait(5000).then(Player__Initialize);
         clearInterval(Player__PAGE_CHECKER);
 
-        parent.FRAMED_CONTROLLER_READY = true;
+        window.FRAMED_CONTROLLER_READY = true;
 
         // Only re-execute if in an iframe
         if(top != window) {
@@ -298,10 +298,10 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                 let { body } = document,
                     observer = new MutationObserver(mutations => {
                         mutations.map(mutation => {
-                            if(PATHNAME !== parent.location.pathname) {
+                            if(PATHNAME !== window.location.pathname) {
                                 let OLD_HREF = PATHNAME;
 
-                                PATHNAME = parent.location.pathname;
+                                PATHNAME = window.location.pathname;
 
                                 for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
                                     func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
@@ -320,7 +320,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                             "unmute"
                         ].reverse(),
             },
-                Glyphs = parent.Glyphs;
+                Glyphs = window.Glyphs;
 
             for(let container of $('figure', true)) {
                 let svg = $('svg', false, container);
@@ -380,6 +380,6 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 }, 500);
 
 Player__SETTING_RELOADER = setInterval(() => {
-    for(let MAX_CALLS = 60; MAX_CALLS > 0 && parent.REFRESH_ON_CHILD?.length; --MAX_CALLS)
-        RestartJob(parent.REFRESH_ON_CHILD.pop());
+    for(let MAX_CALLS = 60; MAX_CALLS > 0 && window.REFRESH_ON_CHILD?.length; --MAX_CALLS)
+        RestartJob(window.REFRESH_ON_CHILD.pop());
 }, 250);
