@@ -9,10 +9,6 @@
  *                                  |___/    |__/
  */
 
-let $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
-let nullish = value => (value === undefined || value === null),
-    defined = value => !nullish(value);
-
 function getURL(path = '') {
     let url = parseURL(top.location);
 
@@ -303,168 +299,6 @@ let // These are option names. Anything else will be removed
         /* "Hidden" options */
         'sync-token',
     ];
-
-// https://stackoverflow.com/a/2117523/4211612
-// https://gist.github.com/jed/982883
-// Creates a random UUID
-    // new UUID() → object
-    // UUID.BWT(string:string) → string
-    // UUID.cyrb53(string:string, seed:number?) → string
-    // UUID.from(string:string, traceable:boolean?) → object
-    // UUID.prototype.toString() → string
-class UUID {
-    static #BWT_SEED = new UUID()
-
-    constructor() {
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ top.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
-
-        this.native = this.value = native;
-
-        this[Symbol.toPrimitive] = type => {
-            switch(type) {
-                case 'boolean':
-                    return true;
-
-                case 'bigint':
-                case 'number':
-                    return NaN;
-
-                case 'default':
-                case 'string':
-                case 'object':
-                case 'symbol':
-                default:
-                    return native;
-            }
-        };
-
-        return this;
-	}
-
-    toString() {
-        return this.native;
-    }
-
-    toStamp() {
-        let value = 0;
-
-        this.native.split('-').map(hex => value ^= parseInt(hex, 16));
-
-        return Math.abs(value).toString(16).padStart(8, '0');
-    }
-
-    /* BWT Sorting Algorithm */
-    static BWT(string = '') {
-        if(/^[\x32]*$/.test(string))
-            return '';
-
-        let _a = `\u0001${ string }`,
-            _b = `\u0001${ string }\u0001${ string }`,
-            p_ = [];
-
-        for(let i = 0; i < _a.length; i++)
-            p_.push(_b.slice(i, _a.length + i));
-
-        p_ = p_.sort();
-
-        return p_.map(P => P.slice(-1)[0]).join('');
-    }
-
-    // https://stackoverflow.com/a/52171480/4211612
-    static cyrb53(string, seed = 0) {
-        let H1 = 0xDEADBEEF ^ seed,
-            H2 = 0x41C6CE57 ^ seed;
-
-        for(let i = 0, code; i < string.length; ++i) {
-            code = string.charCodeAt(i);
-
-            H1 = Math.imul(H1 ^ code, 2654435761);
-            H2 = Math.imul(H2 ^ code, 1597334677);
-        }
-
-        H1 = Math.imul(H1 ^ (H1 >>> 16), 2246822507) ^ Math.imul(H2 ^ (H2 >>> 13), 3266489909);
-        H2 = Math.imul(H2 ^ (H2 >>> 16), 2246822507) ^ Math.imul(H1 ^ (H1 >>> 13), 3266489909);
-
-        return (4294967296 * (2097151 & H2) + (H1 >>> 0)).toString(16);
-    }
-
-    static from(key = '', traceable = false) {
-        key = JSON.stringify(
-            (null
-                ?? key?.toJSON?.()
-                ?? key
-            )
-            || null
-        );
-
-        let PRIVATE_KEY = (traceable? '': `private-key="${ UUID.#BWT_SEED }"`),
-            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key="${ Manifest.name }"`;
-
-        let hash = Uint8Array.from(
-                btoa(
-                    [PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY]
-                        .map(string => UUID.cyrb53(string, parseInt(UUID.#BWT_SEED, 16) * +!traceable))
-                        .join('~')
-                )
-                    .split('')
-                    .map(character => character.charCodeAt(0))
-            ),
-            l = hash.length,
-            i = 0;
-
-        hash = hash.map((n, i, a) => a[n & 255] ^ a[n | 170] ^ a[n ^ 85] ^ a[-~n] ^ n + i);
-
-        let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
-
-        this.native = this.value = native;
-
-        this[Symbol.toPrimitive] = type => {
-            switch(type) {
-                case 'boolean':
-                    return true;
-
-                case 'bigint':
-                case 'number':
-                    return NaN;
-
-                case 'default':
-                case 'string':
-                case 'object':
-                case 'symbol':
-                default:
-                    return this.native;
-            }
-        };
-
-        this.toString = () => this.native;
-        this.toStamp = () => UUID.prototype.toStamp.apply(this);
-
-        return this;
-    }
-
-    static async ergo(key = '') {
-        key = (key ?? '').toString();
-
-        // Privatize (pre-hash) the message a bit
-        let PRIVATE_KEY = `private-key=${ UUID.#BWT_SEED }`,
-            CONTENT_KEY = `content="${ encodeURIComponent(key) }"`,
-            PUBLIC_KEY = `public-key=${ Manifest.version }`;
-
-        key = btoa([PRIVATE_KEY, CONTENT_KEY, PUBLIC_KEY].map(UUID.BWT).join('<% PUB-BWT-KEY %>'));
-
-        // Digest the message
-        // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
-        const UTF8String = new TextEncoder().encode(key);                     // encode as (utf-8) Uint8Array
-        const hashBuffer = await crypto.subtle.digest('SHA-256', UTF8String); // hash the message
-        const hashString =
-            [...new Uint8Array(hashBuffer)]                                   // convert buffer to byte array
-                .map(B => B.toString(16).padStart(2, '0')).join('')           // convert bytes to hex string
-                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');        // format the string into a large UUID string
-
-        return hashString;
-    }
-}
 
 // Creates a Twitch-style tooltip
     // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, direction:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
@@ -1192,7 +1026,7 @@ $('#user_language_preference', true).map(select => {
         let lang = user_language_preference?.toLowerCase?.();
 
         $('option[selected]', false, select)?.removeAttribute?.('selected');
-        $(`option[value="${ (select.value = lang) }"i]`, false, select).setAttribute('selected', true);
+        $(`option[value="${ (select.value = lang) }"i]`, false, select)?.setAttribute('selected', true);
     });
 });
 
@@ -1291,7 +1125,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                         )
                     });
 
-                await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(url.href) }`/*, { mode: 'cors' } */)
+                await fetchURL(url.href/*, { mode: 'cors' } */)
                     .then(response => response.text())
                     .then(token => {
                         let { pathname } = parseURL(token);
@@ -1316,7 +1150,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                         )
                     });
 
-                await fetch(url.href)
+                await fetchURL(url.href)
                     .then(response => response.json())
                     .then(({ shorturl, errorcode, errormessage }) => {
                         if(parseInt(errorcode) > 0)
@@ -1347,7 +1181,7 @@ $('#sync-settings--download').onmouseup = async event => {
         if(compareVersions(`${ Manifest.version } < 99`))
             throw 'ID-v2 not supported';
 
-        await fetch(`https://is.gd/forward.php?format=json&shorturl=${ syncToken }`)
+        await fetchURL(`https://is.gd/forward.php?format=json&shorturl=${ syncToken }`)
             .then(response => response.json())
             .catch(PostSyncStatus.warning)
             .then(({ url, errorcode, errormessage }) => {
@@ -1389,7 +1223,7 @@ $('#sync-settings--download').onmouseup = async event => {
                 PostSyncStatus.warning(error);
             });
     } catch(error) {
-        await fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(`https://preview.tinyurl.com/${ syncToken }`) }`/*, { mode: 'cors' } */)
+        await fetchURL(`https://preview.tinyurl.com/${ syncToken }`/*, { mode: 'cors' } */)
             .then(response => response.text())
             .catch(PostSyncStatus.warning)
             .then(html => {
@@ -1504,7 +1338,7 @@ let FETCHED_DATA = { wasFetched: false };
         if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
             let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
-            await fetch(githubURL)
+            await fetchURL(githubURL)
                 .then(response => {
                     if(FETCHED_DATA.wasFetched)
                         throw 'Data was already fetched';
@@ -1772,7 +1606,7 @@ when.defined(() => SETTINGS)
     });
 
 async function Translate(language = 'en', container = document) {
-    await fetch(`/_locales/${ language }/settings.json`)
+    await fetchURL(`/_locales/${ language }/settings.json`)
         .catch(error => {
             WARN(`Translations to "${ language.toUpperCase() }" are not available`);
 

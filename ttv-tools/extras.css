@@ -911,11 +911,11 @@ caption {
     background-position-x: 0;
     background-size: 200% 100%;
     -webkit-background-clip: text;
-    -webkit-text-fill-color: #fff8;
+    -webkit-text-fill-color: #fff4;
 }
 
 [rainbow-text="true"i] {
-    animation: 2s ease-in-out infinite spinning-background;
+    animation: 2s linear infinite spinning-background;
 }
 
 @keyframes spinning-background {
@@ -962,4 +962,12 @@ caption {
 
     height: 4rem;
     width: 4rem;
+}
+
+/* Rewards Calculator Text */
+[tt-rewards-calc]::before, [tt-rewards-calc]::after {
+    font-style: italic;
+    text-align: center;
+
+    width: -webkit-fill-available;
 }

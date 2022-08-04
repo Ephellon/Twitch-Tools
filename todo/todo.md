@@ -15,6 +15,7 @@
 6. Up Next sometimes goes in an irregular order
     * Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
         * Tentative fix `4.29`
+        * Still present `5.23`
     * It might also not list jobs immediately
 7. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
@@ -35,6 +36,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.24)
+- Added a timer to Game Overview Card
+- Fixed issue with `AddCustomCSSBlock`
+- Added alternative placement for "Available in X streams" text
+- Added `fetchURL`
+- Fixed issue with Non-subscriber error
+- Fixed issue with new Twitch pages
+
 > [`5.23`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.23)
 - Added logic to detect when a tab freezes
 - Modified anchor-cardifying logic
