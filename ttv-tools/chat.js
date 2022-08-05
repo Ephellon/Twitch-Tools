@@ -14,7 +14,7 @@
 function AddCustomCSSBlock(name, block) {
     name = name.trim();
 
-    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/|$)`);
+    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
     Chat__CUSTOM_CSS?.setHTML((Chat__CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     Chat__CUSTOM_CSS?.remove();
@@ -457,7 +457,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             // Load emotes from a certain user
             if(defined(provider))
-                await fetch(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
+                await fetchURL(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
                     .then(response => response.json())
                     .then(json => {
                         let { channelEmotes, sharedEmotes } = json;
@@ -482,7 +482,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Load emotes with a certain name
             else if(defined(keyword))
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && (keyword || '').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
-                    await fetch(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
+                    await fetchURL(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
                             if(!emotes?.length)
@@ -510,7 +510,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Load all emotes from...
             else
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
-                    await fetch(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
+                    await fetchURL(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
                             for(let { emote } of emotes) {
@@ -551,7 +551,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         // Raw Search...
                             // FIX-ME: New Search logic does not complete?
-                        await fetch(`./${ bttvOwner }`)
+                        await fetchURL(`./${ bttvOwner }`)
                             .then(response => response.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(({ documentElement }) => documentElement)
@@ -1939,7 +1939,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     CHAT_CARDIFIED.set(href, null);
                     CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
-                    /*await*/ fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
+                    /*await*/ fetchURL(href, { mode: 'cors' })
                         .then(response => response.text())
                         .then(DOMParser.stripBody)
                         .then(html => HTMLParser.parseFromString(html, 'text/html'))
@@ -2287,7 +2287,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     let CHANNEL_POINTS_MULTIPLIER,
-        REWARDS_CALCULATOR_TOOLTIP;
+        REWARDS_CALCULATOR_TEXT;
 
     Handlers.rewards_calculator = () => {
         START__STOP_WATCH('rewards_calculator');
@@ -2317,7 +2317,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(container)) {
             JUDGE__STOP_WATCH('rewards_calculator');
 
-            return REWARDS_CALCULATOR_TOOLTIP = null;
+            RemoveCustomCSSBlock('tt-rewards-calc');
         }
 
         // Average broadcast time is 4.5h
@@ -2333,9 +2333,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
 
-        container.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-opac-p-8) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
-
-        REWARDS_CALCULATOR_TOOLTIP ??= new Tooltip(container);
+        container?.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-opac-p-8) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
 
         let { ceil, floor, round } = Math;
 
@@ -2350,7 +2348,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             estimated = 'minute',
             timeEstimated = 60 * (ceil(hours * 4) / 4);
 
-        if(hours > 1) {
+        if(hours < 0) {
+            return;
+        } if(hours > 1) {
             estimated = 'hour';
             timeEstimated = hours;
         } if(hours > averageBroadcastTime) {
@@ -2373,7 +2373,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         timeEstimated = ceil(timeEstimated);
 
         function estimates(language) {
-            return fetch(Runtime.getURL(`_locales/${ language }/settings.json`))
+            return fetchURL(Runtime.getURL(`_locales/${ language }/settings.json`))
                 .then(response => response.json())
                 .then(json => {
                     let _ = json['?'],
@@ -2410,7 +2410,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Достъпно по време на този': `Предлага се в още ${ comify(streams) }` } ${ "поток" + ["и","а"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2424,7 +2424,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Dostupné během tohoto': `K dispozici v dalších ${ comify(streams) }` } ${ "stream" + ["u","ech"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2438,7 +2438,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Tilgængelig ${ (streams < 1 || hours < timeLeftInBroadcast)? 'under denne': `i ${ comify(streams) } flere` } ${ "stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2452,7 +2452,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'In diesem Strom': `Erhältlich in ${ comify(streams) } mehr` } ${ "Stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2466,7 +2466,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Saatavilla ${ (streams < 1 || hours < timeLeftInBroadcast)? 'tämän streamin aikana': `vielä ${ comify(streams) } suorana` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2480,7 +2480,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Elérhető a stream alatt': `${ comify(streams) } további adatfolyamban elérhető` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2494,7 +2494,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Tilgjengelig ${ (streams < 1 || hours < timeLeftInBroadcast)? 'under denne strømmen': `i ${ comify(streams) } strømmer til` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2508,7 +2508,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Dostępne ${ (streams < 1 || hours < timeLeftInBroadcast)? 'podczas tej transmisji': `w ${ comify(streams) } kolejnych strumieniach` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2522,7 +2522,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Dostupné ${ (streams < 1 || hours < timeLeftInBroadcast)? 'počas tohto': `v ${ comify(streams) }` } ${ "stream" + ["u","och"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2536,7 +2536,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'Bu yayın sırasında kullanılabilir': `${ comify(streams) } akışta daha mevcuttur` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2550,7 +2550,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Διαθέσιμο ${ (streams < 1 || hours < timeLeftInBroadcast)? 'κατά τη διάρκεια αυτής της': `σε ${ comify(streams) } ακόμη` } ${ "ρο" + ["ής","ές"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2564,7 +2564,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'pendant ce stream': `dans ${ comify(streams) } flux supplémentaires` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2578,7 +2578,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Beschikbaar ${ (streams < 1 || hours < timeLeftInBroadcast)? 'tijdens deze': `in nog ${ comify(streams) }` } ${ "stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2592,7 +2592,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Disponibile ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante questo': `in altri ${ comify(streams) }` } ${ "stream" + ["ing",""][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2606,7 +2606,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Disponibil în ${ (streams < 1 || hours < timeLeftInBroadcast)? 'timpul acestui': `încă  ${ comify(streams) } de` } ${ "flux" + ["","uri"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2620,7 +2620,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'このストリーム中に': `さらに${ comify(streams) }のストリームで` } ${ "利用可能" + ["_","s"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2634,7 +2634,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? '在此直播期间可用': `在另外 ${ comify(streams) } 个流中可用` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2648,7 +2648,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? '在此直播期間可用': `在另外 ${ comify(streams) } 個流中可用` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2662,7 +2662,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? '이 스트림 동안': `${ comify(streams) }개 이상의 스트림에서` } 사용 가능 (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2676,7 +2676,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Tillgänglig ${ (streams < 1 || hours < timeLeftInBroadcast)? 'under denna': `i ytterligare ${ comify(streams) }` } ${ "stream".pluralSuffix(streams, "s") } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2690,7 +2690,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `${ (streams < 1 || hours < timeLeftInBroadcast)? 'ได้ในสตรีมนี้': `พร้อมให้บริการในอีก ${ comify(streams) } สตรีม` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2704,7 +2704,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Có sẵn trong ${ (streams < 1 || hours < timeLeftInBroadcast)? '': comify(streams) } ${ "luồng " + ["này","khác"][+(streams > 1)] } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2718,7 +2718,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Disponible ${ (streams < 1 || hours < timeLeftInBroadcast)? 'durante este arroyo': `en ${ comify(streams) } arroyos más` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2732,7 +2732,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .then(estimates => {
                         estimated = estimates[estimated].pop();
 
-                        REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                        REWARDS_CALCULATOR_TEXT =
                             `Доступно ${ (streams < 1 || hours < timeLeftInBroadcast)? 'во время этого потока': `в ${ comify(streams) } ручьях` } (${ correct(estimated, timeEstimated) })`;
                     });
             } break;
@@ -2742,10 +2742,21 @@ let Chat__Initialize = async(START_OVER = false) => {
                 // Available during this stream (30 minutes)
                 // Available in 33 more streams (3 weeks)
 
-                REWARDS_CALCULATOR_TOOLTIP.innerHTML =
+                REWARDS_CALCULATOR_TEXT =
                     `Available ${ (streams < 1 || hours < timeLeftInBroadcast)? 'during this': `in ${ comify(streams) } more` } ${ "stream".pluralSuffix(streams, "s") } (${ comify(timeEstimated) } ${ estimated.pluralSuffix(timeEstimated) })`;
             } break;
         }
+
+        AddCustomCSSBlock('tt-rewards-calc',
+        `
+        [tt-rewards-calc="before"i]::before {
+            content: "${ REWARDS_CALCULATOR_TEXT }";
+        }
+
+        [tt-rewards-calc="after"i]::after {
+            content: "${ REWARDS_CALCULATOR_TEXT }";
+        }
+        `);
 
         JUDGE__STOP_WATCH('rewards_calculator');
     };
@@ -3173,7 +3184,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                     && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
 
                     // There are channel buttons on the side
-                    && parseBool($('#sideNav .side-nav-section[aria-label]', true)?.length)
+                    && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
                 )
 
                 // This window is not the main container

@@ -48,7 +48,7 @@ when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"
         UserMenuToggleButton.click();
 
         // Setting the statuses...
-        fetch(`https://api.twitchinsights.net/v1/user/status/${ USERNAME }`)
+        fetchURL(`https://api.twitchinsights.net/v1/user/status/${ USERNAME }`)
             .then(response => response?.json())
             .then(({ broadcasterType, createdAt, deletedAt, displayName, id, unavailableReason, updatedAt, userType }) => {
                 IS_TWITCH_ADMIN = ['admin', 'staff'].contains(userType);
@@ -1210,7 +1210,7 @@ class Search {
                 if(nullish(name) || type != 'channel')
                     break;
 
-                searchResults = fetch(`./${ name }`)
+                searchResults = fetchURL(`./${ name }`)
                     .then(response => response.text())
                     .then(html => {
                         let parser = new DOMParser;
@@ -1224,7 +1224,7 @@ class Search {
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                             [language] = languages.filter(lang => alt_languages.missing(lang)),
                             name = display_name?.trim(),
-                            profile_image = $('meta[property$="image"i]', false, doc)?.content,
+                            profile_image = ($('meta[property$="image"i]', false, doc)?.content || Runtime.getURL('profile.png')),
                             live = parseBool(data?.publication?.isLiveBroadcast),
                             started_at = new Date(data?.publication?.startDate).toJSON(),
                             status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
@@ -1409,7 +1409,7 @@ class Search {
 
     static retrieve(query) {
         if(typeof fetch == 'function')
-            return fetch('https://gql.twitch.tv/gql', query);
+            return fetchURL('https://gql.twitch.tv/gql', query);
 
         return new Promise((onSuccess, onError) => {
             let request = new XMLHttpRequest;
@@ -2925,7 +2925,7 @@ let nth = (n, s = '') => {
 function AddCustomCSSBlock(name, block) {
     name = name.trim();
 
-    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/|$)`);
+    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
     CUSTOM_CSS?.setHTML((CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     CUSTOM_CSS?.remove();
@@ -3579,7 +3579,7 @@ try {
 
                     let scripts = [...DOM.scripts].filter(script => script.src?.length);
                     for(let script of scripts)
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(script.src)}`, { mode: 'cors' })
+                        await fetchURL(script.src)
                             .then(response => response.text())
                             .then(js => {
                                 script.removeAttribute('src');
@@ -3588,7 +3588,7 @@ try {
 
                     let styles = [...DOM.styleSheets].filter(style => style.href?.length);
                     for(let style of styles)
-                        await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(style.href)}`, { mode: 'cors' })
+                        await fetchURL(style.href)
                             .then(response => response.text())
                             .then(css => {
                                 style.removeAttribute('href');
@@ -3730,7 +3730,7 @@ async function update() {
     window.CHANNELS = CHANNELS = [
         ...CHANNELS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'CHANNELS',
@@ -3741,7 +3741,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
+                        let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
                             return false;
@@ -3771,7 +3771,7 @@ async function update() {
     window.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
+        ...$(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
                 let streamer = {
                     from: 'STREAMERS',
@@ -3782,7 +3782,7 @@ async function update() {
                             url = parseURL(href),
                             { pathname } = url;
 
-                        let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
+                        let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                         if(nullish(parent))
                             return false;
@@ -3994,7 +3994,7 @@ let Initialize = async(START_OVER = false) => {
         // Next channel in "Up Next"
         if(!parseBool(Settings.first_in_line_none) && UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS?.length)
             return GetNextStreamer.cachedStreamer = (null
-                ?? ALL_CHANNELS.find(channel => channel?.href?.contains?.(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
+                ?? ALL_CHANNELS.find(channel => parseURL(channel?.href)?.pathname?.equals(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
                 ?? {
                     from: 'GET_NEXT_STREAMER',
                     href: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).href,
@@ -4283,7 +4283,7 @@ let Initialize = async(START_OVER = false) => {
                     // type: "say"
                     // updatedAt: "2020-09-10T02:07:05.487Z"
                     // _id: "5f598a4986ca683315a3f402"
-                await fetch(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
+                await fetchURL(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
                     .then(r => r?.json?.())
                     .then(json => json?._id)
                     .then(async id => {
@@ -4293,7 +4293,7 @@ let Initialize = async(START_OVER = false) => {
                             return [];
 
                         for(let type of ['public', 'default'])
-                            await fetch(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`)
+                            await fetchURL(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`, { mode: 'cors' })
                                 .then(r => r.json())
                                 .then(json => commands[type] ??= json);
 
@@ -4316,7 +4316,7 @@ let Initialize = async(START_OVER = false) => {
                     // updatedAt: "2021-07-31T05:33:56.305Z"
                     // userLevel: "everyone"
                     // _id: "6104e0c44038915692edaeed"
-                await fetch(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
+                await fetchURL(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
                     .then(r => r?.json?.())
                     .then(json => json?.channel?._id)
                     .then(async id => {
@@ -4325,7 +4325,7 @@ let Initialize = async(START_OVER = false) => {
                         if(nullish(id))
                             return commands;
 
-                        await fetch('https://api.nightbot.tv/1/commands', { headers: { 'nightbot-channel': id } })
+                        await fetchURL('https://api.nightbot.tv/1/commands', { mode: 'cors', headers: { 'nightbot-channel': id } })
                             .then(r => r.json())
                             .then(json => {
                                 if(!json.status.toString().startsWith('2'))
@@ -4643,7 +4643,7 @@ let Initialize = async(START_OVER = false) => {
         get vods() {
             let { name, sole } = STREAMER;
 
-            return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)}`, { mode: 'cors' })
+            return fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                 .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
@@ -4652,7 +4652,7 @@ let Initialize = async(START_OVER = false) => {
                         return vods;
 
                     // Alternate method...
-                    return fetch(`https://www.twitch.tv/${ name }/videos`)
+                    return fetchURL(`https://www.twitch.tv/${ name }/videos`)
                         .then(r => r.text())
                         .then(html => {
                             let dom = (new DOMParser).parseFromString(html, 'text/html');
@@ -4762,10 +4762,10 @@ let Initialize = async(START_OVER = false) => {
 
         // Click "show more" as many times as possible
         show_more:
-        while(defined(element = $('#sideNav [data-a-target$="show-more-button"i]')))
+        while(defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => nullish($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => nullish($('[class*="--offline"i]', false, e)));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -4776,7 +4776,7 @@ let Initialize = async(START_OVER = false) => {
          */
         ALL_CHANNELS = [
             // Current (followed) streamers
-            ...$(`#sideNav .side-nav-section a`, true)
+            ...$(`[id*="side"i][id*="nav"i] .side-nav-section a`, true)
                 .map(element => {
                     let streamer = {
                         from: 'ALL_CHANNELS',
@@ -4795,7 +4795,7 @@ let Initialize = async(START_OVER = false) => {
                                 return cache.live;
 
                             // Then the actual "does the channel show up" result
-                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
+                            let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                             if(nullish(parent))
                                 return false;
@@ -4832,7 +4832,7 @@ let Initialize = async(START_OVER = false) => {
          */
         CHANNELS = [
             // Current (followed) streamers
-            ...$(`#sideNav .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'CHANNELS',
@@ -4843,7 +4843,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section [href$="${ pathname }"i]`);
+                            let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
                             if(nullish(parent))
                                 return false;
@@ -4876,7 +4876,7 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
                     let streamer = {
                         from: 'STREAMERS',
@@ -4887,7 +4887,7 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url;
 
-                            let parent = $(`#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
+                            let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
                             if(nullish(parent))
                                 return false;
@@ -4922,7 +4922,7 @@ let Initialize = async(START_OVER = false) => {
         // Only re-open sections if they contain live channels
         show_more_again:
         while(true
-            && defined(element = $('#sideNav [data-a-target$="show-more-button"i]'))
+            && defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]'))
             && (++PANEL_SIZE * 12) < ALL_LIVE_SIDE_PANEL_CHANNELS.length
         )
             element.click();
@@ -5063,7 +5063,7 @@ let Initialize = async(START_OVER = false) => {
                             // usualStartTime: "10:00"
                             // usualStopTime: "14:45"
                         if(!FETCHED_OK) {
-                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)}`, { mode: 'cors' })
+                            await fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
                                 .then(response => response.json())
                                 .then(json => {
                                     let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
@@ -5179,7 +5179,7 @@ let Initialize = async(START_OVER = false) => {
                                 });
 
                             // Channel details (HTML → JSON)
-                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)}`, { mode: 'cors' })
+                            await fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(DOM => {
@@ -5244,7 +5244,7 @@ let Initialize = async(START_OVER = false) => {
                             // totalViews: 4344374
                             // totalViewsRanked: 4885
                         if(!FETCHED_OK)
-                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)}`, { mode: 'cors' })
+                            await fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(dom => {
@@ -5336,7 +5336,7 @@ let Initialize = async(START_OVER = false) => {
                          */
                         // Channel details (JSON)
                         if(!FETCHED_OK)
-                            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)}`, { mode: 'cors' })
+                            await fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
                                 .then(text => text.json())
                                 .then(json => {
                                     let data = {};
@@ -5376,7 +5376,7 @@ let Initialize = async(START_OVER = false) => {
                          */
                         // Channel details (JSON) →
                         // if(!FETCHED_OK)
-                        //     await fetch(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
+                        //     await fetchURL(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
                         //         .then(response => response.json())
                         //         .then(json => JSON.parse(json.token ?? "null"))
                         //         .then(json => {
@@ -6035,8 +6035,6 @@ let Initialize = async(START_OVER = false) => {
 
         RegisterJob('away_mode');
 
-        $('video ~ * .player-controls').dataset.automatic = MAINTAIN_VOLUME_CONTROL;
-
         // Maintain the volume until the user changes it
         GetVolume.onchange = (volume, { isTrusted = false }) => {
             if(!MAINTAIN_VOLUME_CONTROL || !isTrusted)
@@ -6050,6 +6048,10 @@ let Initialize = async(START_OVER = false) => {
 
             SetVolume(volume);
         };
+
+        // Set the color and control scheme
+        when.defined(() => $('video ~ * .player-controls'))
+            .then(controls => controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL);
 
         // Scheduling logic...
         when.defined(() => $('#away-mode'), 3000).then(awayMode => {
@@ -6397,6 +6399,8 @@ let Initialize = async(START_OVER = false) => {
                                                 'Buy when available'
                                             );
 
+                                            currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);
+
                                             SaveCache({ AutoClaimRewards });
                                         });
                                     },
@@ -6412,6 +6416,8 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
             });
+
+            $('.reward-icon')?.closest(':not(.reward-icon)')?.setAttribute('tt-rewards-calc', 'after');
         }, 300);
     }
 
@@ -6466,7 +6472,7 @@ let Initialize = async(START_OVER = false) => {
 
         let { href, pathname } = url,
             name = pathname.slice(1),
-            channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
+            channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults));
 
         if(nullish(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -6543,7 +6549,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
             // FIX-ME: Reanimating First in Line jobs may cause reloading issues?
-            let index = ALL_CHANNELS.findIndex(channel => RegExp(channel.href, 'i').test(FIRST_IN_LINE_HREF)),
+            let index = ALL_CHANNELS.findIndex(channel => channel.href.contains(FIRST_IN_LINE_HREF)),
                 channel = ALL_CHANNELS[index],
                 timeRemaining = GET_TIME_REMAINING();
 
@@ -6818,7 +6824,7 @@ let Initialize = async(START_OVER = false) => {
                         listing:
                         for(let { name, time } of reminders) {
                             let channel = await(null
-                                ?? ALL_CHANNELS.find(channel => channel.name == name)
+                                ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                                 ?? new Search(name).then(Search.convertResults)
                             ),
                                 ok = /\/jtv_user/i.test(channel.icon);
@@ -7121,7 +7127,7 @@ let Initialize = async(START_OVER = false) => {
                             return WARN(`Unable to add link to Up Next "${ href }"`);
 
                         streamer = await(null
-                            ?? ALL_CHANNELS.find(channel => channel.href.toLowerCase().contains(pathname.toLowerCase()))
+                            ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals(pathname))
                             ?? (null
                                 ?? new Search(pathname.slice(1)).then(Search.convertResults)
                                 ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
@@ -7220,7 +7226,7 @@ let Initialize = async(START_OVER = false) => {
                     // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                     // LOG('Moved', { oldIndex, newIndex, moved });
 
-                    let channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
+                    let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals(moved));
 
                     if(nullish(channel))
                         return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
@@ -7229,7 +7235,7 @@ let Initialize = async(START_OVER = false) => {
                         // To create a new due date, `NEW_DUE_DATE(time)` → `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
                         // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
-                        let first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
+                        let first = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
                         let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first.name }"i]`)?.getAttribute('time'));
 
                         LOG('New First in Line event:', { ...first, time });
@@ -7254,7 +7260,7 @@ let Initialize = async(START_OVER = false) => {
                     for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             name = parseURL(href).pathname.slice(1),
-                            channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
+                            channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults));
 
                         if(nullish(href) || nullish(channel))
                             continue;
@@ -7321,7 +7327,7 @@ let Initialize = async(START_OVER = false) => {
                                     }
 
                                     let name = container.getAttribute('name'),
-                                        channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults)),
+                                        channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults)),
                                         { live } = channel;
                                         name = channel.name;
 
@@ -7481,7 +7487,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     name = parseURL(href).pathname.slice(1),
-                    channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults));
+                    channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults));
 
                 if(nullish(channel))
                     continue;
@@ -7554,7 +7560,7 @@ let Initialize = async(START_OVER = false) => {
                             SaveCache({ FIRST_IN_LINE_BOOST });
 
                             let name = container.getAttribute('name'),
-                                channel = await(ALL_CHANNELS.find(channel => RegExp(name, 'i').test(channel.name)) ?? new Search(name).then(Search.convertResults)),
+                                channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults)),
                                 { live } = channel;
                                 name = channel.name;
 
@@ -7829,7 +7835,7 @@ let Initialize = async(START_OVER = false) => {
             SaveCache({ BAD_STREAMERS });
 
             // RemoveFromTopSearch(['tt-err-chn']);
-        } else if(nullish($('#sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
+        } else if(nullish($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
             try {
                 $('[data-a-target="side-nav-arrow"i]')
                     .closest('[class*="expand"i]')
@@ -8127,14 +8133,18 @@ let Initialize = async(START_OVER = false) => {
             return;
         existing?.remove();
 
-        let parsed = parseURL.pattern.exec(STREAMER.game.href),
-            [match] = parsed,
+        let parsed = parseURL.pattern.exec(STREAMER.game.href);
+
+        if(!parsed?.length)
+            return;
+
+        let [match] = parsed,
             { index, groups } = parsed,
             { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
         let timerStart = +new Date;
 
-        /*await*/ fetch(`https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`, { mode: 'cors' })
+        /*await*/ fetchURL(href)
             .then(response => response.text())
             .then(DOMParser.stripBody)
             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -8216,11 +8226,13 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                new Tooltip($('[data-a-target$="game-link"i]'), `Read about <a href=#>${ title }</a> below`, { from: 'top' });
+                new Tooltip($('[data-a-target$="game-link"i]'), `Read about <span style=text-decoration:underline>${ title }</span> below`, { from: 'top' });
                 $('.about-section__panel--content').closest('*:not([style]):not([class]):not([id])').insertAdjacentElement('afterend', container);
             })
             .catch(ERROR);
     };
+
+    Timers.game_overview_card = 15_000;
 
     Unhandlers.game_overview_card = () => {
         $('#game-overview-card')?.remove();
@@ -10338,7 +10350,7 @@ let Initialize = async(START_OVER = false) => {
             ?? ALL_CHANNELS.find(({ name }) => (
                 (name.contains('(') && name.contains(')'))?
                     name.contains(alias):
-                name == alias
+                name.equals(alias)
             ))
             ?? { name: alias.normalize('NFKD') }
         )?.name?.replace(/[^]*\(([^\(\)]+)\)[^]*/, '$1');
@@ -11155,7 +11167,7 @@ let Initialize = async(START_OVER = false) => {
             ERROR('The stream ran into an error:', errorMessage, new Date);
 
             // Failed to play video at...
-            PushToTopSearch({ 'tt-err-vid': (+new Date).toString(36) });
+            PushToTopSearch({ 'tt-err-vid': 'video-recovery--non-subscriber' }, false);
         }
 
         JUDGE__STOP_WATCH('recover_video');
@@ -11181,7 +11193,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     setTimeout(() => {
-        $('[data-a-target="followed-channel"i], #sideNav .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget, button = -1 } = event;
 
@@ -11682,7 +11694,7 @@ let Initialize = async(START_OVER = false) => {
                     if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
                         let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
-                        await fetch(githubURL)
+                        await fetchURL(githubURL)
                             .then(response => {
                                 if(FETCHED_DATA.wasFetched)
                                     throw 'Data was already fetched';
@@ -11775,7 +11787,13 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
         // Set the ad volume, if applicable
         // Ensures the volume gets set once; just in case the user actually wants to hear it
-        NORMALIZED_AD_VOLUME = defined($('[data-a-target*="ad-countdown"i]')) && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT) && (SetVolume(Settings.away_mode__volume) || (NORMALIZED_AD_COUNTER = NORMALIZED_AD_COUNTER_CURRENT));
+        NORMALIZED_AD_VOLUME = true
+            && defined($('[data-a-target*="ad-countdown"i]'))
+            && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT)
+            && (false
+                || SetVolume(Settings.away_mode__volume)
+                || (NORMALIZED_AD_COUNTER = NORMALIZED_AD_COUNTER_CURRENT)
+            );
 
         // Ensures the ad does not freeze the page
         refresh_on_ad_freeze: if(defined(adCountdown)) {
@@ -11804,7 +11822,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
 
             // There are channel buttons on the side
-            && parseBool($('#sideNav .side-nav-section[aria-label]', true)?.length)
+            && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
 
             // There isn't an advertisement playing
             && nullish(adCountdown)
@@ -11832,7 +11850,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             return when.defined(() => $('[data-a-target*="ad-countdown"i]'))
                 .then(countdown => {
                     if(defined(VIDEO_AD_COUNTDOWN))
-                        return when.void;
+                        return;
 
                     let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
 
@@ -11844,7 +11862,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                     NORMALIZED_AD_COUNTER_CURRENT = count;
 
-                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
+                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * ++time);
                 });
 
         LOG("Main container ready");
@@ -12242,7 +12260,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 ],
             };
 
-            for(let container of $('#sideNav .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
+            for(let container of $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
                 let svg = $('svg', false, container);
 
                 comparing:
@@ -12632,7 +12650,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
                 TTVToolsNewsArticles = ReadNews || [];
 
-            await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(TTVToolsNewsURL)}`, { mode: 'cors' })
+            await fetchURL(TTVToolsNewsURL)
                 .then(r => r.text())
                 .then(html => {
                     let dom = (new DOMParser).parseFromString(html, 'text/html');

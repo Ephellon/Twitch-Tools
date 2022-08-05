@@ -536,6 +536,34 @@ function delay(fn, ms = 0) {
     }
 }
 
+// Fetches resources with automatic CORS-sense
+    // fetchURL(url:string<URL>, options:object?) → Promise<fetch>
+function fetchURL(url, options = {}) {
+    let { href, domainPath, origin, protocol } = parseURL(url);
+    let [domain, site, ...subDomain] = domainPath;
+
+    let allowedSites = 'betterttv nightbot streamelements twitch twitchinsights'.split(' '),
+        allowedDomains = 'gd'.split(' ');
+
+    // No CORS required
+    if(false
+        || protocol.equals('chrome:')
+        || origin.startsWith('.')
+        || allowedDomains.contains(domain.toLowerCase())
+        || allowedSites.contains(site.toLowerCase())
+    ) {
+        // Do nothing...
+    }
+
+    // CORS required
+    else {
+        options.mode = 'cors';
+        href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
+    }
+
+    return fetch(href, options);
+}
+
 // The following facilitates communication between pages
 // Get the current settings
    // GetSettings() → object
