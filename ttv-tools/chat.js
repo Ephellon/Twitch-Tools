@@ -16,7 +16,7 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    Chat__CUSTOM_CSS?.setHTML((Chat__CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    Chat__CUSTOM_CSS.innerHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     Chat__CUSTOM_CSS?.remove();
 
     // Force styling update
@@ -31,7 +31,7 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    Chat__CUSTOM_CSS?.setHTML((Chat__CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, ''));
+    Chat__CUSTOM_CSS.innerHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
     Chat__CUSTOM_CSS?.remove();
 
     // Force styling update
@@ -456,7 +456,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             QUEUED_EMOTES.add(keyword);
 
             // Load emotes from a certain user
-            if(defined(provider))
+            if(provider?.length)
                 await fetchURL(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
                     .then(response => response.json())
                     .then(json => {
@@ -480,8 +480,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                     })
                     .catch(WARN);
             // Load emotes with a certain name
-            else if(defined(keyword))
-                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && (keyword || '').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
+            else if(keyword?.length)
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.normalize('NFKD').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
                     await fetchURL(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -1949,7 +1949,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 throw TypeError(`No DOM available. Page not loaded`);
 
                             let f = furnish;
-                            let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i]`)?.getAttribute('content');
+                            let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i], [name$="og:${ property }"i], [property$="og:${ property }"i]`)?.getAttribute('content');
 
                             let [title, description, image] = ["title", "description", "image"].map(get),
                                 error = DOM.querySelector('parsererror')?.textContent;

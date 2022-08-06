@@ -25,19 +25,33 @@ let {
     GLOBAL_EVENT_LISTENERS,
 } = window;
 
+/** Adds a CSS block to the CUSTOM_CSS string
+ * AddCustomCSSBlock(name:string, block:string) → undefined
+ */
 function AddCustomCSSBlock(name, block) {
-    Player__CUSTOM_CSS.innerHTML += `/*${ name }*/${ block }/*#${ name }*/`;
+    name = name.trim();
 
+    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
+
+    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     Player__CUSTOM_CSS?.remove();
+
+    // Force styling update
     $('body').append(Player__CUSTOM_CSS);
 }
 
+/** Removes a CSS block from the Player__CUSTOM_CSS string
+ * RemoveCustomCSSBlock(name:string, flags:string?) → undefined
+ */
 function RemoveCustomCSSBlock(name, flags = '') {
+    name = name.trim();
+
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    Player__CUSTOM_CSS.innerHTML = Player__CUSTOM_CSS.innerHTML.replace(regexp, '');
-
+    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
     Player__CUSTOM_CSS?.remove();
+
+    // Force styling update
     $('body').append(Player__CUSTOM_CSS);
 }
 

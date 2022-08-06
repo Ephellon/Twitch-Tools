@@ -36,6 +36,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.25)
+- Fixed issue with First in line ordering
+- Modified command processing logic
+- Fixed issue with purchasing rewards on cooldown
+- Fixed issue with purchasing rewards that had similar titles
+- Added logic to ignore unavailable channels
+- Fixed issue with custom CSS blocks
+
 > [`5.24`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.24)
 - Added a timer to Game Overview Card
 - Fixed issue with `AddCustomCSSBlock`

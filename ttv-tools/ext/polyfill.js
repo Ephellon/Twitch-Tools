@@ -550,11 +550,18 @@ function parseTime(time = '') {
     let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
         ms = 0;
 
+    if(parseTime.pattern.test(time))
+        time = time.replace(/(\d+\s*d)?(\s*\d+\s*h)?(\s*\d+\s*m)?(\s*\d+\s*s)?/i, ($0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $$, $_) => [$1, $2, $3, $4].join(':'));
+
     for(let unit of time.split(':').reverse())
         ms += parseInt(unit) * units.splice(0,1)[0];
 
     return ms;
 }
+
+Object.defineProperties(parseTime, {
+    pattern: { value: /(\b\d\s*(?:d(?:ay)?|h(?:our)?|m(?:in(?:ute)?)?|s(?:ec(?:ond)?)?)s?\b)/i }
+});
 
 // Convert boolean values
     // parseBool(value:any) → boolean

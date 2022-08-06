@@ -2405,6 +2405,22 @@ function parseCoin(amount = '') {
 // Get the video quality
     // GetQuality() → string<{ auto:boolean, high:boolean, low:boolean, source:boolean }>
 async function GetQuality() {
+    let detected = $('[class*="player"i][class*="controls"i]')?.getElementByText(/\d+p/i)?.textContent;
+
+    if(detected?.length) {
+        let quality = new String(detected),
+            value = parseInt(quality);
+
+        Object.defineProperties(quality, {
+            auto:   { value: true },
+            high:   { value: (value > 720) },
+            low:    { value: (value < 361) },
+            source: { value: quality.toLowerCase().contains('source') },
+        });
+
+        return quality;
+    }
+
     let buttons = {
         get settings() {
             return $('[data-a-target="player-settings-button"i]');
@@ -2422,22 +2438,15 @@ async function GetQuality() {
     await(async() => {
         let { settings, quality, options } = buttons;
 
-        if(quality === null && options === null)
+        if(nullish(quality) && nullish(options))
             try {
                 settings?.click();
             } catch(error) {
                 throw error;
             };
     })()
-    .then(() => {
-        let { quality } = buttons;
-
-        if(quality)
-            quality.click();
-    })
-    .catch(error => {
-        throw error;
-    });
+    .then(() => { buttons?.quality?.click() })
+    .catch(error => { throw error });
 
     let qualities = $('[data-a-target$="-quality-option"i] input[type="radio"i]', true)
         .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
@@ -2497,22 +2506,15 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     await(async() => {
         let { settings, quality, options } = buttons;
 
-        if(quality === null && options === null)
+        if(nullish(quality) && nullish(options))
             try {
                 settings?.click();
             } catch(error) {
                 throw error;
             };
     })()
-        .then(() => {
-            let { quality } = buttons;
-
-            if(quality)
-                quality.click();
-        })
-        .catch(error => {
-            throw error;
-        });
+        .then(() => buttons?.quality?.click())
+        .catch(error => { throw error });
 
     let qualities = $('[data-a-target$="-quality-option"i] input[type="radio"i]', true)
         .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
@@ -2927,7 +2929,7 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    CUSTOM_CSS?.setHTML((CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
     CUSTOM_CSS?.remove();
 
     // Force styling update
@@ -2942,7 +2944,7 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    CUSTOM_CSS?.setHTML((CUSTOM_CSS?.getInnerHTML() || '').replace(regexp, ''));
+    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
     CUSTOM_CSS?.remove();
 
     // Force styling update
@@ -6225,7 +6227,8 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let DISPLAY_BUY_LATER_BUTTON;
+    let DISPLAY_BUY_LATER_BUTTON,
+        COOLDOWN_REWARDS = new Map;
 
     Handlers.claim_reward = () => {
         LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
@@ -6238,6 +6241,13 @@ let Initialize = async(START_OVER = false) => {
                             .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
                             .map(async({ id, cost, title, needsInput }) => {
+                                if(COOLDOWN_REWARDS.has(id)) {
+                                    if(COOLDOWN_REWARDS.get(id) < +new Date)
+                                        COOLDOWN_REWARDS.delete(id);
+                                    else
+                                        return;
+                                }
+
                                 await when.defined(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i] button'))
                                     .then(async button => {
                                         let { coin, fiat } = STREAMER;
@@ -6252,27 +6262,30 @@ let Initialize = async(START_OVER = false) => {
                                         button.click();
 
                                         // Purchase and remove
-                                        await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
+                                        await when.defined(() => $('.rewards-list')?.getElementsByInnerText(title, 'i').filter(item => item.textContent.equals(title)).pop()?.closest('.reward-list-item')?.querySelector('button'))
                                             .then(async button => {
                                                 button.click();
 
                                                 await when.defined(() => $('.reward-center-body button'))
-                                                    .then(button => button.click());
+                                                    .then(button => {
+                                                        let cooldown = parseTime(button.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
+
+                                                        if(cooldown > 0)
+                                                            return !LOG(`Unable to purchase "${ title }" yet. Waiting ${ toTimeString(cooldown) }`) || !COOLDOWN_REWARDS.set(id, +(new Date) + cooldown);
+
+                                                        button.click();
+
+                                                        return true;
+                                                    })
+                                                    .then(ok => {
+                                                        if(!ok)
+                                                            return;
+
+                                                        AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => !i.equals(id));
+                                                    })
+                                                    .finally(() => SaveCache({ AutoClaimRewards }));
                                             })
-                                            .finally(() => {
-                                                AutoClaimRewards[sole] = AutoClaimRewards[sole].join(',').replace(id, '').split(',').filter(s => s.length);
-                                            });
-
-                                        return button;
-                                    })
-                                    .finally(button => {
-                                        button
-                                            ?.closest(`[class*="reward-center"i][class*="content"i]`)
-                                            ?.querySelector(`path[d="${ Glyphs.pathData.x }"i]`)
-                                            ?.closest('button')
-                                            ?.click();
-
-                                        SaveCache({ AutoClaimRewards });
+                                            .finally(() => button.click());
                                     });
                             });
         });
@@ -6549,7 +6562,7 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_JOB = setInterval(() => {
             // If the channel disappears (or goes offline), kill the job for it
             // FIX-ME: Reanimating First in Line jobs may cause reloading issues?
-            let index = ALL_CHANNELS.findIndex(channel => channel.href.contains(FIRST_IN_LINE_HREF)),
+            let index = ALL_CHANNELS.findIndex(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF)),
                 channel = ALL_CHANNELS[index],
                 timeRemaining = GET_TIME_REMAINING();
 
@@ -6847,11 +6860,12 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
+                                live = (channel.live || (abs(+now - +time) / 3_600_000 < 0.25)),
                                 [since] = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy],
-                                status = `<span class="tt-${ (channel.live? 'live': 'offline') }" style="min-width:3.5em">${ (channel.live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
+                                status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
 
-                            let { href, icon, live, desc = '' } = channel;
+                            let { href, icon, desc = '' } = channel;
                             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                                 coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                                 coinText =
@@ -6985,7 +6999,7 @@ let Initialize = async(START_OVER = false) => {
                             // Remember to take breaks and tackle the problem at a later date
                                 // https://stackoverflow.com/q/72803095/4211612
                             // Move the channels around to prioritize live ones...
-                            if(channel.live) {
+                            if(live) {
                                 delete LiveReminders[name];
 
                                 LiveReminders = { [name]: time.toJSON(), ...LiveReminders };
@@ -7127,7 +7141,7 @@ let Initialize = async(START_OVER = false) => {
                             return WARN(`Unable to add link to Up Next "${ href }"`);
 
                         streamer = await(null
-                            ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals(pathname))
+                            ?? ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(pathname))
                             ?? (null
                                 ?? new Search(pathname.slice(1)).then(Search.convertResults)
                                 ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
@@ -7226,16 +7240,16 @@ let Initialize = async(START_OVER = false) => {
                     // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                     // LOG('Moved', { oldIndex, newIndex, moved });
 
-                    let channel = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals(moved));
+                    let channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
 
                     if(nullish(channel))
-                        return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel });
+                        return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel, givenChannel: moved });
 
                     // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
                         // To create a new due date, `NEW_DUE_DATE(time)` → `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
                         // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
-                        let first = ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
+                        let first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
                         let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first.name }"i]`)?.getAttribute('time'));
 
                         LOG('New First in Line event:', { ...first, time });
@@ -7720,7 +7734,7 @@ let Initialize = async(START_OVER = false) => {
         // Controls what's listed under the Up Next balloon
         if(nullish(FIRST_IN_LINE_HREF) && ALL_FIRST_IN_LINE_JOBS.length) {
             let [href] = ALL_FIRST_IN_LINE_JOBS,
-                first = (parseURL(STREAMER.href).pathname.equals(parseURL(href).pathname)),
+                first = (RegExp(parseURL(STREAMER.href).pathname + '\\b', 'i').test(href)),
                 channel = (null
                     // Attempts to find the channel via "cache"
                     ?? ALL_CHANNELS
@@ -8154,7 +8168,7 @@ let Initialize = async(START_OVER = false) => {
                     throw TypeError(`No DOM available. Page not loaded`);
 
                 let f = furnish;
-                let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i]`)?.getAttribute('content');
+                let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i], [name$="og:${ property }"i], [property$="og:${ property }"i]`)?.getAttribute('content');
 
                 let [title, description, image] = ["title", "description", "image"].map(get),
                     error = DOM.querySelector('parsererror')?.textContent;
@@ -8465,7 +8479,12 @@ let Initialize = async(START_OVER = false) => {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
                 await wait(1).then(() => {
-                    element.innerHTML = element.innerHTML.replace(RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?:\\p{L}*))`, 'igu'), ($0, $1, $$, $_) => {
+                    let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?:\\p{L}*))`, 'igu');
+
+                    if(!regexp.test(element.innerHTML))
+                        return;
+
+                    element.innerHTML = element.innerHTML.replace(regexp, ($0, $1, $$, $_) => {
                         reply = parseCommands(reply, variables);
 
                         let { href } = (/\b(?<href>(?:https?:\/\/\S+|(?<!\$?[\(\[\{])\w{3,}\.\w{2,}(?:\/\S*)?(?![\}\]\)])))/i.exec(reply)?.groups ?? {}),
@@ -8499,7 +8518,7 @@ let Initialize = async(START_OVER = false) => {
             });
         });
     };
-    Timers.parse_commands = -500;
+    Timers.parse_commands = -1000;
 
     Unhandlers.parse_commands = () => {
         let title = $('[data-a-target="stream-title"i]');
@@ -12692,3 +12711,18 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
         });
     }, 500);
 });
+
+document.body.onload = event => {
+    AntiTimeMachine:
+    when.defined(() => $('main [data-a-target*="error"i][data-a-target*="message"i] ~ * [href$="directory"i]'))
+        .then(() => {
+            let ErrorMessage = $('main [data-a-target*="error"i][data-a-target*="message"i]')?.textContent;
+
+            when.defined(() => $(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`))
+                .then(channel => {
+                    WARN(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
+
+                    open(channel.href, '_self');
+                })
+        })
+};
