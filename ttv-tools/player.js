@@ -33,8 +33,8 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
-    Player__CUSTOM_CSS?.remove();
+    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    Player__CUSTOM_CSS.remove();
 
     // Force styling update
     $('body').append(Player__CUSTOM_CSS);
@@ -48,8 +48,8 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
-    Player__CUSTOM_CSS?.remove();
+    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    Player__CUSTOM_CSS.remove();
 
     // Force styling update
     $('body').append(Player__CUSTOM_CSS);

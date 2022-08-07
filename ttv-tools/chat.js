@@ -16,8 +16,8 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    Chat__CUSTOM_CSS.innerHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
-    Chat__CUSTOM_CSS?.remove();
+    Chat__CUSTOM_CSS.innerHTML = ((Chat__CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    Chat__CUSTOM_CSS.remove();
 
     // Force styling update
     $('body').append(Chat__CUSTOM_CSS);
@@ -31,8 +31,8 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    Chat__CUSTOM_CSS.innerHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
-    Chat__CUSTOM_CSS?.remove();
+    Chat__CUSTOM_CSS.innerHTML = ((Chat__CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    Chat__CUSTOM_CSS.remove();
 
     // Force styling update
     $('body').append(Chat__CUSTOM_CSS);

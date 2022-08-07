@@ -542,7 +542,7 @@ function fetchURL(url, options = {}) {
     let { href, domainPath, origin, protocol } = parseURL(url);
     let [domain, site, ...subDomain] = domainPath;
 
-    let allowedSites = 'betterttv nightbot streamelements twitch twitchinsights'.split(' '),
+    let allowedSites = 'betterttv nightbot streamelements streamloots twitch twitchinsights'.split(' '),
         allowedDomains = 'gd'.split(' ');
 
     // No CORS required

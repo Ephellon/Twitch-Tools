@@ -36,6 +36,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.26)
+- Fixed issue with Time Zone conversion logic
+- Moved News articles to the independent (onload) area
+
 > [`5.25`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.25)
 - Fixed issue with First in line ordering
 - Modified command processing logic

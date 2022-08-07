@@ -2929,8 +2929,8 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
-    CUSTOM_CSS?.remove();
+    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    CUSTOM_CSS.remove();
 
     // Force styling update
     $('body').append(CUSTOM_CSS);
@@ -2944,8 +2944,8 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
-    CUSTOM_CSS?.remove();
+    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    CUSTOM_CSS.remove();
 
     // Force styling update
     $('body').append(CUSTOM_CSS);
@@ -6860,7 +6860,7 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                live = (channel.live || (abs(+now - +time) / 3_600_000 < 0.25)),
+                                live = (channel.live || (abs(+now - +time) / 3_600_000 < 1/3)),
                                 [since] = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy],
                                 status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
@@ -9145,15 +9145,15 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST | 3:00PM (EST) | 3PM (EST) | 3:00P (EST) | 3P (EST) | 3:00 (EST) | 3 (EST)
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]m?(?!\p{L}))?/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))?/iu,
             // EST 15:00 | EST 1500
             /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))/iu,
             // 3:00PM | 3PM
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu,
             // 15:00
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)[ \t]*/iu,
 
@@ -12663,56 +12663,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                 })
             );
         }
-
-        // Alerts for users
-        LoadCache('ReadNews', async({ ReadNews }) => {
-            let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
-                TTVToolsNewsArticles = ReadNews || [];
-
-            await fetchURL(TTVToolsNewsURL)
-                .then(r => r.text())
-                .then(html => {
-                    let dom = (new DOMParser).parseFromString(html, 'text/html');
-
-                    return $('#wiki-body', false, dom)?.children;
-                })
-                .then(([main, footer]) => {
-                    let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
-                        .filter(({ tagName }) => /^h\d$/i.test(tagName))
-                        .map(header => {
-                            let content = [];
-
-                            let e = header;
-                            while(defined(e = e.nextElementSibling) && !/^h\d$/i.test(e.tagName))
-                                content.push(e);
-
-                            return { header, content };
-                        }).map(({ header, content }) => {
-                            let articleID = UUID.from(header.textContent, true).value;
-
-                            if(TTVToolsNewsArticles.contains(articleID))
-                                return;
-                            TTVToolsNewsArticles.push(articleID);
-
-                            let article = furnish(`div#tt-news-${ articleID }`, {},
-                                header, ...content
-                            );
-
-                            $('a.anchor', true, article).map(a => a.remove());
-
-                            return article.outerHTML;
-                        })
-                        .filter(defined);
-
-                    if(articles.length)
-                        confirm.silent(`<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div> ${ articles.join('<br>') }`)
-                        .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
-                });
-        });
     }, 500);
 });
 
 document.body.onload = event => {
+    // Move on from banned/moved channels
     AntiTimeMachine:
     when.defined(() => $('main [data-a-target*="error"i][data-a-target*="message"i] ~ * [href$="directory"i]'))
         .then(() => {
@@ -12724,5 +12679,52 @@ document.body.onload = event => {
 
                     open(channel.href, '_self');
                 })
-        })
+        });
+
+    // Alerts for users
+    DisplayNews:
+    LoadCache('ReadNews', async({ ReadNews }) => {
+        let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
+            TTVToolsNewsArticles = ReadNews || [];
+
+        await fetchURL(TTVToolsNewsURL)
+            .then(r => r.text())
+            .then(html => {
+                let dom = (new DOMParser).parseFromString(html, 'text/html');
+
+                return $('#wiki-body', false, dom)?.children;
+            })
+            .then(([main, footer]) => {
+                let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
+                    .filter(({ tagName }) => /^h\d$/i.test(tagName))
+                    .map(header => {
+                        let content = [];
+
+                        let e = header;
+                        while(defined(e = e.nextElementSibling) && !/^h\d$/i.test(e.tagName))
+                            content.push(e);
+
+                        return { header, content };
+                    }).map(({ header, content }) => {
+                        let articleID = UUID.from(header.textContent, true).value;
+
+                        if(TTVToolsNewsArticles.contains(articleID))
+                            return;
+                        TTVToolsNewsArticles.push(articleID);
+
+                        let article = furnish(`div#tt-news-${ articleID }`, {},
+                            header, ...content
+                        );
+
+                        $('a.anchor', true, article).map(a => a.remove());
+
+                        return article.outerHTML;
+                    })
+                    .filter(defined);
+
+                if(articles.length)
+                    confirm.silent(`<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div> ${ articles.join('<br>') }`)
+                    .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
+            });
+    });
 };
