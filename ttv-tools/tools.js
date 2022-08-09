@@ -111,15 +111,15 @@ class Balloon {
         }
 
         let p =
-        f('div.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
+        f('.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
             f.div(
-                f('div.tt-relative', {},
+                f('.tt-relative', {},
                     // Navigation Icon
                     N = f(`div[@test-selector=toggle-balloon-wrapper__mouse-enter-detector]`,
                         {
                             style: 'display:inherit',
                         },
-                        f('div.tt-inline-flex.tt-relative', {},
+                        f('.tt-inline-flex.tt-relative', {},
                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                 {
                                     'connected-to': U,
@@ -148,10 +148,10 @@ class Balloon {
                                 ),
 
                                 // Notification counter
-                                F = f(`div#tt-notification-counter--${ U }.tt-absolute.tt-right-0.tt-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
-                                    f('div.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in[@a-target=tt-animation-target]', {},
-                                        f('div.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
-                                            f(`div#tt-notification-counter-output--${ U }.tt-number-badge__badge.tt-relative`, {
+                                F = f(`#tt-notification-counter--${ U }.tt-absolute.tt-right-0.tt-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
+                                    f('.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in[@a-target=tt-animation-target]', {},
+                                        f('.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
+                                            f(`#tt-notification-counter-output--${ U }.tt-number-badge__badge.tt-relative`, {
                                                 'interval-id': setInterval(() => {
                                                     let counter = $(`#tt-notification-counter--${ uuid }`),
                                                         output = $(`#tt-notification-counter-output--${ uuid }`),
@@ -179,14 +179,14 @@ class Balloon {
                         )
                     ),
                     // Balloon
-                    f(`div#tt-balloon-${ U }.tt-absolute.tt-balloon.tt-balloon--down.tt-balloon--right.tt-balloon-lg.tt-block`,
+                    f(`#tt-balloon-${ U }.tt-absolute.tt-balloon.tt-balloon--down.tt-balloon--right.tt-balloon-lg.tt-block`,
                         {
                             style: 'display:none!important',
                             display: 'none',
                             role: 'dialog',
                         },
-                        f('div.tt-border-radius-large.tt-c-background-base.tt-c-text-inherit.tt-elevation-4', {},
-                            (C = f(`div#tt-balloon-container-${ U }.tt-flex.tt-flex-column`,
+                        f('.tt-border-radius-large.tt-c-background-base.tt-c-text-inherit.tt-elevation-4', {},
+                            (C = f(`#tt-balloon-container-${ U }.tt-flex.tt-flex-column`,
                                 {
                                     'tt-mix-blend': (Settings?.accent_color ?? 'twitch-purple/12'),
 
@@ -194,8 +194,8 @@ class Balloon {
                                     role: 'dialog',
                                 },
                                 // Header
-                                f('div.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:inherit; position:sticky; top:0; z-index:99999;` },
-                                    f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center', {},
+                                f('.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:inherit; position:sticky; top:0; z-index:99999;` },
+                                    f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center', {},
                                         (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST, }, title))
                                     ),
                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
@@ -228,22 +228,22 @@ class Balloon {
                                     let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
                                         guid = guid = UUID.from([href, message].join(':')).value;
 
-                                    let container = f(`div#tt-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
-                                        f('div.simplebar-scroll-content',
+                                    let container = f(`#tt-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
+                                        f('.simplebar-scroll-content',
                                             {
                                                 style: 'overflow: hidden;',
                                             },
-                                            f('div.simplebar-content',
+                                            f('.simplebar-content',
                                                 {
                                                     style: 'overflow: hidden; width:100%;',
                                                 },
-                                                f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]',
+                                                f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]',
                                                     {},
-                                                    f('div.persistent-notification.tt-relative[@test-selector=persistent-notification]',
+                                                    f('.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                                         {
                                                             style: 'width:100%',
                                                         },
-                                                        f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                                        f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
                                                             f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                                                 {
                                                                     'connected-to': `${ U }--${ guid }`,
@@ -265,25 +265,25 @@ class Balloon {
                                                                         }
                                                                     },
                                                                 },
-                                                                f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                                                f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                                                     // Avatar
                                                                     f.div(
-                                                                        f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
-                                                                            f('div.tt-aspect.tt-aspect--align-top', {},
+                                                                        f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
+                                                                            f('.tt-aspect.tt-aspect--align-top', {},
                                                                                 f('img.tt-balloon-avatar.tt-image', { src })
                                                                             )
                                                                         )
                                                                     ),
                                                                     // Message body
-                                                                    f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                                        f('div.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
+                                                                    f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
+                                                                        f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                                             f('span.tt-c-text-alt', {},
                                                                                 f('p.tt-balloon-message', { innerHTML: message })
                                                                             )
                                                                         ),
                                                                         // Subheader
-                                                                        f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
-                                                                            f('div.tt-mg-l-05', {},
+                                                                        f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
+                                                                            f('.tt-mg-l-05', {},
                                                                                 f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
                                                                             )
                                                                         ),
@@ -292,8 +292,8 @@ class Balloon {
                                                                 )
                                                             ),
                                                             // Repeat mini-button
-                                                            // f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
-                                                            //     f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                            // f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                                            //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                                             //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                             //             {
                                                             //                 'connected-to': `${ U }--${ guid }`,
@@ -321,8 +321,8 @@ class Balloon {
                                                             //     )
                                                             // ),
                                                             // Delete mini-button
-                                                            f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
-                                                                f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                            f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
+                                                                f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                         {
                                                                             'connected-to': `${ U }--${ guid }`,
@@ -385,7 +385,7 @@ class Balloon {
         for(let key of 'body icon header parent container'.split(' '))
             this[key].setAttribute(`${ cssName }--${ key }`, (+new Date).toString(36));
 
-        this.tooltip ??= f('div.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
+        this.tooltip ??= f('.tt-tooltip.tt-tooltip--align-center.tt-tooltip--down', { id: `balloon-tooltip-for-${ U }`, role: 'tooltip' }, this.title = title);
 
         Balloon.#BALLOONS.set(title, this);
 
@@ -441,21 +441,21 @@ class Balloon {
 
             ++this.length;
 
-            let container = f(`div#tt-balloon-job-${ uuid }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
-                f('div.simplebar-scroll-content',
+            let container = f(`#tt-balloon-job-${ uuid }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
+                f('.simplebar-scroll-content',
                     {
                         style: 'overflow: hidden;',
                     },
-                    f('div.simplebar-content',
+                    f('.simplebar-content',
                         {
                             style: 'overflow: hidden; width:100%;',
                         },
-                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
-                            f('div.persistent-notification.tt-relative[@test-selector=persistent-notification]',
+                        f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
+                            f('.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                 {
                                     style: 'width:100%',
                                 },
-                                f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
                                     f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                         {
                                             'connected-to': `${ uuid }--${ guid }`,
@@ -475,25 +475,25 @@ class Balloon {
                                                 }
                                             },
                                         },
-                                        f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                        f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                             // Avatar
                                             f.div(
-                                                f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
-                                                    f('div.tt-aspect.tt-aspect--align-top', {},
+                                                f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
+                                                    f('.tt-aspect.tt-aspect--align-top', {},
                                                         f('img.tt-balloon-avatar.tt-image', { src })
                                                     )
                                                 )
                                             ),
                                             // Message body
-                                            f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                f('div.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
+                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
+                                                f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                     f('span.tt-c-text-alt', {},
                                                         f('p.tt-balloon-message', { innerHTML: message })
                                                     )
                                                 ),
                                                 // Subheader
-                                                f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
-                                                    f('div.tt-mg-l-05', {},
+                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
+                                                    f('.tt-mg-l-05', {},
                                                         f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
                                                     )
                                                 ),
@@ -502,8 +502,8 @@ class Balloon {
                                         )
                                     ),
                                     // Repeat mini-button
-                                    // f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
-                                    //     f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                    // f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                    //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                     //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                     //             {
                                     //                 'connected-to': `${ uuid }--${ guid }`,
@@ -531,8 +531,8 @@ class Balloon {
                                     //     )
                                     // ),
                                     // Remove mini-button
-                                    f('div.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
-                                        f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                    f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
+                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                 {
                                                     'connected-to': `${ uuid }--${ guid }`,
@@ -611,7 +611,7 @@ class Tooltip {
             return existing;
 
         let uuid;
-        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
+        let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
         let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
@@ -630,7 +630,7 @@ class Tooltip {
             let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             $('div#root > *').append(
-                furnish('div.tt-tooltip-layer.tooltip-layer',
+                furnish('.tt-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
                             let style = 'animation:.3s fade-in 1;';
@@ -655,7 +655,7 @@ class Tooltip {
                             return style;
                         })()
                     },
-                    furnish('div.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
+                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
@@ -665,8 +665,8 @@ class Tooltip {
             tooltip.setAttribute('style', (fineTuning.style ?? ''));
         });
 
-        parent.addEventListener('mouseleave', ({ target }) => {
-            let tooltip = $(`[id="${ target.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
+        parent.addEventListener('mouseleave', ({ currentTarget }) => {
+            let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
 
             tooltip?.setAttribute('show', false);
             tooltip?.setAttribute('tt-last-accessed', (new Date).toJSON());
@@ -699,7 +699,7 @@ class ChatFooter {
 
         let parent = $('[data-a-target="chat-scroller"i]'),
             footer =
-            f('div#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
+            f('#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
                 {
                     uuid,
 
@@ -714,8 +714,8 @@ class ChatFooter {
                 },
 
                 f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-core-button.tt-core-button--overlay.tt-core-button--text.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative', { style: 'padding: 0.5rem 1rem;', ...options },
-                    f('div.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0', {},
-                        f('div.tt-flex-grow-0', {
+                    f('.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0', {},
+                        f('.tt-flex-grow-0', {
                             innerHTML: title
                         })
                     )
@@ -776,7 +776,7 @@ class Card {
         let f = furnish;
 
         let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-            card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@a-target=viewer-card-positioner]`, { style: styling }),
+            card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@a-target=viewer-card-positioner]`, { style: styling }),
             uuid = UUID.from([title, subtitle].join('\n')).value;
 
         icon ??= { src: Runtime.getURL('profile.png'), alt: 'Profile' };
@@ -790,33 +790,33 @@ class Card {
         let iconElement = f('img.emote-card__big-emote.tt-image[@test-selector=big-emote]', { ...icon });
 
         card.append(
-            f('div.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
-                f('div.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
-                    f('div.tt-inline-flex.viewer-card-drag-cancel', {},
-                        f('div.tt-inline.tt-relative.tt-tooltip__container[@a-target=emote-name]', {},
+            f('.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
+                f('.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
+                    f('.tt-inline-flex.viewer-card-drag-cancel', {},
+                        f('.tt-inline.tt-relative.tt-tooltip__container[@a-target=emote-name]', {},
                             iconElement
                         )
                     ),
-                    f('div.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1', {},
+                    f('.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1', {},
                         f('h4.tt-c-text-base.tt-ellipsis.tt-strong[@test-selector=emote-code-header]', {}, title),
                         f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6[@test-selector=emote-type-copy]', {}, subtitle)
                     )
                 )
             ),
-            f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@a-target=viewer-card-close-button]',
+            f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@a-target=viewer-card-close-button]',
                 {
                     onmouseup: ({ button = -1 }) => {
                         !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                     },
                 },
-                f('div.tt-inline-flex.viewer-card-drag-cancel', {},
+                f('.tt-inline-flex.viewer-card-drag-cancel', {},
                     f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@test-selector=close-viewer-card]', {
                         'aria-label': "Hide",
                     },
                         f('span.tt-button-icon__icon', {},
                             f('div[style="width: 2rem; height: 2rem;"]', {},
-                                f('div.tt-icon', {},
-                                    f('div.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
+                                f('.tt-icon', {},
+                                    f('.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
                                 )
                             )
                         )
@@ -832,26 +832,26 @@ class Card {
         if(footer?.href?.length)
             $('div', false, card).append(
                 // Tiny banner (live status)
-                f('div.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
+                f('.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
                     f.div(
-                        f('div.tt-align-items-center.tt-align-self-start.tt-mg-b-05', {},
-                            f('div.tt-align-items-center.tt-flex', {},
-                                f('div.tt-align-items-center.tt-flex.tt-mg-r-1', {},
+                        f('.tt-align-items-center.tt-align-self-start.tt-mg-b-05', {},
+                            f('.tt-align-items-center.tt-flex', {},
+                                f('.tt-align-items-center.tt-flex.tt-mg-r-1', {},
                                     f('a.tt-link[rel="noopener noreferrer" target="_blank"]', { href: footer.href },
-                                        f('div.tt-flex', {
+                                        f('.tt-flex', {
                                             innerHTML: `${
                                                 Glyphs.modify('video', { height: '20px', width: '20px' })
                                             }${
-                                                f('div.tt-mg-l-05', {},
+                                                f('.tt-mg-l-05', {},
                                                     f('p.tt-c-text-link.tt-font-size-5.tt-strong', {}, footer.name)
                                                 ).outerHTML
                                             }`
                                         })
                                     )
                                 ),
-                                f('div.tt-align-items-center.tt-flex', {},
+                                f('.tt-align-items-center.tt-flex', {},
                                     f(`div[tt-live-status-indicator="${ parseBool(footer.live) }"]`),
-                                    f('div.tt-flex.tt-mg-l-05', {},
+                                    f('.tt-flex.tt-mg-l-05', {},
                                         f('p.tt-c-text-base.tt-font-size-6', { style: 'text-transform:uppercase' },
                                             ['offline', 'live'][+footer.live]
                                         )
@@ -896,7 +896,7 @@ class Card {
             fineTuning.cursor ??= 'auto';
             fineTuning.padding ??= '1rem';
 
-            let styling = [];
+            let styling = ['border:var(--border-width-default) solid var(--color-border-base);'];
 
             for(let key in fineTuning) {
                 let [value, unit] = (fineTuning[key] ?? "").toString().split(/([\-\+]?[\d\.]+)([^\d\.]+)/).filter(string => string.length);
@@ -917,21 +917,21 @@ class Card {
             let f = furnish;
 
             let container = $('[data-a-target*="card"i] [class*="card-layer"i]'),
-                card = f(`div.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@a-target=viewer-card-positioner]`, { style: styling },
-                    f('div.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@a-target=viewer-card-close-button]',
+                card = f(`.tt-absolute.tt-border-radius-large.viewer-card-layer__draggable[@a-target=viewer-card-positioner]`, { style: styling },
+                    f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@a-target=viewer-card-close-button]',
                         {
                             onmouseup: ({ button = -1 }) => {
                                 !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                             },
                         },
-                        f('div.tt-inline-flex.viewer-card-drag-cancel', {},
+                        f('.tt-inline-flex.viewer-card-drag-cancel', {},
                             f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@test-selector=close-viewer-card]', {
                                 'aria-label': "Hide",
                             },
                                 f('span.tt-button-icon__icon', {},
                                     f('div[style="width: 2rem; height: 2rem;"]', {},
-                                        f('div.tt-icon', {},
-                                            f('div.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
+                                        f('.tt-icon', {},
+                                            f('.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
                                         )
                                     )
                                 )
@@ -945,7 +945,7 @@ class Card {
 
             // Furnish the card
             card.append(
-                f('div.tt-spinner')
+                f('.tt-spinner')
             );
 
             // Add the card
@@ -1009,7 +1009,7 @@ class ContextMenu {
         let f = furnish;
 
         let container = $('#root'),
-            menu = f(`div.tt-context-menu.tt-absolute`, { style: styling }),
+            menu = f(`.tt-context-menu.tt-absolute`, { style: styling }),
             uuid = UUID.from(options.map(Object.values).join('\n')).value;
 
         menu.id = uuid;
@@ -1018,7 +1018,7 @@ class ContextMenu {
         $('.tt-context-menu', true).forEach(menu => menu.remove());
 
         menu.append(
-            f('div.tt-border-radius-large', { style: 'background:var(--color-background-alt-2); position:absolute; z-index:9999', direction: 'top-right' },
+            f('.tt-border-radius-large', { style: 'background:var(--color-background-alt-2); position:absolute; z-index:9999', direction: 'top-right' },
                 // The options...
                 f('div', { style: 'display:inline-block; min-width:16rem; max-width:48rem; width:max-content', role: 'dialog' },
                     f('div', { style: 'padding:0.25rem;' },
@@ -1026,7 +1026,7 @@ class ContextMenu {
                             if(icon?.length)
                                 icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: '16px', width: '16px', style: 'vertical-align:-3px' }) });
                             if(text?.length)
-                                text = f('div.tt-hide-text-overflow', { innerHTML: text });
+                                text = f('.tt-hide-text-overflow', { innerHTML: text });
                             if(shortcut?.length)
                                 shortcut = f.pre(f.code(GetMacro(shortcut)));
 
@@ -1638,9 +1638,17 @@ class Color {
     // Converts Hex color values to a color-object
         // Color.HEXtoColor(hex:string<CSS-Color>) → Object<Color>
     static HEXtoColor(hex = '#000') {
-        let [R, G, B] = hex.split(/^#([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i).filter(string => string.length).map(string => parseInt(string, 16));
+        hex = hex.replace('#', '');
 
-        return Color.RGBtoHSL(R, G, B);
+        let [R, G, B, A = 255] = (
+            (hex.length == 3 || hex.length == 4)?
+                hex.split(/([\da-f])/i):
+            (hex.length == 6 || hex.length == 8)?
+                hex.split(/([\da-f]{2})/i):
+            hex.split(/([\da-f]{1,2}?)/i)
+        ).filter(char => char.length).map(char => parseInt(char.repeat(3 - char.length), 16));
+
+        return Color.RGBtoHSL(R, G, B, A / 255);
     }
 
     // https://stackoverflow.com/a/9493060/4211612 →
@@ -1802,32 +1810,37 @@ class Color {
 
         let colorRegExps = [
             // #RGB #RRGGBB
-            /^(#)([\da-f]{1,2}?)([\da-f]{1,2}?)([\da-f]{1,2}?)$/i,
+            /^([#]?)(?<red>[\da-f]{1,2}?)(?<green>[\da-f]{1,2}?)(?<blue>[\da-f]{1,2}?)(?<alpha>[\da-f]{1,2}?)?$/i,
 
             // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/rgb
             // rgb(red, green, blue) rgb(red green blue) rgba(red, green, blue, alpha) rgba(red green blue / alpha)
-            /^(rgb)a?\((?<red>\d+)[\s,]+(?<green>\d+)[\s,]+(?<blue>\d+)(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
+            /^(rgba?)\((?<red>\d+)[\s,]+(?<green>\d+)[\s,]+(?<blue>\d+)(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
 
             // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hsl
             // hsl(hue, saturation, lightness) hsl(hue saturation lightness) hsla(hue, saturation, lightness, alpha) hsla(hue saturation lightness / alpha)
-            /^(hsl)a?\((?<hue>\d+)(?:deg(?:rees?)?|)?[\s,]+(?<saturation>\d+)(?:[%])?[\s,]+(?<lightness>\d+)(?:[%])?(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
+            /^(hsla?)\((?<hue>[\d\.]+)(?:deg(?:rees?)?)?[\s,]+(?<saturation>[\d\.]+)(?:[%])?[\s,]+(?<lightness>[\d\.]+)(?:[%])?(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
         ];
 
         for(let regexp of colorRegExps)
             if(regexp.test(color)) {
                 let computed;
-                color.replace(regexp, ($0, $1, $2, $3, $4, $5) => {
+                color.replace(regexp, ($0, $1, $2, $3, $4, $5 = null) => {
+                    if(/\b[\da-f]{3,8}$/i.test($0))
+                        $1 ||= '#';
+
                     switch($1.toLowerCase()) {
                         case '#': {
-                            computed = Color.HEXtoColor($0);
+                            computed = Color.HEXtoColor([$1, $2, $3, $4, $5 ?? 'ff'].join(''));
                         } break;
 
-                        case 'rgb': {
-                            computed = Color.RGBtoHSL(...[$2, $3, $4].map(parseFloat));
+                        case 'rgb':
+                        case 'rgba': {
+                            computed = Color.RGBtoHSL(...[$2, $3, $4, $5 ?? 1].map(parseFloat));
                         } break;
 
-                        case 'hsl': {
-                            computed = Color.HSLtoRGB(...[$2, $3, $4].map(parseFloat));
+                        case 'hsl':
+                        case 'hsla': {
+                            computed = Color.HSLtoRGB(...[$2, $3, $4, $5 ?? 1].map(parseFloat));
                         } break;
 
                         default: return;
@@ -2136,7 +2149,7 @@ function GetChat(lines = 250, keepEmotes = false) {
             mentions,
             element: line,
             emotes: containedEmotes.map(string => string.replace(/^:|:$/g, '')).isolate(),
-            deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+            deleted: $.defined('[class*="--deleted-notice"i]', false, line),
             highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
         });
     }
@@ -2559,7 +2572,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
                 resolve({ oldValue: current, newValue: desired ?? computed });
             }
-        }, 100);
+        }, 2_5_0);
     });
 }
 
@@ -2623,12 +2636,12 @@ function GetViewMode() {
         mode = 'theatre';
 
     if(overview
-        ||= defined($(`.home`))
+        ||= $.defined(`.home`)
     )
         mode = 'overview';
 
     if(fullwidth
-        ||= defined($(`[data-a-target*="right-column"i][data-a-target*="chat-bar"i][data-a-target*="collapsed"i] button[data-a-target*="collapse"i]`))
+        ||= $.defined(`[data-a-target*="right-column"i][data-a-target*="chat-bar"i][data-a-target*="collapsed"i] button[data-a-target*="collapse"i]`)
     )
         mode = 'fullwidth';
 
@@ -2701,7 +2714,7 @@ function SetViewMode(mode = 'default') {
     // GetActivity() → Promise<string | null>
 async function GetActivity() {
     return when.defined(() => {
-        let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
+        let open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
 
         if(open) {
             ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent;
@@ -2719,7 +2732,7 @@ async function GetActivity() {
     // GetLanguage() → Promise<string | null>
 async function GetLanguage() {
     return when.defined(() => {
-        let open = defined($('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]'));
+        let open = $.defined('[data-a-target="user-display-name"i], [class*="dropdown-menu-header"i]');
 
         if(open) {
             LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language;
@@ -2929,7 +2942,12 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    let newHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+
+    if(CUSTOM_CSS.innerHTML.equals(newHTML))
+        return;
+
+    CUSTOM_CSS.innerHTML = newHTML;
     CUSTOM_CSS.remove();
 
     // Force styling update
@@ -2944,7 +2962,12 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    CUSTOM_CSS.innerHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    let newHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+
+    if(CUSTOM_CSS.innerHTML.equals(newHTML))
+        return;
+
+    CUSTOM_CSS.innerHTML = newHTML;
     CUSTOM_CSS.remove();
 
     // Force styling update
@@ -3134,7 +3157,24 @@ try {
         }
     });
 
-    // Add message listener
+    // Add message listeners //
+    // Receive messages from the background service worker
+    Runtime.onMessage.addListener((request, sender, respond) => {
+        if(sender.id.unlike(Runtime.id))
+            return /* Not meant for us... */;
+
+        let R = RegExp;
+
+        switch(request?.action) {
+            case 'report-back': {
+                respond({ ok: true });
+            } break;
+        }
+    });
+
+    // Lag reporter
+    Runtime.sendMessage({ action: 'BEGIN_REPORT' });
+
     // Jumping frames...
     REMARK(`Listening for jumped frame data...`);
 
@@ -3357,23 +3397,6 @@ try {
             } break;
         }
     });
-
-    // Receive messages from the background service worker
-    Runtime.onMessage.addListener((request, sender, respond) => {
-        if(sender.id.unlike(Runtime.id))
-            return /* Not meant for us... */;
-
-        let R = RegExp;
-
-        switch(request?.action) {
-            case 'report-back': {
-                respond({ ok: true });
-            } break;
-        }
-    });
-
-    // Lag reporter
-    Runtime.sendMessage({ action: 'BEGIN_REPORT' });
 
     // Add custom context menus
     REMARK(`Adding context menus...`);
@@ -3706,7 +3729,7 @@ async function update() {
                         if(nullish(parent))
                             return true;
 
-                        let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
+                        let live = $.defined(`[data-test-selector="live-badge"i]`, false, parent);
 
                         return live;
                     },
@@ -3749,7 +3772,7 @@ async function update() {
                             return false;
 
                         let live = defined(parent)
-                                && nullish($(`[class*="--offline"i]`, false, parent));
+                                && $.nullish(`[class*="--offline"i]`, false, parent);
 
                         return live;
                     },
@@ -3790,7 +3813,7 @@ async function update() {
                             return false;
 
                         let live = defined(parent)
-                                && nullish($(`[class*="--offline"i]`, false, parent));
+                                && $.nullish(`[class*="--offline"i]`, false, parent);
 
                         return live;
                     },
@@ -3950,7 +3973,7 @@ let Initialize = async(START_OVER = false) => {
             KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
         });
 
-    SPECIAL_MODE = defined($('[data-test-selector="exit-button"i]'));
+    SPECIAL_MODE = $.defined('[data-test-selector="exit-button"i]');
     NORMAL_MODE = !SPECIAL_MODE;
 
     NORMALIZED_PATHNAME = PATHNAME
@@ -4165,7 +4188,7 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(parent))
                                 return false;
 
-                            let live = defined($(`[data-test-selector="live-badge"i]`, false, parent));
+                            let live = $.defined(`[data-test-selector="live-badge"i]`, false, parent);
 
                         return live;
                     },
@@ -4438,14 +4461,14 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get like() {
-            return defined($('[data-a-target="unfollow-button"i]'))
+            return $.defined('[data-a-target="unfollow-button"i]')
         },
 
         get live() {
             return (false
                 || SPECIAL_MODE
                 || (true
-                    && defined($('[status] [class*="status-text"i]')) && nullish($(`[class*="offline-recommend"i]`))
+                    && $.defined('[status] [class*="status-text"i]') && $.nullish(`[class*="offline-recommend"i]`)
                     && !/^offline$/i.test($.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`).first?.textContent?.trim() ?? "")
                 )
             )
@@ -4478,7 +4501,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get paid() {
-            return defined($('[data-a-target="subscribed-button"i]'))
+            return $.defined('[data-a-target="subscribed-button"i]')
         },
 
         get perm() {
@@ -4509,11 +4532,11 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get ping() {
-            return defined($('[data-a-target^="live-notifications"i][data-a-target$="on"i]'))
+            return $.defined('[data-a-target^="live-notifications"i][data-a-target$="on"i]')
         },
 
         get plug() {
-            return defined($('[data-a-target*="ad-countdown"i]'))
+            return $.defined('[data-a-target*="ad-countdown"i]')
         },
 
         get poll() {
@@ -4755,7 +4778,7 @@ let Initialize = async(START_OVER = false) => {
         let element;
 
         // Is the nav open?
-        let open = defined($('[data-a-target="side-nav-search-input"i]')),
+        let open = $.defined('[data-a-target="side-nav-search-input"i]'),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
         // Open the Side Nav
@@ -4767,7 +4790,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => nullish($('[class*="--offline"i]', false, e)));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => $.nullish('[class*="--offline"i]', false, e));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -4803,7 +4826,7 @@ let Initialize = async(START_OVER = false) => {
                                 return false;
 
                             // The "is it offline" result
-                            let live = defined(parent) && nullish($(`[class*="--offline"i]`, false, parent));
+                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, false, parent);
 
                             return live;
                         },
@@ -4850,7 +4873,7 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(parent))
                                 return false;
 
-                            let live = defined(parent) && nullish($(`[class*="--offline"i]`, false, parent));
+                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, false, parent);
 
                             return live;
                         },
@@ -4894,7 +4917,7 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(parent))
                                 return false;
 
-                            let live = defined(parent) && nullish($(`[class*="--offline"i]`, false, parent));
+                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, false, parent);
 
                             return live;
                         },
@@ -5268,7 +5291,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     parsing:
                                     for(let child of children)
-                                        if(nullish($('#allgames', false, child)))
+                                        if($.nullish('#allgames', false, child))
                                             parsing_stats: for(let grandChild of child.children) {
                                                 let [key, val, ...etc] = grandChild.children;
 
@@ -5425,7 +5448,7 @@ let Initialize = async(START_OVER = false) => {
     // Messages.set(STREAMER.name, new Set);
 
     update();
-    setInterval(update, 100);
+    setInterval(update, 2_5_0);
 
     /*** Automation
      *                    _                        _   _
@@ -5544,6 +5567,7 @@ let Initialize = async(START_OVER = false) => {
                 case 'E36D0169-268A-4C62-A4F4-DDF61A0B3AE4': // Creative
                 case '3FFBEC21-97A2-43F9-BD73-4506A1B4D62C': // Farming
                 case '10D820BB-A0A9-40DF-B0D3-FE32B45419EE': // Flight
+                case '6A0C6EA2-84EB-42B1-A8BB-59FD684BFE1A': // Game Show
                 case 'CF0F97AD-EFB8-4494-83EC-6A11CA30261B': // Horror
                 case '6E23D976-33EC-47E8-B22B-3727ACD41862': // Mobile
                 case '6540ED8D-3282-44DF-A592-887B37881846': // Mystery
@@ -5754,7 +5778,7 @@ let Initialize = async(START_OVER = false) => {
                             RestartJob('auto_focus', 'modify');
                         }
                     })
-            }, 100);
+            }, 2_5_0);
         }, POLL_INTERVAL);
     };
     Timers.auto_focus = -1000;
@@ -5812,7 +5836,7 @@ let Initialize = async(START_OVER = false) => {
          * c) There are no quality controls
          * d) The page is a search
          */
-        if(defined(button) || defined($('[data-a-target*="ad-countdown"i]')) || nullish(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
+        if(defined(button) || $.defined('[data-a-target*="ad-countdown"i]') || nullish(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
             // If the quality controls have failed to load for 1min, leave the page
             if(nullish(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
                 let scapeGoat = await GetNextStreamer();
@@ -6142,7 +6166,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Give the loots time to be clicked
             setTimeout(() => button.click(), 100 * stop);
-        }, 100);
+        }, 2_5_0);
     };
     Timers.claim_loot = -5000;
 
@@ -6199,11 +6223,12 @@ let Initialize = async(START_OVER = false) => {
                         input.checked = true;
                         input.closest('.support-panel').querySelector('button[state]:only-child')?.click();
 
-                        when.defined(() => STREAMER.main? true: null).then(ok => {
-                            SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
+                        when(() => STREAMER.main)
+                            .then(() => {
+                                SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
 
-                            WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)?.toNativeStack?.();
-                        });
+                                WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)?.toNativeStack?.();
+                            });
                     });
             }
         });
@@ -6228,7 +6253,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let DISPLAY_BUY_LATER_BUTTON,
-        COOLDOWN_REWARDS = new Map;
+        REWARDS_ON_COOLDOWN = new Map;
 
     Handlers.claim_reward = () => {
         LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
@@ -6241,12 +6266,15 @@ let Initialize = async(START_OVER = false) => {
                             .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
                             .map(async({ id, cost, title, needsInput }) => {
-                                if(COOLDOWN_REWARDS.has(id)) {
-                                    if(COOLDOWN_REWARDS.get(id) < +new Date)
-                                        COOLDOWN_REWARDS.delete(id);
+                                if(REWARDS_ON_COOLDOWN.has(id)) {
+                                    if(REWARDS_ON_COOLDOWN.get(id) < +new Date)
+                                        REWARDS_ON_COOLDOWN.delete(id);
                                     else
                                         return;
                                 }
+
+                                cost = parseInt(cost);
+                                title = title.trim();
 
                                 await when.defined(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i] button'))
                                     .then(async button => {
@@ -6257,9 +6285,9 @@ let Initialize = async(START_OVER = false) => {
                                         if(coin < cost)
                                             return;
 
-                                        LOG(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
-
                                         button.click();
+
+                                        LOG(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
 
                                         // Purchase and remove
                                         await when.defined(() => $('.rewards-list')?.getElementsByInnerText(title, 'i').filter(item => item.textContent.equals(title)).pop()?.closest('.reward-list-item')?.querySelector('button'))
@@ -6270,8 +6298,12 @@ let Initialize = async(START_OVER = false) => {
                                                     .then(button => {
                                                         let cooldown = parseTime(button.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
 
-                                                        if(cooldown > 0)
-                                                            return !LOG(`Unable to purchase "${ title }" yet. Waiting ${ toTimeString(cooldown) }`) || !COOLDOWN_REWARDS.set(id, +(new Date) + cooldown);
+                                                        if(cooldown > 0) {
+                                                            LOG(`Unable to purchase "${ title }" yet. Waiting ${ toTimeString(cooldown) }`);
+                                                            REWARDS_ON_COOLDOWN.set(id, +(new Date) + cooldown);
+
+                                                            return false;
+                                                        }
 
                                                         button.click();
 
@@ -6307,6 +6339,62 @@ let Initialize = async(START_OVER = false) => {
             let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), [state][disabled] [data-test-selector="RequiredPoints"i]:empty')?.closest?.('button'),
                 handler = $('#tt-auto-claim-reward-handler');
 
+            // Rainbow border, Cooldown timer, and Unlock all button
+            Unlock_All_Emotes: {
+                let emoteCheckout = $('[class*="unlock"i][class*="emote"i][class*="checkout"i]');
+
+                if(defined(emoteCheckout))
+                    when.sated(() => $('[data-test-selector^="emote"i]', true, emoteCheckout))
+                        .then(async available => {
+                            available = available.length;
+
+                            if($.defined('#tt-unlock-all-emotes') || available < 2)
+                                return;
+
+                            let cost = (await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('CHOSEN_SUB_EMOTE_UNLOCK'))?.cost) | 0,
+                                face = (STREAMER.face? furnish.img({ src: STREAMER.face }).outerHTML: Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint })),
+                                coin = (STREAMER?.coin) | 0,
+                                amount = (coin / cost).floor().clamp(0, available);
+
+                            emoteCheckout.firstElementChild.lastElementChild.insertAdjacentElement('beforebegin', furnish(`button#tt-unlock-all-emotes.tt-button.purple[@available=${ available }]`, {
+                                style: `margin:0.5rem 0`,
+
+                                onmouseup({ currentTarget }) {
+                                    let { available } = currentTarget.dataset;
+
+                                    // Auto-buy rewards
+                                    function buyOut(count = 1) {
+                                        count *= +$.defined('[class*="reward-center"i]');
+
+                                        if(count > 0)
+                                            when.defined(() => $('[class*="unlock"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]', true)?.random()?.closest('button'))
+                                                .then(emote => {
+                                                    emote.click();
+
+                                                    when.defined(() => $('[class*="unlock"i][class*="emote"i][class*="checkout"i] button[state]'))
+                                                        .then(confirmation => {
+                                                            confirmation.click();
+
+                                                            when.defined(() => $('.reward-center-body [data-test-selector^="share"i][data-test-selector*="emote"i]'))
+                                                                .then(success => {
+                                                                    $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="left"i] button').click();
+
+                                                                    wait(250).then(() => buyOut(--count));
+                                                                });
+                                                        });
+                                                });
+                                        else
+                                            $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="right"i]:last-of-type')?.click();
+                                    }
+
+                                    buyOut(amount);
+                                },
+
+                                innerHTML: `Unlock ${ amount >= available? `all (${ available })`: amount } ${ 'emote'.pluralSuffix(amount) }${ (cost > 0? ` for ${ (cost * amount).suffix('',1).replace('.0','') }`: '') }`
+                            }));
+                        });
+            }
+
             Wallet_Display: {
                 let rewards = $('.rewards-list .reward-list-item:not([tt-wallet])', true);
 
@@ -6331,8 +6419,13 @@ let Initialize = async(START_OVER = false) => {
                         // Variable animataion speed depending on "completion" percentage
                         let child = $('[data-test-selector="cost"i]', false, reward);
 
+                        // Rainbow border
                         child.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
                         child.setAttribute('rainbow-border', (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id));
+
+                        // Cooldown timer
+                        if(REWARDS_ON_COOLDOWN.has(item?.id))
+                            child.closest('.reward-list-item').setAttribute('timed-out', toTimeString((REWARDS_ON_COOLDOWN.get(item?.id) - +new Date).clamp(0, +Infinity), 'clock'));
                     });
                 });
             }
@@ -6371,6 +6464,7 @@ let Initialize = async(START_OVER = false) => {
                     'Buy when available'
                 );
 
+                $('[id$="header"i]', false, head)?.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
                 $('[id$="header"i]', false, head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
 
                 container.insertAdjacentElement('afterend',
@@ -6815,7 +6909,7 @@ let Initialize = async(START_OVER = false) => {
                             head.innerHTML = 'Live Reminders';
                         }
 
-                        body = f('div#tt-reminder-listing', {});
+                        body = f('#tt-reminder-listing');
 
                         parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
@@ -6835,7 +6929,8 @@ let Initialize = async(START_OVER = false) => {
                             return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID).value }</p>`, 7000);
 
                         listing:
-                        for(let { name, time } of reminders) {
+                        for(let index = 0, length = reminders.length; index < length; ++index) {
+                            let { name, time } = reminders[index];
                             let channel = await(null
                                 ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                                 ?? new Search(name).then(Search.convertResults)
@@ -6862,10 +6957,10 @@ let Initialize = async(START_OVER = false) => {
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
                                 live = (channel.live || (abs(+now - +time) / 3_600_000 < 1/3)),
                                 [since] = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat),
-                                [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy],
-                                status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
+                                [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
-                            let { href, icon, desc = '' } = channel;
+                            let _name = name.toLowerCase();
+                            let { href, icon, desc = (STREAMER.jump?.[_name]?.title ?? '') } = channel;
                             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                                 coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                                 coinText =
@@ -6883,21 +6978,31 @@ let Initialize = async(START_OVER = false) => {
                                     })
                                 ).outerHTML;
 
-                            let container = f(`div.tt-reminder`, { name, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
-                                f('div.simplebar-scroll-content',
+                            let game = (STREAMER.jump?.[_name]?.stream?.game?.name ?? ''),
+                                primaryColor = Color.destruct(STREAMER.jump?.[_name]?.primaryColorHex || '9147ff'),
+                                primaryColorDarker = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * .9).clamp(0, 75) }%)`,
+                                primaryColorLighter = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * 1.1).clamp(25, 100) }%)`;
+
+                            let liveFontColor = (THEME.equals('dark')? Color.white: Color.black);
+                            let [liveBGColor] = [primaryColor.RGB, primaryColorDarker, primaryColorLighter].map(Color.destruct).sort((a, b) => Color.contrast(liveFontColor, [b.R, b.G, b.B]) - Color.contrast(liveFontColor, [a.R, a.G, a.B]));
+
+                            let status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em;${ (!live? '': `background-color:${ liveBGColor.RGB }`) }">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`
+
+                            let container = f(`.tt-reminder`, { name, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
+                                f('.simplebar-scroll-content',
                                     {
                                         style: 'overflow: hidden;',
                                     },
-                                    f('div.simplebar-content',
+                                    f('.simplebar-content',
                                         {
                                             style: 'overflow: hidden; width:100%;',
                                         },
-                                        f('div.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
-                                            f('div.persistent-notification.tt-relative[@test-selector=persistent-notification]',
+                                        f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
+                                            f('.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                                 {
                                                     style: 'width:100%',
                                                 },
-                                                f('div.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                                f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
                                                     f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                                         {
                                                             // Sometimes, Twitch likes to default to `_blank`
@@ -6905,27 +7010,27 @@ let Initialize = async(START_OVER = false) => {
 
                                                             href,
                                                         },
-                                                        f('div.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                                        f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
                                                             // Avatar
                                                             f.div(
-                                                                f('div.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
-                                                                    f('div.tt-aspect.tt-aspect--align-top', {},
+                                                                f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live? '': `border:3px solid ${ primaryColor.RGB }`) },
+                                                                    f('.tt-aspect.tt-aspect--align-top', {},
                                                                         f('img.tt-balloon-avatar.tt-image', { src: icon })
                                                                     )
                                                                 )
                                                             ),
                                                             // Message body
-                                                            f('div.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                                f('div.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
+                                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
+                                                                f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                                     f('span.tt-c-text-alt', {},
                                                                         f('p.tt-balloon-message', {
-                                                                            innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ name }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
+                                                                            innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ [name, game].filter(s => s.length).join(' &bull; ') }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
                                                                         })
                                                                     )
                                                                 ),
                                                                 // Subheader
-                                                                f('div.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
-                                                                    f('div.tt-mg-l-05', {},
+                                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
+                                                                    f('.tt-mg-l-05', {},
                                                                         f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: [status, coinIcon + coinText].join(' &bull; ') })
                                                                     )
                                                                 ),
@@ -6934,8 +7039,8 @@ let Initialize = async(START_OVER = false) => {
                                                             )
                                                         )
                                                     ),
-                                                    f('div.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
-                                                        f('div.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                    f('.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
+                                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                 {
                                                                     name,
@@ -7004,7 +7109,13 @@ let Initialize = async(START_OVER = false) => {
 
                                 LiveReminders = { [name]: time.toJSON(), ...LiveReminders };
                             }
+
+                            // Loading reminders...
+                            $('[up-next--body] > *').modStyle(`border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, var(--color-accent) ${ (100 * (index / length)).toFixed(0) }%, #0000 0) 1;`);
                         }
+
+                        wait(500)
+                            .then(() => $('[up-next--body] > *').modStyle('border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, #0000, #0000) 1;'));
 
                         if(oldHash != UUID.from(JSON.stringify(LiveReminders)).value)
                             SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
@@ -7208,8 +7319,8 @@ let Initialize = async(START_OVER = false) => {
                     offset = getOffset(container);
 
                 $('div#root > *').append(
-                    furnish('div.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9999;` },
-                        furnish('div.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
+                    furnish('.tt-tooltip-layer.tooltip-layer', { style: `transform: translate(${ offset.left }px, ${ offset.top }px); width: 30px; height: 30px; z-index: 9999;` },
+                        furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                             furnish('div', { style: 'width: 30px; height: 30px;' }),
                             tooltip
                         )
@@ -7849,7 +7960,7 @@ let Initialize = async(START_OVER = false) => {
             SaveCache({ BAD_STREAMERS });
 
             // RemoveFromTopSearch(['tt-err-chn']);
-        } else if(nullish($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))) {
+        } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]')) {
             try {
                 $('[data-a-target="side-nav-arrow"i]')
                     .closest('[class*="expand"i]')
@@ -8019,7 +8130,7 @@ let Initialize = async(START_OVER = false) => {
                         });
                     },
                 }, f.div(
-                    f('div.tt-action-icon', { innerHTML: icon }),
+                    f('.tt-action-icon', { innerHTML: icon }),
                     f.div(
                         f('p.tw-title.tt-action-title', {}, title),
                         f('p.tt-action-subtitle', {}, subtitle)
@@ -8119,7 +8230,7 @@ let Initialize = async(START_OVER = false) => {
         let actionPanel = $('.about-section__actions');
 
         if(nullish(actionPanel)) {
-            actionPanel = furnish('div.about-section__actions', { style: `padding-left: 2rem; margin-bottom: 3rem; width: 24rem;` });
+            actionPanel = furnish('.about-section__actions', { style: `padding-left: 2rem; margin-bottom: 3rem; width: 24rem;` });
 
             $('.about-section')?.append?.(actionPanel);
         } else {
@@ -8189,16 +8300,16 @@ let Initialize = async(START_OVER = false) => {
 
                 title = title.replace(/[\s\-]+twitch\s*$/i, '');
 
-                let card = f('div.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
-                    f('div.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
-                        f('div.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { style: 'color:inherit; text-decoration:none; min-height:12rem; height:fit-content' },
-                            f('div.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
+                let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
+                    f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
+                        f('.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { style: 'color:inherit; text-decoration:none; min-height:12rem; height:fit-content' },
+                            f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
                                 // Preview image
-                                f('div.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {
+                                f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {
                                     style: 'background-color:#0000!important'
                                 },
-                                    f('div.tt-card-image', {},
-                                        f('div.tt-aspect', {},
+                                    f('.tt-card-image', {},
+                                        f('.tt-aspect', {},
                                             f('div', {}),
                                             f('img.tt-image', {
                                                 alt: title,
@@ -8209,14 +8320,14 @@ let Initialize = async(START_OVER = false) => {
                                     )
                                 ),
                                 // Title & Subtitle
-                                f('div.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
-                                    f('div.tt-full-width.tt-pd-l-1', {},
+                                f('.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
+                                    f('.tt-full-width.tt-pd-l-1', {},
                                         // Title
-                                        f('div.chat-card__title.tt-ellipsis', {},
+                                        f('.chat-card__title.tt-ellipsis', {},
                                             f('h3.tt-strong.tt-ellipsis[@test-selector=chat-card-title]', {}, `About ${ title }`)
                                         ),
                                         // Subtitle
-                                        f('div.tt-ellipsis', {},
+                                        f('.tt-ellipsis', {},
                                             f('p.tt-c-text-alt-2[@test-selector=chat-card-description]', { style: 'white-space:break-spaces' }, description)
                                         ),
                                     )
@@ -8226,13 +8337,13 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                let container = f(`div#game-overview-card.chat-line__message[@game=${ STREAMER.game }][@a-target=chat-line-message][@test-selector=chat-line-message]`, {
+                let container = f(`#game-overview-card.chat-line__message[@game=${ STREAMER.game }][@a-target=chat-line-message][@test-selector=chat-line-message]`, {
                     style: `animation:1s fade-in 1; max-width:fit-content; overflow:visible; overflow-wrap:normal; margin-bottom:3rem`
                 },
-                    f('div.tt-relative', {},
-                        f('div.tt-relative.chat-line__message-container', {},
+                    f('.tt-relative', {},
+                        f('.tt-relative.chat-line__message-container', {},
                             f('div', {},
-                                f('div.chat-line__no-background.tt-inline', {},
+                                f('.chat-line__no-background.tt-inline', {},
                                     card
                                 )
                             )
@@ -8440,7 +8551,7 @@ let Initialize = async(START_OVER = false) => {
                     touser: USERNAME,
 
                     // Either...
-                    customapi: `*Custom API*`,
+                    customapi: `ℂ𝕦𝕤𝕥𝕠𝕞 𝔸ℙ𝕀`,
 
                     // Fetched...
                     ...variables
@@ -8462,14 +8573,33 @@ let Initialize = async(START_OVER = false) => {
 
     function decodeMD(string = '') {
         return string
-            .replace(/(`{3})((?:[\w\-]+\s)?)([^]+?)\1/g, '<code type="$2">$3</code>')
-            .replace(/(`{1})([^]+?)\1/g, '<code>$2</code>')
-            .replace(/([\*_]{3})([^]+?)\1/g, '<strong><em>$2</em></strong>')
-            .replace(/([\*_]{2})([^]+?)\1/g, '<strong>$2</strong>')
-            .replace(/([\*_]{1})([^]+?)\1/g, '<em>$2</em>')
+            .replace(/(`{3})((?:[\w\-]+\s)?)([^$]+)\1/g, '<code type="$2">$3</code>')
+            .replace(/([`]{1})([^\1]+)\1/g, '<code>$2</code>')
+            .replace(/([\*_]{3})([^\1]+)\1/g, '<strong><em>$2</em></strong>')
+            .replace(/([\*_]{2})([^\1]+)\1/g, '<strong>$2</strong>')
+            .replace(/([\*_]{1})([^\1]+)\1/g, '<em>$2</em>')
             .replace(/!\[([^\[\]]+?)\]\(([^\(\)]+?)\)/g, '<img alt="$1" src="$2"/>')
             .replace(/\[([^\[\]]+?)\]\(([^\(\)]+?)\)/g, '<a href="$2" target="_blank">$1</a>')
-            .replace(/([~]{1})([^]+?)\1/g, '<span style="text-decoration:1px line-through!important">$2</span>');
+            .replace(/([~]{1})([^$]+)\1/g, '<span style="text-decoration:1px line-through!important">$2</span>')
+            .replace(/([#]{1,3})([^$]+)\1/g, ($0, $1, $2, $$, $_) => {
+                /** Available scripting types:
+                 * (1) OPF → 𝕋𝕙𝕖 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨𝕟 𝕗𝕠𝕩 𝕛𝕦𝕞𝕡𝕖𝕕 𝕠𝕧𝕖𝕣 𝕥𝕙𝕖 𝕝𝕒𝕫𝕪 𝕕𝕠𝕨𝕟
+                 * (2) SCR → 𝒯𝒽ℯ 𝓆𝓊𝒾𝒸𝓀 𝒷𝓇ℴ𝓌𝓃 𝒻ℴ𝓍 𝒿𝓊𝓂𝓅ℯ𝒹 ℴ𝓋ℯ𝓇 𝓉𝒽ℯ 𝓁𝒶𝓏𝓎 𝒹ℴ𝓌𝓃
+                 * (3) FR  → 𝔗𝔥𝔢 𝔮𝔲𝔦𝔠𝔨 𝔟𝔯𝔬𝔴𝔫 𝔣𝔬𝔵 𝔧𝔲𝔪𝔭𝔢𝔡 𝔬𝔳𝔢𝔯 𝔱𝔥𝔢 𝔩𝔞𝔷𝔶 𝔡𝔬𝔴𝔫
+                 */
+                let type = ['opf','scr','fr'][$1.length - 1];
+
+                let string = '';
+                for(let char of $2)
+                    string += (
+                        /[a-z]/i.test(char)?
+                            `&${ char }${ type };`:
+                        char
+                    );
+
+                return string;
+            })
+            .replace(/([#]{1,5})([^$]+)/g, ($0, $1, $2) => `<h${ $1.length }>${ $2.trim() }</h${ $1.length }>`);
     }
 
     Handlers.parse_commands = async() => {
@@ -8644,9 +8774,9 @@ let Initialize = async(START_OVER = false) => {
                 $('#tt-tcito1')?.remove();
 
                 tray.firstElementChild.append(
-                    f('div#tt-tcito1', {},
-                        f('div.tcito2', {},
-                            f('div.tcito3', {},
+                    f('#tt-tcito1', {},
+                        f('.tcito2', {},
+                            f('.tcito3', {},
                                 f('div', { style: `max-height:3rem!important` },
                                     f('div', { style: `padding: 00.5rem!important` },
                                         f('span', { style: `color:var(--color-text-alt-2)!important` }, `No commands found.`)
@@ -8660,26 +8790,26 @@ let Initialize = async(START_OVER = false) => {
                 $('#tt-tcito1')?.remove();
 
                 tray.firstElementChild.append(
-                    f('div#tt-tcito1', {},
-                        f('div.tcito2', {},
-                            f('div.tcito3', {},
+                    f('#tt-tcito1', {},
+                        f('.tcito2', {},
+                            f('.tcito3', {},
                                 f('div', { style: `max-height:18rem!important` },
                                     f.div(
                                         // f('div', { style: `text-align:center` },
-                                        //     f('div.tt-kb', {},
+                                        //     f('.tt-kb', {},
                                         //         f('p.tt-kb-text', {}, 'Space')
                                         //     ),
                                         //     'insert selected command'
                                         // ),
                                         ...listable.map(({ aliases, command, reply, availability, enabled, origin, variables, textDistance }, index, array) => {
-                                            reply = decodeMD(parseCommands(reply, variables));
+                                            reply = parseCommands(reply, variables);
 
                                             let { href } = (/\b(?<href>(?:https?:\/\/\S+|\w{3,}\.\w{2,}(?:\/\S*)?))/i.exec(reply)?.groups ?? {});
 
                                             if(defined(href))
                                                 reply = f('a', { href: href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`), title: reply, style: `margin-right:0.75rem` }, reply);
 
-                                            return f(`div#tt-command--${ command.replace(/[^\w\-]+/g, '') }`, {},
+                                            return f(`#tt-command--${ command.replace(/[^\w\-]+/g, '') }`, {},
                                                 f('button.tcito7', {
                                                     style: `cursor:${ ['not-allowed','auto'][+enabled] }!important; color:${ ['inherit','var(--color-text-success)'][+(textDistance < 1)] }`,
                                                     onmouseup: ({ target, button = -1 }) => {
@@ -8707,8 +8837,8 @@ let Initialize = async(START_OVER = false) => {
                                                         return RemoveCustomCSSBlock(CSSBlockName);
                                                     },
                                                 },
-                                                    f('div.tcito8', {},
-                                                        f('div.tcito9', {},
+                                                    f('.tcito8', {},
+                                                        f('.tcito9', {},
                                                             f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
                                                                 f('img.chat-badge', { src: TwitchRoleBadges[availability], availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
 
@@ -8852,7 +8982,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.prevent_hosting = async() => {
         START__STOP_WATCH('prevent_hosting');
 
-        let hosting = defined($('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]')),
+        let hosting = $.defined('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]'),
             next = await GetNextStreamer(),
             host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.textContent),
             host = (STREAMER.name ?? ''),
@@ -8924,7 +9054,7 @@ let Initialize = async(START_OVER = false) => {
         let url = parseURL(window.location),
             data = url.searchParameters,
             raided = data.referrer === 'raid',
-            raiding = defined($('[data-test-selector="raid-banner"i]')),
+            raiding = $.defined('[data-test-selector="raid-banner"i]'),
             next = await GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.textContent),
             from = (raided? null: STREAMER.name),
@@ -9013,7 +9143,7 @@ let Initialize = async(START_OVER = false) => {
         let online = [STREAMER, ...STREAMERS].filter(isLive),
             container = (null
                 ?? $('#tt-greedy-raiding--container')
-                ?? furnish('div#tt-greedy-raiding--container', { style: 'height:0!important; width:0!important; visibility:hidden!important; position:absolute!important; top:-100vh!important; left:-100vw!important; display:none!important' })
+                ?? furnish('#tt-greedy-raiding--container', { style: 'height:0!important; width:0!important; visibility:hidden!important; position:absolute!important; top:-100vh!important; left:-100vw!important; display:none!important' })
             );
 
         for(let channel of online) {
@@ -9528,7 +9658,7 @@ let Initialize = async(START_OVER = false) => {
 
                     // span.removeAttribute('tip-text--timezone');
                 });
-        }, 100);
+        }, 2_5_0);
 
         TIME_ZONE__TEXT_MATCHES = TIME_ZONE__TEXT_MATCHES.isolate();
     };
@@ -9962,7 +10092,7 @@ let Initialize = async(START_OVER = false) => {
                 if(nullish(ranking))
                     container.insertBefore(ranking = (
                         furnish('div', { style: 'animation:1s fade-in 1;' },
-                            furnish('div#tt-channel-point-ranking', { style: 'display:flex; position:relative; align-items:center; vertical-align:middle; height:100%;' })
+                            furnish('#tt-channel-point-ranking', { style: 'display:flex; position:relative; align-items:center; vertical-align:middle; height:100%;' })
                         )
                     ), container.lastElementChild);
                 else
@@ -10100,7 +10230,7 @@ let Initialize = async(START_OVER = false) => {
 
                 RECEIPT_TOOLTIP.innerHTML = [abs(EXACT_POINTS_EARNED).suffix(' &uarr;'), abs(EXACT_POINTS_SPENT).suffix(' &darr;')].join(' | ');
                 points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
-            }, 100);
+            }, 2_5_0);
         }
 
         JUDGE__STOP_WATCH('points_receipt_placement');
@@ -10315,7 +10445,7 @@ let Initialize = async(START_OVER = false) => {
                                 });
                             }
 
-                            when.defined(() => STREAMER.__shop__.length > 1? true: null)
+                            when(() => STREAMER.__shop__.length > 1)
                                 .then(() => button.click());
                         });
             });
@@ -10386,13 +10516,13 @@ let Initialize = async(START_OVER = false) => {
         let scale = parseFloat(Settings.stream_preview_scale) || 1,
             muted = !parseBool(Settings.stream_preview_sound),
             quality = (scale > 1? 'auto': '720p'),
-            watchParty = defined($('[data-a-target^="watchparty"i][data-a-target*="overlay"i]')),
+            watchParty = $.defined('[data-a-target^="watchparty"i][data-a-target*="overlay"i]'),
             controls = false;
 
         STREAM_PREVIEW = {
             name,
             element:
-                furnish(`div.tt-stream-preview.invisible[@position=${ (top + height / 2 < body.height / 2)? 'below': 'above' }][@vods=${ richTooltips.length > 1 }]`, {
+                furnish(`.tt-stream-preview.invisible[@position=${ (top + height / 2 < body.height / 2)? 'below': 'above' }][@vods=${ richTooltips.length > 1 }]`, {
                         style: (
                             (top + height / 2 < body.height / 2)?
                                 // Below tooltip
@@ -10401,7 +10531,7 @@ let Initialize = async(START_OVER = false) => {
                             `top: calc(${ top }px - 0.5em - (15rem * ${ scale }));`
                         ) + `left: calc(${ (watchParty? getOffset($('[data-a-target^="side-nav-bar"i]'))?.width: video?.left) ?? 50 }px - 6rem); height: calc(15rem * ${ scale }); width: calc(26.75rem * ${ scale }); z-index: ${ '9'.repeat(1 + parseInt(Settings.stream_preview_position ?? 0)) };`,
                     },
-                    furnish('div.tt-stream-preview--poster', {
+                    furnish('.tt-stream-preview--poster', {
                         style: `background-image: url("https://static-cdn.jtvnw.net/previews-ttv/live_user_${ name.toLowerCase() }-1280x720.jpg?${ +new Date }");`,
                         onerror: event => {
                             // Do something if the stream's live preview poster doesn't load...
@@ -10459,7 +10589,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 SetVolume(0);
                                 clearInterval(audioChecker);
-                            }, 100);
+                            }, 2_5_0);
                         },
                     })
                 )
@@ -10467,7 +10597,7 @@ let Initialize = async(START_OVER = false) => {
 
         document.body.append(STREAM_PREVIEW.element);
 
-        wait(100).then(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'));
+        wait(2_5_0).then(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'));
 
         JUDGE__STOP_WATCH('stream_preview');
     };
@@ -10578,7 +10708,7 @@ let Initialize = async(START_OVER = false) => {
 
                             live_time.tooltip.innerHTML = (timeLeft < 0? '+': '') + toTimeString(Math.abs(timeLeft), 'clock');
                             live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, hsla(${ (120 * percentage) | 0 }, 100%, 50%, 0.5) ${ (100 * percentage).toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
-                        }, 100);
+                        }, 2_5_0);
                 };
             } break;
 
@@ -10754,7 +10884,7 @@ let Initialize = async(START_OVER = false) => {
                         });
                     },
                 }, f.div(
-                    f('div.tt-action-icon', { innerHTML: icon }),
+                    f('.tt-action-icon', { innerHTML: icon }),
                     f.div(
                         f('p.tw-title.tt-action-title', {}, title),
                         f('p.tt-action-subtitle', {}, subtitle)
@@ -10854,7 +10984,7 @@ let Initialize = async(START_OVER = false) => {
         let actionPanel = $('.about-section__actions');
 
         if(nullish(actionPanel)) {
-            actionPanel = furnish('div.about-section__actions', { style: `padding-left: 2rem; margin-bottom: 3rem; width: 24rem;` });
+            actionPanel = furnish('.about-section__actions', { style: `padding-left: 2rem; margin-bottom: 3rem; width: 24rem;` });
 
             $('.about-section')?.append?.(actionPanel);
         } else {
@@ -10936,8 +11066,8 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('recover_frames');
 
         let { paused } = video,
-            isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = defined($('[data-a-target*="ad-countdown"i]')),
+            isTrusted = $.defined('button[data-a-player-state="paused"i]'),
+            isAdvert = $.defined('[data-a-target*="ad-countdown"i]'),
             { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
 
         // Time that's passed since creation. Should constantly increase
@@ -11002,7 +11132,7 @@ let Initialize = async(START_OVER = false) => {
                                         return /* Video not loading */;
 
                                     return VIDEO_OVERRIDE = true;
-                                }, 100);
+                                }, 2_5_0);
                             },
                         })
                     );
@@ -11077,8 +11207,8 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('recover_stream');
 
         let { paused } = video,
-            isTrusted = defined($('button[data-a-player-state="paused"i]')),
-            isAdvert = defined($('[data-a-target*="ad-countdown"i]'));
+            isTrusted = $.defined('button[data-a-player-state="paused"i]'),
+            isAdvert = $.defined('[data-a-target*="ad-countdown"i]');
 
         // Leave the video alone
             // if the video isn't paused
@@ -11243,7 +11373,7 @@ let Initialize = async(START_OVER = false) => {
                 let [thumbnail, searchTerm] = element.children;
                 let image = $('img', false, thumbnail)?.src,
                     name = searchTerm.textContent.trim(),
-                    live = defined($('[data-test-selector="live-badge"i]', false, element));
+                    live = $.defined('[data-test-selector="live-badge"i]', false, element);
 
                 if(!live)
                     return;
@@ -11304,7 +11434,7 @@ let Initialize = async(START_OVER = false) => {
                                 style: 'position:absolute;left:0;margin-left:1rem;',
 
                                 onmousedown(event) {
-                                    $('#tt-exit-pip').modAttribute('style', 'transition:opacity .5s;opacity:0;');
+                                    $('#tt-exit-pip').modStyle('transition:opacity .5s; opacity:0;');
                                     $('.picture-by-picture-player')?.classList?.add('picture-by-picture-player--collapsed');
 
                                     wait(500).then(() => {
@@ -11529,7 +11659,7 @@ let Initialize = async(START_OVER = false) => {
         let [help] = $.body.getElementsByInnerText('space/k', 'i').filter(element => element.tagName == 'TBODY');
 
         let f = furnish;
-        if(defined(help) && nullish($('.tt-extra-keyboard-shortcuts', false, help)))
+        if(defined(help) && $.nullish('.tt-extra-keyboard-shortcuts', false, help))
             for(let shortcut in GLOBAL_EVENT_LISTENERS)
                 if(/^(key(?:up|down)_)/i.test(shortcut)) {
                     let name = GLOBAL_EVENT_LISTENERS[shortcut].toTitle(),
@@ -11550,7 +11680,7 @@ let Initialize = async(START_OVER = false) => {
                     );
                 }
     };
-    Timers.extra_keyboard_shortcuts = 100;
+    Timers.extra_keyboard_shortcuts = 2_5_0;
 
     __ExtraKeyboardShortcuts__:
     if(parseBool(Settings.extra_keyboard_shortcuts)) {
@@ -11798,6 +11928,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
         ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
             ?.toNativeStack?.():
     setInterval(WAIT_FOR_PAGE = async() => {
+        let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
         let adCountdown = $('[data-a-target*="ad-countdown"i]');
 
         // Ensure settings are loaded
@@ -11807,7 +11938,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
         // Set the ad volume, if applicable
         // Ensures the volume gets set once; just in case the user actually wants to hear it
         NORMALIZED_AD_VOLUME = true
-            && defined($('[data-a-target*="ad-countdown"i]'))
+            && $.defined('[data-a-target*="ad-countdown"i]')
             && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT)
             && (false
                 || SetVolume(Settings.away_mode__volume)
@@ -11815,16 +11946,16 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             );
 
         // Ensures the ad does not freeze the page
-        refresh_on_ad_freeze: if(defined(adCountdown)) {
+        refresh_on_ad_freeze: if(defined(sadOverlay) || defined(adCountdown)) {
             if(nullish(LAST_TIME_AD_WAS_CHECKED)) {
                 LAST_TIME_AD_WAS_CHECKED = +new Date;
-                LAST_VALUE_WHEN_AD_WAS_CHECKED = adCountdown.textContent;
+                LAST_VALUE_WHEN_AD_WAS_CHECKED = adCountdown?.textContent;
 
                 break refresh_on_ad_freeze;
             }
 
             if(true
-                && (+new Date - LAST_TIME_AD_WAS_CHECKED) > 2500
+                && (+new Date - LAST_TIME_AD_WAS_CHECKED) > (VIDEO_AD_COUNTDOWN + 2_500)
                 && LAST_VALUE_WHEN_AD_WAS_CHECKED.equals(adCountdown.textContent)
             ) {
                 WARN(`The advertisement seems to be stalled... Refreshing page...`);
@@ -11838,30 +11969,31 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
             && defined(USERNAME)
 
             // The follow button exists
-            && defined($(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`))
+            && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
 
             // There are channel buttons on the side
             && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
 
             // There isn't an advertisement playing
+            && nullish(sadOverlay)
             && nullish(adCountdown)
 
             // There are proper containers
             && (false
                 // There is a message container
-                || defined($('[data-test-selector$="message-container"i]'))
+                || $.defined('[data-test-selector$="message-container"i]')
 
                 // There is an ongoing search
                 || (true
-                    && defined($('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true))
-                    && defined($('[data-a-target^="threads-box-"i]'))
+                    && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true)
+                    && $.defined('[data-a-target^="threads-box-"i]')
                 )
 
                 // The page is a channel viewing page
                 // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
 
                 // There is an error message
-                || defined($('[data-a-target="core-error-message"i]'))
+                || $.defined('[data-a-target="core-error-message"i]')
             )
         );
 
@@ -11877,11 +12009,11 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                         return;
 
                     count = parseInt(count);
-                    time = parseTime(time);
+                    time = (parseTime(time) + 10).floorToNearest(15);
 
                     NORMALIZED_AD_COUNTER_CURRENT = count;
 
-                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * ++time);
+                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
                 });
 
         LOG("Main container ready");
@@ -11904,7 +12036,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                 &&  parseBool(
                                         parseBool(Settings.away_mode)?
                                             (false
-                                                || defined($('#away-mode'))
+                                                || $.defined('#away-mode')
 
                                                 || !NOT_LOADED_CORRECTLY.push('away_mode')
                                             ):
@@ -11915,8 +12047,8 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                 && parseBool(
                                         parseBool(Settings.auto_claim_bonuses)?
                                             (false
-                                                || defined($('#tt-auto-claim-bonuses'))
-                                                || nullish($('[data-test-selector="balance-string"i]'))
+                                                || $.defined('#tt-auto-claim-bonuses')
+                                                || $.nullish('[data-test-selector="balance-string"i]')
                                                 || parseBool(Settings.view_mode)
                                                 || STREAMER.veto
 
@@ -11929,7 +12061,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                 &&  parseBool(
                                         !parseBool(Settings.first_in_line_none)?
                                             (false
-                                                || defined($('[up-next--container]'))
+                                                || $.defined('[up-next--container]')
 
                                                 || !NOT_LOADED_CORRECTLY.push('first_in_line')
                                             ):
@@ -11940,7 +12072,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                 &&  parseBool(
                                         parseBool(Settings.watch_time_placement)?
                                             (false
-                                                || defined($('#tt-watch-time'))
+                                                || $.defined('#tt-watch-time')
 
                                                 || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
                                             ):
@@ -11951,7 +12083,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                 &&  parseBool(
                                         parseBool(Settings.points_receipt_placement)?
                                             (false
-                                                || defined($('#tt-points-receipt'))
+                                                || $.defined('#tt-points-receipt')
 
                                                 || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
                                             ):
@@ -12081,7 +12213,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
                                 mentions,
                                 element: line,
                                 emotes: containedEmotes.map(string => string.replace(/^:|:$/g, '')).isolate(),
-                                deleted: defined($('[class*="--deleted-notice"i]', false, line)),
+                                deleted: $.defined('[class*="--deleted-notice"i]', false, line),
                                 highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
                             });
                         }
@@ -12116,7 +12248,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
                         NodeToObject:
                         for(let node of addedNodes) {
-                            let highlighted = defined($('[class*="container--highlighted"i]', false, node)),
+                            let highlighted = $.defined('[class*="container--highlighted"i]', false, node),
                                 newmessage = ["whisper-message"].contains(node.dataset.aTarget);
 
                             if(false
@@ -12342,7 +12474,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
         // Add custom styling
         CustomCSSInitializer: {
-            CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css', {});
+            CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css');
 
             let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
 
@@ -12430,6 +12562,7 @@ Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
 
             .tt-time-elapsed {
                 color: var(--color-text-live);
+                text-shadow: 0 0 3px var(--color-background-base);
 
                 float: right;
             }
@@ -12681,6 +12814,18 @@ document.body.onload = event => {
                 })
         });
 
+    // Color compontents
+    ColorComponents:
+    if($.nullish('#tt-custom-css')) {
+        let color = window
+            ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
+            ?.getPropertyValue?.('--color-accent');
+
+        color = Color.destruct(color || '#9147FF');
+
+        $.body.append(furnish('style#tt-custom-css', {}, `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`));
+    }
+
     // Alerts for users
     DisplayNews:
     LoadCache('ReadNews', async({ ReadNews }) => {
@@ -12712,7 +12857,7 @@ document.body.onload = event => {
                             return;
                         TTVToolsNewsArticles.push(articleID);
 
-                        let article = furnish(`div#tt-news-${ articleID }`, {},
+                        let article = furnish(`#tt-news-${ articleID }`, {},
                             header, ...content
                         );
 

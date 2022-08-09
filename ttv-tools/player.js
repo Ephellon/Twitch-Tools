@@ -26,14 +26,19 @@ let {
 } = window;
 
 /** Adds a CSS block to the CUSTOM_CSS string
- * AddCustomCSSBlock(name:string, block:string) → undefined
+ * AddCustomCSSBlock_Player(name:string, block:string) → undefined
  */
-function AddCustomCSSBlock(name, block) {
+function AddCustomCSSBlock_Player(name, block) {
     name = name.trim();
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    let newHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+
+    if(Player__CUSTOM_CSS.innerHTML.equals(newHTML))
+        return;
+
+    Player__CUSTOM_CSS.innerHTML = newHTML;
     Player__CUSTOM_CSS.remove();
 
     // Force styling update
@@ -41,14 +46,19 @@ function AddCustomCSSBlock(name, block) {
 }
 
 /** Removes a CSS block from the Player__CUSTOM_CSS string
- * RemoveCustomCSSBlock(name:string, flags:string?) → undefined
+ * RemoveCustomCSSBlock_Player(name:string, flags:string?) → undefined
  */
-function RemoveCustomCSSBlock(name, flags = '') {
+function RemoveCustomCSSBlock_Player(name, flags = '') {
     name = name.trim();
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    Player__CUSTOM_CSS.innerHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    let newHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+
+    if(Player__CUSTOM_CSS.innerHTML.equals(newHTML))
+        return;
+
+    Player__CUSTOM_CSS.innerHTML = newHTML;
     Player__CUSTOM_CSS.remove();
 
     // Force styling update
@@ -185,7 +195,7 @@ let Player__Initialize = async(START_OVER = false) => {
             return;
 
         let video = $('video');
-        let live = nullish($('[class*="channel-status"i][class*="offline"i]'));
+        let live = $.nullish('[class*="channel-status"i][class*="offline"i]');
 
         if(nullish(video) || !live)
             return (
@@ -292,7 +302,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
         && parseBool(window.MAIN_CONTROLLER_READY)
 
         // There is an error message
-        || defined($('[data-test-selector^="content-overlay-gate"i]'))
+        || $.defined('[data-test-selector^="content-overlay-gate"i]')
     );
 
     if(ready) {

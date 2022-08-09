@@ -443,6 +443,22 @@ Object.defineProperties($, {
         enumerable: false,
         configurable: false,
     },
+
+    defined: {
+        value: (selector, multiple = false, container = document) => defined($(selector, multiple, container)),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    nullish: {
+        value: (selector, multiple = false, container = document) => nullish($(selector, multiple, container)),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
 });
 
 // Returns whether a value is nullish or not
@@ -491,7 +507,7 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.defined(callback:function, ms:number<milliseconds>?) → Promise<any>
+                // when.defined(callback:function<any>, ms:number<milliseconds>?) → Promise<any>
             async function(callback, ms = 100) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async() => {
@@ -508,6 +524,63 @@ try {
                                     undefined:
                                 value
                             );
+                        }
+                    }, ms);
+                });
+            },
+        },
+
+        "nullish": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.nullish(callback:function<any>, ms:number<milliseconds>?) → Promise<any>
+            async function(callback, ms = 100) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async() => {
+                        let value = await callback();
+
+                        if(nullish(value)) {
+                            clearInterval(interval);
+                            resolve(value);
+                        }
+                    }, ms);
+                });
+            },
+        },
+
+        "empty": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.empty(callback:function<@@iterable>, ms:number<milliseconds>?) → Promise<any>
+            async function(callback, ms = 100) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async() => {
+                        let value = await callback();
+
+                        if(value?.length < 1) {
+                            clearInterval(interval);
+                            resolve(value);
+                        }
+                    }, ms);
+                });
+            },
+        },
+
+        "sated": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.sated(callback:function<@@iterable>, ms:number<milliseconds>?) → Promise<any>
+            async function(callback, ms = 100) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async() => {
+                        let value = await callback();
+
+                        if(value?.length > 0) {
+                            clearInterval(interval);
+                            resolve(value);
                         }
                     }, ms);
                 });

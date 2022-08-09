@@ -36,6 +36,14 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.27)
+- Enabled lag reporting logic
+- Minor quality of life improvements
+- Added `select`
+- Fixed issue loading initial BTTV emotes
+- Fixed color destructing logic
+- Added `when.nullish` `when.empty` `when.sated` `Array..shuffle` `Array..random`
+
 > [`5.26`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.26)
 - Fixed issue with Time Zone conversion logic
 - Moved News articles to the independent (onload) area

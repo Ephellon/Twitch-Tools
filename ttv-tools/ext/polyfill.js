@@ -318,12 +318,12 @@ Object.defineProperties(furnish, {
     "a": { value: function Anchor(...children) { return furnish('a', null, ...children) } },
     "abbr": { value: function Abbreviation(...children) { return furnish('abbr', null, ...children) } },
     "address": { value: function Address(...children) { return furnish('address', null, ...children) } },
-    "area": { value: function Area(...children) { return furnish('area', null, ...children) } },
+    "area": { value: function Area(attributes) { return furnish('area', attributes) } },
     "article": { value: function Article(...children) { return furnish('article', null, ...children) } },
     "aside": { value: function Aside(...children) { return furnish('aside', null, ...children) } },
     "audio": { value: function Audio(...children) { return furnish('audio', null, ...children) } },
     "b": { value: function Bold(...children) { return furnish('b', null, ...children) } },
-    "base": { value: function Base(...children) { return furnish('base', null, ...children) } },
+    "base": { value: function Base(attributes) { return furnish('base', attributes) } },
     "bdi": { value: function BidirectionalTextInsertion(...children) { return furnish('bdi', null, ...children) } },
     "bdo": { value: function BidirectionalTextOverride(...children) { return furnish('bdo', null, ...children) } },
     "blockquote": { value: function BlockQuote(...children) { return furnish('blockquote', null, ...children) } },
@@ -334,7 +334,7 @@ Object.defineProperties(furnish, {
     "caption": { value: function Caption(...children) { return furnish('caption', null, ...children) } },
     "cite": { value: function Cite(...children) { return furnish('cite', null, ...children) } },
     "code": { value: function Code(...children) { return furnish('code', null, ...children) } },
-    "col": { value: function Column(...children) { return furnish('col', null, ...children) } },
+    "col": { value: function Column(attributes) { return furnish('col', attributes) } },
     "colgroup": { value: function ColumnGroup(...children) { return furnish('colgroup', null, ...children) } },
     "data": { value: function Data(...children) { return furnish('data', null, ...children) } },
     "datalist": { value: function DataList(...children) { return furnish('datalist', null, ...children) } },
@@ -347,7 +347,7 @@ Object.defineProperties(furnish, {
     "dl": { value: function DescriptionList(...children) { return furnish('dl', null, ...children) } },
     "dt": { value: function DescriptionTerm(...children) { return furnish('dt', null, ...children) } },
     "em": { value: function Emphasis(...children) { return furnish('em', null, ...children) } },
-    "embed": { value: function Embed(...children) { return furnish('embed', null, ...children) } },
+    "embed": { value: function Embed(attributes) { return furnish('embed', attributes) } },
     "fieldset": { value: function Fieldset(...children) { return furnish('fieldset', null, ...children) } },
     "figcaption": { value: function FigureCaption(...children) { return furnish('figcaption', null, ...children) } },
     "figure": { value: function Figure(...children) { return furnish('figure', null, ...children) } },
@@ -365,19 +365,19 @@ Object.defineProperties(furnish, {
     "html": { value: function HTML(...children) { return furnish('html', null, ...children) } },
     "i": { value: function Italics(...children) { return furnish('i', null, ...children) } },
     "iframe": { value: function Iframe(...children) { return furnish('iframe', null, ...children) } },
-    "img": { value: function Image(...children) { return furnish('img', null, ...children) } },
-    "input": { value: function Input(...children) { return furnish('input', null, ...children) } },
+    "img": { value: function Image(attributes) { return furnish('img', attributes) } },
+    "input": { value: function Input(attributes) { return furnish('input', attributes) } },
     "ins": { value: function Insertion(...children) { return furnish('ins', null, ...children) } },
     "kbd": { value: function Keyboard(...children) { return furnish('kbd', null, ...children) } },
     "label": { value: function Label(...children) { return furnish('label', null, ...children) } },
     "legend": { value: function Legend(...children) { return furnish('legend', null, ...children) } },
     "li": { value: function ListItem(...children) { return furnish('li', null, ...children) } },
-    "link": { value: function Link(...children) { return furnish('link', null, ...children) } },
+    "link": { value: function Link(attributes) { return furnish('link', attributes) } },
     "main": { value: function Main(...children) { return furnish('main', null, ...children) } },
     "map": { value: function Map(...children) { return furnish('map', null, ...children) } },
     "mark": { value: function Mark(...children) { return furnish('mark', null, ...children) } },
     "menu": { value: function Menu(...children) { return furnish('menu', null, ...children) } },
-    "meta": { value: function Metadata(...children) { return furnish('meta', null, ...children) } },
+    "meta": { value: function Metadata(attributes) { return furnish('meta', attributes) } },
     "meter": { value: function Meter(...children) { return furnish('meter', null, ...children) } },
     "nav": { value: function Navigation(...children) { return furnish('nav', null, ...children) } },
     "noscript": { value: function Noscript(...children) { return furnish('noscript', null, ...children) } },
@@ -402,7 +402,7 @@ Object.defineProperties(furnish, {
     "select": { value: function Select(...children) { return furnish('select', null, ...children) } },
     "slot": { value: function Slot(...children) { return furnish('slot', null, ...children) } },
     "small": { value: function Small(...children) { return furnish('small', null, ...children) } },
-    "source": { value: function Source(...children) { return furnish('source', null, ...children) } },
+    "source": { value: function Source(attributes) { return furnish('source', attributes) } },
     "span": { value: function Span(...children) { return furnish('span', null, ...children) } },
     "strong": { value: function Strong(...children) { return furnish('strong', null, ...children) } },
     "style": { value: function Style(...children) { return furnish('style', null, ...children) } },
@@ -421,12 +421,12 @@ Object.defineProperties(furnish, {
     "time": { value: function Time(...children) { return furnish('time', null, ...children) } },
     "title": { value: function Title(...children) { return furnish('title', null, ...children) } },
     "tr": { value: function TableRow(...children) { return furnish('tr', null, ...children) } },
-    "track": { value: function Track(...children) { return furnish('track', null, ...children) } },
+    "track": { value: function Track(attributes) { return furnish('track', attributes) } },
     "u": { value: function Underline(...children) { return furnish('u', null, ...children) } },
     "ul": { value: function UnorderedList(...children) { return furnish('ul', null, ...children) } },
     "var": { value: function Variable(...children) { return furnish('var', null, ...children) } },
     "video": { value: function Video(...children) { return furnish('video', null, ...children) } },
-    "wbr": { value: function WBR(...children) { return furnish('wbr', null, ...children) } }
+    "wbr": { value: function WBR(attributes) { return furnish('wbr', attributes) } }
 });
 
 // Gets the X and Y offset (in pixels)
@@ -671,6 +671,22 @@ Array.prototype.missing ??= function missing(...values) {
     // Array..isolate() → array<Set>
 Array.prototype.isolate ??= function isolate() {
     return [...new Set(this)];
+};
+
+// (Randomly) Shuffles the array
+    // Array..shuffle() → any
+Array.prototype.shuffle ??= function shuffle() {
+    let { random } = Math;
+
+    return [...this].sort(() => random() < 0.5? -(random() * this.length): +(random() * this.length));
+};
+
+// Returns a random item from the array
+    // Array..random() → any
+Array.prototype.random ??= function random() {
+    let [item] = this.shuffle();
+
+    return item;
 };
 
 // https://stackoverflow.com/a/6117889/4211612
@@ -1253,6 +1269,52 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
     // Element..modAttribute(attribute:string, value:any?) → undefined
 Element.prototype.modAttribute ??= function modAttribute(attribute, value = '') {
     this.setAttribute(attribute, [this.getAttribute(attribute), value].join(''));
+}
+
+// Modifies an element's style attribute
+    // Element..modStyle(value:string?) → undefined
+Element.prototype.modStyle ??= function modStyle(value = '', important = false) {
+    function destruct(string) {
+        let css = new Map;
+
+        string
+            .split(';')
+            .map(declaration => declaration.trim())
+            .filter(declaration => declaration.length > 4)
+            // Shortest possible declaration → `--n:0`
+            .map(declaration => {
+                let [property, value = ''] = declaration.split(':', 2).map(string => string.trim()),
+                    important = value.endsWith('!important');
+
+                value = value.replace('!important', '');
+
+                css.set(property, { value, important });
+            });
+
+        return css;
+    }
+
+    let _old = destruct(this.getAttribute('style')),
+        _new = destruct(value);
+
+    let final = [];
+    for(let [property, _o] of _old) {
+        let _n = _new.get(property);
+
+        if(_n?.value === 0)
+            continue;
+        else if(defined(_n) && (!_o.important || _n.important || important))
+            final.push([property,_n.value].join(':') + (_n.important? '!important': ''));
+        else
+            final.push([property,_o.value].join(':') + (_o.important? '!important': ''));
+
+        _new.delete(property);
+    }
+
+    for(let [property, _n] of _new)
+        final.push([property,_n.value].join(':') + (_n.important? '!important': ''));
+
+    this.setAttribute('style', final.join(';'));
 }
 
 // Returns a function's name as a formatted title
@@ -2786,14 +2848,24 @@ function phantomClick(...elements) {
     }
 }
 
+/***
+ *               _           _
+ *         /\   | |         | |
+ *        /  \  | | ___ _ __| |_
+ *       / /\ \ | |/ _ \ '__| __|
+ *      / ____ \| |  __/ |  | |_
+ *     /_/    \_\_|\___|_|   \__|
+ *
+ *
+ */
 // Displays an alert message
     // alert(message:string?) → Promise
 function alert(message = '') {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
 
-    if(defined($('.tt-alert')))
-        return when.defined(() => nullish($('.tt-alert'))? true: null).then(() => alert(message));
+    if($.defined('.tt-alert'))
+        return when(() => $.nullish('.tt-alert')).then(() => alert(message));
 
     let f = furnish;
     let $DOM = (alert.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -2813,11 +2885,11 @@ function alert(message = '') {
     );
 
     let container =
-    f('div.tt-alert', { uuid: UUID.from(message).value },
-        f('div.tt-alert-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('div.tt-alert-header', { innerHTML: title }),
-            f('div.tt-alert-body', { innerHTML: message }),
-            f('div.tt-alert-footer', {},
+    f('.tt-alert', { uuid: UUID.from(message).value },
+        f('.tt-alert-container', { ['icon'.repeat(+!!icon.length)]: icon },
+            f('.tt-alert-header', { innerHTML: title }),
+            f('.tt-alert-body', { innerHTML: message }),
+            f('.tt-alert-footer', {},
                 f('button.okay', {
                     onmousedown(event) {
                         let { currentTarget } = event;
@@ -2853,7 +2925,7 @@ function alert(message = '') {
     let value = when.defined(() => {
         let element = $('.tt-alert'),
             value = element?.getAttribute('value'),
-            timedOut = parseBool($('.tt-alert-time')?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-alert-time', false, element)?.getAttribute('tt-done'));
 
         value &&= parseBool(value);
 
@@ -2918,8 +2990,8 @@ alert.silent ??= (message = '', veiled = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
 
-    if(defined($('.tt-alert')))
-        return when.defined(() => nullish($('.tt-alert'))? true: null).then(() => alert.silent(message, veiled));
+    if($.defined('.tt-alert'))
+        return when(() => $.nullish('.tt-alert')).then(() => alert.silent(message, veiled));
 
     let response = alert(message),
         container = $('.tt-alert');
@@ -2943,8 +3015,8 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(alert.done.contains(message))
         return alert.done.fetch(message);
 
-    if(defined($('.tt-alert')))
-        return when.defined(() => nullish($('.tt-alert'))? true: null).then(() => alert.timed(message, milliseconds, pausable));
+    if($.defined('.tt-alert'))
+        return when(() => $.nullish('.tt-alert')).then(() => alert.timed(message, milliseconds, pausable));
 
     let response = alert.silent(message),
         container = $('.tt-alert');
@@ -2973,7 +3045,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 
         time.closest('.tt-alert-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
-    }, 100);
+    }, 250);
 
     container.setAttribute('timedJobID', timedJobID);
 
@@ -2981,14 +3053,24 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     return response;
 };
 
+/***
+ *       _____             __ _
+ *      / ____|           / _(_)
+ *     | |     ___  _ __ | |_ _ _ __ _ __ ___
+ *     | |    / _ \| '_ \|  _| | '__| '_ ` _ \
+ *     | |___| (_) | | | | | | | |  | | | | | |
+ *      \_____\___/|_| |_|_| |_|_|  |_| |_| |_|
+ *
+ *
+ */
 // Displays a confirmation message
     // confirm(message:string?) → boolean | null
 function confirm(message = '') {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
 
-    if(defined($('.tt-confirm')))
-        return when.defined(() => nullish($('.tt-confirm'))? true: null).then(() => confirm(message));
+    if($.defined('.tt-confirm'))
+        return when(() => $.nullish('.tt-confirm')).then(() => confirm(message));
 
     let f = furnish;
     let $DOM = (confirm.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -3012,11 +3094,11 @@ function confirm(message = '') {
     );
 
     let container =
-    f('div.tt-confirm', { uuid: UUID.from(message).value },
-        f('div.tt-confirm-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('div.tt-confirm-header', { innerHTML: title }),
-            f('div.tt-confirm-body', { innerHTML: message }),
-            f('div.tt-confirm-footer', {},
+    f('.tt-confirm', { uuid: UUID.from(message).value },
+        f('.tt-confirm-container', { ['icon'.repeat(+!!icon.length)]: icon },
+            f('.tt-confirm-header', { innerHTML: title }),
+            f('.tt-confirm-body', { innerHTML: message }),
+            f('.tt-confirm-footer', {},
                 f('button.edit.deny', {
                     onmousedown(event) {
                         let { currentTarget } = event;
@@ -3079,7 +3161,7 @@ function confirm(message = '') {
     let value = when.defined(() => {
         let element = $('.tt-confirm'),
             value = element?.getAttribute('value'),
-            timedOut = parseBool($('.tt-confirm-time')?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-confirm-time', false, element)?.getAttribute('tt-done'));
 
         value &&= parseBool(value);
 
@@ -3144,8 +3226,8 @@ confirm.silent ??= (message = '', veiled = false) => {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
 
-    if(defined($('.tt-confirm')))
-        return when.defined(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.silent(message, veiled));
+    if($.defined('.tt-confirm'))
+        return when(() => $.nullish('.tt-confirm')).then(() => confirm.silent(message, veiled));
 
     let response = confirm(message),
         container = $('.tt-confirm');
@@ -3169,8 +3251,8 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     if(confirm.done.contains(message))
         return confirm.done.fetch(message);
 
-    if(defined($('.tt-confirm')))
-        return when.defined(() => nullish($('.tt-confirm'))? true: null).then(() => confirm.timed(message, milliseconds, pausable));
+    if($.defined('.tt-confirm'))
+        return when(() => $.nullish('.tt-confirm')).then(() => confirm.timed(message, milliseconds, pausable));
 
     let response = confirm.silent(message),
         container = $('.tt-confirm');
@@ -3199,7 +3281,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
 
         time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
-    }, 100);
+    }, 250);
 
     container.setAttribute('timedJobID', timedJobID);
 
@@ -3207,14 +3289,24 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
     return response;
 };
 
+/***
+ *      _____                           _
+ *     |  __ \                         | |
+ *     | |__) | __ ___  _ __ ___  _ __ | |_
+ *     |  ___/ '__/ _ \| '_ ` _ \| '_ \| __|
+ *     | |   | | | (_) | | | | | | |_) | |_
+ *     |_|   |_|  \___/|_| |_| |_| .__/ \__|
+ *                               | |
+ *                               |_|
+ */
 // Prompts a message
     // prompt(message:string?, defaultValue:string?) → string | null
 function prompt(message = '', defaultValue = '') {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
 
-    if(defined($('.tt-prompt')))
-        return when.defined(() => nullish($('.tt-prompt'))? true: null).then(() => prompt(message));
+    if($.defined('.tt-prompt'))
+        return when(() => $.nullish('.tt-prompt')).then(() => prompt(message));
 
     let f = furnish;
     let $DOM = (prompt.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -3241,7 +3333,7 @@ function prompt(message = '', defaultValue = '') {
         ?? (
             /\p{N}/u.test(defaultValue)?
                 'number':
-            /^\*{4,}$/.test(defaultValue)?
+            (/^[\*\u00b7\u2219\u2022]{4,}$/.test(defaultValue) && !(defaultValue = ''))?
                 'password':
             'text'
         )
@@ -3262,17 +3354,17 @@ function prompt(message = '', defaultValue = '') {
     );
 
     let container =
-    f('div.tt-prompt', { uuid: UUID.from(message).value },
-        f('div.tt-prompt-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('div.tt-prompt-header', { innerHTML: title }),
-            f('div.tt-prompt-body', { innerHTML: message }),
-            f('div.tt-prompt-footer', {},
+    f('.tt-prompt', { uuid: UUID.from(message).value },
+        f('.tt-prompt-container', { ['icon'.repeat(+!!icon.length)]: icon },
+            f('.tt-prompt-header', { innerHTML: title }),
+            f('.tt-prompt-body', { innerHTML: message }),
+            f('.tt-prompt-footer', {},
                 f('input.tt-prompt-input', {
                     type, pattern, placeholder,
 
-                    onkeydown({ target = null, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
+                    onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
                         if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
-                            phantomClick($('.tt-prompt-footer button.okay'));
+                            phantomClick(currentTarget.closest('.tt-prompt-footer').querySelector('button.okay'));
                     }
                 }),
 
@@ -3311,7 +3403,7 @@ function prompt(message = '', defaultValue = '') {
 
                         let parent = currentTarget.closest('.tt-prompt');
 
-                        parent.setAttribute('value', $('.tt-prompt-input').value);
+                        parent.setAttribute('value', $('.tt-prompt-input', false, parent).value);
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
@@ -3335,12 +3427,12 @@ function prompt(message = '', defaultValue = '') {
 
     document.body.append(container);
 
-    $('.tt-prompt-input').value = defaultValue;
+    $('.tt-prompt-input', false, container).value = defaultValue;
 
     let value = when.defined(() => {
         let element = $('.tt-prompt'),
             value = element?.getAttribute('value'),
-            timedOut = parseBool($('.tt-prompt-time')?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-prompt-time', false, element)?.getAttribute('tt-done'));
 
         if(timedOut) {
             let button = $('button.deny', false, element);
@@ -3403,8 +3495,8 @@ prompt.silent ??= (message = '', defaultValue = '', veiled = false) => {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
 
-    if(defined($('.tt-prompt')))
-        return when.defined(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.silent(message, defaultValue, veiled));
+    if($.defined('.tt-prompt'))
+        return when(() => $.nullish('.tt-prompt')).then(() => prompt.silent(message, defaultValue, veiled));
 
     let response = prompt(message, defaultValue),
         container = $('.tt-prompt');
@@ -3428,8 +3520,8 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
     if(prompt.done.contains(message))
         return prompt.done.fetch(message);
 
-    if(defined($('.tt-prompt')))
-        return when.defined(() => nullish($('.tt-prompt'))? true: null).then(() => prompt.timed(message, milliseconds, pausable));
+    if($.defined('.tt-prompt'))
+        return when(() => $.nullish('.tt-prompt')).then(() => prompt.timed(message, milliseconds, pausable));
 
     let response = prompt.silent(message),
         container = $('.tt-prompt');
@@ -3458,11 +3550,317 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
 
         time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
-    }, 100);
+    }, 250);
 
     container.setAttribute('timedJobID', timedJobID);
 
     prompt.done.deposit(message, response);
+    return response;
+};
+
+/***
+ *       _____      _           _
+ *      / ____|    | |         | |
+ *     | (___   ___| | ___  ___| |_
+ *      \___ \ / _ \ |/ _ \/ __| __|
+ *      ____) |  __/ |  __/ (__| |_
+ *     |_____/ \___|_|\___|\___|\__|
+ *
+ *
+ */
+// Selects an option
+    // select(message:string?, options:array?|object?, multiple:boolean?) → string<number|array:number> | null
+function select(message = '', options = [], multiple = false) {
+    if(select.done.contains(message))
+        return select.done.fetch(message);
+
+    if($.defined('.tt-select'))
+        return when(() => $.nullish('.tt-select')).then(() => select(message, options));
+
+    let f = furnish;
+    let $DOM = (select.parser ??= new DOMParser).parseFromString(message, 'text/html'),
+        $CNT = $('[controller]', false, $DOM);
+
+    let title = (null
+        ?? $CNT?.getAttribute('title')
+        ?? `TTV Tools &mdash; Please select ${ (multiple? 'any options': 'an option') }...`
+    ),
+    icon = (null
+        ?? $CNT?.getAttribute('icon')
+        ?? ''
+    ),
+    okay = decodeHTML(null
+        ?? $CNT?.getAttribute('okay')
+        ?? 'OK'
+    ),
+    deny = decodeHTML(null
+        ?? $CNT?.getAttribute('deny')
+        ?? 'Cancel'
+    );
+
+    let __values__ = [],
+        __names__ = {};
+
+    if(isObj(options))
+        switch(options.constructor) {
+            // Array → [value, ...] → 'value'
+            case Array:
+            case Uint8Array:
+            case Uint16Array:
+            case Uint32Array:
+            case Int8Array:
+            case Int16Array:
+            case Int32Array:
+            case Float32Array:
+            case Float64Array:
+            case Set: {
+                for(let index = 0; index < options.length; ++index) {
+                    let value = options[index];
+
+                    __values__.push(value);
+                    // __names__[value] = index;
+                }
+            } break;
+
+            // Map → { key => value, ... } → 'value (key)'
+            case Map: {
+                for(let [key, value] of options) {
+                    __values__.push(value);
+                    __names__[value] = key;
+                }
+            } break;
+
+            // Object → { key: value, ... } → 'value (key)'
+            case Object: {
+                for(let index = 0, keys = Object.keys(options); index < keys.length; ++index) {
+                    let key = keys[index],
+                        value = options[key];
+
+                    __values__.push(value);
+                    __names__[value] = key;
+                }
+            } break;
+        }
+
+    let uuid = UUID.from(message).value;
+    let container =
+    f('.tt-select', { uuid, options: encodeHTML(JSON.stringify(__values__)), keys: encodeHTML(JSON.stringify(__names__)) },
+        f('.tt-select-container', { ['icon'.repeat(+!!icon.length)]: icon },
+            f('.tt-select-header', { innerHTML: title }),
+            f('.tt-select-body', { innerHTML: message }),
+            f('.tt-select-footer', {},
+                f(`.tt-select-input[@multiple=${ multiple }]`, {
+                    onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
+                        if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
+                            phantomClick(currentTarget.closest('.tt-select-footer').querySelector('button.okay'));
+                    }
+                }, ...__values__
+                    .map((option, value) => {
+                        let f = furnish,
+                            id = (new UUID).value;
+
+                        return f(`.tt-option`, { value },
+                            f(`input#${ id }[name=${ uuid }][type=${ (multiple? 'checkbox': 'radio') }]`),
+                            f(`label[for=${ id }]`, { value }, option)
+                        );
+                    })
+                ),
+
+                f('button.edit.deny', {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                            return;
+
+                        let parent = currentTarget.closest('.tt-select');
+
+                        parent.setAttribute('value', '\0');
+                    },
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                            return;
+
+                        let parent = currentTarget.closest('.tt-select'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(timedJobID);
+                    },
+
+                    innerHTML: deny,
+                }),
+
+                f('button.okay', {
+                    onmousedown(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                            return;
+
+                        let parent = currentTarget.closest('.tt-select'),
+                            select = $('.tt-select-input', false, parent),
+                            selected = $('input:checked', true, select).map(input => input.closest('.tt-option').value);
+
+                        parent.setAttribute('value', selected);
+                    },
+                    onmouseup(event) {
+                        let { currentTarget } = event;
+                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                            return;
+
+                        let parent = currentTarget.closest('.tt-select'),
+                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(timedJobID);
+                    },
+
+                    innerHTML: okay,
+                })
+            )
+        )
+    );
+
+    document.body.append(container);
+
+    let value = when.defined(() => {
+        let element = $('.tt-select'),
+            values = element?.getAttribute('value'),
+            options = JSON.parse(decodeHTML(element?.getAttribute('options') || 'null')),
+            keys = JSON.parse(decodeHTML(element?.getAttribute('keys') || 'null')),
+            timedOut = parseBool($('.tt-select-time', false, element)?.getAttribute('tt-done'));
+
+        if(timedOut) {
+            let button = $('button.deny', false, element);
+
+            phantomClick(button);
+
+            return when.null;
+        }
+
+        return (
+            (values == '\0')?
+                when.null:
+            values?.split(',')?.map(parseFloat)?.filter(isFinite)?.map(index =>
+                Object.defineProperties(new Number(index), { value: { value: (keys?.[options[index]] ?? options[index]), enumerable: false, configurable: false, writable: false } })
+            )
+        );
+    });
+
+    select.done.deposit(message, value);
+    return value;
+}
+
+Object.defineProperties(select, {
+    lifetime: {
+        value: 60_000,
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+    done: {
+        value: (map => {
+            map.convert = key => [key, (+new Date).floorToNearest(select.lifetime).toString(36)].map(k => UUID.from(k).toStamp()).join('-').toUpperCase();
+
+            map.contains = (key = '') => {
+                key = select.done.convert(key);
+
+                return map.has(key);
+            };
+
+            map.deposit = (key = '', value) => {
+                key = select.done.convert(key);
+
+                map.set(key, value);
+            };
+
+            map.fetch = (key = '') => {
+                key = select.done.convert(key);
+
+                if(map.has(key))
+                    return map.get(key);
+            };
+
+            return map;
+        })(new Map),
+
+        writable: true,
+        enumerable: false,
+        configurable: false,
+    }
+});
+
+// Selects an option (silently)
+    // select.silent(message:string?, options:array?|object?, multiple:boolean?, veiled:boolean?) → string<number|array:number> | null
+select.silent ??= (message = '', options = [], multiple = false, veiled = false) => {
+    if(select.done.contains(message))
+        return select.done.fetch(message);
+
+    if($.defined('.tt-select'))
+        return when(() => $.nullish('.tt-select')).then(() => select.silent(message, options, multiple, veiled));
+
+    let response = select(message, options, multiple),
+        container = $('.tt-select');
+
+    if(nullish(container))
+        return when.void;
+
+    if(container.classList.contains('tt-silent'))
+        return response;
+
+    container.classList.add('tt-silent');
+    setTimeout(() => container.classList.add('tt-veiled'), +!veiled * 7000);
+
+    select.done.deposit(message, response);
+    return response;
+};
+
+// Selects an option with a timer
+    // select.timed(message:string?, options:array?|object?, multiple:boolean?, milliseconds:number?, pausable:boolean?) → string | null
+select.timed ??= (message = '', options = [], multiple = false, milliseconds = 60_000, pausable = true) => {
+    if(select.done.contains(message))
+        return select.done.fetch(message);
+
+    if($.defined('.tt-select'))
+        return when(() => $.nullish('.tt-select')).then(() => select.timed(message, options, multiple, milliseconds, pausable));
+
+    let response = select.silent(message, options, multiple),
+        container = $('.tt-select');
+
+    if(nullish(container))
+        return when.void;
+
+    if(container.classList.contains('tt-timed'))
+        return response;
+
+    container.classList.add('tt-timed');
+    $('.tt-select-header').append(
+        furnish('span.tt-select-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
+    );
+
+    let timedJobID = setInterval(() => {
+        let time = $('.tt-select-time'),
+            due = parseInt(time?.getAttribute('due')),
+            milliseconds = (+new Date(due) - (+new Date));
+
+        if(nullish(time))
+            return clearInterval(timedJobID);
+
+        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-select-container')))
+            return time.setAttribute('due', due + 100);
+
+        time.closest('.tt-select-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
+        time.setAttribute('tt-done', milliseconds < 0);
+    }, 250);
+
+    container.setAttribute('timedJobID', timedJobID);
+
+    select.done.deposit(message, response);
     return response;
 };
 

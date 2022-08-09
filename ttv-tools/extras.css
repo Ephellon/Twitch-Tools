@@ -1,5 +1,7 @@
 /* Globals */
 button[class*="tt-"i]:hover { background-color: #fff3 }
+button[class*="tt-"i].purple { background-color: var(--color-background-button-primary-active) }
+button[class*="tt-"i].purple:hover { background-color: var(--color-background-button-primary-hover) }
 
 :root {
     /* https://www.facemediagroup.co.uk/resources/a-to-z-guides/a-to-z-of-colours/ */
@@ -98,27 +100,27 @@ caption {
     display: inline-flex !important;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) h1 {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) h1 {
     font-size: x-large !important;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) h2 {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) h2 {
     font-size: larger !important;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) h3 {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) h3 {
     font-size: large !important;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) :is(h4, h5, h6) {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(h4, h5, h6) {
     font-size: initial !important;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) :is(ol, ul) {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(ol, ul) {
     list-style: initial !important;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) pre {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) pre {
     display: inline-block;
     font-family: monospace!important;
 
@@ -126,7 +128,7 @@ caption {
     margin-right: 1rem;
 }
 
-:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt) code, code[tt-code] {
+:is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) code, code[tt-code] {
     background-color: var(--color-background-tooltip)!important;
     border-radius: 4px;
     color: var(--color-background-base)!important;
@@ -135,6 +137,96 @@ caption {
     font-weight: normal;
 
     padding: 0 4px!important;
+}
+
+:is(.tt-select) {
+    display: block;
+    flex-direction: column;
+    vertical-align: baseline;
+}
+
+:is(.tt-select) .tt-select-input {
+    background: inherit;
+    color: inherit;
+    display: block;
+    overflow: auto;
+    text-align: start;
+
+    min-height: 5rem;
+    height: fit-content;
+    max-height: 30rem;
+    width: -webkit-fill-available;
+
+    /* Fix blurry text */
+    /* https://stackoverflow.com/a/27464561/4211612 */
+    -webkit-transform: translate(0);
+}
+
+:is(.tt-select) .tt-select-input:is([data-multiple="true"i], [data-multiple="yes"i], [data-multiple="1"i])::before {
+    content: 'Multiple options can be selected.';
+
+    background: inherit;
+    color: var(--color-text-alt-2);
+    display: block;
+    font-size: small;
+    font-style: italic;
+    text-align: center;
+
+    position: sticky;
+    top: 0;
+
+    width: -webkit-fill-available;
+}
+
+:is(.tt-select) .tt-option {
+    height: 1.6rem;
+    margin: .5rem 1.6rem;
+}
+
+:is(.tt-select) .tt-option input {
+    display: none;
+
+    height: 0;
+    width: 0;
+}
+
+:is(.tt-select) .tt-option label {
+    color: var(--color-text-alt);
+    cursor: pointer;
+    display: inline-block;
+
+    position: relative;
+    padding: 0 0 0 1.3rem;
+
+    transition: background-color .1s ease;
+}
+
+:is(.tt-select) .tt-option label::before {
+    content: '';
+
+    background-clip: padding-box;
+    border: 2px solid var(--color-white);
+    border-radius: 50%;
+    box-sizing: border-box;
+
+    position: absolute;
+    left: 0;
+    transform: translate(-100%);
+
+    height: 1.6rem;
+    width: 1.6rem;
+
+    transition: box-shadow .1s ease-in,
+        background .1s ease-in;
+}
+
+:is(.tt-select) .tt-select-input:is([data-multiple="true"i], [data-multiple="yes"i], [data-multiple="1"i]) label::before {
+    border-radius: 25% !important;
+}
+
+:is(.tt-select) .tt-option input:checked ~ label::before {
+    background-color: var(--color-twitch-purple);
+    border: 6px double var(--color-twitch-purple);
 }
 
 .tt-tooltip-wrapper[show], img ~ .tt-tooltip, [tt-x] {
@@ -341,17 +433,17 @@ caption {
     z-index: 9999;
 }
 
-/* Alerts, Confirmations, and Prompts */
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is([disabled]:not([disabled="false"i]), [is-disabled]:not([is-disabled="false"i])) {
+/* Alerts, Confirmations, Prompts and Selections */
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is([disabled]:not([disabled="false"i]), [is-disabled]:not([is-disabled="false"i])) {
     cursor: not-allowed!important;
     opacity: 0.5!important;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is([hidden]:not([hidden="false"i]), [is-hidden]:not([is-hidden="false"i])) {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is([hidden]:not([hidden="false"i]), [is-hidden]:not([is-hidden="false"i])) {
     display: none!important;
 }
 
-.tt-alert, .tt-confirm, .tt-prompt {
+.tt-alert, .tt-confirm, .tt-prompt, .tt-select {
     animation: 1s fade-in 1;
 
     background: #000d;
@@ -373,7 +465,7 @@ caption {
     to { opacity: 1 }
 }
 
-.tt-alert-container, .tt-confirm-container, .tt-prompt-container {
+.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container {
     background: linear-gradient(45deg, var(--user-accent-color), var(--user-complement-color));
     border-radius: 0.3em;
 
@@ -389,12 +481,12 @@ caption {
     width: fit-content;
 }
 
-:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > * {
+:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) > * {
     background: var(--color-background-base);
     padding: 1em;
 }
 
-.tt-alert-header, .tt-confirm-header, .tt-prompt-header {
+.tt-alert-header, .tt-confirm-header, .tt-prompt-header, .tt-select-header {
     font-family: var(--font-display);
     font-size: 1.25em;
     font-weight: bold;
@@ -402,15 +494,15 @@ caption {
     padding-bottom: 0.5em;
 }
 
-.tt-alert-body, .tt-confirm-body, .tt-prompt-body {
+.tt-alert-body, .tt-confirm-body, .tt-prompt-body, .tt-select-body {
     /* ... */
 }
 
-.tt-alert-footer, .tt-confirm-footer, .tt-prompt-footer {
+.tt-alert-footer, .tt-confirm-footer, .tt-prompt-footer, .tt-select-footer {
     text-align: right;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(button, [type="button"]) {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(button, [type="button"]) {
     align-items: center;
     display: inline-block;
     justify-content: center;
@@ -432,31 +524,31 @@ caption {
     vertical-align: middle;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) input:invalid {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) input:invalid {
     border-color: var(--color-warn)!important;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) *.remove {
     background-color: var(--color-red);
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) *.edit {
     background-color: var(--color-hinted-grey-6);
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(button, input[type="button"]):hover {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(button, input[type="button"]):hover {
     background-color: var(--color-twitch-purple-10);
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) *.remove:hover  {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) *.remove:hover  {
     background-color: var(--color-red-darker) !important;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) *.edit:hover  {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) *.edit:hover  {
     background-color: var(--color-hinted-grey-7) !important;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(textarea, input) {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(textarea, input[type="number"i], input[type="password"i], input[type="text"i]) {
     appearance: none;
     background-clip: padding-box;
     background-color: var(--color-hinted-grey-6);
@@ -479,14 +571,14 @@ caption {
     width: 100%;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(textarea, input):focus {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(textarea, input):focus {
     background-color: var(--color-black);
     border-color: var(--color-prime-blue);
 
     outline: none;
 }
 
-.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt):not(.tt-silent) {
+.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select):not(.tt-silent) {
     animation: 1s fade-out 1;
 
     opacity: 0;
@@ -498,13 +590,13 @@ caption {
 }
 
 /* Silent alerts, confirmations, and prompts */
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) {
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) {
     background: none;
 
     margin-top: 100%;
 }
 
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) {
     animation: 1s glide-in-from-bottom--silent 1;
 
     margin-top: -100%;
@@ -517,7 +609,7 @@ caption {
     to { top: 99% }
 }
 
-.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) {
     transition: transform .6s, opacity .3s;
 
     opacity: .6;
@@ -526,15 +618,16 @@ caption {
     transform: translate(-50%, calc(1% + .1em));
 }
 
-.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container):is(:hover, :focus-within) {
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container):is(:hover, :focus-within) {
     opacity: 1;
 
     transform: translate(-50%, -100%);
 }
 
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-alert-container,
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-confirm-container,
-.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt) .tt-prompt-container {
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-alert-container,
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-confirm-container,
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-prompt-container,
+.tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-select-container {
     /* border: 1px solid var(--user-complement-color); */
 
     --current-border-color: var(--user-complement-color);
@@ -542,7 +635,7 @@ caption {
     min-width: 30rem;
 }
 
-.tt-silent.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) {
+.tt-silent.tt-done:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) {
     animation: .6s glide-out-to-bottom--silent 1;
 
     top: 200%;
@@ -553,7 +646,7 @@ caption {
     to { top: 200% }
 }
 
-.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     content: "\1F92B";
 
     transition: opacity .3s, top .6s;
@@ -583,47 +676,52 @@ caption {
 }
 
 .tt-silent.tt-veiled:is(.tt-alert) :is(.tt-alert-container)::before {
-    /* ⚠ */
+    /* ⚠ - Warning */
     content: "\26A0";
 }
 
 .tt-silent.tt-veiled:is(.tt-confirm) :is(.tt-confirm-container)::before {
-    /* ✔ */
+    /* ✔ - Checkmark */
     content: "\2714";
 }
 
 .tt-silent.tt-veiled:is(.tt-prompt) :is(.tt-prompt-container)::before {
-    /* ⌨ */
+    /* ⌨ - Keyboard */
     content: "\2328";
 }
 
-.tt-silent.tt-veiled :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)[icon]::before {
+.tt-silent.tt-veiled:is(.tt-select) :is(.tt-select-container)::before {
+    /* 🗳 - Ballot */
+    content: "\01f5f3";
+}
+
+.tt-silent.tt-veiled :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)[icon]::before {
     content: attr(icon)!important;
 }
 
-.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     top: 3px;
 }
 
-.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt):is(:hover, :focus-within) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select):is(:hover, :focus-within) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     opacity: 0;
     top: 3em;
 }
 
-[class*="root"i][class*="theme-light"i] .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+[class*="root"i][class*="theme-light"i] .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     mix-blend-mode: lighten;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > * {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) > *:not(:first-child) {
     margin: -1px 0;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > :first-child {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) > :first-child {
     border-top-left-radius: 0.2em;
     border-top-right-radius: 0.2em;
 }
 
-:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container) > :last-child {
+:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) > :last-child {
     border-bottom-left-radius: 0.2em;
     border-bottom-right-radius: 0.2em;
 }
@@ -647,20 +745,20 @@ caption {
 }
 
 /* Timed alerts, confirmations, and prompts */
-.tt-timed:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-time, .tt-confirm-time, .tt-prompt-time) {
+.tt-timed:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-time, .tt-confirm-time, .tt-prompt-time, .tt-select-time) {
     display: inline-block;
 
     float: right;
     padding-left: 1em;
 }
 
-.tt-timed:is(.tt-alert, .tt-confirm, .tt-prompt) [tt-done="true"i]:is(.tt-alert-time, .tt-confirm-time, .tt-prompt-time) {
+.tt-timed:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) [tt-done="true"i]:is(.tt-alert-time, .tt-confirm-time, .tt-prompt-time, .tt-select-time) {
     transition: opacity .3s;
 
     opacity: 0;
 }
 
-.tt-timed.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container)::before {
+.tt-timed.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     content: attr(tt-time-left);
     /* content: "\23F1"; */
 
@@ -853,6 +951,13 @@ caption {
     animation: 1s linear infinite spinner;
 }
 
+.tt-spinner:not(:empty)::after {
+    display: inline-block;
+
+    margin-left: 1rem;
+    vertical-align: middle;
+}
+
 @keyframes spinner {
     0% { transform: rotate(0) }
     100% { transform: rotate(360deg) }
@@ -970,4 +1075,15 @@ caption {
     text-align: center;
 
     width: -webkit-fill-available;
+}
+
+/* Rewards (timed-out) */
+.reward-list-item[timed-out]:not([timed-out=""])::before {
+    content: attr(timed-out);
+    text-align: center;
+    width: inherit;
+    display: block;
+    top: 1rem;
+    transform: translate(0, 100%);
+    z-index: 99999;
 }

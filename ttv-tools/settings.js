@@ -320,7 +320,7 @@ class Tooltip {
             return existing;
 
         let uuid;
-        let tooltip = furnish(`div.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
+        let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
         let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
@@ -341,7 +341,7 @@ class Tooltip {
             let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             $('body').append(
-                furnish('div.twitch-tools-tooltip-layer.tooltip-layer',
+                furnish('.twitch-tools-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
                             let style = 'animation:.3s fade-in 1;';
@@ -464,24 +464,24 @@ class DatePicker {
         daySelect.value = dayDefault;
 
         let container =
-            f(`div.tt-modal-wrapper.context-root`, {},
-                f(`div.tt-modal-body`, {},
-                    f(`div.tt-modal-container`, {},
+            f(`.tt-modal-wrapper.context-root`, {},
+                f(`.tt-modal-body`, {},
+                    f(`.tt-modal-container`, {},
                         // Header
-                        f('div.tt-modal-header', {},
+                        f('.tt-modal-header', {},
                             f('h3', { 'tr-id': 'away-mode:schedule:create', innerHTML: Glyphs.modify('calendar', { height: 30, width: 30 }).toString() }, ' Create a new schedule')
                         ),
 
                         // Body
-                        f('div.tt-modal-content.details.context-body', {},
+                        f('.tt-modal-content.details.context-body', {},
                             f('div', { style: 'width:-webkit-fill-available' },
                                 // Frequency
                                 f('div', { 'pad-bottom': '' },
-                                    f('div.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
-                                    f('div.summary', {},
+                                    f('.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
+                                    f('.summary', {},
                                         daySelect,
 
-                                        f('div.subtitle', {
+                                        f('.subtitle', {
                                             'tr-id': 'away-mode:schedule:create:controls',
                                             innerHTML: `Use <code>${ GetMacro('Ctrl') }</code> and <code>${ GetMacro('Shift') }</code> to select multiple days.`
                                         })
@@ -490,15 +490,15 @@ class DatePicker {
 
                                 // Status & Functionality
                                 f('div', { 'pad-bottom': '' },
-                                    f('div.title', { 'tr-id': 'away-mode:schedule:create:functionality' }, 'Functionality'),
-                                    f('div.summary', { 'tr-id': '' },
+                                    f('.title', { 'tr-id': 'away-mode:schedule:create:functionality' }, 'Functionality'),
+                                    f('.summary', { 'tr-id': '' },
                                         statusSelect,
                                         'at',
                                         timeSelect,
                                         'for',
                                         durationSelect,
 
-                                        f('div.subtitle', {
+                                        f('.subtitle', {
                                             'tr-id': 'away-mode:schedule:create:notice',
                                             innerHTML: `Times will be saved in your current timezone <span>(${ timezone })</span>.`
                                         })
@@ -509,7 +509,7 @@ class DatePicker {
                                 f('div', { 'pad-bottom': '' },
                                     // Add more
                                     f('div', { style: 'width:fit-content' },
-                                        f('div.checkbox.left', { onmouseup: event => $('input', false, event.currentTarget).click() },
+                                        f('.checkbox.left', { onmouseup: event => $('input', false, event.currentTarget).click() },
                                             f('input#add-more', { type: 'checkbox', name: 'add-more-times' }),
                                             f('label', { for: 'add-more-times', 'tr-id': 'away-mode:schedule:create:add-more' }, 'Add another schedule')
                                         )
@@ -640,7 +640,7 @@ function RedoRuleElements(rules, ruleType) {
             } break;
         }
 
-        if(defined($(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i] [${ ruleType }-id="${ ruleID }"i]`)))
+        if($.defined(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i] [${ ruleType }-id="${ ruleID }"i]`))
             continue;
 
         // "Edit" button
@@ -704,7 +704,7 @@ function CreateTimeElement(self, scheduleType) {
     let { day, time, duration, status } = self,
         scheduleID = UUID.from(self).value;
 
-    if(defined($(`#${ scheduleType }_schedule [day="${ day }"][time="${ time }"]`)))
+    if($.defined(`#${ scheduleType }_schedule [day="${ day }"][time="${ time }"]`))
         return;
 
     let E = document.createElement('button'),
@@ -1747,7 +1747,7 @@ document.body.onload = async() => {
 
             if(nullish(languageOptions))
                 document.body.append(
-                    furnish('div.language-select', {},
+                    furnish('.language-select', {},
                         furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English (North American)`),
                         ...(languages => {
                             let buttons = [];
@@ -1806,7 +1806,7 @@ document.body.onload = async() => {
 
             // Overwrite settings defined in the search
             for(let key in search)
-                if(usable_settings.contains(key) && defined($(`#${ key }`)))
+                if(usable_settings.contains(key) && $.defined(`#${ key }`))
                     LoadSettings.assignValue($(`#${ key }`), search[key]);
 
             // Adjust summaries

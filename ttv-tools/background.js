@@ -249,30 +249,31 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 });
 
 let LAG_REPORTER = setInterval(() => {
-    for(let [tabID, tabDOB] of REPORTS)
+    for(let [tabID, responseStamp] of REPORTS)
         Container.tabs.get(tabID)
             .then(tab => {
                 Container.tabs.sendMessage(tab.id, { action: 'report-back' }, response => {
-                    if(response?.ok || tab.discarded || tab.status == "loading")
-                        return;
+                    if((+new Date - +responseStamp) > 30_000)
+                        /* Continue... */;
+                    else if(response?.ok || tab.discarded || tab.status == "loading")
+                        return REPORTS.set(tab.id, new Date);
 
+                    console.warn(`Tab #${ tab.id } did not respond. Contacting again...`);
                     Container.tabs.sendMessage(tab.id, { action: 'report-back' }, response => {
-                        if(response?.ok)
-                            return;
-
-                        let error = `Tab #${ tab.id } did not respond. Discarded`;
+                        if((+new Date - +responseStamp) > 45_000)
+                            /* Continue... */;
+                        else if(response?.ok)
+                            return REPORTS.set(tab.id, new Date);
 
                         Container.tabs.duplicate(tab.id);
                         Container.tabs.discard(tab.id);
                         Container.tabs.remove(tab.id);
 
-                        console.warn(error);
+                        console.warn(`Tab #${ tab.id } did not respond. Discarding...`);
                     });
                 });
             })
-            .catch(error => {
-                REPORTS.delete(tabID);
-            });
+            .catch(error => REPORTS.delete(tabID));
 }, 15_000);
 
 // https://stackoverflow.com/a/6117889/4211612
