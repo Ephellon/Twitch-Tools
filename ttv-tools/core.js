@@ -474,11 +474,11 @@ function defined(value) {
 }
 
 // Makes a Promised setInterval
-    // when(callback:function<boolean>, ms:number<milliseconds>?) → Promise<any>
-async function when(callback, ms = 100) {
+    // when(callback:function<boolean>, ms:number<integer>?, ...args<any>) → Promise<any>
+async function when(callback, ms = 100, ...args) {
     return new Promise((resolve, reject) => {
-        let interval = setInterval(async() => {
-            let value = await callback();
+        let interval = setInterval(async args => {
+            let value = await callback.apply(null, args);
 
             if(parseBool(value) !== false) {
                 clearInterval(interval);
@@ -490,7 +490,7 @@ async function when(callback, ms = 100) {
                     value
                 );
             }
-        }, ms);
+        }, ms, Array.from(args));
     });
 }
 
@@ -507,11 +507,11 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.defined(callback:function<any>, ms:number<milliseconds>?) → Promise<any>
-            async function(callback, ms = 100) {
+                // when.defined(callback:function<any>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async() => {
-                        let value = await callback();
+                    let interval = setInterval(async args => {
+                        let value = await callback.apply(null, args);
 
                         if(defined(value)) {
                             clearInterval(interval);
@@ -525,7 +525,7 @@ try {
                                 value
                             );
                         }
-                    }, ms);
+                    }, ms, Array.from(args));
                 });
             },
         },
@@ -534,17 +534,17 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.nullish(callback:function<any>, ms:number<milliseconds>?) → Promise<any>
-            async function(callback, ms = 100) {
+                // when.nullish(callback:function<any>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async() => {
-                        let value = await callback();
+                    let interval = setInterval(async args => {
+                        let value = await callback.apply(null, args);
 
                         if(nullish(value)) {
                             clearInterval(interval);
                             resolve(value);
                         }
-                    }, ms);
+                    }, ms, Array.from(args));
                 });
             },
         },
@@ -553,17 +553,17 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.empty(callback:function<@@iterable>, ms:number<milliseconds>?) → Promise<any>
-            async function(callback, ms = 100) {
+                // when.empty(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async() => {
-                        let value = await callback();
+                    let interval = setInterval(async args => {
+                        let value = await callback.apply(null, args);
 
                         if(value?.length < 1) {
                             clearInterval(interval);
                             resolve(value);
                         }
-                    }, ms);
+                    }, ms, Array.from(args));
                 });
             },
         },
@@ -572,17 +572,17 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.sated(callback:function<@@iterable>, ms:number<milliseconds>?) → Promise<any>
-            async function(callback, ms = 100) {
+                // when.sated(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async() => {
-                        let value = await callback();
+                    let interval = setInterval(async args => {
+                        let value = await callback.apply(null, args);
 
                         if(value?.length > 0) {
                             clearInterval(interval);
                             resolve(value);
                         }
-                    }, ms);
+                    }, ms, Array.from(args));
                 });
             },
         },
@@ -593,19 +593,19 @@ try {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
 // Waits to execute a function
-    // wait(delay:number<integer>?) → Promise
-function wait(delay) {
-    return new Promise(resolve => setTimeout(resolve, delay));
+    // wait(delay:number<integer>?, ...args:<any>) → Promise<number>
+function wait(delay = 100, ...args) {
+    return new Promise(resolve => setTimeout(resolve, delay, ...args));
 }
 
 // https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
 // Delay callbacks until the user is done...
-    // delay(fn:function, ms:number?) → undefined
-function delay(fn, ms = 0) {
+    // delay(fn:function, ms:number?, ...args<any>) → undefined
+function delay(fn, ms = 0, ...args) {
     let timer = -1;
     return function(...args) {
         clearTimeout(timer);
-        timer = setTimeout(fn.bind(this, ...args), ms);
+        timer = setTimeout(fn.bind(this, ...args), ms, ...args);
     }
 }
 
@@ -613,9 +613,9 @@ function delay(fn, ms = 0) {
     // fetchURL(url:string<URL>, options:object?) → Promise<fetch>
 function fetchURL(url, options = {}) {
     let { href, domainPath, origin, protocol } = parseURL(url);
-    let [domain, site, ...subDomain] = domainPath;
+    let [domain = 'unknown', site = 'unknown', ...subDomain] = domainPath;
 
-    let allowedSites = 'betterttv nightbot streamelements streamloots twitch twitchinsights'.split(' '),
+    let allowedSites = 'betterttv blerp nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
         allowedDomains = 'gd'.split(' ');
 
     // No CORS required
@@ -744,10 +744,10 @@ async function RemoveCache(keys, callback = () => {}) {
 
 // Convert strings to RegExps
     // RegExp lookers
-        // `X(?=Y)`     - match X if before Y
-        // `X(?!Y)`     - match X if not before Y
-        // `(?<=Y)X`    - match X if after Y
-        // `(?<!Y)X`    - match X if not after Y
+        // `X(?=Y)`     - match X if before Y       → \d+(?=\$)     → 1 turkey costs 20$    → 20
+        // `X(?!Y)`     - match X if not before Y   → \d+(?!\$)     → 3 turkeys costs 40$   → 3
+        // `(?<=Y)X`    - match X if after Y        → (?<=\$)\d+    → 5 turkeys costs $60   → 60
+        // `(?<!Y)X`    - match X if not after Y    → (?<!\$)\d+    → 7 turkeys costs $80   → 7
     // AsteriskFn symbols
         // `.`         - 1 character
         // `?`         - 0 or 1 character
@@ -756,7 +756,15 @@ async function RemoveCache(keys, callback = () => {}) {
         // `X#`        - X followed by any charactrer that is NOT: _
         // `X~Y`       - X NOT followed by Y
 function AsteriskFn(feature) {
-    return RegExp(`^${ feature.replace(/\./g, '\\.').replace(/\?/g, '.?').replace(/\+/g, '(\\w+)?').replace(/\*/g, '(\\w*)?').replace(/\#/g, '([^_]+)?').replace(/([^]+)~([^~]+)/, '($1)(?<!$2)') }$`, 'i');
+    return RegExp(`^${
+        feature
+            .replace(/\./g, '\\.')
+            .replace(/(?<![#\+\*])\?/g, '([\\w-])?')
+            .replace(/\+/g, '([\\w-]+)')
+            .replace(/\*/g, '([\\w-]*)')
+            .replace(/\#/g, '([^_]+)')
+            .replace(/([^]+)~([^~]+)/, '($1)(?<!$2)')
+    }$`, 'i');
 }
 
 // The following needs to be run once per page

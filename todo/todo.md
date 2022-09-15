@@ -10,32 +10,56 @@
     * If a channel is already being watched on a different machine, go to a different, unique channel
 4. Remove more language dependencies
     * All bulletin filters are language dependent - they only recognize English
-5. Add an "Auto-Spend" feature for Channel Points
-    * If an item is disabled (available in a few streams, or out of stock), attempt to purchase it when available
-6. Up Next sometimes goes in an irregular order
+5. Up Next sometimes goes in an irregular order
     * Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
         * Tentative fix `4.29`
         * Still present `5.23`
     * It might also not list jobs immediately
-7. `chat.js` has an issue for card popups: `new Search` does not always complete
+6. `chat.js` has an issue for card popups: `new Search` does not always complete
     * Changed to a raw search to remedy the issue
-8. Dead channels get re-added to Up Next sometimes
+7. Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
-9. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
-10. Pause First in Line when observing a raid
-11. Get better translations--or remove them altogether
+8. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
+9. Pause First in Line when observing a raid
+10. Get better translations--or remove them altogether
     * The translations are incorrect and more confusing than the English version
     * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
     * Tentative removal `v5.30`
-12. Toggling Easy Lurk might cause theatre-mode to activate?
+11. Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `5.8`
-13. Live Reminders might re-add all live channels?
-14. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
+12. Live Reminders might re-add all live channels?
+13. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
+14. Add logic to (video) record channel point redemptions
+15. Add ability to message on user's behalf...
+16. Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
+17. Garner user feedback → https://form.jotform.com/222442891146153
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.28)
+- Fixed issue with point watcher text updating for each channel
+- Added Blerp API detection
+- Modified `furnish` logic
+- Added small preview window for First in Line countdown timer
+- Added `Document..get`
+- Modified Buy Later logic
+- Adjusted volume control logic
+- Added Dyslexie font
+- Added ability to search settings
+- Adjusted `scoreTagActivity` logic
+- Added logic to correct for changed usernames
+- Added the plain-text license
+- Updated `GetChat` functionality
+    + Added Twitch IRC capabilities
+- Renamed `GetChat` to just `Chat`
+    + Added `Chat.get` `Chat.send` and more...
+- Fixed issue that caused excessive CPU usage
+- Added logic to force the background service worker to be persistent
+- Added PiP button to live reminders
+- Added option to resurrect messages
+
 > [`5.27`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.27)
 - Enabled lag reporting logic
 - Minor quality of life improvements

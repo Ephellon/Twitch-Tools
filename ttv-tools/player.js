@@ -191,7 +191,7 @@ let Player__Initialize = async(START_OVER = false) => {
     Handlers.auto_dvr = () => {
         let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
 
-        if(action.toLowerCase() != 'dvr')
+        if(action.unlike('dvr'))
             return;
 
         let video = $('video');

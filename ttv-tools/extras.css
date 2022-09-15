@@ -1087,3 +1087,21 @@ caption {
     transform: translate(0, 100%);
     z-index: 99999;
 }
+
+/* Mini player buttons */
+.persistent-notification__popout {
+    opacity: 0;
+}
+
+.persistent-notification--hover .persistent-notification__popout, .persistent-notification:hover .persistent-notification__popout {
+    opacity: 1;
+}
+
+/* Resurrected messages */
+[data-resurrected="true"i] .text-fragment {
+    display: contents !important;
+}
+
+[data-resurrected="true"i]:not(:hover) {
+    /* text-decoration: line-through; */
+}

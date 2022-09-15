@@ -23,13 +23,39 @@ function ReloadTab(tab, onlineOnly = true) {
     Container.tabs.reload(tab.id);
 }
 
+// Removes the tab
+    // RemoveTab(tab:object<Tab>, duplicateTab:boolean?) → undefined
+function RemoveTab(tab, duplicateTab = false) {
+    // Duplicate tab
+    duplication: if(duplicateTab) {
+        // Using `.duplicate` carries the frozen status to the new tab...
+
+        let created = RemoveTab.duplicatedTabs.get(tab.url);
+
+        if(defined(created) && +(new Date) - created < 5_000)
+            break duplication;
+
+        console.warn(`Duplicating tab #${ tab.id }... ${ tab.url }`);
+        Container.tabs.create({ url: tab.url, windowId: tab.windowId });
+
+        RemoveTab.duplicatedTabs.set(tab.url, +new Date);
+    }
+
+    console.warn(`Removing tab #${ tab.id }...`);
+    Container.tabs.remove(tab.id);
+}
+
+Object.defineProperties(RemoveTab, {
+    duplicatedTabs: { value: new Map },
+});
+
 // Determines if a tab is offline
     // TabIsOffline(tab:object<Tab>) → boolean
 function TabIsOffline(tab) {
     return (false
         || tab.pendingUrl?.length
         || tab.title.endsWith('.twitch.tv')
-        || tab.status.toLowerCase() == 'unloaded'
+        || tab.status == UNLOADED
     );
 }
 
@@ -92,7 +118,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
                 // Most settings will reload Twitch pages when needed
                 for(let tab of tabs)
-                    ReloadTab(tab);
+                    RemoveTab(tab, true);
             } break;
         }
 
@@ -103,7 +129,7 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
 
 // Update the tab(s) when they unload
     // `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
-let UnloadedTabs = new Set();
+let OfflineTabs = new Set();
 
 let TabWatcherInterval = setInterval(() => {
     try {
@@ -111,21 +137,19 @@ let TabWatcherInterval = setInterval(() => {
             for(let tab of tabs)
                 if(!TabIsOffline(tab))
                     continue;
-                else if(!UnloadedTabs.has(tab.id))
-                    UnloadedTabs.add(tab.id);
+                else if(!OfflineTabs.has(tab.id))
+                    OfflineTabs.add(tab.id);
                 else
-                    ReloadTab(tab);
+                    ReloadTab(tab, tab.status != UNLOADED);
         });
     } catch(error) {
         // Suppress query errors...
         // console.warn(error);
     }
-}, 5000);
+}, 2500);
 
 // Update the badge text when there's an update available
 Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
-
-let REPORTS = new Map;
 
 Storage.onChanged.addListener(changes => {
     // Use this to set the badge text when there's an update available
@@ -239,7 +263,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         case 'BEGIN_REPORT': {
             let { tab } = sender;
 
-            REPORTS.set(tab.id, new Date);
+            REPORTS.set(tab.id, +new Date);
         } break;
     }
 
@@ -248,33 +272,95 @@ Runtime.onMessage.addListener((request, sender, respond) => {
     return true;
 });
 
+let REPORTS = new Map,
+    GALLOWS = new Map,
+    HANG_UP_CHECKER = new Map,
+    MAX_TIME_ALLOWED = 15_000;
+
+let { COMPLETE, LOADING, UNLOADED } = Container.tabs.TabStatus;
 let LAG_REPORTER = setInterval(() => {
-    for(let [tabID, responseStamp] of REPORTS)
-        Container.tabs.get(tabID)
-            .then(tab => {
-                Container.tabs.sendMessage(tab.id, { action: 'report-back' }, response => {
-                    if((+new Date - +responseStamp) > 30_000)
-                        /* Continue... */;
-                    else if(response?.ok || tab.discarded || tab.status == "loading")
-                        return REPORTS.set(tab.id, new Date);
+    for(let [ID, createdAt] of REPORTS) {
+        HANG_UP_CHECKER.set(ID,
+            setTimeout((id = ID) => {
+                Container.tabs.get(id)
+                    .then(tab => {
+                        console.warn(`Tab "${ tab.title }" (#${ tab.id }) timed out. Removing...`);
 
-                    console.warn(`Tab #${ tab.id } did not respond. Contacting again...`);
-                    Container.tabs.sendMessage(tab.id, { action: 'report-back' }, response => {
-                        if((+new Date - +responseStamp) > 45_000)
-                            /* Continue... */;
-                        else if(response?.ok)
-                            return REPORTS.set(tab.id, new Date);
-
-                        Container.tabs.duplicate(tab.id);
-                        Container.tabs.discard(tab.id);
-                        Container.tabs.remove(tab.id);
-
-                        console.warn(`Tab #${ tab.id } did not respond. Discarding...`);
+                        GALLOWS.set(tab.id, tab);
+                        REPORTS.delete(tab.id);
+                        RemoveTab(tab, true);
                     });
-                });
-            })
-            .catch(error => REPORTS.delete(tabID));
-}, 15_000);
+            }, MAX_TIME_ALLOWED - 100)
+        );
+
+        try {
+            if(GALLOWS.has(ID))
+                continue;
+
+            Container.tabs.get(ID)
+                .then(tab => {
+                    let { audible, discarded, id, mutedInfo, status, title } = tab;
+
+                    Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
+                        let { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
+
+                        if(false
+                            || ((+new Date - timestamp) > MAX_TIME_ALLOWED)
+                            || (performance > 0.95)
+                            || (!audible && !mutedInfo.muted)
+                        ) {
+                            /* Continue... */
+                        } else if(ok || discarded || status == LOADING) {
+                            clearTimeout(HANG_UP_CHECKER.get(id));
+
+                            return REPORTS.set(id, +new Date);
+                        }
+
+                        console.warn(`Tab "${ title }" (#${ id }) did not respond. Contacting again... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }% · Bad Audio → ${ (!audible && !mutedInfo.muted) } { Audible=${ audible }; Muted=${ mutedInfo.muted } }`);
+
+                        Container.tabs.sendMessage(id, { action: 'report-back' }, response => {
+                            let { ok = false, performance = 1, timestamp = +new Date - MAX_TIME_ALLOWED } = (response ?? {});
+
+                            if(false
+                                || ((+new Date - timestamp) > MAX_TIME_ALLOWED * 1.5)
+                                || (performance > 0.99)
+                            ) {
+                                /* Continue... */
+                            } else if(ok || discarded || status == LOADING) {
+                                clearTimeout(HANG_UP_CHECKER.get(id));
+
+                                return REPORTS.set(id, +new Date);
+                            }
+
+                            console.warn(`Tab "${ title }" (#${ id }) did not respond. Removing... Response Time → ${ (+new Date - timestamp) }ms · Memory Usage → ${ (100 * performance).toFixed(2).replace('.00', '') }%`);
+
+                            clearTimeout(HANG_UP_CHECKER.get(id));
+                            REPORTS.delete(id);
+                            RemoveTab(tab, true);
+                        });
+                    });
+                })
+                .catch(error => REPORTS.delete(ID));
+        } catch(error) {
+            // console.warn(error);
+            REPORTS.delete(ID);
+        }
+    }
+}, MAX_TIME_ALLOWED);
+
+let GALLOWS_CHECKER = setInterval(() => {
+    for(let [ID, tab] of GALLOWS) {
+        try {
+            Container.tabs.sendMessage(tab.id, { action: 'close' }, response => {
+                if(!response?.ok)
+                    Container.tabs.remove(tab.id);
+            });
+        } catch(error) {
+            // console.warn(error);
+            GALLOWS.delete(tab.id);
+        }
+    }
+}, 300);
 
 // https://stackoverflow.com/a/6117889/4211612
 // Returns the current week of the year
@@ -294,3 +380,22 @@ Date.prototype.getWeek = function getWeek() {
 
     return Math.ceil((((now - year) / 86_400_000) + 1) / 7);
 };
+
+// Get rid of the errors...
+if(Runtime.lastError)
+    console.warn(Runtime.lastError);
+
+/*** @wOxxOm - https://stackoverflow.com/a/66618269/4211612
+ *      _  __                          _ _
+ *     | |/ /                    /\   | (_)
+ *     | ' / ___  ___ _ __      /  \  | |___   _____
+ *     |  < / _ \/ _ \ '_ \    / /\ \ | | \ \ / / _ \
+ *     | . \  __/  __/ |_) |  / ____ \| | |\ V /  __/
+ *     |_|\_\___|\___| .__/  /_/    \_\_|_| \_/ \___|
+ *                   | |
+ *                   |_|
+ */
+Runtime.onConnect.addListener(port => {
+    if(port.name == 'PING')
+        port.onMessage.addListener(ping => port.postMessage('PONG'));
+});

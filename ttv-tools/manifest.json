@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "5.27",
+    "version": "5.28",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -49,6 +49,7 @@
                 "ext/resemble.js",
                 "ext/sortable.js",
                 "ext/glyphs.js",
+                "ext/irc.js",
                 "core.js",
                 "chat.js"
             ]
@@ -67,6 +68,7 @@
                 "ext/resemble.js",
                 "ext/sortable.js",
                 "ext/glyphs.js",
+                "ext/irc.js",
                 "core.js",
                 "tools.js",
                 "chat.js"

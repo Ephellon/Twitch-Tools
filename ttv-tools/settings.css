@@ -15,9 +15,21 @@
 }
 
 @font-face {
-    font-family: Roobert-Bold;
-    font-weight: normal;
+    font-family: Roobert;
+    font-weight: bold;
     src: url("/font/Roobert-Bold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: Dyslexie;
+    font-weight: 100 400;
+    src: url("/font/Dyslexie-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: Dyslexie;
+    font-weight: 500 900;
+    src: url("/font/Dyslexie-Bold.woff") format("woff");
 }
 
 @font-face {
@@ -72,6 +84,10 @@
 
     --baby-blue: #387aff;
     --baby-pink: #f5009b;
+    --baby-gold: #f59b00;
+    --baby-grey: #9b9b9b;
+    --baby-gray: var(--baby-grey);
+    --igor-pink: #ff9ab4;
 
     --purple: #9147ff;
     --purple-dark: #4700b3;
@@ -167,6 +183,8 @@
     border: 0;
     margin: 0;
     padding: 0;
+
+    scroll-behavior: smooth;
 }
 
 html, body {
@@ -205,8 +223,9 @@ html, body {
 }
 
 header {
-    font-family: Roobert-Bold;
+    font-family: Roobert;
     font-size: 125%;
+    font-weight: bold;
 }
 
 html:not([lang="en"i]) header {
@@ -229,6 +248,8 @@ section, footer {
     flex-wrap: nowrap;
 
     padding: 2rem;
+    /* scroll-padding offset */
+    margin-top: -2rem;
 
     min-height: 10vh;
     width: 100%;
@@ -241,6 +262,13 @@ section:not(:last-child) {
 footer {
     justify-content: center;
     text-align: center;
+
+    margin-top: 0;
+}
+
+#search-results :is(section, footer) {
+    margin-top: 0!important;
+    padding-top: 0!important;
 }
 
 .language-select {
@@ -270,12 +298,15 @@ footer {
     /* transform: translate(-50%); */
 }
 
+.title, .summary {
+    padding: 2rem 2rem 0 0;
+}
+
 .title {
-    font-family: Roobert-Bold;
+    font-family: Roobert;
+    font-weight: bold;
 
     flex-grow: 0;
-
-    padding-right: 2rem;
 
     height: 3rem;
     width: 13rem;
@@ -289,6 +320,8 @@ html:not([lang="en"i]) .title {
 :is(details, .details) .title {
     display: inline-block;
     vertical-align: middle;
+
+    padding: 0;
 
     height: auto;
     max-width: 15rem;
@@ -306,6 +339,8 @@ html:not([lang="en"i]) .title {
 :is(details, .details) .summary {
     display: inline-block;
     vertical-align: middle;
+
+    padding: 0;
 
     height: auto;
     width: 69%;
@@ -463,8 +498,8 @@ a {
 }
 
 b {
-    font-family: Roobert-Bold;
-    font-weight: normal;
+    font-family: Roobert;
+    font-weight: bold;
 }
 
 html:not([lang="en"i]) b {
@@ -548,8 +583,9 @@ summary {
     background-color: var(--background-dark-lit);
     box-shadow: var(--purple-border);
     font-size: 1rem;
-    font-family: Roobert-Bold;
+    font-family: Roobert;
     list-style: none;
+    font-weight: bold;
 
     cursor: pointer;
 
@@ -565,7 +601,7 @@ summary:hover {
     background-color: var(--background-dark-lit-highlighted);
 }
 
-summary::after, .subtitle {
+summary::after, [subtitle]::after {
     content: attr(subtitle);
     color: var(--white-faded);
     display: block;
@@ -577,7 +613,7 @@ summary + *:last-child {
     padding: 1rem 1rem 0;
 }
 
-summary + * > [text-only]:not(:first-child) {
+summary + * > [opt]:not(:first-child) {
     margin-top: .5rem;
 }
 
@@ -613,17 +649,18 @@ select, .select {
     border-radius: 3px;
     color: var(--text-light);
     cursor: pointer;
-    font-family: Roobert-Bold;
+    font-family: Roobert;
+    font-weight: bold;
     user-select: none;
 
     transition: background-color .1s ease;
 
     overflow: hidden;
     max-width: 100%;
-    width: -webkit-fill-available;
+    width: fit-content;
 
     margin: 6px 8px;
-    padding: 6px 8px;
+    padding: 6px 3rem 6px 8px;
 
     vertical-align: middle;
 }
@@ -719,7 +756,8 @@ button, [type="button"] {
     border-radius: 3px;
     color: var(--text-light);
     cursor: pointer;
-    font-family: Roobert-Bold;
+    font-family: Roobert;
+    /* font-weight: bold; */
 
     transition: background-color .1s ease;
 
@@ -742,6 +780,8 @@ html:not([lang="en"i]) :is(button, [type="button"]) {
 
 .edit {
     background-color: var(--grey);
+
+    width: max-content;
 }
 
 :is(button, input[type="button"]):hover {
@@ -994,7 +1034,7 @@ code[fill], [code][fill], [type^="code"i][fill] {
     display: none !important;
 }
 
-textarea, input[type="text"i], input[type="number"i], input[type="date"i], input[type="time"i], [unit]::after {
+textarea, input[type="text"i], input[type="search"i], input[type="number"i], input[type="date"i], input[type="time"i], [unit]::after {
     appearance: none;
     background-clip: padding-box;
     background-color: var(--grey);
@@ -1017,7 +1057,7 @@ textarea, input[type="text"i], input[type="number"i], input[type="date"i], input
     width: 100%;
 }
 
-textarea:focus, input[type="text"i]:focus, input[type="number"i]:focus, input[type="date"i]:focus, input[type="time"i]:focus {
+textarea:focus, input[type="text"i]:focus, input[type="search"i]:focus, input[type="number"i]:focus, input[type="date"i]:focus, input[type="time"i]:focus {
     background-color: var(--black);
     border-color: var(--purple);
 
@@ -1044,7 +1084,7 @@ input[type="number"]::-webkit-inner-spin-button {
     display: none;
 }
 
-input[type="text"i]:not(:valid):not([disabled]), input[type="number"i]:not(:valid):not([disabled]), input[type="date"i]:not(:valid):not([disabled]), input[type="time"i]:not(:valid):not([disabled]) {
+input[type="text"i]:not(:valid):not([disabled]), input[type="search"i]:not(:valid):not([disabled]), input[type="number"i]:not(:valid):not([disabled]), input[type="date"i]:not(:valid):not([disabled]), input[type="time"i]:not(:valid):not([disabled]) {
     border-color: var(--yellow) !important;
 }
 
@@ -1380,9 +1420,13 @@ section[save] {
 }
 
 /* New/Beta sections */
-section:is([new], [beta])::before {
+#search-results section:is([new], [beta], [soon], [dead]) {
+    border: 0;
+}
+
+section:is([new], [beta], [soon], [dead])::before {
     background-color: var(--baby-blue);
-    border-radius: 100rem;
+    border-radius: .25rem;
     color: var(--white);
     content: "New!";
     display: inline-block;
@@ -1392,7 +1436,7 @@ section:is([new], [beta])::before {
 
     line-height: 1;
 
-    margin-top: .5rem;
+    margin-top: 2.5rem;
     padding: .25rem .5rem;
     position: absolute;
     left: 0;
@@ -1405,7 +1449,114 @@ section[beta]::before {
 }
 
 section[soon]::before {
+    background-color: var(--baby-gold);
     content: "Coming soon";
+}
+
+section[dead]::before {
+    background-color: var(--baby-grey);
+    content: "Deprecated (" attr(dead) ")";
+}
+
+section:is([new], [beta], [soon], [dead])::after {
+    content: '';
+
+    background: linear-gradient(135deg, #0000 50%, var(--baby-blue) 0);
+    display: block;
+
+    left: 0;
+    position: absolute;
+    transform: translate(50%,100%) rotate(45deg);
+    z-index: 9;
+
+    height: 8px;
+    width: 8px;
+}
+
+section[beta]::after {
+    background: linear-gradient(135deg, #0000 50%, var(--baby-pink) 0);
+}
+
+section[soon]::after {
+    background: linear-gradient(135deg, #0000 50%, var(--baby-gold) 0);
+}
+
+section[dead]::after {
+    background: linear-gradient(135deg, #0000 50%, var(--baby-grey) 0);
+}
+
+/* Search for settings... */
+#search-container {
+    display: block !important;
+
+    margin: 0 10rem !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 99999;
+
+    max-height: 80% !important;
+    width: -webkit-fill-available !important;
+
+    transition: all .5s;
+}
+
+#search-container:not([data-focus='true'i]) {
+    margin: 0 1rem 0 85% !important;
+}
+
+#search-results {
+    background-color: var(--black);
+    border: 2px solid var(--grey);
+    border-radius: 3px;
+    overflow: hidden auto;
+
+    bottom: 3rem;
+    position: absolute;
+
+    max-height: 30rem;
+    width: -webkit-fill-available !important;
+}
+
+#search-container:not([data-focus='true'i]) #search-results {
+    opacity: 0;
+}
+
+#search-results[data-empty='true'i] {
+    padding: 1rem;
+}
+
+#search-results[data-empty='true'i]::before {
+    content: 'Please enter a keyword... Press Esc to quit';
+}
+
+#search-results[data-empty='false'i]:empty::before {
+    content: 'No results 😢';
+}
+
+#search-results > * {
+    cursor: pointer !important;
+    display: block !important;
+
+    padding: 1rem !important;
+
+    height: fit-content !important;
+    width: -webkit-fill-available !important;
+}
+
+#search-results > *:hover {
+    background-color: var(--grey);
+}
+
+body.popup #search-results {
+    max-height: 20rem !important;
+}
+
+body.popup #search-results[data-empty='true'i]::before {
+    content: 'Start typing... Press Esc to quit';
+}
+
+body.popup #search-container:not([data-focus='true'i]) {
+    margin: 0 3rem 0 75% !important;
 }
 
 /* Version button */
@@ -1517,9 +1668,9 @@ body.popup {
     background-color: var(--white);
     border-radius: .2rem;
     color: var(--black);
-    font-family: Roobert-Bold;
+    font-family: Roobert;
+    font-weight: bold;
     font-size: 75%;
-    font-weight: normal;
     line-height: 1.2;
     padding: 3px 6px;
     pointer-events: none;

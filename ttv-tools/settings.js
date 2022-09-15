@@ -220,6 +220,8 @@ let // These are option names. Anything else will be removed
             // 'simplify_chat_reverse_emotes',
         // Recover chat
         'recover_chat',
+        // Recover messages
+        'recover_messages',
         // Soft Unban
         'soft_unban',
             'soft_unban_keep_bots',
@@ -483,7 +485,7 @@ class DatePicker {
 
                                         f('.subtitle', {
                                             'tr-id': 'away-mode:schedule:create:controls',
-                                            innerHTML: `Use <code>${ GetMacro('Ctrl') }</code> and <code>${ GetMacro('Shift') }</code> to select multiple days.`
+                                            innerHTML: `Use <code>${ GetMacro('Ctrl') }</code> and/or <code>${ GetMacro('Shift') }</code> to select multiple days.`
                                         })
                                     )
                                 ),
@@ -540,7 +542,7 @@ class DatePicker {
                                             else
                                                 $('#date-picker-value').value = JSON.stringify(DatePicker.values.filter(defined));
 
-                                            setTimeout(() => currentTarget.closest('.context-root')?.remove(), 100);
+                                            wait(100).then(() => currentTarget.closest('.context-root')?.remove());
                                         },
                                     }, ['Continue', 'Save'][+preExisting]),
 
@@ -555,7 +557,7 @@ class DatePicker {
 
                                             $('#date-picker-value').value = JSON.stringify(DatePicker.values.filter(defined));
 
-                                            setTimeout(() => currentTarget.closest('.context-root')?.remove(), 100);
+                                            wait(100).then(() => currentTarget.closest('.context-root')?.remove());
                                         },
                                     }, ['Cancel', 'Delete'][+preExisting]),
 
@@ -981,7 +983,7 @@ $('input[type="number"i]:is([min], [max])', true)
 
 /* All of the "clickables" */
 
-$('#whisper_audio_sound', true).map(element => element.onchange = async event => setTimeout(() => $('#whisper_audio_sound-test')?.click(), 10));
+$('#whisper_audio_sound', true).map(element => element.onchange = async event => wait(10).then(() => $('#whisper_audio_sound-test')?.click()));
 
 $('#whisper_audio_sound-test', true).map(button => button.onclick = async event => {
     let [selected] = $('#whisper_audio_sound').selectedOptions;
@@ -1064,10 +1066,10 @@ $('#save, .save', true).map(element => element.onclick = async event => {
             WARN(error);
         })
         .finally(() => {
-            setTimeout(() => {
+            wait(1500).then(() => {
                 currentTarget.removeAttribute('style');
                 currentTarget.classList.remove('spin');
-            }, 1500);
+            });
         });
 });
 
@@ -1094,7 +1096,7 @@ function clearSyncStatus() {
 
 clearSyncStatus.clearID = -1;
 
-setTimeout(clearSyncStatus, 1000);
+wait(1000).then(clearSyncStatus);
 
 $('#sync-settings--upload').onmouseup = async event => {
     let syncToken = $('#sync-token'),
@@ -1510,7 +1512,7 @@ let FETCHED_DATA = { wasFetched: false };
             }
         });
     });
-})(location.host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
+})(location.host.equals("fcfodihfdbiiogppbnhabkigcdhkhdjd"));
 
 // All anchors with the [continue-search] attribute
 $('a[continue-search]', true).map(a => {
@@ -1546,6 +1548,182 @@ $('[id^="key:"i]', true).map(element => element.textContent = GetMacro(element.t
 
 // Get the supported video types here...
 $('#video_clips__file_type option', true).filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
+
+// Search for a setting...
+$.body.onkeydown = event => {
+    if(!event.altKey && event.ctrlKey && !event.metaKey && event.key.equals('f')) {
+        event.preventDefault();
+
+        let y = $.body.scrollTop;
+
+        $('#search').focus();
+
+        $.body.scrollTo({ top: y, behavior: 'instant' });
+    }
+};
+
+$('#search', true).map(input => {
+    input.onfocus = event => {
+        event.preventDefault();
+
+        $('#search-container').dataset.focus = true;
+        $('#search-results').dataset.empty = !parseBool(event.currentTarget.value.length);
+    };
+
+    input.onblur = event => {
+        wait(100).then(() => {
+            $('#search-results').dataset.empty = !parseBool($('#search').value.length);
+        });
+    };
+
+    input.onkeydown = async event => {
+        let { currentTarget, key, altKey, ctrlKey, metaKey, shiftKey } = event;
+
+        if(altKey || ctrlKey || metaKey)
+            return;
+
+        let ignoredKeys = 'alt control meta opt+ shift +lock tab f+ arrow+ +menu ins+ page+ home end media+ audio+'.split(' ').map(AsteriskFn);
+
+        if(ignoredKeys.find(regexp => regexp.test(key)))
+            return;
+
+        event.preventDefault();
+
+        switch(key.toLowerCase()) {
+            case 'escape': {
+                currentTarget.blur();
+
+                return $('#search-container').dataset.focus = false;
+            } break;
+
+            case 'backspace': {
+                let { value, selectionStart, selectionEnd } = currentTarget;
+
+                selectionStart += (selectionStart != selectionEnd);
+
+                currentTarget.value = value.substring(0, --selectionStart) + value.substring(selectionEnd, value.length);
+
+                currentTarget.selectionStart = currentTarget.selectionEnd = selectionStart;
+            } break;
+
+            case 'delete': {
+                let { value, selectionStart, selectionEnd } = currentTarget;
+
+                selectionEnd += (selectionStart != selectionEnd);
+
+                currentTarget.value = value.substring(0, selectionStart) + value.substring(++selectionEnd, value.length);
+
+                currentTarget.selectionStart = currentTarget.selectionEnd = selectionStart;
+            } break;
+
+            case 'enter': {
+                $('#search-results [data-result="true"i]').dispatchEvent(new MouseEvent('mouseup'));
+            } break;
+
+            default: {
+                let { value, selectionStart, selectionEnd } = currentTarget;
+
+                currentTarget.value = value.substring(0, selectionStart) + key + value.substring(selectionEnd, value.length);
+
+                currentTarget.selectionStart = currentTarget.selectionEnd = ++selectionStart;
+            }
+        }
+
+        let query = currentTarget.value || '',
+            last = currentTarget.dataset.last = query || '',
+            output = $('#search-results');
+
+        output.innerHTML = '';
+
+        if(output.dataset.empty = query.length < 3)
+            return;
+
+        let exact = $.body.getElementsByInnerText(query).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+        let partial = $.body.getElementsByInnerText(RegExp(
+            query.replace(/(\W)/g, '\\$1').replace(/[a-z]/g, ($0, $$, $_) => ({
+                'q': '[12qwas]',
+                'w': '[123qweasd]',
+                'e': '[234wersdf]',
+                'r': '[345ertdfg]',
+                't': '[456rtyfgh]',
+                'y': '[567tyughj]',
+                'u': '[678yuihjk]',
+                'i': '[789uiojkl]',
+                'o': '[890iopkl;]',
+                'p': '[90-op[kl;]',
+                'a': '[qwaszx]',
+                's': '[qweasdzxc]',
+                'd': '[wersdfxcv]',
+                'f': '[ertdfgcvb]',
+                'g': '[rtyfghvbn]',
+                'h': '[tyughjbnm]',
+                'j': '[yuihjknm,]',
+                'k': '[uiojklm,.]',
+                'l': '[iopkl;,./]',
+                'z': '[aszx]',
+                'x': '[asdzxc]',
+                'c': '[sdfxcv ]',
+                'v': '[dfgcvb ]',
+                'b': '[fghvbn ]',
+                'n': '[ghjbnm ]',
+                'm': '[hjknm, ]',
+            })[$0.toLowerCase().normalize('NFKD')])
+        , 'i')).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+        let synonymous = $('article', true)
+            .map(element => [...element.childNodes].filter(node => node.nodeName.equals('#comment')))
+            .flat()
+            .filter(comment => comment.textContent.toLowerCase().contains(query.toLowerCase()))
+            .filter(defined)
+            .map(comment => comment.nextElementSibling);
+
+        let results = [...exact, ...partial, ...synonymous]
+            .filter(defined)
+            .filter(element => !element.hasAttribute('save'))
+            .isolate();
+
+        for(let result of results)
+            output.innerHTML += result.outerHTML;
+
+        for(let child of output.children) {
+            'beta dead new soon'.split(' ').map(attr => child.removeAttribute(attr));
+
+            $('[id]', true, child).map(e => (e.dataset.id = e.id) && e.removeAttribute('id'));
+            $('details summary ~ *', true, child).map(e => e.remove());
+
+            child.dataset.id = child.id;
+            child.removeAttribute('id');
+
+            if(child.dataset.result = (child.classList.contains('title')))
+                child.onmouseup = ({ currentTarget }) => {
+                    $(`article :is([id="${ currentTarget.dataset.id }"i], [tr-id="${ currentTarget.getAttribute('tr-id') }"i])`)
+                        .scrollIntoView();
+
+                    $('#search-container').dataset.focus = false;
+                };
+            else
+                for(let fauxSetting of $(`[data-id]`, true, child)) {
+                    LoadSettings.assignValue(fauxSetting, SETTINGS[fauxSetting.dataset.id]);
+
+                    fauxSetting.disabled = true;
+                    fauxSetting.setAttribute('visible', true);
+
+                    let section = $(`#search-results :is([data-id="${ fauxSetting.dataset.id }"i], [tr-id="${ fauxSetting.getAttribute('tr-id') }"i])`).closest('section');
+
+                    section.dataset.id = fauxSetting.dataset.id;
+
+                    section.onmouseup = ({ currentTarget }) => {
+                        $(`article [id="${ currentTarget.dataset.id }"i]`)
+                            .closest('section')
+                            .scrollIntoView();
+
+                        $('#search-container').dataset.focus = false;
+                    };
+                }
+        }
+
+        $('#search-results').dataset.empty = !parseBool((currentTarget.dataset.last = query).length);
+    };
+});
 
 // Set the browser storage usage...
 when.defined(() => SETTINGS)
@@ -1606,7 +1784,7 @@ when.defined(() => SETTINGS)
     });
 
 async function Translate(language = 'en', container = document) {
-    await fetchURL(`/_locales/${ language }/settings.json`)
+    await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
             WARN(`Translations to "${ language.toUpperCase() }" are not available`);
 
@@ -1616,8 +1794,9 @@ async function Translate(language = 'en', container = document) {
         .then(json => {
             if(json?.LANG_PACK_READY !== true) {
                 let ISO = ISO_639_1[language];
+                let errMsg = json['[[ERROR]]'];
 
-                if(nullish(ISO))
+                if(nullish(ISO) || nullish(errMsg))
                     return;
 
                 let [latin] = ISO.name.split('/');
@@ -1630,7 +1809,7 @@ async function Translate(language = 'en', container = document) {
                         <hr>
                         <!-- ${ latin } -->
                         <div style=text-align:center;margin:1rem>${
-                            json['[[ERROR]]'].replace(/(\S*GitHub\S*)/i, link)
+                            errMsg.replace(/(\S*GitHub\S*)/i, link)
                         }</div>
                     </div>
                 `, document.body.classList.contains('popup'));
@@ -1729,6 +1908,9 @@ document.body.onload = async() => {
 
     /* The extension was just installed (most likely the first run) */
     await(async() => {
+        return 'en';
+        // TODO: enable language settings... //
+
         if(nullish(search.installed))
             return;
 
@@ -1749,22 +1931,17 @@ document.body.onload = async() => {
                 document.body.append(
                     furnish('.language-select', {},
                         furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English (North American)`),
-                        ...(languages => {
-                            let buttons = [];
-                            for(let language of languages) {
-                                let ISO = top.ISO_639_1[language];
+                        ...SUPPORTED_LANGUAGES.map(language => {
+                            let ISO = top.ISO_639_1[language];
 
-                                if(nullish(ISO))
-                                    continue;
+                            if(nullish(ISO))
+                                return;
 
-                                let { name, code, dialect } = ISO,
-                                    [latin, native, regional] = unescape(name).split('/', 3);
+                            let { name, code, dialect } = ISO,
+                                [latin, native, regional] = unescape(name).split('/', 3);
 
-                                buttons.push(furnish('button.language-option', { value: code, onmousedown, onmouseup }, `${ native } (${ regional || latin })`));
-                            }
-
-                            return buttons;
-                        })(SUPPORTED_LANGUAGES),
+                            return furnish('button.language-option', { value: code, onmousedown, onmouseup }, `${ native } (${ regional || latin })`);
+                        }).filter(defined),
                     )
                 );
 
@@ -1783,9 +1960,7 @@ document.body.onload = async() => {
             await Storage.get(['user_language_preference'], ({ user_language_preference }) => {
                 let lang = document.documentElement.lang = user_language_preference.toLowerCase();
 
-                if(lang == 'en')
-                    TRANSLATED = true;
-                else
+                if(lang.unlike('en'))
                     Translate(lang);
             });
 
@@ -1801,7 +1976,7 @@ document.body.onload = async() => {
                 $('body').classList.add(attribute);
 
             // Stop or continue loading settings
-            if((search['show-defaults'] + '') != 'true')
+            if((search['show-defaults'] + '').unlike('true'))
                 await LoadSettings();
 
             // Overwrite settings defined in the search
@@ -1849,7 +2024,7 @@ document.body.onload = async() => {
             });
 
             // Update links (hrefs), tooltips, and other items
-            setTimeout(() => {
+            wait(1000).then(() => {
                 // Adjust all audio URLs
                 $('#whisper_audio_sound', true).map(element => {
                     let [selected] = element.selectedOptions;
@@ -1965,7 +2140,7 @@ document.body.onload = async() => {
                     else
                         input.oninput = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('valid', currentTarget.checkValidity());
                 });
-            }, 1000);
+            });
         })
 
     /* Things needed after loading the page... */

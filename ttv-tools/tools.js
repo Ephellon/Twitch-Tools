@@ -28,11 +28,7 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     NORMALIZED_PATHNAME,
     // Hmm...
     JUMPED_FRAMES = false,
-    JUMP_DATA = {},
-    // Yes...
-    IS_TWITCH_ADMIN,
-    IS_CHANNEL_MODERATOR,
-    IS_CHANNEL_VIP;
+    JUMP_DATA = {};
 
 // Populate the username field by quickly showing the menu
 when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
@@ -46,14 +42,6 @@ when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"
         $('[data-a-target^="language"i]')?.click();
         LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
         UserMenuToggleButton.click();
-
-        // Setting the statuses...
-        fetchURL(`https://api.twitchinsights.net/v1/user/status/${ USERNAME }`)
-            .then(response => response?.json())
-            .then(({ broadcasterType, createdAt, deletedAt, displayName, id, unavailableReason, updatedAt, userType }) => {
-                IS_TWITCH_ADMIN = ['admin', 'staff'].contains(userType);
-            })
-            .catch(WARN);
     });
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
@@ -133,7 +121,7 @@ class Balloon {
                                         if(nullish(balloon))
                                             return;
 
-                                        let display = balloon.getAttribute('display') === 'block'? 'none': 'block';
+                                        let display = balloon.getAttribute('display').equals('block')? 'none': 'block';
 
                                         balloon.setAttribute('style', `display:${ display }!important; z-index:9; left: -15rem`);
                                         balloon.setAttribute('display', display);
@@ -215,7 +203,7 @@ class Balloon {
                                                 if(nullish(balloon))
                                                     return;
 
-                                                let display = balloon.getAttribute('display') === 'block'? 'none': 'block';
+                                                let display = balloon.getAttribute('display').equals('block')? 'none': 'block';
 
                                                 balloon.setAttribute('style', `display:${ display }!important`);
                                                 balloon.setAttribute('display', display);
@@ -1055,18 +1043,16 @@ class Search {
             for(let cookie of cookies) {
                 let [name, value] = cookie.split('=', 2);
 
-                object[name] = value;
+                value = /^[\{\[]/.test(value)?
+                    JSON.parse(decodeURIComponent(value)):
+                value;
+
+                object[name.replace(/\W+/g, '_')] = value;
             }
 
             return object;
         })(document?.cookie?.split(/;\s*/))
     };
-
-    static authorization = (
-        defined(Search.cookies['auth-token'])?
-            `OAuth ${ Search.cookies['auth-token'] }`:
-        void null
-    );
 
     static #cache = new Map;
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
@@ -1082,9 +1068,8 @@ class Search {
                     "Accept-Language":  'en-US',
                     "Accept":           '*/*',
                     "Authorization":    Search.authorization,
-                    "Client-ID":        'kimne78kx3ncx6brgo4mv6wki5h1ko',
+                    "Client-ID":        Search.clientID,
                     "Content-Type":     `text/plain; charset=UTF-8`,
-                    "Device-ID":        Search.cookies.unique_id,
                 }
             }),
             player = ({
@@ -1128,10 +1113,10 @@ class Search {
             }
         }
 
-        if(type == 'vod')
+        if(type.equals('vod'))
             vodID = ID;
 
-        if(type == 'channel')
+        if(type.equals('channel'))
             channelName = ID;
 
         let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value,
@@ -1203,11 +1188,47 @@ class Search {
                 //     _id: "39367256"
             } break;
 
+            case 'getID': {
+                return fetchURL(`https://api.twitch.tv/helix/users?login=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                    .then(response => response.json())
+                    .then(json => {
+                        let id = parseInt(json?.data?.shift?.()?.id);
+
+                        if(nullish(id))
+                            throw `${ json.error }: ${ json.message }`;
+
+                        return id;
+                    })
+                    .catch(error => {
+                        WARN(error);
+
+                        Storage.remove('searchToken', ReloadPage);
+                    });
+            } break;
+
+            case 'getName': {
+                return fetchURL(`https://api.twitch.tv/helix/users?id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                    .then(response => response.json())
+                    .then(json => {
+                        let login = json?.data?.shift?.()?.login;
+
+                        if(nullish(login))
+                            throw `${ json.error }: ${ json.message }`;
+
+                        return login;
+                    })
+                    .catch(error => {
+                        WARN(error);
+
+                        Storage.remove('searchToken', ReloadPage);
+                    });
+            } break;
+
             default: {
                 let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
-                let name = channelName;
+                let name = channelName?.toLowerCase();
 
-                if(nullish(name) || type != 'channel')
+                if(nullish(name) || type.unlike('channel'))
                     break;
 
                 searchResults = fetchURL(`./${ name }`)
@@ -1223,7 +1244,7 @@ class Search {
 
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                             [language] = languages.filter(lang => alt_languages.missing(lang)),
-                            name = display_name?.trim(),
+                            name = display_name?.trim()?.toLowerCase(),
                             profile_image = ($('meta[property$="image"i]', false, doc)?.content || Runtime.getURL('profile.png')),
                             live = parseBool(data?.publication?.isLiveBroadcast),
                             started_at = new Date(data?.publication?.startDate).toJSON(),
@@ -1267,7 +1288,7 @@ class Search {
                     .catch(error => {
                         WARN(error);
 
-                        return STREAMER.jump[name.toLowerCase()];
+                        return STREAMER?.jump?.[name];
                     });
 
                 Search.#cache.set(searchID, searchResults);
@@ -1396,10 +1417,10 @@ class Search {
             }
         }
 
-        if(type == 'vod')
+        if(type.equals('vod'))
             vodID = ID;
 
-        if(type == 'channel')
+        if(type.equals('channel'))
             channelName = ID;
 
         let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value;
@@ -1576,6 +1597,27 @@ class Search {
         return new Promise(resolve => resolve(data));
     }
 }
+
+// Search helpers...
+    // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
+(async() => {
+    let { searchToken, searchClientID } = ((await Storage.get(['searchToken', 'searchClientID'])) ?? {});
+
+    if(nullish(searchToken) || nullish(searchClientID))
+        await fetchURL(`https://www.twitchtokengenerator.com/api/refresh/w7lwaxc73n49y6etcp2w3o4uipbvcudiqse6zngiybmkstawl9`)
+            .then(r => r.json())
+            .then(json => {
+                let { token, success = false } = json;
+
+                if(!success)
+                    throw 'Unable to generate tokens...';
+
+                Storage.set({ searchToken: (searchToken = token) });
+            });
+
+    Search.authorization = `Bearer ${ searchToken }`;
+    Search.clientID = 'gp762nuuoqcoxypju8c569th9wz7q5';
+})();
 
 // https://stackoverflow.com/a/45205645/4211612
 // Creates a CSS object that can be used to easily transform an object to a CSS string
@@ -2090,241 +2132,236 @@ function GetSettings() {
     });
 }
 
-// Create an array of the current chat
-    // GetChat(lines:number?, keepEmotes:boolean?) → [...object<{ style, author, emotes, message, mentions, element, uuid, highlighted }>]
-function GetChat(lines = 250, keepEmotes = false) {
-    let chat = $('[data-test-selector$="message-container"i] [data-a-target="chat-line-message"i]', true).slice(-lines),
-        emotes = {},
-        results = [];
-
-    for(let line of chat) {
-        let handle = $('.chat-line__username', true, line).map(element => element.textContent).toString()
-            author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-            message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
-            mentions = $('.mention-fragment', true, line).map(element => element.textContent.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-            badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
-            style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
-            reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
-
-        let raw = line.textContent?.trim(),
-            containedEmotes = [];
-
-        message = message
-            .map(element => {
-                let string;
-
-                if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
-                    let img = $('img', false, element);
-
-                    if(defined(img))
-                        containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
-                } else {
-                    string = element.textContent;
-                }
-
-                return string;
-            })
-            .filter(defined)
-            .join(' ')
-            .trim()
-            .replace(/(\s){2,}/g, '$1');
-
-        style = style
-            .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-        let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
-
-        if(defined(results.find(message => message.uuid == uuid)))
-            continue;
-
-        results.push({
-            raw,
-            uuid,
-            reply,
-            style,
-            author,
-            badges,
-            handle,
-            message,
-            mentions,
-            element: line,
-            emotes: containedEmotes.map(string => string.replace(/^:|:$/g, '')).isolate(),
-            deleted: $.defined('[class*="--deleted-notice"i]', false, line),
-            highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
-        });
-    }
-
-    let bullets = $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i], [role="log"i] [data-test-selector="announcement-line"i]', true).slice(-lines);
-
-    results.bullets = [];
-
-    for(let bullet of bullets) {
-        let message = $('*', true, bullet),
-            mentions = $('.chatter-name, strong', true, bullet).map(element => element.textContent.toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-            subject = (text =>
-                /\braid/i.test(text)?                'raid': // Incoming raid
-                /\b(redeem|contribut)/i.test(text)?  'coin': // Redeeming (spending) channel points
-                /\bcontinu/i.test(text)?             'keep': // Continuing a gifted subscription
-                /\bgift/i.test(text)?                'gift': // Gifting a subscription
-                /\b(re)?subs|\bconvert/i.test(text)? 'dues': // New subscription, continued subscription, or converted subscription
-                /\bannouncements?\b/i.test(text)?    'note': // Announcements
-                null                                         // No subject
-            )($('*:first-child', false, bullet)?.textContent);
-
-        if(nullish(subject) && message.length < 1)
-            continue;
-
-        let raw = bullet.textContent?.trim();
-
-        message = message
-            .map(element => {
-                let string;
-
-                switch(element.dataset.testSelector) {
-                    case 'emote-button': {
-                        if(keepEmotes)
-                            string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
-                    } break;
-
-                    default: {
-                        string = element.textContent;
-                    } break;
-                }
-
-                return string;
-            })
-            .filter(defined)
-            .join(' ')
-            .trim()
-            .replace(/(\s){2,}/g, '$1');
-
-        let uuid = UUID.from([subject, mentions.join(','), message].join(':')).value;
-
-        if(defined(results.bullets.find(bullet => bullet.uuid == uuid)))
-            continue;
-
-        results.bullets.push({
-            raw,
-            uuid,
-            subject,
-            message,
-            mentions,
-            element: bullet,
-        });
-    }
-
-    let commands = $('[class*="line__status"i]', true);
-
-    results.commands = [];
-
-    for(let result of commands) {
-        let raw = result.textContent,
-            uuid = UUID.from(raw).value,
-            [head, body] = raw.split(/[^\w\s\-,]+/).filter(r => r.length).map(r => r.trim());
-
-        if([head, body].filter(nullish).length)
-            continue;
-
-        let [type] = head.toLowerCase().split(/\s/).filter(r => !/^(an?d?|but|for|n?or|th(?:e|is)|yet)$/i.test(r)).map(r => r.replace(/^(\w{3})([^aeiouy s]+)?(?:.*)$/, '$1$2s')),
-            value = body.split(/[^\w\s]/).filter(r => r.length).map(r => r.trim());
-
-        results.commands.push({
-            raw,
-            uuid,
-            type,
-            head,
-            body,
-            value,
-        });
-    }
-
-    results.emotes = emotes;
-
-    return results;
+function Chat(user = '', message = '') {
+    if(!user.length && !message.length)
+        return Chat.get();
 }
 
-// Listener for new chat messages
-Object.defineProperties(GetChat, {
+Object.defineProperties(Chat, {
+    object: { get() { return $('[data-test-selector$="message-container"i]').closest('section') } },
+
+    gang: { value: [] },
+    mods: { value: [] },
+    vips: { value: [] },
+
+    get: {
+        // Create an array of the current chat
+            // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style, author, emotes, message, mentions, element<Element>?, uuid, reply<Element>?, highlighted<boolean>? }>]
+        value:
+        function get(mostRecent = 250, keepEmotes = true) {
+            let results = [];
+
+            for(let [uuid, object] of Chat.__allmessages__) {
+                let { message, emotes } = object;
+
+                if(!keepEmotes)
+                    message = message.replaceAll(Object.keys(emotes).shift(), '');
+
+                results.push({ ...object, message });
+            }
+
+            return results.slice(-mostRecent);
+        }
+    },
+
+    send: {
+        // Sends a message via the current chat
+            // Chat.send(message:string?) → undefined
+        value:
+        function send(message = '') {
+            if(typeof message != 'string')
+                return;
+
+            when(() => TTV_IRC.socket.readyState === WebSocket.OPEN)
+                .then(ready => {
+                    TTV_IRC.socket.send(`PRIVMSG #${ STREAMER.name.toLowerCase() } :${ message }`);
+                });
+        }
+    },
+
+    reply: {
+        // Replies to a message via the current chat
+            // Chat.send(to:string<::IRC-Msg-Id>, message:string?) → undefined
+        value:
+        function reply(to = '', message = '') {
+            if(typeof to != 'string' || to.empty() || typeof message != 'string')
+                return;
+
+            when(() => TTV_IRC.socket.readyState === WebSocket.OPEN)
+                .then(ready => {
+                    TTV_IRC.socket.send(`@reply-parent-msg-id=${ to } PRIVMSG #${ STREAMER.name.toLowerCase() } :${ message }`);
+                });
+        }
+    },
+
+    // Listener for new chat messages
     defer: {
         value: {
-            set onnewmessage(callback) {
+            set onmessage(callback) {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
-                if(GetChat.__deferredEvents__.__onnewmessage__.has(name))
-                    return GetChat.__deferredEvents__.__onnewmessage__.get(name);
+                if(Chat.__deferredEvents__.__onmessage__.has(name))
+                    return Chat.__deferredEvents__.__onmessage__.get(name);
 
                 // REMARK('Adding deferred [on new message] event listener', { [name]: callback });
 
-                GetChat.__deferredEvents__.__onnewmessage__.set(name, callback);
+                Chat.__deferredEvents__.__onmessage__.set(name, callback);
 
                 return callback;
             },
 
-            get onnewmessage() {
-                return GetChat.__deferredEvents__.__onnewmessage__.size;
+            get onmessage() {
+                return Chat.__deferredEvents__.__onmessage__.size;
             },
 
             set onwhisper(callback) {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
-                if(GetChat.__deferredEvents__.__onwhisper__.has(name))
-                    return GetChat.__onwhisper__.get(name);
+                if(Chat.__deferredEvents__.__onwhisper__.has(name))
+                    return Chat.__onwhisper__.get(name);
 
                 // REMARK('Adding deferred [on new whisper] event listener', { [name]: callback });
 
-                return GetChat.__deferredEvents__.__onwhisper__.set(name, callback);
+                return Chat.__deferredEvents__.__onwhisper__.set(name, callback);
             },
 
             get onwhisper() {
-                return GetChat.__deferredEvents__.__onwhisper__.size;
+                return Chat.__deferredEvents__.__onwhisper__.size;
+            },
+
+            set onbullet(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__deferredEvents__.__onbullet__.has(name))
+                    return Chat.__onbullet__.get(name);
+
+                // REMARK('Adding deferred [on new newbullet] event listener', { [name]: callback });
+
+                return Chat.__deferredEvents__.__onbullet__.set(name, callback);
+            },
+
+            get onbullet() {
+                return Chat.__deferredEvents__.__onbullet__.size;
+            },
+
+            set oncommand(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__deferredEvents__.__oncommand__.has(name))
+                    return Chat.__oncommand__.get(name);
+
+                // REMARK('Adding deferred [on new command] event listener', { [name]: callback });
+
+                return Chat.__deferredEvents__.__oncommand__.set(name, callback);
+            },
+
+            get oncommand() {
+                return Chat.__deferredEvents__.__oncommand__.size;
             },
         },
     },
-    __deferredEvents__: { value: { __onnewmessage__: new Map(), __onwhisper__: new Map() } },
+    __deferredEvents__: { value: { __onmessage__: new Map, __onwhisper__: new Map, __onbullet__: new Map, __oncommand__: new Map } },
 
-    onnewmessage: {
+    onmessage: {
         set(callback) {
             let name = callback.name || UUID.from(callback.toString()).value;
 
-            if(GetChat.__onnewmessage__.has(name))
-                return GetChat.__onnewmessage__.get(name);
+            if(Chat.__onmessage__.has(name))
+                return Chat.__onmessage__.get(name);
 
             // REMARK('Adding [on new message] event listener', { [name]: callback });
 
-            GetChat.__onnewmessage__.set(name, callback);
+            Chat.__onmessage__.set(name, callback);
 
             return callback;
         },
 
         get() {
-            return GetChat.__onnewmessage__.size;
+            return Chat.__onmessage__.size;
         },
     },
-    __onnewmessage__: { value: new Map() },
+    __onmessage__: { value: new Map },
 
     onwhisper: {
         set(callback) {
             let name = callback.name || UUID.from(callback.toString()).value;
 
-            if(GetChat.__onwhisper__.has(name))
-                return GetChat.__onwhisper__.get(name);
+            if(Chat.__onwhisper__.has(name))
+                return Chat.__onwhisper__.get(name);
 
             // REMARK('Adding [on new whisper] event listener', { [name]: callback });
 
-            return GetChat.__onwhisper__.set(name, callback);
+            return Chat.__onwhisper__.set(name, callback);
         },
 
         get() {
-            return GetChat.__onwhisper__.size;
+            return Chat.__onwhisper__.size;
         },
     },
-    __onwhisper__: { value: new Map() },
+    __onwhisper__: { value: new Map },
 
+    onbullet: {
+        set(callback) {
+            let name = callback.name || UUID.from(callback.toString()).value;
+
+            if(Chat.__onbullet__.has(name))
+                return Chat.__onbullet__.get(name);
+
+            // REMARK('Adding [on new bullet] event listener', { [name]: callback });
+
+            return Chat.__onbullet__.set(name, callback);
+        },
+
+        get() {
+            return Chat.__onbullet__.size;
+        },
+    },
+    __onbullet__: { value: new Map },
+
+    oncommand: {
+        set(callback) {
+            let name = callback.name || UUID.from(callback.toString()).value;
+
+            if(Chat.__oncommand__.has(name))
+                return Chat.__oncommand__.get(name);
+
+            // REMARK('Adding [on new command] event listener', { [name]: callback });
+
+            return Chat.__oncommand__.set(name, callback);
+        },
+
+        get() {
+            return Chat.__oncommand__.size;
+        },
+    },
+    __oncommand__: { value: new Map },
+
+    // Everything gathered...
+    __allmessages__: { value: new Map },
+    __allbullets__: { value: new Set },
+    __allemotes__: { value: new Map },
+
+    messages: {
+        get() { return Chat.__allmessages__ },
+        set(value) { return Chat.__allmessages__ },
+    },
+
+    bullets: {
+        get() { return Chat.__allbullets__ },
+        set(value) { return Chat.__allbullets__ },
+    },
+
+    emotes: {
+        get() { return Chat.__allemotes__ },
+        set(value) { return Chat.__allemotes__ },
+    },
+
+    // Chat restrictions
     restrictions: {
         set(value) {},
 
         get() {
-            return ($('[class*="chat-restriction"i]')?.parentElement?.nextElementSibling?.textContent || '');
+            return TTV_IRC.restrictions.get(`#${ STREAMER.name.toLowerCase() }`) || ($('[class*="chat-restriction"i]')?.parentElement?.nextElementSibling?.textContent || '');
         },
     },
 });
@@ -3034,7 +3071,72 @@ try {
 
                 return listener;
             }
-        }
+        },
+
+        MiniPlayer: {
+            get() {
+                return $('#tt-pip-player');
+            },
+
+            set(name) {
+                let f = furnish;
+                let src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=360p&private=true`;
+
+                let pbyp = $('.picture-by-picture-player video'),
+                    pip = $('#tt-pip-player');
+
+                $('#tt-exit-pip')?.remove();
+                $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed');
+
+                if(nullish(pbyp))
+                    $('.stream-chat').insertAdjacentElement('beforebegin',
+                        f('.picture-by-picture-player--background[data-test-selector=picture-by-picture-player-background]', {},
+                            f('.picture-by-picture-player.picture-by-picture-player--collapsed[data-test-selector=picture-by-picture-player-container]', {},
+                                f('.tw-aspect', {},
+                                    f.div(),
+                                    f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
+                                        pbyp = f('video[webkit-playsinline][playsinline]', {
+                                            oncontextmenu: () => false,
+                                        })
+                                    )
+                                )
+                            )
+                        )
+                    );
+
+                if(defined(pip))
+                    pip.src = src;
+                else
+                    pip = f('iframe#tt-pip-player', {
+                        src,
+
+                        style: 'height:-webkit-fill-available;width:-webkit-fill-available',
+                    });
+
+                pip.remove();
+                pbyp.insertAdjacentElement('afterend', pip);
+
+                pip.dataset.name = name;
+
+                $('.stream-chat-header').insertAdjacentElement('afterbegin',
+                    f('button#tt-exit-pip', {
+                        style: 'position:absolute;left:0;margin-left:1rem;',
+
+                        onmousedown(event) {
+                            $('#tt-exit-pip').modStyle('transition:opacity .5s; opacity:0;');
+                            $('.picture-by-picture-player')?.classList?.add('picture-by-picture-player--collapsed');
+
+                            wait(500).then(() => {
+                                $('#tt-exit-pip')?.remove();
+                                $('.picture-by-picture-player iframe[src*="player.twitch.tv"i]')?.remove();
+                            });
+                        },
+
+                        innerHTML: Glyphs.modify('exit_picture_in_picture', { height: 15, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' }),
+                    })
+                );
+            },
+        },
     });
 
     // Automatic garbage collection...
@@ -3078,10 +3180,21 @@ try {
                 { oldValue, newValue } = change;
 
             let name = key
+                // Title conversion legend
                 .replace(/\$\$/g, ' | ')
-                .replace(/\$/g, '/')
+                .replace(/\$(\D)/g, '/$1')
                 .replace(/__/g, ' - ')
                 .replace(/_/g, ' ')
+                .replace(/\$1/g, '!')
+                .replace(/\$2/g, '@')
+                .replace(/\$3/g, '#')
+                .replace(/\$5/g, '%')
+                .replace(/\$6/g, '^')
+                .replace(/\$7/g, '&')
+                .replace(/\$8/g, '*')
+                .replace(/\$9/g, '(')
+                .replace(/\$0/g, ')')
+                .replace(/\$4/g, '$')
                 .trim();
 
             if(newValue === false) {
@@ -3167,7 +3280,11 @@ try {
 
         switch(request?.action) {
             case 'report-back': {
-                respond({ ok: true });
+                respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
+            } break;
+
+            case 'close': {
+                respond({ ok: window.close() || true });
             } break;
         }
     });
@@ -3240,7 +3357,7 @@ try {
                             let [type, id] = [R.$1, R.$2].map(s => s.toLowerCase());
                             let store = Points[type] ??= {};
 
-                            if(type == 'automatic') {
+                            if(type.equals('automatic')) {
                                 let [channel, name] = id.split(':', 2);
 
                                 if(STREAMER?.sole == parseInt(channel))
@@ -3350,11 +3467,11 @@ try {
                     && payable
                     && (false
                         || (["all", "greed"].contains(method))
-                        || (method == "unfollowed" && STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)))
+                        || (method.equals("unfollowed") && STREAMERS.contains(({ name }) => RegExp(`^${ to }$`, 'i').test(name)))
                     )
                 )
                     confirm
-                        .timed(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 15_000)
+                        .timed(`<a href='./${ from }'><strong>${ from }</strong></a> is raiding <strong>${ to }</strong>. There is a chance to collect bonus channel points...`, 10_000)
                         .then(action => {
                             // The event timed out...
                             action ??= true;
@@ -3562,7 +3679,7 @@ try {
                                     throw `Unable to save clip. No recording data available.`;
 
                                 let name = new ClipName;
-                                let blob = new Blob(chunks, { type: chunks.type });
+                                let blob = new Blob(chunks, { type: chunks[0].type });
                                 let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(video.mimeType) }` }, name);
 
                                 video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
@@ -3658,54 +3775,8 @@ async function update() {
 
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
-        .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
-        .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
-
-    // The theme
-    THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
-    ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
-
-    let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
-        .map(Color.HEXtoColor)
-        // Primary → Closest to theme; Secondary → Furthest from theme
-        .sort((C1, C2) => {
-            let background = (THEME == 'dark'? Color.black: Color.white);
-
-            return Color.contrast(background, [C1.R, C1.G, C1.B]) - Color.contrast(background, [C2.R, C2.G, C2.B]);
-        })
-        .map(color => color.RGB);
-
-    THEME__CHANNEL_DARK = (THEME == 'dark'? PRIMARY: SECONDARY);
-    THEME__CHANNEL_LIGHT = (THEME != 'dark'? PRIMARY: SECONDARY);
-
-    PRIMARY = Color.HEXtoColor(PRIMARY);
-    SECONDARY = Color.HEXtoColor(SECONDARY);
-
-    if(window.THEME != THEME) {
-        RemoveCustomCSSBlock('theme-updater');
-
-        AddCustomCSSBlock('theme-updater',
-            `:root {
-                --channel-color: ${ STREAMER.tint } !important;
-                --channel-color-complement: ${ STREAMER.tone } !important;
-                --channel-color-dark: ${ THEME__CHANNEL_DARK } !important;
-                --channel-color-light: ${ THEME__CHANNEL_LIGHT } !important;
-            }`
-        );
-
-        window.THEME = THEME;
-    }
-
-    let contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B])),
-
-        black = { R: 0, G: 0, B: 0 },
-        white = { R: 255, G: 255, B: 255 },
-
-        theme = (THEME == 'dark'? black: white),
-        antitheme = (THEME != 'dark'? black: white);
-
-    THEME__BASE_CONTRAST = contrastOf(PRIMARY, SECONDARY);
-    THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(PRIMARY, antitheme)? THEME: ANTITHEME) }`;
+        .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
+        .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
 
     // All Channels under Search
     window.SEARCH = SEARCH = [
@@ -3713,12 +3784,13 @@ async function update() {
         // Current (followed) streamers
         ...$(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
+                let icon = $('img', false, element)?.src;
                 let channel = {
                     element,
 
                     from: 'SEARCH',
                     href: element.href,
-                    icon: $('img', false, element)?.src,
+                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                     get live() {
                         let { href } = element,
                             url = parseURL(href),
@@ -3757,10 +3829,11 @@ async function update() {
         // Current (followed) streamers
         ...$(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
+                let icon = $('img', false, element)?.src;
                 let streamer = {
                     from: 'CHANNELS',
                     href: element.href,
-                    icon: $('img', false, element)?.src,
+                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                     get live() {
                         let { href } = element,
                             url = parseURL(href),
@@ -3798,10 +3871,11 @@ async function update() {
         // Current (followed) streamers
         ...$(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
             .map(element => {
+                let icon = $('img', false, element)?.src;
                 let streamer = {
                     from: 'STREAMERS',
                     href: element.href,
-                    icon: $('img', false, element)?.src,
+                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                     get live() {
                         let { href } = element,
                             url = parseURL(href),
@@ -3839,10 +3913,11 @@ async function update() {
         // Notification elements
         ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true).map(
             element => {
+                let icon = $('img', false, element)?.src;
                 let streamer = {
                     live: true,
                     href: $('a', false, element)?.href,
-                    icon: $('img', false, element)?.src,
+                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                     name: $('[class$="text"i]', false, element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
                 };
 
@@ -3871,10 +3946,10 @@ let // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'greedy_raiding', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next*', 'view_mode'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next+', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
-    NORMALIZED_FEATURES = ['away_mode*~schedule', 'auto_follow*', 'first_in_line*', 'prevent_#', 'kill*'].map(AsteriskFn),
+    NORMALIZED_FEATURES = ['away_mode*~schedule', 'auto_follow+', 'first_in_line*', 'prevent_#', 'kill+'].map(AsteriskFn),
 
     // Features that need to be refreshed when changed
     REFRESHABLE_FEATURES = ['auto_focus*', 'bttv_emotes*', 'filter_messages', 'highlight_phrases', 'native_twitch_reply', '*placement'].map(AsteriskFn);
@@ -3978,8 +4053,8 @@ let Initialize = async(START_OVER = false) => {
 
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
-        .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
-        .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
+        .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
+        .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
 
     if(SPECIAL_MODE) {
         let { $1, $2 } = RegExp,
@@ -4172,12 +4247,13 @@ let Initialize = async(START_OVER = false) => {
         // Current (followed) streamers
         ...$(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"i])`, true)
             .map(element => {
+                let icon = $('img', false, element)?.src;
                 let channel = {
                     element,
 
                     from: 'SEARCH',
                     href: element.href,
-                    icon: $('img', false, element)?.src,
+                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                     get live() {
                         let { href } = element,
                             url = parseURL(href),
@@ -4255,7 +4331,7 @@ let Initialize = async(START_OVER = false) => {
      */
     STREAMER = window.STREAMER = {
         get chat() {
-            return GetChat()
+            return Chat.get()
         },
 
         get coin() {
@@ -4453,7 +4529,10 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get icon() {
-            return $(`[class*="channel"i] *:is(a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]) img`)?.src
+            let url = $(`[class*="channel"i] *:is(a[href$="${ NORMALIZED_PATHNAME }"i], [data-a-channel]) img`)?.src;
+
+            if(typeof url == 'string')
+                return Object.assign(new String(url), parseURL(url));
         },
 
         get jump() {
@@ -4504,31 +4583,65 @@ let Initialize = async(START_OVER = false) => {
             return $.defined('[data-a-target="subscribed-button"i]')
         },
 
+        mods: [],
+        vips: [],
+
         get perm() {
             /** User Levels → StreamElements | NightBot
-             * Everyone         →   100 | everyone
-             * Subscriber       →   250 | subscriber
-             * Regular          →   300 | regular
-             * VIP              →   400 | twitch_vip
-             * Moderator        →   500 | moderator
+             * Everyone         →   100  | everyone
+             * Subscriber       →   250  | subscriber
+             * Regular          →   300  | regular
+             * VIP              →   400  | twitch_vip
+             * Moderator        →   500  | moderator
              * Super Moderator  →   1000 | admin
              * Broadcaster      →   1500 | owner
              */
-            return (
+            let level = 0;
+            let string = new String(
                 (STREAMER.name == USERNAME)?
-                    'owner':
-                (IS_TWITCH_ADMIN)?
-                    'admin':
-                (IS_CHANNEL_MODERATOR = PostOffice.get('IS_CHANNEL_MODERATOR'))?
-                    'moderator':
-                (IS_CHANNEL_VIP = PostOffice.get('IS_CHANNEL_VIP'))?
-                    'vip':
+                    (level = 1500, 'owner'):
+                (parseBool(Search.cookies?.twilight_user?.roles?.isStaff))?
+                    (level = 1000, 'admin'):
+                (Chat.mods.contains(USERNAME.toLowerCase()))?
+                    (level = 500, 'moderator'):
+                (Chat.vips.contains(USERNAME.toLowerCase()))?
+                    (level = 400, 'vip'):
                 (STREAMER.paid)?
-                    'subscriber':
+                    (level = 300, 'subscriber'):
                 (STREAMER.ping)?
-                    'regular':
-                'everyone'
-            )
+                    (level = 250, 'regular'):
+                (level = 100, 'everyone')
+            );
+
+            Object.defineProperties(string, {
+                find: {
+                    value(value) {
+                        let levels = {
+                            owner: 1500,
+                            broadcaster: 1500,
+                            administrator: 1000,
+                            moderator: 500,
+                            vip: 400,
+                            subscriber: 300,
+                            regular: 250,
+                            follower: 250,
+                            everyone: 100,
+                            anyone: 100,
+                        };
+
+                        for(let level in levels)
+                            if(level.startsWith(value?.toLowerCase?.()))
+                                return levels[level];
+
+                        return value;
+                    }
+                },
+                level: { value: level },
+                not: { value(level) { return this.level < this.find(level) } },
+                is: { value(level) { return this.level >= this.find(level) } },
+            });
+
+            return string;
         },
 
         get ping() {
@@ -4557,7 +4670,7 @@ let Initialize = async(START_OVER = false) => {
                 pointsPerInterval = 80, // The user normally gets 80 points per 15mins
                 maximum = (intervals * pointsPerInterval).round();
 
-            return (followers - (followers * (STREAMER.coin / maximum))).clamp(1, followers).round()
+            return (followers - (followers * (STREAMER.coin / maximum))).clamp(0, followers).round()
         },
 
         get redo() {
@@ -4656,7 +4769,7 @@ let Initialize = async(START_OVER = false) => {
 
         get tone() {
             let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint),
-                [min, max] = [[0,30],[70,100]][+(THEME == 'light')];
+                [min, max] = [[0,30],[70,100]][+(THEME.equals('light'))];
 
             return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).RGB.toUpperCase()
         },
@@ -4746,6 +4859,9 @@ let Initialize = async(START_OVER = false) => {
 
     // Handlers: on-raid | on-host
     STREAMER.onraid = STREAMER.onhost = async({ hosting = false, raiding = false, raided = false }) => {
+        if(!hosting && !raiding && !raided)
+            return;
+
         let next = await GetNextStreamer();
 
         LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
@@ -4762,14 +4878,16 @@ let Initialize = async(START_OVER = false) => {
     // Notifications
     NOTIFICATIONS = [
         ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true)
-            .map(element =>
-                ({
+            .map(element =>{
+                let icon = $('img', false, element)?.src;
+
+                return {
                     live: true,
                     href: $('a', false, element)?.href,
-                    icon: $('img', false, element)?.src,
+                    icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                     name: $('[class$="text"i]', false, element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
-                })
-            ),
+                };
+            }),
     ].filter(uniqueChannels);
 
     // Expand the left-hand panel until the last live channel is visible
@@ -4803,10 +4921,11 @@ let Initialize = async(START_OVER = false) => {
             // Current (followed) streamers
             ...$(`[id*="side"i][id*="nav"i] .side-nav-section a`, true)
                 .map(element => {
+                    let icon = $('img', false, element)?.src;
                     let streamer = {
                         from: 'ALL_CHANNELS',
                         href: element.href,
-                        icon: $('img', false, element)?.src,
+                        icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                         get live() {
                             let { href } = element,
                                 url = parseURL(href),
@@ -4859,10 +4978,11 @@ let Initialize = async(START_OVER = false) => {
             // Current (followed) streamers
             ...$(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
+                    let icon = $('img', false, element)?.src;
                     let streamer = {
                         from: 'CHANNELS',
                         href: element.href,
-                        icon: $('img', false, element)?.src,
+                        icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                         get live() {
                             let { href } = element,
                                 url = parseURL(href),
@@ -4903,10 +5023,11 @@ let Initialize = async(START_OVER = false) => {
             // Current streamers
             ...$(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
                 .map(element => {
+                    let icon = $('img', false, element)?.src;
                     let streamer = {
                         from: 'STREAMERS',
                         href: element.href,
-                        icon: $('img', false, element)?.src,
+                        icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
                         get live() {
                             let { href } = element,
                                 url = parseURL(href),
@@ -4988,7 +5109,7 @@ let Initialize = async(START_OVER = false) => {
                     // Get the cookie values
                     let { cookies } = Search;
 
-                    USERNAME = window.USERNAME = cookies.name ?? USERNAME;
+                    USERNAME = window.USERNAME = cookies.login ?? USERNAME;
 
                     // Get the channel/vod information
                     let channelName,
@@ -5004,7 +5125,7 @@ let Initialize = async(START_OVER = false) => {
                     // Fetch an API request
                     let type = (defined(videoID)? 'vod': 'channel'),
                         value = (defined(videoID)? videoID: channelName),
-                        token = cookies['auth-token'];
+                        token = cookies.auth_token;
 
                     if(nullish(STREAMER.name))
                         break __FineDetails__;
@@ -5442,13 +5563,10 @@ let Initialize = async(START_OVER = false) => {
             };
         });
 
-    // TODO: Add an "un-delete" feature for chat...
-    // Keep a copy of all messages
-    // REMARK("Keeping a log of all original messages");
-    // Messages.set(STREAMER.name, new Set);
-
-    update();
     setInterval(update, 2_5_0);
+
+    let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true,      // Allow this tab to use Up Next
+        LIVE_REMINDERS__LISTING_INTERVAL;   // List the live time of Live Reminders
 
     /*** Automation
      *                    _                        _   _
@@ -5512,88 +5630,93 @@ let Initialize = async(START_OVER = false) => {
     function scoreTagActivity(...tags) {
         let score = 0;
 
-        tags = tags.map(tag => tag.split(/\//).pop().toUpperCase());
+        // Last directory in pathname
+        try {
+            tags = tags.map(tag => tag.split(/\//).pop().toUpperCase().replace(/(%\d{2})/g, ($0, $1) => decodeURIComponent($1)));
+        } catch(error) {
+            return;
+        }
 
         scoring:
         for(let tag of tags)
             switch(tag) {
-                case '4D1EAA36-F750-4862-B7E9-D0A13970D535': // Action
-                case '80427D95-BB46-42D3-BF4D-408E9BDCA49A': // Adventure
-                case 'A69F7FFB-DDDA-4C05-8D7D-F0B24975A2C3': // FPS
-                case '9386024F-DB7E-4E4F-B8DF-A73E354C5BC2': // Pinball
-                case '5D289CF9-D75A-42B5-A635-0D117609E6A6': // Platformer
-                case 'E607B115-8FA1-49C1-ACDF-F6927BE4CA1B': // Shoot
-                case '523FE736-FA95-44C7-B22F-13008CA2172C': // Shooter
-                case '0D4233AF-7AC6-49DA-937D-E0F42B7DB187': // Sports
-                case '7199189A-0569-4854-908E-08E6C3667379': // Wrestling
+                case 'ACTION':      case '4D1EAA36-F750-4862-B7E9-D0A13970D535': // Action
+                case 'ADVENTURE':   case '80427D95-BB46-42D3-BF4D-408E9BDCA49A': // Adventure
+                case 'FPS':         case 'A69F7FFB-DDDA-4C05-8D7D-F0B24975A2C3': // FPS
+                case 'PINBALL':     case '9386024F-DB7E-4E4F-B8DF-A73E354C5BC2': // Pinball
+                case 'PLATFORMER':  case '5D289CF9-D75A-42B5-A635-0D117609E6A6': // Platformer
+                case 'SHOOT':       case 'E607B115-8FA1-49C1-ACDF-F6927BE4CA1B': // Shoot
+                case 'SHOOTER':     case '523FE736-FA95-44C7-B22F-13008CA2172C': // Shooter
+                case 'SPORTS':      case '0D4233AF-7AC6-49DA-937D-E0F42B7DB187': // Sports
+                case 'WRESTLING':   case '7199189A-0569-4854-908E-08E6C3667379': // Wrestling
                 {
                     score += 20;
                 } continue scoring;
 
-                case '7304B834-D065-47D5-9865-C19CD17D2639': // 4X
-                case 'E62CB1D5-A47D-4690-A373-FE4C0856F78B': // BMX
-                case '2FFD5C3E-B927-4749-BA53-79D3B626B2DA': // Cosplay
-                case '011F7C20-F533-4AD1-8093-8C6F8F75BC4C': // Drag
-                case 'F5ED5BD0-78CB-4467-8E13-9172A210B64D': // Driving
-                case 'D27DA25E-1EE2-4207-BB11-DD8D54FA29EC': // E3
-                case '36A89A80-4FCD-4B74-B3D2-2C6FD9B30C95': // Esports
-                case '246D6E4B-B9C6-442B-9573-77028839F194': // Fashion
-                case '9751EE1D-0E5A-4FD3-8E9F-BC3C5D3230F0': // Fighting
-                case '068C541B-DC07-4D7F-A689-5578F90905A9': // Game
-                case '2610CFF9-10AE-4CB3-8500-778E6722FBB5': // IRL
-                case '643FE658-C4FC-45F0-9AED-CBE54A7C1D10': // MMO
-                case '12510423-D1F6-4992-8AEA-1441A43D1DF4': // MOBA
-                case 'B1E92364-CBDA-4033-92FC-E01094C1753F': // Party
-                case '8486F56B-8677-44F7-8004-000295391524': // PvP
-                case '0C99BF18-5A92-4257-8974-D7A60088D1E8': // Point
-                case 'C8BB9D08-8202-42F8-B028-C59AC1AAFE76': // Rhythm
-                case 'CAD488FB-C95C-4BE1-B197-5B851D3A12FA': // Roguelike
-                case 'CA470745-C1DF-4C11-9474-9AB79DFC1863': // VR
-                case '52D7E4CC-633D-46F5-818C-BB59102D9549': // Vtuber
+                case '4X':          case '7304B834-D065-47D5-9865-C19CD17D2639': // 4X
+                case 'BMX':         case 'E62CB1D5-A47D-4690-A373-FE4C0856F78B': // BMX
+                case 'COSPLAY':     case '2FFD5C3E-B927-4749-BA53-79D3B626B2DA': // Cosplay
+                case 'DRAG':        case '011F7C20-F533-4AD1-8093-8C6F8F75BC4C': // Drag
+                case 'DRIVING':     case 'F5ED5BD0-78CB-4467-8E13-9172A210B64D': // Driving
+                case 'E3':          case 'D27DA25E-1EE2-4207-BB11-DD8D54FA29EC': // E3
+                case 'ESPORTS':     case '36A89A80-4FCD-4B74-B3D2-2C6FD9B30C95': // Esports
+                case 'FASHION':     case '246D6E4B-B9C6-442B-9573-77028839F194': // Fashion
+                case 'FIGHTING':    case '9751EE1D-0E5A-4FD3-8E9F-BC3C5D3230F0': // Fighting
+                case 'GAME':        case '068C541B-DC07-4D7F-A689-5578F90905A9': // Game
+                case 'IRL':         case '2610CFF9-10AE-4CB3-8500-778E6722FBB5': // IRL
+                case 'MMO':         case '643FE658-C4FC-45F0-9AED-CBE54A7C1D10': // MMO
+                case 'MOBA':        case '12510423-D1F6-4992-8AEA-1441A43D1DF4': // MOBA
+                case 'PARTY':       case 'B1E92364-CBDA-4033-92FC-E01094C1753F': // Party
+                case 'PVP':         case '8486F56B-8677-44F7-8004-000295391524': // PvP
+                case 'POINT':       case '0C99BF18-5A92-4257-8974-D7A60088D1E8': // Point
+                case 'RHYTHM':      case 'C8BB9D08-8202-42F8-B028-C59AC1AAFE76': // Rhythm
+                case 'ROGUELIKE':   case 'CAD488FB-C95C-4BE1-B197-5B851D3A12FA': // Roguelike
+                case 'VR':          case 'CA470745-C1DF-4C11-9474-9AB79DFC1863': // VR
+                case 'VTUBER':      case '52D7E4CC-633D-46F5-818C-BB59102D9549': // Vtuber
                 {
                     score += 15;
                 } continue scoring;
 
-                case 'E659959D-392F-44C5-83A5-FB959CDBACCC': // 100%
-                case 'A31DAEB5-EDC2-4B29-AFA1-84C96612836D': // 12
-                case '27937CEC-5CFC-4F56-B1D3-F6E1D67735E2': // Achievement
-                case '6606E54C-F92D-40F6-8257-74977889CCDD': // Anime
-                case '7FF66192-68EF-4B69-8906-24736BF66ED0': // Arcade
-                case '72340836-353F-49BF-B9BE-1AAC4F658AFE': // Athletics
-                case 'CD2EE226-342B-4E6B-90D5-C14687006B04': // Autobattler
-                case '1400CA9C-84EA-414E-A85B-076A70D38ECF': // Automotive
-                case '31866A92-269D-4DF3-A2FB-58081BF97378': // Baking
-                case 'F1E3759C-35B3-4858-A50F-8F9CAFC2660F': // Brickbuilding
-                case 'E36D0169-268A-4C62-A4F4-DDF61A0B3AE4': // Creative
-                case '3FFBEC21-97A2-43F9-BD73-4506A1B4D62C': // Farming
-                case '10D820BB-A0A9-40DF-B0D3-FE32B45419EE': // Flight
-                case '6A0C6EA2-84EB-42B1-A8BB-59FD684BFE1A': // Game Show
-                case 'CF0F97AD-EFB8-4494-83EC-6A11CA30261B': // Horror
-                case '6E23D976-33EC-47E8-B22B-3727ACD41862': // Mobile
-                case '6540ED8D-3282-44DF-A592-887B37881846': // Mystery
-                case '9D38085E-EE62-4203-877B-81797052A18B': // RPG
-                case '3E30C47A-26C0-4DD3-9C3A-9CD6AD35589C': // RTS
-                case 'AE7D0652-8B2E-476B-8B51-A076550B234F': // Survival
+                case '100%':            case 'E659959D-392F-44C5-83A5-FB959CDBACCC': // 100%
+                case '12':              case 'A31DAEB5-EDC2-4B29-AFA1-84C96612836D': // 12
+                case 'ACHIEVEMENT':     case '27937CEC-5CFC-4F56-B1D3-F6E1D67735E2': // Achievement
+                case 'ANIME':           case '6606E54C-F92D-40F6-8257-74977889CCDD': // Anime
+                case 'ARCADE':          case '7FF66192-68EF-4B69-8906-24736BF66ED0': // Arcade
+                case 'ATHLETICS':       case '72340836-353F-49BF-B9BE-1AAC4F658AFE': // Athletics
+                case 'AUTOBATTLER':     case 'CD2EE226-342B-4E6B-90D5-C14687006B04': // Autobattler
+                case 'AUTOMOTIVE':      case '1400CA9C-84EA-414E-A85B-076A70D38ECF': // Automotive
+                case 'BAKING':          case '31866A92-269D-4DF3-A2FB-58081BF97378': // Baking
+                case 'BRICKBUILDING':   case 'F1E3759C-35B3-4858-A50F-8F9CAFC2660F': // Brickbuilding
+                case 'CREATIVE':        case 'E36D0169-268A-4C62-A4F4-DDF61A0B3AE4': // Creative
+                case 'FARMING':         case '3FFBEC21-97A2-43F9-BD73-4506A1B4D62C': // Farming
+                case 'FLIGHT':          case '10D820BB-A0A9-40DF-B0D3-FE32B45419EE': // Flight
+                case 'GAME SHOW':       case '6A0C6EA2-84EB-42B1-A8BB-59FD684BFE1A': // Game Show
+                case 'HORROR':          case 'CF0F97AD-EFB8-4494-83EC-6A11CA30261B': // Horror
+                case 'MOBILE':          case '6E23D976-33EC-47E8-B22B-3727ACD41862': // Mobile
+                case 'MYSTERY':         case '6540ED8D-3282-44DF-A592-887B37881846': // Mystery
+                case 'RPG':             case '9D38085E-EE62-4203-877B-81797052A18B': // RPG
+                case 'RTS':             case '3E30C47A-26C0-4DD3-9C3A-9CD6AD35589C': // RTS
+                case 'SURVIVAL':        case 'AE7D0652-8B2E-476B-8B51-A076550B234F': // Survival
                 {
                     score += 10;
                 } continue scoring;
 
-                case '3DC8F084-D886-4264-B20F-8BD5F90562B5': // Animals
-                case 'E3A6B378-232B-4EC2-9A82-86B72851E09A': // Animation
-                case 'DF448DA8-7082-45B2-92AD-C624DBA6551F': // Art
-                case '8D39B307-D3AD-4F4A-98A4-D1951F55CEB7': // Card
-                case 'D81D54C8-D705-4DF6-AAF0-01D715C1DBCC': // DJ
-                case 'AA971BDC-A28D-4A33-A686-F112C764E73B': // Drones
-                case 'CB00CFE5-AE4E-4E4F-A8F1-8FA6DDEC6361': // Fantasy
-                case '71265475-E0B0-411E-A0CF-B93C33848B2B': // Gambling
-                case 'C2839AF5-F1D2-46C4-8EDC-1D0BFBD85070': // Hype
-                case 'D72D9DE6-1DF8-4C4E-B6A2-74E6F4C80557': // Indie
-                case '537F5D21-9CA0-4632-84F3-9A29A761D66D': // Metroidvania
-                case 'A682F560-5186-4871-B97A-8D8E3F4308E9': // Open
-                case '7616F6EA-7E3D-4501-A87C-C160D2BC1849': // Puzzle
-                case '22E434B6-CA88-46E8-91EF-C18EE1CB8A67': // Simulation
-                case '0472BAB0-E068-49B3-9BB8-789FDFE3C66A': // Stealth
-                case 'CD9ED640-426D-4A08-B8E0-417A61197264': // Unboxing
+                case 'ANIMALS':         case '3DC8F084-D886-4264-B20F-8BD5F90562B5': // Animals
+                case 'ANIMATION':       case 'E3A6B378-232B-4EC2-9A82-86B72851E09A': // Animation
+                case 'ART':             case 'DF448DA8-7082-45B2-92AD-C624DBA6551F': // Art
+                case 'CARD':            case '8D39B307-D3AD-4F4A-98A4-D1951F55CEB7': // Card
+                case 'DJ':              case 'D81D54C8-D705-4DF6-AAF0-01D715C1DBCC': // DJ
+                case 'DRONES':          case 'AA971BDC-A28D-4A33-A686-F112C764E73B': // Drones
+                case 'FANTASY':         case 'CB00CFE5-AE4E-4E4F-A8F1-8FA6DDEC6361': // Fantasy
+                case 'GAMBLING':        case '71265475-E0B0-411E-A0CF-B93C33848B2B': // Gambling
+                case 'HYPE':            case 'C2839AF5-F1D2-46C4-8EDC-1D0BFBD85070': // Hype
+                case 'INDIE':           case 'D72D9DE6-1DF8-4C4E-B6A2-74E6F4C80557': // Indie
+                case 'METROIDVANIA':    case '537F5D21-9CA0-4632-84F3-9A29A761D66D': // Metroidvania
+                case 'OPEN':            case 'A682F560-5186-4871-B97A-8D8E3F4308E9': // Open
+                case 'PUZZLE':          case '7616F6EA-7E3D-4501-A87C-C160D2BC1849': // Puzzle
+                case 'SIMULATION':      case '22E434B6-CA88-46E8-91EF-C18EE1CB8A67': // Simulation
+                case 'STEALTH':         case '0472BAB0-E068-49B3-9BB8-789FDFE3C66A': // Stealth
+                case 'UNBOXING':        case 'CD9ED640-426D-4A08-B8E0-417A61197264': // Unboxing
                 {
                     score += 5;
                 } continue scoring;
@@ -5627,7 +5750,7 @@ let Initialize = async(START_OVER = false) => {
             let frame = video.captureFrame(`image/${ imageType }`),
                 start = +new Date;
 
-            setTimeout(() => {
+            wait(2_5_0).then(() => {
                 resemble(frame)
                     .compareTo(video.captureFrame(`image/${ imageType }`))
                     .ignoreColors()
@@ -5684,7 +5807,7 @@ let Initialize = async(START_OVER = false) => {
                             let size = diffImg.src.length,
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
-                            diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0] == 'd') }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
+                            diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0].equals('d')) }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
                             diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { from: 'left' });
                         } else {
                             diffImg?.remove();
@@ -5696,7 +5819,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Lurking, pause Up Next
-                            if((nullish(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend === 'down').length < (30 / pollInterval) / 2) {
+                            if((nullish(POSITIVE_TREND) || POSITIVE_TREND === false) && bias.slice(-(30 / pollInterval)).filter(trend => trend.equals('down')).length < (30 / pollInterval) / 2) {
                                 POSITIVE_TREND = true;
 
                                 // Pause Up Next
@@ -5729,7 +5852,7 @@ let Initialize = async(START_OVER = false) => {
                                 LOG('Positive trend detected: ' + changes.join(', '));
                             }
                             // Negative activity trend; enable Lurking, resume Up Next
-                            else if((nullish(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend === 'up').length < (60 / pollInterval) / 5) {
+                            else if((nullish(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend.equals('up')).length < (60 / pollInterval) / 5) {
                                 POSITIVE_TREND = false;
 
                                 // Resume Up Next
@@ -5778,13 +5901,13 @@ let Initialize = async(START_OVER = false) => {
                             RestartJob('auto_focus', 'modify');
                         }
                     })
-            }, 2_5_0);
+            });
         }, POLL_INTERVAL);
     };
     Timers.auto_focus = -1000;
 
     Unhandlers.auto_focus = () => {
-        if(RestartJob.__reason__ !== 'modify')
+        if(RestartJob.__reason__.unlike('modify'))
             $('#tt-auto-focus-differences, #tt-auto-focus-stats', true)
                 .forEach(element => element.remove());
 
@@ -5967,7 +6090,7 @@ let Initialize = async(START_OVER = false) => {
 
         // if(init === true) →
         // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled') === "true")] } !important;`);
+        button.background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled').equals("true"))] } !important;`);
         // button.icon.setAttribute('height', '20px');
         // button.icon.setAttribute('width', '20px');
 
@@ -6165,7 +6288,7 @@ let Initialize = async(START_OVER = false) => {
             $('[class*="prime-offer"i][class*="dismiss"i] button', true).map(button => button.click());
 
             // Give the loots time to be clicked
-            setTimeout(() => button.click(), 100 * stop);
+            wait(100 * stop, button).then(button => button.click());
         }, 2_5_0);
     };
     Timers.claim_loot = -5000;
@@ -6336,7 +6459,8 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('claim_reward');
 
         DISPLAY_BUY_LATER_BUTTON = setInterval(() => {
-            let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), [state][disabled] [data-test-selector="RequiredPoints"i]:empty')?.closest?.('button'),
+            let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), [state][disabled] [data-test-selector="RequiredPoints"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
+                    ?.closest?.('button, [class*="error"i]'),
                 handler = $('#tt-auto-claim-reward-handler');
 
             // Rainbow border, Cooldown timer, and Unlock all button
@@ -6355,6 +6479,9 @@ let Initialize = async(START_OVER = false) => {
                                 face = (STREAMER.face? furnish.img({ src: STREAMER.face }).outerHTML: Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint })),
                                 coin = (STREAMER?.coin) | 0,
                                 amount = (coin / cost).floor().clamp(0, available);
+
+                            if(amount < 1)
+                                return;
 
                             emoteCheckout.firstElementChild.lastElementChild.insertAdjacentElement('beforebegin', furnish(`button#tt-unlock-all-emotes.tt-button.purple[@available=${ available }]`, {
                                 style: `margin:0.5rem 0`,
@@ -6438,11 +6565,11 @@ let Initialize = async(START_OVER = false) => {
             LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
                 AutoClaimRewards ??= {};
 
-                let [head, body] = container.closest('.reward-center__content').children,
+                let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
                     $title = ($('#channel-points-reward-center-header', false, head)?.textContent || '').trim(),
                     $prompt = ($('.reward-center-body p', false, body)?.textContent || '').trim(),
                     $image = $('.reward-icon img', false, body)?.src,
-                    [$cost] = $('[state]', false, body)?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0);
+                    [$cost = 0] = (($('[state]', false, body) ?? $('[class*="reward"i][class*="header"i]', false, head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
                 let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
                     (false
@@ -6464,8 +6591,8 @@ let Initialize = async(START_OVER = false) => {
                     'Buy when available'
                 );
 
-                $('[id$="header"i]', false, head)?.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
-                $('[id$="header"i]', false, head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
+                $('[id$="header"i], [class*="header"i]', false, head)?.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
+                $('[id$="header"i], [class*="header"i]', false, head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
 
                 container.insertAdjacentElement('afterend',
                     f(`#tt-auto-claim-reward-handler[data-tt-reward-id=${ rewardID }]`, {},
@@ -6553,9 +6680,6 @@ let Initialize = async(START_OVER = false) => {
         FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
         FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
 
-    let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true,     // Allow this tab to use Up Next
-        LIVE_REMINDERS__LISTING_INTERVAL;                               // List the live time of Live Reminders
-
     let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
     // First in Line wait time
@@ -6579,7 +6703,10 @@ let Initialize = async(START_OVER = false) => {
 
         let { href, pathname } = url,
             name = pathname.slice(1),
-            channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults));
+            channel = await(null
+                ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                ?? new Search(name).then(Search.convertResults)
+            );
 
         if(nullish(channel))
             return ERROR(`Unable to create job for "${ href }"`);
@@ -6616,7 +6743,7 @@ let Initialize = async(START_OVER = false) => {
             let { name } = GetNextStreamer.cachedStreamer;
 
             confirm
-                .timed(`<div hiden controller okay="Go now" deny="Skip ${ name }"></div>Coming up next: <a href="${ FIRST_IN_LINE_HREF }">${ name }</a>`, timeRemaining)
+                .timed(`<div hiden controller title="${ (Settings.stream_preview? `Up next: ${ name }`: 'Coming up next...') }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview? '': `Up next: <a href="${ FIRST_IN_LINE_HREF }">${ name }</a>`) }`, timeRemaining)
                 .then(action => {
                     if(nullish(action))
                         return /* The event timed out... */;
@@ -6632,6 +6759,7 @@ let Initialize = async(START_OVER = false) => {
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
+                    // FIX-ME: Pressing "Skip" may destroy the queue (logically)
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
                             // The user clicked "OK"
@@ -6650,6 +6778,12 @@ let Initialize = async(START_OVER = false) => {
                             balloonChild?.remove();
                         }
                     });
+                });
+
+            when.defined(() => $('.tt-confirm-container'))
+                .then(container => {
+                    $.body.append(furnish('style', {}, `.tt-confirm-header { background:#0008 } .tt-confirm-body, .tt-confirm-footer { background:#0000; text-shadow:0 0 1rem #000 }`));
+                    container.append(furnish(`iframe[src=https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=160p]`, { style: 'position:absolute;top:4px;z-index:-9;padding:0;max-width:calc(100% - 4px);max-height:calc(100% - 4px);border-radius:inherit' }));
                 });
         }, 1000);
 
@@ -6680,8 +6814,8 @@ let Initialize = async(START_OVER = false) => {
                         let restored = ({
                             from: 'SEARCH',
                             href,
-                            icon: streamer.icon,
-                            live: streamer.live,
+                            icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                            live: parseBool(streamer.live),
                             name: streamer.name,
                         });
 
@@ -6755,7 +6889,7 @@ let Initialize = async(START_OVER = false) => {
         let timeRemaining = parseInt(job.getAttribute('time'));
 
         if(timeRemaining <= 60_000 && nullish('.tt-confirm'))
-            setTimeout(() => {
+            wait(60_000).then(() => {
                 WARN(`Mitigation for Up Next: Loose interval @ ${ window.location } / ${ new Date }`)
                     ?.toNativeStack?.();
 
@@ -6783,7 +6917,7 @@ let Initialize = async(START_OVER = false) => {
                     });
 
                 top.open(href, '_self');
-            }, 60_000);
+            });
 
         clearInterval(FIRST_IN_LINE_SAFETY_CATCH);
     }, 1000);
@@ -6864,7 +6998,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: 'pause',
                 onclick: event => {
                     let { currentTarget } = event,
-                        paused = currentTarget.getAttribute('paused') == 'true';
+                        paused = parseBool(currentTarget.getAttribute('paused')?.equals('true'));
 
                     paused = !paused;
 
@@ -6889,7 +7023,12 @@ let Initialize = async(START_OVER = false) => {
                         parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
                     LoadCache(['LiveReminders', 'ChannelPoints'], async({ LiveReminders = null, ChannelPoints = {} }) => {
-                        LiveReminders = JSON.parse(LiveReminders || '{}');
+                        try {
+                            LiveReminders = JSON.parse(LiveReminders || '{}');
+                        } catch(error) {
+                            // Probably an object already...
+                            LiveReminders ??= {};
+                        }
 
                         let oldHash = UUID.from(JSON.stringify(LiveReminders)).value;
 
@@ -6909,7 +7048,7 @@ let Initialize = async(START_OVER = false) => {
                             head.innerHTML = 'Live Reminders';
                         }
 
-                        body = f('#tt-reminder-listing');
+                        body = f(`#tt-reminder-listing`);
 
                         parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
@@ -6929,21 +7068,64 @@ let Initialize = async(START_OVER = false) => {
                             return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID).value }</p>`, 7000);
 
                         listing:
-                        for(let index = 0, length = reminders.length; index < length; ++index) {
+                        for(let index = 0; index < reminders.length; ++index) {
+                            if($.nullish(`#tt-reminder-listing`))
+                                break listing;
+
+                            let { length } = reminders;
                             let { name, time } = reminders[index];
                             let channel = await(null
-                                ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
+                                ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
                                 ?? new Search(name).then(Search.convertResults)
                             ),
-                                ok = /\/jtv_user/i.test(channel.icon);
+                                ok = channel.icon?.pathname?.startsWith('/jtv_user');
 
                             // Search did not complete...
-                            let max = 5;
-                            while(!ok && --max > 0) {
+                            let num = 3;
+                            while(!ok && --num > 0 && $.defined(`#tt-reminder-listing`)) {
                                 Search.void(name);
 
                                 channel = await when.defined(() => new Search(name).then(Search.convertResults), 500);
-                                ok = /\/jtv_user/i.test(channel.icon);
+                                ok = channel.icon?.pathname?.startsWith('/jtv_user');
+
+                                // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
+                            }
+
+                            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
+                                sole = face?.split('/')?.map(parseFloat)?.shift();
+
+                            // Correct for changed usernames
+                            if(!ok) {
+                                let definitiveID = await new Search(name, 'sniffer', 'getID');
+
+                                if(nullish(definitiveID)) {
+                                    let real = await new Search(sole, 'sniffer', 'getName');
+
+                                    WARN(`Updating details about (#${ sole }) "${ name }" → "${ real }"`);
+
+                                    // Correct the cache...
+                                    LoadCache(`data/${ name }`, cache => {
+                                        SaveCache({ [`data/${ real }`]: cache[`data/${ name }`] });
+                                        RemoveCache(`data/${ name }`);
+                                    });
+
+                                    // Correc the channel points...
+                                    ChannelPoints[real] = ChannelPoints[name];
+                                    delete ChannelPoints[name];
+
+                                    SaveCache({ ChannelPoints });
+
+                                    // Correct the live reminders...
+                                    LiveReminders[real] = LiveReminders[name];
+                                    delete LiveReminders[name];
+
+                                    SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+
+                                    // Continue with the new name...
+                                    reminders.push({ name: real, time });
+
+                                    continue listing;
+                                }
                             }
 
                             // Legacy reminders... | v4.26 → v4.27
@@ -6961,8 +7143,7 @@ let Initialize = async(START_OVER = false) => {
 
                             let _name = name.toLowerCase();
                             let { href, icon, desc = (STREAMER.jump?.[_name]?.title ?? '') } = channel;
-                            let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
-                                coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
+                            let coinStyle = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                                 coinText =
                                     furnish('span.tt-live-reminder-point-amount[bottom-only]', {
                                         'rainbow-border': notEarned == 0,
@@ -7024,7 +7205,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
                                                                     f('span.tt-c-text-alt', {},
                                                                         f('p.tt-balloon-message', {
-                                                                            innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ [name, game].filter(s => s.length).join(' &bull; ') }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
+                                                                            innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ [name, game].filter(s => s.length).join(' &mdash; ') }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
                                                                         })
                                                                     )
                                                                 ),
@@ -7039,7 +7220,7 @@ let Initialize = async(START_OVER = false) => {
                                                             )
                                                         )
                                                     ),
-                                                    f('.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0; right:0` },
+                                                    f('.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0.0rem; right:0` },
                                                         f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
                                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                 {
@@ -7050,13 +7231,18 @@ let Initialize = async(START_OVER = false) => {
                                                                             name = currentTarget.getAttribute('name');
 
                                                                         LoadCache('LiveReminders', async({ LiveReminders }) => {
-                                                                            LiveReminders = JSON.parse(LiveReminders || '{}');
+                                                                            try {
+                                                                                LiveReminders = JSON.parse(LiveReminders || '{}');
+                                                                            } catch(error) {
+                                                                                // Probably an object already...
+                                                                                LiveReminders ??= {};
+                                                                            }
 
                                                                             let justInCase = { ...LiveReminders[name] };
 
                                                                             $(`.tt-reminder[name="${ name }"i]`)?.remove();
                                                                             delete LiveReminders[name];
-                                                                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                                                            SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
                                                                             await confirm
                                                                                 .timed(`Reminder removed successfully!<p tt-x>${ UUID.from(name).value }</p>`, 5000)
@@ -7066,7 +7252,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                         return;
 
                                                                                     // The user pressed "Cancel"
-                                                                                    SaveCache({ LiveReminders: JSON.stringify({ ...LiveReminders, [name]: justInCase }) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                                                                    SaveCache({ LiveReminders: { ...LiveReminders, [name]: justInCase } }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                                                                                 });
                                                                         });
                                                                     },
@@ -7076,6 +7262,30 @@ let Initialize = async(START_OVER = false) => {
                                                                         {
                                                                             style: 'height:1.6rem; width:1.6rem',
                                                                             innerHTML: Glyphs.ignore,
+                                                                        },
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    ),
+                                                    f('.persistent-notification__popout.tt-absolute.tt-pd-l-1', { style: `top:2.5rem; right:0` },
+                                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__popout]',
+                                                                {
+                                                                    name,
+
+                                                                    onclick: event => {
+                                                                        let { currentTarget } = event,
+                                                                            name = currentTarget.getAttribute('name');
+
+                                                                        MiniPlayer = name;
+                                                                    },
+                                                                },
+                                                                f('span.tt-button-icon__icon', {},
+                                                                    f('div',
+                                                                        {
+                                                                            style: 'height:1.6rem; width:1.6rem',
+                                                                            innerHTML: Glyphs.picture_in_picture,
                                                                         },
                                                                     )
                                                                 )
@@ -7118,7 +7328,7 @@ let Initialize = async(START_OVER = false) => {
                             .then(() => $('[up-next--body] > *').modStyle('border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, #0000, #0000) 1;'));
 
                         if(oldHash != UUID.from(JSON.stringify(LiveReminders)).value)
-                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                            SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                     });
                 },
             });
@@ -7152,7 +7362,7 @@ let Initialize = async(START_OVER = false) => {
                     UP_NEXT_ALLOW_THIS_TAB?
                         `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`:
                     `Up Next is disabled for this tab`
-                ).replace(/\bcolored\b/g, () => Color.getName(THEME == 'dark'? THEME__CHANNEL_DARK: THEME__CHANNEL_LIGHT));
+                ).replace(/\bcolored\b/g, () => Color.getName(THEME.equals('dark')? THEME__CHANNEL_DARK: THEME__CHANNEL_LIGHT));
             }, 1000);
 
             // Load cache
@@ -7261,8 +7471,8 @@ let Initialize = async(START_OVER = false) => {
                                     let found = ({
                                         from: 'SEARCH',
                                         href,
-                                        icon: search.icon,
-                                        live: search.live,
+                                        icon: (typeof search.icon == 'string'? Object.assign(new String(search.icon), parseURL(search.icon)): null),
+                                        live: parseBool(search.live),
                                         name: search.name,
                                     });
 
@@ -7291,8 +7501,8 @@ let Initialize = async(START_OVER = false) => {
                                         let restored = ({
                                             from: 'SEARCH',
                                             href,
-                                            icon: streamer.icon,
-                                            live: streamer.live,
+                                            icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                                            live: parseBool(streamer.live),
                                             name: streamer.name,
                                         });
 
@@ -7347,6 +7557,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
                     ALL_FIRST_IN_LINE_JOBS.splice(--newIndex, 0, moved);
+                    ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(defined);
 
                     // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
                     // LOG('Moved', { oldIndex, newIndex, moved });
@@ -7378,14 +7589,17 @@ let Initialize = async(START_OVER = false) => {
             if(Settings.first_in_line_none)
                 FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
             else
-                FIRST_IN_LINE_LISTING_JOB = setInterval(async() => {
+                FIRST_IN_LINE_LISTING_JOB ??= setInterval(async() => {
                     // Set the opacity...
                     // FIRST_IN_LINE_BALLOON.container.setAttribute('style', `opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.75) }!important`);
 
                     for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             name = parseURL(href).pathname.slice(1),
-                            channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults));
+                            channel = await(null
+                                ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                                ?? new Search(name).then(Search.convertResults)
+                            );
 
                         if(nullish(href) || nullish(channel))
                             continue;
@@ -7452,7 +7666,10 @@ let Initialize = async(START_OVER = false) => {
                                     }
 
                                     let name = container.getAttribute('name'),
-                                        channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults)),
+                                        channel = await(null
+                                            ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => name.equals(channel.name))
+                                            ?? new Search(name).then(Search.convertResults)
+                                        ),
                                         { live } = channel;
                                         name = channel.name;
 
@@ -7479,7 +7696,7 @@ let Initialize = async(START_OVER = false) => {
                                     }
 
                                     if(time < 1000)
-                                        setTimeout(() => {
+                                        wait(5000, container, intervalID).then((container, intervalID) => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
@@ -7491,7 +7708,7 @@ let Initialize = async(START_OVER = false) => {
                                             });
 
                                             return clearInterval(intervalID);
-                                        }, 5000);
+                                        });
 
                                     container.setAttribute('time', time - (index > 0? 0: 1000));
 
@@ -7540,7 +7757,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.first_in_line = async(ActionableNotification) => {
         START__STOP_WATCH('first_in_line');
 
-        let notifications = [...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true), ActionableNotification].filter(defined);
+        let notifications = [...$('[data-test-selector*="notification"i] [data-test-selector*="notification"i]', true), ActionableNotification].filter(defined);
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
@@ -7612,7 +7829,10 @@ let Initialize = async(START_OVER = false) => {
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     name = parseURL(href).pathname.slice(1),
-                    channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults));
+                    channel = await(null
+                        ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                        ?? new Search(name).then(Search.convertResults)
+                    );
 
                 if(nullish(channel))
                     continue;
@@ -7630,7 +7850,7 @@ let Initialize = async(START_OVER = false) => {
                     onremove: event => {
                         let index = ALL_FIRST_IN_LINE_JOBS.findIndex(href => event.href == href),
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                            name = parseURL(removed).pathname.slice(1);
+                            name = parseURL(removed).pathname?.slice(1);
 
                         LOG('Removed from Up Next:', removed, 'Was it canceled?', event.canceled);
 
@@ -7685,7 +7905,10 @@ let Initialize = async(START_OVER = false) => {
                             SaveCache({ FIRST_IN_LINE_BOOST });
 
                             let name = container.getAttribute('name'),
-                                channel = await(ALL_CHANNELS.find(channel => name.equals(channel.name)) ?? new Search(name).then(Search.convertResults)),
+                                channel = await(null
+                                    ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => name.equals(channel.name))
+                                    ?? new Search(name).then(Search.convertResults)
+                                ),
                                 { live } = channel;
                                 name = channel.name;
 
@@ -7712,7 +7935,7 @@ let Initialize = async(START_OVER = false) => {
                             }
 
                             if(time < 1000)
-                                setTimeout(() => {
+                                wait(5000, container, intervalID).then((container, intervalID) => {
                                     LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
@@ -7724,7 +7947,7 @@ let Initialize = async(START_OVER = false) => {
                                     });
 
                                     return clearInterval(intervalID);
-                                }, 5000);
+                                });
 
                             container.setAttribute('time', time - (index > 0? 0: 1000));
 
@@ -7778,7 +8001,7 @@ let Initialize = async(START_OVER = false) => {
         if(defined(FIRST_IN_LINE_JOB))
             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        if(UnregisterJob.__reason__ == 'default')
+        if(UnregisterJob.__reason__.equals('default'))
             return;
 
         if(defined(FIRST_IN_LINE_HREF))
@@ -7856,6 +8079,7 @@ let Initialize = async(START_OVER = false) => {
                         // Gets the channel in question, if applicable
                         .find(channel => parseURL(channel.href).pathname === parseURL(href).pathname)
                     // Attempts to find the channel via a search
+
                     ?? new Search(parseURL(href).pathname.slice(1)).then(Search.convertResults)
                 );
 
@@ -7875,8 +8099,8 @@ let Initialize = async(START_OVER = false) => {
                         let restored = ({
                             from: 'SEARCH',
                             href,
-                            icon: streamer.icon,
-                            live: streamer.live,
+                            icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                            live: parseBool(streamer.live),
                             name: streamer.name,
                         });
 
@@ -8067,7 +8291,12 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('live_reminders');
 
         LoadCache('LiveReminders', async({ LiveReminders }) => {
-            LiveReminders = JSON.parse(LiveReminders || '{}');
+            try {
+                LiveReminders = JSON.parse(LiveReminders || '{}');
+            } catch(error) {
+                // Probably an object already...
+                LiveReminders ??= {};
+            }
 
             let f = furnish,
                 s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
@@ -8093,7 +8322,12 @@ let Initialize = async(START_OVER = false) => {
                             return /* Not the primary button */;
 
                         LoadCache('LiveReminders', async({ LiveReminders }) => {
-                            LiveReminders = JSON.parse(LiveReminders || '{}');
+                            try {
+                                LiveReminders = JSON.parse(LiveReminders || '{}');
+                            } catch(error) {
+                                // Probably an object already...
+                                LiveReminders ??= {};
+                            }
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                 reminderName = STREAMER.name,
@@ -8126,7 +8360,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                            SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
                 }, f.div(
@@ -8161,21 +8395,28 @@ let Initialize = async(START_OVER = false) => {
             START__STOP_WATCH('live_reminders__reminder_checking_interval');
 
             LoadCache('LiveReminders', async({ LiveReminders }) => {
-                LiveReminders = JSON.parse(LiveReminders || '{}');
+                try {
+                    LiveReminders = JSON.parse(LiveReminders || '{}');
+                } catch(error) {
+                    // Probably an object already...
+                    LiveReminders ??= {};
+                }
 
                 checking:
                 // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
                     let channel = await new Search(reminderName).then(Search.convertResults),
-                        ok = /\/jtv_user/i.test(channel.icon);
+                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
 
                     // Search did not complete...
-                    let max = 5;
-                    while(!ok && --max > 0) {
+                    let num = 3;
+                    while(!ok && --num > 0) {
                         Search.void(reminderName);
 
                         channel = await when.defined(() => new Search(reminderName).then(Search.convertResults), 500);
-                        ok = /\/jtv_user/i.test(channel.icon);
+                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
+
+                        // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Reminders]: "${ reminderName }" → OK = ${ ok }`);
                     }
 
                     if(!channel.live)
@@ -8195,7 +8436,7 @@ let Initialize = async(START_OVER = false) => {
                             delete LiveReminders[reminderName];
                         }
 
-                        SaveCache({ LiveReminders: JSON.stringify(LiveReminders) }, async() => {
+                        SaveCache({ LiveReminders }, async() => {
                             // TODO: Currently, only one option looks for Live Reminder notifications...
                             Handle_phantom_notification: {
                                 let notification = { href, textContent: `${ name } is live [Live Reminders]` },
@@ -8279,7 +8520,7 @@ let Initialize = async(START_OVER = false) => {
                     throw TypeError(`No DOM available. Page not loaded`);
 
                 let f = furnish;
-                let get = property => DOM.querySelector(`[name$="${ property }"i], [property$="${ property }"i], [name$="og:${ property }"i], [property$="og:${ property }"i]`)?.getAttribute('content');
+                let get = property => DOM.get(property);
 
                 let [title, description, image] = ["title", "description", "image"].map(get),
                     error = DOM.querySelector('parsererror')?.textContent;
@@ -8287,7 +8528,7 @@ let Initialize = async(START_OVER = false) => {
                 let ok = /\/ttv-boxart\//i.test(image);
 
                 if(!ok)
-                    throw `No metadata avilable for "${ STREAMER.game }"`;
+                    throw `No metadata available for "${ STREAMER.game }"`;
 
                 LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
 
@@ -8401,7 +8642,7 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters;
 
         let { like, follow } = STREAMER,
-            raid = data.referrer === 'raid';
+            raid = data.referrer.equals('raid');
 
         if(!like && raid)
             follow();
@@ -8492,7 +8733,7 @@ let Initialize = async(START_OVER = false) => {
             string = string.replace(regexp, ($0, $1, $$, $_) => {
                 let path = $1.replace(/^[\(\[\{]|[\}\]\)]$/g, '').split(/[\s\.]+/).filter(string => !!string.length);
 
-                let gameText = $('[data-a-target="stream-game-link"i]').textContent;
+                let gameText = $('[data-a-target*="stream"i][data-a-target*="game"i][data-a-target*="link"i]').textContent;
                 let properties = ({
                     // StreamElements
                     user: {
@@ -8506,7 +8747,7 @@ let Initialize = async(START_OVER = false) => {
                         time_online_rank: [STREAMER.rank, STREAMER.cult].join('/'),
                         time_offline_rank: [STREAMER.rank, STREAMER.cult].join('/'),
 
-                        lastmessage: GetChat().filter(({ author }) => USERNAME.contains(author)),
+                        lastmessage: Chat.get().filter(({ author }) => USERNAME.equals(author)).pop(),
                         lastseen: toTimeString(0, '!minute_m !second_s'),
                         lastactive: toTimeString(0, '!minute_m !second_s'),
 
@@ -8603,7 +8844,11 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.parse_commands = async() => {
-        let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *', true).map($0 => $0.getElementByText(/([!][\w\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/)).isolate().filter(defined);
+        let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *', true)
+            .map($0 => $0.getElementByText(/([!][\w\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/))
+            .isolate()
+            .filter(defined)
+            .filter(e => nullish(e.closest('a[href]')));
 
         for(let element of elements) {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
@@ -8705,7 +8950,7 @@ let Initialize = async(START_OVER = false) => {
             owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
         });
 
-        $('[data-a-target="chat-input"i]').addEventListener('keyup', delay(async event => {
+        $('[data-a-target="chat-input"i]')?.addEventListener('keyup', delay(async event => {
             let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
                 value = (target?.value ?? target?.textContent ?? target?.innerText),
                 [tray, chat] = target.closest('div:not([class])').firstElementChild.children,
@@ -8713,7 +8958,7 @@ let Initialize = async(START_OVER = false) => {
 
             if(['Tab', 'Space', 'Enter', 'Escape'].contains(code) || value?.contains(' ') || !value?.startsWith('!')) {
                 let command = $('.tt-chat-input-suggestion')?.getAttribute('command');
-                if(code == 'Tab' && defined(command)) {
+                if(code.equals('Tab') && defined(command)) {
                     let match = value.match(/!(\S+|$)/),
                         { index } = match,
                         [text, word] = match;
@@ -8778,7 +9023,7 @@ let Initialize = async(START_OVER = false) => {
                         f('.tcito2', {},
                             f('.tcito3', {},
                                 f('div', { style: `max-height:3rem!important` },
-                                    f('div', { style: `padding: 00.5rem!important` },
+                                    f('div', { style: `padding: 0.05rem!important` },
                                         f('span', { style: `color:var(--color-text-alt-2)!important` }, `No commands found.`)
                                     )
                                 )
@@ -9007,8 +9252,8 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
 
-            for(let job of STREAMER.__eventlisteners__.onhost)
-                job({ hosting });
+            for(let callback of STREAMER.__eventlisteners__.onhost)
+                callback({ hosting });
 
             if(defined(next)) {
                 LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
@@ -9026,7 +9271,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.prevent_hosting = 5000;
 
     __PreventHosting__:
-    if(Settings.prevent_hosting != "none") {
+    if(Settings.prevent_hosting.unlike("none")) {
         RegisterJob('prevent_hosting');
     }
 
@@ -9053,7 +9298,7 @@ let Initialize = async(START_OVER = false) => {
 
         let url = parseURL(window.location),
             data = url.searchParameters,
-            raided = data.referrer === 'raid',
+            raided = parseBool(data.referrer?.equals('raid')),
             raiding = $.defined('[data-test-selector="raid-banner"i]'),
             next = await GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.textContent),
@@ -9070,7 +9315,7 @@ let Initialize = async(START_OVER = false) => {
             if(["greed", "unfollowed"].contains(method)) {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
-                if(raiding && method == "greed") {
+                if(raiding && method.equals("greed")) {
                     LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid' }, true).href);
 
                     CONTINUE_RAIDING = true;
@@ -9093,11 +9338,10 @@ let Initialize = async(START_OVER = false) => {
                 }
             }
 
-            let leaveStream = () => {
+            STREAMER.onraid = async({ raiding, raided }) => {
                 CONTINUE_RAIDING = false;
 
-                for(let job of STREAMER.__eventlisteners__.onraid)
-                    job({ raided, raiding, next });
+                let next = await GetNextStreamer();
 
                 stopper:
                 if(defined(next)) {
@@ -9116,15 +9360,18 @@ let Initialize = async(START_OVER = false) => {
             };
 
             // Leave the raided channel after 2mins to ensure points were collected
-            CONTINUE_RAIDING = !setTimeout(leaveStream, 120_000 * +["greed"].missing(method));
+            CONTINUE_RAIDING = ["greed"].contains(method);
+
+            for(let callback of STREAMER.__eventlisteners__.onraid)
+                callback({ raiding, raided });
         }
 
         JUDGE__STOP_WATCH('prevent_raiding');
     };
-    Timers.prevent_raiding = 15_000;
+    Timers.prevent_raiding = 10_000;
 
     __PreventRaiding__:
-    if(Settings.prevent_raiding != "none") {
+    if(Settings.prevent_raiding.unlike("none")) {
         RegisterJob('prevent_raiding');
     }
 
@@ -9649,7 +9896,7 @@ let Initialize = async(START_OVER = false) => {
                 comment.replaceWith(span);
             });
 
-        setTimeout(() => {
+        wait(2_5_0).then(() => {
             $('[id^="tt-time-zone-"][tip-text--timezone]', true)
                 .map(span => {
                     let oldText = span.getAttribute('tip-text--timezone');
@@ -9658,7 +9905,7 @@ let Initialize = async(START_OVER = false) => {
 
                     // span.removeAttribute('tip-text--timezone');
                 });
-        }, 2_5_0);
+        });
 
         TIME_ZONE__TEXT_MATCHES = TIME_ZONE__TEXT_MATCHES.isolate();
     };
@@ -9888,10 +10135,9 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('mention_audio');
 
         // Play sound on new message
-        NOTIFICATION_EVENTS.onmention ??= GetChat.onnewmessage = lines => {
-            for(let { mentions } of lines)
-                if(mentions.contains(USERNAME) && !NOTIFICATION_SOUND?.playing)
-                    NOTIFICATION_SOUND?.play();
+        NOTIFICATION_EVENTS.onmention ??= Chat.onmessage = ({ mentions }) => {
+            if(mentions.contains(USERNAME) && !NOTIFICATION_SOUND?.playing)
+                NOTIFICATION_SOUND?.play();
         };
 
         JUDGE__STOP_WATCH('mention_audio');
@@ -9921,10 +10167,11 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('phrase_audio');
 
         // Play sound on new message
-        NOTIFICATION_EVENTS.onphrase ??= GetChat.onnewmessage = lines => {
-            for(let { element } of lines)
-                if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
-                    NOTIFICATION_SOUND?.play();
+        NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = async line => {
+            let element = await line.element;
+
+            if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
+                NOTIFICATION_SOUND?.play();
         };
 
         JUDGE__STOP_WATCH('phrase_audio');
@@ -9954,13 +10201,13 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('whisper_audio');
 
         // Play sound on new message
-        NOTIFICATION_EVENTS.onwhisper ??= GetChat.onwhisper = ({ unread, highlighted, message }) => {
-            LOG('Got a new whisper', { unread, highlighted, message });
+        NOTIFICATION_EVENTS.onwhisper ??= Chat.onwhisper = ({ unread, from, message }) => {
+            LOG('Got a new whisper', { unread, from, message });
 
-            if(!unread && !highlighted && !message)
+            if(!unread && !from && !message)
                 return;
 
-            LOG('Playing notification sound...', NOTIFICATION_SOUND, { unread, highlighted, message });
+            LOG('Playing notification sound...', NOTIFICATION_SOUND, { unread, from, message });
 
             NOTIFICATION_SOUND?.play();
         };
@@ -10061,7 +10308,7 @@ let Initialize = async(START_OVER = false) => {
         DisplayRanking: {
             let placement;
 
-            if((placement = Settings.points_receipt_placement ??= "null") == "null") {
+            if((placement = Settings.points_receipt_placement ??= "null").equals("null")) {
                 JUDGE__STOP_WATCH('points_receipt_placement__ranking');
                 break DisplayRanking;
             }
@@ -10082,8 +10329,8 @@ let Initialize = async(START_OVER = false) => {
                     );
 
                 rank = (
-                    place < 1?
-                        '?':
+                    rank < 1?
+                        'Unknown':
                     place < 4?
                         `<span style="text-decoration:${ 4 - place }px underline ${ color }">${ string }</span>`:
                     string
@@ -10098,13 +10345,16 @@ let Initialize = async(START_OVER = false) => {
                 else
                     ranking.innerHTML = Glyphs.modify('trophy', { height: '16px', width: '16px', fill: color }) + rank;
 
-                if(rank == '?')
-                    return ranking?.remove() || JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+                RANK_TOOLTIP ??= new Tooltip(ranking, rank, { from: 'top' });
 
-                RANK_TOOLTIP ??= new Tooltip(ranking, "", { from: 'top' });
-                let placementString = `You are in the top ${ place || '?' }%`;
+                let placementString;
 
-                if(RANK_TOOLTIP.innerHTML != placementString)
+                if(rank.equals('unknown'))
+                    placementString = `Unable to get your rank for this channel`;
+                else
+                    placementString = `You are in the top ${ place }%`;
+
+                if(RANK_TOOLTIP.innerHTML.unlike(placementString))
                     RANK_TOOLTIP.innerHTML = placementString;
             }, 5000);
         }
@@ -10117,7 +10367,7 @@ let Initialize = async(START_OVER = false) => {
         DisplayReceipt: {
             let placement;
 
-            if((placement = Settings.points_receipt_placement ??= "null") == "null")
+            if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
                 return JUDGE__STOP_WATCH('points_receipt_placement');
 
             let live_time = $('.live-time');
@@ -10183,7 +10433,7 @@ let Initialize = async(START_OVER = false) => {
                     let time = OBSERVED_COLLECTION_ANIMATIONS.get(animationID);
 
                     // It's been less than 5 minutes
-                    if(nullish(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
+                    if(nullish(animationID) || !parseBool(animationID) || Math.abs(animationTimeStamp - time) < 300_000)
                         return;
 
                     // Continue executing...
@@ -10243,7 +10493,7 @@ let Initialize = async(START_OVER = false) => {
         $('#tt-points-receipt, #tt-channel-point-ranking', true)
             .forEach(span => span?.parentElement?.remove());
 
-        if(UnregisterJob.__reason__ == 'modify')
+        if(UnregisterJob.__reason__.equals('modify'))
             return;
 
         INITIAL_POINTS = null;
@@ -10322,10 +10572,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(richTooltip))
             return JUDGE__STOP_WATCH('point_watcher_placement', 30_000);
 
-        // Remove the old face and values...
-        // $('.tt-point-amount, .tt-point-face', true).map(element => element?.remove());
-
-        let [title, subtitle, ...footers] = $('[class*="channel-tooltip"i] > *', true, richTooltip),
+        let [title, subtitle, ...footers] = richTooltip.children,
             footer = footers[footers.length - 1],
             target = footer?.lastElementChild;
 
@@ -10346,6 +10593,9 @@ let Initialize = async(START_OVER = false) => {
         name = name?.trim();
         game = game?.trim();
 
+        // Remove the old face and values...
+        $(`:is(.tt-point-amount, .tt-point-face):not([name="${ name }"i])`, true).map(element => element?.remove());
+
         // Update the rich tooltip display
         LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
@@ -10359,20 +10609,25 @@ let Initialize = async(START_OVER = false) => {
                 0
             );
 
-            let amounter = $('.tt-point-amount', false, target);
+            let amounter = $(`.tt-point-amount[name="${ name }"i]`, false, target);
             if(defined(amounter)) {
                 amounter.setAttribute('rainbow-border', notEarned == 0);
-                amounter.innerHTML = amount;
+
+                if(amounter.innerHTML.unlike(amount))
+                    amounter.innerHTML = amount;
             } else {
-                let text = furnish('span.tt-point-amount[bottom-only]', {
+                let pointAmount = `span.tt-point-amount[bottom-only][name=${ name }]`,
+                    pointFace = `span.tt-point-face[name=${ name }]`;
+
+                let text = furnish(pointAmount, {
                         'rainbow-border': notEarned == 0,
                         innerHTML: amount,
                     }),
                     icon = face?.length?
-                        furnish('span.tt-point-face', {
+                        furnish(pointFace, {
                             innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
                         }):
-                    furnish('span.tt-point-face', {
+                    furnish(pointFace, {
                         innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
                     });
 
@@ -10537,7 +10792,7 @@ let Initialize = async(START_OVER = false) => {
                             // Do something if the stream's live preview poster doesn't load...
                         },
                     }),
-                    furnish(`iframe.tt-stream-preview--iframe[@index=0][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
+                    furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
                         allow: 'autoplay',
                         src: parseURL(`https://player.twitch.tv/`).addSearch(
                             isOnline?
@@ -10561,7 +10816,7 @@ let Initialize = async(START_OVER = false) => {
 
                         onload: event => {
                             $('.tt-stream-preview--poster')?.classList?.add('invisible');
-                            $('[class*="channel-tooltip"i]', true).at($('.tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME == 'light'? 6: 0) })`);
+                            $('[class*="channel-tooltip"i]', true).at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
 
                             if(!parseBool(Settings.stream_preview_sound))
                                 return;
@@ -10575,21 +10830,7 @@ let Initialize = async(START_OVER = false) => {
                                     ?? element?.audioTracks?.length
                                 );
 
-                            let audioChecker =
-                            setInterval(() => {
-                                let doc = $('.tt-stream-preview--iframe')?.contentDocument;
-
-                                if(nullish(doc))
-                                    return;
-
-                                let playingAudio = hasAudio($('video', false, doc));
-
-                                if(!playingAudio)
-                                    return;
-
-                                SetVolume(0);
-                                clearInterval(audioChecker);
-                            }, 2_5_0);
+                            when.defined(() => $('#tt-stream-preview--iframe')).then(() => SetVolume(0));
                         },
                     })
                 )
@@ -10623,7 +10864,7 @@ let Initialize = async(START_OVER = false) => {
 
             let richTooltips = $(`[class*="channel-tooltip"i]`, true),
                 { length } = richTooltips,
-                iframe = $('.tt-stream-preview--iframe'),
+                iframe = $('#tt-stream-preview--iframe'),
                 { index = 0, controls = false, muted = true, quality = 'auto' } = iframe.dataset;
 
             index |= 0;
@@ -10671,7 +10912,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.watch_time_placement = async() => {
         let placement;
 
-        if((placement = Settings.watch_time_placement ??= "null") == "null")
+        if((placement = Settings.watch_time_placement ??= "null").equals("null"))
             return;
 
         let parent, container,
@@ -10764,7 +11005,7 @@ let Initialize = async(START_OVER = false) => {
         live_time?.tooltip?.remove?.();
         clearInterval(live_time?.tooltipAnimation);
 
-        if(UnregisterJob.__reason__ == 'modify')
+        if(UnregisterJob.__reason__.equals('modify'))
             return;
 
         SaveCache({ Watching: null, WatchTime: 0 });
@@ -10901,7 +11142,7 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = chunks => {
         let name = `${ new ClipName(2) }.${ top.MIME_Types.find(MASTER_VIDEO.mimeType) }`;
-        let blob = new Blob(chunks, { type: chunks.type });
+        let blob = new Blob(chunks, { type: chunks[0].type });
         let link = furnish('a', { href: URL.createObjectURL(blob), download: name, hidden: true }, name);
 
         document.head.append(link);
@@ -10934,15 +11175,17 @@ let Initialize = async(START_OVER = false) => {
                 for(let DVR_ID in DVRChannels) {
                     let [streamer, station, date] = DVR_ID.split('-');
                     let channel = await new Search(streamer).then(Search.convertResults),
-                        ok = /\/jtv_user/i.test(channel.icon);
+                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
 
                     // Search did not complete...
-                    let max = 5;
-                    while(!ok && --max > 0) {
+                    let num = 3;
+                    while(!ok && --num > 0) {
                         Search.void(streamer);
 
                         channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
-                        ok = /\/jtv_user/i.test(channel.icon);
+                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
+
+                        // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
                     }
 
                     if(!parseBool(channel.live))
@@ -10992,7 +11235,7 @@ let Initialize = async(START_OVER = false) => {
                 child.setAttribute('action-origin', 'native');
         }
 
-        // Pause Up Next
+        // Pause Up Next and handle DVR events
         if(parseBool(parseURL(top.location.href).searchParameters?.dvr))
             LoadCache('DVRChannels', async({ DVRChannels }) => {
                 DVRChannels = JSON.parse(DVRChannels || '{}');
@@ -11017,6 +11260,9 @@ let Initialize = async(START_OVER = false) => {
                                 });
 
                                 STREAMER.onraid = STREAMER.onhost = top.onbeforeunload = async({ hosting = false, raiding = false, raided = false }) => {
+                                    if(!hosting && !raiding && !raided)
+                                        return;
+
                                     let next = await GetNextStreamer();
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
@@ -11054,7 +11300,7 @@ let Initialize = async(START_OVER = false) => {
     let SECONDS_PAUSED_UNSAFELY = 0,
         CREATION_TIME,
         TOTAL_VIDEO_FRAMES,
-        PAGE_HAS_FOCUS = document.visibilityState === "visible",
+        PAGE_HAS_FOCUS = document.visibilityState.equals("visible"),
         VIDEO_OVERRIDE = false;
 
     Handlers.recover_frames = () => {
@@ -11101,8 +11347,8 @@ let Initialize = async(START_OVER = false) => {
                         muted = true,
                         iframe;
 
-                    container.append(
-                        iframe = furnish(`iframe#tt-embedded-video`, {
+                    container.append(iframe =
+                        furnish(`iframe#tt-embedded-video`, {
                             allow: 'autoplay',
                             src: parseURL(`https://player.twitch.tv/`).addSearch({
                                 channel: name,
@@ -11181,7 +11427,7 @@ let Initialize = async(START_OVER = false) => {
 
     __RecoverFrames__:
     if(parseBool(Settings.recover_frames)) {
-        $.on('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState === "visible");
+        $.on('visibilitychange', event => PAGE_HAS_FOCUS = document.visibilityState.equals("visible"));
 
         RegisterJob('recover_frames');
 
@@ -11256,12 +11502,12 @@ let Initialize = async(START_OVER = false) => {
 
             control.dataset.recoveryAttempts = ++attempts;
 
-            setTimeout(() => {
+            wait(5000).then(() => {
                 let control = $('button[data-a-player-state]'),
                     attempts = control.dataset?.recoveryAttempts | 0;
 
                 control.dataset.recoveryAttempts = --attempts;
-            }, 5000);
+            });
         }
 
         JUDGE__STOP_WATCH('recover_stream');
@@ -11341,7 +11587,7 @@ let Initialize = async(START_OVER = false) => {
      * Wait for the elements to populate
      * May not always be present
      */
-    setTimeout(() => {
+    wait(1000).then(() => {
         $('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget, button = -1 } = event;
@@ -11355,7 +11601,7 @@ let Initialize = async(START_OVER = false) => {
                 SaveCache({ UserIntent });
             });
         });
-    }, 1000);
+    });
 
     /*** Private Viewing - NOT A SETTING. Create a "private viewing" button for live, searched streams
      *      _____      _            _        __      ___               _
@@ -11384,71 +11630,17 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(button))
                     return;
 
-                let anchor = element.closest('[href]'),
-                    mods = { height: 20, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' };
+                let anchor = element.closest('[href]');
 
                 anchor.setAttribute('style', 'display:inline-block;width:calc(100% - 5rem)');
                 anchor.insertAdjacentElement('afterend', f(`button[tt-pip]`, {
                     name, live, image,
 
                     onmousedown({ currentTarget }) {
-                        let name = currentTarget.getAttribute('name'),
-                            src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=360p&private=true`;
-
-                        let pbyp = $('.picture-by-picture-player video'),
-                            pip = $('#tt-pip-player');
-
-                        $('#tt-exit-pip')?.remove();
-                        $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed');
-
-                        if(nullish(pbyp))
-                            $('.stream-chat').insertAdjacentElement('beforebegin',
-                                f('.picture-by-picture-player--background[data-test-selector=picture-by-picture-player-background]', {},
-                                    f('.picture-by-picture-player.picture-by-picture-player--collapsed[data-test-selector=picture-by-picture-player-container]', {},
-                                        f('.tw-aspect', {},
-                                            f.div(),
-                                            f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
-                                                pbyp = f('video[webkit-playsinline][playsinline]', {
-                                                    oncontextmenu: () => false,
-                                                })
-                                            )
-                                        )
-                                    )
-                                )
-                            );
-
-                        if(defined(pip))
-                            pip.src = src;
-                        else
-                            pip = f('iframe#tt-pip-player', {
-                                src,
-
-                                style: 'height:-webkit-fill-available;width:-webkit-fill-available',
-                            });
-
-                        pip.remove();
-                        pbyp.insertAdjacentElement('afterend', pip);
-
-                        $('.stream-chat-header').insertAdjacentElement('afterbegin',
-                            f('button#tt-exit-pip', {
-                                style: 'position:absolute;left:0;margin-left:1rem;',
-
-                                onmousedown(event) {
-                                    $('#tt-exit-pip').modStyle('transition:opacity .5s; opacity:0;');
-                                    $('.picture-by-picture-player')?.classList?.add('picture-by-picture-player--collapsed');
-
-                                    wait(500).then(() => {
-                                        $('#tt-exit-pip')?.remove();
-                                        $('.picture-by-picture-player iframe[src*="player.twitch.tv"i]')?.remove();
-                                    });
-                                },
-
-                                innerHTML: Glyphs.modify('exit_picture_in_picture', { height: 15, width: 20 }),
-                            })
-                        );
+                        MiniPlayer = currentTarget.getAttribute('name');
                     },
 
-                    innerHTML: Glyphs.modify('picture_in_picture', mods),
+                    innerHTML: Glyphs.modify('picture_in_picture', { height: 20, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' }),
                 }));
             });
     }, 300);
@@ -11521,7 +11713,7 @@ let Initialize = async(START_OVER = false) => {
             else if(span < (Timers.recover_pages * 1.05) && RECOVER_PAGE_FROM_LAG__WARNINGS > 0)
                 --RECOVER_PAGE_FROM_LAG__WARNINGS;
 
-            if(RECOVER_PAGE_FROM_LAG__WARNINGS > 4)
+            if(RECOVER_PAGE_FROM_LAG__WARNINGS > 2)
                 ReloadPage();
 
             RECOVER_PAGE_FROM_LAG__EXACT = now;
@@ -11560,7 +11752,7 @@ let Initialize = async(START_OVER = false) => {
 
                     video.setAttribute('uuid', video.uuid ??= (new UUID).value);
 
-                    let body = `<div hidden controller
+                    let body = `<input hidden controller
                         icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
                         placeholder="${ DEFAULT_CLIP_NAME }"
                         pattern="${
@@ -11573,7 +11765,7 @@ let Initialize = async(START_OVER = false) => {
 
                         okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
                         deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
-                        ></div>
+                        />
 
                         <table is-hidden="${ !Settings.experimental_mode }">
                             <caption>Video details</caption>
@@ -11625,7 +11817,7 @@ let Initialize = async(START_OVER = false) => {
                                 if(halt)
                                     return;
 
-                                let blob = new Blob(chunks, { type: chunks.type });
+                                let blob = new Blob(chunks, { type: chunks[0].type });
                                 let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(video.mimeType) }`, hidden: true }, name);
 
                                 document.head.append(link);
@@ -11655,8 +11847,16 @@ let Initialize = async(START_OVER = false) => {
                 }
             });
 
+        // Send the previewed channel to the miniplayer
+        // <Stream Preview>:hover → Z
+        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_Z))
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_Z = function Send_to_miniplayer({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+                if(!(ctrlKey || metaKey || altKey || shiftKey) && key.equals('z') && $.defined('#tt-stream-preview--iframe') && parseBool($('#tt-stream-preview--iframe').dataset.live))
+                    MiniPlayer = $('#tt-stream-preview--iframe').dataset.name;
+            });
+
         // Display the enabled keyboard shortcuts
-        let [help] = $.body.getElementsByInnerText('space/k', 'i').filter(element => element.tagName == 'TBODY');
+        let [help] = $.body.getElementsByInnerText('space/k', 'i').filter(element => element.tagName.equals('TBODY'));
 
         let f = furnish;
         if(defined(help) && $.nullish('.tt-extra-keyboard-shortcuts', false, help))
@@ -11760,6 +11960,37 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Miscellaneous: {
+        // The theme
+        THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+        ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
+
+        let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
+            .map(Color.HEXtoColor)
+            // Primary → Closest to theme; Secondary → Furthest from theme
+            .sort((C1, C2) => {
+                let background = (THEME.equals('dark')? Color.black: Color.white);
+
+                return Color.contrast(background, [C1.R, C1.G, C1.B]) - Color.contrast(background, [C2.R, C2.G, C2.B]);
+            })
+            .map(color => color.RGB);
+
+        THEME__CHANNEL_DARK = (THEME.equals('dark')? PRIMARY: SECONDARY);
+        THEME__CHANNEL_LIGHT = (THEME.unlike('dark')? PRIMARY: SECONDARY);
+
+        PRIMARY = Color.HEXtoColor(PRIMARY);
+        SECONDARY = Color.HEXtoColor(SECONDARY);
+
+        let contrastOf = (C1, C2) => Color.contrast(...[C1, C2].map(({ R, G, B }) => [R, G, B])),
+
+            black = { R: 0, G: 0, B: 0 },
+            white = { R: 255, G: 255, B: 255 },
+
+            theme = (THEME.equals('dark')? black: white),
+            antitheme = (THEME.unlike('dark')? black: white);
+
+        THEME__BASE_CONTRAST = contrastOf(PRIMARY, SECONDARY);
+        THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(PRIMARY, antitheme)? THEME: ANTITHEME) }`;
+
         // Better styling. Will match the user's theme choice as best as possible
         AddCustomCSSBlock('better-themed-styling',
             `
@@ -11816,95 +12047,94 @@ let Initialize = async(START_OVER = false) => {
 
     __GET_UPDATE_INFO__: {
         // Getting the version information
-        setTimeout(() => {
+        let installedFromWebstore = parseURL(Runtime.getURL('profile.png')).host.equals("fcfodihfdbiiogppbnhabkigcdhkhdjd");
+
+        wait(3_600_000, installedFromWebstore).then(async installedFromWebstore => {
             let FETCHED_DATA = { wasFetched: false };
+            let properties = {
+                origin: {
+                    github: !installedFromWebstore,
+                    chrome: installedFromWebstore,
+                },
+                version: {
+                    installed: Manifest.version,
+                    github: '5.6',
+                    chrome: '5.6',
+                },
+                Glyphs,
+            };
 
-            (async function(installedFromWebstore) {
-                let properties = {
-                    origin: {
-                        github: !installedFromWebstore,
-                        chrome: installedFromWebstore,
-                    },
-                    version: {
-                        installed: Manifest.version,
-                        github: '5.6',
-                        chrome: '5.6',
-                    },
-                    Glyphs,
-                };
+            await Storage.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
+                buildVersion ??= properties.version.installed;
+                versionRetrivalDate ||= 0;
 
-                await Storage.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
-                    buildVersion ??= properties.version.installed;
-                    versionRetrivalDate ||= 0;
+                // Only refresh if the data is older than 1h
+                // The data has expired →
+                __FetchingUpdates__:
+                if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
+                    let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
 
-                    // Only refresh if the data is older than 1h
-                    // The data has expired →
-                    __FetchingUpdates__:
-                    if((FETCHED_DATA.wasFetched === false) && (versionRetrivalDate + 3_600_000) < +new Date) {
-                        let githubURL = 'https://api.github.com/repos/ephellon/twitch-tools/releases/latest';
+                    await fetchURL(githubURL)
+                        .then(response => {
+                            if(FETCHED_DATA.wasFetched)
+                                throw 'Data was already fetched';
 
-                        await fetchURL(githubURL)
-                            .then(response => {
-                                if(FETCHED_DATA.wasFetched)
-                                    throw 'Data was already fetched';
+                            return response.json();
+                        })
+                        .then(metadata => {
+                            LOG({ ['GitHub']: metadata });
 
-                                return response.json();
-                            })
-                            .then(metadata => {
-                                LOG({ ['GitHub']: metadata });
-
-                                return properties.version.github = metadata.tag_name;
-                            })
-                            .then(version => Storage.set({ githubVersion: version }))
-                            .catch(async error => {
-                                await Storage.get(['githubVersion'], ({ githubVersion }) => {
-                                    if(defined(githubVersion))
-                                        properties.version.github = githubVersion;
-                                });
-                            })
-                            .finally(() => {
-                                let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`),
-                                    chromeUpdateAvailable = false;
-
-                                FETCHED_DATA = { ...FETCHED_DATA, ...properties };
-                                Storage.set({ githubUpdateAvailable });
-
-                                // Only applies to versions installed from the Chrome Web Store
-                                __ChromeOnly__:
-                                if(installedFromWebstore)
-                                    Storage.set({ chromeUpdateAvailable: githubUpdateAvailable });
-
-                                if((!installedFromWebstore && githubUpdateAvailable) || (installedFromWebstore && chromeUpdateAvailable))
-                                    confirm
-                                        .timed(`There is an update available for ${ Manifest.name } (${ properties.version.installed } &rarr; ${ properties.version.github })`)
-                                        .then(ok => {
-                                            if(nullish(ok))
-                                                return;
-
-                                            open([
-                                                'https://github.com/Ephellon/Twitch-Tools/releases',
-                                                'https://chrome.google.com/webstore/detail/ttv-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd',
-                                            ][+installedFromWebstore], '_blank');
-                                        });
+                            return properties.version.github = metadata.tag_name;
+                        })
+                        .then(version => Storage.set({ githubVersion: version }))
+                        .catch(async error => {
+                            await Storage.get(['githubVersion'], ({ githubVersion }) => {
+                                if(defined(githubVersion))
+                                    properties.version.github = githubVersion;
                             });
+                        })
+                        .finally(() => {
+                            let githubUpdateAvailable = compareVersions(`${ properties.version.installed } < ${ properties.version.github }`),
+                                chromeUpdateAvailable = false;
 
-                        // GitHub-only logic - get Chrome version information
+                            FETCHED_DATA = { ...FETCHED_DATA, ...properties };
+                            Storage.set({ githubUpdateAvailable });
 
-                        if(FETCHED_DATA.wasFetched === false) {
-                            FETCHED_DATA.wasFetched = true;
-                            versionRetrivalDate = +new Date;
+                            // Only applies to versions installed from the Chrome Web Store
+                            __ChromeOnly__:
+                            if(installedFromWebstore)
+                                Storage.set({ chromeUpdateAvailable: githubUpdateAvailable });
 
-                            Storage.set({ versionRetrivalDate });
-                        }
+                            if((!installedFromWebstore && githubUpdateAvailable) || (installedFromWebstore && chromeUpdateAvailable))
+                                confirm
+                                    .timed(`There is an update available for ${ Manifest.name } (${ properties.version.installed } &rarr; ${ properties.version.github })`)
+                                    .then(ok => {
+                                        if(nullish(ok))
+                                            return;
+
+                                        open([
+                                            'https://github.com/Ephellon/Twitch-Tools/releases',
+                                            'https://chrome.google.com/webstore/detail/ttv-tools/fcfodihfdbiiogppbnhabkigcdhkhdjd',
+                                        ][+installedFromWebstore], '_blank');
+                                    });
+                        });
+
+                    // GitHub-only logic - get Chrome version information
+
+                    if(FETCHED_DATA.wasFetched === false) {
+                        FETCHED_DATA.wasFetched = true;
+                        versionRetrivalDate = +new Date;
+
+                        Storage.set({ versionRetrivalDate });
                     }
-                    // The data hasn't expired yet
-                    else {
-                        properties.version.github = githubVersion ?? properties.version.github;
-                        properties.version.chrome = chromeVersion ?? properties.version.chrome;
-                    }
-                });
-            })(parseURL(Runtime.getURL('profile.png')).host === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
-        }, 3_600_000);
+                }
+                // The data hasn't expired yet
+                else {
+                    properties.version.github = githubVersion ?? properties.version.github;
+                    properties.version.chrome = chromeVersion ?? properties.version.chrome;
+                }
+            });
+        });
     }
 
     // End of Initialize
@@ -11914,6 +12144,7 @@ let Initialize = async(START_OVER = false) => {
 let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE,
+    PAGE_IS_READY = false,
     VIDEO_AD_COUNTDOWN,
     NORMALIZED_AD_VOLUME = false,
     NORMALIZED_AD_COUNTER = 0,
@@ -11921,955 +12152,1166 @@ let CUSTOM_CSS,
     LAST_TIME_AD_WAS_CHECKED,
     LAST_VALUE_WHEN_AD_WAS_CHECKED;
 
-Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
-    let isProperRuntime = Manifest.version === version;
-
-    PAGE_CHECKER = !isProperRuntime?
-        ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
-            ?.toNativeStack?.():
-    setInterval(WAIT_FOR_PAGE = async() => {
-        let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
-        let adCountdown = $('[data-a-target*="ad-countdown"i]');
-
-        // Ensure settings are loaded
-        if(nullish(Settings?.versionRetrivalDate))
-            Settings = await GetSettings();
-
-        // Set the ad volume, if applicable
-        // Ensures the volume gets set once; just in case the user actually wants to hear it
-        NORMALIZED_AD_VOLUME = true
-            && $.defined('[data-a-target*="ad-countdown"i]')
-            && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT)
-            && (false
-                || SetVolume(Settings.away_mode__volume)
-                || (NORMALIZED_AD_COUNTER = NORMALIZED_AD_COUNTER_CURRENT)
-            );
-
-        // Ensures the ad does not freeze the page
-        refresh_on_ad_freeze: if(defined(sadOverlay) || defined(adCountdown)) {
-            if(nullish(LAST_TIME_AD_WAS_CHECKED)) {
-                LAST_TIME_AD_WAS_CHECKED = +new Date;
-                LAST_VALUE_WHEN_AD_WAS_CHECKED = adCountdown?.textContent;
-
-                break refresh_on_ad_freeze;
-            }
-
-            if(true
-                && (+new Date - LAST_TIME_AD_WAS_CHECKED) > (VIDEO_AD_COUNTDOWN + 2_500)
-                && LAST_VALUE_WHEN_AD_WAS_CHECKED.equals(adCountdown.textContent)
-            ) {
-                WARN(`The advertisement seems to be stalled... Refreshing page...`);
-
-                ReloadPage(false);
-            }
-        }
-
-        let ready = (true
-            // There is a valid username
-            && defined(USERNAME)
-
-            // The follow button exists
-            && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
-
-            // There are channel buttons on the side
-            && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
-
-            // There isn't an advertisement playing
-            && nullish(sadOverlay)
-            && nullish(adCountdown)
-
-            // There are proper containers
-            && (false
-                // There is a message container
-                || $.defined('[data-test-selector$="message-container"i]')
-
-                // There is an ongoing search
-                || (true
-                    && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true)
-                    && $.defined('[data-a-target^="threads-box-"i]')
-                )
-
-                // The page is a channel viewing page
-                // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
-
-                // There is an error message
-                || $.defined('[data-a-target="core-error-message"i]')
-            )
-        );
-
-        if(!ready)
-            return when.defined(() => $('[data-a-target*="ad-countdown"i]'))
-                .then(countdown => {
-                    if(defined(VIDEO_AD_COUNTDOWN))
-                        return;
-
-                    let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
-
-                    if('00:00'.contains(time))
-                        return;
-
-                    count = parseInt(count);
-                    time = (parseTime(time) + 10).floorToNearest(15);
-
-                    NORMALIZED_AD_COUNTER_CURRENT = count;
-
-                    alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
-                });
-
-        LOG("Main container ready");
-
-        // Set the user's language
-        let [documentLanguage] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLowerCase().split('-');
-
-        window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
-
-        // Give the storage 1s to perform any "catch-up"
-        setTimeout(async() => {
-            await Initialize(ready)
-                .then(() => {
-                    // TTV Tools has the max Timer amount to initilize correctly...
-                    let REINIT_JOBS =
-                    setTimeout(() => {
-                        let NOT_LOADED_CORRECTLY = [],
-                            ALL_LOADED_CORRECTLY = (true
-                                // Lurking
-                                &&  parseBool(
-                                        parseBool(Settings.away_mode)?
-                                            (false
-                                                || $.defined('#away-mode')
-
-                                                || !NOT_LOADED_CORRECTLY.push('away_mode')
-                                            ):
-                                        true
-                                    )
-
-                                // Auto-Claim Bonuses
-                                && parseBool(
-                                        parseBool(Settings.auto_claim_bonuses)?
-                                            (false
-                                                || $.defined('#tt-auto-claim-bonuses')
-                                                || $.nullish('[data-test-selector="balance-string"i]')
-                                                || parseBool(Settings.view_mode)
-                                                || STREAMER.veto
-
-                                                || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
-                                            ):
-                                        true
-                                    )
-
-                                // Up Next
-                                &&  parseBool(
-                                        !parseBool(Settings.first_in_line_none)?
-                                            (false
-                                                || $.defined('[up-next--container]')
-
-                                                || !NOT_LOADED_CORRECTLY.push('first_in_line')
-                                            ):
-                                        true
-                                    )
-
-                                // Watch Time
-                                &&  parseBool(
-                                        parseBool(Settings.watch_time_placement)?
-                                            (false
-                                                || $.defined('#tt-watch-time')
-
-                                                || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
-                                            ):
-                                        true
-                                    )
-
-                                // Channel Points Receipt
-                                &&  parseBool(
-                                        parseBool(Settings.points_receipt_placement)?
-                                            (false
-                                                || $.defined('#tt-points-receipt')
-
-                                                || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
-                                            ):
-                                        true
-                                    )
-                            );
-
-                        if(false
-                            // This page shouldn't be touched...
-                            || RESERVED_TWITCH_PATHNAMES.test(window.location.pathname)
-
-                            // Everything loaded just fine
-                            || ALL_LOADED_CORRECTLY
-                        )
-                            return clearInterval(REINIT_JOBS);
-
-                        WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
-
-                        if(parseBool(Settings.recover_pages))
-                            return ReloadPage();
-                        else
-                            for(let job of NOT_LOADED_CORRECTLY)
-                                if(defined(job))
-                                    RestartJob(job, 'failure_to_activate');
-
-                        // Failed to activate job at...
-                        // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
-                    }, Math.max(...Object.values(Timers)));
-                });
-        }, 1000);
-        clearInterval(PAGE_CHECKER);
-
-        window.MAIN_CONTROLLER_READY = true;
-
-        // Observe location changes
-        LocationObserver: {
-            let { body } = document,
-                observer = new MutationObserver(mutations => {
-                    mutations.map(mutation => {
-                        if(PATHNAME !== window.location.pathname) {
-                            let OLD_HREF = PATHNAME;
-
-                            PATHNAME = window.location.pathname;
-
-                            NORMALIZED_PATHNAME = PATHNAME
-                                // Remove common "modes"
-                                .replace(/^(moderator)\/(\/[^\/]+?)/i, '$1')
-                                .replace(/^(\/[^\/]+?)\/(about|schedule|squad|videos)\b/i, '$1');
-
-                            for(let [name, func] of __ONLOCATIONCHANGE__)
-                                func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
-                        }
-                    });
-                });
-
-            observer.observe(body, { childList: true, subtree: true });
-        }
-
-        // Observe chat changes
-        ChatObserver: {
-            let chat = $('[data-test-selector$="message-container"i]'),
-                observer = new MutationObserver(mutations => {
-                    let emotes = {},
-                        results = [];
-
-                    mutations = mutations.filter(({ type }) => type == 'childList');
-
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
-
-                        NodeToObject:
-                        for(let line of addedNodes) {
-                            let keepEmotes = true;
-
-                            let handle = $('.chat-line__username', true, line).map(element => element.textContent).toString()
-                                author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                message = $('[data-test-selector="chat-message-separator"i] ~ * > *', true, line),
-                                mentions = $('.mention-fragment', true, line).map(element => element.textContent.replace('@', '').toLowerCase()).filter(text => /^[a-z_]\w+$/i.test(text)),
-                                badges = $('.chat-badge', true, line).map(img => img.alt.toLowerCase()),
-                                style = $('.chat-line__username [style]', true, line).map(element => element.getAttribute('style')).join(';'),
-                                reply = $('button[data-test-selector="chat-reply-button"i]', false, line);
-
-                            let raw = line.textContent?.trim(),
-                                containedEmotes = [];
-
-                            message = message
-                                .map(element => {
-                                    let string;
-
-                                    if(keepEmotes && ((element.dataset.testSelector == 'emote-button') || element.dataset.ttEmote?.length)) {
-                                        let img = $('img', false, element);
-
-                                        if(defined(img))
-                                            containedEmotes.push(string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))(img) }:`);
-                                    } else {
-                                        string = element.textContent;
-                                    }
-
-                                    return string;
-                                })
-                                .filter(defined)
-                                .join(' ')
-                                .trim()
-                                .replace(/(\s){2,}/g, '$1');
-
-                            style = style
-                                .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                            let uuid = UUID.from([author, mentions.join(','), message].join(':')).value;
-
-                            if(defined(results.find(message => message.uuid == uuid)))
-                                continue;
-
-                            // Replace all share URLs
-                            // line.innerHTML = line.innerHTML.replace(/\bshare:([\w\-]{8,})/g, ($0, $1) => furnish('a', { href: Runtime.getURL(`settings.html?sync-token=${ $1 }`), target: '_blank', rel: 'noreferrer', referrerpolicy: 'no-referrer' }, `share://${ $1 }`).outerHTML);
-
-                            results.push({
-                                raw,
-                                uuid,
-                                reply,
-                                style,
-                                author,
-                                badges,
-                                handle,
-                                message,
-                                mentions,
-                                element: line,
-                                emotes: containedEmotes.map(string => string.replace(/^:|:$/g, '')).isolate(),
-                                deleted: $.defined('[class*="--deleted-notice"i]', false, line),
-                                highlighted: !!(line.classList.value.split(' ').filter(value => /^chat-line--/i.test(value)).length),
-                            });
-                        }
-                    }
-
-                    results.emotes = emotes;
-
-                    for(let [name, callback] of GetChat.__onnewmessage__)
-                        callback(results);
-
-                    setTimeout(async(results) => {
-                        for(let [name, callback] of GetChat.__deferredEvents__.__onnewmessage__)
-                            await callback(results);
-                    }, 50, results);
-                });
-
-            if(nullish(chat))
-                break ChatObserver;
-
-            observer.observe(chat, { childList: true });
-        }
-
-        // Observe whisper changes
-        WhisperObserver: {
-            let chat = $('main'),
-                chat_observer = new MutationObserver(mutations => {
-                    mutations = mutations.filter(({ type }) => type == 'childList');
-
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
-
-                        NodeToObject:
-                        for(let node of addedNodes) {
-                            let highlighted = $.defined('[class*="container--highlighted"i]', false, node),
-                                newmessage = ["whisper-message"].contains(node.dataset.aTarget);
-
-                            if(false
-                                || !highlighted
-                                || !newmessage
-                            )
-                                continue;
-
-                            async function parse(callback, { node, highlighted, newmessage }) {
-                                if(highlighted) {
-                                    await callback({ highlighted });
-                                } else if(newmessage) {
-                                    let keepEmotes = true;
-
-                                    let handle = $('[data-a-target="whisper-message-name"i]', false, node).textContent,
-                                        author = handle.toLowerCase().replace(/[^]+?\((\w+)\)/, '$1'),
-                                        message = $('[data-test-selector="separator"i] ~ * > *', true, node),
-                                        style = node.getAttribute('style');
-
-                                    let raw = node.textContent;
-
-                                    message = message
-                                        .map(element => {
-                                            let string;
-
-                                            switch(element.dataset.aTarget) {
-                                                case 'emote-name': {
-                                                    if(keepEmotes)
-                                                        string = `:${ (i=>((emotes[i.alt]=i.src),i.alt))($('img', false, element)) }:`;
-                                                } break;
-
-                                                default: {
-                                                    string = element.textContent;
-                                                } break;
-                                            }
-
-                                            return string;
-                                        })
-                                        .filter(defined)
-                                        .join(' ')
-                                        .trim()
-                                        .replace(/(\s){2,}/g, '$1');
-
-                                    style = style
-                                        .replace(/\brgba?\(([\d\s,]+)\)/i, ($0, $1, $$, $_) => '#' + $1.split(',').map(color => (+color.trim()).toString(16).padStart(2, '00')).join(''));
-
-                                    let uuid = UUID.from([author, new Date, message].join(':')).value;
-
-                                    await callback({
-                                        raw,
-                                        uuid,
-                                        style,
-                                        author,
-                                        handle,
-                                        message,
-                                        element: node,
-                                    });
-                                }
-                            }
-
-                            for(let [name, callback] of GetChat.__onwhisper__)
-                                parse(callback, { node, highlighted, newmessage });
-
-                            setTimeout(async({ node, highlighted, newmessage }) => {
-                                for(let [name, callback] of GetChat.__deferredEvents__.__onwhisper__)
-                                    await parse(callback, { node, highlighted, newmessage });
-                            }, 50, { node, highlighted, newmessage });
-                        }
-                    }
-                }),
-
-                pill = $('[data-a-target^="threads-box-"i]')?.previousElementSibling,
-                pill_observer = new MutationObserver(mutations => {
-                    mutations = mutations.filter(({ type }) => type == 'childList');
-
-                    // LOG('The Whisper Pill has mutated...', mutations);
-
-                    MutationToNode:
-                    for(let mutation of mutations) {
-                        let { addedNodes } = mutation;
-
-                        NodeToObject:
-                        for(let node of addedNodes) {
-                            if(node.classList?.missing?.('whispers__pill'))
-                                continue;
-
-                            let unread = parseInt(node.textContent) | 0;
-
-                            for(let [name, callback] of GetChat.__onwhisper__)
-                                callback({ unread });
-                        }
-                    }
-                });
-
-            if(defined(chat))
-                chat_observer.observe(chat, { childList: true });
-
-            if(defined(pill))
-                pill_observer.observe(pill, { childList: true });
-        }
-
-        // Observe the volume changes
-        VolumeObserver: {
-            $('video ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])', true)
-                .map(element => {
-                    element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
-                        currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
-
-                        for(let [name, callback] of GetVolume.__onchange__)
-                            callback(currentTarget.value, { isTrusted });
-                    });
-
-                    element.addEventListener('mouseup', ({ currentTarget, isTrusted }) => {
-                        currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
-
-                        for(let [name, callback] of GetVolume.__onchange__)
-                            callback(currentTarget.value, { isTrusted });
-                    });
-
-                    element.addEventListener('change', ({ currentTarget, isTrusted }) => {
-                        currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
-
-                        for(let [name, callback] of GetVolume.__onchange__)
-                            callback(currentTarget.value, { isTrusted });
-                    });
-                });
-        }
-
-        // Set the SVGs' section IDs
-        SectionLabeling: {
-            let conversions = {
-                favorite: [
-                    "followed",
-                ].reverse(),
-
-                video: [
-                    "suggested",
-                    "related",
-                ].reverse(),
-
-                people: [
-                    "friends",
-                    "watch-channel-trailer",
-                ].reverse(),
-
-                inform: [
-                    "live-reminders",
-                ].reverse(),
-
-                checkmark: [
-                    "live-reminders",
-                ].reverse(),
-
-                rewind: [
-                    "rewind-stream",
-                ].reverse(),
-
-                crown: [
-                    "prime-subscription",
-                ],
-            };
-
-            for(let container of $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
-                let svg = $('svg', false, container);
-
-                comparing:
-                for(let glyph in Glyphs)
-                    if(Glyphs.__exclusionList__.contains(glyph))
-                        continue comparing;
-                    else
-                        resemble(SVGtoImage(svg))
-                            .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode))
-                            .ignoreColors()
-                            .scaleToSameSize()
-                            .onComplete(async data => {
-                                let { analysisTime, misMatchPercentage } = data;
-
-                                analysisTime = parseInt(analysisTime);
-                                misMatchPercentage = parseFloat(misMatchPercentage);
-
-                                let matchPercentage = 100 - misMatchPercentage;
-
-                                if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
-                                    return;
-
-                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
-
-                                let family = conversions[glyph];
-
-                                if(family?.length)
-                                    container.setAttribute('tt-svg-label', family.pop());
-                            });
-            }
-        }
-
-        top.onlocationchange = () => {
-            WARN("[Parent] Re-initializing...");
-
-            Balloon.get('Up Next')?.remove();
-
-            // Do NOT soft-reset ("turn off, turn on") these settings
-            // They will be destroyed, including any data they are using
-            let VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
-
-            DestroyingJobs:
-            for(let job in Jobs)
-                if(!!~VOLATILE.findIndex(name => name.test(job)))
-                    continue DestroyingJobs;
-                else
-                    RestartJob(job);
-
-            Reinitialize:
-            if(NORMAL_MODE) {
-                if(Settings.keep_popout) {
-                    PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
-
-                    break Reinitialize;
+// Do NOT run on iframes...
+if(top == window) {
+    // Keep the background alive (every 3 minutes)
+    setInterval(() => {
+        let KeepAlive = Runtime.connect({ name: 'PING' });
+
+        KeepAlive.postMessage('PING', () => KeepAlive.disconnect());
+    }, 180e3);
+
+    Runtime.sendMessage({ action: 'GET_VERSION' }, async({ version = null }) => {
+        let isProperRuntime = Manifest.version === version;
+
+        PAGE_CHECKER = !isProperRuntime?
+            ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
+                ?.toNativeStack?.():
+        setInterval(WAIT_FOR_PAGE = async() => {
+            let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
+            let adCountdown = $('[data-a-target*="ad-countdown"i]');
+
+            // Ensure settings are loaded
+            if(nullish(Settings?.versionRetrivalDate))
+                Settings = await GetSettings();
+
+            // Set the ad volume, if applicable
+            // Ensures the volume gets set once; just in case the user actually wants to hear it
+            NORMALIZED_AD_VOLUME = true
+                && $.defined('[data-a-target*="ad-countdown"i]')
+                && (NORMALIZED_AD_COUNTER != NORMALIZED_AD_COUNTER_CURRENT)
+                && (false
+                    || SetVolume(Settings.away_mode__volume)
+                    || (NORMALIZED_AD_COUNTER = NORMALIZED_AD_COUNTER_CURRENT)
+                );
+
+            // Ensures the ad does not freeze the page
+            refresh_on_ad_freeze: if(defined(sadOverlay) || defined(adCountdown)) {
+                if(nullish(LAST_TIME_AD_WAS_CHECKED)) {
+                    LAST_TIME_AD_WAS_CHECKED = +new Date;
+                    LAST_VALUE_WHEN_AD_WAS_CHECKED = adCountdown?.textContent;
+
+                    break refresh_on_ad_freeze;
                 }
 
-                ReloadPage();
-            }
-        };
+                if(true
+                    && (+new Date - LAST_TIME_AD_WAS_CHECKED) > (VIDEO_AD_COUNTDOWN + 2_500)
+                    && LAST_VALUE_WHEN_AD_WAS_CHECKED.equals(adCountdown.textContent)
+                ) {
+                    WARN(`The advertisement seems to be stalled... Refreshing page...`);
 
-        // Add custom styling
-        CustomCSSInitializer: {
-            CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css');
-
-            let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
-
-            CUSTOM_CSS.innerHTML =
-            `
-            :root {
-                --user-accent-color: var(--color-${ accent });
-                --user-complement-color: var(--color-${ accent }-${ complement });
-
-                /* z-index meanings */
-                --always-on-top:    9999;
-                --normal:           999;
-                --always-on-bottom: 99;
-                --baseline:         9;
+                    ReloadPage(false);
+                }
             }
 
-            /* Little fixes */
-            .social-media-link {
-                min-width: 20rem;
-            }
-
-            /* First Run */
-            .tt-first-run {
-                background-color: var(--color-blue);
-                border-radius: 3px;
-
-                transition: background-color 1s;
-            }
-
-            [animationID] a { cursor: grab }
-            [animationID] a:active { cursor: grabbing }
-
-            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
-
-            /* Keyborad Shortcuts */
-            .tt-extra-keyboard-shortcuts td {
-                padding: 0.5rem;
-            }
-
-            .tt-extra-keyboard-shortcuts td:first-child {
-                text-align: left;
-            }
-
-            .tt-extra-keyboard-shortcuts td:last-child {
-                text-align: right;
-            }
-
-            /* Up Next */
-            [up-next--body] {
-                background-color: var(--user-accent-color);
-                border-radius: 0.5rem;
-                color: var(--color-hinted-grey-${ complement });
-            }
-
-            [up-next--body][empty="true"i] {
-                background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
-                background-repeat: no-repeat;
-                background-size: 35rem;
-                background-position: bottom center;
-            }
-
-            [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                /* background-blend-mode: color-burn; */
-            }
-
-            [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
-                /* background-blend-mode: darken; */
-            }
-
-            [up-next--body][allowed="false"i] {
-                background-image: url("${ Runtime.getURL('256.png') }") !important;
-                background-repeat: repeat !important;
-                background-size: 5rem !important;
-                background-position: center center !important;
-                background-blend-mode: soft-light !important;
-            }
-
-            #up-next-boost[speeding="true"i] {
-                animation: fade-in 1s alternate infinite;
-            }
-
-            /* Live Reminders */
-            #tt-reminder-listing:not(:empty) ~ [live] { display:none }
-
-            .tt-time-elapsed {
-                color: var(--color-text-live);
-                text-shadow: 0 0 3px var(--color-background-base);
-
-                float: right;
-            }
-
-            /** Old CSS...
-            #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
-                animation: fade-in 1s 1;
-
-                display: block;
-                text-align: center;
-
-                margin: 0.5em 0px;
-
-                width: 100%;
-            }
-
-            #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
-            #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
-            */
-
-            /* Auto-Focus */
-            [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
-
-            [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
-            [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
-            [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
-
-            [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
-            [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
-
-            #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
-                opacity: 0.7;
-                margin-top: -100%;
-            }
-
-            .tt-emote-captured [data-test-selector="badge-button-icon"i],
-            .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-                left: 0;
-                top: 0;
-            }
-
-            [tt-live-status-indicator] {
-                background-color: var(--color-hinted-grey-6);
-                border-radius: var(--border-radius-rounded);
-                width: 0.8rem;
-                height: 0.8rem;
-                display: inline-block;
-                position: relative;
-            }
-
-            [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
-
-            /* Change Up Next font color */
-            [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }
-            [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:darken */ }
-
-            /* Lurking */
-            #away-mode svg[id^="tt-away-mode"i] {
-                display: inline-block;
-
-                transform: translateX(0px) scale(1);
-                transition: all 100ms ease-in;
-            }
-
-            #tt-away-mode--hide {
-                position: absolute;
-            }
-
-            #tt-away-mode--hide, #tt-away-mode--show {
-                fill: var(--color-text-base);
-            }
-
-            [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
-                opacity: 0;
-            }
-
-            svg[id^="tt-away-mode"i][preview="true"i] {
-                opacity: 1 !important;
-                transform: translateX(0px) scale(1.2) !important;
-            }
-
-            /* Rich tooltips */
-            [role] [data-popper-placement="right-start"i] [role] {
-                width: max-content;
-            }
-
-            [role="tooltip"i][class*="tt-tooltip"i] {
-                white-space: normal;
-
-                max-width: 50em;
-                width: max-content;
-            }
-
-            /* Bits */
-            [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
-                max-width: 45rem;
-            }
-
-            /* Stream Preview */
-            .tt-stream-preview {
-                border-radius: 0.6rem;
-                box-shadow: #000 0 4px 8px, #000 0 0 4px;
-                display: block;
-                visibility: visible;
-
-                transition: all 0.5s ease-in;
-
-                position: fixed;
-                margin-left: 7rem;
-                z-index: 999;
-
-                height: 9rem;
-                width: 16rem;
-            }
-
-            .tt-stream-preview--poster {
-                background-color: #0008;
-                background-size: cover;
-                border-radius: inherit;
-                display: block;
-
-                transition: all 1.5s ease-in;
-
-                position: absolute;
-                margin: 0;
-                padding: 0;
-                left: 0;
-                top: 0;
-                z-index: 999;
-
-                height: 100% !important;
-                width: 100% !important;
-            }
-
-            .tt-stream-preview--iframe {
-                display: block;
-                border-radius: inherit;
-                opacity: 1;
-                visibility: inherit;
-            }
-
-            .invisible {
-                opacity: 0;
-            }
-
-            .tt-stream-preview[data-vods="true"i][data-position="above"i]::after, .tt-stream-preview[data-vods="true"i][data-position="below"i]::before {
-                content: "Choose VOD (↑ / ↓)";
-
-                background-color: var(--color-background-tooltip);
-                border-radius: .4rem;
-                color: var(--color-text-tooltip);
-                display: inline-block;
-                font-family: inherit;
-                font-size: 100%;
-                font-weight: 600;
-                line-height: 1.2;
-                padding: .5rem;
-                pointer-events: none;
-                text-align: left;
-                user-select: none;
-                white-space: nowrap;
-
-                position: absolute;
-                left: 50%;
-                transform: translate(-50%,0);
-                z-index: 9999;
-
-                animation: 1s fade-out 1 forwards 7s;
-            }
-
-            video ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb) {
-                transition: all 1s;
-            }
-
-            video ~ * .player-controls[data-automatic="true"i] [data-a-target*="mute"i] svg {
-                fill: var(--color-warn);
-            }
-
-            video ~ * .player-controls[data-automatic="true"i] [data-test-selector*="fill-value"i] {
-                background-color: var(--color-warn);
-            }
-
-            video ~ * .player-controls[data-automatic="true"i] [data-a-target$="slider"i]::-webkit-slider-thumb {
-                border: var(--border-width-default) solid var(--color-warn);
-                background-color: var(--color-warn);
-            }
-            `;
-
-            CUSTOM_CSS?.remove();
-            $('body').append(CUSTOM_CSS);
-        }
-
-        // Update the settings
-        SettingsInitializer: {
-            switch(Settings.onInstalledReason) {
-                // Is this the first time the extension has run?
-                // If so, then point out what's been changed
-                case INSTALL: {
-                    // Detect the user's desired language
-                        // Capitalizing the language code notifies the Settings page the code was not manually input
-                    let [user_language_preference] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toUpperCase().split('-');
-
-                    Storage.set({ user_language_preference });
-
-                    // Point out the newly added buttons
-                    setTimeout(() => {
-                        for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
-                            element.classList.add('tt-first-run');
-
-                        let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
-
-                        // Make sure the user goes to the Settings page
-                        alert
-                            .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
-                            .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
-                    }, 10_000);
-                } break;
-            }
-
-            Storage.set({ onInstalledReason: null });
-        }
-
-        // Jump some frames
-        FrameJumper: {
-            document.head.append(
-                furnish('script', {
-                    src: Runtime.getURL('ext/jump.js'),
-                    onload() {
-                        // Do something when the data is jumped...
-                    },
-                })
+            let ready = (true
+                // There is a valid username
+                && defined(USERNAME)
+
+                // The follow button exists
+                && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
+
+                // There are channel buttons on the side
+                && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
+
+                // There isn't an advertisement playing
+                && nullish(sadOverlay)
+                && nullish(adCountdown)
+
+                // There are proper containers
+                && (false
+                    // There is a message container
+                    || $.defined('[data-test-selector$="message-container"i]')
+
+                    // There is an ongoing search
+                    || (true
+                        && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true)
+                        && $.defined('[data-a-target^="threads-box-"i]')
+                    )
+
+                    // The page is a channel viewing page
+                    // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
+
+                    // There is an error message
+                    || $.defined('[data-a-target="core-error-message"i]')
+                )
             );
+
+            if(!ready)
+                return when.defined(() => $('[data-a-target*="ad-countdown"i]'))
+                    .then(countdown => {
+                        if(defined(VIDEO_AD_COUNTDOWN))
+                            return;
+
+                        let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
+
+                        if('00:00'.contains(time))
+                            return;
+
+                        count = parseInt(count);
+                        time = (parseTime(time) + 10).floorToNearest(15);
+
+                        NORMALIZED_AD_COUNTER_CURRENT = count;
+
+                        alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
+                    });
+
+            LOG("Main container ready");
+
+            // Set the user's language
+            let [documentLanguage] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toLowerCase().split('-');
+
+            window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
+
+            // Give the storage 1s to perform any "catch-up"
+            wait(1000, ready).then(async ready => {
+                await Initialize(ready)
+                    .then(() => {
+                        // TTV Tools has the max Timer amount to initilize correctly...
+                        let REINIT_JOBS =
+                        setTimeout(() => {
+                            let NOT_LOADED_CORRECTLY = [],
+                                ALL_LOADED_CORRECTLY = (true
+                                    // Lurking
+                                    &&  parseBool(
+                                            parseBool(Settings.away_mode)?
+                                                (false
+                                                    || $.defined('#away-mode')
+
+                                                    || !NOT_LOADED_CORRECTLY.push('away_mode')
+                                                ):
+                                            true
+                                        )
+
+                                    // Auto-Claim Bonuses
+                                    && parseBool(
+                                            parseBool(Settings.auto_claim_bonuses)?
+                                                (false
+                                                    || $.defined('#tt-auto-claim-bonuses')
+                                                    || $.nullish('[data-test-selector="balance-string"i]')
+                                                    || parseBool(Settings.view_mode)
+                                                    || STREAMER.veto
+
+                                                    || !NOT_LOADED_CORRECTLY.push('auto_claim_bonuses')
+                                                ):
+                                            true
+                                        )
+
+                                    // Up Next
+                                    &&  parseBool(
+                                            !parseBool(Settings.first_in_line_none)?
+                                                (false
+                                                    || $.defined('[up-next--container]')
+
+                                                    || !NOT_LOADED_CORRECTLY.push('first_in_line')
+                                                ):
+                                            true
+                                        )
+
+                                    // Watch Time
+                                    &&  parseBool(
+                                            parseBool(Settings.watch_time_placement)?
+                                                (false
+                                                    || $.defined('#tt-watch-time')
+
+                                                    || !NOT_LOADED_CORRECTLY.push('watch_time_placement')
+                                                ):
+                                            true
+                                        )
+
+                                    // Channel Points Receipt
+                                    &&  parseBool(
+                                            parseBool(Settings.points_receipt_placement)?
+                                                (false
+                                                    || $.defined('#tt-points-receipt')
+
+                                                    || !NOT_LOADED_CORRECTLY.push('points_receipt_placement')
+                                                ):
+                                            true
+                                        )
+                                );
+
+                            if(false
+                                // This page shouldn't be touched...
+                                || RESERVED_TWITCH_PATHNAMES.test(window.location.pathname)
+
+                                // Everything loaded just fine
+                                || ALL_LOADED_CORRECTLY
+                            )
+                                return PAGE_IS_READY = !clearInterval(REINIT_JOBS);
+
+                            WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
+
+                            if(parseBool(Settings.recover_pages))
+                                return ReloadPage();
+                            else
+                                for(let job of NOT_LOADED_CORRECTLY)
+                                    if(defined(job))
+                                        RestartJob(job, 'failure_to_activate');
+
+                            // Failed to activate job at...
+                            // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
+                        }, Math.max(...Object.values(Timers)));
+                    });
+
+                // Handle coin related bulletins
+                setInterval(async() => {
+                    let { sole, name, fiat } = STREAMER;
+                    let line = $('[data-test-selector="user-notice-line"i]:not([data-uuid])');
+
+                    if(nullish(line))
+                        return;
+
+                    let [head, body] = line.children;
+
+                    if($.nullish(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, false, head))
+                        return;
+
+                    let user = ($('[data-a-target$="username"i]', false, body) || head).textContent.split(' ').shift();
+
+                    let badges = $('img.chat-badge', true, body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1')),
+                        color = Color.destruct($('[data-a-target$="username"i]', false, body)?.style?.color || '#9147FF').RGB,
+                        mod = +STREAMER.perm.is('mod'),
+                        sub = +STREAMER.paid,
+                        shopID = await STREAMER.shop.find(entry => (true
+                            && head.textContent.contains(entry.title)
+                            && head.textContent.contains(comify(entry.cost))
+                        ))?.id;
+
+                    line.dataset.uuid = UUID.from(line.getPath());
+
+                    if(nullish(shopID))
+                        return;
+
+                    TTV_IRC.socket?.reflect?.({ data: `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;msg-param-shop-id=${ shopID };subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ head.innerText.trim().replace(/\s+/g, ' ') }` });
+                }, 100);
+
+                // Handle saved states...
+                wait(1000).then(() => {
+                    let { mini = '' } = parseURL(window.location).searchParameters;
+
+                    if(mini.length)
+                        MiniPlayer = mini;
+                });
+            });
+            PAGE_CHECKER = clearInterval(PAGE_CHECKER);
+
+            window.MAIN_CONTROLLER_READY = true;
+
+            // Observe location changes
+            LocationObserver: {
+                let { body } = document,
+                    observer = new MutationObserver(mutations => {
+                        mutations.map(mutation => {
+                            if(PATHNAME !== window.location.pathname) {
+                                let OLD_HREF = PATHNAME;
+
+                                PATHNAME = window.location.pathname;
+
+                                NORMALIZED_PATHNAME = PATHNAME
+                                    // Remove common "modes"
+                                    .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
+                                    .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
+
+                                for(let [name, func] of __ONLOCATIONCHANGE__)
+                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
+                            }
+                        });
+                    });
+
+                observer.observe(body, { childList: true, subtree: true });
+            }
+
+            // Observe the volume changes
+            VolumeObserver: {
+                $('video ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])', true)
+                    .map(element => {
+                        element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
+                            currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+
+                            for(let [name, callback] of GetVolume.__onchange__)
+                                callback(currentTarget.value, { isTrusted });
+                        });
+
+                        element.addEventListener('mouseup', ({ currentTarget, isTrusted }) => {
+                            currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+
+                            for(let [name, callback] of GetVolume.__onchange__)
+                                callback(currentTarget.value, { isTrusted });
+                        });
+
+                        element.addEventListener('change', ({ currentTarget, isTrusted }) => {
+                            currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
+
+                            for(let [name, callback] of GetVolume.__onchange__)
+                                callback(currentTarget.value, { isTrusted });
+                        });
+                    });
+            }
+
+            // Set the SVGs' section IDs
+            SectionLabeling: {
+                let conversions = {
+                    favorite: [
+                        "followed",
+                    ].reverse(),
+
+                    video: [
+                        "suggested",
+                        "related",
+                    ].reverse(),
+
+                    people: [
+                        "friends",
+                        "watch-channel-trailer",
+                    ].reverse(),
+
+                    inform: [
+                        "live-reminders",
+                    ].reverse(),
+
+                    checkmark: [
+                        "live-reminders",
+                    ].reverse(),
+
+                    rewind: [
+                        "rewind-stream",
+                    ].reverse(),
+
+                    crown: [
+                        "prime-subscription",
+                    ],
+                };
+
+                for(let container of $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
+                    let svg = $('svg', false, container);
+
+                    comparing:
+                    for(let glyph in Glyphs)
+                        if(Glyphs.__exclusionList__.contains(glyph))
+                            continue comparing;
+                        else
+                            resemble(SVGtoImage(svg))
+                                .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode))
+                                .ignoreColors()
+                                .scaleToSameSize()
+                                .onComplete(async data => {
+                                    let { analysisTime, misMatchPercentage } = data;
+
+                                    analysisTime = parseInt(analysisTime);
+                                    misMatchPercentage = parseFloat(misMatchPercentage);
+
+                                    let matchPercentage = 100 - misMatchPercentage;
+
+                                    if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
+                                        return;
+
+                                    // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+
+                                    let family = conversions[glyph];
+
+                                    if(family?.length)
+                                        container.setAttribute('tt-svg-label', family.pop());
+                                });
+                }
+            }
+
+            top.onlocationchange = () => {
+                WARN("[Parent] Re-initializing...");
+
+                Balloon.get('Up Next')?.remove();
+
+                // Do NOT soft-reset ("turn off, turn on") these settings
+                // They will be destroyed, including any data they are using
+                let VOLATILE = window.VOLATILE = ['first_in_line*'].map(AsteriskFn);
+
+                DestroyingJobs:
+                for(let job in Jobs)
+                    if(!!~VOLATILE.findIndex(name => name.test(job)))
+                        continue DestroyingJobs;
+                    else
+                        RestartJob(job);
+
+                Reinitialize:
+                if(NORMAL_MODE) {
+                    if(parseBool(Settings.keep_popout)) {
+                        PAGE_CHECKER ??= setInterval(WAIT_FOR_PAGE, 500);
+
+                        // Save states...
+                        let states = {
+                            mini: MiniPlayer?.dataset?.name,
+                        };
+
+                        for(let key in states)
+                            if(parseBool(states[key]))
+                                PushToTopSearch({ [key]: states[key] }, false);
+
+                        break Reinitialize;
+                    }
+
+                    ReloadPage();
+                }
+            };
+
+            // Add custom styling
+            CustomCSSInitializer: {
+                CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css');
+
+                let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
+
+                CUSTOM_CSS.innerHTML =
+                `
+                :root {
+                    --user-accent-color: var(--color-${ accent });
+                    --user-complement-color: var(--color-${ accent }-${ complement });
+
+                    /* z-index meanings */
+                    --always-on-top:    9999;
+                    --normal:           999;
+                    --always-on-bottom: 99;
+                    --baseline:         9;
+                }
+
+                /* Little fixes */
+                .social-media-link {
+                    min-width: 20rem;
+                }
+
+                /* First Run */
+                .tt-first-run {
+                    background-color: var(--color-blue);
+                    border-radius: 3px;
+
+                    transition: background-color 1s;
+                }
+
+                [animationID] a { cursor: grab }
+                [animationID] a:active { cursor: grabbing }
+
+                [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+                [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+
+                /* Keyborad Shortcuts */
+                .tt-extra-keyboard-shortcuts td {
+                    padding: 0.5rem;
+                }
+
+                .tt-extra-keyboard-shortcuts td:first-child {
+                    text-align: left;
+                }
+
+                .tt-extra-keyboard-shortcuts td:last-child {
+                    text-align: right;
+                }
+
+                /* Up Next */
+                [up-next--body] {
+                    background-color: var(--user-accent-color);
+                    border-radius: 0.5rem;
+                    color: var(--color-hinted-grey-${ complement });
+                }
+
+                [up-next--body][empty="true"i] {
+                    background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
+                    background-repeat: no-repeat;
+                    background-size: 35rem;
+                    background-position: bottom center;
+                }
+
+                [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                    /* background-blend-mode: color-burn; */
+                }
+
+                [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                    /* background-blend-mode: darken; */
+                }
+
+                [up-next--body][allowed="false"i] {
+                    background-image: url("${ Runtime.getURL('256.png') }") !important;
+                    background-repeat: repeat !important;
+                    background-size: 5rem !important;
+                    background-position: center center !important;
+                    background-blend-mode: soft-light !important;
+                }
+
+                #up-next-boost[speeding="true"i] {
+                    animation: fade-in 1s alternate infinite;
+                }
+
+                /* Live Reminders */
+                #tt-reminder-listing:not(:empty) ~ [live] { display:none }
+
+                .tt-time-elapsed {
+                    color: var(--color-text-live);
+                    text-shadow: 0 0 3px var(--color-background-base);
+
+                    float: right;
+                }
+
+                /** Old CSS...
+                #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
+                    animation: fade-in 1s 1;
+
+                    display: block;
+                    text-align: center;
+
+                    margin: 0.5em 0px;
+
+                    width: 100%;
+                }
+
+                #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
+                #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
+                */
+
+                /* Auto-Focus */
+                [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
+
+                [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
+                [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
+                [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
+
+                [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
+                [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+
+                #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
+                    opacity: 0.7;
+                    margin-top: -100%;
+                }
+
+                .tt-emote-captured [data-test-selector="badge-button-icon"i],
+                .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                    left: 0;
+                    top: 0;
+                }
+
+                [tt-live-status-indicator] {
+                    background-color: var(--color-hinted-grey-6);
+                    border-radius: var(--border-radius-rounded);
+                    width: 0.8rem;
+                    height: 0.8rem;
+                    display: inline-block;
+                    position: relative;
+                }
+
+                [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+
+                /* Change Up Next font color */
+                [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }
+                [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:darken */ }
+
+                /* Lurking */
+                #away-mode svg[id^="tt-away-mode"i] {
+                    display: inline-block;
+
+                    transform: translateX(0px) scale(1);
+                    transition: all 100ms ease-in;
+                }
+
+                #tt-away-mode--hide {
+                    position: absolute;
+                }
+
+                #tt-away-mode--hide, #tt-away-mode--show {
+                    fill: var(--color-text-base);
+                }
+
+                [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
+                    opacity: 0;
+                }
+
+                svg[id^="tt-away-mode"i][preview="true"i] {
+                    opacity: 1 !important;
+                    transform: translateX(0px) scale(1.2) !important;
+                }
+
+                /* Rich tooltips */
+                [role] [data-popper-placement="right-start"i] [role] {
+                    width: max-content;
+                }
+
+                [role="tooltip"i][class*="tt-tooltip"i] {
+                    white-space: normal;
+
+                    max-width: 50em;
+                    width: max-content;
+                }
+
+                /* Bits */
+                [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
+                    max-width: 45rem;
+                }
+
+                /* Stream Preview */
+                .tt-stream-preview {
+                    border-radius: 0.6rem;
+                    box-shadow: #000 0 4px 8px, #000 0 0 4px;
+                    display: block;
+                    visibility: visible;
+
+                    transition: all 0.5s ease-in;
+
+                    position: fixed;
+                    margin-left: 7rem;
+                    z-index: 999;
+
+                    height: 9rem;
+                    width: 16rem;
+                }
+
+                .tt-stream-preview--poster {
+                    background-color: #0008;
+                    background-size: cover;
+                    border-radius: inherit;
+                    display: block;
+
+                    transition: all 1.5s ease-in;
+
+                    position: absolute;
+                    margin: 0;
+                    padding: 0;
+                    left: 0;
+                    top: 0;
+                    z-index: 999;
+
+                    height: 100% !important;
+                    width: 100% !important;
+                }
+
+                #tt-stream-preview--iframe {
+                    display: block;
+                    border-radius: inherit;
+                    opacity: 1;
+                    visibility: inherit;
+                }
+
+                .invisible {
+                    opacity: 0;
+                }
+
+                .tt-stream-preview[data-vods][data-position="above"i]::after, .tt-stream-preview[data-vods][data-position="below"i]::before {
+                    content: "Choose VOD (↑ / ↓)";
+
+                    background-color: var(--color-background-tooltip);
+                    border-radius: .4rem;
+                    color: var(--color-text-tooltip);
+                    display: inline-block;
+                    font-family: inherit;
+                    font-size: 100%;
+                    font-weight: 600;
+                    line-height: 1.2;
+                    padding: .5rem;
+                    pointer-events: none;
+                    text-align: left;
+                    user-select: none;
+                    white-space: nowrap;
+
+                    position: absolute;
+                    left: 50%;
+                    transform: translate(-50%,0);
+                    z-index: 9999;
+
+                    animation: 1s fade-out 1 forwards 7s;
+                }
+
+                .tt-stream-preview[data-vods="false"i][data-position="above"i]::after, .tt-stream-preview[data-vods="false"i][data-position="below"i]::before {
+                    content: "Send to miniplayer (z)";
+                }
+
+                video ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb) {
+                    transition: all 1s;
+                }
+
+                video ~ * .player-controls[data-automatic="true"i] [data-a-target*="mute"i] svg {
+                    fill: var(--color-warn);
+                }
+
+                video ~ * .player-controls[data-automatic="true"i] [data-test-selector*="fill-value"i] {
+                    background-color: var(--color-warn);
+                }
+
+                video ~ * .player-controls[data-automatic="true"i] [data-a-target$="slider"i]::-webkit-slider-thumb {
+                    border: var(--border-width-default) solid var(--color-warn);
+                    background-color: var(--color-warn);
+                }
+                `;
+
+                CUSTOM_CSS?.remove();
+                $('body').append(CUSTOM_CSS);
+            }
+
+            // Update the settings
+            SettingsInitializer: {
+                switch(Settings.onInstalledReason) {
+                    // Is this the first time the extension has run?
+                    // If so, then point out what's been changed
+                    case INSTALL: {
+                        // Detect the user's desired language
+                            // Capitalizing the language code notifies the Settings page the code was not manually input
+                        let [user_language_preference] = (document.documentElement?.lang ?? window.navigator?.userLanguage ?? window.navigator?.language ?? 'en').toUpperCase().split('-');
+
+                        Storage.set({ user_language_preference });
+
+                        // Point out the newly added buttons
+                        wait(10_000).then(() => {
+                            for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
+                                element.classList.add('tt-first-run');
+
+                            let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+
+                            // Make sure the user goes to the Settings page
+                            alert
+                                .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
+                                .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
+                        });
+                    } break;
+                }
+
+                Storage.set({ onInstalledReason: null });
+            }
+
+            // Jump some frames
+            FrameJumper: {
+                document.head.append(
+                    furnish('script', {
+                        src: Runtime.getURL('ext/jump.js'),
+                        onload() {
+                            // Do something when the data is jumped...
+                        },
+                    })
+                );
+            }
+        }, 500);
+    });
+
+    document.body.onload = event => {
+        // Move on from banned/moved channels
+        AntiTimeMachine:
+        when.defined(() => $('main [data-a-target*="error"i][data-a-target*="message"i] ~ * [href$="directory"i]'))
+            .then(() => {
+                let ErrorMessage = $('main [data-a-target*="error"i][data-a-target*="message"i]')?.textContent;
+
+                when.defined(() => $(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`))
+                    .then(channel => {
+                        WARN(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
+
+                        open(channel.href, '_self');
+                    })
+            });
+
+        // Color compontents
+        ColorComponents:
+        if($.nullish('#tt-custom-css')) {
+            let color = window
+                ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
+                ?.getPropertyValue?.('--color-accent');
+
+            color = Color.destruct(color || '#9147FF');
+
+            $.body.append(furnish('style#tt-custom-css', {}, `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`));
         }
-    }, 500);
-});
 
-document.body.onload = event => {
-    // Move on from banned/moved channels
-    AntiTimeMachine:
-    when.defined(() => $('main [data-a-target*="error"i][data-a-target*="message"i] ~ * [href$="directory"i]'))
-        .then(() => {
-            let ErrorMessage = $('main [data-a-target*="error"i][data-a-target*="message"i]')?.textContent;
+        // Alerts for users
+        DisplayNews:
+        LoadCache('ReadNews', async({ ReadNews }) => {
+            let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
+                TTVToolsNewsArticles = ReadNews || [];
 
-            when.defined(() => $(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`))
-                .then(channel => {
-                    WARN(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
+            await fetchURL(TTVToolsNewsURL)
+                .then(r => r.text())
+                .then(html => {
+                    let dom = (new DOMParser).parseFromString(html, 'text/html');
 
-                    open(channel.href, '_self');
+                    return $('#wiki-body', false, dom)?.children;
                 })
+                .then(([main, footer]) => {
+                    let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
+                        .filter(({ tagName }) => /^h\d$/i.test(tagName))
+                        .map(header => {
+                            let content = [];
+
+                            let e = header;
+                            while(defined(e = e.nextElementSibling) && !/^h\d$/i.test(e.tagName))
+                                content.push(e);
+
+                            return { header, content };
+                        }).map(({ header, content }) => {
+                            let articleID = UUID.from(header.textContent, true).value;
+
+                            if(TTVToolsNewsArticles.contains(articleID))
+                                return;
+                            TTVToolsNewsArticles.push(articleID);
+
+                            let article = furnish(`#tt-news-${ articleID }`, {},
+                                header, ...content
+                            );
+
+                            $('a.anchor', true, article).map(a => a.remove());
+
+                            return article.outerHTML;
+                        })
+                        .filter(defined);
+
+                    if(articles.length)
+                        confirm.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"/> ${ articles.join('<br>') }`)
+                        .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
+                });
         });
 
-    // Color compontents
-    ColorComponents:
-    if($.nullish('#tt-custom-css')) {
-        let color = window
-            ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
-            ?.getPropertyValue?.('--color-accent');
+        // Observe chat & whispers
+        let CHAT_SELF_REFLECTOR;
 
-        color = Color.destruct(color || '#9147FF');
+        CommsObserver:
+        when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
+            .then(chat => {
+                let [CHANNEL] = window.location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
+                    USERNAME = Search.cookies.login;
 
-        $.body.append(furnish('style#tt-custom-css', {}, `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`));
-    }
+                CHANNEL = `#${ CHANNEL }`;
 
-    // Alerts for users
-    DisplayNews:
-    LoadCache('ReadNews', async({ ReadNews }) => {
-        let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
-            TTVToolsNewsArticles = ReadNews || [];
+                // Simple WebSocket → https://dev.twitch.tv/docs/irc
+                if(defined(TTV_IRC.socket))
+                    return;
 
-        await fetchURL(TTVToolsNewsURL)
-            .then(r => r.text())
-            .then(html => {
-                let dom = (new DOMParser).parseFromString(html, 'text/html');
+                Object.defineProperty(TTV_IRC, 'wsURL', {
+                    value: `wss://irc-ws.chat.twitch.tv:443`,
 
-                return $('#wiki-body', false, dom)?.children;
-            })
-            .then(([main, footer]) => {
-                let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
-                    .filter(({ tagName }) => /^h\d$/i.test(tagName))
-                    .map(header => {
-                        let content = [];
+                    writable: false,
+                    enumerable: false,
+                    configurable: false,
+                });
 
-                        let e = header;
-                        while(defined(e = e.nextElementSibling) && !/^h\d$/i.test(e.tagName))
-                            content.push(e);
+                let socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
 
-                        return { header, content };
-                    }).map(({ header, content }) => {
-                        let articleID = UUID.from(header.textContent, true).value;
+                let START_WS = socket.onopen = event => {
+                    LOG(`Chat Relay (main) connected to "${ CHANNEL }"`);
 
-                        if(TTVToolsNewsArticles.contains(articleID))
-                            return;
-                        TTVToolsNewsArticles.push(articleID);
+                    // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
+                    when(() => socket.readyState === WebSocket.OPEN)
+                        .then(() => {
+                            socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
+                            socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
+                            socket.send(`NICK ${ USERNAME.toLowerCase() }`);
+                        });
 
-                        let article = furnish(`#tt-news-${ articleID }`, {},
-                            header, ...content
-                        );
+                    let chat_log = (TTV_IRC.chat_log ??= new Map);
+                    let restrictions = (TTV_IRC.restrictions ??= new Map);
 
-                        $('a.anchor', true, article).map(a => a.remove());
+                    socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
+                        let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
 
-                        return article.outerHTML;
-                    })
-                    .filter(defined);
+                        // REMARK('Chat Relay received messages', messages);
 
-                if(articles.length)
-                    confirm.silent(`<div hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"></div> ${ articles.join('<br>') }`)
-                    .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
+                        for(let { command, parameters, source, tags } of messages) {
+                            const channel = (command.channel ?? CHANNEL).toLowerCase();
+                            const usable = parseBool(channel.equals(CHANNEL));
+
+                            if(channel.startsWith('#') && !chat_log.has(channel))
+                                chat_log.set(channel, new Set);
+
+                            switch(command.command) {
+                                // Successful login attempt
+                                case '001': {
+                                    socket.send(`JOIN ${ CHANNEL }`);
+                                    socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
+                                    socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
+                                } break;
+
+                                // PONG the server back...
+                                case 'PING': {
+                                    socket.send(`PONG ${ parameters }`);
+                                } break;
+
+                                // Someone joined the server
+                                case 'JOIN': {
+                                    // LOG(`New user "${ source.nick }" on ${ channel }`);
+
+                                    Chat.gang.push(source.nick);
+                                } break;
+
+                                // Kicked!
+                                case 'PART': {
+                                    // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
+
+                                    if(USERNAME.equals(source.nick))
+                                        socket.close();
+
+                                    Chat.gang = Chat.gang.filter(user => user.unlike(source.nick));
+                                } break;
+
+                                // Something happened...
+                                case 'NOTICE': {
+                                    if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
+                                        let msg = tags.msg_id,
+                                            typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
+
+                                        if(msg.startsWith('no_'))
+                                            /* Do nothing */;
+                                        else if(/^(mod|vip)_/i.test(msg))
+                                            Chat[typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
+                                        else if(/^un(mod|vip)_/i.test(msg))
+                                            Chat[typ] = Chat[typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
+                                        else
+                                            Chat[typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
+                                    } else if('host_on host_off'.contains(tags?.msg_id)) {
+                                        if(!usable) continue;
+
+                                        when.defined(() => STREAMER)
+                                            .then(() => {
+                                                for(let callback of STREAMER.__eventlisteners__.onhost)
+                                                    when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: parameters.toLowerCase().startsWith('now hosting') }));
+                                            });
+                                    } else {
+                                        if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
+                                            WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                        else
+                                            WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+
+                                        // socket.send(`PART ${ channel }`);
+                                    }
+                                } break;
+
+                                // Status(es) of the room
+                                case 'ROOMSTATE': {
+                                    let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
+
+                                    restrictions.set(channel, {
+                                        room_id,
+                                        emote_only: parseBool(+emote_only),
+                                        followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
+                                        r9k: parseBool(+r9k),
+                                        slow: (+slow * 1000),
+                                        subs_only: parseBool(+subs_only),
+                                    });
+                                } break;
+
+                                // Something happened (alert)
+                                case 'USERNOTICE': {
+                                    let { id, msg_id, system_msg } = tags;
+
+                                    let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
+                                        mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                        subject = (
+                                            'sub resub'.split(' ').contains(msg_id)?
+                                                'dues':
+                                            'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
+                                                'keep':
+                                            'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
+                                                'gift':
+                                            'raid'.split(' ').contains(msg_id)?
+                                                'raid': // incoming raids
+                                            'pointsredeemed'.split(' ').contains(msg_id)?
+                                                'coin':
+                                            'note'
+                                        ),
+                                        element = when.defined((message, subject) =>
+                                            // TODO: get bullets via text content
+                                            $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i], [role="log"i] [data-test-selector="announcement-line"i]', true)
+                                                .find(element => {
+                                                    if(false
+                                                        // The element already has a UUID and type
+                                                        || (element.dataset.uuid && element.dataset.type)
+                                                        // The text matches less than 30% of the message
+                                                        || 1 - message.mutilate().errs(element.textContent.mutilate()) < .3
+                                                    )
+                                                        return false;
+
+                                                    element.dataset.uuid ||= UUID.from(element.getPath());
+                                                    element.dataset.type ||= subject;
+
+                                                    return message.errs(element.textContent) < .3;
+                                                })
+                                            , 100, message, subject);
+
+                                    let results = {
+                                        element,
+                                        usable,
+                                        message,
+                                        subject,
+                                        mentions,
+
+                                        // TODO: see if there are extra `msg_id` values
+                                        msg_id,
+                                    };
+
+                                    Chat.__allbullets__.add(results);
+
+                                    for(let [name, callback] of Chat.__onbullet__)
+                                        when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                    wait(100, results).then(async results => {
+                                        for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
+                                            when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                    });
+                                } break;
+
+                                // The channel is hosting...
+                                case 'HOSTTARGET': {
+                                    if(!usable) continue;
+
+                                    let [to, amount] = parameters.split(' ', 2);
+
+                                    when.defined(() => STREAMER)
+                                        .then(() => {
+                                            for(let callback of STREAMER.__eventlisteners__.onhost)
+                                                when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
+                                        });
+                                } break;
+
+                                // Got a message...
+                                case 'PRIVMSG': {
+                                    // REMARK('PRIVMSG:', { command, parameters, source, tags });
+
+                                    // Bot commands...
+                                    if(defined(command.botCommand)) {
+                                        let results = { name: command.botCommand, arguments: command.botCommandParams };
+
+                                        for(let [name, callback] of Chat.__oncommand__)
+                                            when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                        wait(100, results).then(async results => {
+                                            for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                                when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                        });
+
+                                        continue;
+                                    }
+
+                                    let author = source.nick,
+                                        badges = Object.keys(tags?.badges ?? {}),
+                                        // Have to wait on the page to play catch-up...
+                                        element = when.defined((parameters, uuid) =>
+                                            $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
+                                                .find(message =>
+                                                    $(`[data-a-user="${ author }"i]`, true, message)
+                                                        .map(div => div.closest('[data-test-selector$="message"i]'))
+                                                        .filter(defined)
+                                                        .find(div => {
+                                                            let text = [],
+                                                                body = $('[data-test-selector$="message-body"i]', false, div);
+
+                                                            if(nullish(body))
+                                                                return;
+
+                                                            for(let child of body.children)
+                                                                if(child.dataset.testSelector?.equals('emote-button'))
+                                                                    text.push($('img', false, child).alt);
+                                                                else
+                                                                    text.push(child.textContent);
+
+                                                            let match = text.join('').sheer().equals(parameters.sheer());
+
+                                                            if(match)
+                                                                div.dataset.uuid = uuid;
+
+                                                            return match
+                                                        })
+                                                )
+                                            , 100, parameters, tags.id),
+                                        emotes = Object.keys(tags.emotes ?? {}).map(key => {
+                                            let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
+                                                name = parameters.substring(+emote.startPosition, ++emote.endPosition),
+                                                url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+
+                                            Chat.__allemotes__.set(name, url);
+
+                                            return name;
+                                        }),
+                                        handle = tags.display_name,
+                                        mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                        message = parameters,
+                                        raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
+                                        reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
+                                        style = `color: ${ tags.color || '#9147FF' };`,
+                                        uuid = tags.id;
+
+                                    let results = {
+                                        raw,
+                                        uuid,
+                                        reply,
+                                        style,
+                                        author,
+                                        emotes,
+                                        badges,
+                                        handle,
+                                        usable,
+                                        element,
+                                        message,
+                                        mentions,
+                                        highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
+                                    };
+
+                                    Object.defineProperties(results, {
+                                        deleted: {
+                                            get: async function() {
+                                                return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                            }.bind(element)
+                                        },
+                                    });
+
+                                    chat_log.get(channel).add(results);
+
+                                    Chat.__allmessages__.set(uuid, results);
+
+                                    for(let [name, callback] of Chat.__onmessage__)
+                                        when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                    wait(100, results).then(async results => {
+                                        for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                            when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                    });
+                                } break;
+
+                                // Got a whisper
+                                case 'WHISPER': {
+                                    let results = { unread: 1, from: channel, message: parameters };
+
+                                    for(let [name, callback] of Chat.__onwhisper__)
+                                        when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                    wait(100, results).then(async results => {
+                                        for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                            when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                    });
+                                } break;
+
+                                default: continue;
+                            };
+                        }
+                    };
+                };
+
+                socket.onerror = event => {
+                    WARN(`Chat Relay (main) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
+
+                    socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
+                    START_WS(event);
+                };
+
+                socket.onclose = event => {
+                    WARN(`Chat Relay (main) closed unexpectedly → ${ JSON.stringify(event) }`);
+
+                    socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
+                    START_WS(event);
+                };
+
+                // The socket closed...
+                when(() => TTV_IRC.socket?.readyState === WebSocket.CLOSED, 1000)
+                    .then(closed => {
+                        WARN(`The WebSocket closed... Restarting in 5s...`);
+
+                        wait(5000)
+                            .then(() => {
+                                if(parseBool(Settings.recover_chat))
+                                    return window.location.reload();
+                                return TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL_chat);
+                            })
+                            .then(() => {
+                                when(() => TTV_IRC.socket.readyState === WebSocket.OPEN, 500)
+                                    .then(() => TTV_IRC.socket.send(`JOIN ${ CHANNEL }`))
+                                    .then(() => TTV_IRC.socket.onmessage = TTV_IRC.socket.reflect = CHAT_SELF_REFLECTOR);
+                            });
+                    });
             });
-    });
-};
+    };
+}

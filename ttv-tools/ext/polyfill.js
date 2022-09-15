@@ -162,6 +162,14 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
                         context = null;
                         continue;
+                    } else if(char == '"') {
+                        if(value.length > 0) {
+                            attributes[name] = value;
+
+                            context = 'attribute';
+                        }
+
+                        continue;
                     }
                 }
 
@@ -183,15 +191,15 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
                         context = 'id';
                         continue;
-                    } if(char == '[') {
-                        element.classList.add(value.trim());
-
-                        context = 'attribute';
-                        continue;
                     } if(char == '.') {
                         element.classList.add(value.trim());
 
                         value = '';
+                        continue;
+                    } if(char == '[') {
+                        element.classList.add(value.trim());
+
+                        context = 'attribute';
                         continue;
                     }
                 }
@@ -258,15 +266,17 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
     Object.entries(attributes)
         .filter(([name, value]) => name?.length)
-        .forEach(
-        ([name, value]) => (/^(@|data-|on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
-            (/^on/.test(name))?
-                element.addEventListener(name.replace(/^on/, ''), value):
-            (/^(@|data-)/.test(name))?
-                element.dataset[name.replace(/^(@|data-)/, '').replace(/-(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())] = value:
-            element[name] = value:
-        element.setAttribute(name, value)
-    );
+        .forEach(([name, value]) => {
+            name = name?.trim();
+
+            return (/^(@|data-|on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
+                (/^on/.test(name))?
+                    element.addEventListener(name.replace(/^on/, ''), value):
+                (/^(@|data-)/.test(name))?
+                    element.dataset[name.replace(/^(@|data-)/, '').replace(/-(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())] = value:
+                element[name] = value:
+            element.setAttribute(name, value);
+    });
 
     children
         .filter(defined)
@@ -573,7 +583,7 @@ function parseBool(value = null) {
         stringified = value.toString();
     }
 
-    stringified = stringified.trim().replace(/^"([^"]*?)"$/, '$1');
+    stringified = (stringified || typeof stringified).trim().replace(/^"([^"]*?)"$/, '$1');
 
     switch(stringified) {
         case undefined:
@@ -718,6 +728,12 @@ Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
     return (offset / day).floor();
 };
 
+// Returns the milliseconds since an event
+    // Date.since(event:Date|number) → number<integer>
+Date.since ??= function since(event) {
+    return (+new Date) - +event;
+};
+
 // Strips the HTML body from a document
     // DOMParser.stripBody(html:string?) → string<html>
 DOMParser.stripBody ??= function stripBody(html = '') {
@@ -783,6 +799,12 @@ DOMParser.stripBody ??= function stripBody(html = '') {
 
             return $1.replace($2, Object.entries(attributes).map(([name, value]) => [name, value].join('=')).join(' '));
         });
+};
+
+// Gets meta properties by name
+    // Document..get(property:string) → string|null
+Document.prototype.get ??= function get(property) {
+    return this.querySelector(`[name$="${ property }"i], [property$="${ property }"i], [name$="og:${ property }"i], [property$="og:${ property }"i]`)?.getAttribute('content');
 };
 
 // Returns an element based upon its text
@@ -1348,20 +1370,93 @@ String.prototype.count ??= function count(...searches) {
     return count;
 };
 
-// Compares a string
+// Compares strings (space dependent)
     // String..equals(value:any, caseSensitive:boolean?) → boolean
 String.prototype.equals ??= function equals(value, caseSensitive = false) {
     if(!caseSensitive)
-        return this.trim().toLowerCase() == value?.trim()?.toLowerCase();
-    return this.trim() == value?.trim();
+        return this.normalize('NFKD').trim().toLowerCase() == value?.normalize('NFKD')?.trim()?.toLowerCase();
+    return this.normalize('NFKD').trim() == value?.normalize('NFKD')?.trim();
 };
 
-// Compares a string
+// Compares strings (space dependent)
     // String..unlike(value:any, caseSensitive:boolean?) → boolean
 String.prototype.unlike ??= function unlike(value, caseSensitive = false) {
-    if(!caseSensitive)
-        return this.trim().toLowerCase() != value?.trim()?.toLowerCase();
-    return this.trim() != value?.trim();
+    return !this.equals(value, caseSensitive);
+};
+
+// Replaces text in the string
+    // String..replaceAll(search:any, replacer:string|function) → string
+String.prototype.replaceAll ??= function replaceAll(search, replacer) {
+    let before = this,
+        after = before.replace(search, replacer);
+
+    if(after.unlike(before))
+        return after.replaceAll(search, replacer);
+    return after;
+};
+
+// Replaces spaces in the string
+    // String..sheer() → string
+String.prototype.sheer ??= function sheer() {
+    return this.replace(/\s+/g, '');
+};
+
+// Removess spaces and makes the string all lowercase
+    // String..mutilate(normalize:boolean?) → string
+String.prototype.mutilate ??= function mutilate(normalize = false) {
+    let results = this.sheer().toLowerCase();
+
+    if(parseBool(normalize))
+        results = results.normalize('NFKD');
+
+    return results;
+};
+
+// Matches two strings and returns a comparison of how much text matched
+    // String..errs(string:string) → string
+String.prototype.errs ??= function errs(string) {
+    let matched = '';
+
+    for(let char of this)
+        if(string.contains(char)) {
+            matched += char;
+            string.replace(char, '');
+        }
+
+    return 1 - matched.length / this.length
+};
+
+// Compares strings - Calculates the Levenshtein's distance between two strings
+    // String..distanceFrom(that:any) → number<integer>
+String.prototype.distanceFrom ??= function distanceFrom(that = '') {
+    let A = this,
+        B = that?.toString?.() || '';
+
+    let a = A.length,
+        b = B.length;
+
+    let track = Array(b + 1).fill(null).map(() => Array(a + 1).fill(null));
+
+    for(let i = 0; i <= a; ++i)
+        track[0][i] = i;
+
+    for(let j = 0; j <= b; ++j)
+        track[j][0] = j;
+
+    for(let j = 1; j <= b; ++j)
+        for(let i = 1; i <= a; ++i)
+            track[j][i] = Math.min(
+                // Deletion
+                track[j][i - 1] + 1,
+
+                // Insertion
+                track[j - 1][i] + 1,
+
+                // Substitution
+                track[j - 1][i - 1] + +(A[i - 1] !== B[j - 1]),
+            );
+
+    return track[b][a];
 };
 
 // Add Array methods to HTMLCollection
@@ -1445,21 +1540,20 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
 // Records a video element
     // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
-HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = {}) {
-    let key = UUID.from(options?.key ?? 'DEFAULT_RECORDER').value,
+HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = { mimeType: 'video/webm' }) {
+    let key = UUID.from(options?.key ?? 'DEFAULT_RECORDING').value,
         { private = false } = options;
+
+    this.recorders ??= {};
+
+    if(defined(this.recorders[key]))
+        throw `There is already an active recording for "${ options.key }." You must delete the previous recording: HTMLVideoElement.prototype.removeRecording("${ options.key }")`;
 
     for(let key of ['key', 'private'])
         delete options[key];
 
-    this.recorders ??= {};
-
-    if(defined(this?.recorders?.[key]))
-        throw `There is already an active recording (${ this.recorders[key].stream.id }). You must delete the previous recording: HTMLVideoElement.prototype.removeRecording("${ key }")`;
-
-    let STREAM = this.captureStream(),
-        RECORDER = this.recorders[key] = new MediaRecorder(STREAM, options),
-        DATA = (this.__Recording__ = []);
+    let RECORDER = this.recorders[key] = new MediaRecorder(this.captureStream(), options),
+        DATA = (this.latestBlobs = []);
 
     let configurable = false, writable = false, enumerable = false;
     Object.defineProperties(RECORDER, {
@@ -1481,9 +1575,14 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
     RECORDER.ondataavailable = event => {
         this.mimeType ??= RECORDER.mimeType;
 
-        this.__Recording__.push(event.data);
+        this.latestBlobs.push(event.data);
     };
     RECORDER.start(1000);
+    // Chunks per second
+        // 1k → 1cps
+        // 42 → 24cps
+        // 33 → 30cps
+        // 17 → 60cps
 
     this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', !private);
 
@@ -1502,44 +1601,44 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
 
 // Gets a recording of a video element
     // HTMLVideoElement..getRecording(key:string?) → MediaRecorder
-HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDER') {
-    return this?.recorders?.[ UUID.from(key).value ];
+HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDING') {
+    return this.recorders?.[ UUID.from(key).value ];
 };
 
 // Determines if there is a recording of a video element
     // HTMLVideoElement..hasRecording(key:string?) → boolean
-HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDER') {
-    return defined(this?.recorders?.[ UUID.from(key).value ]);
+HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDING') {
+    return defined(this.recorders?.[ UUID.from(key).value ]);
 };
 
 // Removes a recording of a video element
     // HTMLVideoElement..removeRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDER') {
-    delete this?.recorders?.[ UUID.from(key).value ];
+HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
+    delete this.recorders?.[ UUID.from(key).value ];
 
     return this;
 };
 
 // Pauses a recording of a video element
     // HTMLVideoElement..pauseRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDER') {
-    this?.recorders?.[ UUID.from(key).value ]?.pause();
+HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDING') {
+    this.recorders?.[ UUID.from(key).value ]?.pause();
 
     return this;
 };
 
 // Resumes a recording of a video element
     // HTMLVideoElement..resumeRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDER') {
-    this?.recorders?.[ UUID.from(key).value ]?.resume();
+HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDING') {
+    this.recorders?.[ UUID.from(key).value ]?.resume();
 
     return this;
 };
 
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.cancelRecording ??= function removeRecording(key = 'DEFAULT_RECORDER') {
-    let recorder = this?.recorders?.[ UUID.from(key).value ];
+HTMLVideoElement.prototype.cancelRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
+    let recorder = this.recorders?.[ UUID.from(key).value ];
 
     if(defined(recorder))
         recorder.slice = Infinity;
@@ -1550,15 +1649,19 @@ HTMLVideoElement.prototype.cancelRecording ??= function removeRecording(key = 'D
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
 // Stops recording a video element
     // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDER') {
-    let recorder = this?.recorders?.[ UUID.from(key).value ],
+HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDING') {
+    let recorder = this.recorders?.[ UUID.from(key).value ],
         stream = recorder?.stream;
 
     if(nullish(stream))
         throw `There are no active recordings with the key "${ key }". You must create a recording: HTMLVideoElement.prototype.startRecording(maxTime:number?, options:object?)`;
 
-    recorder.stop();
-    stream.getTracks().map(track => track.stop());
+    try {
+        recorder.stop();
+        stream.getTracks().map(track => track.stop());
+    } catch(error) {
+        // MediaRecorder probably inactive
+    }
 
     let isActive = false;
     for(let guid in this.recorders)
@@ -2303,10 +2406,12 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
  *
  */
 // Returns if an item is of an object class
-    // isObj([object:any, ...or<Function>?) → boolean
+    // isObj(object:any, ...or<Function>?) → boolean
 function isObj(object, ...or) {
-    return !![Object, Array, Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, Map, Set, ...or]
-        .find(constructor => object?.constructor === constructor || object instanceof constructor);
+    return defined(
+        [Object, Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array, ...or]
+            .find(constructor => object?.constructor === constructor || object instanceof constructor)
+    );
 }
 
 // Returns a number formatted with commas
@@ -2624,7 +2729,7 @@ function LOG(...messages) {
         else
             type = 'o';
 
-        (type/* == 'o'*/)?
+        (type/*.equals('o')*/)?
             console.log(message):
         console.log(
             `%${ type }\u22b3 ${ message } `,
@@ -2688,7 +2793,7 @@ function WARN(...messages) {
         else
             type = 'o';
 
-        (type/* == 'o'*/)?
+        (type/*.equals('o')*/)?
             console.log(message):
         console.log(
             `%${ type }\u26a0 ${ message } `,
@@ -2752,7 +2857,7 @@ function ERROR(...messages) {
         else
             type = 'o';
 
-        (type/* == 'o'*/)?
+        (type/*.equals('o')*/)?
             console.log(message):
         console.log(
             `%${ type }\u2298 ${ message } `,
@@ -2816,7 +2921,7 @@ function REMARK(...messages) {
         else
             type = 'o';
 
-        (type/* == 'o'*/)?
+        (type/*.equals('o')*/)?
             console.log(message):
         console.log(
             `%${ type }\u22b3 ${ message } `,
@@ -2844,7 +2949,7 @@ function phantomClick(...elements) {
             mouseup = new MouseEvent('mouseup', { bubbles: true });
 
         element?.dispatchEvent(mousedown);
-        wait(30).then(() => element?.dispatchEvent(mouseup));
+        wait(100).then(() => element?.dispatchEvent(mouseup));
     }
 }
 
@@ -2893,7 +2998,9 @@ function alert(message = '') {
                 f('button.okay', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-alert').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-alert').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-alert');
@@ -2902,16 +3009,18 @@ function alert(message = '') {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-alert').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-alert').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-alert'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: okay,
@@ -3032,13 +3141,13 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         furnish('span.tt-alert-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
     );
 
-    let timedJobID = setInterval(() => {
+    let intervalID = setInterval(() => {
         let time = $('.tt-alert-time'),
             due = parseInt(time?.getAttribute('due')),
             milliseconds = (+new Date(due) - (+new Date));
 
         if(nullish(time))
-            return clearInterval(timedJobID);
+            return clearInterval(intervalID);
 
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-alert-container')))
             return time.setAttribute('due', due + 100);
@@ -3047,7 +3156,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         time.setAttribute('tt-done', milliseconds < 0);
     }, 250);
 
-    container.setAttribute('timedJobID', timedJobID);
+    container.dataset.intervalId = intervalID;
 
     alert.done.deposit(message, response);
     return response;
@@ -3102,7 +3211,9 @@ function confirm(message = '') {
                 f('button.edit.deny', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-confirm').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-confirm');
@@ -3111,16 +3222,18 @@ function confirm(message = '') {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-confirm').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-confirm'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: deny,
@@ -3129,7 +3242,9 @@ function confirm(message = '') {
                 f('button.okay', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-confirm').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-confirm');
@@ -3138,16 +3253,18 @@ function confirm(message = '') {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-confirm').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-confirm').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-confirm'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: okay,
@@ -3268,13 +3385,13 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         furnish('span.tt-confirm-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
     );
 
-    let timedJobID = setInterval(() => {
+    let intervalID = setInterval(() => {
         let time = $('.tt-confirm-time'),
             due = parseInt(time?.getAttribute('due')),
             milliseconds = (+new Date(due) - (+new Date));
 
         if(nullish(time))
-            return clearInterval(timedJobID);
+            return clearInterval(intervalID);
 
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-confirm-container')))
             return time.setAttribute('due', due + 100);
@@ -3283,7 +3400,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         time.setAttribute('tt-done', milliseconds < 0);
     }, 250);
 
-    container.setAttribute('timedJobID', timedJobID);
+    container.dataset.intervalId = intervalID;
 
     confirm.done.deposit(message, response);
     return response;
@@ -3350,7 +3467,7 @@ function prompt(message = '', defaultValue = '') {
     pattern = (null
         ?? $CNT?.getAttribute('pattern')
         ?? $CNT?.getAttribute('regexp')
-        ?? ''
+        ?? '[^$]*'
     );
 
     let container =
@@ -3371,7 +3488,9 @@ function prompt(message = '', defaultValue = '') {
                 f('button.edit.deny', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-prompt').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-prompt');
@@ -3380,16 +3499,18 @@ function prompt(message = '', defaultValue = '') {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-prompt').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-prompt'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: deny,
@@ -3398,7 +3519,9 @@ function prompt(message = '', defaultValue = '') {
                 f('button.okay', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-prompt').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-prompt');
@@ -3407,16 +3530,18 @@ function prompt(message = '', defaultValue = '') {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-prompt').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-prompt').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-prompt'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: okay,
@@ -3537,13 +3662,13 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
         furnish('span.tt-prompt-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
     );
 
-    let timedJobID = setInterval(() => {
+    let intervalID = setInterval(() => {
         let time = $('.tt-prompt-time'),
             due = parseInt(time?.getAttribute('due')),
             milliseconds = (+new Date(due) - (+new Date));
 
         if(nullish(time))
-            return clearInterval(timedJobID);
+            return clearInterval(intervalID);
 
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-prompt-container')))
             return time.setAttribute('due', due + 100);
@@ -3552,7 +3677,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
         time.setAttribute('tt-done', milliseconds < 0);
     }, 250);
 
-    container.setAttribute('timedJobID', timedJobID);
+    container.dataset.intervalId = intervalID;
 
     prompt.done.deposit(message, response);
     return response;
@@ -3606,6 +3731,7 @@ function select(message = '', options = [], multiple = false) {
             // Array → [value, ...] → 'value'
             case Array:
             case Uint8Array:
+            case Uint8ClampedArray:
             case Uint16Array:
             case Uint32Array:
             case Int8Array:
@@ -3613,6 +3739,9 @@ function select(message = '', options = [], multiple = false) {
             case Int32Array:
             case Float32Array:
             case Float64Array:
+            case BigInt64Array:
+            case BigUint64Array:
+            case WeakSet:
             case Set: {
                 for(let index = 0; index < options.length; ++index) {
                     let value = options[index];
@@ -3623,6 +3752,7 @@ function select(message = '', options = [], multiple = false) {
             } break;
 
             // Map → { key => value, ... } → 'value (key)'
+            case WeakMap:
             case Map: {
                 for(let [key, value] of options) {
                     __values__.push(value);
@@ -3669,7 +3799,9 @@ function select(message = '', options = [], multiple = false) {
                 f('button.edit.deny', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-select').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-select');
@@ -3678,16 +3810,18 @@ function select(message = '', options = [], multiple = false) {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-select').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-select'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: deny,
@@ -3696,7 +3830,9 @@ function select(message = '', options = [], multiple = false) {
                 f('button.okay', {
                     onmousedown(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-select').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-select'),
@@ -3707,16 +3843,18 @@ function select(message = '', options = [], multiple = false) {
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
-                        if(parseBool(currentTarget.closest('.tt-select').getAttribute('disabled')))
+                        let disabled = currentTarget.closest('.tt-select').getAttribute('disabled');
+
+                        if(parseBool(disabled))
                             return;
 
                         let parent = currentTarget.closest('.tt-select'),
-                            timedJobID = parseInt(parent.getAttribute('timedJobID') || -1);
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
 
                         parent.classList.add('tt-done');
                         wait(500).then(() => parent.classList.remove('tt-veiled'));
                         wait(1000).then(() => parent.remove());
-                        clearInterval(timedJobID);
+                        clearInterval(intervalID);
                     },
 
                     innerHTML: okay,
@@ -3843,13 +3981,13 @@ select.timed ??= (message = '', options = [], multiple = false, milliseconds = 6
         furnish('span.tt-select-time', { due: (+new Date) + milliseconds }, toTimeString(milliseconds))
     );
 
-    let timedJobID = setInterval(() => {
+    let intervalID = setInterval(() => {
         let time = $('.tt-select-time'),
             due = parseInt(time?.getAttribute('due')),
             milliseconds = (+new Date(due) - (+new Date));
 
         if(nullish(time))
-            return clearInterval(timedJobID);
+            return clearInterval(intervalID);
 
         if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-select-container')))
             return time.setAttribute('due', due + 100);
@@ -3858,7 +3996,7 @@ select.timed ??= (message = '', options = [], multiple = false, milliseconds = 6
         time.setAttribute('tt-done', milliseconds < 0);
     }, 250);
 
-    container.setAttribute('timedJobID', timedJobID);
+    container.dataset.intervalId = intervalID;
 
     select.done.deposit(message, response);
     return response;
