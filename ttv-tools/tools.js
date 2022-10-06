@@ -8482,6 +8482,46 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('live_reminders');
     }
 
+    /*** Auto-Chat (VIP) · @dskw1
+     *                    _               _____ _           _      ____      _______ _______
+     *         /\        | |             / ____| |         | |    / /\ \    / /_   _|  __ \ \
+     *        /  \  _   _| |_ ___ ______| |    | |__   __ _| |_  | |  \ \  / /  | | | |__) | |
+     *       / /\ \| | | | __/ _ \______| |    | '_ \ / _` | __| | |   \ \/ /   | | |  ___/| |
+     *      / ____ \ |_| | || (_) |     | |____| | | | (_| | |_  | |    \  /   _| |_| |    | |
+     *     /_/    \_\__,_|\__\___/       \_____|_| |_|\__,_|\__| | |     \/   |_____|_|    | |
+     *                                                            \_\                     /_/
+     *
+     */
+    let LastChat_CacheName = `last-chat/${ STREAMER.sole }`;
+
+    Handlers.auto_chat__vip = () => {
+      if(STREAMER.perm.not('vip'))
+        return;
+
+      LoadCache(LastChat_CacheName, results => {
+        let old = results[LastChat_CacheName],
+            now = new Date;
+
+        if(nullish(old))
+          old = now;
+        else
+          old = new Date(old);
+
+        if((now - old) && (now - old < parseTIme('8:00:00')))
+          return;
+
+        Chat.send('!lurk');
+
+        SaveCache({ [LastChat_CacheName]: now.toJSON() });
+      };
+    };
+
+    Timers.auto_chat__vip = -5000;
+
+    if(parseBool(Setting.auto_chat__vip)) {
+      RegisterJob('auto_chat__vip');
+    }
+
     /*** Game Overview Card
      *       _____                         ____                       _                  _____              _
      *      / ____|                       / __ \                     (_)                / ____|            | |
