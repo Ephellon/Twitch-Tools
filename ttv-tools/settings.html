@@ -346,7 +346,7 @@
                         <label for='parse_commands'></label>
                     </div>
                     <p tr-id>
-                        Parses <b alert-text top-tooltip='!command'>commands</b> found on the page.
+                        When a <b alert-text top-tooltip='!command'>command</b> has been found on the page, retrieve the contents of the command.
                     </p>
                     <details>
                         <summary tr-id='options' subtitle='Adjust options for &quot;Parse Commands&quot;'>Options</summary>
@@ -359,7 +359,7 @@
                                         <label for='parse_commands__create_links'></label>
                                     </div>
                                     <p tr-id>
-                                        <b>Parse Commands</b> will turn commands that contain links into their link.
+                                        <b>Parse Commands</b> will turn commands that contain links into their first link.
                                     </p>
                                 </div>
                             </div>
@@ -480,7 +480,7 @@
                                         <label for='stay_live__ignore_channel_reruns'></label>
                                     </div>
                                     <p tr-id='stay-live:vod-is-offline'>
-                                        Treat <a href='https://help.twitch.tv/s/article/video-on-demand' top-tooltip='Video on Demand'>VOD</a> streams as offline streams.
+                                        Treat <a href='https://help.twitch.tv/s/article/video-on-demand#reruns' top-tooltip='Reruns'>reruns</a> as offline streams.
                                     </p>
                                 </div>
                             </div>
@@ -498,7 +498,7 @@
                         <label for='time_zones'></label>
                     </div>
                     <p tr-id>
-                        Convert times on the page to your local time zone.
+                        Automatically convert detected times on the page to your local time zone.
                     </p>
                 </div>
             </section>
@@ -538,6 +538,71 @@
         -->
         <header tr-id='header:chat-and-messaging' subtitle='These settings do not apply to banned channels unless otherwise noted.'>Chat &amp; Messaging</header>
         <article>
+            <!-- Accessible Chat → accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform -->
+            <section new='3.1'>
+                <div class='title' tr-id='simplify-chat'><span large gold glyph='accessible'></span> Accessible Chat</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='simplify_chat' type='checkbox'>
+                        <label for='simplify_chat'></label>
+                    </div>
+                    <p tr-id>
+                        Display the chat dual-toned to make it easier to read.
+                    </p>
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Accessible Chat&quot;'>Options</summary>
+                        <div>
+                            <div opt>
+                                <div class='title' tr-id='simplify-chat:options'>Monotone Usernames</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='simplify_chat_monotone_usernames' type='checkbox'>
+                                        <label for='simplify_chat_monotone_usernames'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Keep username colors uniform.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class='title' tr-id>Chat Font</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Display chat in the following font:
+                                    </p>
+
+                                    <select id='simplify_chat_font'>
+                                        <option value='null' style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
+                                        <option value='Arial' style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
+                                        <option value='Calibri' style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
+                                        <option value='Dyslexie' style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
+                                        <option value='Helvetica' style='font-family:Helvetica!important'>Helvetica → TWITCH.tv™</option>
+                                        <option value='Monospace' style='font-family:Monospace!important'>Monospace → TWITCH.tv™</option>
+                                        <option value='System-UI' style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
+                                        <option value='Tahoma' style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
+                                        <option value='Verdana' style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div disabled opt>
+                                <div class='title' tr-id>Reverse Emotes</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='simplify_chat_reverse_emotes' type='checkbox' disabled>
+                                        <label for='simplify_chat_reverse_emotes'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
             <!-- BetterTTV Emotes → amount,anxiety,area,avenue,bundle,capacity,carrier,cause,channel,consignment,content,district,document,element,emotes,explanation,fluctuation,goods,haul,idea,insecurity,instability,loading,locale,location,matter,means,medium,motivation,motive,neighborhood,origin,packing,paragraph,part,passage,payload,point,position,principle,purpose,quotation,region,root,route,scene,section,shipment,site,situation,source,spot,station,storing,text,theme,tunnel,uncertainty,venue,verse,volatility,vulnerability,weakness,weight,whereabouts,wording,words -->
             <section>
                 <div class='title' tr-id='bttv-emotes'><span small gold glyph='emotes'></span> BetterTTV Emotes</div>
@@ -547,7 +612,7 @@
                         <label for='bttv_emotes'></label>
                     </div>
                     <p tr-id>
-                        Use BetterTTV emotes.
+                        Enable the usage of BetterTTV emotes.
                     </p>
                     <p warning-text tr-id>
                         This may cause instability while loading emotes.
@@ -801,8 +866,58 @@
                         <label for='link_maker__chat'></label>
                     </div>
                     <p tr-id>
-                        Convert links in the chat to preview cards.
+                        Automatically convert links in chat to preview cards.
                     </p>
+                </div>
+            </section>
+
+            <!-- Lurking Message → channels,charge,directive,handling,information,letter,management,manipulation,memo,memorandum,message,news,note,notice,oversight,plan,policy,report,strategy,transaction,treatment,vip,word -->
+            <section new='5.29'>
+                <div class='title' tr-id='auto-chat'><span white glyph='thread'></span> Lurking Message</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='auto_chat__vip' type='checkbox'>
+                        <label for='auto_chat__vip'></label>
+                    </div>
+                    <p tr-id>
+                        For channels where you are a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='VIP'>VIP</a>, send a message to notify you are lurking.
+                    </p>
+
+                    <details>
+                        <summary tr-id='options' subtitle='Adjust options for &quot;Lurking Message&quot;'>Options</summary>
+                        <div>
+                            <div disabled opt>
+                                <div class='title' tr-id='auto-chat:include-mentions'>Mentions</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        When someone mentions you <code purple>@username</code>:<br>
+
+                                        <select id='auto_chat__mentions'>
+                                            <option value='null'>Do nothing</option>
+                                        </select>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class='title' tr-id='auto-chat:lurking-message'>Message</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Send this message on your behalf: <input id='auto_chat__lurking_message' type='text' placeholder='Just going to !lurk'>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class='title' tr-id='auto-chat:include-phrases'>Wait Time</div>
+                                <div class='summary'>
+                                    <p tr-id>
+                                        Wait <span unit='min'><input id='auto_chat__wait_time' type='number' value='5' min='0' max='30' step='1' set='top-tooltip:this.min — this.max'></span> before sending the <b>message</b>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 
@@ -891,14 +1006,14 @@
                                 </div>
                             </div>
                             <p>
-                                </p><div class='cc-container'>
+                                <div class='cc-container'>
                                     <div class='cc-svg'><span black glyph='cc'></span></div>
                                     <p class='cc-text' tr-id='cc-sound-notice'>
                                         <a id='sound-href' href='https://notificationsounds.com/notification-sounds/goes-without-saying-608' rel='nofollow'>This sound</a> is licensed under the Creative Commons Attribution license.
-                                        <a id='sound-license' href='https://creativecommons.org/licenses/by/4.0/legalcode' rel='nofollow'>Find out more</a>
+                                        <a id='sound-license' href='https://creativecommons.org/licenses/by/4.0/legalcode' rel='nofollow'>Find out more</a>.
                                     </p>
                                 </div>
-                            <p></p>
+                            </p>
                         </div>
                     </details>
                 </div>
@@ -913,7 +1028,7 @@
                         <label for='prevent_spam'></label>
                     </div>
                     <p tr-id>
-                        Hide repetitive messages in chat.
+                        When repetitive messages are detected in chat, hide them.
                     </p>
                     <details>
                         <summary tr-id='options' subtitle='Adjust options for &quot;Prevent Spam&quot;'>Options</summary>
@@ -940,7 +1055,7 @@
                                 <div class='title' tr-id>Maximum Occurrences</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        <b>Prevent Spam</b> will mark messages as <b>repetitive</b> after a word appears <span unit='≥'><input id='prevent_spam_ignore_under' type='number' value='5' min='1' max='150' step='1' set='top-tooltip:this.min — this.max'></span> or more times.
+                                        <b>Prevent Spam</b> will mark any message as <b>repetitious</b> after any word appears <span unit='≥'><input id='prevent_spam_ignore_under' type='number' value='5' min='1' max='150' step='1' set='top-tooltip:this.min — this.max'></span> or more times.
                                     </p>
                                 </div>
                             </div>
@@ -958,7 +1073,7 @@
                         <label for='recover_chat'></label>
                     </div>
                     <p tr-id>
-                        If the <b>Stream Chat</b> is not loaded (or suddenly destroyed), attempt to recover it.
+                        When the chat object is not loaded (or suddenly destroyed), attempt to recover it.
                     </p>
                 </div>
             </section>
@@ -972,7 +1087,7 @@
                         <label for='recover_messages'></label>
                     </div>
                     <p tr-id>
-                        If a message is deleted, attempt to recover it.
+                        When a message is deleted, attempt to recover it.
                     </p>
                 </div>
             </section>
@@ -988,71 +1103,6 @@
                     <p tr-id>
                         When someone mentions you <code purple>@username</code>, make the message stand out by showing a pop-up.
                     </p>
-                </div>
-            </section>
-
-            <!-- Simplify Chat → accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform -->
-            <section new='3.1'>
-                <div class='title' tr-id='simplify-chat'><span large gold glyph='accessible'></span> Simplify Chat</div>
-                <div class='summary'>
-                    <div class='toggle'>
-                        <input id='simplify_chat' type='checkbox'>
-                        <label for='simplify_chat'></label>
-                    </div>
-                    <p tr-id>
-                        Apply dual tones to make chat easier to read.
-                    </p>
-                    <details>
-                        <summary tr-id='options' subtitle='Adjust options for &quot;Simplify Chat&quot;'>Options</summary>
-                        <div>
-                            <div opt>
-                                <div class='title' tr-id='simplify-chat:options'>Monotone Usernames</div>
-                                <div class='summary'>
-                                    <div class='toggle'>
-                                        <input id='simplify_chat_monotone_usernames' type='checkbox'>
-                                        <label for='simplify_chat_monotone_usernames'></label>
-                                    </div>
-                                    <p tr-id>
-                                        Keep username colors uniform.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div opt>
-                                <div class='title' tr-id>Chat Font</div>
-                                <div class='summary'>
-                                    <p tr-id>
-                                        Display chat in the following font:
-                                    </p>
-
-                                    <select id='simplify_chat_font'>
-                                        <option value='null' style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
-                                        <option value='Arial' style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
-                                        <option value='Calibri' style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
-                                        <option value='Dyslexie' style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
-                                        <option value='Helvetica' style='font-family:Helvetica!important'>Helvetica → TWITCH.tv™</option>
-                                        <option value='Monospace' style='font-family:Monospace!important'>Monospace → TWITCH.tv™</option>
-                                        <option value='System-UI' style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
-                                        <option value='Tahoma' style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
-                                        <option value='Verdana' style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div disabled opt>
-                                <div class='title' tr-id>Reverse Emotes</div>
-                                <div class='summary'>
-                                    <div class='toggle'>
-                                        <input id='simplify_chat_reverse_emotes' type='checkbox' disabled>
-                                        <label for='simplify_chat_reverse_emotes'></label>
-                                    </div>
-                                    <p tr-id>
-                                        Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </details>
                 </div>
             </section>
 
@@ -1142,11 +1192,11 @@
                 <div class='title' tr-id='accent-color'><span small glyph='latest'></span> Accent Color</div>
                 <div class='summary'>
                     <p tr-id>
-                        What should the accent color be?
+                        What should the TTV Tools' accent color be?
                     </p>
 
                     <select id='accent_color'>
-                        <option value='colored/complement' tr-id='color:auto'>Auto</option>
+                        <option value='colored/contrast' tr-id='color:auto'>Auto</option>
                         <option value='blue/12' tr-id='color:blue'>Blue</option>
                         <option value='twitch-purple/12' selected tr-id='color:purple'>Purple</option>
                         <option value='red/15' tr-id='color:red'>Red</option>
@@ -1190,7 +1240,7 @@
                 <div class='title' tr-id='placement:points-receipt'><span small gold glyph='channelpoints'></span> Points Receipt &amp; Rank</div>
                 <div class='summary'>
                     <p tr-id>
-                        Where should the <b>Points Receipt</b> &amp; <b>Point Ranking</b> text be displayed?
+                        Where should the <b>Points Receipt &amp; Point Rank</b> text be displayed?
                     </p>
 
                     <select id='points_receipt_placement'>
@@ -1224,7 +1274,7 @@
                         <label for='stream_preview'></label>
                     </div>
                     <p tr-id>
-                        Display a preview of broadcasts when hovering over channels.
+                        When hovering over a streamer's icon, display a preview of their broadcast.
                     </p>
                     <details>
                         <summary tr-id='extras' subtitle='Adjust settings for &quot;Stream Preview&quot;'>Extras</summary>
@@ -1233,12 +1283,12 @@
                                 <div class='title' tr-id='stream-preview:position'>Preview Position</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        Adjust the orthogonal position of the preview.
+                                        Adjust the <b attention-text top-tooltip='In front of, or behind'>orthogonal</b> position of the preview.
                                     </p>
                                     <select id='stream_preview_position'>
-                                        <option value='3' selected tr-id='stream-preview:position-options'>Always on top</option>
+                                        <option value='3' selected tr-id='stream-preview:position-options'>Always in front (on top)</option>
                                         <option value='2' tr-id>Normal</option>
-                                        <option value='1' tr-id>Always on bottom</option>
+                                        <option value='1' tr-id>Always behind (on bottom)</option>
                                     </select>
                                 </div>
                             </div>
@@ -1247,7 +1297,7 @@
                                 <div class='title' tr-id='stream-preview:size'>Preview Size</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        Adjust the size of the preview.
+                                        How large sould the preview be?
                                     </p>
                                     <select id='stream_preview_scale'>
                                         <option value='1' selected tr-id='stream-preview:size-options'>Normal (×1)</option>
@@ -1261,7 +1311,10 @@
                                 <div class='title' tr-id='stream-preview:sound'>Preview Sound</div>
                                 <div class='summary'>
                                     <p tr-id>
-                                        Adjust the sound of the preview.
+                                        Should the preview be audible?
+                                    </p>
+                                    <p warning-text tr-id>
+                                        This will temporarily mute the current stream.
                                     </p>
                                     <div class='toggle'>
                                         <input id='stream_preview_sound' type='checkbox'>
@@ -1313,18 +1366,18 @@
                 <div class='title' tr-id='networking:sync-settings'><span small glyph='export'></span> Export Settings</div>
                 <div class='summary' style='width:fit-content'>
                     <p tr-id>
-                        If you would like to <b attention-text top-tooltip='Save settings from the cloud to this device'>download settings</b>, enter the <b attention-text top-tooltip='8 or more letters, numbers and/or dashes'>Upload ID</b>.
+                        If you would like to <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter the <b attention-text top-tooltip='8 or more letters, numbers and/or dashes'>Upload ID</b>.
                     </p>
                     <p>
                         <input id='sync-token' type='text' value='TTV-TOOL' style='width:-webkit-fill-available; font-family: monospace; letter-spacing:1em; text-align:center; text-transform:uppercase; text-overflow:clip' placeholder='ABCD1234' pattern='[\w\-]{8,}'>
-                        </p><div id='sync-status' class='subtitle' style='margin-left:0.5rem; transition: all .5s;;'>&nbsp;</div>
-                    <p></p>
+                        <div id='sync-status' class='subtitle' style='margin-left:0.5rem; transition: all .5s;;'>&nbsp;</div>
+                    </p>
 
-                    <button id='sync-settings--upload' style='margin-right:0.5rem' --right-tooltip='Generates a new ID'>
+                    <button id='sync-settings--upload' style='margin-right:0.5rem' top-tooltip='Save settings from this device to another device'>
                         <span small glyph='upload'></span>
                         <span tr-id='networking:sync-settings:upload'>Upload</span>
                     </button>
-                    <button id='sync-settings--download'>
+                    <button id='sync-settings--download' top-tooltip='Save settings from somewhere else to this device'>
                         <span small glyph='download'></span>
                         <span tr-id='networking:sync-settings:download'>Download</span>
                     </button>
@@ -1335,12 +1388,36 @@
                 </div>
             </section>
 
+            <!-- Store Integration → acquisition,asset,assimilation,association,buy,channel,contact,current,element,examination,exploration,flood,flow,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,purchase,pursuit,quest,relationship,research,rush,search,spate,stock,store,stream,surge,tide,tie,torrent,tributary -->
+            <section new='5.29'>
+                <div class='title' tr-id='store-integration'><span small gold glyph='video'></span> Store Integration</div>
+                <div class='summary'>
+                    <div class='toggle'>
+                        <input id='store_integration' type='checkbox' checked>
+                        <label for='store_integration'></label>
+                    </div>
+                    <p tr-id>
+                        When a stream is loaded and a game is detected, search for the game and create a purchase link.
+                    </p>
+                    <br>
+                    <p tr-id>
+                        Currently supports:
+
+                        <ul>
+                            <li>Steam&reg;</li>
+                            <li>PlayStation&reg;</li>
+                            <li>Xbox&reg;</li>
+                        </ul>
+                    </p>
+                </div>
+            </section>
+
             <!-- Video Clips → allocation,alt,avenue,bar,beginning,block,book,break,breathing space,carrier,case,channels,charge,chunk,clips,conclusion,current,data,dawn,default,delinquency,directory,dossier,excerpt,file,flood,flow,folder,fraction,fragment,halt,handling,hesitation,hiatus,hitch,information,interlude,intermission,interruption,interval,kickoff,lapse,layoff,letup,list,lot,lull,management,manipulation,means,medium,mow,nonpayment,notebook,opening,outset,oversight,part,pause,piece,plan,policy,portions,prune,quantity,queue,recess,recording,respite,route,rush,section,segment,serving,shave,shear,snip,spate,start,stoppage,strategy,streams,surge,suspension,televised,tide,torrent,transaction,treatment,tributary,trim,tunnel,video,video -->
             <section new='5.15' beta='5.28'>
                 <div class='title' tr-id='networking:video-clips'><span small glyph='download'></span> Video Clips</div>
                 <div class='summary'>
                     <p tr-id>
-                        Record portions of streams. Use <code id='key:alt-z'>Alt + Z</code> to start/stop recording.
+                        Allows recording portions of streams. Use <code id='key:alt-z'>Alt + Z</code> to start/stop recording.
                     </p>
                     <details>
                         <summary tr-id='options' subtitle='Adjust settings for &quot;Video Clips&quot;'>Options</summary>
@@ -1352,13 +1429,14 @@
                                         What file type should <b>Video Clips</b> be?
                                     </p>
                                     <select id='video_clips__file_type'>
-                                        <option value='x-matroska' selected tr-id='video-clips:file-type-options'>Most shareable (MKV)</option>
+                                        <option value='x-matroska' selected tr-id='video-clips:file-type-options'>Easiest to share (MKV)</option>
                                         <option value='webm;codecs=h264' tr-id>Most compatible (MP4)</option>
                                         <option value='webm;codecs=vp8,vp9' tr-id>Most supported (AVI)</option>
-                                        <option value='webm;codecs=opus' tr-id>Most workable (OGV)</option>
+                                        <option value='webm;codecs=opus' tr-id>Easiest to edit (OGV)</option>
                                         <option value='webm;codecs=3gpp' tr-id>Most mobile-friendly (3GP)</option>
                                         <option value='webm' tr-id>Most efficient (WebM)</option>
                                         <option value='mpeg' tr-id>Most dynamic (MPEG)</option>
+                                        <!-- Firefox requries the colon character ":" → "webm;codecs:h264" -->
                                     </select>
                                 </div>
                             </div>
@@ -1398,7 +1476,7 @@
                                         <label for='video_clips__dvr'></label>
                                     </div>
                                     <p tr-id>
-                                        Automatically record (and save) certain channel's streams. Channels marked as <b>DVR</b> will skip and pause the <b>First in Line</b> queue.
+                                        Automatically record (and save) certain streams. Channels marked as <b>DVR</b> will skip and pause the <b>First in Line</b> queue.
                                     </p>
                                 </div>
                             </div>
@@ -1448,7 +1526,7 @@
                         <label for='recover_ads'></label>
                     </div>
                     <p tr-id>
-                        When an advertisement fails to play ("freezes"), attempt to recover it.
+                        When an advertisement <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
                     </p>
                 </div>
             </section>
@@ -1462,7 +1540,7 @@
                         <label for='recover_frames'></label>
                     </div>
                     <p tr-id>
-                        When the video fails to play (drops frames for longer than <b>15 seconds</b>), reload the webpage.
+                        When the video <b attention-text top-tooltip='Fails to play for longer than 15 seconds'>freezes</b>, reload the webpage.
                     </p>
 
                     <details>
@@ -1508,7 +1586,7 @@
                         <label for='recover_stream'></label>
                     </div>
                     <p tr-id>
-                        When the stream fails to play ("freezes"), attempt to recover it.
+                        When the stream <b attention-text top-tooltip='Fails to play for more than 5 seconds'>freezes</b>, attempt to recover it.
                     </p>
                 </div>
             </section>
@@ -1522,7 +1600,7 @@
                         <label for='recover_video'></label>
                     </div>
                     <p tr-id>
-                        When the video fails to download (black screen), reload the webpage.
+                        When the video <b attention-text top-tooltip='Displays an error code or blank screen'>fails to download</b>, reload the webpage.
                     </p>
                 </div>
             </section>
@@ -1625,7 +1703,7 @@
                         <label for='show_stats'></label>
                     </div>
                     <p tr-id>
-                        Allow the extension to display statistics.
+                        Allow the extension to display statistics from certain features, such as calculated data, images, errors, etc.
                     </p>
                 </div>
             </section>
@@ -1642,7 +1720,7 @@
                         Allow the extension to display, and use experimental features.
                     </p>
                     <p warning-text tr-id>
-                        May cause data loss.
+                        Some features may cause data loss.
                     </p>
                 </div>
             </section>
@@ -1659,7 +1737,7 @@
                         Allow the extension to add extra keyboard shortcuts.
                     </p>
                     <p tr-id>
-                        Keyboard shortcuts can be viewed by pressing <code id='key:?'>?</code>
+                        Keyboard shortcuts can be viewed by invoking <code id='key:?'>?</code> on any stream.
                     </p>
                 </div>
             </section>
@@ -1673,7 +1751,7 @@
                         <label for='low_data_mode'></label>
                     </div>
                     <p tr-id>
-                        Forces the extension to use less data per hour.
+                        Forces the extension to use less overhead data per hour.
                     </p>
                     <p tr-id>
                         Current estimate <span><input disabled visible id='est-data-usage' type='number' value='0' controller='#low_data_mode'></span>
@@ -1690,10 +1768,10 @@
                         <label for='fine_details'></label>
                     </div>
                     <p tr-id>
-                        Allow the extension to use Twitch™ API data to enhance your experience.
+                        Allow the extension to make use of Twitch™ API data to enhance your experience.
                     </p>
                     <p warning-text tr-id>
-                        This will not collect any data. It will use the data Twitch™ has collected.
+                        This will not collect any data. It will use the data Twitch™ has already collected.
                     </p>
                 </div>
             </section>
@@ -1790,9 +1868,10 @@
                                     </p>
 
                                     <select id='auto_focus_poll_image_type'>
+                                        <option value='webp' selected tr-id>Automatic</option>
                                         <option value='jpeg' tr-id>JPG — CPU friendly, good detection</option>
                                         <option value='png' tr-id>PNG — CPU intensive, great detection</option>
-                                        <option value='webp' selected tr-id>WebP — CPU friendly, great detection</option>
+                                        <option value='webp' tr-id>WebP — CPU friendly, great detection</option>
                                     </select>
                                 </div>
                             </div>
@@ -1915,10 +1994,10 @@
                 <div class='title' tr-id='data-usage--browser-storage'><span small glyph='poll'></span> Data Usage</div>
                 <div class='summary'>
                     <p>
-                        </p><table id='data-usage--browser-storage-itemized'>
+                        <table id='data-usage--browser-storage-itemized'>
                             <thead><tr><th colspan='999'><input id='data-usage--browser-storage-range' disabled visible type='range' min='0' max='100'></th></tr></thead>
                         </table>
-                    <p></p>
+                    </p>
                 </div>
             </section>
 
@@ -1952,7 +2031,18 @@
             </section>
 
             <footer tr-id='footer'>
-                This extension is in no way affiliated with, nor endorsed by Amazon™, Twitch™, NightDev (LLC), either party's partners, affiliates, or subsidiaries.
+                <div>
+                    <h3>This extension is in no way affiliated with, nor endorsed by:</h3>
+                    <ul>
+                        <li>Amazon&trade;</li>
+                        <li>Twitch Interactive, Inc.</li>
+                        <li>NightDev (LLC)</li>
+                        <li>Valve Corp. &copy;</li>
+                        <li>Microsoft Corp. &copy;</li>
+                        <li>Sony Interactive Entertainment (LLC)</li>
+                        <li><em>Either aforementioned party's partners, affiliates, or subsidiaries.</em></li>
+                    </ul>
+                </div>
             </footer>
         </article>
 

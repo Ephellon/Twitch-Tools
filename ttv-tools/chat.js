@@ -384,9 +384,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             let f = furnish;
 
             let emoteContainer =
-            f(`#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`, {},
-                f('.emote-button', {},
-                    f('.tt-inline-flex', {},
+            f(`#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`).with(
+                f('.emote-button').with(
+                    f('.tt-inline-flex').with(
                         f(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@test-selector=emote-button-clickable][@a-target=${name}]`,
                             {
                                 'aria-label': name,
@@ -415,7 +415,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                f('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]', {},
+                                f('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]').with(
                                     f('figure.tt-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
                                 f('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
@@ -451,7 +451,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             // Load emotes from a certain user
             if(provider?.length)
-                await fetchURL(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
+                await fetchURL.idempotent(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
                     .then(response => response.json())
                     .then(json => {
                         let { channelEmotes, sharedEmotes } = json;
@@ -476,7 +476,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Load emotes with a certain name
             else if(keyword?.length)
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.normalize('NFKD').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
-                    await fetchURL(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
+                    await fetchURL.idempotent(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
                             if(!emotes?.length)
@@ -504,7 +504,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Load all emotes from...
             else
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
-                    await fetchURL(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
+                    await fetchURL.idempotent(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
                             for(let { emote } of emotes) {
@@ -545,7 +545,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         // Raw Search...
                             // FIX-ME: New Search logic does not complete?
-                        await fetchURL(`./${ bttvOwner }`)
+                        await fetchURL.idempotent(`./${ bttvOwner }`)
                             .then(response => response.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(({ documentElement }) => documentElement)
@@ -572,9 +572,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         f = furnish;
 
                                     let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
-                                        f('.chat-line__message--emote-button[@test-selector=emote-button]', {},
-                                            f('span[@a-target=emote-name]', {},
-                                                f('.class.chat-image__container.tt-align-center.tt-inline-block', {},
+                                        f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
+                                            f('span[@a-target=emote-name]').with(
+                                                f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                                     f('img.bttv.chat-image.chat-line__message--emote', {
                                                         src: BTTV_EMOTES.get(emote),
                                                         alt: emote,
@@ -655,9 +655,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                 },
             },
 
-            furnish('.tt-pd-b-1.tt-pd-t-05.tt-pd-x-1.tt-relative', {},
+            furnish('.tt-pd-b-1.tt-pd-t-05.tt-pd-x-1.tt-relative').with(
                 // Emote Section Header
-                furnish('.emote-grid-section__header-title.tt-align-items-center.tt-flex.tt-pd-x-1.tt-pd-y-05', {},
+                furnish('.emote-grid-section__header-title.tt-align-items-center.tt-flex.tt-pd-x-1.tt-pd-y-05').with(
                     furnish('p.tt-align-middle.tt-c-text-alt.tt-strong', {
                         innerHTML: `BetterTTV Emotes &mdash; ${ EmoteDragCommand }`
                     })
@@ -678,7 +678,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('bttv_emotes');
     };
-    Timers.bttv_emotes = 2_500;
+    Timers.bttv_emotes = 5_000;
 
     __BetterTTVEmotes__:
     if(parseBool(Settings.bttv_emotes)) {
@@ -720,7 +720,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 // Run the bttv-emote changer on pre-populated messages
                 (Chat.onmessage = async line => {
-                    let regexp;
+                    let regexp,
+                        holding = new Map;
 
                     // Replace BTTV emotes for the last 15 chat messages
                     if(Queue.bttv_emotes.contains(line.uuid))
@@ -744,9 +745,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             let f = furnish;
                             let img =
-                            f('.chat-line__message--emote-button[@test-selector=emote-button]', {},
-                                f('span[@a-target=emote-name]', {},
-                                    f('.class.chat-image__container.tt-align-center.tt-inline-block', {},
+                            f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
+                                f('span[@a-target=emote-name]').with(
+                                    f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                         f('img.bttv.chat-image.chat-line__message--emote', {
                                             alt, src,
                                         })
@@ -759,7 +760,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             alt = alt.replace(/\s+/g, '_');
 
                             $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                                let container = furnish(`.chat-line__message--emote-button[@test-selector=emote-button][@bttv-emote=${alt}][@bttv-owner=${own}][@bttv-owner-id=${pid}]`, { innerHTML: img.innerHTML }),
+                                let container = furnish(`.chat-line__message--emote-button[@test-selector=emote-button][@bttv-emote=${alt}][@bttv-owner=${own}][@bttv-owner-id=${pid}]`).html(img.innerHTML),
                                     converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                                 converted.push(alt);
@@ -768,11 +769,17 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                                 fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
                                 fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
-                                fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
-
-                                REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                                fragment.innerHTML = fragment.innerHTML.replace(regexp, UUID.from(alt).toString());
+                                holding.set(alt, container.outerHTML);
                             });
                         }
+
+                    for(let [alt, html] of holding)
+                        $(`.text-fragment[tt-converted-emotes~="${alt}"i]`, true).map(fragment => {
+                            fragment.innerHTML = fragment.innerHTML.replaceAll(UUID.from(alt).toString(), html);
+
+                            REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                        });
                 })//(Chat.get());
             });
 
@@ -818,9 +825,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                 return;
 
             let emoteContainer =
-            furnish('.tt-emote-captured.tt-pd-x-05.tt-relative', {},
-                furnish('.emote-button', {},
-                    furnish('.tt-inline-flex', {},
+            furnish('.tt-emote-captured.tt-pd-x-05.tt-relative').with(
+                furnish('.emote-button').with(
+                    furnish('.tt-inline-flex').with(
                         furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@test-selector=emote-button-clickable][@a-target=${name}]`,
                             {
                                 'aria-label': name,
@@ -849,7 +856,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                furnish('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]', {},
+                                furnish('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]').with(
                                     furnish('figure.tt-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
                                 furnish('img.emote-picker__image', { src, alt: name })
@@ -924,9 +931,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                 },
             },
 
-            furnish('.tt-pd-b-1.tt-pd-t-05.tt-pd-x-1.tt-relative', {},
+            furnish('.tt-pd-b-1.tt-pd-t-05.tt-pd-x-1.tt-relative').with(
                 // Emote Section Header
-                furnish('.emote-grid-section__header-title.tt-align-items-center.tt-flex.tt-pd-x-1.tt-pd-y-05', {},
+                furnish('.emote-grid-section__header-title.tt-align-items-center.tt-flex.tt-pd-x-1.tt-pd-y-05').with(
                     furnish('p.tt-align-middle.tt-c-text-alt.tt-strong', {
                         innerHTML: `Captured Emotes &mdash; ${ EmoteDragCommand }`
                     })
@@ -1035,9 +1042,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     let f = furnish;
                     let img =
-                    f('.chat-line__message--emote-button[@test-selector=emote-button]', {},
-                        f('span[@a-target=emote-name]', {},
-                            f('.class.chat-image__container.tt-align-center.tt-inline-block', {},
+                    f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
+                        f('span[@a-target=emote-name]').with(
+                            f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                 f('img.chat-image.chat-line__message--emote', {
                                     srcset, alt, src,
                                 })
@@ -1050,7 +1057,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     alt = alt.replace(/\s+/g, '_');
 
                     $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                        let container = furnish(`.chat-line__message--emote-button[@test-selector=emote-button][@captured-emote=${alt}]`, { innerHTML: img.innerHTML }),
+                        let container = furnish(`.chat-line__message--emote-button[@test-selector=emote-button][@captured-emote=${alt}]`).html(img.innerHTML),
                             converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                         converted.push(alt);
@@ -1325,40 +1332,27 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let BULLETIN_FILTER;
+    let BULLETIN_FILTERS = new Map([
+        ['filter_messages__bullets_coin', ['coin']],
+        ['filter_messages__bullets_raid', ['raid']],
+        ['filter_messages__bullets_subs', ['dues', 'gift', 'keep']],
+        ['filter_messages__bullets_note', ['note']],
+    ]);
 
     Handlers.filter_bulletins = () => {
         START__STOP_WATCH('filter_bulletins');
 
-        BULLETIN_FILTER ??= Chat.onbullet = async bullet => {
-            let { mentions, message, subject } = bullet,
-                element = await bullet.element,
-                reason;
-
-            let censor = parseBool(false
-                || (['coin'].contains(subject) && parseBool(Settings.filter_messages__bullets_coin)? reason = 'channel points': false)
-                || (['raid'].contains(subject) && parseBool(Settings.filter_messages__bullets_raid)? reason = 'raid(s)': false)
-                || (['dues', 'gift', 'keep'].contains(subject) && parseBool(Settings.filter_messages__bullets_subs)? reason = 'subscription(s)': false)
-                || (['note'].contains(subject) && parseBool(Settings.filter_messages__bullets_note)? reason = 'announcement(s)': false)
-            ),
-                censoring = parseBool(element.getAttribute('tt-hidden-bulletin'));
-
-            if(!censor || censoring || mentions.contains(USERNAME))
-                return;
-
-            // LOG(`Censoring bulletin because its subject is "${ reason }"`, bullet);
-
-            element.setAttribute('tt-hidden-bulletin', censor);
-        };
+        for(let [key, subjects] of BULLETIN_FILTERS)
+            if(parseBool(Settings[key]))
+                AddCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
 
         JUDGE__STOP_WATCH('filter_bulletins');
     };
     Timers.filter_bulletins = -2_500;
 
     Unhandlers.filter_bulletins = () => {
-        let hidden = $('[tt-hidden-bulletin]', true);
-
-        hidden.map(element => element.removeAttribute('tt-hidden-bulletin'));
+        for(let [key, subjects] of BULLETIN_FILTERS)
+            RemoveCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`);
     };
 
     __FilterBulletins__:
@@ -1391,7 +1385,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         PHRASE_HIGHLIGHTER ??= Chat.onmessage = async line => {
             let Phrases = UPDATE_RULES('phrase');
 
-            let { message, mentions, author, badges, emotes } = line,
+            let { message, mentions, author, badges, emotes, style } = line,
                 element = await line.element,
                 reason;
 
@@ -1427,12 +1421,15 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             LOG(`Highlighting message because the ${ reason } matches`, line);
 
-            let highlight = parseBool(element.getAttribute('tt-light')?.equals('true'));
+            let highlight = parseBool(element.hasAttribute('tt-light'));
 
             if(highlight)
                 return;
 
+            let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
+
             element.setAttribute('tt-light', true);
+            element.modStyle(`border:1px solid ${ color }; border-radius:3px;`);
         };
 
         if(defined(PHRASE_HIGHLIGHTER))
@@ -1604,12 +1601,14 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.messages.missing(line.uuid)) {
                 Queue.messages.push(line.uuid);
 
-                let { author, message } = line,
+                let { author, message, style } = line,
                     element = await line.element;
 
                 // LOG('Highlighting message:', { author, message });
 
-                element.setAttribute('style', 'background-color: var(--color-opac-p-8)');
+                let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
+
+                element.setAttribute('style', `background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
             }
         })//(Chat.get());
     };
@@ -1661,7 +1660,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         LOG('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
 
-                        (reply ?? $('button[data-test-selector="chat-reply-button"i]', false, element))?.click();
+                        (reply ?? $('button[data-test-selector*="reply"i]', false, element))?.click();
                     },
                 });
             }
@@ -1714,7 +1713,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     chatContainer: ['tt-block','tt-border-radius-large','tt-pd-0'],
                 };
 
-                return f('.chat-line__reply-icon.tt-absolute.tt-border-radius-medium.tt-c-background-base.tt-elevation-1', {},
+                return f('.chat-line__reply-icon.tt-absolute.tt-border-radius-medium.tt-c-background-base.tt-elevation-1').with(
                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=chat-reply-button]',
                         {
                             onclick: event => {
@@ -1734,11 +1733,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     chatContainerChild.classList.add(...addedClasses.chatContainerChild);
 
                                     bubbleContainer.append(
-                                        f(`#tt-native-twitch-reply.tt-align-items-start.tt-flex.tt-flex-row.tt-pd-0[@test-selector=chat-input-tray]`, {},
-                                            f('.tt-align-center.tt-mg-05', {},
-                                                f('.tt-align-items-center.tt-flex', { innerHTML: Glyphs.modify('reply', { height: '24px', width: '24px' }) })
+                                        f(`#tt-native-twitch-reply.tt-align-items-start.tt-flex.tt-flex-row.tt-pd-0[@test-selector=chat-input-tray]`).with(
+                                            f('.tt-align-center.tt-mg-05').with(
+                                                f('.tt-align-items-center.tt-flex').html(Glyphs.modify('reply', { height: '24px', width: '24px' }))
                                             ),
-                                            f('.tt-flex-grow-1.tt-pd-l-05.tt-pd-y-05', {},
+                                            f('.tt-flex-grow-1.tt-pd-l-05.tt-pd-y-05').with(
                                                 f('span.tt-c-text-alt.tt-font-size-5.tt-strong.tt-word-break-word', {
                                                     'connected-to': uuid,
 
@@ -1747,7 +1746,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                     innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
                                                 })
                                             ),
-                                            f('.tt-right-0.tt-top-0', {},
+                                            f('.tt-right-0.tt-top-0').with(
                                                 f('button#tt-close-native-twitch-reply.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                                     {
                                                         onclick: event => {
@@ -1776,8 +1775,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     );
 
                                     bubbleContainer.append(
-                                        f('#tt-native-twitch-reply-message.font-scale--default.tt-pd-x-1.tt-pd-y-05.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]',{},
-                                            f('.tt-relative', { innerHTML: messageElement.outerHTML })
+                                        f('#tt-native-twitch-reply-message.font-scale--default.tt-pd-x-1.tt-pd-y-05.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]').with(
+                                            f('.tt-relative').html(messageElement.outerHTML)
                                         )
                                     );
 
@@ -1787,11 +1786,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 chatInput.focus();
                             },
                         },
-                        f('span.tt-button-icon__icon', {},
+                        f('span.tt-button-icon__icon').with(
                             f('div',
                                 { style: 'width: 2rem; height: 2rem;' },
-                                f('.tt-icon', {},
-                                    f('.tt-aspect', { innerHTML: Glyphs.reply })
+                                f('.tt-icon').with(
+                                    f('.tt-aspect').html(Glyphs.reply)
                                 )
                             )
                         )
@@ -1864,6 +1863,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         REWARDS_CARDIFIER = setInterval(() => {
             let f = furnish;
             let card = $('[class*="reward"i][class*="center"i][class*="body"i]');
+            let timerStart = +new Date;
 
             if(nullish(card))
                 return;
@@ -1874,7 +1874,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(nullish(content))
                 return;
 
-            let parsed = parseURL.pattern.exec(content.textContent);
+            let parsed = parseURL.pattern.exec(content.innerText);
 
             if(!parsed?.length)
                 return;
@@ -1886,10 +1886,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             content.innerHTML =
                 f('a[target=_blank]', { href, style: 'padding:1rem;margin:1rem' },
                     f.img({ src: 'https://cdn.blerp.com/Favicons/favicon-16x16.png', style: 'margin-right:1rem;vertical-align:middle' }),
-                    f(`span[@blerp=${ pathname }]`, {}, `Blerp soundbite: ${ alias }`)
+                    f(`span[@blerp=${ pathname }]`).with(`Blerp soundbite: ${ alias }`)
                 ).outerHTML;
 
-            fetchURL(href)
+            fetchURL.idempotent(href)
                 .then(response => response.text())
                 .then(DOMParser.stripBody)
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -1901,13 +1901,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let f = furnish;
                     let get = property => DOM.get(property);
 
-                    let [title, description, image, url] = ["title", "description", "image", "url"].map(get),
+                    let [title, description, image, url, audio] = ["title", "description", "image", "url", "audio"].map(get),
                         error = DOM.querySelector('parsererror')?.textContent;
-
-                    let ok = /\/thumbnails\//i.test(image);
-
-                    if(!ok)
-                        throw `No metadata available for "${ STREAMER.game }"`;
 
                     LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
 
@@ -1918,13 +1913,17 @@ let Chat__Initialize = async(START_OVER = false) => {
                             throw error;
                     }
 
-                    let aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`);
+                    let aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`),
+                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; width:-webkit-fill-available' }, f.source({ src: audio }));
 
                     if(nullish(aliasContainer))
                         return;
 
-                    aliasContainer.innerHTML = encodeHTML(title);
-                    aliasContainer.title = description;
+                    description = description.split(/memes?[\.!\?]/, 2).pop();
+
+                    aliasContainer.innerHTML = encodeHTML(`Blerp soundbite: ${ title }`);
+                    aliasContainer.title = description || title;
+                    aliasContainer.append(audioContainer);
                 });
         });
 
@@ -1979,7 +1978,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 CHAT_CARDIFIED.set(href, null);
                 CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
-                /*await*/ fetchURL(href, { mode: 'cors' })
+                /*await*/ fetchURL.idempotent(href, { mode: 'cors' })
                     .then(response => response.text())
                     .then(DOMParser.stripBody)
                     .then(html => HTMLParser.parseFromString(html, 'text/html'))
@@ -1991,7 +1990,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         let f = furnish;
                         let get = property => DOM.get(property);
 
-                        let [title, description, image] = ["title", "description", "image"].map(get),
+                        let [title = '', description = '', image] = ["title", "description", "image"].map(get),
                             error = DOM.querySelector('parsererror')?.textContent;
 
                         LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
@@ -2005,14 +2004,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 throw error;
                         }
 
-                        let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
-                            f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
+                        let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
+                            f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
                                 f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
-                                    f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
+                                    f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05').with(
                                         // Preview image
-                                        f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {},
-                                            f('.tt-card-image', {},
-                                                f('.tt-aspect', {},
+                                        f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center').with(
+                                            f('.tt-card-image').with(
+                                                f('.tt-aspect').with(
                                                     f('div', {}),
                                                     f('img.tt-image', {
                                                         alt: title,
@@ -2026,15 +2025,15 @@ let Chat__Initialize = async(START_OVER = false) => {
                                             )
                                         ),
                                         // Title & Subtitle
-                                        f('.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
-                                            f('.tt-full-width.tt-pd-l-1', {},
+                                        f('.tt-align-items-center.tt-flex.tt-overflow-hidden').with(
+                                            f('.tt-full-width.tt-pd-l-1').with(
                                                 // Title
-                                                f('.chat-card__title.tt-ellipsis', {},
-                                                    f('p.tt-strong.tt-ellipsis[@test-selector=chat-card-title]', {}, title)
+                                                f('.chat-card__title.tt-ellipsis').with(
+                                                    f('p.tt-strong.tt-ellipsis[@test-selector=chat-card-title]').with(title)
                                                 ),
                                                 // Subtitle
-                                                f('.tt-ellipsis', {},
-                                                    f('p.tt-c-text-alt-2.tt-ellipsis[@test-selector=chat-card-description]', {}, description)
+                                                f('.tt-ellipsis').with(
+                                                    f('p.tt-c-text-alt-2.tt-ellipsis[@test-selector=chat-card-description]').with(description)
                                                 ),
                                             )
                                         )
@@ -2043,11 +2042,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                             )
                         );
 
-                        let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]`, {},
-                            f('.tt-relative', {},
-                                f('.tt-relative.chat-line__message-container', {},
-                                    f('div', {},
-                                        f('.chat-line__no-background.tt-inline', {},
+                        let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]`).with(
+                            f('.tt-relative').with(
+                                f('.tt-relative.chat-line__message-container').with(
+                                    f('div').with(
+                                        f('.chat-line__no-background.tt-inline').with(
                                             card
                                         )
                                     )
@@ -2109,7 +2108,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let spam_placeholder = "chat-deleted-message-placeholder";
 
             function markAsSpam(element, type = 'spam', message) {
-                let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@a-target=${spam_placeholder}][@test-selector=${spam_placeholder}]`, {}, `message marked as ${ type }.`);
+                let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@a-target=${spam_placeholder}][@test-selector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
 
                 $('[data-test-selector="chat-message-separator"i] ~ * > *', true, element).forEach(sibling => sibling.remove());
                 $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.append(span);
@@ -2358,10 +2357,11 @@ let Chat__Initialize = async(START_OVER = false) => {
             RemoveCustomCSSBlock_Chat('tt-rewards-calc');
         }
 
-        // Average broadcast time is 4.5h
-        // Average number of streamed days is 5 (Mon - Fri)
-        let averageBroadcastTime = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000, // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
-            activeDaysPerWeek = (STREAMER.data?.activeDaysPerWeek ?? 5),
+        // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
+            // Average broadcast time is 4.5h
+            // Average number of streamed days is 5 (Mon - Fri)
+        let averageBroadcastTime = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000).clamp(0, 24),
+            activeDaysPerWeek = (STREAMER.data?.activeDaysPerWeek ?? 5).clamp(1, 7),
             pointsEarnedPerHour = 120 + (200 * +Settings.auto_claim_bonuses); // https://help.twitch.tv/s/article/channel-points-guide
         let timeLeftInBroadcast = averageBroadcastTime - (STREAMER.time / 3_600_000);
 
@@ -2918,33 +2918,24 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.recover_messages = async() => {
         START__STOP_WATCH('recover_messages');
 
-        let previous;
         restoring: for(let [uuid, line] of Chat.messages) {
+            if(RESTORED_MESSAGES.has(uuid))
+                continue restoring;
+
             let { author, message, emotes } = line,
                 element = await line.element,
                 deleted = await line.deleted;
 
-            if(RESTORED_MESSAGES.has(uuid))
-                continue restoring;
-
             if(deleted) {
-                let container,
-                    body;
-
-                if(defined(previous)) {
-                    container = $(`[data-a-target^="chat"i] [data-test-selector="chat-line-message"i][data-uuid="${ previous }"i] ~ [data-test-selector="chat-line-message"i]:not([data-resurrected="true"i])`);
+                let container = $(`[data-a-target^="chat"i] [data-test-selector="chat-line-message"i]:not([data-uuid])`),
                     body = $(`[data-test-selector$="message-placeholder"i]`, false, container);
-                } else {
-                    container = $(`[data-a-target^="chat"i] [data-test-selector="chat-line-message"i]:not([data-resurrected="true"i])`);
-                    body = $(`[data-test-selector$="message-placeholder"i]`, false, container);
-                }
 
                 if(nullish(body) || $.nullish(`[data-a-user="${ author }"i]`, false, container))
                     continue restoring;
 
                 let f = furnish;
 
-                LOG(`Restoring message "${ message }"`, { line, previous });
+                LOG(`Restoring message "${ message }"`, { line });
 
                 // Fragmented...
                 if(emotes.length > 0) {
@@ -2954,10 +2945,10 @@ let Chat__Initialize = async(START_OVER = false) => {
                         inter.push(
                             emotes.contains(word)
                             // Create an emote button...
-                            ? f('.chat-line__message--emote-button[@test-selector=emote-button]', {},
-                                f('div', {},
-                                    f('span[@a-target=emote-name]', {},
-                                        f('.chat-image__container', {},
+                            ? f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
+                                f('div').with(
+                                    f('span[@a-target=emote-name]').with(
+                                        f('.chat-image__container').with(
                                             f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
                                         )
                                     )
@@ -2973,14 +2964,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                             fragments.push(word);
                         } else {
                             if(fragments.length)
-                                final.push(f('.text-fragment[@a-target=chat-message-text]', {}, fragments.join(' ')));
+                                final.push(f('.text-fragment[@a-target=chat-message-text]').with( fragments.join(' ')));
                             final.push(word);
 
                             fragments = [];
                         }
 
                     if(fragments.length)
-                        final.push(f('.text-fragment[@a-target=chat-message-text]', {}, fragments.join(' ')));
+                        final.push(f('.text-fragment[@a-target=chat-message-text]').with( fragments.join(' ')));
 
                     body.innerHTML = final.map(e => e.outerHTML).join(' ');
                 } else {
@@ -2992,14 +2983,12 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 RESTORED_MESSAGES.add(uuid);
             }
-
-            previous = uuid;
         }
 
         JUDGE__STOP_WATCH('recover_messages');
     };
     // Variable timer...
-    Timers.recover_messages = 500;
+    Timers.recover_messages = 750;
 
     __RecoverChat__:
     if(parseBool(Settings.recover_messages)) {
@@ -3007,7 +2996,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Adjust the tiemr dynamically...
         setInterval(() => {
-            let desired = 500 + STREAMER.poll.floorToNearest(100),
+            let desired = 500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0).floorToNearest(100),
                 actual = Timers.recover_messages,
                 min = Math.min(desired, actual),
                 max = Math.max(desired, actual);
@@ -3025,7 +3014,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 };
 // End of Chat__Initialize
 
-let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
+let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
     let USERNAME, LANGUAGE, THEME,
         PATHNAME, NORMALIZED_PATHNAME, STREAMER,
         GLOBAL_EVENT_LISTENERS;
@@ -3035,7 +3024,7 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
     USERNAME ??= Search?.cookies?.name;
-    STREAMER ??= ({ name: (name ?? path), sole });
+    STREAMER ??= ({ name: (name ?? path), sole, veto: banned });
 
     // Fill GLOBAL_EVENT_LISTENERS
     GLOBAL_EVENT_LISTENERS ??= {};
@@ -3206,7 +3195,8 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
 
         let f = furnish;
 
-        let { name, fiat } = (STREAMER ?? { name: top.location.pathname.split(/\W/, 2)[1], fiat: 'Channel Points' }),
+        let name = (STREAMER.name || top.location.pathname.split(/\W/, 2)[1]).replace('/', ''),
+            fiat = (STREAMER.fiat || 'Channel Points'),
             url = parseURL(`https://nightdev.com/hosted/obschat/`).addSearch({
                 theme: `bttv_${ THEME }`,
                 channel: name,
@@ -3216,13 +3206,13 @@ let Chat__Initialize_Safe_Mode = async(START_OVER = false) => {
             }),
             iframe = f(`iframe#tt-proxy-chat`, { src: url.href, style: `width: 100%; height: 100%` }),
             preBanner =
-                f('#tt-banned-banner.tt-pd-b-2.tt-pd-x-2', {},
+                f('#tt-banned-banner.tt-pd-b-2.tt-pd-x-2').with(
                     f('.tt-border-t.tt-pd-b-1.tt-pd-x-2'),
-                    f('.tt-align-center', {},
-                        f('p.tt-c-text.tt-strong[@test-selector=current-user-timed-out-text]', {},
+                    f('.tt-align-center').with(
+                        f('p.tt-c-text.tt-strong[@test-selector=current-user-timed-out-text]').with(
                             `Messages from ${ name } chat.`
                         ),
-                        f('p.tt-c-text-alt-2', {},
+                        f('p.tt-c-text-alt-2').with(
                             `Unable to collect ${ fiat }.`
                         )
                     )
@@ -3305,7 +3295,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         if(!parseBool(hidden))
             WARN('[NON_FATAL] Child container unavailable. Reason:', { banned, hidden });
 
-        wait(5000).then(Chat__Initialize_Safe_Mode);
+        wait(5000).then(() => Chat__Initialize_Safe_Mode({ banned, hidden }));
         clearInterval(Chat__PAGE_CHECKER);
 
         return Settings = await GetSettings();
@@ -3393,352 +3383,424 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         // Observe chat
         let CHAT_SELF_REFLECTOR;
 
-        ChatObserver:
-        when.defined(() => $('[data-test-selector$="message-container"i]'))
-            .then(chat => {
-                let [CHANNEL] = window.location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
-                    USERNAME = Search.cookies.login;
+        ChatObserver: {
+            let [CHANNEL] = window.location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
+                USERNAME = Search.cookies.login;
 
-                CHANNEL = `#${ CHANNEL }`;
+            CHANNEL = `#${ CHANNEL }`;
 
-                // Simple WebSocket → https://dev.twitch.tv/docs/irc
-                if(defined(TTV_IRC.sockets[CHANNEL]))
-                    return;
+            // Simple WebSocket → https://dev.twitch.tv/docs/irc
+            if(defined(TTV_IRC.sockets[CHANNEL]))
+                return;
 
-                Object.defineProperty(TTV_IRC, 'wsURL_chat', {
-                    value: `wss://irc-ws.chat.twitch.tv:443`,
+            Object.defineProperty(TTV_IRC, 'wsURL_chat', {
+                value: `wss://irc-ws.chat.twitch.tv:443`,
 
-                    writable: false,
-                    enumerable: false,
-                    configurable: false,
+                writable: false,
+                enumerable: false,
+                configurable: false,
+            });
+
+            let socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+
+            let START_WS = socket.onopen = event => {
+                LOG(`Chat Relay (child) connected to "${ CHANNEL }"`);
+
+                // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
+                when(() => socket.readyState === WebSocket.OPEN)
+                    .then(() => {
+                        socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
+                        socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
+                        socket.send(`NICK ${ USERNAME.toLowerCase() }`);
+                    });
+
+                let chat_log = (TTV_IRC.chat_log ??= new Map);
+                let restrictions = (TTV_IRC.restrictions ??= new Map);
+
+                socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
+                    let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
+
+                    // REMARK('Chat Relay received messages', messages);
+
+                    for(let { command, parameters, source, tags } of messages) {
+                        const channel = (command.channel ?? CHANNEL).toLowerCase();
+                        const usable = parseBool(channel.equals(CHANNEL));
+
+                        if(channel.startsWith('#') && !chat_log.has(channel))
+                            chat_log.set(channel, new Set);
+
+                        switch(command.command) {
+                            // Successful login attempt
+                            case '001': {
+                                socket.send(`JOIN ${ CHANNEL }`);
+                                socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
+                                socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
+                            } break;
+
+                            // PONG the server back...
+                            case 'PING': {
+                                socket.send(`PONG ${ parameters }`);
+                            } break;
+
+                            // Someone joined the server
+                            case 'JOIN': {
+                                // LOG(`New user "${ source.nick }" on ${ channel }`);
+
+                                Chat.gang?.push(source.nick);
+                            } break;
+
+                            // Kicked!
+                            case 'PART': {
+                                // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
+
+                                if(USERNAME.equals(source.nick))
+                                    socket.close();
+
+                                Chat.gang = Chat.gang?.filter(user => user.unlike(source.nick));
+                            } break;
+
+                            // Something happened...
+                            case 'NOTICE': {
+                                if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
+                                    let msg = tags.msg_id,
+                                        typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
+
+                                    Chat[CHANNEL] ??= { mods: [], vips: [] };
+
+                                    if(msg.startsWith('no_'))
+                                        /* Do nothing */;
+                                    else if(/^(mod|vip)_/i.test(msg))
+                                        Chat[CHANNEL][typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
+                                    else if(/^un(mod|vip)_/i.test(msg))
+                                        Chat[CHANNEL][typ] = Chat[CHANNEL][typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
+                                    else
+                                        Chat[CHANNEL][typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
+                                } else {
+                                    if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
+                                        WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                    else
+                                        WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+
+                                    // socket.send(`PART ${ channel }`);
+                                }
+                            } break;
+
+                            // Status(es) of the room
+                            case 'ROOMSTATE': {
+                                let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
+
+                                restrictions.set(channel, {
+                                    room_id,
+                                    emote_only: parseBool(+emote_only),
+                                    followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
+                                    r9k: parseBool(+r9k),
+                                    slow: (+slow * 1000),
+                                    subs_only: parseBool(+subs_only),
+                                });
+                            } break;
+
+                            // Something happened (alert)
+                            case 'USERNOTICE': {
+                                let { id, msg_id, system_msg } = tags;
+
+                                let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
+                                    mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                    subject = (
+                                        'sub resub'.split(' ').contains(msg_id)?
+                                            'dues':
+                                        'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
+                                            'keep':
+                                        'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
+                                            'gift':
+                                        'raid'.split(' ').contains(msg_id)?
+                                            'raid': // incoming raids
+                                        'pointsredeemed'.split(' ').contains(msg_id)?
+                                            'coin':
+                                        'note'
+                                    ),
+                                    element = when.defined((message, subject) =>
+                                        // TODO: get bullets via text content
+                                        $('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])', true)
+                                            .find(element => {
+                                                if(false
+                                                    // The element already has a UUID and type
+                                                    || (element.dataset.uuid && element.dataset.type)
+                                                    // The text matches less than 20% of the message
+                                                    || message.mutilate().errs(element.textContent.mutilate()) > .8
+                                                )
+                                                    return false;
+
+                                                element.dataset.uuid ||= UUID.from(element.getPath());
+                                                element.dataset.type ||= subject;
+
+                                                return message.mutilate().errs(element.textContent.mutilate()) < .2;
+                                            })
+                                        , 100, message, subject);
+
+                                let results = {
+                                    element,
+                                    usable,
+                                    message,
+                                    subject,
+                                    mentions,
+
+                                    // TODO: see if there are extra `msg_id` values
+                                    msg_id,
+                                };
+
+                                Chat.__allbullets__.add(results);
+
+                                for(let [name, callback] of Chat.__onbullet__)
+                                    callback(results);
+
+                                wait(100, results).then(async results => {
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
+                                        callback(results);
+                                });
+                            } break;
+
+                            // The channel is hosting...
+                            case 'HOSTTARGET': {
+                                if(!usable) continue;
+
+                                let [to, amount] = parameters.split(' ', 2);
+
+                                when.defined(() => STREAMER)
+                                    .then(() => {
+                                        for(let callback of STREAMER.__eventlisteners__.onhost)
+                                            when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
+                                    });
+                            } break;
+
+                            // Got a message...
+                            case 'PRIVMSG': {
+                                // REMARK('PRIVMSG:', { command, parameters, source, tags });
+
+                                // Bot commands...
+                                if(defined(command.botCommand)) {
+                                    let results = { name: command.botCommand, arguments: command.botCommandParams };
+
+                                    for(let [name, callback] of Chat.__oncommand__)
+                                        callback(results);
+
+                                    wait(100, results).then(async results => {
+                                        for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                            callback(results);
+                                    });
+
+                                    continue;
+                                }
+
+                                let author = source.nick,
+                                    badges = Object.keys(tags?.badges ?? {}),
+                                    // Have to wait on the page to play catch-up...
+                                    element = when.defined(parameters =>
+                                        $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
+                                            .find(message =>
+                                                $(`[data-a-user="${ author }"i]`, true, message)
+                                                    .map(div => div.closest('[data-test-selector$="message"i]'))
+                                                    .filter(defined)
+                                                    .find(div => {
+                                                        let text = [],
+                                                            body = $('[data-test-selector$="message-body"i]', false, div);
+
+                                                        if(nullish(body))
+                                                            return;
+
+                                                        for(let child of body.children)
+                                                            if(child.dataset.testSelector?.equals('emote-button'))
+                                                                text.push($('img', false, child).alt);
+                                                            else
+                                                                text.push(child.textContent);
+
+                                                        let match = text.join('').sheer().equals(parameters.sheer());
+
+                                                        if(match)
+                                                            div.dataset.uuid = uuid;
+
+                                                        return match
+                                                    })
+                                            )
+                                        , 100, parameters),
+                                    emotes = Object.keys(tags.emotes ?? {}).map(key => {
+                                        let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
+                                            name = parameters.substring(+emote.startPosition, ++emote.endPosition),
+                                            url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+
+                                        Chat.__allemotes__.set(name, url);
+
+                                        return name;
+                                    }),
+                                    handle = tags.display_name,
+                                    mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                    message = parameters,
+                                    raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
+                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
+                                    style = `color: ${ tags.color || '#9147FF' };`,
+                                    uuid = tags.id;
+
+                                let results = {
+                                    raw,
+                                    uuid,
+                                    reply,
+                                    style,
+                                    author,
+                                    emotes,
+                                    badges,
+                                    handle,
+                                    usable,
+                                    element,
+                                    message,
+                                    mentions,
+                                    highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
+                                };
+
+                                Object.defineProperties(results, {
+                                    deleted: {
+                                        get: async function() {
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                        }.bind(element)
+                                    },
+                                });
+
+                                chat_log.get(channel).add(results);
+
+                                Chat.__allmessages__.set(uuid, results);
+
+                                for(let [name, callback] of Chat.__onmessage__)
+                                    callback(results);
+
+                                wait(100, results).then(async results => {
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                        callback(results);
+                                });
+                            } break;
+
+                            // Got a whisper
+                            case 'WHISPER': {
+                                let results = { unread: 1, from: channel, message: parameters };
+
+                                for(let [name, callback] of Chat.__onwhisper__)
+                                    callback(results);
+
+                                wait(100, results).then(async results => {
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                        callback(results);
+                                });
+                            } break;
+
+                            default: continue;
+                        };
+                    }
+                };
+            };
+
+            socket.onerror = event => {
+                WARN(`Chat Relay (child) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
+
+                socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+                START_WS(event);
+            };
+
+            socket.onclose = event => {
+                WARN(`Chat Relay (child) closed unexpectedly → ${ JSON.stringify(event) }`);
+
+                socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+                START_WS(event);
+            };
+
+            // The socket closed...
+            when(() => TTV_IRC.sockets[CHANNEL]?.readyState === WebSocket.CLOSED, 1000)
+                .then(closed => {
+                    WARN(`The WebSocket closed... Restarting in 5s...`);
+
+                    wait(5000)
+                        .then(() => {
+                            if(parseBool(Settings.recover_chat))
+                                return window.location.reload();
+                            return TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat);
+                        })
+                        .then(() => {
+                            when(() => TTV_IRC.sockets[CHANNEL].readyState === WebSocket.OPEN, 500)
+                                .then(() => TTV_IRC.sockets[CHANNEL].send(`JOIN ${ CHANNEL }`))
+                                .then(() => TTV_IRC.sockets[CHANNEL].onmessage = TTV_IRC.sockets[CHANNEL].reflect = CHAT_SELF_REFLECTOR);
+                        });
                 });
 
-                let socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
+                // Play catch-up...
+                when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
+                    .then(chat => {
+                        let unhandled = $('[data-a-target="chat-line-message"i]:not([data-uuid])', true, chat);
 
-                let START_WS = socket.onopen = event => {
-                    LOG(`Chat Relay (child) connected to "${ CHANNEL }"`);
+                        for(let element of unhandled) {
+                            let raw = $('[class*="message"i][class*="container"i]', false, element).textContent.trim(),
+                                uuid = UUID.from(raw).toString(),
+                                reply = $('button[data-test-selector*="reply"i]', false, element),
+                                style = $('[data-a-user]', false, element)?.getAttribute('style')?.trim(),
+                                author = $('[data-a-user]', false, element).dataset.aUser,
+                                emotes = new Set,
+                                badges = new Set,
+                                __bs__ = $('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', true, element).map(e => badges.add(e.alt.toLowerCase())),
+                                handle = $('[data-a-user]', false, element).textContent,
+                                usable = false,
+                                message = $('[class*="message"i][class*="body"i] *', true, element).map(e => {
+                                    if(e.dataset.testSelector.contains('emote')) {
+                                        let i = $('img', false, e);
 
-                    // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
-                    when(() => socket.readyState === WebSocket.OPEN)
-                        .then(() => {
-                            socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
-                            socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
-                            socket.send(`NICK ${ USERNAME.toLowerCase() }`);
-                        });
+                                        emotes.add(i.alt);
+                                        Chat.__allemotes__.set(i.alt, i.src);
 
-                    let chat_log = (TTV_IRC.chat_log ??= new Map);
-                    let restrictions = (TTV_IRC.restrictions ??= new Map);
-
-                    socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
-                        let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
-
-                        // REMARK('Chat Relay received messages', messages);
-
-                        for(let { command, parameters, source, tags } of messages) {
-                            const channel = (command.channel ?? CHANNEL).toLowerCase();
-                            const usable = parseBool(channel.equals(CHANNEL));
-
-                            if(channel.startsWith('#') && !chat_log.has(channel))
-                                chat_log.set(channel, new Set);
-
-                            switch(command.command) {
-                                // Successful login attempt
-                                case '001': {
-                                    socket.send(`JOIN ${ CHANNEL }`);
-                                    socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
-                                    socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
-                                } break;
-
-                                // PONG the server back...
-                                case 'PING': {
-                                    socket.send(`PONG ${ parameters }`);
-                                } break;
-
-                                // Someone joined the server
-                                case 'JOIN': {
-                                    // LOG(`New user "${ source.nick }" on ${ channel }`);
-
-                                    Chat.gang?.push(source.nick);
-                                } break;
-
-                                // Kicked!
-                                case 'PART': {
-                                    // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
-
-                                    if(USERNAME.equals(source.nick))
-                                        socket.close();
-
-                                    Chat.gang = Chat.gang?.filter(user => user.unlike(source.nick));
-                                } break;
-
-                                // Something happened...
-                                case 'NOTICE': {
-                                    if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
-                                        let msg = tags.msg_id,
-                                            typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
-
-                                        Chat[CHANNEL] ??= { mods: [], vips: [] };
-
-                                        if(msg.startsWith('no_'))
-                                            /* Do nothing */;
-                                        else if(/^(mod|vip)_/i.test(msg))
-                                            Chat[CHANNEL][typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
-                                        else if(/^un(mod|vip)_/i.test(msg))
-                                            Chat[CHANNEL][typ] = Chat[CHANNEL][typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
-                                        else
-                                            Chat[CHANNEL][typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
-                                    } else {
-                                        if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
-                                            WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
-                                        else
-                                            WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
-
-                                        // socket.send(`PART ${ channel }`);
-                                    }
-                                } break;
-
-                                // Status(es) of the room
-                                case 'ROOMSTATE': {
-                                    let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
-
-                                    restrictions.set(channel, {
-                                        room_id,
-                                        emote_only: parseBool(+emote_only),
-                                        followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
-                                        r9k: parseBool(+r9k),
-                                        slow: (+slow * 1000),
-                                        subs_only: parseBool(+subs_only),
-                                    });
-                                } break;
-
-                                // Something happened (alert)
-                                case 'USERNOTICE': {
-                                    let { id, msg_id, system_msg } = tags;
-
-                                    let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
-                                        mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                        subject = (
-                                            'sub resub'.split(' ').contains(msg_id)?
-                                                'dues':
-                                            'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
-                                                'keep':
-                                            'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
-                                                'gift':
-                                            'raid'.split(' ').contains(msg_id)?
-                                                'raid': // incoming raids
-                                            'pointsredeemed'.split(' ').contains(msg_id)?
-                                                'coin':
-                                            'note'
-                                        ),
-                                        element = when.defined((message, subject) =>
-                                            // TODO: get bullets via text content
-                                            $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i], [role="log"i] [data-test-selector="announcement-line"i]', true)
-                                                .find(element => {
-                                                    if(false
-                                                        // The element already has a UUID and type
-                                                        || (element.dataset.uuid && element.dataset.type)
-                                                        // The text matches less than 30% of the message
-                                                        || 1 - message.mutilate().errs(element.textContent.mutilate()) < .3
-                                                    )
-                                                        return false;
-
-                                                    element.dataset.uuid ||= UUID.from(element.getPath());
-                                                    element.dataset.type ||= subject;
-
-                                                    return message.errs(element.textContent) < .3;
-                                                })
-                                            , 100, message, subject);
-
-                                    let results = {
-                                        element,
-                                        usable,
-                                        message,
-                                        subject,
-                                        mentions,
-
-                                        // TODO: see if there are extra `msg_id` values
-                                        msg_id,
-                                    };
-
-                                    Chat.__allbullets__.add(results);
-
-                                    for(let [name, callback] of Chat.__onbullet__)
-                                        callback(results);
-
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
-                                            callback(results);
-                                    });
-                                } break;
-
-                                // The channel is hosting...
-                                case 'HOSTTARGET': {
-                                    if(!usable) continue;
-
-                                    let [to, amount] = parameters.split(' ', 2);
-
-                                    when.defined(() => STREAMER)
-                                        .then(() => {
-                                            for(let callback of STREAMER.__eventlisteners__.onhost)
-                                                when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
-                                        });
-                                } break;
-
-                                // Got a message...
-                                case 'PRIVMSG': {
-                                    // REMARK('PRIVMSG:', { command, parameters, source, tags });
-
-                                    // Bot commands...
-                                    if(defined(command.botCommand)) {
-                                        let results = { name: command.botCommand, arguments: command.botCommandParams };
-
-                                        for(let [name, callback] of Chat.__oncommand__)
-                                            callback(results);
-
-                                        wait(100, results).then(async results => {
-                                            for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
-                                                callback(results);
-                                        });
-
-                                        continue;
+                                        return i.alt;
                                     }
 
-                                    let author = source.nick,
-                                        badges = Object.keys(tags?.badges ?? {}),
-                                        // Have to wait on the page to play catch-up...
-                                        element = when.defined(parameters =>
-                                            $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
-                                                .find(message =>
-                                                    $(`[data-a-user="${ author }"i]`, true, message)
-                                                        .map(div => div.closest('[data-test-selector$="message"i]'))
-                                                        .filter(defined)
-                                                        .find(div => {
-                                                            let text = [],
-                                                                body = $('[data-test-selector$="message-body"i]', false, div);
+                                    return e.textContent?.trim?.() || '';
+                                }).join(' '),
+                                mentions = $('[data-a-atrget*="mention"i]', true, element).map(e => e.textContent),
+                                highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
-                                                            if(nullish(body))
-                                                                return;
+                            element.dataset.uuid = uuid;
 
-                                                            for(let child of body.children)
-                                                                if(child.dataset.testSelector?.equals('emote-button'))
-                                                                    text.push($('img', false, child).alt);
-                                                                else
-                                                                    text.push(child.textContent);
+                            emotes = [...emotes];
+                            badges = [...badges];
 
-                                                            let match = text.join('').sheer().equals(parameters.sheer());
-
-                                                            if(match)
-                                                                div.dataset.uuid = uuid;
-
-                                                            return match
-                                                        })
-                                                )
-                                            , 100, parameters),
-                                        emotes = Object.keys(tags.emotes ?? {}).map(key => {
-                                            let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
-                                                name = parameters.substring(+emote.startPosition, ++emote.endPosition),
-                                                url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
-
-                                            Chat.__allemotes__.set(name, url);
-
-                                            return name;
-                                        }),
-                                        handle = tags.display_name,
-                                        mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                        message = parameters,
-                                        raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
-                                        reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
-                                        style = `color: ${ tags.color || '#9147FF' };`,
-                                        uuid = tags.id;
-
-                                    let results = {
-                                        raw,
-                                        uuid,
-                                        reply,
-                                        style,
-                                        author,
-                                        emotes,
-                                        badges,
-                                        handle,
-                                        usable,
-                                        element,
-                                        message,
-                                        mentions,
-                                        highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
-                                    };
-
-                                    Object.defineProperties(results, {
-                                        deleted: {
-                                            get: async function() {
-                                                return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
-                                            }.bind(element)
-                                        },
-                                    });
-
-                                    chat_log.get(channel).add(results);
-
-                                    Chat.__allmessages__.set(uuid, results);
-
-                                    for(let [name, callback] of Chat.__onmessage__)
-                                        callback(results);
-
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                            callback(results);
-                                    });
-                                } break;
-
-                                // Got a whisper
-                                case 'WHISPER': {
-                                    let results = { unread: 1, from: channel, message: parameters };
-
-                                    for(let [name, callback] of Chat.__onwhisper__)
-                                        callback(results);
-
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                            callback(results);
-                                    });
-                                } break;
-
-                                default: continue;
+                            let results = {
+                                raw,
+                                uuid,
+                                reply,
+                                style,
+                                author,
+                                emotes,
+                                badges,
+                                handle,
+                                usable,
+                                element,
+                                message,
+                                mentions,
+                                highlighted,
                             };
-                        }
-                    };
-                };
 
-                socket.onerror = event => {
-                    WARN(`Chat Relay (child) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
-
-                    socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
-                    START_WS(event);
-                };
-
-                socket.onclose = event => {
-                    WARN(`Chat Relay (child) closed unexpectedly → ${ JSON.stringify(event) }`);
-
-                    socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
-                    START_WS(event);
-                };
-
-                // The socket closed...
-                when(() => TTV_IRC.sockets[CHANNEL]?.readyState === WebSocket.CLOSED, 1000)
-                    .then(closed => {
-                        WARN(`The WebSocket closed... Restarting in 5s...`);
-
-                        wait(5000)
-                            .then(() => {
-                                if(parseBool(Settings.recover_chat))
-                                    return window.location.reload();
-                                return TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat);
-                            })
-                            .then(() => {
-                                when(() => TTV_IRC.sockets[CHANNEL].readyState === WebSocket.OPEN, 500)
-                                    .then(() => TTV_IRC.sockets[CHANNEL].send(`JOIN ${ CHANNEL }`))
-                                    .then(() => TTV_IRC.sockets[CHANNEL].onmessage = TTV_IRC.sockets[CHANNEL].reflect = CHAT_SELF_REFLECTOR);
+                            Object.defineProperties(results, {
+                                deleted: {
+                                    get: function() {
+                                        return nullish(this.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, this);
+                                    }.bind(element)
+                                },
                             });
+
+                            TTV_IRC.chat_log.get(CHANNEL).add(results);
+
+                            Chat.__allmessages__.set(uuid, results);
+
+                            for(let [name, callback] of Chat.__onmessage__)
+                                when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                            wait(100, results).then(async results => {
+                                for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                    when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                            });
+                        }
                     });
-            });
+        }
 
         // Override variables
         Overrides: {
@@ -3815,8 +3877,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             section[data-test-selector^="chat"i] :is([tt-hidden-message="true"i], [tt-hidden-bulletin="true"i]) { display: none }
 
-            [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-            [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+            [class*="theme"i][class*="dark"i] [tt-light], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+            [class*="theme"i][class*="light"i] [tt-light], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
             .chat-line__message[style] a {
                 color: var(--color-text-alt);

@@ -286,7 +286,7 @@ let LAG_REPORTER = setInterval(() => {
                     .then(tab => {
                         console.warn(`Tab "${ tab.title }" (#${ tab.id }) timed out. Removing...`);
 
-                        GALLOWS.set(tab.id, tab);
+                        GALLOWS.set(tab.id, +new Date);
                         REPORTS.delete(tab.id);
                         RemoveTab(tab, true);
                     });
@@ -344,23 +344,27 @@ let LAG_REPORTER = setInterval(() => {
         } catch(error) {
             // console.warn(error);
             REPORTS.delete(ID);
+            GALLOWS.delete(ID);
         }
     }
 }, MAX_TIME_ALLOWED);
 
 let GALLOWS_CHECKER = setInterval(() => {
-    for(let [ID, tab] of GALLOWS) {
-        try {
-            Container.tabs.sendMessage(tab.id, { action: 'close' }, response => {
-                if(!response?.ok)
-                    Container.tabs.remove(tab.id);
-            });
-        } catch(error) {
-            // console.warn(error);
-            GALLOWS.delete(tab.id);
+    for(let [ID, updated] of GALLOWS) {
+        Container.tabs.sendMessage(ID, { action: 'close' }, response => {
+            if(!response?.ok)
+                Container.tabs.remove(ID);
+
+            GALLOWS.set(ID, +new Date);
+        });
+
+        // More than 1.5s have passed since the last successful update...
+        if((+new Date - updated) > 1_500) {
+            REPORTS.delete(ID);
+            GALLOWS.delete(ID);
         }
     }
-}, 300);
+}, 500);
 
 // https://stackoverflow.com/a/6117889/4211612
 // Returns the current week of the year

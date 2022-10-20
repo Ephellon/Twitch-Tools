@@ -31,13 +31,28 @@
 12. Live Reminders might re-add all live channels?
 13. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
 14. Add logic to (video) record channel point redemptions
-15. Add ability to message on user's behalf...
-16. Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
-17. Garner user feedback → https://form.jotform.com/222442891146153
+15. Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
+16. Garner user feedback → https://form.jotform.com/222442891146153
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.29)
+- Adjusted settings page to be easier to understand
+- Adjusted logic for Recover Messages
+- Added Store Integration logic
+- Added `fetchURL.idempotent`
+- Fixed issue with Soft Unban
+- Modified Bulletin Filter logic
+- Modified BTTV emote logic
+- Modified command parsing logic
+- Modified anchor-cardifying logic
+- Adjusted point receipt logic
+- Modified some polyfill logic
+- Fixed issue with Blerp API
+- Modified Reward Calculator logic
+- Added Auto-Chat by @dskw
+
 > [`5.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.28)
 - Fixed issue with point watcher text updating for each channel
 - Added Blerp API detection

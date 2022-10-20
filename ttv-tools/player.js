@@ -354,8 +354,8 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                     if(Glyphs.__exclusionList__.contains(glyph))
                         continue comparing;
                     else
-                        resemble(SVGtoImage(svg))
-                            .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode))
+                        resemble(svg.toImage())
+                            .compareTo(Glyphs.modify(glyph, { height: 20, width: 20 }).asNode.toImage())
                             .ignoreColors()
                             .scaleToSameSize()
                             .onComplete(async data => {

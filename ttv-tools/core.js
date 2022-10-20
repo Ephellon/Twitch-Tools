@@ -637,6 +637,26 @@ function fetchURL(url, options = {}) {
     return fetch(href, options);
 }
 
+Object.defineProperties(fetchURL, {
+    requests: { value: [] },
+
+    // Reduce duplicates
+    idempotent: {
+        value: (url, options) => {
+            let found = fetchURL.requests.indexOf(url);
+            if(!!~found) {
+                fetchURL.requests.push(found);
+
+                return fetchURL.requests[found];
+            }
+
+            fetchURL.requests.push(found = fetchURL(url, options));
+
+            return found;
+        },
+    },
+});
+
 // The following facilitates communication between pages
 // Get the current settings
    // GetSettings() → object

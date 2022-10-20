@@ -201,6 +201,11 @@ let // These are option names. Anything else will be removed
         'convert_emotes',
         // Link Maker (chat)
         'link_maker__chat',
+        // Auto-Chat (VIP)
+        'auto_chat__vip',
+            'auto_chat__mentions',
+            'auto_chat__lurking_message',
+            'auto_chat__wait_time',
         // Native Twitch Replies
         'native_twitch_reply',
         // Notification Sounds
@@ -258,6 +263,9 @@ let // These are option names. Anything else will be removed
         /* Data-Collection Features */
         // Fine Details
         'fine_details',
+
+        // Store integration
+        'store_integration',
 
         // DVR Settings
         'video_clips__file_type',
@@ -466,21 +474,21 @@ class DatePicker {
         daySelect.value = dayDefault;
 
         let container =
-            f(`.tt-modal-wrapper.context-root`, {},
-                f(`.tt-modal-body`, {},
-                    f(`.tt-modal-container`, {},
+            f(`.tt-modal-wrapper.context-root`).with(
+                f(`.tt-modal-body`).with(
+                    f(`.tt-modal-container`).with(
                         // Header
-                        f('.tt-modal-header', {},
+                        f('.tt-modal-header').with(
                             f('h3', { 'tr-id': 'away-mode:schedule:create', innerHTML: Glyphs.modify('calendar', { height: 30, width: 30 }).toString() }, ' Create a new schedule')
                         ),
 
                         // Body
-                        f('.tt-modal-content.details.context-body', {},
+                        f('.tt-modal-content.details.context-body').with(
                             f('div', { style: 'width:-webkit-fill-available' },
                                 // Frequency
                                 f('div', { 'pad-bottom': '' },
                                     f('.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
-                                    f('.summary', {},
+                                    f('.summary').with(
                                         daySelect,
 
                                         f('.subtitle', {
@@ -1929,7 +1937,7 @@ document.body.onload = async() => {
 
             if(nullish(languageOptions))
                 document.body.append(
-                    furnish('.language-select', {},
+                    furnish('.language-select').with(
                         furnish('button.language-option', { value: 'en', onmousedown, onmouseup }, `English (North American)`),
                         ...SUPPORTED_LANGUAGES.map(language => {
                             let ISO = top.ISO_639_1[language];

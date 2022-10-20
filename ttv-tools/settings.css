@@ -261,7 +261,7 @@ section:not(:last-child) {
 
 footer {
     justify-content: center;
-    text-align: center;
+    /* text-align: center; */
 
     margin-top: 0;
 }
@@ -1518,6 +1518,7 @@ section[dead]::after {
 }
 
 #search-container:not([data-focus='true'i]) #search-results {
+    display: none;
     opacity: 0;
 }
 

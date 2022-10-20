@@ -466,7 +466,7 @@ caption {
 }
 
 .tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container {
-    background: linear-gradient(45deg, var(--user-accent-color), var(--user-complement-color));
+    background: linear-gradient(45deg, var(--user-accent-color), var(--user-contrast-color));
     border-radius: 0.3em;
 
     padding: 0.15em;
@@ -628,9 +628,9 @@ caption {
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-confirm-container,
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-prompt-container,
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-select-container {
-    /* border: 1px solid var(--user-complement-color); */
+    /* border: 1px solid var(--user-contrast-color); */
 
-    --current-border-color: var(--user-complement-color);
+    --current-border-color: var(--user-contrast-color);
 
     min-width: 30rem;
 }
@@ -1104,4 +1104,118 @@ caption {
 
 [data-resurrected="true"i]:not(:hover) {
     /* text-decoration: line-through; */
+}
+
+/* "Buy on {store}" */
+.tt-store-purchase--container {
+    background: var(--color-background-pill);
+    border: 3px solid var(--color-background-pill);
+    border-radius: 3px;
+    color: var(--color-text-alt);
+    display: inline-block;
+    font-size: 12px;
+
+    margin: 0 .25rem 0 0;
+    padding: 0;
+
+    height: fit-content;
+    width: fit-content;
+}
+
+.tt-store-purchase--price, .tt-store-purchase--handler {
+    box-shadow: 2px 2px 10px #0008;
+
+    float: left;
+    margin-left: 3px;
+}
+
+.tt-store-purchase--price {
+    border: 0;
+    border-radius: 3px;
+    color: var(--color-text-alt);
+    font-family: sans-serif;
+    font-size: 13px;
+
+    box-shadow: inset 0 0 20px 10px var(--color-background-alt);
+    text-shadow: 1px 1px 3px var(--color-background-alt);
+
+    padding: 5px 12px 4px;
+
+    height: -webkit-fill-available;
+}
+
+.tt-store-purchase--handler {
+    height: -webkit-fill-available;
+}
+
+.tt-store-purchase--handler a {
+    cursor: pointer;
+
+    background: linear-gradient(to right, var(--channel-color) 5%, var(--channel-color-contrast) 95%);
+    border-radius: 3px;
+    color: #d2efa9;
+    display: inline-block;
+    font-size: 14px;
+    text-align: center;
+    text-decoration: none !important;
+    text-transform: unset;
+
+    box-shadow: inset 0 0 20px 10px #0002;
+    text-shadow: 1px 1px 2px #0004;
+
+    line-height: 2;
+    padding: 0px 11px;
+
+    height: -webkit-fill-available;
+
+    transition: background .5s ease, box-shadow .5s ease;
+}
+
+.is-steam .tt-store-purchase--handler a {
+    background: linear-gradient(to right, #0cf 5%, #36f 95%);
+}
+
+.is-playstation .tt-store-purchase--handler a {
+    background: linear-gradient(to right, #00ffff 5%, #0072ce 95%);
+}
+
+.is-xbox .tt-store-purchase--handler a {
+    background: linear-gradient(to right, #44ff44 5%, #107c10 95%);
+}
+
+.tt-store-purchase--handler a:hover {
+    color: #fff;
+
+    box-shadow: inset 0 0 20px 10px #0008;
+}
+
+[id^="tt-"][id$="-purchase"] {
+    display: none;
+}
+
+[data-mature-content]:not([data-mature-content="false"i]):not([data-mature-content=""i]) {
+    padding-top: 1.5rem;
+}
+
+[data-mature-content]::before {
+    border: 0;
+    border-radius: 3px;
+    color: var(--color-warn);
+    display: inline-block;
+    font-weight: bold;
+    text-transform: uppercase;
+
+    padding: 0 0 0 3px;
+    position: absolute;
+    transform: translate(0,-90%);
+
+    width: fit-content;
+}
+
+[data-mature-content]:not([data-mature-content="true"i]):not([data-mature-content="false"i]):not([data-mature-content=""i])::before {
+    content: attr(data-mature-content);
+}
+
+[data-mature-content="true"i]::before {
+    content: "Mature \1F51E\FE0F";
 }

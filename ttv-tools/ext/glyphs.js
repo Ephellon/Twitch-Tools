@@ -93,6 +93,37 @@
  */
 
 window.Glyphs ??= {
+    /* Valve Corp. (c) 2022. All rights reserved. */
+    /** 2022-09-16 11:18 CST - <https://store.steampowered.com/legal>
+     * Nothing that notes use of the Steam logo is restricted. The logo is ONLY used as a placeholder to redirect to Steam's site.
+     */
+    // Steam store logo
+    store_steam: `<svg fill="#000000" width="34px" height="34px" version="1.1" viewBox="0 25 90 40" x="0px" y="0px"><g><path d="M41.8,0C19.7,0,1.7,17,0,38.5l22.5,9.3c1.9-1.3,4.2-2.1,6.7-2.1c0.2,0,0.4,0,0.7,0l10-14.5c0-0.1,0-0.1,0-0.2    c0-8.7,7.1-15.8,15.8-15.8c8.7,0,15.8,7.1,15.8,15.8c0,8.7-7.1,15.8-15.8,15.8c-0.1,0-0.2,0-0.4,0L41,57.1c0,0.2,0,0.4,0,0.6    c0,6.5-5.3,11.9-11.9,11.9c-5.7,0-10.5-4.1-11.6-9.5L1.4,53.3c5,17.6,21.1,30.5,40.3,30.5c23.1,0,41.9-18.8,41.9-41.9    C83.7,18.8,64.9,0,41.8,0z"/><path d="M26.3,63.6l-5.1-2.1c0.9,1.9,2.5,3.5,4.6,4.4c4.5,1.9,9.8-0.3,11.6-4.8c0.9-2.2,0.9-4.6,0-6.8    c-0.9-2.2-2.6-3.9-4.8-4.8c-2.2-0.9-4.5-0.9-6.6-0.1l5.3,2.2c3.3,1.4,4.9,5.2,3.5,8.6C33.4,63.4,29.6,65,26.3,63.6z"/><path d="M66.1,31.1c0-5.8-4.7-10.5-10.5-10.5s-10.5,4.7-10.5,10.5s4.7,10.5,10.5,10.5S66.1,36.9,66.1,31.1z     M47.7,31.1c0-4.4,3.5-7.9,7.9-7.9c4.4,0,7.9,3.5,7.9,7.9c0,4.4-3.5,7.9-7.9,7.9C51.2,39,47.7,35.5,47.7,31.1z"/></g></svg>`,
+
+    /* Sony Interactive Entertainment LLC (c) 2022. All rights reserved. */
+    /** 2022-09-16 11:12 CST - <https://www.playstation.com/en-us/legal/copyright-and-trademark-notice/>
+     * Nothing that notes use of the PlayStation logo is restricted. The logo is ONLY used as a placeholder to redirect to PlayStation's site.
+     */
+    // PlayStation store logo
+    store_playstation: `<svg fill="#0072ce" width="34px" height="34px" version="1.1" viewBox="0 0 64 64" x="0px" y="0px"><path fill-rule="evenodd" d="M40.579 40.486c-.466.578-1.594.996-1.594.996l-8.389 3.014v-2.224l6.174-2.199c.7-.257.805-.61.24-.795-.575-.188-1.598-.133-2.305.12l-4.109 1.45v-2.313l.236-.08s1.19-.42 2.861-.601c1.67-.184 3.72.023 5.329.63 1.811.576 2.014 1.416 1.557 2.002zM29.865 30.52v14.234l-3.844-1.218V26.558c1.636.301 4.013 1.023 5.295 1.449 3.249 1.118 4.353 2.51 4.353 5.634 0 3.054-1.883 4.214-4.276 3.055v-5.685c0-.663-.123-1.281-.749-1.456-.48-.154-.779.292-.779.964zm-.343-19.877c.31-.032.612.015.912.138-1.733 2.363-2.232 6.531-2.374 8.862-.713.001-1.4.004-2.06.006.258-5.552 1.508-8.8 3.522-9.006zm-4.245 28.41l-3.96 1.419c-.7.25-.805.605-.24.789.575.194 1.595.14 2.297-.118l1.903-.686v1.995c-.122.021-.258.041-.383.063-1.898.315-3.92.185-5.917-.475-1.858-.52-2.17-1.614-1.321-2.245.783-.58 2.115-1.013 2.115-1.013l5.506-1.963v2.234zm6.268-27.471c1.655 1.714 2.778 5.254 3.256 8.06-1.4-.002-2.927-.002-4.577-.002h-.784c.158-2.567.708-6.211 2.105-8.058zm2.033-1.173c.643-.004 1.24.304 1.82.937 1.754 1.914 2.661 6.003 3 8.298l-2.194-.001c-.494-3.057-1.723-6.955-3.622-8.982.303-.158.634-.25.996-.252zm15.467 10.096c-.009-.173-.167-.31-.36-.307l-3.672-.529a.68.68 0 00-.105-.014c-.737 0-2.481-.005-5.11-.008-.311-2.393-1.22-6.38-2.934-8.696-.954-1.29-2.063-1.94-3.294-1.933a3.496 3.496 0 00-2.119.717c-.662-.389-1.353-.547-2.068-.475-3.46.352-4.541 5.442-4.767 10.397a592.65 592.65 0 00-9.105.111c-.221.004-.399.161-.411.361-.084 1.39-.406 6.844-.859 15.226-.48 8.864-.754 13.7-.82 14.978-.011.184.132.343.332.372l14.62 2.217 14.452 2.19a.468.468 0 00.329-.073v.002l7.141-4.565a.63.63 0 00.285-.548l-1.535-29.423z"></path></svg>`,
+
+    /* Microsoft (c) 2022. All rights reserved. */
+    /** 2022-09-16 11:07 CST - <https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks>
+     * QUOTE:
+     * Without a license arrangement with Microsoft, everything about your app (including developer name, app name, logo, description,
+     * screenshots, and other app collateral) must be unique to you and free of Microsoft’s Brand Assets. The only exception is that
+     * you may truthfully state whether your app is compatible or interoperable with a Microsoft product or service within the text
+     * description about your app. If your app is integrated with a Microsoft technology, follow the guidelines for partner-led marketing
+     * under the Resources section below.
+     *
+     * You may not use Microsoft’s Brand Assets in a manner that implies Microsoft published, developed, endorsed, is affiliated with,
+     * or is otherwise connected with your app. Furthermore, Microsoft’s logos, designs, and icons can never be used as your app icon
+     * and can only be used in your app advertisements with a license agreement in place.
+     * END QUOTE
+     */
+    // XBox store logo
+    store_xbox: `<svg fill="#107c10" width="34px" height="34px" version="1.1" viewBox="-10 5 400 340" x="0px" y="0px"><g><path d="M 169.18811,359.44924 C 140.50497,356.70211 111.4651,346.40125 86.518706,330.1252 65.614374,316.48637 60.893704,310.87967 60.893704,299.69061 c 0,-22.47524 24.711915,-61.84014 66.992496,-106.71584 24.01246,-25.48631 57.46022,-55.36001 61.0775,-54.55105 7.0309,1.57238 63.25048,56.41053 84.29655,82.2252 33.28077,40.82148 48.58095,74.24535 40.808,89.14682 -5.9087,11.32753 -42.57224,33.4669 -69.50775,41.97242 -22.19984,7.01011 -51.35538,9.9813 -75.37239,7.68108 z M 32.660004,276.3228 C 15.288964,249.67326 6.5125436,223.43712 2.2752336,185.49086 c -1.39917002,-12.53 -0.89778,-19.69701 3.17715,-45.41515 5.0788204,-32.05404 23.3330104,-69.136381 45.2671304,-91.957616 9.34191,-9.719732 10.17624,-9.956543 21.56341,-6.120482 13.828357,4.658436 28.595936,14.857457 51.498366,35.56661 l 13.36254,12.082873 -7.2969,8.96431 C 95.97448,140.22403 60.217254,199.2085 46.741444,235.70071 c -7.32599,19.83862 -10.28084,39.75281 -7.12868,48.04363 2.12818,5.59752 0.17339,3.51093 -6.95276,-7.42154 z m 304.915426,4.53255 c 1.71605,-8.37719 -0.4544,-23.76257 -5.5413,-39.28002 -11.01667,-33.60598 -47.83964,-96.12421 -81.65282,-138.63054 L 239.73699,89.563875 251.25285,78.989784 c 15.03631,-13.806637 25.47602,-22.073835 36.74025,-29.094513 8.88881,-5.540156 21.59109,-10.444558 27.05113,-10.444558 3.36626,0 15.21723,12.298726 24.78421,25.720611 14.81725,20.787711 25.71782,45.986976 31.24045,72.219686 3.56833,16.9498 3.8657,53.23126 0.57486,70.13935 -2.70068,13.87582 -8.40314,31.87484 -13.9661,44.08195 -4.16823,9.14657 -14.53521,26.91044 -19.0783,32.69074 -2.33569,2.97175 -2.33761,2.96527 -1.02393,-3.4477 z M 172.25917,33.104812 c -15.60147,-7.922671 -39.6696,-16.427164 -52.96493,-18.715209 -4.66097,-0.802124 -12.61193,-1.249474 -17.6688,-0.994114 -10.969613,0.55394 -10.479662,-0.0197 7.11783,-8.3336652 14.63023,-6.912081 26.83386,-10.976696 43.40044,-14.455218 18.6362,-3.9130858 53.66559,-3.9590088 72.00507,-0.0944 19.80818,4.174105 43.13297,12.854085 56.27623,20.9423862 l 3.90633,2.403927 -8.96247,-0.452584 c -17.81002,-0.899366 -43.76575,6.295879 -71.63269,19.857459 -8.40538,4.090523 -15.71788,7.357511 -16.25,7.25997 -0.53211,-0.09754 -7.38426,-3.43589 -15.22701,-7.418555 z"/></g></svg>`,
+
     bonuschannelpoints: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>`,
     /** The Chromium Authors (c) 2015. All rights reserved.
      * "Exit Picture in Picture," and "Picture in Picture" by The Chromium Authors
@@ -144,6 +175,8 @@ window.Glyphs ??= {
     people: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7 2a4 4 0 00-1.015 7.87c-.098.64-.651 1.13-1.318 1.13A2.667 2.667 0 002 13.667V18h2v-4.333c0-.368.298-.667.667-.667.908 0 1.732-.363 2.333-.953.601.59 1.425.953 2.333.953.369 0 .667.299.667.667V18h2v-4.333A2.667 2.667 0 009.333 11c-.667 0-1.22-.49-1.318-1.13A4.002 4.002 0 007 2zM5 6a2 2 0 104 0 2 2 0 00-4 0z" clip-rule="evenodd"></path><path d="M14 11.83V18h4v-3.75c0-.69-.56-1.25-1.25-1.25a.75.75 0 01-.75-.75v-.42a3.001 3.001 0 10-2 0z"></path></g></svg>`,
     popout: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M12 4h2.586L9.293 9.293l1.414 1.414L16 5.414V8h2V2h-6v2z"></path><path d="M4 4h6v2H4v10h10v-6h2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z"></path></g></svg>`,
     rewind: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5.757 14.243A6 6 0 105.527 6H7v2H2V3h2v1.708a8 8 0 11.343 10.949l1.414-1.414z"></path><path d="M11 10.414l1.707-1.707-1.414-1.414L9 9.586V14h2v-3.586z"></path></g></svg>`,
+    ribbon: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="m3 8 3-6h8l3 6-3.355 4.194L18 18h-7l-1-1.25L9 18H2l4.355-5.806L3 8Zm4.236-4-1 2h7.528l-1-2H7.236ZM8 8l.75 1-1.156 1.541L5.561 8H8Zm3.28 7.15.681.85H14l-1.645-2.194-1.074 1.343ZM6 16l6-8h2.439l-6.4 8H6Z" clip-rule="evenodd"></path></g></svg>`,
+    rocket: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M13 6a1 1 0 100 2 1 1 0 000-2z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M6 8l3.657-3.657A8 8 0 0115.314 2H18v2.686a8 8 0 01-2.343 5.657L12 14v2a2 2 0 01-2 2H9v-3l-4-4H2v-1a2 2 0 012-2h2zm4 5.172l4.243-4.243A6 6 0 0016 4.686V4h-.686a6 6 0 00-4.243 1.757L6.828 10 10 13.172z"></path><path d="M4 18a2 2 0 10-2-2v2h2z"></path></g></svg>`,
     search: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M13.192 14.606a7 7 0 111.414-1.414l3.101 3.1-1.414 1.415-3.1-3.1zM14 9A5 5 0 114 9a5 5 0 0110 0z" clip-rule="evenodd"></path></g></svg>`,
     stream: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9 8l3 2-3 2V8z"></path><path fill-rule="evenodd" d="M4 2H2v16h2v-2h12v2h2V2h-2v2H4V2zm12 4H4v8h12V6z" clip-rule="evenodd"></path></g></svg>`,
     thread: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M5 6H7V8H5V6Z"></path><path d="M9 6H11V8H9V6Z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M8 14L10 12H13C13.5523 12 14 11.5523 14 11V3C14 2.44772 13.5523 2 13 2H3C2.44772 2 2 2.44772 2 3V11C2 11.5523 2.44772 12 3 12H6L8 14ZM6.82843 10H4V4H12V10H9.17157L8 11.1716L6.82843 10Z"></path></g></svg>`,
@@ -156,6 +189,7 @@ window.Glyphs ??= {
 
     audio: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 40 40" x="0px" y="0px"><path d="M24.7176 14.7667L22.1946 22.0049L22.2541 7.00546L19.3848 7L15.6102 19.5662V14.7503L12.9566 14.7325L8.58734 19.5034H5V22.4951H9.6644L12.3166 19.6563L12.318 28.0511L15.3988 27.9951L19.0854 17.3679V32L22.037 31.9959L24.6041 23.1737L24.5729 23.1765V27.9514L27.2279 27.9692L31.3318 23.1997H35V20.3828H30.4165L27.682 23.2611V14.7503L24.7219 14.7708L24.7176 14.7667Z"/></svg>`,
     alert: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M11 14l7 4V2l-7 4H4a2 2 0 00-2 2v4a2 2 0 002 2h2v4h2v-4h3zm1-6.268l4-2.286v9.108l-4-2.286V7.732zM10 12H4V8h6v4z"></path></svg>`,
+    cheer: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px" preserveAspectRatio="xMidYMid meet"><path fill-rule="evenodd" d="M8 2h4c3.314 0 6 3.582 6 8s-2.686 8-6 8H8c-3.314 0-6-3.582-6-8s2.686-8 6-8zm0 14c-.886 0-1.841-.474-2.643-1.543S4 11.818 4 10s.555-3.387 1.357-4.457S7.114 4 8 4s1.841.474 2.643 1.543S12 8.182 12 10s-.555 3.387-1.357 4.457S8.886 16 8 16zm3.969 0c.259-.305.499-.64.715-1h1.489c-.691.688-1.454 1-2.173 1-.01 0-.021 0-.031 0zm1.595-3h1.883a7.88 7.88 0 0 0 .496-2h-1.989a10.15 10.15 0 0 1-.39 2zm.39-4h1.989c-.084-.726-.257-1.399-.496-2h-1.883a10.15 10.15 0 0 1 .39 2zm-1.27-4h1.489c-.691-.688-1.454-1-2.173-1h-.031c.259.305.499.64.715 1z"></path></svg>`,
     close: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 16V4H2v12h2zM13 15l-1.5-1.5L14 11H6V9h8l-2.5-2.5L13 5l5 5-5 5z"></path></g></svg>`,
     crown: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M13.798 10.456L10 6.657l-3.798 3.799L4 8.805V13h12V8.805l-2.202 1.65zM18 5v8a2 2 0 0 1-2 2H4a2.002 2.002 0 0 1-2-2V5l4 3 4-4 4 4 4-3z"></path></g></svg>`,
     error: `<svg fill="#bb1411"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M2 10a8 8 0 1016 0 8 8 0 00-16 0zm12 1V9H6v2h8z" clip-rule="evenodd"></path></g></svg>`,
@@ -333,6 +367,12 @@ window.Glyphs ??= {
             // 9th batch
             incognito: "\uD83D\uDD75\uFE0F",
             flag: "\uD83D\uDEA9\uFE0F",
+
+            // 10th batch
+            rocket: "\u{1F680}",
+            ribbon: "\u{1F397}",
+            cheer: "\u{1F941}",
+            error: "\u26D4",
         });
     },
 
@@ -360,7 +400,7 @@ window.Glyphs ??= {
                 if(!!~exclusions.indexOf(glyph))
                     continue;
                 else
-                    __dataURI__[glyph] ??= SVGtoImage(window.Glyphs[glyph]);
+                    __dataURI__[glyph] ??= window.Glyphs[glyph].toImage();
 
             return window.Glyphs.__dataURI__ ??= __dataURI__;
         })();

@@ -101,13 +101,13 @@ class Balloon {
         let p =
         f('.tt-align-self-center.tt-flex-grow-0.tt-flex-nowrap.tt-flex-shrink-0.tt-mg-x-05', { style: `animation:1s fade-in 1;` },
             f.div(
-                f('.tt-relative', {},
+                f('.tt-relative').with(
                     // Navigation Icon
                     N = f(`div[@test-selector=toggle-balloon-wrapper__mouse-enter-detector]`,
                         {
                             style: 'display:inherit',
                         },
-                        f('.tt-inline-flex.tt-relative', {},
+                        f('.tt-inline-flex.tt-relative').with(
                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                 {
                                     'connected-to': U,
@@ -137,8 +137,8 @@ class Balloon {
 
                                 // Notification counter
                                 F = f(`#tt-notification-counter--${ U }.tt-absolute.tt-right-0.tt-top-0`, { style: 'visibility:hidden', 'connected-to': U, length: 0 },
-                                    f('.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in[@a-target=tt-animation-target]', {},
-                                        f('.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative', {},
+                                    f('.tt-animation.tt-animation--animate.tt-animation--bounce-in.tt-animation--duration-medium.tt-animation--fill-mode-both.tt-animation--timing-ease-in[@a-target=tt-animation-target]').with(
+                                        f('.tt-c-background-base.tt-inline-flex.tt-number-badge.tt-relative').with(
                                             f(`#tt-notification-counter-output--${ U }.tt-number-badge__badge.tt-relative`, {
                                                 'interval-id': setInterval(() => {
                                                     let counter = $(`#tt-notification-counter--${ uuid }`),
@@ -173,7 +173,7 @@ class Balloon {
                             display: 'none',
                             role: 'dialog',
                         },
-                        f('.tt-border-radius-large.tt-c-background-base.tt-c-text-inherit.tt-elevation-4', {},
+                        f('.tt-border-radius-large.tt-c-background-base.tt-c-text-inherit.tt-elevation-4').with(
                             (C = f(`#tt-balloon-container-${ U }.tt-flex.tt-flex-column`,
                                 {
                                     'tt-mix-blend': (Settings?.accent_color ?? 'twitch-purple/12'),
@@ -183,7 +183,7 @@ class Balloon {
                                 },
                                 // Header
                                 f('.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:inherit; position:sticky; top:0; z-index:99999;` },
-                                    f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center', {},
+                                    f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center').with(
                                         (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST, }, title))
                                     ),
                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-button-icon--secondary.tt-core-button.tt-flex.tt-flex-column.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-justify-content-center.tt-mg-l-05.tt-overflow-hidden.tt-popover-header__icon-slot--right.tt-relative',
@@ -214,7 +214,7 @@ class Balloon {
                                 // Body
                                 ...jobs.map((job, index) => {
                                     let { href, message, subheader, src = I, attributes = {}, onremove = ($=>$), animate = ($=>$) } = job,
-                                        guid = guid = UUID.from([href, message].join(':')).value;
+                                        guid = UUID.from([href, message].join(':')).value;
 
                                     let container = f(`#tt-balloon-job-${ U }--${ guid }`, { ...attributes, uuid, guid, href: parseURL(href).href },
                                         f('.simplebar-scroll-content',
@@ -225,13 +225,12 @@ class Balloon {
                                                 {
                                                     style: 'overflow: hidden; width:100%;',
                                                 },
-                                                f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]',
-                                                    {},
+                                                f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]').with(
                                                     f('.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                                         {
                                                             style: 'width:100%',
                                                         },
-                                                        f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                                        f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap').with(
                                                             f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                                                 {
                                                                     'connected-to': `${ U }--${ guid }`,
@@ -253,35 +252,35 @@ class Balloon {
                                                                         }
                                                                     },
                                                                 },
-                                                                f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                                                f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
                                                                     // Avatar
                                                                     f.div(
-                                                                        f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
-                                                                            f('.tt-aspect.tt-aspect--align-top', {},
+                                                                        f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden').with(
+                                                                            f('.tt-aspect.tt-aspect--align-top').with(
                                                                                 f('img.tt-balloon-avatar.tt-image', { src })
                                                                             )
                                                                         )
                                                                     ),
                                                                     // Message body
-                                                                    f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                                        f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
-                                                                            f('span.tt-c-text-alt', {},
-                                                                                f('p.tt-balloon-message', { innerHTML: message })
+                                                                    f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1').with(
+                                                                        f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]').with(
+                                                                            f('span.tt-c-text-alt').with(
+                                                                                f('p.tt-balloon-message').html(message)
                                                                             )
                                                                         ),
                                                                         // Subheader
-                                                                        f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
-                                                                            f('.tt-mg-l-05', {},
-                                                                                f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
+                                                                        f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05').with(
+                                                                            f('.tt-mg-l-05').with(
+                                                                                f('span.tt-balloon-subheader.tt-c-text-alt').html(subheader)
                                                                             )
                                                                         ),
-                                                                        f('div', { innerHTML: Glyphs.modify('navigation', { height: '20px', width: '20px', style: 'position:absolute; right:0; top:40%;' }) })
+                                                                        f('div').html(Glyphs.modify('navigation', { height: '20px', width: '20px', style: 'position:absolute; right:0; top:40%;' }))
                                                                     )
                                                                 )
                                                             ),
                                                             // Repeat mini-button
                                                             // f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
-                                                            //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                            //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                                             //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                             //             {
                                                             //                 'connected-to': `${ U }--${ guid }`,
@@ -297,7 +296,7 @@ class Balloon {
                                                             //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
                                                             //                 },
                                                             //             },
-                                                            //             f('span.tt-button-icon__icon', {},
+                                                            //             f('span.tt-button-icon__icon').with(
                                                             //                 f('div',
                                                             //                     {
                                                             //                         style: 'height:1.6rem; width:1.6rem',
@@ -310,7 +309,7 @@ class Balloon {
                                                             // ),
                                                             // Delete mini-button
                                                             f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
-                                                                f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                                f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                         {
                                                                             'connected-to': `${ U }--${ guid }`,
@@ -328,7 +327,7 @@ class Balloon {
                                                                                 }
                                                                             },
                                                                         },
-                                                                        f('span.tt-button-icon__icon', {},
+                                                                        f('span.tt-button-icon__icon').with(
                                                                             f('div',
                                                                                 {
                                                                                     style: 'height:1.6rem; width:1.6rem',
@@ -438,12 +437,12 @@ class Balloon {
                         {
                             style: 'overflow: hidden; width:100%;',
                         },
-                        f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
+                        f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]').with(
                             f('.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                 {
                                     style: 'width:100%',
                                 },
-                                f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap').with(
                                     f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                         {
                                             'connected-to': `${ uuid }--${ guid }`,
@@ -463,35 +462,35 @@ class Balloon {
                                                 }
                                             },
                                         },
-                                        f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                        f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
                                             // Avatar
                                             f.div(
-                                                f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', {},
-                                                    f('.tt-aspect.tt-aspect--align-top', {},
+                                                f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden').with(
+                                                    f('.tt-aspect.tt-aspect--align-top').with(
                                                         f('img.tt-balloon-avatar.tt-image', { src })
                                                     )
                                                 )
                                             ),
                                             // Message body
-                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
-                                                    f('span.tt-c-text-alt', {},
-                                                        f('p.tt-balloon-message', { innerHTML: message })
+                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1').with(
+                                                f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]').with(
+                                                    f('span.tt-c-text-alt').with(
+                                                        f('p.tt-balloon-message').html(message)
                                                     )
                                                 ),
                                                 // Subheader
-                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
-                                                    f('.tt-mg-l-05', {},
-                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: subheader })
+                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05').with(
+                                                    f('.tt-mg-l-05').with(
+                                                        f('span.tt-balloon-subheader.tt-c-text-alt').html(subheader)
                                                     )
                                                 ),
-                                                f('div', { innerHTML: Glyphs.modify('navigation', { height: '20px', width: '20px', style: 'position:absolute; right:0; top:40%;' }) })
+                                                f('div').html(Glyphs.modify('navigation', { height: '20px', width: '20px', style: 'position:absolute; right:0; top:40%;' }))
                                             )
                                         )
                                     ),
                                     // Repeat mini-button
                                     // f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
-                                    //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                    //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                     //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                     //             {
                                     //                 'connected-to': `${ uuid }--${ guid }`,
@@ -507,7 +506,7 @@ class Balloon {
                                     //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
                                     //                 },
                                     //             },
-                                    //             f('span.tt-button-icon__icon', {},
+                                    //             f('span.tt-button-icon__icon').with(
                                     //                 f('div',
                                     //                     {
                                     //                         style: 'height:1.6rem; width:1.6rem',
@@ -520,7 +519,7 @@ class Balloon {
                                     // ),
                                     // Remove mini-button
                                     f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
-                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                 {
                                                     'connected-to': `${ uuid }--${ guid }`,
@@ -538,7 +537,7 @@ class Balloon {
                                                         }
                                                     },
                                                 },
-                                                f('span.tt-button-icon__icon', {},
+                                                f('span.tt-button-icon__icon').with(
                                                     f('div',
                                                         {
                                                             style: 'height:1.6rem; width:1.6rem',
@@ -702,7 +701,7 @@ class ChatFooter {
                 },
 
                 f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-core-button.tt-core-button--overlay.tt-core-button--text.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative', { style: 'padding: 0.5rem 1rem;', ...options },
-                    f('.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0', {},
+                    f('.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0').with(
                         f('.tt-flex-grow-0', {
                             innerHTML: title
                         })
@@ -779,15 +778,13 @@ class Card {
 
         card.append(
             f('.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
-                f('.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative', {},
-                    f('.tt-inline-flex.viewer-card-drag-cancel', {},
-                        f('.tt-inline.tt-relative.tt-tooltip__container[@a-target=emote-name]', {},
-                            iconElement
-                        )
+                f('.emote-card__banner.tt-align-center.tt-align-items-center.tt-c-background-alt.tt-flex.tt-flex-grow-2.tt-flex-row.tt-full-width.tt-justify-content-start.tt-pd-l-1.tt-pd-y-1.tt-relative').with(
+                    f('.tt-inline-flex.viewer-card-drag-cancel').with(
+                        f('.tt-inline.tt-relative.tt-tooltip__container[@a-target=emote-name]').with(iconElement)
                     ),
-                    f('.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1', {},
-                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong[@test-selector=emote-code-header]', {}, title),
-                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6[@test-selector=emote-type-copy]', {}, subtitle)
+                    f('.emote-card__display-name.tt-align-items-center.tt-align-left.tt-ellipsis.tt-mg-1').with(
+                        f('h4.tt-c-text-base.tt-ellipsis.tt-strong[@test-selector=emote-code-header]').with(title),
+                        f('p.tt-c-text-alt-2.tt-ellipsis.tt-font-size-6[@test-selector=emote-type-copy]').with(subtitle)
                     )
                 )
             ),
@@ -797,14 +794,14 @@ class Card {
                         !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                     },
                 },
-                f('.tt-inline-flex.viewer-card-drag-cancel', {},
+                f('.tt-inline-flex.viewer-card-drag-cancel').with(
                     f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@test-selector=close-viewer-card]', {
                         'aria-label': "Hide",
                     },
-                        f('span.tt-button-icon__icon', {},
-                            f('div[style="width: 2rem; height: 2rem;"]', {},
-                                f('.tt-icon', {},
-                                    f('.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
+                        f('span.tt-button-icon__icon').with(
+                            f('div[style="width: 2rem; height: 2rem;"]').with(
+                                f('.tt-icon').with(
+                                    f('.tt-aspect').html(Glyphs.modify('x', { height: '20px', width: '20px' }).toString())
                                 )
                             )
                         )
@@ -820,26 +817,26 @@ class Card {
         if(footer?.href?.length)
             $('div', false, card).append(
                 // Tiny banner (live status)
-                f('.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel', {},
+                f('.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel').with(
                     f.div(
-                        f('.tt-align-items-center.tt-align-self-start.tt-mg-b-05', {},
-                            f('.tt-align-items-center.tt-flex', {},
-                                f('.tt-align-items-center.tt-flex.tt-mg-r-1', {},
+                        f('.tt-align-items-center.tt-align-self-start.tt-mg-b-05').with(
+                            f('.tt-align-items-center.tt-flex').with(
+                                f('.tt-align-items-center.tt-flex.tt-mg-r-1').with(
                                     f('a.tt-link[rel="noopener noreferrer" target="_blank"]', { href: footer.href },
                                         f('.tt-flex', {
                                             innerHTML: `${
                                                 Glyphs.modify('video', { height: '20px', width: '20px' })
                                             }${
-                                                f('.tt-mg-l-05', {},
-                                                    f('p.tt-c-text-link.tt-font-size-5.tt-strong', {}, footer.name)
+                                                f('.tt-mg-l-05').with(
+                                                    f('p.tt-c-text-link.tt-font-size-5.tt-strong').with(footer.name)
                                                 ).outerHTML
                                             }`
                                         })
                                     )
                                 ),
-                                f('.tt-align-items-center.tt-flex', {},
+                                f('.tt-align-items-center.tt-flex').with(
                                     f(`div[tt-live-status-indicator="${ parseBool(footer.live) }"]`),
-                                    f('.tt-flex.tt-mg-l-05', {},
+                                    f('.tt-flex.tt-mg-l-05').with(
                                         f('p.tt-c-text-base.tt-font-size-6', { style: 'text-transform:uppercase' },
                                             ['offline', 'live'][+footer.live]
                                         )
@@ -912,14 +909,14 @@ class Card {
                                 !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
                             },
                         },
-                        f('.tt-inline-flex.viewer-card-drag-cancel', {},
+                        f('.tt-inline-flex.viewer-card-drag-cancel').with(
                             f('button.tt-button-icon.tt-button-icon--secondary.tt-core-button[@test-selector=close-viewer-card]', {
                                 'aria-label': "Hide",
                             },
-                                f('span.tt-button-icon__icon', {},
-                                    f('div[style="width: 2rem; height: 2rem;"]', {},
-                                        f('.tt-icon', {},
-                                            f('.tt-aspect', { innerHTML: Glyphs.modify('x', { height: '20px', width: '20px' }).toString() })
+                                f('span.tt-button-icon__icon').with(
+                                    f('div[style="width: 2rem; height: 2rem;"]').with(
+                                        f('.tt-icon').with(
+                                            f('.tt-aspect').html(Glyphs.modify('x', { height: '20px', width: '20px' }).toString())
                                         )
                                     )
                                 )
@@ -1014,7 +1011,7 @@ class ContextMenu {
                             if(icon?.length)
                                 icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: '16px', width: '16px', style: 'vertical-align:-3px' }) });
                             if(text?.length)
-                                text = f('.tt-hide-text-overflow', { innerHTML: text });
+                                text = f('.tt-hide-text-overflow').html(text);
                             if(shortcut?.length)
                                 shortcut = f.pre(f.code(GetMacro(shortcut)));
 
@@ -1189,7 +1186,7 @@ class Search {
             } break;
 
             case 'getID': {
-                return fetchURL(`https://api.twitch.tv/helix/users?login=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                return fetchURL.idempotent(`https://api.twitch.tv/helix/users?login=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
                     .then(response => response.json())
                     .then(json => {
                         let id = parseInt(json?.data?.shift?.()?.id);
@@ -1207,7 +1204,7 @@ class Search {
             } break;
 
             case 'getName': {
-                return fetchURL(`https://api.twitch.tv/helix/users?id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                return fetchURL.idempotent(`https://api.twitch.tv/helix/users?id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
                     .then(response => response.json())
                     .then(json => {
                         let login = json?.data?.shift?.()?.login;
@@ -1231,7 +1228,7 @@ class Search {
                 if(nullish(name) || type.unlike('channel'))
                     break;
 
-                searchResults = fetchURL(`./${ name }`)
+                searchResults = fetchURL.idempotent(`./${ name }`)
                     .then(response => response.text())
                     .then(html => {
                         let parser = new DOMParser;
@@ -3090,9 +3087,9 @@ try {
 
                 if(nullish(pbyp))
                     $('.stream-chat').insertAdjacentElement('beforebegin',
-                        f('.picture-by-picture-player--background[data-test-selector=picture-by-picture-player-background]', {},
-                            f('.picture-by-picture-player.picture-by-picture-player--collapsed[data-test-selector=picture-by-picture-player-container]', {},
-                                f('.tw-aspect', {},
+                        f('.picture-by-picture-player--background[data-test-selector=picture-by-picture-player-background]').with(
+                            f('.picture-by-picture-player.picture-by-picture-player--collapsed[data-test-selector=picture-by-picture-player-container]').with(
+                                f('.tw-aspect').with(
                                     f.div(),
                                     f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
                                         pbyp = f('video[webkit-playsinline][playsinline]', {
@@ -3648,7 +3645,7 @@ try {
         else if(defined(video)) {
             let VideoClips = {
                 dvr: parseBool(Settings.video_clips__dvr),
-                filetype: (Settings.video_clips__file_type ?? 'mp4'),
+                filetype: (Settings.video_clips__file_type ?? 'webm'),
                 quality: (Settings.video_clips__quality ?? 'auto'),
                 length: parseInt(Settings.video_clips__length ?? 60) * 1000,
             };
@@ -3986,6 +3983,7 @@ let TWITCH_PATHNAMES = [
 
         'activate',
         'bits(-checkout/?)?',
+        'clips?',
         'checkout/', 'collections/?', 'communities/?',
         'dashboard/?', 'directory/?', 'downloads?', 'drops/?',
         'event/?',
@@ -4287,6 +4285,7 @@ let Initialize = async(START_OVER = false) => {
     ].filter(uniqueChannels);
 
     /** Streamer Array - the current streamer/channel
+     * aego:string*      - GETTER: GETTER: the channel's complementary accent color (if applicable)
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * coms:array*       - GETTER: returns the channel commands (if available)
@@ -4319,7 +4318,7 @@ let Initialize = async(START_OVER = false) => {
      * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
      * time:number*      - GETTER: how long has the channel been live
      * tint:string*      - GETTER: the channel's accent color (if applicable)
-     * tone:string*      - GETTER: the channel's complementary accent color (if applicable)
+     * tone:string*      - GETTER: the channel's opposing lightness color (if applicable)
      * unfollow:function - unfollows the current channel
      * veto:boolean      - GETTER: determines if the user is banned from the chat or not
      * vods:array*       - GETTER: returns a list (up to 25) of the channel's VODs
@@ -4384,7 +4383,7 @@ let Initialize = async(START_OVER = false) => {
                     // type: "say"
                     // updatedAt: "2020-09-10T02:07:05.487Z"
                     // _id: "5f598a4986ca683315a3f402"
-                await fetchURL(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
+                await fetchURL.idempotent(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
                     .then(r => r?.json?.())
                     .then(json => json?._id)
                     .then(async id => {
@@ -4394,7 +4393,7 @@ let Initialize = async(START_OVER = false) => {
                             return [];
 
                         for(let type of ['public', 'default'])
-                            await fetchURL(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`, { mode: 'cors' })
+                            await fetchURL.idempotent(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`, { mode: 'cors' })
                                 .then(r => r.json())
                                 .then(json => commands[type] ??= json);
 
@@ -4417,7 +4416,7 @@ let Initialize = async(START_OVER = false) => {
                     // updatedAt: "2021-07-31T05:33:56.305Z"
                     // userLevel: "everyone"
                     // _id: "6104e0c44038915692edaeed"
-                await fetchURL(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
+                await fetchURL.idempotent(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
                     .then(r => r?.json?.())
                     .then(json => json?.channel?._id)
                     .then(async id => {
@@ -4426,7 +4425,7 @@ let Initialize = async(START_OVER = false) => {
                         if(nullish(id))
                             return commands;
 
-                        await fetchURL('https://api.nightbot.tv/1/commands', { mode: 'cors', headers: { 'nightbot-channel': id } })
+                        await fetchURL.idempotent('https://api.nightbot.tv/1/commands', { mode: 'cors', headers: { 'nightbot-channel': id } })
                             .then(r => r.json())
                             .then(json => {
                                 if(!json.status.toString().startsWith('2'))
@@ -4774,6 +4773,12 @@ let Initialize = async(START_OVER = false) => {
             return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).RGB.toUpperCase()
         },
 
+        get aego() {
+            let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint);
+
+            return Color.HSLtoRGB(H + 180, S, L).RGB.toUpperCase()
+        },
+
         get veto() {
             return !!$('[id*="banned"i], [class*="banned"i]', true).length
         },
@@ -4781,7 +4786,7 @@ let Initialize = async(START_OVER = false) => {
         get vods() {
             let { name, sole } = STREAMER;
 
-            return fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)
+            return fetchURL.idempotent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                 .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
@@ -4790,7 +4795,7 @@ let Initialize = async(START_OVER = false) => {
                         return vods;
 
                     // Alternate method...
-                    return fetchURL(`https://www.twitch.tv/${ name }/videos`)
+                    return fetchURL.idempotent(`https://www.twitch.tv/${ name }/videos`)
                         .then(r => r.text())
                         .then(html => {
                             let dom = (new DOMParser).parseFromString(html, 'text/html');
@@ -6086,7 +6091,7 @@ let Initialize = async(START_OVER = false) => {
                 });
         }
 
-        let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
+        let [accent, contrast] = (Settings.accent_color ?? 'blue/12').split('/');
 
         // if(init === true) →
         // Don't use above, event listeners won't work
@@ -6453,7 +6458,7 @@ let Initialize = async(START_OVER = false) => {
 
     __ClaimReward__:
     // On by Default (ObD; v5.16)
-    if(true || parseBool(Settings.claim_reward)) {
+    if(nullish(Settings.claim_reward) || parseBool(Settings.claim_reward)) {
         REMARK('Adding reward claimer...');
 
         RegisterJob('claim_reward');
@@ -6595,8 +6600,8 @@ let Initialize = async(START_OVER = false) => {
                 $('[id$="header"i], [class*="header"i]', false, head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
 
                 container.insertAdjacentElement('afterend',
-                    f(`#tt-auto-claim-reward-handler[data-tt-reward-id=${ rewardID }]`, {},
-                        f('.tt-inline-flex.tt-relative', {},
+                    f(`#tt-auto-claim-reward-handler[data-tt-reward-id=${ rewardID }]`).with(
+                        f('.tt-inline-flex.tt-relative').with(
                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
                                 {
                                     style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(container).width.ceil() }px!important`,
@@ -6743,7 +6748,7 @@ let Initialize = async(START_OVER = false) => {
             let { name } = GetNextStreamer.cachedStreamer;
 
             confirm
-                .timed(`<div hiden controller title="${ (Settings.stream_preview? `Up next: ${ name }`: 'Coming up next...') }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview? '': `Up next: <a href="${ FIRST_IN_LINE_HREF }">${ name }</a>`) }`, timeRemaining)
+                .timed(`<div hidden controller title="${ (Settings.stream_preview? `Up next: ${ name }`: 'Coming up next...') }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview? '': `Up next: <a href="${ FIRST_IN_LINE_HREF }">${ name }</a>`) }`, timeRemaining)
                 .then(action => {
                     if(nullish(action))
                         return /* The event timed out... */;
@@ -6782,7 +6787,7 @@ let Initialize = async(START_OVER = false) => {
 
             when.defined(() => $('.tt-confirm-container'))
                 .then(container => {
-                    $.body.append(furnish('style', {}, `.tt-confirm-header { background:#0008 } .tt-confirm-body, .tt-confirm-footer { background:#0000; text-shadow:0 0 1rem #000 }`));
+                    $.body.append(furnish('style').with(`.tt-confirm-header { background:#0008 } .tt-confirm-body, .tt-confirm-footer { background:#0000; text-shadow:0 0 1rem #000 }`));
                     container.append(furnish(`iframe[src=https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=160p]`, { style: 'position:absolute;top:4px;z-index:-9;padding:0;max-width:calc(100% - 4px);max-height:calc(100% - 4px);border-radius:inherit' }));
                 });
         }, 1000);
@@ -7178,12 +7183,12 @@ let Initialize = async(START_OVER = false) => {
                                         {
                                             style: 'overflow: hidden; width:100%;',
                                         },
-                                        f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]', {},
+                                        f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-overflow-hidden[@test-selector=center-window__content]').with(
                                             f('.persistent-notification.tt-relative[@test-selector=persistent-notification]',
                                                 {
                                                     style: 'width:100%',
                                                 },
-                                                f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap', {},
+                                                f('.persistent-notification__unread.tt-border-b.tt-flex.tt-flex-nowrap').with(
                                                     f('a.tt-block.tt-full-width.tt-interactable.tt-interactable--alpha.tt-interactable--hover-enabled.tt-interactive[@test-selector=persistent-notification__click]',
                                                         {
                                                             // Sometimes, Twitch likes to default to `_blank`
@@ -7191,28 +7196,28 @@ let Initialize = async(START_OVER = false) => {
 
                                                             href,
                                                         },
-                                                        f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1', {},
+                                                        f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
                                                             // Avatar
                                                             f.div(
                                                                 f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live? '': `border:3px solid ${ primaryColor.RGB }`) },
-                                                                    f('.tt-aspect.tt-aspect--align-top', {},
+                                                                    f('.tt-aspect.tt-aspect--align-top').with(
                                                                         f('img.tt-balloon-avatar.tt-image', { src: icon })
                                                                     )
                                                                 )
                                                             ),
                                                             // Message body
-                                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1', {},
-                                                                f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]', {},
-                                                                    f('span.tt-c-text-alt', {},
+                                                            f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1').with(
+                                                                f('.persistent-notification__body.tt-overflow-hidden[@test-selector=persistent-notification__body]').with(
+                                                                    f('span.tt-c-text-alt').with(
                                                                         f('p.tt-balloon-message', {
                                                                             innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ [name, game].filter(s => s.length).join(' &mdash; ') }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
                                                                         })
                                                                     )
                                                                 ),
                                                                 // Subheader
-                                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05', {},
-                                                                    f('.tt-mg-l-05', {},
-                                                                        f('span.tt-balloon-subheader.tt-c-text-alt', { innerHTML: [status, coinIcon + coinText].join(' &bull; ') })
+                                                                f('.tt-align-items-center.tt-flex.tt-flex-shrink-0.tt-mg-t-05').with(
+                                                                    f('.tt-mg-l-05').with(
+                                                                        f('span.tt-balloon-subheader.tt-c-text-alt').html([status, coinIcon + coinText].join(' &bull; '))
                                                                     )
                                                                 ),
                                                                 // Footer (persistent)
@@ -7221,7 +7226,7 @@ let Initialize = async(START_OVER = false) => {
                                                         )
                                                     ),
                                                     f('.persistent-notification__delete.tt-absolute.tt-pd-l-1', { style: `top:0.0rem; right:0` },
-                                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__delete]',
                                                                 {
                                                                     name,
@@ -7257,7 +7262,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         });
                                                                     },
                                                                 },
-                                                                f('span.tt-button-icon__icon', {},
+                                                                f('span.tt-button-icon__icon').with(
                                                                     f('div',
                                                                         {
                                                                             style: 'height:1.6rem; width:1.6rem',
@@ -7269,7 +7274,7 @@ let Initialize = async(START_OVER = false) => {
                                                         )
                                                     ),
                                                     f('.persistent-notification__popout.tt-absolute.tt-pd-l-1', { style: `top:2.5rem; right:0` },
-                                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap', {},
+                                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=persistent-notification__popout]',
                                                                 {
                                                                     name,
@@ -7281,7 +7286,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         MiniPlayer = name;
                                                                     },
                                                                 },
-                                                                f('span.tt-button-icon__icon', {},
+                                                                f('span.tt-button-icon__icon').with(
                                                                     f('div',
                                                                         {
                                                                             style: 'height:1.6rem; width:1.6rem',
@@ -7320,8 +7325,8 @@ let Initialize = async(START_OVER = false) => {
                                 LiveReminders = { [name]: time.toJSON(), ...LiveReminders };
                             }
 
-                            // Loading reminders...
-                            $('[up-next--body] > *').modStyle(`border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, var(--color-accent) ${ (100 * (index / length)).toFixed(0) }%, #0000 0) 1;`);
+                            // Loading reminders (progress bar)...
+                            $('[up-next--body] > *').modStyle(`border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, var(--user-complement-color) ${ (100 * (index / length)).toFixed(0) }%, #0000 0) 1;`);
                         }
 
                         wait(500)
@@ -7351,7 +7356,7 @@ let Initialize = async(START_OVER = false) => {
                 icon: 'help',
                 left: true,
             }),
-                [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/'),
+                [accent, contrast] = (Settings.accent_color ?? 'blue/12').split('/'),
                 [colorName] = accent.split('-').reverse();
 
             first_in_line_help_button.tooltip ??= new Tooltip(first_in_line_help_button, 'Drop a channel here to queue it');
@@ -7757,7 +7762,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.first_in_line = async(ActionableNotification) => {
         START__STOP_WATCH('first_in_line');
 
-        let notifications = [...$('[data-test-selector*="notification"i] [data-test-selector*="notification"i]', true), ActionableNotification].filter(defined);
+        let notifications = [...$('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]', true), ActionableNotification].filter(defined);
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
@@ -7787,7 +7792,10 @@ let Initialize = async(START_OVER = false) => {
             if(DO_NOT_AUTO_ADD.contains(href))
                 continue;
 
-            if(!/([^]+? +)(go(?:ing)?|is|went) +live\b/i.test(textContent))
+            if(true
+                && !/\blive\b/i.test(textContent)
+                && $.nullish('[class*="toast"i][class*="action"i]', false, notification)
+            )
                 continue;
 
             LOG('Received an actionable notification:', textContent, new Date);
@@ -8309,7 +8317,7 @@ let Initialize = async(START_OVER = false) => {
                     ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'notify']
                 ][+!!hasReminder];
 
-            icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
+            icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
             // Create the action button...
             action =
@@ -8339,7 +8347,7 @@ let Initialize = async(START_OVER = false) => {
                                     ['Reminder set', `You will receive a notification for ${ s(STREAMER.name) }${ tense } live ${ stream_s }`, 'notify']
                                 ][+!!notReminded];
 
-                            icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
+                            icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
                             $('.tt-action-icon', false, currentTarget).innerHTML = icon;
                             $('.tt-action-title', false, currentTarget).textContent = title;
@@ -8364,10 +8372,10 @@ let Initialize = async(START_OVER = false) => {
                         });
                     },
                 }, f.div(
-                    f('.tt-action-icon', { innerHTML: icon }),
+                    f('.tt-action-icon').html(icon),
                     f.div(
-                        f('p.tw-title.tt-action-title', {}, title),
-                        f('p.tt-action-subtitle', {}, subtitle)
+                        f('p.tw-title.tt-action-title').with(title),
+                        f('p.tt-action-subtitle').with(subtitle)
                     )
                 ))
             );
@@ -8386,7 +8394,7 @@ let Initialize = async(START_OVER = false) => {
 
     __Live_Reminders__:
     // On by Default (ObD; v5.15)
-    if(true || parseBool(Settings.live_reminders)) {
+    if(nullish(Settings.live_reminders) || parseBool(Settings.live_reminders)) {
         REMARK('Adding Live Reminders...');
 
         // See if there are any notifications to push...
@@ -8452,7 +8460,7 @@ let Initialize = async(START_OVER = false) => {
                                 // Show a notification
                                 Display_phantom_notification: {
                                     WARN(`Live Reminders: ${ name } just went live`, new Date);
-                                    await alert.timed(`${ name } just went live!`, 7000);
+                                    await alert.timed(`<a href='/${ name }'>${ name }</a> just went live!`, 7000);
                                 }
                             }
 
@@ -8482,7 +8490,7 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('live_reminders');
     }
 
-    /*** Game Overview Card
+    /*** Game Overview Card | Store Integration
      *       _____                         ____                       _                  _____              _
      *      / ____|                       / __ \                     (_)                / ____|            | |
      *     | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ ____   ___  _____      __ | |     __ _ _ __ __| |
@@ -8510,7 +8518,10 @@ let Initialize = async(START_OVER = false) => {
 
         let timerStart = +new Date;
 
-        /*await*/ fetchURL(href)
+        let MATURE_HINTS = ['ADULT', 'MATUR', 'NSFW', ...16..to(99)],
+            RATING_STYLING = `max-height:6rem; max-width:4rem; position:absolute; left:0; bottom:-6rem; transform:translate(50%);`;
+
+        /*await*/ fetchURL.idempotent(href)
             .then(response => response.text())
             .then(DOMParser.stripBody)
             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -8541,36 +8552,46 @@ let Initialize = async(START_OVER = false) => {
 
                 title = title.replace(/[\s\-]+twitch\s*$/i, '');
 
-                let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1', {},
-                    f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width', {},
+                let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
+                    f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
                         f('.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { style: 'color:inherit; text-decoration:none; min-height:12rem; height:fit-content' },
-                            f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {},
+                            f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {
+                                style: 'min-height:20rem',
+                            },
                                 // Preview image
                                 f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {
                                     style: 'background-color:#0000!important'
                                 },
-                                    f('.tt-card-image', {},
-                                        f('.tt-aspect', {},
-                                            f('div', {}),
+                                    f('.tt-card-image').with(
+                                        f('.tt-aspect', { style: 'transform:translate(0,40%)' },
                                             f('img.tt-image', {
                                                 alt: title,
                                                 src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
-                                                style: 'height:11rem; transform:translate(0,30%)',
-                                            })
+                                                style: 'height:11rem',
+                                            }),
+                                            f('img#tt-content-rating-placeholder', { src: `//image.api.playstation.com/grc/images/ratings/hd/esrb/rp.png`, style: RATING_STYLING })
                                         )
                                     )
                                 ),
                                 // Title & Subtitle
-                                f('.tt-align-items-center.tt-flex.tt-overflow-hidden', {},
-                                    f('.tt-full-width.tt-pd-l-1', {},
+                                f('.tt-align-items-center.tt-flex.tt-overflow-hidden').with(
+                                    f('.tt-full-width.tt-pd-l-1').with(
                                         // Title
-                                        f('.chat-card__title.tt-ellipsis', {},
-                                            f('h3.tt-strong.tt-ellipsis[@test-selector=chat-card-title]', {}, `About ${ title }`)
+                                        f('.chat-card__title.tt-ellipsis').with(
+                                            f('h3.tt-strong.tt-ellipsis[@test-selector=chat-card-title]').with(title)
                                         ),
                                         // Subtitle
-                                        f('.tt-ellipsis', {},
+                                        f('.tt-ellipsis').with(
                                             f('p.tt-c-text-alt-2[@test-selector=chat-card-description]', { style: 'white-space:break-spaces' }, description)
                                         ),
+                                        // Footer
+                                        f('.tt-ellipsis').with(
+                                            f.br(),
+                                            f('#tt-steam-purchase'),
+                                            f('#tt-nintendo-purchase'),
+                                            f('#tt-playstation-purchase'),
+                                            f('#tt-xbox-purchase'),
+                                        )
                                     )
                                 )
                             )
@@ -8578,13 +8599,13 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                let container = f(`#game-overview-card.chat-line__message[@game=${ STREAMER.game }][@a-target=chat-line-message][@test-selector=chat-line-message]`, {
+                let container = f(`#game-overview-card.chat-line__message[@game="${ STREAMER.game }"][@a-target=chat-line-message][@test-selector=chat-line-message]`, {
                     style: `animation:1s fade-in 1; max-width:fit-content; overflow:visible; overflow-wrap:normal; margin-bottom:3rem`
                 },
-                    f('.tt-relative', {},
-                        f('.tt-relative.chat-line__message-container', {},
-                            f('div', {},
-                                f('.chat-line__no-background.tt-inline', {},
+                    f('.tt-relative').with(
+                        f('.tt-relative.chat-line__message-container').with(
+                            f('div').with(
+                                f('.chat-line__no-background.tt-inline').with(
                                     card
                                 )
                             )
@@ -8596,9 +8617,344 @@ let Initialize = async(START_OVER = false) => {
                 $('.about-section__panel--content').closest('*:not([style]):not([class]):not([id])').insertAdjacentElement('afterend', container);
             })
             .catch(ERROR);
+
+            /***
+             *       _____ _                   _____       _                       _   _
+             *      / ____| |                 |_   _|     | |                     | | (_)
+             *     | (___ | |_ ___  _ __ ___    | |  _ __ | |_ ___  __ _ _ __ __ _| |_ _  ___  _ __
+             *      \___ \| __/ _ \| '__/ _ \   | | | '_ \| __/ _ \/ _` | '__/ _` | __| |/ _ \| '_ \
+             *      ____) | || (_) | | |  __/  _| |_| | | | ||  __/ (_| | | | (_| | |_| | (_) | | | |
+             *     |_____/ \__\___/|_|  \___| |_____|_| |_|\__\___|\__, |_|  \__,_|\__|_|\___/|_| |_|
+             *                                                      __/ |
+             *                                                     |___/
+             */
+
+            // On by Default (ObD; v5.29)
+            if(nullish(Settings.store_integration) || parseBool(Settings.store_integration)) {
+                // Get the Country code and Language code
+                // e.g. "en-US"
+                let [langCode, counCode] = navigator.language.split('-'),
+                    [langName] = (ISO_639_1[langCode]?.names || [navigator.language]),
+                    game = STREAMER.game,
+                    gameURI = encodeURIComponent(game);
+
+                /*** Get the Steam link (if applicable)
+                 *       _____ _
+                 *      / ____| |
+                 *     | (___ | |_ ___  __ _ _ __ ___
+                 *      \___ \| __/ _ \/ _` | '_ ` _ \
+                 *      ____) | ||  __/ (_| | | | | | |
+                 *     |_____/ \__\___|\__,_|_| |_| |_|
+                 *
+                 *
+                 */
+                async function fetchSteamGame(index = 1) {
+                    return /*await*/ fetchURL.idempotent(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
+                        .then(r => r.text())
+                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                        .then(DOM => {
+                            for(let item of $('[data-ds-appid]', true, DOM)) {
+                                let href = item.href,
+                                    name = $('[class*="name"i]', false, item).textContent.replace(/[^\w \(\)\[\]\{\}!@#\$%\^&\*\+\=\-:;'"`,<>\/\?\\\|]/),
+                                        // Removes symbols like ™ ® © etc.
+                                    img = $('[class*="img"i] img', false, item).src,
+                                    price = $('[class*="price"i]', false, item).textContent || 'More...';
+
+                                if(game.errs(name) < .01)
+                                    return { game, name, href, img, price };
+                            }
+
+                            return {};
+                        });
+                }
+
+                fetchSteamGame()
+                    .then(info => {
+                        let { game, name, href, img, price } = info;
+
+                        if(!href?.length)
+                            return;
+
+                        let f = furnish;
+
+                        let purchase =
+                            f(`.tt-store-purchase--container.is-steam`).with(
+                                // Price
+                                f('.tt-store-purchase--price').with(price),
+
+                                // Link to Steam
+                                f('.tt-store-purchase--handler').with(
+                                    f(`a[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
+                                )
+                            );
+
+                        // $('.tt-store-purchase--price', false, purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
+
+                        when.defined(() => $('#tt-steam-purchase'))
+                            .then(container => {
+                                // Load the maturity warning (if applicable)...
+                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    .then(r => r.text())
+                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                    .then(DOM => {
+                                        $('.tt-store-purchase--container.is-steam').dataset.matureContent = (null
+                                            // Steam will error-out if you try to load an adult-only game...
+                                            // Or... There will be a mature label
+                                            // Or... There will be an "Age Gate"
+                                            // Or... The content descriptor will be defined
+
+                                            // Too much text...
+                                            // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', false, DOM)?.textContent
+                                            || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', false, DOM)
+                                        )
+                                    });
+
+                                container.replaceWith(purchase);
+                            });
+
+                        LOG(`Got "${ game }" data from Steam store:`, info);
+                    });
+
+                /*** Get the PlayStation link (if applicable)
+                 *      _____  _              _____ _        _   _
+                 *     |  __ \| |            / ____| |      | | (_)
+                 *     | |__) | | __ _ _   _| (___ | |_ __ _| |_ _  ___  _ __
+                 *     |  ___/| |/ _` | | | |\___ \| __/ _` | __| |/ _ \| '_ \
+                 *     | |    | | (_| | |_| |____) | || (_| | |_| | (_) | | | |
+                 *     |_|    |_|\__,_|\__, |_____/ \__\__,_|\__|_|\___/|_| |_|
+                 *                      __/ |
+                 *                     |___/
+                 */
+                async function fetchPlayStationGame(index = 1, pages = 1) {
+                    return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ langCode }-${ counCode }/search/${ gameURI }/${ index }`)
+                        .then(r => r.text())
+                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                        .then(async DOM => {
+                            let items = JSON.parse($('script[id*="data"i]', false, DOM)?.textContent || null)?.props?.apolloState;
+
+                            pages = parseInt($('[data-qa*="#page"i]', true, DOM).pop()?.value) || pages;
+
+                            for(let item in items)
+                                if(/^Product:/i.test(item)) {
+                                    item = items[item];
+
+                                    if(true
+                                        && item?.storeDisplayClassification?.toLowerCase()?.contains('game')
+                                        && item?.name
+                                            // Removes symbols like ™ ® © etc.
+                                            ?.replace(/[^\w `\-=~!@#\$%^&\*\(\)\+\{\}\|\[\]\\:;"'<>\?,\.\/]/)
+                                            // Removes common trademarks → PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+                                            ?.replace(/\bPS\s*(\d|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i, '')
+                                            ?.errs(game) < .01
+                                    )
+                                        return {
+                                            game,
+                                            name: item.name,
+                                            href: `https://store.playstation.com/en-us/product/${ item.id }`,
+                                            img: (items[item.media?.shift()?.id]?.url),
+                                            price: (items[item.price?.id]?.basePrice || 'More...'),
+                                        };
+                                }
+
+                            if(index < pages)
+                                return await fetchPlayStationGame(index + 1, pages);
+                            return {};
+                        });
+                }
+
+                fetchPlayStationGame()
+                    .then(info => {
+                        let { game, name, href, img, price } = info;
+
+                        if(!href?.length)
+                            return;
+
+                        let f = furnish;
+
+                        let purchase =
+                            f(`.tt-store-purchase--container.is-playstation`).with(
+                                // Price
+                                f('.tt-store-purchase--price').with(price),
+
+                                // Link to Steam
+                                f('.tt-store-purchase--handler').with(
+                                    f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                )
+                            );
+
+                        // $('.tt-store-purchase--price', false, purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+
+                        when.defined(() => $('#tt-playstation-purchase'))
+                            .then(container => {
+                                // Load the maturity warning (if applicable)...
+                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    .then(r => r.text())
+                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                    .then(DOM => {
+                                        let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', false, DOM)?.textContent;
+
+                                        if(!data?.length)
+                                            return;
+
+                                        data = JSON.parse(data);
+
+                                        finder: for(let key in data.cache)
+                                            if(/^product/i.test(key)) {
+                                                let { authority, description, name, url } = data.cache[key].contentRating;
+
+                                                $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
+                                                $('#tt-content-rating-placeholder')?.replaceWith(furnish.img({ alt: description, src: url, style: RATING_STYLING }));
+
+                                                break finder;
+                                            }
+                                    });
+
+                                container.replaceWith(purchase);
+                            });
+
+                        LOG(`Got "${ game }" data from PlayStation store:`, info);
+                    });
+
+                /*** Get the Xbox link (if applicable)
+                 *     __   ___
+                 *     \ \ / / |
+                 *      \ V /| |__   _____  __
+                 *       > < | '_ \ / _ \ \/ /
+                 *      / . \| |_) | (_) >  <
+                 *     /_/ \_\_.__/ \___/_/\_\
+                 *
+                 *
+                 */
+                async function fetchXboxGame(index = 1) {
+                    return /*await*/ fetchURL.idempotent(`https://www.microsoft.com/msstoreapiprod/api/autosuggest?market=${ langCode }-${ counCode }&sources=DCatAll-Products&filter=%2BClientType%3AStoreWeb&query=${ gameURI }`)
+                        .then(r => r.json())
+                        .then(json => {
+                            let info = json
+                                ?.ResultSets
+                                ?.shift()
+                                ?.Suggests
+                                ?.find(({ Description, ImageUrl, Metas, Source, Title, Url }) => Source?.equals('games') && Title?.errs(game) < .01);
+
+                            if(nullish(info))
+                                return {};
+
+                            let name = info.Title.replace(/[^\w \(\)\[\]\{\}!@#\$%\^&\*\+\=\-:;'"`,<>\/\?\\\|]/),
+                                    // Removes symbols like ™ ® © etc.
+                                href = info.Url,
+                                img = info.ImageUrl,
+                                price = 'More...';
+
+                            return { game, name, href, img, price };
+                        });
+                }
+
+                fetchXboxGame()
+                    .then(info => {
+                        let { game, name, href, img, price } = info;
+
+                        if(!href?.length)
+                            return;
+
+                        let f = furnish;
+
+                        let purchase =
+                            f('.tt-store-purchase--container.is-xbox').with(
+                                // Price
+                                f('.tt-store-purchase--price').with(price),
+
+                                // Link to Xbox
+                                f('.tt-store-purchase--handler').with(
+                                    f(`a[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
+                                )
+                            );
+
+                        // $('.tt-store-purchase--price', false, purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
+
+                        when.defined(() => $('#tt-xbox-purchase'))
+                            .then(container => {
+                                // Load the price & maturity warning (if applicable)...
+                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    .then(r => r.text())
+                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                    .then(DOM => {
+                                        let price = $('[itemprop="price"i]')?.content || $('[class^="price-module"i], [class$="price-text"i] *', false, DOM)?.textContent?.trim();
+                                        let rating = $('[class*="age"i][class*="rating"i] img', false, DOM),
+                                            mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
+
+                                        rating.modStyle(RATING_STYLING);
+
+                                        $('.is-xbox .tt-store-purchase--price').textContent ||= price;
+                                        $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
+                                        $('#tt-content-rating-placeholder')?.replaceWith(rating);
+                                    });
+
+                                // TODO: Make this faster somehow!
+                                // Slow as hell!
+                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    .then(r => r.text())
+                                    .then(DOMParser.stripBody)
+                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                    .then(DOM => {
+                                        return /* TODO: Get this to work without freezing the machine */;
+
+                                        let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
+
+                                        if(data?.length) {
+                                            /** Xbox | Product Summaries
+                                                accessibilityCapabilities: object<{ audio:array, gameplay:array, input:array, publisherInformationUri:string?, visual:array }>
+                                                availableOn:array<["Xbox", "XboxOne", "XboxSeriesS", "XboxSeriesX"...]>
+                                                averageRating:number<float>
+                                                bundledProductIds:array<[...string]>
+                                                bundlesBySeed:array<[...string]>
+                                                capabilities:object<{ `CapabilityKey`:`CapabilityDescription` }>
+                                                categories:array<[...string]>
+                                                contentRating:object<{ boardName:string, description:string, disclaimers:array<[...string]>, descriptors:array<[...string]>, imageUri:string<URL>, imageLinkUri:string<URL>, interactiveDescriptions:array<[...string]>, rating:string, ratingAge:number<integer>, ratingDescription:string }>
+                                                description:string
+                                                developerName:string
+                                                editions:array<[...string]>
+                                                hasAddOns:boolean
+                                                images:object<{ `ImageType`:object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels> }> }>
+                                                includedWithPassesProductIds:array<[...string]>
+                                                languagesSupported:object<{ `Language`:object<{ areSubtitlesSupported:boolean, isAudioSupported:boolean, isInterfaceSupported:boolean, languageDisplayName:string }> }>
+                                                legalNotices:array<[...string]> of @@capabilities
+                                                maxInstallSize:number<integer:Bytes>
+                                                optimalSatisfyingPassId:string
+                                                optimalSkuId:string
+                                                preferredSkuId:string
+                                                productFamily:string
+                                                productId:string
+                                                publisherName:string
+                                                ratingCount:number<integer>
+                                                releaseDate:string<Date:ISO>
+                                                shortDescription:string
+                                                showSupportedLanguageDisclaimer:boolean
+                                                specificPrices:object<{ `PriceType`:array<[ ...object<{ skuId:string, availabilityId:string, listPrice:number<float>, msrp:number<float>, discountPercentage:number<float>, currencyCode:string, remediations:array<[]>, affirmationId:string?, priceEligibilityInfo:object?, availabilityActions:array<[...string]>, endDate:string<Date:ISO>, hasXPriceOffer:boolean }> ]> }>
+                                                systemRequirements:array<[ object<{ minimum:string, recommended:string, title:string<RequirementType> }> ]>
+                                                title:string
+                                                videos:array<[ object<{ title:string, url:string<URL>, width:number<integer:pixels>, height:number<integer:pixels>, previewImage: object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels>, caption:string }>, purpose:string }> ]>
+                                            */
+                                            data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
+
+                                            if(nullish(data?.specificPrices))
+                                                return;
+
+                                            let mature = data.contentRating?.rating || '',
+                                                price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+
+                                            $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
+                                            $('.is-xbox .tt-store-purchase--price').textContent = price;
+                                        }
+                                    });
+
+                                container.replaceWith(purchase);
+                            });
+
+                        LOG(`Got "${ game }" data from Xbox store:`, info);
+                    });
+            }
     };
 
-    Timers.game_overview_card = 15_000;
+    Timers.game_overview_card = 5_000;
 
     Unhandlers.game_overview_card = () => {
         $('#game-overview-card')?.remove();
@@ -8606,7 +8962,7 @@ let Initialize = async(START_OVER = false) => {
 
     __GameOverviewCard__:
     // On by Default (ObD; v5.23)
-    if(true || parseBool(Settings.game_overview_card)) {
+    if(nullish(Settings.game_overview_card) || parseBool(Settings.game_overview_card)) {
         REMARK('Adding game overview card...');
 
         RegisterJob('game_overview_card');
@@ -8854,7 +9210,7 @@ let Initialize = async(START_OVER = false) => {
             for(let { aliases, command, reply, availability, enabled, origin, variables } of await STREAMER.coms)
                 // Wait here to keep from lagging the page...
                 await wait(1).then(() => {
-                    let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?:\\p{L}*))`, 'igu');
+                    let regexp = RegExp(`([!](?:${ [command, ...aliases].map(s => s.replace(/[\.\\\/\?\+\(\)\[\]\{\}\$\*\|]/g, '\\$&')).join('|') })(?!\\p{L}))`, 'igu');
 
                     if(!regexp.test(element.innerHTML))
                         return;
@@ -8862,7 +9218,7 @@ let Initialize = async(START_OVER = false) => {
                     element.innerHTML = element.innerHTML.replace(regexp, ($0, $1, $$, $_) => {
                         reply = parseCommands(reply, variables);
 
-                        let { href } = (/\b(?<href>(?:https?:\/\/\S+|(?<!\$?[\(\[\{])\w{3,}\.\w{2,}(?:\/\S*)?(?![\}\]\)])))/i.exec(reply)?.groups ?? {}),
+                        let { href } = (parseURL.pattern.exec(reply)?.groups ?? {}),
                             string;
 
                         if(parseBool(Settings.parse_commands__create_links) && defined(href))
@@ -8874,7 +9230,7 @@ let Initialize = async(START_OVER = false) => {
                     });
                 });
 
-            $('[tt-parse-commands]:not([tt-parsed])', true).map(element => {
+            $('[tt-parse-commands]:not([tt-parsed="true"i])', true).map(element => {
                 element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
                 element.setAttribute('tt-parsed', true);
             });
@@ -9019,9 +9375,9 @@ let Initialize = async(START_OVER = false) => {
                 $('#tt-tcito1')?.remove();
 
                 tray.firstElementChild.append(
-                    f('#tt-tcito1', {},
-                        f('.tcito2', {},
-                            f('.tcito3', {},
+                    f('#tt-tcito1').with(
+                        f('.tcito2').with(
+                            f('.tcito3').with(
                                 f('div', { style: `max-height:3rem!important` },
                                     f('div', { style: `padding: 0.05rem!important` },
                                         f('span', { style: `color:var(--color-text-alt-2)!important` }, `No commands found.`)
@@ -9035,14 +9391,14 @@ let Initialize = async(START_OVER = false) => {
                 $('#tt-tcito1')?.remove();
 
                 tray.firstElementChild.append(
-                    f('#tt-tcito1', {},
-                        f('.tcito2', {},
-                            f('.tcito3', {},
+                    f('#tt-tcito1').with(
+                        f('.tcito2').with(
+                            f('.tcito3').with(
                                 f('div', { style: `max-height:18rem!important` },
                                     f.div(
                                         // f('div', { style: `text-align:center` },
-                                        //     f('.tt-kb', {},
-                                        //         f('p.tt-kb-text', {}, 'Space')
+                                        //     f('.tt-kb').with(
+                                        //         f('p.tt-kb-text').with('Space')
                                         //     ),
                                         //     'insert selected command'
                                         // ),
@@ -9054,7 +9410,7 @@ let Initialize = async(START_OVER = false) => {
                                             if(defined(href))
                                                 reply = f('a', { href: href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`), title: reply, style: `margin-right:0.75rem` }, reply);
 
-                                            return f(`#tt-command--${ command.replace(/[^\w\-]+/g, '') }`, {},
+                                            return f(`#tt-command--${ command.replace(/[^\w\-]+/g, '') }`).with(
                                                 f('button.tcito7', {
                                                     style: `cursor:${ ['not-allowed','auto'][+enabled] }!important; color:${ ['inherit','var(--color-text-success)'][+(textDistance < 1)] }`,
                                                     onmouseup: ({ target, button = -1 }) => {
@@ -9082,8 +9438,8 @@ let Initialize = async(START_OVER = false) => {
                                                         return RemoveCustomCSSBlock(CSSBlockName);
                                                     },
                                                 },
-                                                    f('.tcito8', {},
-                                                        f('.tcito9', {},
+                                                    f('.tcito8').with(
+                                                        f('.tcito9').with(
                                                             f('p.tt-chat-input-suggestion', { style: `word-break:break-word!important; color:${ ['inherit','var(--color-text-error)'][+!enabled] }`, command },
                                                                 f('img.chat-badge', { src: TwitchRoleBadges[availability], availability, style: `margin:0 0.75rem 0 0; height:1.5rem; width:1.5rem` }),
 
@@ -9136,7 +9492,7 @@ let Initialize = async(START_OVER = false) => {
                 .tcito3 {
                     display: flex !important;
                     flex-direction: column !important;
-                    overflow: hiden !important;
+                    overflow: hidden !important;
                 }
 
                 .tcito7 {
@@ -9303,7 +9659,7 @@ let Initialize = async(START_OVER = false) => {
             next = await GetNextStreamer(),
             raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.textContent),
             from = (raided? null: STREAMER.name),
-            [to] = (raided? [STREAMER.name]: raid_banner.filter(name => !RegExp(name, 'i').test(from)));
+            [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.unlike(from)));
 
         let method = Settings.prevent_raiding ?? "none";
 
@@ -9883,7 +10239,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let span = furnish('span', {
                     id: `tt-time-zone-${ (new UUID) }`,
-                    style: 'color:var(--user-complement-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
+                    style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
                     contrast: THEME__PREFERRED_CONTRAST,
                     innerHTML: unescape(atob(newText)).split('').join('&zwj;'),
                 });
@@ -10077,6 +10433,76 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     // /chat.js
+
+    /*** Auto-chat (VIP) · @dskw1
+     *                    _                  _           _      ____      _______ _______
+     *         /\        | |                | |         | |    / /\ \    / /_   _|  __ \ \
+     *        /  \  _   _| |_ ___ ______ ___| |__   __ _| |_  | |  \ \  / /  | | | |__) | |
+     *       / /\ \| | | | __/ _ \______/ __| '_ \ / _` | __| | |   \ \/ /   | | |  ___/| |
+     *      / ____ \ |_| | || (_) |    | (__| | | | (_| | |_  | |    \  /   _| |_| |    | |
+     *     /_/    \_\__,_|\__\___/      \___|_| |_|\__,_|\__| | |     \/   |_____|_|    | |
+     *                                                         \_\                     /_/
+     *
+     */
+    let lastAutoChatName = `auto-chat/${ STREAMER.sole }`;
+
+    Handlers.auto_chat__vip = () => {
+        if(STREAMER.perm.not('vip'))
+            return;
+
+        wait(parseInt(Settings.auto_chat__wait_time) * 60_000).then(() => {
+            LoadCache(lastAutoChatName, results => {
+                let old = results[lastAutoChatName],
+                    now = new Date;
+
+                if(nullish(old))
+                    old = now;
+                else
+                    old = new Date(old);
+
+                // It's been less than 8h since the last auto-message was sent
+                if((now - old) && (now - old < parseTime('8:00:00')))
+                    return;
+
+                Chat.send(Settings.auto_chat__lurking_message || 'Just going to !lurk');
+
+                SaveCache({ [lastAutoChatName]: now.toJSON() });
+            });
+        });
+
+        // Handle mentions while AFK
+        Chat.onmessage = async({ uuid, author, usable, message, mentions, deleted }) => {
+            // Don't reply to messages not meant for us...
+            if(true
+                && mentions.map(username => username.toLowerCase()).missing(USERNAME.toLowerCase())
+                // Only accept exact matches, instead of partials; e.g. "Hey @SomeUserName, wyd?" vs. "Hey User, wyd?"
+                && message.toLowerCase().missing(USERNAME)
+            ) return;
+
+            // Wouldn't make sense to reply to a deleted message...
+            if(await deleted)
+                return;
+
+            // The UUID does not belong to a valid Twitch message...
+            if(!usable)
+                return;
+
+            // What do?
+            switch(Settings.auto_chat__mentions) {
+                case 'reply': {
+                    Chat.reply(uuid, 'AFK. BRB');
+                } break;
+
+                default: return;
+            }
+        };
+    };
+
+    Timers.auto_chat__vip = -5_000;
+
+    if(parseBool(Settings.auto_chat__vip)) {
+        RegisterJob('auto_chat__vip');
+    }
 
     /*** Prevent spam
      *      _____                          _      _____
@@ -10291,15 +10717,47 @@ let Initialize = async(START_OVER = false) => {
      *                                                        | |
      *                                                        |_|
      */
-    let INITIAL_POINTS,
-        RECEIPT_TOOLTIP,
+    let RECEIPT_TOOLTIP,
         COUNTING_POINTS,
         EXACT_POINTS_SPENT = 0,
+        EXACT_POINTS_DEBTED = 0,
         EXACT_POINTS_EARNED = 0,
         COUNTING_HREF = NORMALIZED_PATHNAME,
-        OBSERVED_COLLECTION_ANIMATIONS = new Map(),
+        OBSERVED_COLLECTION_ANIMATIONS = new Map,
         DISPLAYING_RANK,
-        RANK_TOOLTIP;
+        RANK_TOOLTIP,
+        TALLY = new Map;
+
+    function UpdateReceiptDisplay() {
+        let receipt = EXACT_POINTS_EARNED - (EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED),
+            glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
+            { abs } = Math;
+
+        switch(Settings.channelpoints_receipt_display) {
+            case "round100": {
+                // Round to nearest hundred
+                receipt = receipt.floorToNearest(100);
+            } break;
+
+            case "round50": {
+                // Round to nearest fifty (half)
+                receipt = receipt.floorToNearest(50);
+            } break;
+
+            case "round25": {
+                // Round to nearest twenty-five (quarter)
+                receipt = receipt.floorToNearest(25);
+            } break;
+
+            case "null":
+            default: {
+                // Do nothing...
+            } break;
+        }
+
+        RECEIPT_TOOLTIP.innerHTML = [abs(EXACT_POINTS_EARNED).suffix(' &uarr;', 1, 'natural'), abs(EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED).suffix(' &darr;', 1, 'natural')].join(' | ');
+        $('#tt-points-receipt').innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
+    }
 
     Handlers.points_receipt_placement = () => {
         // Display the ranking
@@ -10329,7 +10787,7 @@ let Initialize = async(START_OVER = false) => {
                     );
 
                 rank = (
-                    rank < 1?
+                    rank < 1 || Number.isNaN(rank)?
                         'Unknown':
                     place < 4?
                         `<span style="text-decoration:${ 4 - place }px underline ${ color }">${ string }</span>`:
@@ -10388,7 +10846,7 @@ let Initialize = async(START_OVER = false) => {
 
             parent.append(points_receipt);
 
-            RECEIPT_TOOLTIP ??= new Tooltip(points_receipt);
+            RECEIPT_TOOLTIP = new Tooltip(points_receipt);
 
             COUNTING_POINTS = setInterval(async() => {
                 let points_receipt = $('#tt-points-receipt'),
@@ -10414,15 +10872,9 @@ let Initialize = async(START_OVER = false) => {
                     exact_change ??= { textContent: framedData.exact_change };
                 }
 
-                let current = parseCoin(balance?.textContent);
+                EXACT_POINTS_DEBTED = parseCoin(exact_debt?.textContent ?? EXACT_POINTS_DEBTED);
 
-                INITIAL_POINTS ??= current;
-
-                let debt = INITIAL_POINTS - current;
-
-                EXACT_POINTS_SPENT = parseCoin(exact_debt?.textContent ?? (debt? EXACT_POINTS_SPENT > debt? EXACT_POINTS_SPENT: debt: EXACT_POINTS_SPENT));
-
-                let animationID = (exact_change?.textContent ?? exact_debt?.textContent ?? (INITIAL_POINTS > current? -EXACT_POINTS_SPENT: 0)) + '',
+                let animationID = ((exact_change?.textContent ?? exact_debt?.textContent ?? -EXACT_POINTS_SPENT) | 0).toString(),
                     animationTimeStamp = +new Date;
 
                 if(!/^([\+\-, \d]+)$/.test(animationID))
@@ -10452,34 +10904,7 @@ let Initialize = async(START_OVER = false) => {
 
                 EXACT_POINTS_EARNED += parseCoin(exact_change?.textContent);
 
-                let receipt = EXACT_POINTS_EARNED - EXACT_POINTS_SPENT,
-                    glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
-                    { abs } = Math;
-
-                switch(Settings.channelpoints_receipt_display) {
-                    case "round100": {
-                        // Round to nearest hundred
-                        receipt = receipt.floorToNearest(100);
-                    } break;
-
-                    case "round50": {
-                        // Round to nearest fifty (half)
-                        receipt = receipt.floorToNearest(50);
-                    } break;
-
-                    case "round25": {
-                        // Round to nearest twenty-five (quarter)
-                        receipt = receipt.floorToNearest(25);
-                    } break;
-
-                    case "null":
-                    default: {
-                        // Do nothing...
-                    } break;
-                }
-
-                RECEIPT_TOOLTIP.innerHTML = [abs(EXACT_POINTS_EARNED).suffix(' &uarr;'), abs(EXACT_POINTS_SPENT).suffix(' &darr;')].join(' | ');
-                points_receipt.innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
+                UpdateReceiptDisplay();
             }, 2_5_0);
         }
 
@@ -10495,13 +10920,41 @@ let Initialize = async(START_OVER = false) => {
 
         if(UnregisterJob.__reason__.equals('modify'))
             return;
-
-        INITIAL_POINTS = null;
     };
 
     __PointsReceiptPlacement__:
     if(parseBool(Settings.points_receipt_placement)) {
         RegisterJob('points_receipt_placement');
+
+        Chat.onbullet = async({ element, message, subject, mentions }) => {
+            if(subject.unlike('coin') || message.missing(USERNAME))
+                return;
+
+            let [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.toLowerCase().contains(reward.title.toLowerCase()));
+
+            if(nullish(item))
+                return;
+
+            EXACT_POINTS_SPENT += parseCoin(item.cost);
+
+            UpdateReceiptDisplay();
+        };
+
+        AddRedemptionListener: {
+            function addListener() {
+                when.defined(() => $('[data-test-selector*="required"i]:empty'))
+                    .then(element => parseCoin(element?.previousSibling?.nodeValue))
+                    .then(amount => {
+                        let title = $('[id*="reward"i][id*="header"i]').textContent.trim();
+
+                        TALLY.set(title, amount);
+                    })
+                    .catch(WARN)
+                    .finally(addListener);
+            }
+
+            addListener();
+        }
     }
 
     /*** Point Watcher
@@ -10864,8 +11317,12 @@ let Initialize = async(START_OVER = false) => {
 
             let richTooltips = $(`[class*="channel-tooltip"i]`, true),
                 { length } = richTooltips,
-                iframe = $('#tt-stream-preview--iframe'),
-                { index = 0, controls = false, muted = true, quality = 'auto' } = iframe.dataset;
+                iframe = $('#tt-stream-preview--iframe');
+
+            if(nullish(iframe))
+                return;
+
+            let { index = 0, controls = false, muted = true, quality = 'auto' } = iframe.dataset;
 
             index |= 0;
             controls = parseBool(controls);
@@ -10958,7 +11415,7 @@ let Initialize = async(START_OVER = false) => {
 
         let f = furnish;
         let watch_time = f(`${ container.tagName }${ classes(container) }`,
-            { style: `color: var(--user-complement-color)`, contrast: THEME__PREFERRED_CONTRAST },
+            { style: `color: var(--user-contrast-color)`, contrast: THEME__PREFERRED_CONTRAST },
             f(`${ live_time.tagName }#tt-watch-time${ classes(live_time).replace(/\blive-time\b/gi, 'watch-time') }`, { time: 0 })
         );
 
@@ -11038,7 +11495,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let VideoClips = {
         dvr: parseBool(Settings.video_clips__dvr),
-        filetype: (Settings.video_clips__file_type ?? 'mp4'),
+        filetype: (Settings.video_clips__file_type ?? 'webm'),
         quality: (Settings.video_clips__quality ?? 'auto'),
         length: parseInt(Settings.video_clips__length ?? 60) * 1000,
     };
@@ -11067,7 +11524,7 @@ let Initialize = async(START_OVER = false) => {
                     ['Turn DVR off', `${ s(STREAMER.name) } live streams will not be recorded`, 'host']
                 ][+!!enabled];
 
-            icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
+            icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
             // Create the action button...
             action =
@@ -11090,7 +11547,7 @@ let Initialize = async(START_OVER = false) => {
                                     ['Turn DVR off', `${ s(STREAMER.name) } live streams will not be recorded`, 'host']
                                 ][+!!enabled];
 
-                            icon = Glyphs.modify(icon, { style: 'fill:var(--user-complement-color)!important', height: '20px', width: '20px' });
+                            icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
                             $('.tt-action-icon', false, currentTarget).innerHTML = icon;
                             $('.tt-action-title', false, currentTarget).textContent = title;
@@ -11125,10 +11582,10 @@ let Initialize = async(START_OVER = false) => {
                         });
                     },
                 }, f.div(
-                    f('.tt-action-icon', { innerHTML: icon }),
+                    f('.tt-action-icon').html(icon),
                     f.div(
-                        f('p.tw-title.tt-action-title', {}, title),
-                        f('p.tt-action-subtitle', {}, subtitle)
+                        f('p.tw-title.tt-action-title').with(title),
+                        f('p.tt-action-subtitle').with(subtitle)
                     )
                 ))
             );
@@ -11869,11 +12326,11 @@ let Initialize = async(START_OVER = false) => {
                         continue;
 
                     help.append(
-                        f('tr.tw-table-row.tt-extra-keyboard-shortcuts', {},
-                            f('td.tw-tabel-cell', {},
+                        f('tr.tw-table-row.tt-extra-keyboard-shortcuts').with(
+                            f('td.tw-tabel-cell').with(
                                 f.p(name)
                             ),
-                            f('td.tw-table-cell', {},
+                            f('td.tw-table-cell').with(
                                 f.span(macro)
                             )
                         )
@@ -11997,25 +12454,28 @@ let Initialize = async(START_OVER = false) => {
             /* The user is using the light theme (like a crazy person) */
             :root {
                 --channel-color: ${ STREAMER.tint };
-                --channel-color-complement: ${ STREAMER.tone };
+                --channel-color-contrast: ${ STREAMER.tone };
+                --channel-color-complement: ${ STREAMER.aego };
                 --channel-color-dark: ${ THEME__CHANNEL_DARK };
                 --channel-color-light: ${ THEME__CHANNEL_LIGHT };
             }
 
             :root[class*="light"i] {
                 --color-colored: var(--channel-color-light);
-                --color-colored-complement: var(--channel-color-dark);
+                --color-colored-contrast: var(--channel-color-dark);
+                --channel-color-opposite: var(--channel-color-complement);
             }
 
             /* The user is using the dark theme */
             :root[class*="dark"i] {
                 --color-colored: var(--channel-color-dark);
-                --color-colored-complement: var(--channel-color-light);
+                --color-colored-contrast: var(--channel-color-light);
+                --channel-color-opposite: var(--channel-color-complement);
             }
 
             [up-next--body] *:is(button, h5) {
-                --color: var(--user-complement-color) !important;
-                --fill: var(--user-complement-color) !important;
+                --color: var(--user-contrast-color) !important;
+                --fill: var(--user-contrast-color) !important;
             }
 
             /* Apply contrast correction... div[contrast="low prefer dark"] */
@@ -12351,6 +12811,8 @@ if(top == window) {
 
                             // Failed to activate job at...
                             // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
+
+                            Initialize.ready = ready;
                         }, Math.max(...Object.values(Timers)));
                     });
 
@@ -12491,8 +12953,8 @@ if(top == window) {
                         if(Glyphs.__exclusionList__.contains(glyph))
                             continue comparing;
                         else
-                            resemble(SVGtoImage(svg))
-                                .compareTo(SVGtoImage(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode))
+                            resemble(svg?.toImage())
+                                .compareTo(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode.toImage())
                                 .ignoreColors()
                                 .scaleToSameSize()
                                 .onComplete(async data => {
@@ -12557,13 +13019,14 @@ if(top == window) {
             CustomCSSInitializer: {
                 CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css');
 
-                let [accent, complement] = (Settings.accent_color ?? 'blue/12').split('/');
+                let [accent, contrast] = (Settings.accent_color || 'blue/12').split('/');
 
                 CUSTOM_CSS.innerHTML =
                 `
                 :root {
                     --user-accent-color: var(--color-${ accent });
-                    --user-complement-color: var(--color-${ accent }-${ complement });
+                    --user-contrast-color: var(--color-${ accent }-${ contrast });
+                    --user-complement-color: var(--channel-color-opposite);
 
                     /* z-index meanings */
                     --always-on-top:    9999;
@@ -12588,8 +13051,8 @@ if(top == window) {
                 [animationID] a { cursor: grab }
                 [animationID] a:active { cursor: grabbing }
 
-                [class*="theme"i][class*="dark"i] [tt-light="true"i], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-                [class*="theme"i][class*="light"i] [tt-light="true"i], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+                [class*="theme"i][class*="dark"i] [tt-light], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+                [class*="theme"i][class*="light"i] [tt-light], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
 
                 /* Keyborad Shortcuts */
                 .tt-extra-keyboard-shortcuts td {
@@ -12608,7 +13071,7 @@ if(top == window) {
                 [up-next--body] {
                     background-color: var(--user-accent-color);
                     border-radius: 0.5rem;
-                    color: var(--color-hinted-grey-${ complement });
+                    color: var(--color-hinted-grey-${ contrast });
                 }
 
                 [up-next--body][empty="true"i] {
@@ -12618,11 +13081,11 @@ if(top == window) {
                     background-position: bottom center;
                 }
 
-                [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="contrast"i]) {
                     /* background-blend-mode: color-burn; */
                 }
 
-                [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="complement"i]) {
+                [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="contrast"i]) {
                     /* background-blend-mode: darken; */
                 }
 
@@ -12697,8 +13160,8 @@ if(top == window) {
                 [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
 
                 /* Change Up Next font color */
-                [class*="theme"i][class*="dark"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:lighten */ }
-                [class*="theme"i][class*="light"i] [tt-mix-blend$="complement"i] { /* mix-blend-mode:darken */ }
+                [class*="theme"i][class*="dark"i] [tt-mix-blend$="contrast"i] { /* mix-blend-mode:lighten */ }
+                [class*="theme"i][class*="light"i] [tt-mix-blend$="contrast"i] { /* mix-blend-mode:darken */ }
 
                 /* Lurking */
                 #away-mode svg[id^="tt-away-mode"i] {
@@ -12908,7 +13371,7 @@ if(top == window) {
 
             color = Color.destruct(color || '#9147FF');
 
-            $.body.append(furnish('style#tt-custom-css', {}, `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`));
+            $.body.append(furnish('style#tt-custom-css').with( `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`));
         }
 
         // Alerts for users
@@ -12942,7 +13405,7 @@ if(top == window) {
                                 return;
                             TTVToolsNewsArticles.push(articleID);
 
-                            let article = furnish(`#tt-news-${ articleID }`, {},
+                            let article = furnish(`#tt-news-${ articleID }`).with(
                                 header, ...content
                             );
 
@@ -12961,357 +13424,429 @@ if(top == window) {
         // Observe chat & whispers
         let CHAT_SELF_REFLECTOR;
 
-        CommsObserver:
-        when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
-            .then(chat => {
-                let [CHANNEL] = window.location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
-                    USERNAME = Search.cookies.login;
+        CommsObserver: {
+            let [CHANNEL] = window.location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
+                USERNAME = Search.cookies.login;
 
-                CHANNEL = `#${ CHANNEL }`;
+            CHANNEL = `#${ CHANNEL }`;
 
-                // Simple WebSocket → https://dev.twitch.tv/docs/irc
-                if(defined(TTV_IRC.socket))
-                    return;
+            // Simple WebSocket → https://dev.twitch.tv/docs/irc
+            if(defined(TTV_IRC.socket))
+                return;
 
-                Object.defineProperty(TTV_IRC, 'wsURL', {
-                    value: `wss://irc-ws.chat.twitch.tv:443`,
+            Object.defineProperty(TTV_IRC, 'wsURL', {
+                value: `wss://irc-ws.chat.twitch.tv:443`,
 
-                    writable: false,
-                    enumerable: false,
-                    configurable: false,
-                });
+                writable: false,
+                enumerable: false,
+                configurable: false,
+            });
 
-                let socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
+            let socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
 
-                let START_WS = socket.onopen = event => {
-                    LOG(`Chat Relay (main) connected to "${ CHANNEL }"`);
+            let START_WS = socket.onopen = event => {
+                LOG(`Chat Relay (main) connected to "${ CHANNEL }"`);
 
-                    // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
-                    when(() => socket.readyState === WebSocket.OPEN)
-                        .then(() => {
-                            socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
-                            socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
-                            socket.send(`NICK ${ USERNAME.toLowerCase() }`);
-                        });
+                // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
+                when(() => socket.readyState === WebSocket.OPEN)
+                    .then(() => {
+                        socket.send(`CAP REQ :twitch.tv/commands twitch.tv/membership twitch.tv/tags`);
+                        socket.send(`PASS oauth:${ Search.cookies.auth_token }`);
+                        socket.send(`NICK ${ USERNAME.toLowerCase() }`);
+                    });
 
-                    let chat_log = (TTV_IRC.chat_log ??= new Map);
-                    let restrictions = (TTV_IRC.restrictions ??= new Map);
+                let chat_log = (TTV_IRC.chat_log ??= new Map);
+                let restrictions = (TTV_IRC.restrictions ??= new Map);
 
-                    socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
-                        let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
+                socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
+                    let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
 
-                        // REMARK('Chat Relay received messages', messages);
+                    // REMARK('Chat Relay received messages', messages);
 
-                        for(let { command, parameters, source, tags } of messages) {
-                            const channel = (command.channel ?? CHANNEL).toLowerCase();
-                            const usable = parseBool(channel.equals(CHANNEL));
+                    for(let { command, parameters, source, tags } of messages) {
+                        const channel = (command.channel ?? CHANNEL).toLowerCase();
+                        const usable = parseBool(channel.equals(CHANNEL));
 
-                            if(channel.startsWith('#') && !chat_log.has(channel))
-                                chat_log.set(channel, new Set);
+                        if(channel.startsWith('#') && !chat_log.has(channel))
+                            chat_log.set(channel, new Set);
 
-                            switch(command.command) {
-                                // Successful login attempt
-                                case '001': {
-                                    socket.send(`JOIN ${ CHANNEL }`);
-                                    socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
-                                    socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
-                                } break;
+                        switch(command.command) {
+                            // Successful login attempt
+                            case '001': {
+                                socket.send(`JOIN ${ CHANNEL }`);
+                                socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
+                                socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
+                            } break;
 
-                                // PONG the server back...
-                                case 'PING': {
-                                    socket.send(`PONG ${ parameters }`);
-                                } break;
+                            // PONG the server back...
+                            case 'PING': {
+                                socket.send(`PONG ${ parameters }`);
+                            } break;
 
-                                // Someone joined the server
-                                case 'JOIN': {
-                                    // LOG(`New user "${ source.nick }" on ${ channel }`);
+                            // Someone joined the server
+                            case 'JOIN': {
+                                // LOG(`New user "${ source.nick }" on ${ channel }`);
 
-                                    Chat.gang.push(source.nick);
-                                } break;
+                                Chat.gang.push(source.nick);
+                            } break;
 
-                                // Kicked!
-                                case 'PART': {
-                                    // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
+                            // Kicked!
+                            case 'PART': {
+                                // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
 
-                                    if(USERNAME.equals(source.nick))
-                                        socket.close();
+                                if(USERNAME.equals(source.nick))
+                                    socket.close();
 
-                                    Chat.gang = Chat.gang.filter(user => user.unlike(source.nick));
-                                } break;
+                                Chat.gang = Chat.gang.filter(user => user.unlike(source.nick));
+                            } break;
 
-                                // Something happened...
-                                case 'NOTICE': {
-                                    if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
-                                        let msg = tags.msg_id,
-                                            typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
+                            // Something happened...
+                            case 'NOTICE': {
+                                if('room_mods mod_success unmod_success no_mods vips_success vip_success unvip_success no_vips'.contains(tags?.msg_id)) {
+                                    let msg = tags.msg_id,
+                                        typ = msg.replace(/.*((?:mod|vip)s?).*/i, '$1').toLowerCase();
 
-                                        if(msg.startsWith('no_'))
-                                            /* Do nothing */;
-                                        else if(/^(mod|vip)_/i.test(msg))
-                                            Chat[typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
-                                        else if(/^un(mod|vip)_/i.test(msg))
-                                            Chat[typ] = Chat[typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
-                                        else
-                                            Chat[typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
-                                    } else if('host_on host_off'.contains(tags?.msg_id)) {
-                                        if(!usable) continue;
-
-                                        when.defined(() => STREAMER)
-                                            .then(() => {
-                                                for(let callback of STREAMER.__eventlisteners__.onhost)
-                                                    when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: parameters.toLowerCase().startsWith('now hosting') }));
-                                            });
-                                    } else {
-                                        if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
-                                            WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
-                                        else
-                                            WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
-
-                                        // socket.send(`PART ${ channel }`);
-                                    }
-                                } break;
-
-                                // Status(es) of the room
-                                case 'ROOMSTATE': {
-                                    let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
-
-                                    restrictions.set(channel, {
-                                        room_id,
-                                        emote_only: parseBool(+emote_only),
-                                        followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
-                                        r9k: parseBool(+r9k),
-                                        slow: (+slow * 1000),
-                                        subs_only: parseBool(+subs_only),
-                                    });
-                                } break;
-
-                                // Something happened (alert)
-                                case 'USERNOTICE': {
-                                    let { id, msg_id, system_msg } = tags;
-
-                                    let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
-                                        mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                        subject = (
-                                            'sub resub'.split(' ').contains(msg_id)?
-                                                'dues':
-                                            'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
-                                                'keep':
-                                            'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
-                                                'gift':
-                                            'raid'.split(' ').contains(msg_id)?
-                                                'raid': // incoming raids
-                                            'pointsredeemed'.split(' ').contains(msg_id)?
-                                                'coin':
-                                            'note'
-                                        ),
-                                        element = when.defined((message, subject) =>
-                                            // TODO: get bullets via text content
-                                            $('[role="log"i] .tt-accent-region, [role="log"i] [data-test-selector="user-notice-line"i], [role="log"i] [class*="gift"i], [role="log"i] [data-test-selector="announcement-line"i]', true)
-                                                .find(element => {
-                                                    if(false
-                                                        // The element already has a UUID and type
-                                                        || (element.dataset.uuid && element.dataset.type)
-                                                        // The text matches less than 30% of the message
-                                                        || 1 - message.mutilate().errs(element.textContent.mutilate()) < .3
-                                                    )
-                                                        return false;
-
-                                                    element.dataset.uuid ||= UUID.from(element.getPath());
-                                                    element.dataset.type ||= subject;
-
-                                                    return message.errs(element.textContent) < .3;
-                                                })
-                                            , 100, message, subject);
-
-                                    let results = {
-                                        element,
-                                        usable,
-                                        message,
-                                        subject,
-                                        mentions,
-
-                                        // TODO: see if there are extra `msg_id` values
-                                        msg_id,
-                                    };
-
-                                    Chat.__allbullets__.add(results);
-
-                                    for(let [name, callback] of Chat.__onbullet__)
-                                        when(() => PAGE_IS_READY, 250).then(() => callback(results));
-
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
-                                            when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                    });
-                                } break;
-
-                                // The channel is hosting...
-                                case 'HOSTTARGET': {
+                                    if(msg.startsWith('no_'))
+                                        /* Do nothing */;
+                                    else if(/^(mod|vip)_/i.test(msg))
+                                        Chat[typ].push(parameters.replace(/.*added\s+(\S+).*/i, '$1').toLowerCase());
+                                    else if(/^un(mod|vip)_/i.test(msg))
+                                        Chat[typ] = Chat[typ].filter(name => name.unlike(parameters.replace(/.*removed\s+(\S+).*/i, '$1')));
+                                    else
+                                        Chat[typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
+                                } else if('host_on host_off'.contains(tags?.msg_id)) {
                                     if(!usable) continue;
-
-                                    let [to, amount] = parameters.split(' ', 2);
 
                                     when.defined(() => STREAMER)
                                         .then(() => {
                                             for(let callback of STREAMER.__eventlisteners__.onhost)
-                                                when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
+                                                when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: parameters.toLowerCase().startsWith('now hosting') }));
                                         });
-                                } break;
+                                } else {
+                                    if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
+                                        WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                    else
+                                        WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
 
-                                // Got a message...
-                                case 'PRIVMSG': {
-                                    // REMARK('PRIVMSG:', { command, parameters, source, tags });
+                                    // socket.send(`PART ${ channel }`);
+                                }
+                            } break;
 
-                                    // Bot commands...
-                                    if(defined(command.botCommand)) {
-                                        let results = { name: command.botCommand, arguments: command.botCommandParams };
+                            // Status(es) of the room
+                            case 'ROOMSTATE': {
+                                let { room_id, emote_only, followers_only, r9k, slow, subs_only } = tags;
 
-                                        for(let [name, callback] of Chat.__oncommand__)
-                                            when(() => PAGE_IS_READY, 250).then(() => callback(results));
+                                restrictions.set(channel, {
+                                    room_id,
+                                    emote_only: parseBool(+emote_only),
+                                    followers_only: (+followers_only > 0? +followers_only * 60_000: !1),
+                                    r9k: parseBool(+r9k),
+                                    slow: (+slow * 1000),
+                                    subs_only: parseBool(+subs_only),
+                                });
+                            } break;
 
-                                        wait(100, results).then(async results => {
-                                            for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
-                                                when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                        });
+                            // Something happened (alert)
+                            case 'USERNOTICE': {
+                                let { id, msg_id, system_msg } = tags;
 
-                                        continue;
-                                    }
-
-                                    let author = source.nick,
-                                        badges = Object.keys(tags?.badges ?? {}),
-                                        // Have to wait on the page to play catch-up...
-                                        element = when.defined((parameters, uuid) =>
-                                            $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
-                                                .find(message =>
-                                                    $(`[data-a-user="${ author }"i]`, true, message)
-                                                        .map(div => div.closest('[data-test-selector$="message"i]'))
-                                                        .filter(defined)
-                                                        .find(div => {
-                                                            let text = [],
-                                                                body = $('[data-test-selector$="message-body"i]', false, div);
-
-                                                            if(nullish(body))
-                                                                return;
-
-                                                            for(let child of body.children)
-                                                                if(child.dataset.testSelector?.equals('emote-button'))
-                                                                    text.push($('img', false, child).alt);
-                                                                else
-                                                                    text.push(child.textContent);
-
-                                                            let match = text.join('').sheer().equals(parameters.sheer());
-
-                                                            if(match)
-                                                                div.dataset.uuid = uuid;
-
-                                                            return match
-                                                        })
+                                let message = (system_msg ?? parameters).replace(/\\s/g, ' '),
+                                    mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                    subject = (
+                                        'sub resub'.split(' ').contains(msg_id)?
+                                            'dues':
+                                        'giftpaidupgrade anongiftpaidupgrade'.split(' ').contains(msg_id)?
+                                            'keep':
+                                        'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
+                                            'gift':
+                                        'raid'.split(' ').contains(msg_id)?
+                                            'raid': // incoming raids
+                                        'pointsredeemed'.split(' ').contains(msg_id)?
+                                            'coin':
+                                        'note'
+                                    ),
+                                    element = when.defined((message, subject) =>
+                                        // TODO: get bullets via text content
+                                        $('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])', true)
+                                            .find(element => {
+                                                if(false
+                                                    // The element already has a UUID and type
+                                                    || (element.dataset.uuid && element.dataset.type)
+                                                    // The text matches less than 20% of the message
+                                                    || message.mutilate().errs(element.textContent.mutilate()) > .8
                                                 )
-                                            , 100, parameters, tags.id),
-                                        emotes = Object.keys(tags.emotes ?? {}).map(key => {
-                                            let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
-                                                name = parameters.substring(+emote.startPosition, ++emote.endPosition),
-                                                url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+                                                    return false;
 
-                                            Chat.__allemotes__.set(name, url);
+                                                element.dataset.uuid ||= UUID.from(element.getPath());
+                                                element.dataset.type ||= subject;
 
-                                            return name;
-                                        }),
-                                        handle = tags.display_name,
-                                        mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                        message = parameters,
-                                        raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
-                                        reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
-                                        style = `color: ${ tags.color || '#9147FF' };`,
-                                        uuid = tags.id;
+                                                return message.mutilate().errs(element.textContent.mutilate()) < .2;
+                                            })
+                                        , 100, message, subject);
 
-                                    let results = {
-                                        raw,
-                                        uuid,
-                                        reply,
-                                        style,
-                                        author,
-                                        emotes,
-                                        badges,
-                                        handle,
-                                        usable,
-                                        element,
-                                        message,
-                                        mentions,
-                                        highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
-                                    };
+                                let results = {
+                                    element,
+                                    usable,
+                                    message,
+                                    subject,
+                                    mentions,
 
-                                    Object.defineProperties(results, {
-                                        deleted: {
-                                            get: async function() {
-                                                return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
-                                            }.bind(element)
-                                        },
+                                    // TODO: see if there are extra `msg_id` values
+                                    // msg_id,
+                                };
+
+                                Chat.__allbullets__.add(results);
+
+                                for(let [name, callback] of Chat.__onbullet__)
+                                    when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                wait(100, results).then(async results => {
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
+                                        when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                });
+                            } break;
+
+                            // The channel is hosting...
+                            case 'HOSTTARGET': {
+                                if(!usable) continue;
+
+                                let [to, amount] = parameters.split(' ', 2);
+
+                                when.defined(() => STREAMER)
+                                    .then(() => {
+                                        for(let callback of STREAMER.__eventlisteners__.onhost)
+                                            when(() => PAGE_IS_READY, 250).then(() => callback({ hosting: to.unlike('-') }));
                                     });
+                            } break;
 
-                                    chat_log.get(channel).add(results);
+                            // Got a message...
+                            case 'PRIVMSG': {
+                                // REMARK('PRIVMSG:', { command, parameters, source, tags });
 
-                                    Chat.__allmessages__.set(uuid, results);
+                                // Bot commands...
+                                if(defined(command.botCommand)) {
+                                    let results = { name: command.botCommand, arguments: command.botCommandParams };
 
-                                    for(let [name, callback] of Chat.__onmessage__)
+                                    for(let [name, callback] of Chat.__oncommand__)
                                         when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                                     wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                        for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
                                             when(() => PAGE_IS_READY, 1000).then(() => callback(results));
                                     });
-                                } break;
 
-                                // Got a whisper
-                                case 'WHISPER': {
-                                    let results = { unread: 1, from: channel, message: parameters };
+                                    continue;
+                                }
 
-                                    for(let [name, callback] of Chat.__onwhisper__)
-                                        when(() => PAGE_IS_READY, 250).then(() => callback(results));
+                                let author = source.nick,
+                                    badges = Object.keys(tags?.badges ?? {}),
+                                    // Have to wait on the page to play catch-up...
+                                    element = when.defined((parameters, uuid) =>
+                                        $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
+                                            .find(message =>
+                                                $(`[data-a-user="${ author }"i]`, true, message)
+                                                    .map(div => div.closest('[data-test-selector$="message"i]'))
+                                                    .filter(defined)
+                                                    .find(div => {
+                                                        let text = [],
+                                                            body = $('[data-test-selector$="message-body"i]', false, div);
 
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                            when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                    });
-                                } break;
+                                                        if(nullish(body))
+                                                            return;
 
-                                default: continue;
-                            };
-                        }
-                    };
+                                                        for(let child of body.children)
+                                                            if(child.dataset.testSelector?.equals('emote-button'))
+                                                                text.push($('img', false, child).alt);
+                                                            else
+                                                                text.push(child.textContent);
+
+                                                        let match = text.join('').sheer().equals(parameters.sheer());
+
+                                                        if(match)
+                                                            div.dataset.uuid = uuid;
+
+                                                        return match
+                                                    })
+                                            )
+                                        , 100, parameters, tags.id),
+                                    emotes = Object.keys(tags.emotes ?? {}).map(key => {
+                                        let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
+                                            name = parameters.substring(+emote.startPosition, ++emote.endPosition),
+                                            url = `https://static-cdn.jtvnw.net/emoticons/v2/${ key }/default/${ THEME }/1.0`;
+
+                                        Chat.__allemotes__.set(name, url);
+
+                                        return name;
+                                    }),
+                                    handle = tags.display_name,
+                                    mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                                    message = parameters,
+                                    raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
+                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
+                                    style = `color: ${ tags.color || '#9147FF' };`,
+                                    uuid = tags.id;
+
+                                let results = {
+                                    raw,
+                                    uuid,
+                                    reply,
+                                    style,
+                                    author,
+                                    emotes,
+                                    badges,
+                                    handle,
+                                    usable,
+                                    element,
+                                    message,
+                                    mentions,
+                                    highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
+                                };
+
+                                Object.defineProperties(results, {
+                                    deleted: {
+                                        get: async function() {
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                        }.bind(element)
+                                    },
+                                });
+
+                                chat_log.get(channel).add(results);
+
+                                Chat.__allmessages__.set(uuid, results);
+
+                                for(let [name, callback] of Chat.__onmessage__)
+                                    when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                wait(100, results).then(async results => {
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                        when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                });
+                            } break;
+
+                            // Got a whisper
+                            case 'WHISPER': {
+                                let results = { unread: 1, from: channel, message: parameters };
+
+                                for(let [name, callback] of Chat.__onwhisper__)
+                                    when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                                wait(100, results).then(async results => {
+                                    for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                        when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                                });
+                            } break;
+
+                            default: continue;
+                        };
+                    }
                 };
+            };
 
-                socket.onerror = event => {
-                    WARN(`Chat Relay (main) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
+            socket.onerror = event => {
+                WARN(`Chat Relay (main) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
 
-                    socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
-                    START_WS(event);
-                };
+                socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
+                START_WS(event);
+            };
 
-                socket.onclose = event => {
-                    WARN(`Chat Relay (main) closed unexpectedly → ${ JSON.stringify(event) }`);
+            socket.onclose = event => {
+                WARN(`Chat Relay (main) closed unexpectedly → ${ JSON.stringify(event) }`);
 
-                    socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
-                    START_WS(event);
-                };
+                socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
+                START_WS(event);
+            };
 
-                // The socket closed...
-                when(() => TTV_IRC.socket?.readyState === WebSocket.CLOSED, 1000)
-                    .then(closed => {
-                        WARN(`The WebSocket closed... Restarting in 5s...`);
+            // The socket closed...
+            when(() => TTV_IRC.socket?.readyState === WebSocket.CLOSED, 1000)
+                .then(closed => {
+                    WARN(`The WebSocket closed... Restarting in 5s...`);
 
-                        wait(5000)
-                            .then(() => {
-                                if(parseBool(Settings.recover_chat))
-                                    return window.location.reload();
-                                return TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL_chat);
-                            })
-                            .then(() => {
-                                when(() => TTV_IRC.socket.readyState === WebSocket.OPEN, 500)
-                                    .then(() => TTV_IRC.socket.send(`JOIN ${ CHANNEL }`))
-                                    .then(() => TTV_IRC.socket.onmessage = TTV_IRC.socket.reflect = CHAT_SELF_REFLECTOR);
-                            });
-                    });
-            });
+                    wait(5000)
+                        .then(() => {
+                            if(parseBool(Settings.recover_chat))
+                                return window.location.reload();
+                            return TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL_chat);
+                        })
+                        .then(() => {
+                            when(() => TTV_IRC.socket.readyState === WebSocket.OPEN, 500)
+                                .then(() => TTV_IRC.socket.send(`JOIN ${ CHANNEL }`))
+                                .then(() => TTV_IRC.socket.onmessage = TTV_IRC.socket.reflect = CHAT_SELF_REFLECTOR);
+                        });
+                });
+
+            // Play catch-up...
+            when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
+                .then(chat => {
+                    let unhandled = $('[data-a-target="chat-line-message"i]:not([data-uuid])', true, chat);
+
+                    for(let element of unhandled) {
+                        let raw = $('[class*="message"i][class*="container"i]', false, element).textContent.trim(),
+                            uuid = UUID.from(raw).toString(),
+                            reply = $('button[data-test-selector*="reply"i]', false, element),
+                            style = $('[data-a-user]', false, element)?.getAttribute('style')?.trim(),
+                            author = $('[data-a-user]', false, element).dataset.aUser,
+                            emotes = new Set,
+                            badges = new Set,
+                            __bs__ = $('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', true, element).map(e => badges.add(e.alt.toLowerCase())),
+                            handle = $('[data-a-user]', false, element).textContent,
+                            usable = false,
+                            message = $('[class*="message"i][class*="body"i] *', true, element).map(e => {
+                                if(e.dataset.testSelector.contains('emote')) {
+                                    let i = $('img', false, e);
+
+                                    emotes.add(i.alt);
+                                    Chat.__allemotes__.set(i.alt, i.src);
+
+                                    return i.alt;
+                                }
+
+                                return e.textContent?.trim?.() || '';
+                            }).join(' '),
+                            mentions = $('[data-a-atrget*="mention"i]', true, element).map(e => e.textContent),
+                            highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
+
+                        element.dataset.uuid = uuid;
+
+                        emotes = [...emotes];
+                        badges = [...badges];
+
+                        let results = {
+                            raw,
+                            uuid,
+                            reply,
+                            style,
+                            author,
+                            emotes,
+                            badges,
+                            handle,
+                            usable,
+                            element,
+                            message,
+                            mentions,
+                            highlighted,
+                        };
+
+                        Object.defineProperties(results, {
+                            deleted: {
+                                get: function() {
+                                    return nullish(this.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, this);
+                                }.bind(element)
+                            },
+                        });
+
+                        TTV_IRC.chat_log?.get(CHANNEL)?.add(results);
+
+                        Chat.__allmessages__.set(uuid, results);
+
+                        for(let [name, callback] of Chat.__onmessage__)
+                            when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+                        wait(100, results).then(async results => {
+                            for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+                        });
+                    }
+                });
+        }
     };
 }

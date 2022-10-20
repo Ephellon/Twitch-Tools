@@ -284,13 +284,26 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
     /* furnish('div').and('figure').with('svg').and('figure').with('svg') → div > figure > svg ~ figure > svg */
     Object.defineProperties(element, {
-        // Add a child; immediately after the root `this`
+        // Add a child; chains down the tree
+        // Returns the last accessed child
         and: {
-            value: function(tagname = 'div', attributes = null, ...children) {
-                let child = furnish(tagname, attributes, ...children),
-                    last = UUID.from('last-child-in-chain').value;
+            value: function(...children) {
+                let last;
+                for(let child of children)
+                    this.append(last = child);
 
-                this.append(this[last] = child);
+                return last;
+            },
+
+            writable: false,
+            enumerable: true,
+            configurable: false,
+        },
+
+        // Shorthand to set the element's innerHTML
+        html: {
+            value: function(innerHTML) {
+                this.innerHTML = innerHTML;
 
                 return this;
             },
@@ -300,13 +313,25 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             configurable: false,
         },
 
-        // Add a child; chains down the tree
-        with: {
-            value: function(tagname = 'div', attributes = null, ...children) {
-                let child = furnish(tagname, attributes, ...children),
-                    last = UUID.from('last-child-in-chain').value;
+        // Shorthand to set the element's innerText
+        text: {
+            value: function(innerText) {
+                this.innerText = innerText;
 
-                (this[last] || this).append(this[last] = child);
+                return this;
+            },
+
+            writable: false,
+            enumerable: true,
+            configurable: false,
+        },
+
+        // Add a child; immediately after the root `this`
+        // Returns `this`
+        with: {
+            value: function(...children) {
+                for(let child of children)
+                    this.append(child);
 
                 return this;
             },
@@ -1299,16 +1324,16 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false) 
     function destruct(string) {
         let css = new Map;
 
-        string
+        (string || '')
             .split(';')
             .map(declaration => declaration.trim())
             .filter(declaration => declaration.length > 4)
             // Shortest possible declaration → `--n:0`
             .map(declaration => {
                 let [property, value = ''] = declaration.split(':', 2).map(string => string.trim()),
-                    important = value.endsWith('!important');
+                    important = value.toLowerCase().endsWith('!important');
 
-                value = value.replace('!important', '');
+                value = value.replace(/!important\b/i, '');
 
                 css.set(property, { value, important });
             });
@@ -1372,10 +1397,12 @@ String.prototype.count ??= function count(...searches) {
 
 // Compares strings (space dependent)
     // String..equals(value:any, caseSensitive:boolean?) → boolean
-String.prototype.equals ??= function equals(value, caseSensitive = false) {
+String.prototype.equals ??= function equals(value = '', caseSensitive = false) {
+    value = value?.toString() || '';
+
     if(!caseSensitive)
-        return this.normalize('NFKD').trim().toLowerCase() == value?.normalize('NFKD')?.trim()?.toLowerCase();
-    return this.normalize('NFKD').trim() == value?.normalize('NFKD')?.trim();
+        return this.normalize('NFKD').trim().toLowerCase() == value.normalize('NFKD').trim().toLowerCase();
+    return this.normalize('NFKD').trim() == value.normalize('NFKD').trim();
 };
 
 // Compares strings (space dependent)
@@ -1413,17 +1440,18 @@ String.prototype.mutilate ??= function mutilate(normalize = false) {
 };
 
 // Matches two strings and returns a comparison of how much text matched
-    // String..errs(string:string) → string
+    // String..errs(string:string) → number<float>
 String.prototype.errs ??= function errs(string) {
-    let matched = '';
+    let [B, A] = [this, string?.toString() || ''].map(s => s.sheer().normalize('NFKD').toLowerCase()).sort((a, b) => a.length - b.length),
+        C = '';
 
-    for(let char of this)
-        if(string.contains(char)) {
-            matched += char;
-            string.replace(char, '');
+    for(let char of A)
+        if(B.contains(char)) {
+            C += char;
+            B.replace(char, '');
         }
 
-    return 1 - matched.length / this.length
+    return 1 - C.length / A.length
 };
 
 // Compares strings - Calculates the Levenshtein's distance between two strings
@@ -1540,7 +1568,7 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
 // Records a video element
     // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
-HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = { mimeType: 'video/webm' }) {
+HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = { mimeType: 'video/webm;codecs=vp9' }) {
     let key = UUID.from(options?.key ?? 'DEFAULT_RECORDING').value,
         { private = false } = options;
 
@@ -1722,7 +1750,7 @@ Number.prototype.to ??= function to(end = 0, by = 1) {
 };
 
 // Converts SVGs to images
-    // SVGtoImage(SVG:HTMLSVGElement|string, imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
+    // Element<SVG>..toImage(imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
         // imageType = "image/jpeg" | "image/png" | "image/webp"
         // returnType = "img" | "element" | "HTMLImageElement"
             // → HTMLImageElement
@@ -1730,23 +1758,39 @@ Number.prototype.to ??= function to(end = 0, by = 1) {
             // → Object<{ type=imageType, data:string, height:number#integer, width:number#integer }>
         // returnType = "dataURI" | "dataURL" | ...
             // → string<dataURL>
-function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
-    if(typeof SVG == 'string' || SVG instanceof String)
-        SVG = (SVGtoImage.DOMParser ??= new DOMParser).parseFromString(SVG + '', 'text/xml')?.querySelector('svg');
+    // String<XML<SVG>>..toImage()
+String.prototype.toImage ??= function toImage(imageType = "image/png", returnType = "dataURL") {
+    return (new DOMParser).parseFromString(this, 'text/xml')?.querySelector('figure, svg, path, g')?.toImage(imageType, returnType);
+};
+
+Element.prototype.toImage ??=
+SVGElement.prototype.toImage ??=
+SVGSVGElement.prototype.toImage ??=
+SVGGElement.prototype.toImage ??=
+SVGPathElement.prototype.toImage ??=
+
+function toImage(imageType = "image/png", returnType = "dataURL") {
+    if([
+        'figure',
+        'svg',
+        'path',
+        'g',
+    ].missing(this.tagName.toLowerCase()))
+        return;
 
     let height, width;
 
     try {
-        let offset = getOffset(SVG);
+        let offset = getOffset(this);
 
         height = offset.height;
         width = offset.width;
     } catch(e) {
-        height = SVG?.height;
-        width = SVG?.width;
+        height = this?.height;
+        width = this?.width;
     } finally {
-        height ||= SVG?.getAttribute('height');
-        width ||= SVG?.getAttribute('width');
+        height ||= this?.getAttribute('height');
+        width ||= this?.getAttribute('width');
     }
 
     height = parseFloat(height);
@@ -1758,7 +1802,7 @@ function SVGtoImage(SVG, imageType = "image/png", returnType = "dataURL") {
     let canvas = furnish('canvas', { height, width }),
         context = canvas.getContext('2d');
 
-    let path = new Path2D($('path', false, SVG)?.getAttribute('d') ?? '');
+    let path = new Path2D($('path', false, this)?.getAttribute('d') ?? '');
 
     context.stroke(path);
 
@@ -2992,9 +3036,9 @@ function alert(message = '') {
     let container =
     f('.tt-alert', { uuid: UUID.from(message).value },
         f('.tt-alert-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('.tt-alert-header', { innerHTML: title }),
-            f('.tt-alert-body', { innerHTML: message }),
-            f('.tt-alert-footer', {},
+            f('.tt-alert-header').html(title),
+            f('.tt-alert-body').html(message),
+            f('.tt-alert-footer').with(
                 f('button.okay', {
                     onmousedown(event) {
                         let { currentTarget } = event;
@@ -3205,9 +3249,9 @@ function confirm(message = '') {
     let container =
     f('.tt-confirm', { uuid: UUID.from(message).value },
         f('.tt-confirm-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('.tt-confirm-header', { innerHTML: title }),
-            f('.tt-confirm-body', { innerHTML: message }),
-            f('.tt-confirm-footer', {},
+            f('.tt-confirm-header').html(title),
+            f('.tt-confirm-body').html(message),
+            f('.tt-confirm-footer').with(
                 f('button.edit.deny', {
                     onmousedown(event) {
                         let { currentTarget } = event;
@@ -3473,9 +3517,9 @@ function prompt(message = '', defaultValue = '') {
     let container =
     f('.tt-prompt', { uuid: UUID.from(message).value },
         f('.tt-prompt-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('.tt-prompt-header', { innerHTML: title }),
-            f('.tt-prompt-body', { innerHTML: message }),
-            f('.tt-prompt-footer', {},
+            f('.tt-prompt-header').html(title),
+            f('.tt-prompt-body').html(message),
+            f('.tt-prompt-footer').with(
                 f('input.tt-prompt-input', {
                     type, pattern, placeholder,
 
@@ -3776,9 +3820,9 @@ function select(message = '', options = [], multiple = false) {
     let container =
     f('.tt-select', { uuid, options: encodeHTML(JSON.stringify(__values__)), keys: encodeHTML(JSON.stringify(__names__)) },
         f('.tt-select-container', { ['icon'.repeat(+!!icon.length)]: icon },
-            f('.tt-select-header', { innerHTML: title }),
-            f('.tt-select-body', { innerHTML: message }),
-            f('.tt-select-footer', {},
+            f('.tt-select-header').html(title),
+            f('.tt-select-body').html(message),
+            f('.tt-select-footer').with(
                 f(`.tt-select-input[@multiple=${ multiple }]`, {
                     onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
                         if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
