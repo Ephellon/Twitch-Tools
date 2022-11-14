@@ -62,7 +62,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     } = top;
 
     // Fill STREAMER
-    let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
+    let [path, name, endpoint] = location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.src?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
     USERNAME ??= Search?.cookies?.name;
@@ -387,7 +387,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             f(`#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`).with(
                 f('.emote-button').with(
                     f('.tt-inline-flex').with(
-                        f(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@test-selector=emote-button-clickable][@a-target=${name}]`,
+                        f(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${name}]`,
                             {
                                 'aria-label': name,
                                 name,
@@ -415,8 +415,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                f('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]').with(
-                                    f('figure.tt-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
+                                f('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@testSelector=badge-button-icon]').with(
+                                    f('figure.tt-svg', { style: '-webkit-box-align:center; -moz-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
                                 f('img.bttv.emote-picker__image', { src, alt: name, style: 'height:3.5rem;' })
                             )
@@ -475,7 +475,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .catch(WARN);
             // Load emotes with a certain name
             else if(keyword?.length)
-                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.normalize('NFKD').trim().length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
                     await fetchURL.idempotent(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -572,8 +572,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         f = furnish;
 
                                     let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
-                                        f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
-                                            f('span[@a-target=emote-name]').with(
+                                        f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                                            f('span[@aTarget=emote-name]').with(
                                                 f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                                     f('img.bttv.chat-image.chat-line__message--emote', {
                                                         src: BTTV_EMOTES.get(emote),
@@ -587,7 +587,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     resultCard.post({
                                         title: bttvEmote,
                                         subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                        description: `Visit <a href="//betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } ${ Glyphs.modify('ne_arrow', { height: 16, width: 16, style: 'vertical-align:-3px' }) }</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
+                                        description: `Visit <a href="https://betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } ${ Glyphs.modify('ne_arrow', { height: 16, width: 16, style: 'vertical-align:-3px' }) }</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
 
                                         icon: {
                                             src: BTTV_EMOTES.get(bttvEmote),
@@ -699,7 +699,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 // Load extra emotes
                 for(let keyword of (Settings.bttv_emotes_extras ?? "").split(',').filter(string => string.length > 1))
                     // FIX-ME: Adding BTTV emotes might cause loading issues?
-                    await LOAD_BTTV_EMOTES(keyword);
+                    LOAD_BTTV_EMOTES(keyword);
             })
             .then(() => {
                 let container = $('#tt-bttv-emotes-container');
@@ -745,8 +745,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             let f = furnish;
                             let img =
-                            f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
-                                f('span[@a-target=emote-name]').with(
+                            f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                                f('span[@aTarget=emote-name]').with(
                                     f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                         f('img.bttv.chat-image.chat-line__message--emote', {
                                             alt, src,
@@ -760,7 +760,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             alt = alt.replace(/\s+/g, '_');
 
                             $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                                let container = furnish(`.chat-line__message--emote-button[@test-selector=emote-button][@bttv-emote=${alt}][@bttv-owner=${own}][@bttv-owner-id=${pid}]`).html(img.innerHTML),
+                                let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${alt}][@bttvOwner=${own}][@bttvOwnerId=${pid}]`).html(img.innerHTML),
                                     converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                                 converted.push(alt);
@@ -828,7 +828,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             furnish('.tt-emote-captured.tt-pd-x-05.tt-relative').with(
                 furnish('.emote-button').with(
                     furnish('.tt-inline-flex').with(
-                        furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@test-selector=emote-button-clickable][@a-target=${name}]`,
+                        furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${name}]`,
                             {
                                 'aria-label': name,
                                 name,
@@ -856,8 +856,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     </figure>
                                 </div>
                                 */
-                                furnish('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@test-selector=badge-button-icon]').with(
-                                    furnish('figure.tt-svg', { style: '-webkit-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
+                                furnish('.emote-button__lock.tt-absolute.tt-border-radius-small.tt-c-background-overlay.tt-c-text-overlay.tt-inline-flex.tt-justify-content-center.tt-z-above[@testSelector=badge-button-icon]').with(
+                                    furnish('figure.tt-svg', { style: '-webkit-box-align:center; -moz-box-align:center; align-items:center; display:inline-flex;', innerHTML: Glyphs.modify('emotes', { height: '10px', width: '10px' }) })
                                 ),
                                 furnish('img.emote-picker__image', { src, alt: name })
                             )
@@ -1032,7 +1032,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             for(let [emote, url] of CAPTURED_EMOTES)
                 if((regexp = RegExp('\\b' + emote.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
                     let alt = emote,
-                        src = '//static-cdn.jtvnw.net/emoticons/v1/' + url.split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
+                        src = 'https://static-cdn.jtvnw.net/emoticons/v1/' + url.split('-').map((v, i) => i == 0? parseInt(v, 36): v).join('/'),
                         srcset;
 
                     if(/\/https?:\/\//i.test(src))
@@ -1042,8 +1042,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     let f = furnish;
                     let img =
-                    f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
-                        f('span[@a-target=emote-name]').with(
+                    f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                        f('span[@aTarget=emote-name]').with(
                             f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
                                 f('img.chat-image.chat-line__message--emote', {
                                     srcset, alt, src,
@@ -1057,7 +1057,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     alt = alt.replace(/\s+/g, '_');
 
                     $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
-                        let container = furnish(`.chat-line__message--emote-button[@test-selector=emote-button][@captured-emote=${alt}]`).html(img.innerHTML),
+                        let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${alt}]`).html(img.innerHTML),
                             converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                         converted.push(alt);
@@ -1714,7 +1714,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 };
 
                 return f('.chat-line__reply-icon.tt-absolute.tt-border-radius-medium.tt-c-background-base.tt-elevation-1').with(
-                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@test-selector=chat-reply-button]',
+                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=chat-reply-button]',
                         {
                             onclick: event => {
                                 let { currentTarget } = event,
@@ -1733,7 +1733,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     chatContainerChild.classList.add(...addedClasses.chatContainerChild);
 
                                     bubbleContainer.append(
-                                        f(`#tt-native-twitch-reply.tt-align-items-start.tt-flex.tt-flex-row.tt-pd-0[@test-selector=chat-input-tray]`).with(
+                                        f(`#tt-native-twitch-reply.tt-align-items-start.tt-flex.tt-flex-row.tt-pd-0[@testSelector=chat-input-tray]`).with(
                                             f('.tt-align-center.tt-mg-05').with(
                                                 f('.tt-align-items-center.tt-flex').html(Glyphs.modify('reply', { height: '24px', width: '24px' }))
                                             ),
@@ -1775,7 +1775,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     );
 
                                     bubbleContainer.append(
-                                        f('#tt-native-twitch-reply-message.font-scale--default.tt-pd-x-1.tt-pd-y-05.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]').with(
+                                        f('#tt-native-twitch-reply-message.font-scale--default.tt-pd-x-1.tt-pd-y-05.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]').with(
                                             f('.tt-relative').html(messageElement.outerHTML)
                                         )
                                     );
@@ -1818,7 +1818,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 let target = $('div', false, parent);
                 if(nullish(target)) return;
 
-                let highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@test-selector=chat-message-highlight]', {});
+                let highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@testSelector=chat-message-highlight]', {});
 
                 target.classList.add('chat-line__message-container');
 
@@ -1874,14 +1874,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(nullish(content))
                 return;
 
-            let parsed = parseURL.pattern.exec(content.innerText);
+            let { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL(content.innerText);
 
-            if(!parsed?.length)
+            if(!href?.length)
                 return;
-
-            let [match] = parsed,
-                { index, groups } = parsed,
-                { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
             content.innerHTML =
                 f('a[target=_blank]', { href, style: 'padding:1rem;margin:1rem' },
@@ -1914,7 +1910,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     }
 
                     let aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`),
-                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; width:-webkit-fill-available' }, f.source({ src: audio }));
+                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; width:-webkit-fill-available; width:-moz-available;' }, f.source({ src: audio }));
 
                     if(nullish(aliasContainer))
                         return;
@@ -1928,6 +1924,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         });
 
         // Chat messages
+        let marked = [];
         (Chat.onmessage = async line => {
             if(!LINK_MAKER_ENABLED)
                 return;
@@ -1937,30 +1934,35 @@ let Chat__Initialize = async(START_OVER = false) => {
             let { message, mentions, author } = line,
                 element = await line.element;
 
-            for(let { pattern } = parseURL, { length } = message, index = 0; pattern.test(message) && index < length | 0; ++index) {
+            parsing: for(let { pattern } = parseURL, { length } = message, jndex = 0; pattern.test(message) && jndex < length | 0; ++jndex) {
                 let parsed = parseURL.pattern.exec(message);
 
                 if(!parsed?.length)
-                    return;
+                    continue;
 
                 let [match] = parsed,
                     { index, groups } = parsed,
-                    { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
+                    { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
-                message = message.slice(index + match.length);
+                if(href.length < 2)
+                    continue;
 
+                jndex = (index + match.length) - 1;
+                message = message.slice(jndex + 1);
+
+                let unknown = Symbol('UNKNOWN');
                 let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
-                    [topDom, secDom, ...subDom] = url.domainPath;
+                    [topDom = '', secDom = '', ...subDom] = url.domainPath;
 
                 // Ignore pre-cardified links
                 if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
-                    return;
+                    continue;
 
                 // Mobilize laggy URLs
-                if('instagram twitter'.contains(secDom.toLowerCase()))
-                    return; // subDom = ['mobile'];
+                if('instagram twitter'.split(' ').contains(secDom.toLowerCase()))
+                    continue; // subDom = ['mobile'];
 
-                href = url.href.replace(url.hostname, [...subDom, secDom, topDom].join('.'));
+                href = url.href.replace(url.hostname, [...subDom, secDom, topDom].filter(dom => dom.length).join('.'));
 
                 if(CHAT_CARDIFIED.has(href)) {
                     let card = CHAT_CARDIFIED.get(href);
@@ -1972,7 +1974,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             card.scrollIntoViewIfNeeded(true);
                     }
 
-                    return
+                    continue;
                 }
 
                 CHAT_CARDIFIED.set(href, null);
@@ -2029,11 +2031,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                                             f('.tt-full-width.tt-pd-l-1').with(
                                                 // Title
                                                 f('.chat-card__title.tt-ellipsis').with(
-                                                    f('p.tt-strong.tt-ellipsis[@test-selector=chat-card-title]').with(title)
+                                                    f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
                                                 ),
                                                 // Subtitle
                                                 f('.tt-ellipsis').with(
-                                                    f('p.tt-c-text-alt-2.tt-ellipsis[@test-selector=chat-card-description]').with(description)
+                                                    f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').with(description)
                                                 ),
                                             )
                                         )
@@ -2042,7 +2044,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             )
                         );
 
-                        let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@a-target=chat-line-message][@test-selector=chat-line-message]`).with(
+                        let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
                             f('.tt-relative').with(
                                 f('.tt-relative.chat-line__message-container').with(
                                     f('div').with(
@@ -2108,7 +2110,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let spam_placeholder = "chat-deleted-message-placeholder";
 
             function markAsSpam(element, type = 'spam', message) {
-                let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@a-target=${spam_placeholder}][@test-selector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
+                let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
 
                 $('[data-test-selector="chat-message-separator"i] ~ * > *', true, element).forEach(sibling => sibling.remove());
                 $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.append(span);
@@ -2411,7 +2413,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         timeEstimated = ceil(timeEstimated);
 
         function estimates(language) {
-            return fetchURL(Runtime.getURL(`_locales/${ language }/settings.json`))
+            return fetchURL(Runtime.getURL(`_locales/${ language }/translations.json`))
                 .then(response => response.json())
                 .then(json => {
                     let _ = json['?'],
@@ -2440,7 +2442,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let T_L = top.LANGUAGE;
         switch(T_L) {
             case 'bg': {
-                // Adopted from /_locales/bg/settings.json
+                // Adopted from /_locales/bg/translations.json
                 // Достъпно по време на този поток (33 минути)
                 // Предлага се в още 33 потока (3 седмици)
 
@@ -2454,7 +2456,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'cs': {
-                // Adopted from /_locales/cs/settings.json
+                // Adopted from /_locales/cs/translations.json
                 // Dostupné během tohoto streamu (33 minut)
                 // K dispozici v dalších 33 streamech (3 týdny)
 
@@ -2482,7 +2484,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'de': {
-                // Adopted from /_locales/de/settings.json
+                // Adopted from /_locales/de/translations.json
                 // In diesem Strom verfügbar (30 Minuten)
                 // Erhältlich in 33 mehr Streams (3 Wochen)
 
@@ -2496,7 +2498,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'fi': {
-                // Adopted from /_locales/fi/settings.json
+                // Adopted from /_locales/fi/translations.json
                 // Saatavilla tämän streamin aikana (33 minuuttia)
                 // Saatavilla vielä 33 suorana (3 viikkoa)
 
@@ -2510,7 +2512,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'hu': {
-                // Adopted from /_locales/hu/settings.json
+                // Adopted from /_locales/hu/translations.json
                 // Elérhető a stream alatt (33 perc)
                 // 33 további adatfolyamban elérhető (3 hét)
 
@@ -2524,7 +2526,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'no': {
-                // Adopted from /_locales/no/settings.json
+                // Adopted from /_locales/no/translations.json
                 // Tilgjengelig under denne strømmen (33 minutter)
                 // Tilgjengelig i 33 strømmer til (3 uker)
 
@@ -2538,7 +2540,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'pl': {
-                // Adopted from /_locales/pl/settings.json
+                // Adopted from /_locales/pl/translations.json
                 // Dostępne podczas tej transmisji (33 minuty)
                 // Dostępne w 33 kolejnych strumieniach (3 tygodnie)
 
@@ -2552,7 +2554,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'sk': {
-                // Adopted from /_locales/sk/settings.json
+                // Adopted from /_locales/sk/translations.json
                 // Dostupné počas tohto streamu (33 minút)
                 // Dostupné v 33 ďalších streamoch (3 týždne)
 
@@ -2566,7 +2568,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'tr': {
-                // Adopted from /_locales/tr/settings.json
+                // Adopted from /_locales/tr/translations.json
                 // Bu yayın sırasında kullanılabilir (33 dakika)
                 // 33 akışta daha mevcuttur (3 hafta)
 
@@ -2580,7 +2582,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'el': {
-                // Adopted from /_locales/el/settings.json
+                // Adopted from /_locales/el/translations.json
                 // Διαθέσιμο κατά τη διάρκεια αυτής της ροής (33 λεπτά)
                 // Διαθέσιμο σε 33 ακόμη ροές (3 εβδομάδες)
 
@@ -2594,7 +2596,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'fr': {
-                // Adopted from /_locales/fr/settings.json
+                // Adopted from /_locales/fr/translations.json
                 // Disponible pendant ce stream (33 minutes)
                 // Disponible dans 33 flux supplémentaires (3 semaines)
 
@@ -2608,7 +2610,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'nl': {
-                // Adopted from /_locales/nl/settings.json
+                // Adopted from /_locales/nl/translations.json
                 // Beschikbaar tijdens deze stream (33 minuten)
                 // Beschikbaar in nog 33 streams (3 weken)
 
@@ -2622,7 +2624,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'it': {
-                // Adopted from /_locales/it/settings.json
+                // Adopted from /_locales/it/translations.json
                 // Disponibile durante questo streaming (33 minuti)
                 // Disponibile in altri 33 stream (3 settimane)
 
@@ -2636,7 +2638,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ro': {
-                // Adopted from /_locales/ro/settings.json
+                // Adopted from /_locales/ro/translations.json
                 // Disponibil în timpul acestui flux (33 de minute)
                 // Disponibil în încă 33 de fluxuri (3 săptămâni)
 
@@ -2650,7 +2652,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ja': {
-                // Adopted from /_locales/ja/settings.json
+                // Adopted from /_locales/ja/translations.json
                 // このストリーム中に利用可能（33分）
                 // さらに33のストリームで利用可能（3週間）
 
@@ -2664,7 +2666,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'zh-ch': {
-                // Adopted from /_locales/zh/settings.json
+                // Adopted from /_locales/zh/translations.json
                 // 在此直播期间可用（33 分钟）
                 // 在另外 33 个流中可用（3 周）
 
@@ -2678,7 +2680,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'zh-tw': {
-                // Adopted from /_locales/zh/settings.json
+                // Adopted from /_locales/zh/translations.json
                 // 在此直播期間可用（33 分鐘）
                 // 在另外 33 個流中可用（3 週）
 
@@ -2692,7 +2694,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ko': {
-                // Adopted from /_locales/ko/settings.json
+                // Adopted from /_locales/ko/translations.json
                 // 이 스트림 동안 사용 가능(33분)
                 // 33개 이상의 스트림에서 사용 가능(3주)
 
@@ -2706,7 +2708,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'sv': {
-                // Adopted from /_locales/sv/settings.json
+                // Adopted from /_locales/sv/translations.json
                 // Tillgänglig under denna stream (33 minuter)
                 // Tillgänglig i ytterligare 33 streams (3 veckor)
 
@@ -2720,7 +2722,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'th': {
-                // Adopted from /_locales/th/settings.json
+                // Adopted from /_locales/th/translations.json
                 // ได้ในสตรีมนี้ (33 นาที)
                 // พร้อมให้บริการในอีก 33 สตรีม (3 สัปดาห์)
 
@@ -2734,7 +2736,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'vi': {
-                // Adopted from /_locales/vi/settings.json
+                // Adopted from /_locales/vi/translations.json
                 // Có sẵn trong luồng này (33 phút)
                 // Có sẵn trong 33 luồng khác (3 tuần)
 
@@ -2748,7 +2750,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'es': {
-                // Adopted from /_locales/es/settings.json
+                // Adopted from /_locales/es/translations.json
                 // Disponible durante este arroyo (30 minutos)
                 // Disponible en 33 arroyos más (3 semanas)
 
@@ -2762,7 +2764,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ru': {
-                // Adopted from /_locales/ru/settings.json
+                // Adopted from /_locales/ru/translations.json
                 // Доступно во время этого потока (30 минут)
                 // Доступно в 33 ручьях (3 недели)
 
@@ -2922,73 +2924,116 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(RESTORED_MESSAGES.has(uuid))
                 continue restoring;
 
-            let { author, message, emotes } = line,
+            let { author, handle, message, emotes, badges, style } = line,
                 element = await line.element,
                 deleted = await line.deleted;
 
-            if(deleted) {
-                let container = $(`[data-a-target^="chat"i] [data-test-selector="chat-line-message"i]:not([data-uuid])`),
-                    body = $(`[data-test-selector$="message-placeholder"i]`, false, container);
+            if(!deleted || !message?.length || author.equals(USERNAME))
+                continue restoring;
 
-                if(nullish(body) || $.nullish(`[data-a-user="${ author }"i]`, false, container))
-                    continue restoring;
+            RESTORED_MESSAGES.add(uuid);
 
-                let f = furnish;
+            let f = furnish;
+            let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
 
-                LOG(`Restoring message "${ message }"`, { line });
-
-                // Fragmented...
-                if(emotes.length > 0) {
-                    let inter = [], final = [];
-
-                    for(let word of message.split(' ').filter(s => s.length))
-                        inter.push(
-                            emotes.contains(word)
-                            // Create an emote button...
-                            ? f('.chat-line__message--emote-button[@test-selector=emote-button]').with(
-                                f('div').with(
-                                    f('span[@a-target=emote-name]').with(
-                                        f('.chat-image__container').with(
-                                            f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
+            // The message was deleted before the element was placed
+            if(nullish(container)) {
+                container = f(`.chat-line__message[@aTarget="chat-line-message" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
+                    f('[style="position:relative"]').with(
+                        f('.chat-line__message-highlight[@testSelector="chat-message-highlight" style="border-radius:.4rem; position:absolute"]'),
+                        f('.chat-line__message-container[style="position:relative"]').with(
+                            f('').with(
+                                f('.chat-line__no-background[style="display:inline"]').with(
+                                    f('.chat-line__username-container[style="display:inline-block"]').with(
+                                        f('span').with(
+                                            ...badges.map(name =>
+                                                f('button[@aTarget=chat-badge]').with(
+                                                    f(`img.chat-badge[alt="${ name }"]`)
+                                                )
+                                            )
+                                        ),
+                                        f('span.chat-line__username[role=button]').with(
+                                            f.span(
+                                                f(`span.chat-author__display-name[@aTarget="chat-message-username" @aUser="${ author }" @testSelector="message-username" style="${ style }"]`).text(handle)
+                                            )
                                         )
+                                    ),
+                                    f('span[@testSelector=chat-message-separator]').text(': '),
+                                    f('span[@testSelector=chat-line-message-placeholder]').text('Restoring...')
+                                )
+                            )
+                        ),
+                        f('.chat-line__icons')
+                    )
+                );
+
+                $('[data-test-selector*="chat"i][role="log"i]').append(container);
+            }
+
+            let body = $(`[data-test-selector$="message-placeholder"i]`, false, container),
+                user = $(`[data-a-user="${ author }"i]`, false, container);
+
+            if(nullish(body) || nullish(user))
+                continue restoring;
+
+            LOG(`Restoring message:`, line);
+
+            // Fragmented...
+            if(emotes.length > 0) {
+                let inter = [], final = [];
+
+                for(let word of message.split(' ').filter(s => s.length))
+                    inter.push(
+                        emotes.contains(word)
+                        // Create an emote button...
+                        ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                            f('div').with(
+                                f('span[@aTarget=emote-name]').with(
+                                    f('.chat-image__container').with(
+                                        f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
                                     )
                                 )
                             )
-                            // Just push the message...
-                            : word
-                        );
+                        )
+                        // Just push the message...
+                        : word
+                    );
 
-                    let fragments = [];
-                    for(let word of inter)
-                        if(typeof word == 'string') {
-                            fragments.push(word);
-                        } else {
-                            if(fragments.length)
-                                final.push(f('.text-fragment[@a-target=chat-message-text]').with( fragments.join(' ')));
-                            final.push(word);
+                let fragments = [];
+                for(let word of inter)
+                    if(typeof word == 'string') {
+                        fragments.push(word);
+                    } else {
+                        if(fragments.length)
+                            final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
+                        final.push(word);
 
-                            fragments = [];
-                        }
+                        fragments = [];
+                    }
 
-                    if(fragments.length)
-                        final.push(f('.text-fragment[@a-target=chat-message-text]').with( fragments.join(' ')));
+                if(fragments.length)
+                    final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
 
-                    body.innerHTML = final.map(e => e.outerHTML).join(' ');
-                } else {
-                    body.innerText = message;
-                }
-
-                container.dataset.uuid = uuid;
-                container.dataset.resurrected = true;
-
-                RESTORED_MESSAGES.add(uuid);
+                body.innerHTML = final.map(e => e.outerHTML).join(' ');
+            } else {
+                body.innerText = message;
             }
+
+            container.dataset.uuid = uuid;
+            container.dataset.resurrected = true;
+
+            let target = $('[data-a-target*="deleted"i]', false, container);
+
+            if(defined(target))
+                target.dataset.aTarget = 'chat-restored-message-placeholder';
+
+            LOG(`Restored message "${ message }"`, { line, container });
         }
 
         JUDGE__STOP_WATCH('recover_messages');
     };
     // Variable timer...
-    Timers.recover_messages = 750;
+    Timers.recover_messages = 5000;
 
     __RecoverChat__:
     if(parseBool(Settings.recover_messages)) {
@@ -3020,7 +3065,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         GLOBAL_EVENT_LISTENERS;
 
     // Fill STREAMER
-    let [path, name, endpoint] = window.location.pathname.split(/(?<!^)\//),
+    let [path, name, endpoint] = location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
 
     USERNAME ??= Search?.cookies?.name;
@@ -3059,9 +3104,9 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
             return;
         RAID_LOGGED ||= raiding;
 
-        let { current = false } = parseBool(parseURL(window.location).searchParameters);
+        let { current = false } = parseBool(parseURL(location).searchParameters);
         let raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
-            [,from,] = window.location.pathname.split(/(?<!^)\//),
+            [,from,] = location.pathname.split(/(?<!^)\//),
             [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
 
         // Already on the channeling that's raiding...
@@ -3111,13 +3156,14 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
      */
     let pointWatcherCounter = 0,
         balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button'),
-        hasPointsEnabled = false;
+        hasPointsEnabled = false,
+        ALL_CHANNEL_POINT_REWARDS;
 
     Handlers.point_watcher_helper = async() => {
         LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
-                allRewards = $('[data-test-selector="cost"i]', true),
-                balance = $('[data-test-selector="balance-string"i]');
+                balance = $('[data-test-selector="balance-string"i]'),
+                allRewards = ALL_CHANNEL_POINT_REWARDS;
 
             hasPointsEnabled ||= defined(balance);
 
@@ -3163,6 +3209,9 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
         if(defined(balanceButton)) {
             balanceButton.click();
+
+            ALL_CHANNEL_POINT_REWARDS = $('[data-test-selector="cost"i]', true).map(e => ({ innerText: e.innerText, innerHTML: e.innerHTML, outerHTML: e.outerHTML }));
+
             wait(300).then(() => balanceButton.click());
         }
     }
@@ -3209,7 +3258,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
                 f('#tt-banned-banner.tt-pd-b-2.tt-pd-x-2').with(
                     f('.tt-border-t.tt-pd-b-1.tt-pd-x-2'),
                     f('.tt-align-center').with(
-                        f('p.tt-c-text.tt-strong[@test-selector=current-user-timed-out-text]').with(
+                        f('p.tt-c-text.tt-strong[@testSelector=current-user-timed-out-text]').with(
                             `Messages from ${ name } chat.`
                         ),
                         f('p.tt-c-text-alt-2').with(
@@ -3289,7 +3338,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     let banned = STREAMER?.veto || parseBool($('[class*="banned"i]', true)?.length);
 
     // Keep hidden iframes from loading resources
-    let { hidden } = parseURL(window.location).searchParameters;
+    let { hidden } = parseURL(location).searchParameters;
 
     if([banned, hidden].map(parseBool).contains(true)) {
         if(!parseBool(hidden))
@@ -3322,7 +3371,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 // This window is not the main container
                 || (true
                     && top != window
-                    && window.document.readyState.equals('complete')
+                    && document.readyState.equals('complete')
 
                     // There is a welcome message container
                     && $.defined(`[data-a-target*="welcome"i]`)
@@ -3384,7 +3433,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         let CHAT_SELF_REFLECTOR;
 
         ChatObserver: {
-            let [CHANNEL] = window.location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
+            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
                 USERNAME = Search.cookies.login;
 
             CHANNEL = `#${ CHANNEL }`;
@@ -3653,15 +3702,12 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     message,
                                     mentions,
                                     highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
-                                };
-
-                                Object.defineProperties(results, {
-                                    deleted: {
-                                        get: async function() {
+                                    get deleted() {
+                                        return (async function() {
                                             return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
-                                        }.bind(element)
+                                        }).call(this.element)
                                     },
-                                });
+                                };
 
                                 chat_log.get(channel).add(results);
 
@@ -3717,7 +3763,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                     wait(5000)
                         .then(() => {
                             if(parseBool(Settings.recover_chat))
-                                return window.location.reload();
+                                return location.reload();
                             return TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat);
                         })
                         .then(() => {
@@ -3777,15 +3823,12 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 message,
                                 mentions,
                                 highlighted,
-                            };
-
-                            Object.defineProperties(results, {
-                                deleted: {
-                                    get: function() {
-                                        return nullish(this.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, this);
-                                    }.bind(element)
+                                get deleted() {
+                                    return (async function() {
+                                        return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                    }).call(this.element)
                                 },
-                            });
+                            };
 
                             TTV_IRC.chat_log.get(CHANNEL).add(results);
 
@@ -3804,7 +3847,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
         // Override variables
         Overrides: {
-            window.ALLOWED_JOBS ??= (parseURL(window.location).searchParameters?.allow || '').split(',');
+            window.ALLOWED_JOBS ??= (parseURL(location).searchParameters?.allow || '').split(',');
 
             // Registers a job
                 // @override RegisterJob(JobName:string) → Number<IntervalID>

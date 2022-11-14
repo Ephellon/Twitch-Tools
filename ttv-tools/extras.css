@@ -1,3 +1,10 @@
+/*
+* Prefixed by https://autoprefixer.github.io
+* PostCSS: v8.4.14,
+* Autoprefixer: v10.4.7
+* Browsers: Chrome > 80, Firefox > 80
+*/
+
 /* Globals */
 button[class*="tt-"i]:hover { background-color: #fff3 }
 button[class*="tt-"i].purple { background-color: var(--color-background-button-primary-active) }
@@ -36,6 +43,8 @@ button[class*="tt-"i].purple:hover { background-color: var(--color-background-bu
 /* Misc. */
 table {
     width: -webkit-fill-available;
+    width: -moz-available;
+    width: stretch;
 }
 
 caption {
@@ -153,13 +162,16 @@ caption {
     text-align: start;
 
     min-height: 5rem;
+    height: -moz-fit-content;
     height: fit-content;
     max-height: 30rem;
     width: -webkit-fill-available;
+    width: -moz-available;
+    width: stretch;
 
     /* Fix blurry text */
     /* https://stackoverflow.com/a/27464561/4211612 */
-    -webkit-transform: translate(0);
+    transform: translate(0);
 }
 
 :is(.tt-select) .tt-select-input:is([data-multiple="true"i], [data-multiple="yes"i], [data-multiple="1"i])::before {
@@ -176,6 +188,8 @@ caption {
     top: 0;
 
     width: -webkit-fill-available;
+    width: -moz-available;
+    width: stretch;
 }
 
 :is(.tt-select) .tt-option {
@@ -424,7 +438,10 @@ caption {
 
     padding: .5rem;
 
+    height: -moz-fit-content;
+
     height: fit-content;
+    width: -moz-fit-content;
     width: fit-content;
 
     left: inherit;
@@ -478,6 +495,7 @@ caption {
 
     min-width: 25vw;
     max-width: 35vw;
+    width: -moz-fit-content;
     width: fit-content;
 }
 
@@ -549,7 +567,8 @@ caption {
 }
 
 :is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(textarea, input[type="number"i], input[type="password"i], input[type="text"i]) {
-    appearance: none;
+    -webkit-appearance: none;
+            appearance: none;
     background-clip: padding-box;
     background-color: var(--color-hinted-grey-6);
     border: 2px solid var(--color-hinted-grey-6);
@@ -670,6 +689,7 @@ caption {
     padding: .1em .5em .4em;
 
     height: 1em;
+    width: -moz-fit-content;
     width: fit-content;
 
     transform: translate(-50%, -50%);
@@ -783,7 +803,8 @@ caption {
 [unit]::after {
     content: attr(unit);
 
-    appearance: none;
+    -webkit-appearance: none;
+            appearance: none;
     background-clip: padding-box;
     background-color: var(--color-background-base);
     border: 2px solid var(--color-background-base);
@@ -1016,7 +1037,8 @@ caption {
     background-position-x: 0;
     background-size: 200% 100%;
     -webkit-background-clip: text;
-    -webkit-text-fill-color: #fff4;
+            background-clip: text;
+    text-fill-color: #fff4;
 }
 
 [rainbow-text="true"i] {
@@ -1075,6 +1097,8 @@ caption {
     text-align: center;
 
     width: -webkit-fill-available;
+    width: -moz-available;
+    width: stretch;
 }
 
 /* Rewards (timed-out) */
@@ -1118,7 +1142,10 @@ caption {
     margin: 0 .25rem 0 0;
     padding: 0;
 
+    height: -moz-fit-content;
+
     height: fit-content;
+    width: -moz-fit-content;
     width: fit-content;
 }
 
@@ -1142,10 +1169,14 @@ caption {
     padding: 5px 12px 4px;
 
     height: -webkit-fill-available;
+    height: -moz-available;
+    height: stretch;
 }
 
 .tt-store-purchase--handler {
     height: -webkit-fill-available;
+    height: -moz-available;
+    height: stretch;
 }
 
 .tt-store-purchase--handler a {
@@ -1167,6 +1198,8 @@ caption {
     padding: 0px 11px;
 
     height: -webkit-fill-available;
+    height: -moz-available;
+    height: stretch;
 
     transition: background .5s ease, box-shadow .5s ease;
 }
@@ -1208,6 +1241,8 @@ caption {
     padding: 0 0 0 3px;
     position: absolute;
     transform: translate(0,-90%);
+
+    width: -moz-fit-content;
 
     width: fit-content;
 }

@@ -612,16 +612,27 @@ function delay(fn, ms = 0, ...args) {
 // Fetches resources with automatic CORS-sense
     // fetchURL(url:string<URL>, options:object?) → Promise<fetch>
 function fetchURL(url, options = {}) {
-    let { href, domainPath, origin, protocol } = parseURL(url);
-    let [domain = 'unknown', site = 'unknown', ...subDomain] = domainPath;
+    let empty = {};
 
-    let allowedSites = 'betterttv blerp nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
+    empty.then = empty.catch = empty.finally = (function() { return this }).bind(empty);
+
+    if(!url?.length)
+        return empty;
+
+    let unknown = Symbol('UNKNOWN');
+    let { href, domainPath = [], host, protocol } = parseURL(url);
+    let [domain = unknown, site = unknown, ...subDomain] = domainPath;
+
+    if([domain, site].contains(unknown))
+        return empty;
+
+    let allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
         allowedDomains = 'gd'.split(' ');
 
     // No CORS required
     if(false
         || protocol.equals('chrome:')
-        || origin.startsWith('.')
+        || host.startsWith('.')
         || allowedDomains.contains(domain.toLowerCase())
         || allowedSites.contains(site.toLowerCase())
     ) {
@@ -638,21 +649,12 @@ function fetchURL(url, options = {}) {
 }
 
 Object.defineProperties(fetchURL, {
-    requests: { value: [] },
+    requests: { value: new Map },
 
     // Reduce duplicates
     idempotent: {
         value: (url, options) => {
-            let found = fetchURL.requests.indexOf(url);
-            if(!!~found) {
-                fetchURL.requests.push(found);
-
-                return fetchURL.requests[found];
-            }
-
-            fetchURL.requests.push(found = fetchURL(url, options));
-
-            return found;
+            return fetchURL.requests.set(url, fetchURL(url, options)).get(url);
         },
     },
 });

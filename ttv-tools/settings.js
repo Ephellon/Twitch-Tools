@@ -444,7 +444,7 @@ class DatePicker {
                 ...dayOptions.map(value => f(`option${ (value == dayDefault? '[selected]': '') }`, { value, 'tr-id': 'day-of-week' }, DatePicker.weekdays[value]))
             ),
 
-            statusSelect = f(`select.edit`, { type: 'status', value: defaultStatus, 'tr-id': 'en|dis' },
+            statusSelect = f(`select.edit`, { type: 'status', value: defaultStatus, 'tr-id': 'toggle' },
                 ...statusOptions.map(value => f(`option${ (value == defaultStatus? '[selected]': '') }`, { value }, 'off on'.split(' ')[+value]))
             ),
 
@@ -484,7 +484,7 @@ class DatePicker {
 
                         // Body
                         f('.tt-modal-content.details.context-body').with(
-                            f('div', { style: 'width:-webkit-fill-available' },
+                            f('div', { style: 'width:-webkit-fill-available; width:-moz-available' },
                                 // Frequency
                                 f('div', { 'pad-bottom': '' },
                                     f('.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
@@ -1792,7 +1792,7 @@ when.defined(() => SETTINGS)
     });
 
 async function Translate(language = 'en', container = document) {
-    await fetch(`/_locales/${ language }/settings.json`)
+    await fetch(`/_locales/${ language }/translations.json`)
         .catch(error => {
             WARN(`Translations to "${ language.toUpperCase() }" are not available`);
 

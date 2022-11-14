@@ -197,7 +197,9 @@ window.TTV_IRC ??= {
 
     // Parses the command component of the IRC message.
     parseCommand(rawCommandComponent) {
-        let [command, channel, request] = rawCommandComponent.trim().split(' ', 3);
+        let [command, channel, ...request] = rawCommandComponent.trim().split(' ');
+
+        request = request.join(' ');
 
         switch(command?.toUpperCase()) {
             case 'JOIN':

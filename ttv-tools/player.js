@@ -8,7 +8,7 @@
  *                      __/ |        _/ |
  *                     |___/        |__/
  */
-let here = parseURL(window.location);
+let here = parseURL(location);
 
 let {
     USERNAME,
@@ -77,7 +77,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 max = abs(JobTime) * 1.1;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ window.location.pathname }`)
+                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
         },
         START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
@@ -158,7 +158,7 @@ let Player__Initialize = async(START_OVER = false) => {
 
                 // WARN(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
 
-                window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, window.location.origin);
+                window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, '*');
             });
     };
     Timers.hide_blank_ads = 500;
@@ -189,7 +189,7 @@ let Player__Initialize = async(START_OVER = false) => {
      *                                              |_|
      */
     Handlers.auto_dvr = () => {
-        let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
+        let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(location).searchParameters;
 
         if(action.unlike('dvr'))
             return;
@@ -223,7 +223,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 URL.revokeObjectURL(link?.href);
                 link?.remove();
 
-                window.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, window.location.origin);
+                window.postMessage({ action: 'report-offline-dvr', from: 'player.js', slug }, '*');
             });
     };
     Timers.auto_dvr = 500;
@@ -245,7 +245,7 @@ let Player__Initialize = async(START_OVER = false) => {
      */
     Miscellaneous: {
         __UnmuteEmbed__: {
-            let { channel, controls, muted, parent, quality } = parseURL(window.location).searchParameters;
+            let { channel, controls, muted, parent, quality } = parseURL(location).searchParameters;
 
             controls = parseBool(controls);
             muted = parseBool(muted);
@@ -297,12 +297,12 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     }
 
     // Only executes if the user is NOT banned
-    let ready = (true
+    let ready = (true /* Assume OK if this loads in the first place... */
         // The main controller is ready
-        && parseBool(window.MAIN_CONTROLLER_READY)
+        // && parseBool(top.MAIN_CONTROLLER_READY)
 
         // There is an error message
-        || $.defined('[data-test-selector^="content-overlay-gate"i]')
+        || $.nullish('[data-test-selector^="content-overlay-gate"i]')
     );
 
     if(ready) {
@@ -322,10 +322,10 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                 let { body } = document,
                     observer = new MutationObserver(mutations => {
                         mutations.map(mutation => {
-                            if(PATHNAME !== window.location.pathname) {
+                            if(PATHNAME !== location.pathname) {
                                 let OLD_HREF = PATHNAME;
 
-                                PATHNAME = window.location.pathname;
+                                PATHNAME = location.pathname;
 
                                 for(let [name, func] of (top?.__ONLOCATIONCHANGE__ ?? []))
                                     func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));

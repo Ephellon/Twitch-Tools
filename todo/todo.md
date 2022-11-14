@@ -8,35 +8,40 @@
     * Up Next does not currently allow duplicates
 3. Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
-4. Remove more language dependencies
-    * All bulletin filters are language dependent - they only recognize English
-5. Up Next sometimes goes in an irregular order
+4. Up Next sometimes goes in an irregular order
     * Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
         * Tentative fix `4.29`
         * Still present `5.23`
     * It might also not list jobs immediately
-6. `chat.js` has an issue for card popups: `new Search` does not always complete
-    * Changed to a raw search to remedy the issue
-7. Dead channels get re-added to Up Next sometimes
+5. Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
-8. Break up debts into categories to be more precise, i.e. "gambled + spent = total debt"
-9. Pause First in Line when observing a raid
-10. Get better translations--or remove them altogether
-    * The translations are incorrect and more confusing than the English version
-    * All non-English language packs have been "disabled" (display a warning) as of `v4.30`
-    * Tentative removal `v5.30`
-11. Toggling Easy Lurk might cause theatre-mode to activate?
-    * Tentative fix `5.8`
-12. Live Reminders might re-add all live channels?
-13. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
-14. Add logic to (video) record channel point redemptions
-15. Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
-16. Garner user feedback → https://form.jotform.com/222442891146153
+6. Pause First in Line when observing a raid
+7. Toggling Easy Lurk might cause theatre-mode to activate?
+    * Tentative fix `v5.8`
+8. Live Reminders might re-add all live channels?
+    * Usually during raids (semi-intentional)
+9. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
+10. Add logic to (video) record channel point redemptions
+    * Like PSN trophies
+11. Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
+12. Garner user feedback → https://form.jotform.com/222442891146153
+13. Offer an option to use Live Reminder channels after live followed channels have been exhausted
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.30)
+- Removed complex translations
+- Fixed issue with monitoring un-earned rewards
+- Removed unnecessary asynchronous events from initial workflow
+- Fixed minor issues with store loading logic
+- Fixed issue with message restoration logic
+- Adjusted fetching logic
+- Enabled Redo option for Up Next
+- Adjusted time zone logic to detect some ranges
+- Fixed issue where prompts would steal focus
+
 > [`5.29`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.29)
 - Adjusted settings page to be easier to understand
 - Adjusted logic for Recover Messages
@@ -51,7 +56,7 @@
 - Modified some polyfill logic
 - Fixed issue with Blerp API
 - Modified Reward Calculator logic
-- Added Auto-Chat by @dskw
+- Added Auto-Chat by @dskw1
 
 > [`5.28`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.28)
 - Fixed issue with point watcher text updating for each channel

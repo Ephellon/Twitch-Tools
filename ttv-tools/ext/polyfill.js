@@ -20,6 +20,21 @@
  */
 // Parse a URL
     // parseURL(url:string) → object
+    /** Breaking down a URL → https://user:pass@example.com:56/action?login=true#news
+     * href → https://user:pass@example.com:56/action?login=true#news
+     * origin → https://
+     * protocol → https:
+     * scheme → https
+     * username → user
+     * password → pass
+     * host → example.com:56
+     * hostname → example.com
+     * port → 56
+     * pathname → /action
+     * search → ?login=true
+     * hash → #news
+     */
+
 function parseURL(url) {
     if(nullish(url))
         return {};
@@ -27,7 +42,7 @@ function parseURL(url) {
     url = url.toString();
 
     let {
-        href,
+        href = '',
         origin = '',
         protocol = '',
         scheme = '',
@@ -39,9 +54,12 @@ function parseURL(url) {
         pathname = '',
         search = '',
         hash = '',
-    } = /^(?<href>(?<origin>(?<protocol>(?<scheme>[^:\/?#]+):)?(?:\/\/)?)(?:(?<username>[^:]*):(?<password>[^@]*)@)?(?<host>(?<hostname>[^:\/?#]*)?(?:\:(?<port>\d+))?)?(?<pathname>[^?#]*)(?<search>\?[^#]*)?(?<hash>#.*)?)$/
+    } = parseURL.pattern
         .exec(url)
-        .groups;
+        ?.groups ?? {};
+
+    if(href.length < 2)
+        return {};
 
     origin += host;
 
@@ -102,7 +120,9 @@ function parseURL(url) {
 }
 
 Object.defineProperties(parseURL, {
-    pattern: { value: /(?<href>(?<origin>(?<protocol>(?<scheme>https?):)\/\/)?(?<host>(?<hostname>[^\.:\/?#\s]{3,}\.(?:[^\.:\/?#\s]+|\.[^\.:\/?#\s]+))(?:\:(?<port>\d+))?)(?<pathname>[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^$\s]*)?)/ },
+    pattern: {
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?\/\/)?(?:(?<username>[^:]*):(?<password>[^@]*)@)?(?<host>(?<hostname>\w+\.[^:\/?#\s]+|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+    },
 });
 
 // Create elements
@@ -303,6 +323,8 @@ function furnish(tagname = 'div', attributes = null, ...children) {
         // Shorthand to set the element's innerHTML
         html: {
             value: function(innerHTML) {
+                if(nullish(innerHTML))
+                    return this.outerHTML;
                 this.innerHTML = innerHTML;
 
                 return this;
@@ -316,6 +338,8 @@ function furnish(tagname = 'div', attributes = null, ...children) {
         // Shorthand to set the element's innerText
         text: {
             value: function(innerText) {
+                if(nullish(innerText))
+                    return this.innerText;
                 this.innerText = innerText;
 
                 return this;
@@ -2733,6 +2757,8 @@ function GetMacro(keys = '', OS = null) {
 // Logs messages (green)
     // LOG(...messages:any) → undefined
 function LOG(...messages) {
+    // return console.error(...messages);
+
     let CSS = `
         background-color: #00332b;
         border-bottom: 1px solid #0000;
@@ -2797,6 +2823,8 @@ function LOG(...messages) {
 // Logs warnings (yellow)
     // WARN(...messages:any) → undefined
 function WARN(...messages) {
+    // return console.error(...messages);
+
     let CSS = `
         background-color: #332b00;
         border-bottom: 1px solid #0000;
@@ -2861,6 +2889,8 @@ function WARN(...messages) {
 // Logs errors (red)
     // ERROR(...messages:any) → undefined
 function ERROR(...messages) {
+    // return console.error(...messages);
+
     let CSS = `
         background-color: #290000;
         border-bottom: 1px solid #0000;
@@ -2925,6 +2955,8 @@ function ERROR(...messages) {
 // Logs comments (blue)
     // LOG(...messages:any) → undefined
 function REMARK(...messages) {
+    // return console.error(...messages);
+
     let CSS = `
         background-color: #002b55;
         border-bottom: 1px solid #0000;
@@ -2989,8 +3021,8 @@ function REMARK(...messages) {
 // "Clicks" on elements
 function phantomClick(...elements) {
     for(let element of elements) {
-        let mousedown = new MouseEvent('mousedown', { bubbles: true }),
-            mouseup = new MouseEvent('mouseup', { bubbles: true });
+        let mousedown = new MouseEvent('mousedown', { bubbles: false }),
+            mouseup = new MouseEvent('mouseup', { bubbles: false });
 
         element?.dispatchEvent(mousedown);
         wait(100).then(() => element?.dispatchEvent(mouseup));
