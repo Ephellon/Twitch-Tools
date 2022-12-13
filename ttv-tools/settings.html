@@ -573,7 +573,7 @@
                                     </p>
 
                                     <select id='simplify_chat_font'>
-                                        <option value='null' style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
+                                        <option value='Roobert' style='font-family:Roobert!important' selected>Roobert → TWITCH.tv™</option>
                                         <option value='Arial' style='font-family:Arial!important'>Arial → TWITCH.tv™</option>
                                         <option value='Calibri' style='font-family:Calibri!important'>Calibri → TWITCH.tv™</option>
                                         <option value='Dyslexie' style='font-family:Dyslexie!important'>Dyslexie → TWITCH.tv™</option>
@@ -687,7 +687,7 @@
 
             <!-- [[Convert Emotes]] -->
 
-            <!-- Filter Messages → advertisement,aid,announcements,appliance,arrest,assault,assistance,avenue,backing,benefit,block,break in,briefing,broadcast,bulletins,capture,carrier,channels,charge,clean,compensation,contribution,cooperation,device,disclosure,dispatch,drain,dribble,filter,gear,gizmo,handling,handout,help,incursion,invasion,leak,machinery,management,manipulation,means,mechanism,medium,messages,news,notice,onslaught,oversight,penetrate,percolate,permeate,plan,points,policy,prediction,publication,prevent,raids,refine,release,relief,report,revelation,route,rules,service,sift,sortie,statement,stop,strategy,subscriptions,support,surprise attack,sweep,tools,transaction,treatment,trickle,tunnel,winnow,writing -->
+            <!-- Filter Messages → advertisement,aid,announcements,appliance,arrest,assault,assistance,avenue,backing,benefit,block,break in,briefing,broadcast,bulletins,capture,carrier,channels,charge,clean,compensation,contribution,cooperation,device,disclosure,dispatch,drain,dribble,filter,gear,gizmo,handling,handout,help,incursion,invasion,leak,machinery,management,manipulation,means,mechanism,medium,messages,news,notice,onslaught,oversight,penetrate,percolate,permeate,pin,pinned,plan,points,policy,prediction,publication,prevent,raids,refine,release,relief,report,revelation,route,rules,service,sift,sortie,statement,stop,strategy,subscriptions,support,surprise attack,sweep,tools,transaction,treatment,trickle,tunnel,winnow,writing -->
             <section new='5.8'>
                 <div class='title' tr-id='filter-messages'><span small gold glyph='mod'></span> Filter Messages</div>
                 <div class='summary'>
@@ -778,6 +778,19 @@
                                     </div>
                                     <p tr-id>
                                         Hide all announcement related bulletins.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class='title' tr-id><span small gold glyph='pinned'></span> Pinned Messages</div>
+                                <div class='summary'>
+                                    <div class='toggle'>
+                                        <input id='filter_messages__bullets_paid' type='checkbox'>
+                                        <label for='filter_messages__bullets_paid'></label>
+                                    </div>
+                                    <p tr-id>
+                                        Hide all pinned messages.
                                     </p>
                                 </div>
                             </div>
@@ -880,7 +893,7 @@
                         <label for='auto_chat__vip'></label>
                     </div>
                     <p tr-id>
-                        For channels where you are a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='VIP'>VIP</a>, send a message to notify you are lurking.
+                        For channels where you are a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='VIP'>VIP</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                     </p>
 
                     <details>
@@ -1404,8 +1417,9 @@
                         Currently supports:
 
                         <ul>
-                            <li>Steam&reg;</li>
+                            <li>Nintendo&reg;</li>
                             <li>PlayStation&reg;</li>
+                            <li>Steam&reg;</li>
                             <li>Xbox&reg;</li>
                         </ul>
                     </p>
@@ -2037,9 +2051,10 @@
                         <li>Amazon&trade;</li>
                         <li>Twitch Interactive, Inc.</li>
                         <li>NightDev (LLC)</li>
-                        <li>Valve Corp. &copy;</li>
-                        <li>Microsoft Corp. &copy;</li>
+                        <li>Valve Corp.</li>
+                        <li>Microsoft Corp.</li>
                         <li>Sony Interactive Entertainment (LLC)</li>
+                        <li>Nintendo of America, Inc.</li>
                         <li><em>Either aforementioned party's partners, affiliates, or subsidiaries.</em></li>
                     </ul>
                 </div>

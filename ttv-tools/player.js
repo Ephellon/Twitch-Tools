@@ -19,7 +19,7 @@ let {
     STREAMER = ({
         get href() { return `https://www.twitch.tv/${ STREAMER.name }` },
         get name() { return here.searchParameters.channel },
-        get live() { return !$('[href*="offline_embed"i]', true).length },
+        get live() { return !$.all('[href*="offline_embed"i]').length },
     }),
 
     GLOBAL_EVENT_LISTENERS,
@@ -103,7 +103,7 @@ let Player__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_accept_mature = () => {
-        $('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i], [data-test-selector*="mute"i][data-test-selector*="dismiss"i]', true)
+        $.all('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i], [data-test-selector*="mute"i][data-test-selector*="dismiss"i]')
             .map(button => button.click());
     };
     Timers.auto_accept_mature = -1_000;
@@ -136,6 +136,9 @@ let Player__Initialize = async(START_OVER = false) => {
     let BLANK_AD_PRESENCE = false;
 
     Handlers.hide_blank_ads = () => {
+        if($.defined('[data-a-target*="ad-countdown"i]'))
+            return window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: true }, '*');
+
         let capture = $('video').captureFrame(),
             banner = Runtime.getURL('twitch-banner.png');
 
@@ -251,7 +254,29 @@ let Player__Initialize = async(START_OVER = false) => {
             muted = parseBool(muted);
 
             if(!controls && !muted)
-            $('figure[tt-svg-label~="unmute"i]')?.click();
+                $('figure[tt-svg-label~="unmute"i]')?.click();
+        }
+
+        __PopinButton__: {
+            let { channel, controls, muted, parent, quality, private = false } = parseURL(location).searchParameters
+
+            controls = parseBool(controls);
+            muted = parseBool(muted);
+            private = parseBool(private);
+
+            if(private) {
+                $('[data-test-selector*="video-player"i][data-test-selector*="container"]').append(
+                    furnish('a#player-to-top', {
+                        href: `//www.twitch.tv/${ channel }`,
+                        target: '_top',
+                        style: `z-index:9;position:absolute;bottom:-100%;left:50%;transform:translate(-50%);text-shadow:0 0 4px #8888;transition:all 0.5s;background-color:var(--color-background-button-primary-default);padding:.25rem .5rem;border-radius:3px;color:white;text-decoration:none;`,
+
+                        innerHTML: `&swarr; Go to ${ channel }`,
+                    })
+                );
+
+                AddCustomCSSBlock_Player('player-to-top', `[data-test-selector*="video-player"i][data-test-selector*="container"]:hover #player-to-top{bottom:0!important} #player-to-top:hover{background-color:var(--color-background-button-primary-hover)!important}`);
+            }
         }
     }
 
@@ -285,7 +310,7 @@ let Player__CUSTOM_CSS,
 
 Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
-    let banned = STREAMER?.veto || !!$('[class*="banned"i]', true).length;
+    let banned = STREAMER?.veto || !!$.all('[class*="banned"i]').length;
 
     if([banned].contains(true)) {
         WARN('[NON_FATAL] Framed container unavailable. Reason:', { banned });
@@ -306,7 +331,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
-        LOG("Framed container ready");
+        LOG(`Framed container ready → <iframe>:${ location.href }`);
 
         Settings = await GetSettings();
 
@@ -346,8 +371,11 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
             },
                 Glyphs = window.Glyphs;
 
-            for(let container of $('figure', true)) {
-                let svg = $('svg', false, container);
+            for(let container of $.all('figure')) {
+                let svg = $('svg', container);
+
+                if(nullish(svg))
+                    continue;
 
                 comparing:
                 for(let glyph in Glyphs)

@@ -1216,6 +1216,10 @@ caption {
     background: linear-gradient(to right, #44ff44 5%, #107c10 95%);
 }
 
+.is-nintendo .tt-store-purchase--handler a {
+    background: linear-gradient(to right, #e60012 5%, #ac000d 95%);
+}
+
 .tt-store-purchase--handler a:hover {
     color: #fff;
 
@@ -1226,17 +1230,12 @@ caption {
     display: none;
 }
 
-[data-mature-content]:not([data-mature-content="false"i]):not([data-mature-content=""i]) {
-    padding-top: 1.5rem;
-}
-
-[data-mature-content]::before {
+:is([data-mature-content], [data-version-name])::before {
     border: 0;
     border-radius: 3px;
     color: var(--color-warn);
     display: inline-block;
     font-weight: bold;
-    text-transform: uppercase;
 
     padding: 0 0 0 3px;
     position: absolute;
@@ -1247,8 +1246,20 @@ caption {
     width: fit-content;
 }
 
+[data-mature-content]::before {
+    text-transform: uppercase;
+}
+
+[data-mature-content]:not([data-mature-content="false"i]):not([data-mature-content=""i]), [data-version-name]:not([data-version-name=""i]) {
+    padding-top: 1.5rem;
+}
+
 [data-mature-content]:not([data-mature-content="true"i]):not([data-mature-content="false"i]):not([data-mature-content=""i])::before {
     content: attr(data-mature-content);
+}
+
+[data-version-name]:not([data-version-name=""i])::before {
+    content: attr(data-version-name);
 }
 
 [data-mature-content="true"i]::before {

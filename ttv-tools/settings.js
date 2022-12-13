@@ -190,6 +190,7 @@ let // These are option names. Anything else will be removed
             'filter_messages__bullets_raid',
             'filter_messages__bullets_subs',
             'filter_messages__bullets_note',
+            'filter_messages__bullets_paid',
         // BetterTTV Emotes
         'bttv_emotes',
             'auto_load_bttv_emotes',
@@ -341,7 +342,7 @@ class Tooltip {
         tooltip.id = uuid;
 
         parent.addEventListener('mouseenter', event => {
-            $('.tooltip-layer', true).map(layer => layer.remove());
+            $.all('.tooltip-layer').map(layer => layer.remove());
 
             let { currentTarget } = event,
                 offset = getOffset(currentTarget),
@@ -448,9 +449,9 @@ class DatePicker {
                 ...statusOptions.map(value => f(`option${ (value == defaultStatus? '[selected]': '') }`, { value }, 'off on'.split(' ')[+value]))
             ),
 
-            timeSelect = f(`select.edit`, { type: 'time', value: timeDefault, 'tr-id': 'away-mode:schedule:create:hour' },
+            timeSelect = f(`select.edit`, { type: 'time', value: timeDefault },
                 ...timeOptions.map(value =>
-                    f(`option${ (value == timeDefault? '[selected]': '') }`, { value, 'tr-id': '' },
+                    f(`option${ (value == timeDefault? '[selected]': '') }`, { value },
                         (
                             AM.length && PM.length?
                                 // Uses meridiem indicators
@@ -462,7 +463,7 @@ class DatePicker {
                 )
             ),
 
-            durationSelect = f(`select.edit`, { type: 'duration', value: defaultDuration, 'tr-id': 'away-mode:schedule:create:duration' },
+            durationSelect = f(`select.edit`, { type: 'duration', value: defaultDuration },
                 ...durationOptions.map(value => {
                     let timeString = toTimeString(value * h),
                         timeType = timeString.replace(/[^a-z]|s$/ig, '').replace(/ie$/i, 'y');
@@ -479,7 +480,7 @@ class DatePicker {
                     f(`.tt-modal-container`).with(
                         // Header
                         f('.tt-modal-header').with(
-                            f('h3', { 'tr-id': 'away-mode:schedule:create', innerHTML: Glyphs.modify('calendar', { height: 30, width: 30 }).toString() }, ' Create a new schedule')
+                            f('h3', { innerHTML: Glyphs.modify('calendar', { height: 30, width: 30 }).toString() }, ' Create a new schedule')
                         ),
 
                         // Body
@@ -487,12 +488,11 @@ class DatePicker {
                             f('div', { style: 'width:-webkit-fill-available; width:-moz-available' },
                                 // Frequency
                                 f('div', { 'pad-bottom': '' },
-                                    f('.title', { 'tr-id': 'away-mode:schedule:create:frequency' }, 'Frequency'),
+                                    f('.title').with('Frequency'),
                                     f('.summary').with(
                                         daySelect,
 
                                         f('.subtitle', {
-                                            'tr-id': 'away-mode:schedule:create:controls',
                                             innerHTML: `Use <code>${ GetMacro('Ctrl') }</code> and/or <code>${ GetMacro('Shift') }</code> to select multiple days.`
                                         })
                                     )
@@ -500,8 +500,8 @@ class DatePicker {
 
                                 // Status & Functionality
                                 f('div', { 'pad-bottom': '' },
-                                    f('.title', { 'tr-id': 'away-mode:schedule:create:functionality' }, 'Functionality'),
-                                    f('.summary', { 'tr-id': '' },
+                                    f('.title').with('Functionality'),
+                                    f('.summary').with(
                                         statusSelect,
                                         'at',
                                         timeSelect,
@@ -509,7 +509,6 @@ class DatePicker {
                                         durationSelect,
 
                                         f('.subtitle', {
-                                            'tr-id': 'away-mode:schedule:create:notice',
                                             innerHTML: `Times will be saved in your current timezone <span>(${ timezone })</span>.`
                                         })
                                     )
@@ -519,9 +518,9 @@ class DatePicker {
                                 f('div', { 'pad-bottom': '' },
                                     // Add more
                                     f('div', { style: 'width:fit-content' },
-                                        f('.checkbox.left', { onmouseup: event => $('input', false, event.currentTarget).click() },
+                                        f('.checkbox.left', { onmouseup: event => $('input', event.currentTarget).click() },
                                             f('input#add-more', { type: 'checkbox', name: 'add-more-times' }),
-                                            f('label', { for: 'add-more-times', 'tr-id': 'away-mode:schedule:create:add-more' }, 'Add another schedule')
+                                            f('label', { for: 'add-more-times' }, 'Add another schedule')
                                         )
                                     ),
 
@@ -532,7 +531,7 @@ class DatePicker {
                                         onmousedown: event => {
                                             let { currentTarget } = event;
 
-                                            let values = $('select[type]', true, currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), (select.multiple? [...select.selectedOptions].map(option => option.value): select.value)]);
+                                            let values = $.all('select[type]', currentTarget.closest('.context-body')).map(select => [select.getAttribute('type'), (select.multiple? [...select.selectedOptions].map(option => option.value): select.value)]);
 
                                             let object = {};
                                             for(let [key, value] of values)
@@ -543,7 +542,7 @@ class DatePicker {
 
                                         onmouseup: event => {
                                             let { currentTarget } = event,
-                                                addNew = $('#add-more', false, currentTarget.closest(':not(button)')).checked;
+                                                addNew = $('#add-more', currentTarget.closest(':not(button)')).checked;
 
                                             if(addNew)
                                                 new DatePicker();
@@ -603,7 +602,7 @@ let Glyphs = {
     chrome: '<svg width="100%" height="100%" version="1.1" viewbox="0 0 190 190" x="0px" y="0px"><circle fill="#FFF" cx="85.314" cy="85.713" r="83.805"/><path fill-opacity=".1" d="M138.644 100.95c0-29.454-23.877-53.331-53.33-53.331-29.454 0-53.331 23.877-53.331 53.331H47.22c0-21.039 17.055-38.094 38.093-38.094s38.093 17.055 38.093 38.094"/><circle fill-opacity=".1" cx="89.123" cy="96.379" r="28.951"/><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-149.309" y1="-72.211" x2="-149.309" y2="-71.45" gradientTransform="matrix(82 0 0 82 12328.615 5975.868)"><stop offset="0" stop-color="#81b4e0"/><stop offset="1" stop-color="#0c5a94"/></linearGradient><circle fill="url(#a)" cx="85.314" cy="85.712" r="31.236"/><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-114.66" y1="591.553" x2="-114.66" y2="660.884" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#f06b59"/><stop offset="1" stop-color="#df2227"/></linearGradient><path fill="url(#b)" d="M161.5 47.619C140.525 5.419 89.312-11.788 47.111 9.186a85.315 85.315 0 0 0-32.65 28.529l34.284 59.426c-6.313-20.068 4.837-41.456 24.905-47.77a38.128 38.128 0 0 1 10.902-1.752"/><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="-181.879" y1="737.534" x2="-146.834" y2="679.634" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#388b41"/><stop offset="1" stop-color="#4cb749"/></linearGradient><path fill="url(#c)" d="M14.461 37.716c-26.24 39.145-15.78 92.148 23.363 118.39a85.33 85.33 0 0 0 40.633 14.175l35.809-60.948c-13.39 16.229-37.397 18.529-53.625 5.141a38.096 38.096 0 0 1-11.896-17.33"/><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="-64.479" y1="743.693" x2="-101.81" y2="653.794" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#e4b022"/><stop offset=".3" stop-color="#fcd209"/></linearGradient><path fill="url(#d)" d="M78.457 170.28c46.991 3.552 87.965-31.662 91.519-78.653a85.312 85.312 0 0 0-8.477-44.007H84.552c21.036.097 38.014 17.23 37.917 38.269a38.099 38.099 0 0 1-8.205 23.443"/><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="-170.276" y1="686.026" x2="-170.276" y2="625.078" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#e)" d="M14.461 37.716l34.284 59.426a38.093 38.093 0 0 1 1.523-25.904L15.984 35.43"/><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="-86.149" y1="705.707" x2="-128.05" y2="748.37" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#f)" d="M78.457 170.28l35.809-60.948a38.105 38.105 0 0 1-22.095 12.951L76.933 170.28"/><linearGradient id="chrome-logo-gradient" gradientUnits="userSpaceOnUse" x1="-86.757" y1="717.981" x2="-80.662" y2="657.797" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#chrome-logo-gradient)" d="M161.5 47.619H84.552a38.094 38.094 0 0 1 29.712 14.476l48.759-12.189"/></svg>',
 };
 
-let SETTINGS,
+let SETTINGS = {},
     TRANSLATED = false,
     INITIAL_LOAD = true;
 let SUPPORTED_LANGUAGES = ["bg","cs","da","de","el","es","fi","fr","hu","it","ja","ko","nl","no","pl","ro","ru","sk","sv","th","tr","vi"];
@@ -776,7 +775,7 @@ function CreateTimeElement(self, scheduleType) {
 async function SaveSettings() {
     let { extractValue } = SaveSettings;
 
-    let elements = $(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', '), true),
+    let elements = $.all(usable_settings.map(name => '#' + name + ':not(:invalid)').join(', ')),
         using = elements.map(element => element.id);
 
     // Edit settings before exporting them (if needed)
@@ -789,7 +788,7 @@ async function SaveSettings() {
                 if(parseBool(input))
                     rules = input.split(',');
 
-                for(let rule of $('#filter_rules code', true))
+                for(let rule of $.all('#filter_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -805,7 +804,7 @@ async function SaveSettings() {
                 if(parseBool(input))
                     rules = input.split(',');
 
-                for(let rule of $('#phrase_rules code', true))
+                for(let rule of $.all('#phrase_rules code'))
                     rules.push(rule.textContent);
                 rules = rules.isolate().filter(rule => rule.length);
 
@@ -816,7 +815,7 @@ async function SaveSettings() {
 
             case 'away_mode_schedule': {
                 let times = [];
-                for(let button of $('#away_mode_schedule button[duration]', true)) {
+                for(let button of $.all('#away_mode_schedule button[duration]')) {
                     let day = parseInt(button.getAttribute('day')),
                         time = parseInt(button.getAttribute('time')),
                         duration = parseInt(button.getAttribute('duration')),
@@ -885,7 +884,7 @@ Object.defineProperties(SaveSettings, {
 async function LoadSettings(OVER_RIDE_SETTINGS = null) {
     let assignValue = LoadSettings.assignValue;
 
-    let elements = $(usable_settings.map(name => '#' + name).join(', '), true),
+    let elements = $.all(usable_settings.map(name => '#' + name).join(', ')),
         using = elements.map(element => element.id);
 
     return await Storage.get(null, settings => {
@@ -940,7 +939,7 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
                 } break;
 
                 default: {
-                    let selected = $('[selected]', false, element);
+                    let selected = $('[selected]', element);
 
                     if(defined(selected))
                         selected.removeAttribute('selected');
@@ -966,7 +965,7 @@ Object.defineProperties(LoadSettings, {
                 'number': 'value',
                 'checkbox': 'checked',
                 'select-one': 'value',
-            }[element.type]] = value;
+            }[element.type]] = value || '';
         },
 
         ...PRIVATE_OBJECT_CONFIGURATION
@@ -979,7 +978,7 @@ function depadName(string) {
 
 /* Auto-making tooltips */
 
-$('input[type="number"i]:is([min], [max])', true)
+$.all('input[type="number"i]:is([min], [max])')
     .map(input => {
         let parent = input.closest(':not(input)'),
             min = input.getAttribute('min') || input.getAttribute('value') || '0',
@@ -991,9 +990,9 @@ $('input[type="number"i]:is([min], [max])', true)
 
 /* All of the "clickables" */
 
-$('#whisper_audio_sound', true).map(element => element.onchange = async event => wait(10).then(() => $('#whisper_audio_sound-test')?.click()));
+$.all('#whisper_audio_sound').map(element => element.onchange = async event => wait(10).then(() => $('#whisper_audio_sound-test')?.click()));
 
-$('#whisper_audio_sound-test', true).map(button => button.onclick = async event => {
+$.all('#whisper_audio_sound-test').map(button => button.onclick = async event => {
     let [selected] = $('#whisper_audio_sound').selectedOptions;
     let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
 
@@ -1005,7 +1004,7 @@ $('#whisper_audio_sound-test', true).map(button => button.onclick = async event 
         innerHTML: ['mp3', 'ogg']
             .map(type => {
                 let types = { mp3: 'mpeg' },
-                    src = getURL(`aud/${ selected.value }.${ type }`);
+                    src = `${ location.origin }/aud/${ selected.value }.${ type }`;
                 type = `audio/${ types[type] ?? type }`;
 
                 return furnish('source', { src, type }).outerHTML;
@@ -1016,7 +1015,7 @@ $('#whisper_audio_sound-test', true).map(button => button.onclick = async event 
     test_sound.onended = event => test_sound.remove();
 });
 
-$('#user_language_preference', true).map(select => {
+$.all('#user_language_preference').map(select => {
     let languages = SUPPORTED_LANGUAGES;
 
     listing:
@@ -1035,12 +1034,12 @@ $('#user_language_preference', true).map(select => {
     Storage.get({ user_language_preference }, ({ user_language_preference }) => {
         let lang = user_language_preference?.toLowerCase?.();
 
-        $('option[selected]', false, select)?.removeAttribute?.('selected');
-        $(`option[value="${ (select.value = lang) }"i]`, false, select)?.setAttribute('selected', true);
+        $('option[selected]', select)?.removeAttribute?.('selected');
+        $(`option[value="${ (select.value = lang) }"i]`, select)?.setAttribute('selected', true);
     });
 });
 
-$('#user_language_preference', true).map(select => select.onchange = async event => {
+$.all('#user_language_preference').map(select => select.onchange = async event => {
     let { currentTarget } = event,
         preferred = currentTarget.value;
 
@@ -1049,7 +1048,7 @@ $('#user_language_preference', true).map(select => select.onchange = async event
     await Storage.set({ ...SETTINGS, user_language_preference: preferred });
 });
 
-$('#save, .save', true).map(element => element.onclick = async event => {
+$.all('#save, .save').map(element => element.onclick = async event => {
     let { currentTarget } = event;
 
     currentTarget.classList.add('spin');
@@ -1300,14 +1299,14 @@ $('#simplify_chat_font').onchange = event => event.target.setAttribute('style', 
 
 /* Eveyting else... */
 // Glyphs
-$('[glyph]', true).map(element => {
+$.all('[glyph]').map(element => {
     let glyph = element.getAttribute('glyph');
 
     glyph = Glyphs[glyph];
 
     element.innerHTML = glyph;
 
-    glyph = $('svg', false, element);
+    glyph = $('svg', element);
 
     if(glyph)
         glyph.setAttribute('style', 'height: inherit; width: inherit; vertical-align: text-bottom');
@@ -1412,7 +1411,7 @@ let FETCHED_DATA = { wasFetched: false };
         }
 
         // Modify all [set] elements
-        $('[set]', true).map(async(element) => {
+        $.all('[set]').map(async(element) => {
             properties.this = Object.fromEntries([...element.attributes].map(({ name, value }) => [name, value]));
 
             // Continue with the data...
@@ -1523,7 +1522,7 @@ let FETCHED_DATA = { wasFetched: false };
 })(location.host.equals("fcfodihfdbiiogppbnhabkigcdhkhdjd"));
 
 // All anchors with the [continue-search] attribute
-$('a[continue-search]', true).map(a => {
+$.all('a[continue-search]').map(a => {
     let parameters = [];
 
     for(let target of [top.location, a]) {
@@ -1540,10 +1539,10 @@ $('a[continue-search]', true).map(a => {
 });
 
 // All anchors without a target
-$('a:not([target])', true).map(a => a.target = '_blank');
+$.all('a:not([target])').map(a => a.target = '_blank');
 
 // All "new" features for this version
-$('[new]', true).map(element => {
+$.all('[new]').map(element => {
     let { version } = Manifest,
         conception = element.getAttribute('new');
 
@@ -1552,10 +1551,10 @@ $('[new]', true).map(element => {
 });
 
 // Any keys that need "translating"
-$('[id^="key:"i]', true).map(element => element.textContent = GetMacro(element.textContent));
+$.all('[id^="key:"i]').map(element => element.textContent = GetMacro(element.textContent));
 
 // Get the supported video types here...
-$('#video_clips__file_type option', true).filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
+$.all('#video_clips__file_type option').filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
 
 // Search for a setting...
 $.body.onkeydown = event => {
@@ -1570,7 +1569,7 @@ $.body.onkeydown = event => {
     }
 };
 
-$('#search', true).map(input => {
+$.all('#search').map(input => {
     input.onfocus = event => {
         event.preventDefault();
 
@@ -1677,7 +1676,7 @@ $('#search', true).map(input => {
                 'm': '[hjknm, ]',
             })[$0.toLowerCase().normalize('NFKD')])
         , 'i')).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
-        let synonymous = $('article', true)
+        let synonymous = $.all('article')
             .map(element => [...element.childNodes].filter(node => node.nodeName.equals('#comment')))
             .flat()
             .filter(comment => comment.textContent.toLowerCase().contains(query.toLowerCase()))
@@ -1695,8 +1694,8 @@ $('#search', true).map(input => {
         for(let child of output.children) {
             'beta dead new soon'.split(' ').map(attr => child.removeAttribute(attr));
 
-            $('[id]', true, child).map(e => (e.dataset.id = e.id) && e.removeAttribute('id'));
-            $('details summary ~ *', true, child).map(e => e.remove());
+            $.all('[id]', child).map(e => (e.dataset.id = e.id) && e.removeAttribute('id'));
+            $.all('details summary ~ *', child).map(e => e.remove());
 
             child.dataset.id = child.id;
             child.removeAttribute('id');
@@ -1709,7 +1708,7 @@ $('#search', true).map(input => {
                     $('#search-container').dataset.focus = false;
                 };
             else
-                for(let fauxSetting of $(`[data-id]`, true, child)) {
+                for(let fauxSetting of $.all(`[data-id]`, child)) {
                     LoadSettings.assignValue(fauxSetting, SETTINGS[fauxSetting.dataset.id]);
 
                     fauxSetting.disabled = true;
@@ -1741,20 +1740,20 @@ when.defined(() => SETTINGS)
             let MAX_BYTES = (Storage.QUOTA_BYTES || ESTIMATE?.quota),
                 PERC_IN_USE = (100 * ((BYTES_IN_USE || ESTIMATE?.usage) / MAX_BYTES)).toFixed(3);
 
-            $('[id*="data-usage"i][id*="browser-storage"i][type="number"i]', true).map(input => {
+            $.all('[id*="data-usage"i][id*="browser-storage"i][type="number"i]').map(input => {
                 let [amount, unit] = BYTES_IN_USE.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
 
                 input.value = amount;
                 input.closest('[unit]')?.setAttribute('unit', unit);
             });
 
-            $('[id*="data-usage"i][id*="browser-storage"i][type="range"i]', true).map(input => {
+            $.all('[id*="data-usage"i][id*="browser-storage"i][type="range"i]').map(input => {
                 input.value = PERC_IN_USE;
 
                 // new Tooltip(input, `${ PERC_IN_USE }%`, { direction: 'left' });
             });
 
-            $('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]', true).map(table => {
+            $.all('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]').map(table => {
                 let allcBytes = 0,
                     miscBytes = 0;
 
@@ -1792,7 +1791,7 @@ when.defined(() => SETTINGS)
     });
 
 async function Translate(language = 'en', container = document) {
-    await fetch(`/_locales/${ language }/translations.json`)
+    await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
             WARN(`Translations to "${ language.toUpperCase() }" are not available`);
 
@@ -1802,7 +1801,7 @@ async function Translate(language = 'en', container = document) {
         .then(json => {
             if(json?.LANG_PACK_READY !== true) {
                 let ISO = ISO_639_1[language];
-                let errMsg = json['[[ERROR]]'];
+                let errMsg = json?.['[[ERROR]]'];
 
                 if(nullish(ISO) || nullish(errMsg))
                     return;
@@ -1829,7 +1828,7 @@ async function Translate(language = 'en', container = document) {
             let { ELEMENT_NODE, TEXT_NODE } = document,
                 PREV_NODE, SEND_BACK = 0;
 
-            for(let element of $('[tr-id]', true, container)) {
+            for(let element of $.all('[tr-id]', container)) {
                 let translation_id = (element.getAttribute('tr-id') || lastTrID),
                     translations = (null
                         ?? json['?']?.[translation_id]
@@ -1912,7 +1911,7 @@ async function Translate(language = 'en', container = document) {
 
 document.body.onload = async() => {
     let url = parseURL(location.href),
-        search = url.searchParameters;
+        search = url.searchParameters || {};
 
     /* The extension was just installed (most likely the first run) */
     await(async() => {
@@ -1965,7 +1964,7 @@ document.body.onload = async() => {
             if(defined(language))
                 await Storage.set({ user_language_preference: language.toLowerCase() });
 
-            await Storage.get(['user_language_preference'], ({ user_language_preference }) => {
+            await Storage.get(['user_language_preference'], ({ user_language_preference = 'en' }) => {
                 let lang = document.documentElement.lang = user_language_preference.toLowerCase();
 
                 if(lang.unlike('en'))
@@ -1993,7 +1992,7 @@ document.body.onload = async() => {
                     LoadSettings.assignValue($(`#${ key }`), search[key]);
 
             // Adjust summaries
-            $('.summary', true).map(element => {
+            $.all('.summary').map(element => {
                 let article = element.parentElement,
                     summary = element,
                     uuid = 'uuid-' + Math.random().toString(36).replace('.','');
@@ -2018,7 +2017,7 @@ document.body.onload = async() => {
 
                 // Dynamically adjust the elements' heights
                 summary.id = uuid;
-                $('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), true, summary)
+                $.all('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), summary)
                     .map(element => {
                         let height = getHeight(element);
 
@@ -2034,7 +2033,7 @@ document.body.onload = async() => {
             // Update links (hrefs), tooltips, and other items
             wait(1000).then(() => {
                 // Adjust all audio URLs
-                $('#whisper_audio_sound', true).map(element => {
+                $.all('#whisper_audio_sound').map(element => {
                     let [selected] = element.selectedOptions;
                     let pathname = (/\b(568)$/.test(selected.value)? '/message-tones/': '/notification-sounds/') + selected.value;
 
@@ -2042,7 +2041,7 @@ document.body.onload = async() => {
                 });
 
                 // All developer features
-                $('#est-data-usage', true).map(input => {
+                $.all('#est-data-usage').map(input => {
                     let estimate = async({ currentTarget }) =>
                         await Storage.get('LIVE_REMINDERS', ({ LIVE_REMINDERS }) => {
                             let output = currentTarget.closest('summary, .summary').querySelector('#est-data-usage'),
@@ -2059,7 +2058,7 @@ document.body.onload = async() => {
                     ($(input.getAttribute('controller')).onchange = estimate)({ currentTarget: input });
                 });
 
-                $([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(','), true).map(element => {
+                $.all([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(',')).map(element => {
                     let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
                         direction = tooltip.replace(/-?tooltip$/, '');
 
@@ -2069,7 +2068,7 @@ document.body.onload = async() => {
                 });
 
                 // All experimental features - auto-enable "Experimental Features" if a feature is turned on
-                $('[id=":settings--experimental"i] section > .summary .toggle input', true).map(input => {
+                $.all('[id=":settings--experimental"i] section > .summary .toggle input').map(input => {
                     let prerequisites = (input.getAttribute('requires') ?? '').split(',').filter(string => string.length);
 
                     prerequisites.push('#experimental_mode');
@@ -2100,8 +2099,8 @@ document.body.onload = async() => {
                 //     furnish(`meta.top.${ keysDeep(top).isolate().join('.') }`)
                 // );
 
-                $('[requires]', true).map(dependent => {
-                    let providers = $(dependent.getAttribute('requires'), true);
+                $.all('[requires]').map(dependent => {
+                    let providers = $.all(dependent.getAttribute('requires'));
 
                     Observing:
                     for(let provider of providers) {
@@ -2119,7 +2118,7 @@ document.body.onload = async() => {
                                 dependents = currentTarget.getAttribute('dependents');
 
                             if(!checked)
-                                $(dependents, true).filter(dependent => dependent.checked).map(dependent => dependent.click());
+                                $.all(dependents).filter(dependent => dependent.checked).map(dependent => dependent.click());
                         });
                     }
 
@@ -2130,7 +2129,7 @@ document.body.onload = async() => {
                             providers = currentTarget.getAttribute('requires');
 
                         if(checked)
-                            $(providers, true).filter(provider => !provider.checked).map(provider => provider.click());
+                            $.all(providers).filter(provider => !provider.checked).map(provider => provider.click());
                     });
 
                     let tooltipContainer = dependent.closest(':not(input)');
@@ -2139,7 +2138,7 @@ document.body.onload = async() => {
                 });
 
                 // All unit targets
-                $('[unit] input', true).map(input => {
+                $.all('[unit] input').map(input => {
                     input.onfocus = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', true);
                     input.onblur = ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', false);
 

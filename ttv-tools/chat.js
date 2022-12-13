@@ -16,9 +16,9 @@ function AddCustomCSSBlock_Chat(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    let newHTML = ((Chat__CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    let newHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
 
-    if(Chat__CUSTOM_CSS.innerHTML.equals(newHTML))
+    if(Chat__CUSTOM_CSS?.innerHTML?.equals(newHTML))
         return;
 
     Chat__CUSTOM_CSS.innerHTML = newHTML;
@@ -36,9 +36,9 @@ function RemoveCustomCSSBlock_Chat(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    let newHTML = ((Chat__CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    let newHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
 
-    if(Chat__CUSTOM_CSS.innerHTML.equals(newHTML))
+    if(Chat__CUSTOM_CSS?.innerHTML?.equals(newHTML))
         return;
 
     Chat__CUSTOM_CSS.innerHTML = newHTML;
@@ -64,6 +64,22 @@ let Chat__Initialize = async(START_OVER = false) => {
     // Fill STREAMER
     let [path, name, endpoint] = location.pathname.split(/(?<!^)\//),
         sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.src?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
+
+    // Get Twitch Badges
+    let TTV_BADGES = {
+        get(name) {
+            for(let key in TTV_BADGES)
+                if(name.equals(key))
+                    return TTV_BADGES[key];
+        },
+    };
+
+    fetch(Runtime.getURL(`ext/badges.json`))
+        .then(r => r.json())
+        .then(json => {
+            for(let { name, uuid } of json)
+                TTV_BADGES[name] = uuid;
+        });
 
     USERNAME ??= Search?.cookies?.name;
     STREAMER ??= ({ name: (name ?? path.slice(1)), sole });
@@ -136,7 +152,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         if(nullish(button)) {
             let parent    = $('[data-test-selector="community-points-summary"i]'),
-                heading   = $('.top-nav__menu > div', true).pop(),
+                heading   = $.all('.top-nav__menu > div').pop(),
                 container = furnish();
 
             if(nullish(parent) || nullish(heading)) {
@@ -153,7 +169,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             $('#tt-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
 
-            let textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', false, container);
+            let textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
 
             if(defined(textContainer)) {
                 let { parentElement } = textContainer;
@@ -164,7 +180,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 container,
                 enabled: true,
                 text: textContainer,
-                icon: $('svg, img', false, container),
+                icon: $('svg, img', container),
                 get offset() { return getOffset(container) },
                 tooltip: new Tooltip(container, Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ (320 * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`, { top: -10 }),
             };
@@ -173,23 +189,23 @@ let Chat__Initialize = async(START_OVER = false) => {
             button.text.innerHTML = '+' + BonusChannelPointsSVG;
             button.container.setAttribute('tt-auto-claim-enabled', true);
 
-            button.icon ??= $('svg, img', false, container);
+            button.icon ??= $('svg, img', container);
 
-            if($.nullish('.channel-points-icon', false, container))
+            if($.nullish('.channel-points-icon', container))
                 button.icon.outerHTML = Glyphs.channelpoints;
 
-            button.icon = $('svg, img', false, container);
+            button.icon = $('svg, img', container);
             button.icon.setAttribute('style', `height: 2rem; width: 2rem; margin-top: .25rem; margin-left: .25rem;`);
         } else {
             let container = button,
-                textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', false, container);
+                textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
 
             button = {
                 container,
                 enabled: true,
                 text: textContainer,
                 tooltip: Tooltip.get(container),
-                icon: $('svg, img', false, container),
+                icon: $('svg, img', container),
                 get offset() { return getOffset(container) },
             };
         }
@@ -225,10 +241,10 @@ let Chat__Initialize = async(START_OVER = false) => {
         junk && (junk.innerHTML = '');
 
         // Set the Channel Point icon's color & positioning
-        $('svg:not([id])', false, button.container)
+        $('svg:not([id])', button.container)
             ?.setAttribute('style', `fill:var(--channel-color-${ ANTITHEME })`);
 
-        $('svg:not([id])', false, button.container)
+        $('svg:not([id])', button.container)
             ?.closest('div:not([class*="channel"i])')
             ?.setAttribute('style', 'margin-top:0.1em');
 
@@ -324,7 +340,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             appendResults: {
                 value: function appendResults(nodes, type) {
-                    $(`[tt-${ type }-emote-search-result]`, true).forEach(node => node.remove());
+                    $.all(`[tt-${ type }-emote-search-result]`).forEach(node => node.remove());
 
                     let container = $('[class*="emote-picker"i] [class*="emote-picker"i][class*="block"i] > *:last-child');
 
@@ -338,7 +354,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     }
 
                     let title = (null
-                        ?? $('p', false, container.previousElementSibling)
+                        ?? $('p', container.previousElementSibling)
                         ?? $('[class*="emote-picker"i] p')
                     );
 
@@ -523,7 +539,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         .catch(WARN);
         },
         REFURBISH_BTTV_EMOTE_TOOLTIPS = fragment => {
-            $('[data-bttv-emote]', true, fragment)
+            $.all('[data-bttv-emote]', fragment)
                 .forEach(emote => {
                     let { bttvEmote } = emote.dataset,
                         tooltip = new Tooltip(emote, bttvEmote);
@@ -551,16 +567,16 @@ let Chat__Initialize = async(START_OVER = false) => {
                             .then(({ documentElement }) => documentElement)
                             .then(async doc => {
                                 let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
-                                let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
-                                    [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[]");
+                                let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang),
+                                    [data] = JSON.parse($('script[type^="application"i][type$="json"i]', doc)?.textContent || "[]");
 
-                                let display_name = await when.defined(() => $('meta[name$="title"i]', false, doc)?.content?.split(/\s/, 1)?.pop()),
+                                let display_name = await when.defined(() => $('meta[name$="title"i]', doc)?.content?.split(/\s/, 1)?.pop()),
                                     [language] = languages.filter(lang => alt_languages.missing(lang)),
                                     name = display_name?.toLowerCase(),
-                                    profile_image = $('meta[property$="image"i]', false, doc)?.content,
+                                    profile_image = $('meta[property$="image"i]', doc)?.content,
                                     live = parseBool(data?.publication?.isLiveBroadcast),
                                     started_at = new Date(data?.publication?.startDate).toJSON(),
-                                    status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
+                                    status = (data?.description ?? $('meta[name$="description"i]', doc)?.content),
                                     updated_at = new Date(data?.publication?.endDate).toJSON();
 
                                 await Search.convertResults({
@@ -759,7 +775,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             alt = alt.replace(/\s+/g, '_');
 
-                            $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
+                            $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
                                 let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${alt}][@bttvOwner=${own}][@bttvOwnerId=${pid}]`).html(img.innerHTML),
                                     converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
@@ -775,7 +791,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         }
 
                     for(let [alt, html] of holding)
-                        $(`.text-fragment[tt-converted-emotes~="${alt}"i]`, true).map(fragment => {
+                        $.all(`.text-fragment[tt-converted-emotes~="${alt}"i]`).map(fragment => {
                             fragment.innerHTML = fragment.innerHTML.replaceAll(UUID.from(alt).toString(), html);
 
                             REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
@@ -897,7 +913,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(streamersEmotes))
             return RegisterJob('convert_emotes');
 
-        for(let lock of $('[data-test-selector*="lock"i]', true, streamersEmotes)) {
+        for(let lock of $.all('[data-test-selector*="lock"i]', streamersEmotes)) {
             let emote = lock.nextElementSibling,
                 { alt, src } = emote,
                 parent = emote.closest('[class^="emote-picker"i]').parentElement,
@@ -981,10 +997,10 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Grab locked emotes when the page loads
             wait(250).then(() => {
                 // Collect the emotes
-                $('.emote-button [data-test-selector*="lock"i] ~ img:not(.bttv)', true)
+                $.all('.emote-button [data-test-selector*="lock"i] ~ img:not(.bttv)')
                     .map(img => CAPTURED_EMOTES.set(img.alt, shrt(img.src)));
 
-                $('.emote-button img:not(.bttv)', true)
+                $.all('.emote-button img:not(.bttv)')
                     .filter(img => !CAPTURED_EMOTES.has(img.alt))
                     .map(img => OWNED_EMOTES.set(img.alt, shrt(img.src)));
 
@@ -1056,7 +1072,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     alt = alt.replace(/\s+/g, '_');
 
-                    $(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, true, element).map(fragment => {
+                    $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
                         let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${alt}]`).html(img.innerHTML),
                             converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
@@ -1068,7 +1084,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
                         fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
 
-                        $('[data-captured-emote]', true, fragment)
+                        $.all('[data-captured-emote]', fragment)
                             .forEach(element => {
                                 let { capturedEmote } = element.dataset;
                                 // ... //
@@ -1155,7 +1171,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.filter_messages = () => {
         START__STOP_WATCH('filter_messages');
 
-        MESSAGE_FILTER ??= Chat.onmessage = async line => {
+        MESSAGE_FILTER ??= Chat.onmessage = Chat.onpinned = async line => {
             let Filter = UPDATE_RULES('filter');
 
             let { message, mentions, author, badges, emotes } = line,
@@ -1174,7 +1190,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 || (Filter.badge.test(badges)? (match = badges, reason = 'badge'): false)
                 // Filter emotes on all channels
                 || (Filter.emote.test(emotes)? (match = emotes, reason = 'emote'): false)
-                // Filter messges (RegExp) on all channels
+                // Filter messages (RegExp) on all channels
                 || (Filter.text.test(message)? (match = message, reason = 'text'): false)
                 // Filter messages/users on specific a channel
                 || Filter.channel.map(({ name, badge, emote, user, text }) => {
@@ -1213,7 +1229,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Timers.filter_messages = -2_500;
 
     Unhandlers.filter_messages = () => {
-        let hidden = $('[tt-hidden-message]', true);
+        let hidden = $.all('[tt-hidden-message]');
 
         hidden.map(element => element.removeAttribute('tt-hidden-message'));
     };
@@ -1242,7 +1258,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(card) || defined(existing))
             return;
 
-        let title = $('h1,h2,h3,h4,h5,h6', false, card),
+        let title = $('h1,h2,h3,h4,h5,h6', card),
             [name] = title.childNodes,
             type = (card.getAttribute('data-a-target').equals('viewer-card')? 'user': 'emote'),
             { filter_rules } = Settings;
@@ -1276,7 +1292,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 innerHTML: `${ Glyphs.trash } Filter messages from @${ name }`,
             });
 
-            let svg = $('svg', false, filter);
+            let svg = $('svg', filter);
 
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
@@ -1308,7 +1324,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 innerHTML: `${ Glyphs.trash } Filter <strong>${ name }</strong>`,
             });
 
-            let svg = $('svg', false, filter);
+            let svg = $('svg', filter);
 
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
@@ -1337,13 +1353,17 @@ let Chat__Initialize = async(START_OVER = false) => {
         ['filter_messages__bullets_raid', ['raid']],
         ['filter_messages__bullets_subs', ['dues', 'gift', 'keep']],
         ['filter_messages__bullets_note', ['note']],
-    ]);
+        ['filter_messages__bullets_paid', ['PINNED_MESSAGES']],
+    ]),
+        PINNED_FILTER = -1;
 
     Handlers.filter_bulletins = () => {
         START__STOP_WATCH('filter_bulletins');
 
         for(let [key, subjects] of BULLETIN_FILTERS)
-            if(parseBool(Settings[key]))
+            if(key.endsWith('bullets_paid') && parseBool(Settings[key]))
+                PINNED_FILTER = setInterval(() => $('[class*="pinned"i][class*="by"i]').closest('[class*="chat"][class*="content"i] > div:not([class])').remove(), 100);
+            else if(parseBool(Settings[key]))
                 AddCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
 
         JUDGE__STOP_WATCH('filter_bulletins');
@@ -1353,6 +1373,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Unhandlers.filter_bulletins = () => {
         for(let [key, subjects] of BULLETIN_FILTERS)
             RemoveCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`);
+        clearInterval(PINNED_FILTER);
     };
 
     __FilterBulletins__:
@@ -1361,6 +1382,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         Settings.filter_messages__bullets_raid,
         Settings.filter_messages__bullets_subs,
         Settings.filter_messages__bullets_note,
+        Settings.filter_messages__bullets_paid,
     ].map(parseBool).contains(true)) {
         REMARK("Adding bulletin filtering...");
 
@@ -1396,7 +1418,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 || (Phrases.badge.test(badges)? reason = 'badge': false)
                 // Phrase of emotes on all channels
                 || (Phrases.emote.test(emotes)? reason = 'emote': false)
-                // Phrase of messges (RegExp) on all channels
+                // Phrase of messages (RegExp) on all channels
                 || (Phrases.text.test(message)? reason = 'text': false)
                 // Phrase of messages/users on specific a channel
                 || Phrases.channel.map(({ name, text, user, badge, emote }) => {
@@ -1440,7 +1462,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Timers.highlight_phrases = -2_500;
 
     Unhandlers.highlight_phrases = () => {
-        let highlight = $('[tt-light]', true);
+        let highlight = $.all('[tt-light]');
 
         highlight.map(element => element.removeAttribute('tt-light'));
     };
@@ -1469,7 +1491,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(card) || defined(existing))
             return;
 
-        let title = $('h1,h2,h3,h4,h5,h6', false, card),
+        let title = $('h1,h2,h3,h4,h5,h6', card),
             [name] = title.childNodes,
             type = (card.getAttribute('data-a-target').equals('viewer-card')? 'user': 'emote'),
             { phrase_rules } = Settings;
@@ -1503,7 +1525,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 innerHTML: `${ Glyphs.star } Highlight messages from @${ name }`,
             });
 
-            let svg = $('svg', false, phrase);
+            let svg = $('svg', phrase);
 
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
@@ -1535,7 +1557,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 innerHTML: `${ Glyphs.star } Highlight <strong>${ name }</strong>`,
             });
 
-            let svg = $('svg', false, phrase);
+            let svg = $('svg', phrase);
 
             svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
 
@@ -1565,7 +1587,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(card))
             return;
 
-        let title = $('h1,h2,h3,h4,h5,h6', false, card),
+        let title = $('h1,h2,h3,h4,h5,h6', card),
             { length } = title.children;
 
         if(length > 2)
@@ -1660,7 +1682,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         LOG('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
 
-                        (reply ?? $('button[data-test-selector*="reply"i]', false, element))?.click();
+                        (reply ?? $('button[data-test-selector*="reply"i]', element))?.click();
                     },
                 });
             }
@@ -1720,8 +1742,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 let { currentTarget } = event,
                                     messageElement = currentTarget.closest('div').previousElementSibling,
                                     chatInput = $('[data-a-target="chat-input"i]'),
-                                    [bubbleContainer, chatContainer] = $('.chat-input > :last-child > :first-child > :not(:first-child)', true),
-                                    chatContainerChild = $('div', false, chatContainer);
+                                    [bubbleContainer, chatContainer] = $.all('.chat-input > :last-child > :first-child > :not(:first-child)'),
+                                    chatContainerChild = $('div', chatContainer);
 
                                 let f = furnish;
 
@@ -1751,8 +1773,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                     {
                                                         onclick: event => {
                                                             let chatInput = $('[data-a-target="chat-input"i]'),
-                                                                [bubbleContainer, chatContainer] = $('.chat-input > :last-child > :first-child > :not(:first-child)', true),
-                                                                chatContainerChild = $('div', false, chatContainer);
+                                                                [bubbleContainer, chatContainer] = $.all('.chat-input > :last-child > :first-child > :not(:first-child)'),
+                                                                chatContainerChild = $('div', chatContainer);
 
                                                             RemoveNativeReplyBubble: {
                                                                 bubbleContainer.classList.remove(...addedClasses.bubbleContainer);
@@ -1761,7 +1783,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                                 chatContainer.classList.add(...removedClasses.chatContainer);
                                                                 chatContainerChild.classList.remove(...addedClasses.chatContainerChild);
 
-                                                                $('[id^="tt-native-twitch-reply"i]', true).forEach(element => element.remove());
+                                                                $.all('[id^="tt-native-twitch-reply"i]').forEach(element => element.remove());
 
                                                                 chatInput.setAttribute('placeholder', 'Send a message');
                                                             }
@@ -1806,16 +1828,16 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(nullish(element))
                     return;
 
-                if($.defined('.chat-line__message-container', false, element))
+                if($.defined('.chat-line__message-container', element))
                     return;
 
                 if(handle == USERNAME)
                     return;
 
-                let parent = $('div', false, element);
+                let parent = $('div', element);
                 if(nullish(parent)) return;
 
-                let target = $('div', false, parent);
+                let target = $('div', parent);
                 if(nullish(target)) return;
 
                 let highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@testSelector=chat-message-highlight]', {});
@@ -1967,7 +1989,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(CHAT_CARDIFIED.has(href)) {
                     let card = CHAT_CARDIFIED.get(href);
 
-                    if(nullish($(`#card-${ UUID.from(href).toStamp() }`, false, element)) && defined(card)) {
+                    if(nullish($(`#card-${ UUID.from(href).toStamp() }`, element)) && defined(card)) {
                         element.insertAdjacentElement('beforeend', card);
 
                         if($.nullish('[class*="chat-paused"i]'))
@@ -2073,7 +2095,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         clearInterval(REWARDS_CARDIFIER);
 
-        $('.tt-iframe-card', true)
+        $.all('.tt-iframe-card')
             .map(card => card.remove());
     };
 
@@ -2112,8 +2134,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             function markAsSpam(element, type = 'spam', message) {
                 let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
 
-                $('[data-test-selector="chat-message-separator"i] ~ * > *', true, element).forEach(sibling => sibling.remove());
-                $('[data-test-selector="chat-message-separator"i]', false, element).parentElement.append(span);
+                $.all('[data-test-selector="chat-message-separator"i] ~ * > *', element).forEach(sibling => sibling.remove());
+                $('[data-test-selector="chat-message-separator"i]', element).parentElement.append(span);
 
                 element.setAttribute(type, message);
 
@@ -2144,11 +2166,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             }
 
             // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
-            new Promise(resolve => {
-                resolve(spamChecker(message, author));
-            }).then(message => {
-                SPAM = [...SPAM, message].isolate();
-            });
+            wait(30, message, author)
+                .then((message, author) => spamChecker(message, author))
+                .then(message => SPAM = [...SPAM, message].isolate());
         })//(Chat.get());
 
         JUDGE__STOP_WATCH('prevent_spam');
@@ -2235,9 +2255,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('convert_bits');
 
         let dropdown = $('[class*="bits-buy"i]'),
-            bits_counter = $('[class*="bits-count"i]:not([tt-tusda])', true),
-            bits_cheer = $('[class*="cheer-amount"i]:not([tt-tusda])', true),
-            hype_trains = $('[class*="community-highlight-stack"i] p:not([tt-tusda])', true);
+            bits_counter = $.all('[class*="bits-count"i]:not([tt-tusda])'),
+            bits_cheer = $.all('[class*="cheer-amount"i]:not([tt-tusda])'),
+            hype_trains = $.all('[class*="community-highlight-stack"i] p:not([tt-tusda])');
 
         let bits_num_regexp = /([\d,]+)(?: +bits)?/i,
             bits_alp_regexp = /([\d,]+) +bits/i;
@@ -2245,7 +2265,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let _0 = /(\D\d)$/;
 
         if(defined(dropdown))
-            $('h5:not([tt-tusda])', true, dropdown).map(header => {
+            $.all('h5:not([tt-tusda])', dropdown).map(header => {
                 let bits = parseInt(header.textContent.replace(/\D+/g, '')),
                     usd;
 
@@ -2874,7 +2894,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.recover_chat = () => {
         START__STOP_WATCH('recover_chat');
 
-        let [chat] = $('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true),
+        let [chat] = $.all('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]'),
             error = $('[class*="chat"i][class*="content"] .core-error');
 
         if(defined(error)) {
@@ -2892,7 +2912,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 src: `./popout/${name}/chat`,
                 role: "tt-log",
             }),
-            container = $('.chat-shell', false, top.document);
+            container = $('.chat-shell', top.document);
 
         container?.parentElement?.replaceChild(iframe, container);
 
@@ -2945,10 +2965,13 @@ let Chat__Initialize = async(START_OVER = false) => {
                             f('').with(
                                 f('.chat-line__no-background[style="display:inline"]').with(
                                     f('.chat-line__username-container[style="display:inline-block"]').with(
+                                        // Chat badges
                                         f('span').with(
                                             ...badges.map(name =>
                                                 f('button[@aTarget=chat-badge]').with(
-                                                    f(`img.chat-badge[alt="${ name }"]`)
+                                                    // /badges/{version}/{UUID}/{size}
+                                                    // Broadcaster → https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1
+                                                    f(`img.chat-badge[alt="${ name }"]`, { src: `//static-cdn.jtvnw.net/badges/v1/${ TTV_BADGES.get(name) }/1` })
                                                 )
                                             )
                                         ),
@@ -2970,8 +2993,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                 $('[data-test-selector*="chat"i][role="log"i]').append(container);
             }
 
-            let body = $(`[data-test-selector$="message-placeholder"i]`, false, container),
-                user = $(`[data-a-user="${ author }"i]`, false, container);
+            let body = $(`[data-test-selector$="message-placeholder"i]`, container),
+                user = $(`[data-a-user="${ author }"i]`, container);
 
             if(nullish(body) || nullish(user))
                 continue restoring;
@@ -3022,7 +3045,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             container.dataset.uuid = uuid;
             container.dataset.resurrected = true;
 
-            let target = $('[data-a-target*="deleted"i]', false, container);
+            let target = $('[data-a-target*="deleted"i]', container);
 
             if(defined(target))
                 target.dataset.aTarget = 'chat-restored-message-placeholder';
@@ -3105,7 +3128,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         RAID_LOGGED ||= raiding;
 
         let { current = false } = parseBool(parseURL(location).searchParameters);
-        let raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.innerText),
+        let raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.innerText),
             [,from,] = location.pathname.split(/(?<!^)\//),
             [to] = raid_banner.filter(name => !RegExp(`^${ from }$`, 'i').test(name));
 
@@ -3160,6 +3183,9 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         ALL_CHANNEL_POINT_REWARDS;
 
     Handlers.point_watcher_helper = async() => {
+        if(top.__readyState__ == "unloading")
+            return;
+
         LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
                 balance = $('[data-test-selector="balance-string"i]'),
@@ -3199,7 +3225,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
     Timers.point_watcher_helper = 15_000;
 
     Unhandlers.point_watcher_helper = () => {
-        $('.tt-point-amount', true)
+        $.all('.tt-point-amount')
             .forEach(span => span?.remove());
     };
 
@@ -3210,7 +3236,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         if(defined(balanceButton)) {
             balanceButton.click();
 
-            ALL_CHANNEL_POINT_REWARDS = $('[data-test-selector="cost"i]', true).map(e => ({ innerText: e.innerText, innerHTML: e.innerHTML, outerHTML: e.outerHTML }));
+            ALL_CHANNEL_POINT_REWARDS = $.all('[data-test-selector="cost"i]').map(e => ({ innerText: e.innerText, innerHTML: e.innerHTML, outerHTML: e.outerHTML }));
 
             wait(300).then(() => balanceButton.click());
         }
@@ -3335,7 +3361,7 @@ let Chat__CUSTOM_CSS,
 
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
-    let banned = STREAMER?.veto || parseBool($('[class*="banned"i]', true)?.length);
+    let banned = STREAMER?.veto || parseBool($.all('[class*="banned"i]')?.length);
 
     // Keep hidden iframes from loading resources
     let { hidden } = parseURL(location).searchParameters;
@@ -3365,7 +3391,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                     && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
 
                     // There are channel buttons on the side
-                    && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
+                    && parseBool($.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]')?.length)
                 )
 
                 // This window is not the main container
@@ -3569,7 +3595,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])', true)
+                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])')
                                             .find(element => {
                                                 if(false
                                                     // The element already has a UUID and type
@@ -3644,21 +3670,21 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     badges = Object.keys(tags?.badges ?? {}),
                                     // Have to wait on the page to play catch-up...
                                     element = when.defined(parameters =>
-                                        $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
+                                        $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
                                             .find(message =>
-                                                $(`[data-a-user="${ author }"i]`, true, message)
+                                                $.all(`[data-a-user="${ author }"i]`, message)
                                                     .map(div => div.closest('[data-test-selector$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
                                                         let text = [],
-                                                            body = $('[data-test-selector$="message-body"i]', false, div);
+                                                            body = $('[data-test-selector$="message-body"i]', div);
 
                                                         if(nullish(body))
                                                             return;
 
                                                         for(let child of body.children)
                                                             if(child.dataset.testSelector?.equals('emote-button'))
-                                                                text.push($('img', false, child).alt);
+                                                                text.push($('img', child).alt);
                                                             else
                                                                 text.push(child.textContent);
 
@@ -3686,10 +3712,12 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
                                     reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
                                     style = `color: ${ tags.color || '#9147FF' };`,
-                                    uuid = tags.id;
+                                    uuid = tags.id,
+                                    sent = (new Date).toJSON();
 
                                 let results = {
                                     raw,
+                                    sent,
                                     uuid,
                                     reply,
                                     style,
@@ -3704,7 +3732,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
                                     get deleted() {
                                         return (async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
                                         }).call(this.element)
                                     },
                                 };
@@ -3776,22 +3804,22 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 // Play catch-up...
                 when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
                     .then(chat => {
-                        let unhandled = $('[data-a-target="chat-line-message"i]:not([data-uuid])', true, chat);
+                        let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
 
                         for(let element of unhandled) {
-                            let raw = $('[class*="message"i][class*="container"i]', false, element).textContent.trim(),
+                            let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim(),
                                 uuid = UUID.from(raw).toString(),
-                                reply = $('button[data-test-selector*="reply"i]', false, element),
-                                style = $('[data-a-user]', false, element)?.getAttribute('style')?.trim(),
-                                author = $('[data-a-user]', false, element).dataset.aUser,
+                                reply = $('button[data-test-selector*="reply"i]', element),
+                                style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
+                                author = $('[data-a-user]', element).dataset.aUser,
                                 emotes = new Set,
                                 badges = new Set,
-                                __bs__ = $('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', true, element).map(e => badges.add(e.alt.toLowerCase())),
-                                handle = $('[data-a-user]', false, element).textContent,
+                                __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
+                                handle = $('[data-a-user]', element).textContent,
                                 usable = false,
-                                message = $('[class*="message"i][class*="body"i] *', true, element).map(e => {
+                                message = $.all('[class*="message"i][class*="body"i] *', element).map(e => {
                                     if(e.dataset.testSelector.contains('emote')) {
-                                        let i = $('img', false, e);
+                                        let i = $('img', e);
 
                                         emotes.add(i.alt);
                                         Chat.__allemotes__.set(i.alt, i.src);
@@ -3801,7 +3829,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                     return e.textContent?.trim?.() || '';
                                 }).join(' '),
-                                mentions = $('[data-a-atrget*="mention"i]', true, element).map(e => e.textContent),
+                                mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
                                 highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
                             element.dataset.uuid = uuid;
@@ -3825,7 +3853,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 highlighted,
                                 get deleted() {
                                     return (async function() {
-                                        return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                        return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
                                     }).call(this.element)
                                 },
                             };
@@ -3951,6 +3979,74 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         }
 
         Storage.set({ onInstalledReason: null });
+    }
+
+    // Handle pinned messages...
+    Pinned: {
+        let PinnedMessageHandler = header => {
+            let toggle = $('button', header.closest('[class*="pinned"i][class*="chat"i][class*="area"i]')),
+                collapsed = defined(toggle.closest('[class*="highlight"i][class*="collapsed"i]'));
+
+            if(collapsed)
+                toggle.click();
+
+            let element = header.closest('[class*="chat"][class*="content"i] > div:not([class])'),
+                message = $('[class*="pinned"i][class*="message"i]', element),
+                handle = $('.chatter-name', element),
+                badges = $.all('.chat-badge', element).map(img => img.alt).isolate(),
+                emotes = $.all('.chat-image', message).map(img => img.alt).isolate(),
+                author = handle.textContent;
+
+            header = header.textContent;
+            message = message.textContent;
+
+            let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
+                style = $('[style]', handle).getAttribute('style'),
+                { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle.parentElement.textContent).groups,
+                sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * (meridiem == 'PM'), minute, ':00'].join('')).toJSON();
+
+            handle = author.replace(/([^]*)\((.+)\)[^]*/, ($0, $1, $2 = '', $$, $_) => {
+                author = $2 || $1;
+
+                return $1;
+            });
+
+            let raw = `${ header } → ${ [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': ') }`,
+                uuid = UUID.from([sent, message, author].join('@')).toString();
+
+            let results = {
+                raw,
+                sent,
+                uuid,
+                style,
+                author,
+                emotes,
+                badges,
+                handle,
+                element,
+                message,
+                mentions,
+            };
+
+            if(collapsed)
+                toggle.click();
+
+            Chat.__allpinned__.set(uuid, results);
+
+            for(let [name, callback] of Chat.__onpinned__)
+                when(() => PAGE_IS_READY, 250).then(() => callback(results));
+
+            wait(100, results).then(async results => {
+                for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
+                    when(() => PAGE_IS_READY, 1000).then(() => callback(results));
+            });
+
+            when(() => $.nullish('[class*="pinned"i][class*="by"i]'))
+                .then(() => when.defined(() => $('[class*="pinned"i][class*="by"i]')).then(PinnedMessageHandler));
+        };
+
+        // #TODO: fix this; it's the time the page waits (5s) + time the function starts (2.5s)
+        when.defined(() => $('[class*="pinned"i][class*="by"i]'), 8_000).then(PinnedMessageHandler);
     }
 }, 500);
 

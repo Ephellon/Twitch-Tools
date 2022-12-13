@@ -121,7 +121,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?\/\/)?(?:(?<username>[^:]*):(?<password>[^@]*)@)?(?<host>(?<hostname>\w+\.[^:\/?#\s]+|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?\/\/)?(?:(?<username>[^:]*):(?<password>[^@]*)@)?(?<host>(?<hostname>\w+(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -289,7 +289,7 @@ function furnish(tagname = 'div', attributes = null, ...children) {
         .forEach(([name, value]) => {
             name = name?.trim();
 
-            return (/^(@|data-|on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name))?
+            return (/^(@|data-|on|(?:(?:inner|outer)(?:HTML|Text)|textContent|class(?:List|Name)|value)$)/.test(name) || typeof value == 'function')?
                 (/^on/.test(name))?
                     element.addEventListener(name.replace(/^on/, ''), value):
                 (/^(@|data-)/.test(name))?
@@ -1093,7 +1093,6 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
     return containers.isolate();
 };
 
-
 // Gets the DOM path of an element
     // Element..getPath(shorten:boolean?) → string
 Element.prototype.getPath ??= function getPath(shorten = false) {
@@ -1826,7 +1825,7 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
     let canvas = furnish('canvas', { height, width }),
         context = canvas.getContext('2d');
 
-    let path = new Path2D($('path', false, this)?.getAttribute('d') ?? '');
+    let path = new Path2D($('path', this)?.getAttribute('d') ?? '');
 
     context.stroke(path);
 
@@ -1861,7 +1860,7 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
             // true → 123.456.suffix('m', true) => "123.456m"
             // false → 123.456.suffix('m', false) => "123m"
             // 1 → 123.456.suffix('m', 1) => "123.4m"
-        // format = "metric" | "imperial" | "readable"
+        // format = "metric" | "imperial" | "natural" | "readable" | "data"
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
         sign = (number < 0? '-': ''),
@@ -1950,12 +1949,8 @@ Number.prototype.clamp ??= function clamp(min, max) {
         max = ((min < 0)? min - 1: min + 1);
 
     // Keep everything in order
-    if(min > max) {
-        let tmp = min;
-
-        min = max;
-        max = tmp;
-    }
+    if(min > max)
+        [min, max] = [max, min];
 
     // clamp.js - https://www.webtips.dev/webtips/javascript/how-to-clamp-numbers-in-javascript
     return Math.min(Math.max(this, min), max);
@@ -3050,7 +3045,7 @@ function alert(message = '') {
 
     let f = furnish;
     let $DOM = (alert.parser ??= new DOMParser).parseFromString(message, 'text/html'),
-        $CNT = $('[controller]', false, $DOM);
+        $CNT = $('[controller]', $DOM);
 
     let title = (null
         ?? $CNT?.getAttribute('title')
@@ -3099,6 +3094,22 @@ function alert(message = '') {
                         clearInterval(intervalID);
                     },
 
+                    disregard() {
+                        let disabled = this.closest('.tt-alert').getAttribute('disabled');
+
+                        if(parseBool(disabled))
+                            return;
+
+                        let parent = this.closest('.tt-alert'),
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
+
+                        parent.setAttribute('value', true);
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(intervalID);
+                    },
+
                     innerHTML: okay,
                 })
             )
@@ -3110,14 +3121,14 @@ function alert(message = '') {
     let value = when.defined(() => {
         let element = $('.tt-alert'),
             value = element?.getAttribute('value'),
-            timedOut = parseBool($('.tt-alert-time', false, element)?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-alert-time', element)?.getAttribute('tt-done'));
 
         value &&= parseBool(value);
 
         if(timedOut) {
-            let button = $('button.okay', false, element);
+            let button = $('button.okay', element);
 
-            phantomClick(button);
+            button.disregard();
 
             return when.void;
         }
@@ -3225,7 +3236,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         if(nullish(time))
             return clearInterval(intervalID);
 
-        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-alert-container')))
+        if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-alert-container')))
             return time.setAttribute('due', due + 100);
 
         time.closest('.tt-alert-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
@@ -3259,7 +3270,7 @@ function confirm(message = '') {
 
     let f = furnish;
     let $DOM = (confirm.parser ??= new DOMParser).parseFromString(message, 'text/html'),
-        $CNT = $('[controller]', false, $DOM);
+        $CNT = $('[controller]', $DOM);
 
     let title = (null
         ?? $CNT?.getAttribute('title')
@@ -3312,6 +3323,22 @@ function confirm(message = '') {
                         clearInterval(intervalID);
                     },
 
+                    disregard() {
+                        let disabled = this.closest('.tt-confirm').getAttribute('disabled');
+
+                        if(parseBool(disabled))
+                            return;
+
+                        let parent = this.closest('.tt-confirm'),
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
+
+                        parent.setAttribute('value', false);
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(intervalID);
+                    },
+
                     innerHTML: deny,
                 }),
 
@@ -3343,6 +3370,22 @@ function confirm(message = '') {
                         clearInterval(intervalID);
                     },
 
+                    disregard() {
+                        let disabled = this.closest('.tt-confirm').getAttribute('disabled');
+
+                        if(parseBool(disabled))
+                            return;
+
+                        let parent = this.closest('.tt-confirm'),
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
+
+                        parent.setAttribute('value', true);
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(intervalID);
+                    },
+
                     innerHTML: okay,
                 })
             )
@@ -3354,14 +3397,14 @@ function confirm(message = '') {
     let value = when.defined(() => {
         let element = $('.tt-confirm'),
             value = element?.getAttribute('value'),
-            timedOut = parseBool($('.tt-confirm-time', false, element)?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-confirm-time', element)?.getAttribute('tt-done'));
 
         value &&= parseBool(value);
 
         if(timedOut) {
-            let button = $('button.deny', false, element);
+            let button = $('button.deny', element);
 
-            phantomClick(button);
+            button.disregard();
 
             return when.null;
         }
@@ -3469,7 +3512,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
         if(nullish(time))
             return clearInterval(intervalID);
 
-        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-confirm-container')))
+        if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-confirm-container')))
             return time.setAttribute('due', due + 100);
 
         time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
@@ -3503,7 +3546,7 @@ function prompt(message = '', defaultValue = '') {
 
     let f = furnish;
     let $DOM = (prompt.parser ??= new DOMParser).parseFromString(message, 'text/html'),
-        $CNT = $('[controller]', false, $DOM);
+        $CNT = $('[controller]', $DOM);
 
     let title = (null
         ?? $CNT?.getAttribute('title')
@@ -3557,7 +3600,7 @@ function prompt(message = '', defaultValue = '') {
 
                     onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
                         if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
-                            phantomClick(currentTarget.closest('.tt-prompt-footer').querySelector('button.okay'));
+                            currentTarget.closest('.tt-prompt-footer').querySelector('button.okay').disregard();
                     }
                 }),
 
@@ -3602,7 +3645,7 @@ function prompt(message = '', defaultValue = '') {
 
                         let parent = currentTarget.closest('.tt-prompt');
 
-                        parent.setAttribute('value', $('.tt-prompt-input', false, parent).value);
+                        parent.setAttribute('value', $('.tt-prompt-input', parent).value);
                     },
                     onmouseup(event) {
                         let { currentTarget } = event;
@@ -3620,6 +3663,22 @@ function prompt(message = '', defaultValue = '') {
                         clearInterval(intervalID);
                     },
 
+                    disregard() {
+                        let disabled = this.closest('.tt-prompt').getAttribute('disabled');
+
+                        if(parseBool(disabled))
+                            return;
+
+                        let parent = this.closest('.tt-prompt'),
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
+
+                        parent.setAttribute('value', $('.tt-prompt-input', parent).value);
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(intervalID);
+                    },
+
                     innerHTML: okay,
                 })
             )
@@ -3628,17 +3687,17 @@ function prompt(message = '', defaultValue = '') {
 
     document.body.append(container);
 
-    $('.tt-prompt-input', false, container).value = defaultValue;
+    $('.tt-prompt-input', container).value = defaultValue;
 
     let value = when.defined(() => {
         let element = $('.tt-prompt'),
             value = element?.getAttribute('value'),
-            timedOut = parseBool($('.tt-prompt-time', false, element)?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-prompt-time', element)?.getAttribute('tt-done'));
 
         if(timedOut) {
-            let button = $('button.deny', false, element);
+            let button = $('button.deny', element);
 
-            phantomClick(button);
+            button.disregard();
 
             return when.null;
         }
@@ -3746,7 +3805,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
         if(nullish(time))
             return clearInterval(intervalID);
 
-        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-prompt-container')))
+        if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-prompt-container')))
             return time.setAttribute('due', due + 100);
 
         time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
@@ -3780,7 +3839,7 @@ function select(message = '', options = [], multiple = false) {
 
     let f = furnish;
     let $DOM = (select.parser ??= new DOMParser).parseFromString(message, 'text/html'),
-        $CNT = $('[controller]', false, $DOM);
+        $CNT = $('[controller]', $DOM);
 
     let title = (null
         ?? $CNT?.getAttribute('title')
@@ -3858,7 +3917,7 @@ function select(message = '', options = [], multiple = false) {
                 f(`.tt-select-input[@multiple=${ multiple }]`, {
                     onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
                         if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
-                            phantomClick(currentTarget.closest('.tt-select-footer').querySelector('button.okay'));
+                            currentTarget.closest('.tt-select-footer').querySelector('button.okay').disregard();
                     }
                 }, ...__values__
                     .map((option, value) => {
@@ -3900,6 +3959,22 @@ function select(message = '', options = [], multiple = false) {
                         clearInterval(intervalID);
                     },
 
+                    disregard() {
+                        let disabled = this.closest('.tt-select').getAttribute('disabled');
+
+                        if(parseBool(disabled))
+                            return;
+
+                        let parent = this.closest('.tt-select'),
+                            intervalID = parseInt(parent.dataset.intervalId || -1);
+
+                        parent.setAttribute('value', '\0');
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(intervalID);
+                    },
+
                     innerHTML: deny,
                 }),
 
@@ -3912,8 +3987,8 @@ function select(message = '', options = [], multiple = false) {
                             return;
 
                         let parent = currentTarget.closest('.tt-select'),
-                            select = $('.tt-select-input', false, parent),
-                            selected = $('input:checked', true, select).map(input => input.closest('.tt-option').value);
+                            select = $('.tt-select-input', parent),
+                            selected = $.all('input:checked', select).map(input => input.closest('.tt-option').value);
 
                         parent.setAttribute('value', selected);
                     },
@@ -3933,6 +4008,24 @@ function select(message = '', options = [], multiple = false) {
                         clearInterval(intervalID);
                     },
 
+                    disregard() {
+                        let disabled = this.closest('.tt-select').getAttribute('disabled');
+
+                        if(parseBool(disabled))
+                            return;
+
+                        let parent = this.closest('.tt-select'),
+                            intervalID = parseInt(parent.dataset.intervalId || -1),
+                            select = $('.tt-select-input', parent),
+                            selected = $.all('input:checked', select).map(input => input.closest('.tt-option').value);
+
+                        parent.setAttribute('value', selected);
+                        parent.classList.add('tt-done');
+                        wait(500).then(() => parent.classList.remove('tt-veiled'));
+                        wait(1000).then(() => parent.remove());
+                        clearInterval(intervalID);
+                    },
+
                     innerHTML: okay,
                 })
             )
@@ -3946,12 +4039,12 @@ function select(message = '', options = [], multiple = false) {
             values = element?.getAttribute('value'),
             options = JSON.parse(decodeHTML(element?.getAttribute('options') || 'null')),
             keys = JSON.parse(decodeHTML(element?.getAttribute('keys') || 'null')),
-            timedOut = parseBool($('.tt-select-time', false, element)?.getAttribute('tt-done'));
+            timedOut = parseBool($('.tt-select-time', element)?.getAttribute('tt-done'));
 
         if(timedOut) {
-            let button = $('button.deny', false, element);
+            let button = $('button.deny', element);
 
-            phantomClick(button);
+            button.disregard();
 
             return when.null;
         }
@@ -4065,7 +4158,7 @@ select.timed ??= (message = '', options = [], multiple = false, milliseconds = 6
         if(nullish(time))
             return clearInterval(intervalID);
 
-        if(pausable && $('*:is(:hover, :focus-within)', true).contains(time.closest('.tt-select-container')))
+        if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-select-container')))
             return time.setAttribute('due', due + 100);
 
         time.closest('.tt-select-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));

@@ -378,8 +378,8 @@ class LZW {
 };
 
 // The following is just shared logic
-    // $(selector:string, multiple:boolean?, container:Node?) → Array|Element
-function $(selector, multiple = false, container = document) {
+    // $(selector:string, container:Node?, multiple:boolean?) → Array|Element
+function $(selector, container = document, multiple = false) {
     return multiple?
         [...container?.querySelectorAll(selector)]:
     container?.querySelector(selector);
@@ -445,7 +445,7 @@ Object.defineProperties($, {
     },
 
     defined: {
-        value: (selector, multiple = false, container = document) => defined($(selector, multiple, container)),
+        value: (selector, container = document, multiple = false) => multiple? $(selector, container, true).length > 0: defined($(selector, container)),
 
         writable: false,
         enumerable: false,
@@ -453,7 +453,15 @@ Object.defineProperties($, {
     },
 
     nullish: {
-        value: (selector, multiple = false, container = document) => nullish($(selector, multiple, container)),
+        value: (selector, container = document, multiple = false) => multiple? $(selector, container, true).length < 1: nullish($(selector, container)),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+
+    all: {
+        value: (selector, container = document) => $(selector, container, true),
 
         writable: false,
         enumerable: false,
@@ -632,6 +640,7 @@ function fetchURL(url, options = {}) {
     // No CORS required
     if(false
         || protocol.equals('chrome:')
+        || protocol.equals('chrome-extension:')
         || host.startsWith('.')
         || allowedDomains.contains(domain.toLowerCase())
         || allowedSites.contains(site.toLowerCase())

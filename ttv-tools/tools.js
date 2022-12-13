@@ -30,12 +30,14 @@ let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: 
     JUMPED_FRAMES = false,
     JUMP_DATA = {};
 
+top.__readyState__ = document.readyState;
+
 // Populate the username field by quickly showing the menu
 when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
     .then(() => {
         UserMenuToggleButton.click();
         ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent ?? '';
-        USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? null;
+        USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? `Anon_${ +new Date }`;
         THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
         ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
@@ -43,6 +45,10 @@ when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"
         LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
         UserMenuToggleButton.click();
     });
+
+top.onbeforeunload = event => {
+    top.__readyState__ = "unloading";
+};
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
  *       _____      _                  __                      _       _ _ __
@@ -66,8 +72,8 @@ class Balloon {
     constructor({ title, icon = 'play' }, ...jobs) {
         let f = furnish;
 
-        let [P] = $('.top-nav__menu > div', true).slice(-1),
-            X = $('#tt-balloon', false, P),
+        let [P] = $.all('.top-nav__menu > div').slice(-1),
+            X = $('#tt-balloon', P),
             I = Runtime.getURL('profile.png'),
             F, C, H, U, N;
 
@@ -290,7 +296,7 @@ class Balloon {
                                                             //                         connectedTo = currentTarget.getAttribute('connected-to');
                                                             //
                                                             //                     let element = $(`#tt-balloon-job-${ connectedTo }`),
-                                                            //                         thisJob = $('a', false, element),
+                                                            //                         thisJob = $('a', element),
                                                             //                         repeat = parseBool(parseURL(thisJob.href).searchParameters?.redo);
                                                             //
                                                             //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
@@ -382,7 +388,7 @@ class Balloon {
     addButton({ left = false, icon = 'play', onclick = ($=>$), attributes = {} }) {
         let parent = this.header.closest('div[class*="header"i]');
         let uuid = UUID.from(onclick.toString()).value,
-            existing = $(`[uuid="${ uuid }"i]`, false, parent);
+            existing = $(`[uuid="${ uuid }"i]`, parent);
 
         if(defined(existing))
             return existing;
@@ -500,7 +506,7 @@ class Balloon {
                                     //                         connectedTo = currentTarget.getAttribute('connected-to');
                                     //
                                     //                     let element = $(`#tt-balloon-job-${ connectedTo }`),
-                                    //                         thisJob = $('a', false, element),
+                                    //                         thisJob = $('a', element),
                                     //                         repeat = parseBool(parseURL(thisJob.href).searchParameters?.redo);
                                     //
                                     //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
@@ -576,7 +582,7 @@ class Balloon {
 class Tooltip {
     static #TOOLTIPS = new Map()
     static #CLEANER = setInterval(() => {
-        $('[tt-last-accessed]', true)
+        $.all('[tt-last-accessed]')
             .map(tooltip => {
                 if(+new Date(tooltip.getAttribute('tt-last-accessed')) < +new Date - 1000)
                     tooltip.closest('.tooltip-layer').remove();
@@ -791,7 +797,7 @@ class Card {
             f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@aTarget=viewer-card-close-button]',
                 {
                     onmouseup: ({ button = -1 }) => {
-                        !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
+                        !button && $.all('[data-a-target*="card"i] [class*="card-layer"] > *').forEach(node => node.remove());
                     },
                 },
                 f('.tt-inline-flex.viewer-card-drag-cancel').with(
@@ -815,7 +821,7 @@ class Card {
 
         // Add the optional footer
         if(footer?.href?.length)
-            $('div', false, card).append(
+            $('div', card).append(
                 // Tiny banner (live status)
                 f('.emote-card__content.tt-full-width.tt-inline-flex.tt-pd-1.viewer-card-drag-cancel').with(
                     f.div(
@@ -906,7 +912,7 @@ class Card {
                     f('.tt-absolute.tt-mg-r-05.tt-mg-t-05.tt-right-0.tt-top-0[@aTarget=viewer-card-close-button]',
                         {
                             onmouseup: ({ button = -1 }) => {
-                                !button && $('[data-a-target*="card"i] [class*="card-layer"] > *', true).forEach(node => node.remove());
+                                !button && $.all('[data-a-target*="card"i] [class*="card-layer"] > *').forEach(node => node.remove());
                             },
                         },
                         f('.tt-inline-flex.viewer-card-drag-cancel').with(
@@ -1000,7 +1006,7 @@ class ContextMenu {
         menu.id = uuid;
 
         // Remove current menus. Only one allowed at a time
-        $('.tt-context-menu', true).forEach(menu => menu.remove());
+        $.all('.tt-context-menu').forEach(menu => menu.remove());
 
         menu.append(
             f('.tt-border-radius-large', { style: 'background:var(--color-background-alt-2); position:absolute; z-index:9999', direction: 'top-right' },
@@ -1236,16 +1242,16 @@ class Search {
                         return parser.parseFromString(html, 'text/html');
                     })
                     .then(async doc => {
-                        let alt_languages = $('link[rel^="alt"i][hreflang]', true, doc).map(link => link.hreflang),
-                            [data] = JSON.parse($('script[type^="application"i][type$="json"i]', false, doc)?.textContent || "[{}]");
+                        let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang),
+                            [data] = JSON.parse($('script[type^="application"i][type$="json"i]', doc)?.textContent || "[{}]");
 
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                             [language] = languages.filter(lang => alt_languages.missing(lang)),
                             name = display_name?.trim()?.toLowerCase(),
-                            profile_image = ($('meta[property$="image"i]', false, doc)?.content || Runtime.getURL('profile.png')),
+                            profile_image = ($('meta[property$="image"i]', doc)?.content || Runtime.getURL('profile.png')),
                             live = parseBool(data?.publication?.isLiveBroadcast),
                             started_at = new Date(data?.publication?.startDate).toJSON(),
-                            status = (data?.description ?? $('meta[name$="description"i]', false, doc)?.content),
+                            status = (data?.description ?? $('meta[name$="description"i]', doc)?.content),
                             updated_at = new Date(data?.publication?.endDate).toJSON();
 
                         let json = { display_name, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
@@ -2213,6 +2219,23 @@ Object.defineProperties(Chat, {
                 return Chat.__deferredEvents__.__onmessage__.size;
             },
 
+            set onpinned(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__deferredEvents__.__onpinned__.has(name))
+                    return Chat.__deferredEvents__.__onpinned__.get(name);
+
+                // REMARK('Adding deferred [on new pinned] event listener', { [name]: callback });
+
+                Chat.__deferredEvents__.__onpinned__.set(name, callback);
+
+                return callback;
+            },
+
+            get onpinned() {
+                return Chat.__deferredEvents__.__onpinned__.size;
+            },
+
             set onwhisper(callback) {
                 let name = callback.name || UUID.from(callback.toString()).value;
 
@@ -2259,7 +2282,7 @@ Object.defineProperties(Chat, {
             },
         },
     },
-    __deferredEvents__: { value: { __onmessage__: new Map, __onwhisper__: new Map, __onbullet__: new Map, __oncommand__: new Map } },
+    __deferredEvents__: { value: { __onmessage__: new Map, __onpinned__: new Map, __onwhisper__: new Map, __onbullet__: new Map, __oncommand__: new Map } },
 
     onmessage: {
         set(callback) {
@@ -2280,6 +2303,26 @@ Object.defineProperties(Chat, {
         },
     },
     __onmessage__: { value: new Map },
+
+    onpinned: {
+        set(callback) {
+            let name = callback.name || UUID.from(callback.toString()).value;
+
+            if(Chat.__onpinned__.has(name))
+                return Chat.__onpinned__.get(name);
+
+            // REMARK('Adding [on new pinned] event listener', { [name]: callback });
+
+            Chat.__onpinned__.set(name, callback);
+
+            return callback;
+        },
+
+        get() {
+            return Chat.__onpinned__.size;
+        },
+    },
+    __onpinned__: { value: new Map },
 
     onwhisper: {
         set(callback) {
@@ -2339,6 +2382,7 @@ Object.defineProperties(Chat, {
     __allmessages__: { value: new Map },
     __allbullets__: { value: new Set },
     __allemotes__: { value: new Map },
+    __allpinned__: { value: new Map },
 
     messages: {
         get() { return Chat.__allmessages__ },
@@ -2353,6 +2397,11 @@ Object.defineProperties(Chat, {
     emotes: {
         get() { return Chat.__allemotes__ },
         set(value) { return Chat.__allemotes__ },
+    },
+
+    pinned: {
+        get() { return Chat.__allpinned__ },
+        set(value) { return Chat.__allpinned__ },
     },
 
     // Chat restrictions
@@ -2497,7 +2546,7 @@ async function GetQuality() {
     .then(() => { buttons?.quality?.click() })
     .catch(error => { throw error });
 
-    let qualities = $('[data-a-target$="-quality-option"i] input[type="radio"i]', true)
+    let qualities = $.all('[data-a-target$="-quality-option"i] input[type="radio"i]')
         .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
 
     let textOf = text => (text?.textContent ?? text?.value ?? text);
@@ -2565,7 +2614,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         .then(() => buttons?.quality?.click())
         .catch(error => { throw error });
 
-    let qualities = $('[data-a-target$="-quality-option"i] input[type="radio"i]', true)
+    let qualities = $.all('[data-a-target$="-quality-option"i] input[type="radio"i]')
         .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
 
     let textOf = text => (text?.textContent ?? text?.value ?? text);
@@ -2600,7 +2649,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
 
     return new Promise((resolve, reject) => {
         let checker = setInterval(() => {
-            video = $('video', true).pop(),
+            video = $.all('video').pop(),
             computed = (video?.videoHeight | 0) + 'p';
 
             if(desired !== computed) {
@@ -2648,14 +2697,16 @@ function SetVolume(volume = 0.5) {
         thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
         slider = $('video ~ * .player-controls + * [style]');
 
+    volume = parseFloat(volume?.toFixed(2) || 1);
+
     if(defined(video))
-        video.volume = parseFloat(volume);
+        video.volume = volume;
 
     if(defined(thumb))
-        thumb.value = parseFloat(volume);
+        thumb.value = volume;
 
     if(defined(slider))
-        slider.setAttribute('style', `width: ${ 100 * parseFloat(volume) }%`);
+        slider.setAttribute('style', `width: ${ 100 * volume }%`);
 }
 
 // Get the view mode
@@ -2694,7 +2745,7 @@ function GetViewMode() {
                 && fullwidth
                 && !overview
             )
-        || $(classes, true, container.parentElement).length <= 3
+        || $.all(classes, container.parentElement).length <= 3
     )
         mode = 'fullscreen';
 
@@ -2978,9 +3029,9 @@ function AddCustomCSSBlock(name, block) {
 
     let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
 
-    let newHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
+    let newHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
 
-    if(CUSTOM_CSS.innerHTML.equals(newHTML))
+    if(CUSTOM_CSS?.innerHTML?.equals(newHTML))
         return;
 
     CUSTOM_CSS.innerHTML = newHTML;
@@ -2998,9 +3049,9 @@ function RemoveCustomCSSBlock(name, flags = '') {
 
     let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
 
-    let newHTML = ((CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
+    let newHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
 
-    if(CUSTOM_CSS.innerHTML.equals(newHTML))
+    if(CUSTOM_CSS?.innerHTML?.equals(newHTML))
         return;
 
     CUSTOM_CSS.innerHTML = newHTML;
@@ -3109,7 +3160,7 @@ try {
                     pip = f('iframe#tt-pip-player', {
                         src,
 
-                        style: 'height:-webkit-fill-available;height:-moz-available;width:-webkit-fill-available;width:-moz-available',
+                        style: 'height:auto;width:-webkit-fill-available;width:-moz-available;z-index:9;position:relative',
                     });
 
                 pip.remove();
@@ -3664,7 +3715,7 @@ try {
                 text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.toTitle(),
                 icon: 'bolt',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X)? 'alt+shift+x': ''),
-                action: event => $('video', true).pop().copyFrame(),
+                action: event => $.all('video').pop().copyFrame(),
             },{
                 text: `Record the next ${ toTimeString(VideoClips.length) }`,
                 icon: 'video',
@@ -3672,14 +3723,14 @@ try {
                 action: event => {
                     let EVENT_NAME = 'Event mousedown<right>';
                     let time = VideoClips.length,
-                        video = $('video', true).pop();
+                        video = $.all('video').pop();
 
                     SetQuality('auto').then(() => {
                         video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME });
 
                         alert.timed(`Recording ${ STREAMER.name }...`, time)
                             .then(() => {
-                                let video = $('video', true).pop(),
+                                let video = $.all('video').pop(),
                                     chunks = (video?.getRecording(EVENT_NAME)?.data ?? []);
 
                                 if(chunks.length < 1)
@@ -3744,7 +3795,7 @@ try {
                                 style.textContent = css;
                             });
 
-                    for(let element of $('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', true, DOM))
+                    for(let element of $.all('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', DOM))
                         element.remove();
 
                     let blob = new Blob([
@@ -3789,9 +3840,9 @@ async function update() {
     window.SEARCH = SEARCH = [
         ...SEARCH,
         // Current (followed) streamers
-        ...$(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ PATHNAME }"i])`, true)
+        ...$.all(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ PATHNAME }"i])`)
             .map(element => {
-                let icon = $('img', false, element)?.src;
+                let icon = $('img', element)?.src;
                 let channel = {
                     element,
 
@@ -3808,11 +3859,11 @@ async function update() {
                         if(nullish(parent))
                             return true;
 
-                        let live = $.defined(`[data-test-selector="live-badge"i]`, false, parent);
+                        let live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
                         return live;
                     },
-                    name: $('img', false, element)?.alt,
+                    name: $('img', element)?.alt,
                 };
 
                 element.setAttribute('draggable', true);
@@ -3834,9 +3885,9 @@ async function update() {
     window.CHANNELS = CHANNELS = [
         ...CHANNELS,
         // Current (followed) streamers
-        ...$(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`, true)
+        ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`)
             .map(element => {
-                let icon = $('img', false, element)?.src;
+                let icon = $('img', element)?.src;
                 let streamer = {
                     from: 'CHANNELS',
                     href: element.href,
@@ -3852,11 +3903,11 @@ async function update() {
                             return false;
 
                         let live = defined(parent)
-                                && $.nullish(`[class*="--offline"i]`, false, parent);
+                                && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
                     },
-                    name: $('img', false, element)?.alt,
+                    name: $('img', element)?.alt,
                 };
 
                 element.setAttribute('draggable', true);
@@ -3876,9 +3927,9 @@ async function update() {
     window.STREAMERS = STREAMERS = [
         ...STREAMERS,
         // Current (followed) streamers
-        ...$(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`, true)
+        ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ PATHNAME }"i])`)
             .map(element => {
-                let icon = $('img', false, element)?.src;
+                let icon = $('img', element)?.src;
                 let streamer = {
                     from: 'STREAMERS',
                     href: element.href,
@@ -3894,11 +3945,11 @@ async function update() {
                             return false;
 
                         let live = defined(parent)
-                                && $.nullish(`[class*="--offline"i]`, false, parent);
+                                && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
                     },
-                    name: $('img', false, element)?.alt,
+                    name: $('img', element)?.alt,
                 };
 
                 element.setAttribute('draggable', true);
@@ -3918,14 +3969,14 @@ async function update() {
     window.NOTIFICATIONS = NOTIFICATIONS = [
         ...NOTIFICATIONS,
         // Notification elements
-        ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true).map(
+        ...$.all('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]').map(
             element => {
-                let icon = $('img', false, element)?.src;
+                let icon = $('img', element)?.src;
                 let streamer = {
                     live: true,
-                    href: $('a', false, element)?.href,
+                    href: $('a', element)?.href,
                     icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                    name: $('[class$="text"i]', false, element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                    name: $('[class$="text"i]', element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
                 };
 
                 if(nullish(streamer.name))
@@ -4253,9 +4304,9 @@ let Initialize = async(START_OVER = false) => {
      */
     SEARCH = [
         // Current (followed) streamers
-        ...$(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"i])`, true)
+        ...$.all(`.search-tray a[href^="/"]:not([href*="/search?"i]):not([href$="${ NORMALIZED_PATHNAME }"i]), [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"i])`)
             .map(element => {
-                let icon = $('img', false, element)?.src;
+                let icon = $('img', element)?.src;
                 let channel = {
                     element,
 
@@ -4272,11 +4323,11 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(parent))
                                 return false;
 
-                            let live = $.defined(`[data-test-selector="live-badge"i]`, false, parent);
+                            let live = $.defined(`[data-test-selector="live-badge"i]`, parent);
 
                         return live;
                     },
-                    name: $('img', false, element)?.alt,
+                    name: $('img', element)?.alt,
                 };
 
                 element.setAttribute('draggable', true);
@@ -4500,7 +4551,7 @@ let Initialize = async(START_OVER = false) => {
                 return PostOffice.get('points_receipt_placement')?.coin_face;
 
             let container = balance?.closest('button'),
-                icon = $('img[alt]', false, container);
+                icon = $('img[alt]', container);
 
             return icon?.src
         },
@@ -4512,7 +4563,7 @@ let Initialize = async(START_OVER = false) => {
                 return PostOffice.get('points_receipt_placement')?.coin_name;
 
             let container = balance?.closest('button'),
-                icon = $('img[alt]', false, container);
+                icon = $('img[alt]', container);
 
             return icon?.alt ?? 'Channel Points'
         },
@@ -4567,9 +4618,10 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get mark() {
-            let tags = [];
+            let tags = [],
+                f = furnish;
 
-            $('.tw-tag', true).map(element => {
+            $.all('.tw-tag').map(element => {
                 let { href } = element.closest('a[href]');
 
                 if(parseBool(Settings.show_stats)) {
@@ -4581,7 +4633,24 @@ let Initialize = async(START_OVER = false) => {
                 tags.push(href);
             });
 
-            return scoreTagActivity(...tags)
+            let score = scoreTagActivity(...tags);
+
+            if(parseBool(Settings.show_stats) && $.nullish('#tt-mark-total'))
+                when.defined(() => $('[id*="channel"i][id*="info"i] [class*="metadata"i][class*="support"i] + * div:not([class]) div[class] > *:last-child > div'))
+                    .then(container => $.nullish('#tt-mark-total') && container.append(
+                            f(`#tt-mark-total[style="font-size:var(--font-size-7)!important;display:inline-block!important;margin-bottom:0.5rem!important;margin-left:0.5rem!important;vertical-align:middle!important"]`).with(
+                                f(`a[@score="${ score }" href="#!/score:${ score }" style="display:inline-block;border-radius:var(--border-radius-rounded);font-weight:var(--font-weight-semibold);background-color:var(--color-background-tooltip);border:var(--border-width-tag) solid #0000;color:var(--color-text-tooltip);height:2rem;max-width:100%;text-decoration:none;"]`).with(
+                                    f(`[style="display:flex;-webkit-box-align:center;align-items:center;font-size:var(--font-size-7);padding:0 .8rem;"]`).with(
+                                        f(`[style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden"]`).with(
+                                            f(`span`, {}, `Score: +${ score }`)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    );
+
+            return score
         },
 
         get name() {
@@ -4730,7 +4799,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get sole() {
-            let [channel_id] = $('[data-test-selector="image_test_selector"i]', true).map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
+            let [channel_id] = $.all('[data-test-selector="image_test_selector"i]').map(img => img.src).filter(src => src.contains('/panel-')).map(src => parseURL(src).pathname.split('-', 3).filter(parseFloat)).flat();
 
             return (0
                 || parseInt(channel_id ?? LIVE_CACHE.get('sole'))
@@ -4740,7 +4809,7 @@ let Initialize = async(START_OVER = false) => {
         get tags() {
             let tags = [];
 
-            $('.tw-tag', true).map(element => {
+            $.all('.tw-tag').map(element => {
                 let name = element.textContent.toLowerCase(),
                     { href } = element.closest('a[href]');
 
@@ -4790,7 +4859,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get veto() {
-            return !!$('[id*="banned"i], [class*="banned"i]', true).length
+            return !!$.all('[id*="banned"i], [class*="banned"i]').length
         },
 
         get vods() {
@@ -4799,7 +4868,7 @@ let Initialize = async(START_OVER = false) => {
             return fetchURL.idempotent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                .then(DOM => $('[href*="/videos/"i]:not(:only-child)', true, DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
+                .then(DOM => $.all('[href*="/videos/"i]:not(:only-child)', DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
                 .then(vods => {
                     if(parseBool(vods.length))
                         return vods;
@@ -4809,7 +4878,7 @@ let Initialize = async(START_OVER = false) => {
                         .then(r => r.text())
                         .then(html => {
                             let dom = (new DOMParser).parseFromString(html, 'text/html');
-                            let scripts = $('script[type*="json"i]', true, dom);
+                            let scripts = $.all('script[type*="json"i]', dom);
                             let data = [];
 
                             for(let script of scripts)
@@ -4892,15 +4961,15 @@ let Initialize = async(START_OVER = false) => {
      */
     // Notifications
     NOTIFICATIONS = [
-        ...$('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]', true)
+        ...$.all('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]')
             .map(element =>{
-                let icon = $('img', false, element)?.src;
+                let icon = $('img', element)?.src;
 
                 return {
                     live: true,
-                    href: $('a', false, element)?.href,
+                    href: $('a', element)?.href,
                     icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                    name: $('[class$="text"i]', false, element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
+                    name: $('[class$="text"i]', element)?.textContent?.replace(/([^]+?) +(go(?:ing)?|is|went) +live\b([^$]+)/i, ($0, $1, $$, $_) => $1),
                 };
             }),
     ].filter(uniqueChannels);
@@ -4923,7 +4992,7 @@ let Initialize = async(START_OVER = false) => {
         while(defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]')))
             element.click();
 
-        let ALL_LIVE_SIDE_PANEL_CHANNELS = $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a', true).filter(e => $.nullish('[class*="--offline"i]', false, e));
+        let ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a').filter(e => $.nullish('[class*="--offline"i]', e));
 
         // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
@@ -4934,9 +5003,9 @@ let Initialize = async(START_OVER = false) => {
          */
         ALL_CHANNELS = [
             // Current (followed) streamers
-            ...$(`[id*="side"i][id*="nav"i] .side-nav-section a`, true)
+            ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a`)
                 .map(element => {
-                    let icon = $('img', false, element)?.src;
+                    let icon = $('img', element)?.src;
                     let streamer = {
                         from: 'ALL_CHANNELS',
                         href: element.href,
@@ -4960,11 +5029,11 @@ let Initialize = async(START_OVER = false) => {
                                 return false;
 
                             // The "is it offline" result
-                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, false, parent);
+                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                             return live;
                         },
-                        name: $('img', false, element)?.alt,
+                        name: $('img', element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -4991,9 +5060,9 @@ let Initialize = async(START_OVER = false) => {
          */
         CHANNELS = [
             // Current (followed) streamers
-            ...$(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
                 .map(element => {
-                    let icon = $('img', false, element)?.src;
+                    let icon = $('img', element)?.src;
                     let streamer = {
                         from: 'CHANNELS',
                         href: element.href,
@@ -5008,11 +5077,11 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(parent))
                                 return false;
 
-                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, false, parent);
+                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                             return live;
                         },
-                        name: $('img', false, element)?.alt,
+                        name: $('img', element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -5036,9 +5105,9 @@ let Initialize = async(START_OVER = false) => {
          */
         STREAMERS = [
             // Current streamers
-            ...$(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`, true)
+            ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
                 .map(element => {
-                    let icon = $('img', false, element)?.src;
+                    let icon = $('img', element)?.src;
                     let streamer = {
                         from: 'STREAMERS',
                         href: element.href,
@@ -5053,11 +5122,11 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(parent))
                                 return false;
 
-                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, false, parent);
+                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
                             return live;
                         },
-                        name: $('img', false, element)?.alt,
+                        name: $('img', element)?.alt,
                     };
 
                     element.setAttribute('draggable', true);
@@ -5346,7 +5415,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then(DOM => {
                                     let data = {};
 
-                                    $('dt+dd', true, DOM).map(dd => {
+                                    $.all('dt+dd', DOM).map(dd => {
                                         let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
                                             value = dd.textContent.trim();
 
@@ -5354,7 +5423,7 @@ let Initialize = async(START_OVER = false) => {
                                             /^(followers)$/i.test(name)?
                                                 parseInt(value.replace(/\D/g, '')):
                                             /^((first|last)seen)$/i.test(name)?
-                                                new Date($('time', false, dd).getAttribute('datetime')):
+                                                new Date($('time', dd).getAttribute('datetime')):
                                             value
                                         );
 
@@ -5409,7 +5478,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(dom => {
-                                    let children = $('.conta > :not(:first-child, :last-child)', true, dom);
+                                    let children = $.all('.conta > :not(:first-child, :last-child)', dom);
                                     let obj = { games: {} };
 
                                     let parse = (string = '') =>
@@ -5417,9 +5486,9 @@ let Initialize = async(START_OVER = false) => {
                                             /\b(da?y|h(?:ou)?r|min(?:ute)?)s?\b/i.test(string)?
                                                 parseTime(string.replace(/([a-z\s,]+)/gi, ':').replace(/:?$/, '00')):
                                             /^([-])$/.test(string)?
-                                                0:
+                                                '':
                                             /^\d/.test(string)?
-                                                parseFloat(string.replace(/[^\d\.]+/g, '')):
+                                                parseFloat(string.replace(/[^\d\.]+/g, '')) + '':
                                             /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)?
                                                 new Date(string):
                                             string
@@ -5427,7 +5496,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     parsing:
                                     for(let child of children)
-                                        if($.nullish('#allgames', false, child))
+                                        if($.nullish('#allgames', child))
                                             parsing_stats: for(let grandChild of child.children) {
                                                 let [key, val, ...etc] = grandChild.children;
 
@@ -5464,7 +5533,7 @@ let Initialize = async(START_OVER = false) => {
                                                 }
                                             }
                                         else
-                                            parsing_games: for(let game of $('#allgames > *', true, child)) {
+                                            parsing_games: for(let game of $.all('#allgames > *', child)) {
                                                 let [name, time] = game.children;
 
                                                 obj.games[name.textContent] = parse(time.textContent);
@@ -5617,7 +5686,7 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.auto_accept_mature)) {
         RegisterJob('auto_accept_mature');
 
-        $(`[class*="info"i] [href$="${ STREAMER.name }"i] [class*="title"i], main [href$="${ STREAMER.name }"i]`, true).map(element => {
+        $.all(`[class*="info"i] [href$="${ STREAMER.name }"i] [class*="title"i], main [href$="${ STREAMER.name }"i]`).map(element => {
             element.closest('div[class]').addEventListener('mousedown', async({ isTrusted, button = -1 }) => {
                 !button && (await when.defined(() => $('.home')))?.setAttribute?.('user-intended', IGNORE_ZOOM_STATE = isTrusted);
             })
@@ -5757,7 +5826,7 @@ let Initialize = async(START_OVER = false) => {
             CAPTURE_HISTORY.shift();
 
         CAPTURE_INTERVAL = setInterval(() => {
-            let video = $('video', true).pop();
+            let video = $.all('video').pop();
 
             if(nullish(video))
                 return;
@@ -5923,7 +5992,7 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.auto_focus = () => {
         if(RestartJob.__reason__.unlike('modify'))
-            $('#tt-auto-focus-differences, #tt-auto-focus-stats', true)
+            $.all('#tt-auto-focus-differences, #tt-auto-focus-stats')
                 .forEach(element => element.remove());
 
         clearInterval(CAPTURE_INTERVAL);
@@ -5963,7 +6032,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Alt + A | Opt + A
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A))
-            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_A = function Toggle_Lurking({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('a'))
                     $('#away-mode')?.click?.();
             });
@@ -6000,7 +6069,7 @@ let Initialize = async(START_OVER = false) => {
             switch(placement) {
                 // Option 1 "over" - video overlay, play button area
                 case 'over': {
-                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child', false);
+                    sibling = $('[data-a-target="player-controls"i] [class*="player-controls"i][class*="right-control-group"i] > :last-child');
                     parent = sibling?.parentElement;
                     before = 'first';
                     extra = ({ container }) => {
@@ -6016,7 +6085,7 @@ let Initialize = async(START_OVER = false) => {
                     before = 'last';
                     extra = ({ container }) => {
                         // Remove extra classes
-                        let classes = $('button', false, container)?.closest('div')?.classList ?? [];
+                        let classes = $('button', container)?.closest('div')?.classList ?? [];
 
                         [...classes].map(value => {
                             if(/[-_]/.test(value))
@@ -6045,8 +6114,8 @@ let Initialize = async(START_OVER = false) => {
             if(['over'].contains(placement)) {
                 container.firstElementChild.classList.remove('tt-mg-l-1');
             } else if(['under'].contains(placement)) {
-                $('span', false, container)?.remove();
-                $('[style]', false, container)?.setAttribute('style', 'opacity: 1; transform: translateX(15%) translateZ(0px);')
+                $('span', container)?.remove();
+                $('[style]', container)?.setAttribute('style', 'opacity: 1; transform: translateX(15%) translateZ(0px);')
             }
 
             extra({ container, sibling, parent, before, placement });
@@ -6054,8 +6123,8 @@ let Initialize = async(START_OVER = false) => {
             button = {
                 enabled,
                 container,
-                icon: $('svg', false, container),
-                background: $('button', false, container),
+                icon: $('svg', container),
+                background: $('button', container),
                 get offset() { return getOffset(container) },
                 tooltip: new Tooltip(container, `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`, { from: 'top', left: +5 }),
             };
@@ -6063,22 +6132,22 @@ let Initialize = async(START_OVER = false) => {
             // button.tooltip.id = new UUID().toString().replace(/-/g, '');
             button.container.setAttribute('tt-away-mode-enabled', enabled);
 
-            button.icon ??= $('svg', false, container);
+            button.icon ??= $('svg', container);
             button.icon.outerHTML = [
                 Glyphs.modify('show', { id: 'tt-away-mode--show', height: '20px', width: '20px' }).toString(),
                 Glyphs.modify('hide', { id: 'tt-away-mode--hide', height: '20px', width: '20px' }).toString(),
             ].filter(defined).join('');
-            button.icon = $('svg', false, container);
+            button.icon = $('svg', container);
         } else {
             let container = $('#away-mode');
 
             button = {
                 enabled,
                 container,
-                icon: $('svg', false, container),
+                icon: $('svg', container),
                 tooltip: Tooltip.get(container),
                 get offset() { return getOffset(container) },
-                background: $('button', false, container),
+                background: $('button', container),
             };
         }
 
@@ -6164,9 +6233,9 @@ let Initialize = async(START_OVER = false) => {
 
         button.container.onmouseenter ??= event => {
             let { currentTarget } = event,
-                svgContainer = $('figure', false, currentTarget),
-                svgShow = $('svg#tt-away-mode--show', false, svgContainer),
-                svgHide = $('svg#tt-away-mode--hide', false, svgContainer);
+                svgContainer = $('figure', currentTarget),
+                svgShow = $('svg#tt-away-mode--show', svgContainer),
+                svgHide = $('svg#tt-away-mode--hide', svgContainer);
             let enabled = parseBool(currentTarget.closest('#away-mode').getAttribute('tt-away-mode-enabled'));
 
             svgShow?.setAttribute('preview', !enabled);
@@ -6175,9 +6244,9 @@ let Initialize = async(START_OVER = false) => {
 
         button.container.onmouseleave ??= event => {
             let { currentTarget } = event,
-                svgContainer = $('figure', false, currentTarget),
-                svgShow = $('svg#tt-away-mode--show', false, svgContainer),
-                svgHide = $('svg#tt-away-mode--hide', false, svgContainer);
+                svgContainer = $('figure', currentTarget),
+                svgShow = $('svg#tt-away-mode--show', svgContainer),
+                svgHide = $('svg#tt-away-mode--hide', svgContainer);
 
             svgShow?.removeAttribute('preview');
             svgHide?.removeAttribute('preview');
@@ -6285,21 +6354,21 @@ let Initialize = async(START_OVER = false) => {
     Handlers.claim_loot = () => {
         let container = $('.prime-offers');
 
-        if(parseInt($('[class*="pill"i]', false, container)?.textContent || 0) <= 0)
+        if(parseInt($('[class*="pill"i]', container)?.textContent || 0) <= 0)
             return;
-        let button = $('button', false, container);
+        let button = $('button', container);
 
         button.click();
 
         // Give the loots time to load
         let waiter = setInterval(() => {
-            let stop = $('[href*="gaming.amazon.com"]', true).length;
+            let stop = $.all('[href*="gaming.amazon.com"]').length;
 
             if(!stop) return;
 
             clearInterval(waiter);
 
-            $('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button', true).map(button => button.click());
+            $.all('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button').map(button => button.click());
 
             // Give the loots time to be clicked
             wait(100 * stop, button).then(button => button.click());
@@ -6482,7 +6551,7 @@ let Initialize = async(START_OVER = false) => {
                 let emoteCheckout = $('[class*="unlock"i][class*="emote"i][class*="checkout"i]');
 
                 if(defined(emoteCheckout))
-                    when.sated(() => $('[data-test-selector^="emote"i]', true, emoteCheckout))
+                    when.sated(() => $.all('[data-test-selector^="emote"i]', emoteCheckout))
                         .then(async available => {
                             available = available.length;
 
@@ -6508,7 +6577,7 @@ let Initialize = async(START_OVER = false) => {
                                         count *= +$.defined('[class*="reward-center"i]');
 
                                         if(count > 0)
-                                            when.defined(() => $('[class*="unlock"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]', true)?.random()?.closest('button'))
+                                            when.defined(() => $.all('[class*="unlock"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]')?.random()?.closest('button'))
                                                 .then(emote => {
                                                     emote.click();
 
@@ -6537,7 +6606,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             Wallet_Display: {
-                let rewards = $('.rewards-list .reward-list-item:not([tt-wallet])', true);
+                let rewards = $.all('.rewards-list .reward-list-item:not([tt-wallet])');
 
                 if(rewards.length < 1)
                     break Wallet_Display;
@@ -6546,9 +6615,9 @@ let Initialize = async(START_OVER = false) => {
                     AutoClaimRewards ??= {};
 
                     rewards.map(async reward => {
-                        let $image = $('img', false, reward)?.src,
-                            $cost = parseCoin($('[data-test-selector="cost"i]', false, reward)?.textContent),
-                            $title = ($('button ~ * [title]', false, reward)?.textContent || '').trim();
+                        let $image = $('img', reward)?.src,
+                            $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent),
+                            $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
 
                         let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
                             (false
@@ -6558,7 +6627,7 @@ let Initialize = async(START_OVER = false) => {
                         );
 
                         // Variable animataion speed depending on "completion" percentage
-                        let child = $('[data-test-selector="cost"i]', false, reward);
+                        let child = $('[data-test-selector="cost"i]', reward);
 
                         // Rainbow border
                         child.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
@@ -6580,10 +6649,10 @@ let Initialize = async(START_OVER = false) => {
                 AutoClaimRewards ??= {};
 
                 let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
-                    $title = ($('#channel-points-reward-center-header', false, head)?.textContent || '').trim(),
-                    $prompt = ($('.reward-center-body p', false, body)?.textContent || '').trim(),
-                    $image = $('.reward-icon img', false, body)?.src,
-                    [$cost = 0] = (($('[state]', false, body) ?? $('[class*="reward"i][class*="header"i]', false, head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
+                    $title = ($('#channel-points-reward-center-header', head)?.textContent || '').trim(),
+                    $prompt = ($('.reward-center-body p', body)?.textContent || '').trim(),
+                    $image = $('.reward-icon img', body)?.src,
+                    [$cost = 0] = (($('[state]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
                 let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
                     (false
@@ -6605,8 +6674,8 @@ let Initialize = async(START_OVER = false) => {
                     'Buy when available'
                 );
 
-                $('[id$="header"i], [class*="header"i]', false, head)?.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
-                $('[id$="header"i], [class*="header"i]', false, head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
+                $('[id$="header"i], [class*="header"i]', head)?.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
+                $('[id$="header"i], [class*="header"i]', head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
 
                 container.insertAdjacentElement('afterend',
                     f(`#tt-auto-claim-reward-handler[data-tt-reward-id=${ rewardID }]`).with(
@@ -6720,7 +6789,7 @@ let Initialize = async(START_OVER = false) => {
         let { href, pathname } = url,
             name = pathname.slice(1),
             channel = await(null
-                ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                 ?? new Search(name).then(Search.convertResults)
             );
 
@@ -6731,7 +6800,7 @@ let Initialize = async(START_OVER = false) => {
 
         FIRST_IN_LINE_HREF = href;
         GetNextStreamer.cachedStreamer = channel;
-        name = channel.name;
+        name = (channel.name?.equals(name)? channel.name: name);
 
         if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
@@ -6756,10 +6825,14 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
+            let url = parseURL(FIRST_IN_LINE_HREF);
             let { name } = GetNextStreamer.cachedStreamer;
 
+            if(url.pathname.slice(1).unlike(name))
+                name = url.pathname.slice(1);
+
             confirm
-                .timed(`<div hidden controller title="${ (Settings.stream_preview? `Up next: ${ name }`: 'Coming up next...') }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview? '': `Up next: <a href="${ FIRST_IN_LINE_HREF }">${ name }</a>`) }`, timeRemaining)
+                .timed(`<div hidden controller title="${ (Settings.stream_preview? `Up next: ${ name }`: 'Coming up next...') }" okay="Go now" deny="Skip ${ name }"></div>${ (Settings.stream_preview? '': `Up next: <a href="${ url.href }">${ name }</a>`) }`, timeRemaining)
                 .then(action => {
                     if(nullish(action))
                         return /* The event timed out... */;
@@ -6786,7 +6859,7 @@ let Initialize = async(START_OVER = false) => {
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="${ pathname }"i]`),
                                 animationID = (balloonChild?.getAttribute('animationID')) || -1;
 
-                            $(`button[data-test-selector$="delete"i]`, false, balloonChild)?.click();
+                            $(`button[data-test-selector$="delete"i]`, balloonChild)?.click();
 
                             clearInterval(animationID);
                             balloonChild?.remove();
@@ -6996,7 +7069,7 @@ let Initialize = async(START_OVER = false) => {
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                    $(`[up-next--body] [time]`, true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
+                    $.all(`[up-next--body] [time]`).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
 
                     SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
                 },
@@ -7089,7 +7162,7 @@ let Initialize = async(START_OVER = false) => {
                             let { length } = reminders;
                             let { name, time } = reminders[index];
                             let channel = await(null
-                                ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                                ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                                 ?? new Search(name).then(Search.convertResults)
                             ),
                                 ok = channel.icon?.pathname?.startsWith('/jtv_user');
@@ -7313,8 +7386,8 @@ let Initialize = async(START_OVER = false) => {
                                 )
                             );
 
-                            let lastOnline = $('.tt-reminder[live="true"i]', true, body).pop(),
-                                firstOffline = $('.tt-reminder[live="false"i]:first-child', false, body);
+                            let lastOnline = $.all('.tt-reminder[live="true"i]', body).pop(),
+                                firstOffline = $('.tt-reminder[live="false"i]:first-child', body);
 
                             if(defined(firstOffline) && live)
                                 firstOffline.insertAdjacentElement('beforebegin', container);
@@ -7351,8 +7424,8 @@ let Initialize = async(START_OVER = false) => {
 
             LIVE_REMINDERS__LISTING_INTERVAL ??=
             setInterval(() => {
-                for(let span of $('.tt-time-elapsed', true))
-                    span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), 'clock');
+                for(let span of $.all('.tt-time-elapsed'))
+                    span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), '?hour:!minute:!second').replace(/^\d:/, '0$&');
             }, 1000);
 
             // Help Button
@@ -7415,14 +7488,16 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                REMARK(`Up Next Boost is ${ ['dis','en'][FIRST_IN_LINE_BOOST | 0] }abled`);
-
                 if(FIRST_IN_LINE_BOOST) {
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(Math.min(GET_TIME_REMAINING(), fiveMin));
 
-                    wait(5000).then(() => $('[up-next--body] [time]:not([index="0"])', true).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)));
+                    wait(5000).then(() => $.all('[up-next--body] [time]:not([index="0"])').forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)));
 
                     SaveCache({ FIRST_IN_LINE_DUE_DATE });
+
+                    REMARK(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname.slice(1) }"`);
+                } else {
+                    REMARK(`Up Next Boost is disabled`);
                 }
 
                 // Up Next Boost
@@ -7611,7 +7686,7 @@ let Initialize = async(START_OVER = false) => {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
                             name = parseURL(href).pathname.slice(1),
                             channel = await(null
-                                ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                                ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                                 ?? new Search(name).then(Search.convertResults)
                             );
 
@@ -7665,7 +7740,7 @@ let Initialize = async(START_OVER = false) => {
                             },
 
                             animate: container => {
-                                let subheader = $('.tt-balloon-subheader', false, container);
+                                let subheader = $('.tt-balloon-subheader', container);
 
                                 return setInterval(async() => {
                                     START__STOP_WATCH('up_next_balloon__subheader_timer_animation');
@@ -7684,7 +7759,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     let name = container.getAttribute('name'),
                                         channel = await(null
-                                            ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => name.equals(channel.name))
+                                            ?? ALL_CHANNELS.find(channel => name.equals(channel.name))
                                             ?? new Search(name).then(Search.convertResults)
                                         ),
                                         { live } = channel;
@@ -7692,8 +7767,8 @@ let Initialize = async(START_OVER = false) => {
 
                                     let time = timeRemaining,
                                         intervalID = parseInt(container.getAttribute('animationID')),
-                                        index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container),
-                                        anchor = $('a[connected-to]', true, container.parentElement)[index];
+                                        index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container),
+                                        anchor = $.all('a[connected-to]', container.parentElement)[index];
 
                                     if(anchor.hasAttribute('new-href')) {
                                         let href = anchor.getAttribute('new-href');
@@ -7723,7 +7798,7 @@ let Initialize = async(START_OVER = false) => {
                                                 WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
                                                     ?.toNativeStack?.();
 
-                                                open($('a', false, container)?.href ?? '?', '_self');
+                                                open($('a', container)?.href ?? '?', '_self');
                                             });
 
                                             return clearInterval(intervalID);
@@ -7736,11 +7811,11 @@ let Initialize = async(START_OVER = false) => {
 
                                     let theme = { light: 'w', dark: 'b' }[THEME];
 
-                                    $('a', false, container)
+                                    $('a', container)
                                         .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
                                     if(container.getAttribute('live') != (live + '')) {
-                                        $('.tt-balloon-message', false, container).innerHTML =
+                                        $('.tt-balloon-message', container).innerHTML =
                                             `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
                                         container.setAttribute('style', `opacity: ${ 2**-!live }!important`);
                                         container.setAttribute('live', live);
@@ -7755,7 +7830,7 @@ let Initialize = async(START_OVER = false) => {
                             ?? [];
                     }
 
-                    FIRST_IN_LINE_BALLOON.counter.setAttribute('length', $(`[up-next--body] [time]`, true).length);
+                    FIRST_IN_LINE_BALLOON.counter.setAttribute('length', $.all(`[up-next--body] [time]`).length);
                 }, 1000);
         }
     }, 1000);
@@ -7776,7 +7851,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.first_in_line = async(ActionableNotification) => {
         START__STOP_WATCH('first_in_line');
 
-        let notifications = [...$('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]', true), ActionableNotification].filter(defined);
+        let notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
@@ -7788,7 +7863,7 @@ let Initialize = async(START_OVER = false) => {
         for(let notification of notifications) {
             let action = (
                 notification instanceof Element?
-                    $('a[href^="/"]', false, notification):
+                    $('a[href^="/"]', notification):
                 notification
             );
 
@@ -7808,7 +7883,7 @@ let Initialize = async(START_OVER = false) => {
 
             if(true
                 && !/\blive\b/i.test(textContent)
-                && $.nullish('[class*="toast"i][class*="action"i]', false, notification)
+                && $.nullish('[class*="toast"i][class*="action"i]', notification)
             )
                 continue;
 
@@ -7852,7 +7927,7 @@ let Initialize = async(START_OVER = false) => {
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(href),
                     name = parseURL(href).pathname.slice(1),
                     channel = await(null
-                        ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => channel.name.equals(name))
+                        ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                         ?? new Search(name).then(Search.convertResults)
                     );
 
@@ -7907,7 +7982,7 @@ let Initialize = async(START_OVER = false) => {
                     },
 
                     animate: container => {
-                        let subheader = $('.tt-balloon-subheader', false, container);
+                        let subheader = $('.tt-balloon-subheader', container);
 
                         if(!UP_NEXT_ALLOW_THIS_TAB)
                             return -1;
@@ -7931,7 +8006,7 @@ let Initialize = async(START_OVER = false) => {
 
                             let name = container.getAttribute('name'),
                                 channel = await(null
-                                    ?? ALL_CHANNELS.sort(channel => -channel.live).find(channel => name.equals(channel.name))
+                                    ?? ALL_CHANNELS.find(channel => name.equals(channel.name))
                                     ?? new Search(name).then(Search.convertResults)
                                 ),
                                 { live } = channel;
@@ -7939,8 +8014,8 @@ let Initialize = async(START_OVER = false) => {
 
                             let time = timeRemaining,
                                 intervalID = parseInt(container.getAttribute('animationID')),
-                                index = $('[id][guid][uuid]', true, container.parentElement).indexOf(container),
-                                anchor = $('a[connected-to]', true, container.parentElement)[index];
+                                index = $.all('[id][guid][uuid]', container.parentElement).indexOf(container),
+                                anchor = $.all('a[connected-to]', container.parentElement)[index];
 
                             if(anchor.hasAttribute('new-href')) {
                                 let href = anchor.getAttribute('new-href');
@@ -7970,7 +8045,7 @@ let Initialize = async(START_OVER = false) => {
                                     SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
                                         WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`);
 
-                                        open($('a', false, container)?.href ?? '?', '_self');
+                                        open($('a', container)?.href ?? '?', '_self');
                                     });
 
                                     return clearInterval(intervalID);
@@ -7983,11 +8058,11 @@ let Initialize = async(START_OVER = false) => {
 
                             let theme = { light: 'w', dark: 'b' }[THEME];
 
-                            $('a', false, container)
+                            $('a', container)
                                 .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
 
                             if(container.getAttribute('live') != (live + '')) {
-                                $('.tt-balloon-message', false, container).innerHTML =
+                                $('.tt-balloon-message', container).innerHTML =
                                     `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
                                 container.setAttribute('style', `opacity: ${ 2**-!live }!important`);
                                 container.setAttribute('live', live);
@@ -8320,7 +8395,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(actionPanel))
             return JUDGE__STOP_WATCH('live_reminders');
 
-        let action = $('[tt-svg-label="live-reminders"i], [tt-action="live-reminders"i]', false, actionPanel);
+        let action = $('[tt-svg-label="live-reminders"i], [tt-action="live-reminders"i]', actionPanel);
 
         if(defined(action))
             return JUDGE__STOP_WATCH('live_reminders');
@@ -8376,9 +8451,9 @@ let Initialize = async(START_OVER = false) => {
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
-                            $('.tt-action-icon', false, currentTarget).innerHTML = icon;
-                            $('.tt-action-title', false, currentTarget).textContent = title;
-                            $('.tt-action-subtitle', false, currentTarget).textContent = subtitle;
+                            $('.tt-action-icon', currentTarget).innerHTML = icon;
+                            $('.tt-action-title', currentTarget).textContent = title;
+                            $('.tt-action-subtitle', currentTarget).textContent = subtitle;
 
                             // Add the reminder...
                             let message;
@@ -8415,7 +8490,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.live_reminders = -2_500;
 
     Unhandlers.live_reminders = () => {
-        $('[tt-action="live-reminders"i]', true).map(action => action.remove());
+        $.all('[tt-action="live-reminders"i]').map(action => action.remove());
         [LIVE_REMINDERS__CHECKING_INTERVAL, LIVE_REMINDERS__LISTING_INTERVAL].map(clearInterval);
     };
 
@@ -8605,15 +8680,15 @@ let Initialize = async(START_OVER = false) => {
                                         ),
                                         // Subtitle
                                         f('.tt-ellipsis').with(
-                                            f('p.tt-c-text-alt-2[@testSelector=chat-card-description]', { style: 'white-space:break-spaces' }, description)
+                                            f('p.tt-c-text-alt-2[@testSelector=chat-card-description]', { style: 'white-space:break-spaces' }).with(description)
                                         ),
                                         // Footer
-                                        f('.tt-ellipsis').with(
+                                        f('#tt-purchase-container.tt-ellipsis').with(
                                             f.br(),
                                             f('#tt-steam-purchase'),
-                                            f('#tt-nintendo-purchase'),
                                             f('#tt-playstation-purchase'),
                                             f('#tt-xbox-purchase'),
+                                            f('#tt-nintendo-purchase'),
                                         )
                                     )
                                 )
@@ -8665,6 +8740,9 @@ let Initialize = async(START_OVER = false) => {
                 // Removes symbols like ™ ® © etc.
                 let NON_ASCII = /[^\p{L}\d `\-=~!@#\$%^&\*\(\)\+\{\}\|\[\]\\:;"'<>\?,\.\/]/gu;
 
+                // The item can not be found
+                const ITEM_NOT_FOUND = Symbol('NOT_FOUND');
+
                 /*** Get the Steam link (if applicable)
                  *       _____ _
                  *      / ____| |
@@ -8680,11 +8758,11 @@ let Initialize = async(START_OVER = false) => {
                         .then(r => r.text())
                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                         .then(DOM => {
-                            for(let item of $('[data-ds-appid]', true, DOM)) {
+                            for(let item of $.all('[data-ds-appid]', DOM)) {
                                 let href = item.href,
-                                    name = $('[class*="name"i]', false, item).textContent.replace(NON_ASCII, ''),
-                                    img = $('[class*="img"i] img', false, item).src,
-                                    price = $('[class*="price"i]', false, item).textContent || 'More...';
+                                    name = $('[class*="name"i]', item).textContent.replace(NON_ASCII, ''),
+                                    img = $('[class*="img"i] img', item).src,
+                                    price = $('[class*="price"i]', item).textContent || 'More...';
 
                                 if(game.errs(name) < .01)
                                     return { game, name, href, img, price };
@@ -8714,7 +8792,7 @@ let Initialize = async(START_OVER = false) => {
                                 )
                             );
 
-                        // $('.tt-store-purchase--price', false, purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
+                        // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
 
                         when.defined(() => $('#tt-steam-purchase'))
                             .then(container => {
@@ -8730,8 +8808,8 @@ let Initialize = async(START_OVER = false) => {
                                             // Or... The content descriptor will be defined
 
                                             // Too much text...
-                                            // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', false, DOM)?.textContent
-                                            || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', false, DOM)
+                                            // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
+                                            || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
                                         )
                                     })
                                     .catch(error => {
@@ -8747,7 +8825,7 @@ let Initialize = async(START_OVER = false) => {
                         WARN(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
                     });
 
-                /*** Get the PlayStation link (if applicable)
+                /*** Get the PlayStation link (if applicable) · 1,662 Games 2022-11-22 16:37 CST
                  *      _____  _              _____ _        _   _
                  *     |  __ \| |            / ____| |      | | (_)
                  *     | |__) | | __ _ _   _| (___ | |_ __ _| |_ _  ___  _ __
@@ -8757,40 +8835,74 @@ let Initialize = async(START_OVER = false) => {
                  *                      __/ |
                  *                     |___/
                  */
+                let PlayStationRegExp = /\bPS\s*(\d|one|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i,
+                    // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+
+                    XboxRegExp = /\bXbox\s*(\d+|live|one\s*(series\s*)?([x\|s]+\s*)?(enhanced)?)?.*$/i,
+                    // Removes common trademarks → Xbox,Xbox 360,Xbox Live,Xbox One,Xbox One X|S,Xbox One X,Xbox One X Enhanced,Xbox One S,Xbox One Series X|S,Xbox One Series X,Xbox One Series X Enhanced,Xbox One Series S
+
+                    NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i;
+                    // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
+
                 async function fetchPlayStationGame(index = 1, pages = 1) {
                     return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
-                            for(let item of data)
-                                if(false
-                                    || item.name.equals(game)
-                                    || item.name
+                            let [best, ...othr] = data.sort((prev, next) =>
+                                prev.name
+                                    .replace(NON_ASCII, '')
+                                    .replace(PlayStationRegExp, '')
+                                    .errs(game)
+                                - next.name
+                                    .replace(NON_ASCII, '')
+                                    .replace(PlayStationRegExp, '')
+                                    .errs(game)
+                            )
+                                .slice(0, 60)
+                                .sort((prev, next) =>
+                                    prev.name
                                         .replace(NON_ASCII, '')
-                                        // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                        .replace(/\bPS\s*(\d|one|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i, '')
-                                        .errs(game) < .01
-                                ) return ({
-                                    game,
-                                    name: item.name,
-                                    href: item.href,
-                                    img: item.image,
-                                    price: item.price,
-                                });
+                                        .replace(PlayStationRegExp, '')
+                                        .distanceFrom(game)
+                                    - next.name
+                                        .replace(NON_ASCII, '')
+                                        .replace(PlayStationRegExp, '')
+                                        .distanceFrom(game)
+                                );
 
-                            throw Symbol.search;
+                            if(false
+                                || best.name.equals(game)
+                                || best.name
+                                    .replace(NON_ASCII, '')
+                                    .replace(PlayStationRegExp, '')
+                                    .trim()
+                                    .equals(game)
+                                || best.name
+                                    .replace(NON_ASCII, '')
+                                    .replace(PlayStationRegExp, '')
+                                    .errs(game) < .1
+                            ) return ({
+                                game,
+                                name: best.name,
+                                href: best.href,
+                                img: best.image,
+                                price: best.price,
+                            });
+
+                            throw ITEM_NOT_FOUND;
                         })
                         .catch(error => {
                             // Fallback: Search the store normally
-                            if(error == Symbol.search)
+                            if(error == ITEM_NOT_FOUND)
                                 return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ lang }/search/${ gameURI }/${ index }`)
                                     .then(r => r.text())
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(async DOM => {
                                         return /* TODO: Get this to work without again */;
 
-                                        let items = JSON.parse($('script[id*="data"i]', false, DOM)?.textContent || null)?.props?.apolloState;
+                                        let items = JSON.parse($('script[id*="data"i]', DOM)?.textContent || null)?.props?.apolloState;
 
-                                        pages = parseInt($('[data-qa*="#page"i]', true, DOM).pop()?.value) || pages;
+                                        pages = parseInt($.all('[data-qa*="#page"i]', DOM).pop()?.value) || pages;
 
                                         for(let item in items)
                                             if(/^Product:/i.test(item)) {
@@ -8798,11 +8910,19 @@ let Initialize = async(START_OVER = false) => {
 
                                                 if(true
                                                     && item?.storeDisplayClassification?.toLowerCase()?.contains('game')
-                                                    && item?.name
-                                                        ?.replace(NON_ASCII, '')
-                                                        // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                                        ?.replace(/\bPS\s*(\d|one|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i, '')
-                                                        ?.errs(game) < .01
+                                                    && (false
+                                                        || item?.name?.equals(
+                                                            game
+                                                                ?.replace(NON_ASCII, '')
+                                                                // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+                                                                ?.replace(PlayStationRegExp, '')
+                                                        )
+                                                        || item?.name
+                                                            ?.replace(NON_ASCII, '')
+                                                            // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+                                                            ?.replace(PlayStationRegExp, '')
+                                                            ?.errs(game) < .01
+                                                    )
                                                 )
                                                     return {
                                                         game,
@@ -8836,13 +8956,13 @@ let Initialize = async(START_OVER = false) => {
                                 // Price
                                 f('.tt-store-purchase--price').with(price),
 
-                                // Link to Steam
+                                // Link to PlayStation
                                 f('.tt-store-purchase--handler').with(
                                     f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
                                 )
                             );
 
-                        // $('.tt-store-purchase--price', false, purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+                        // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
 
                         when.defined(() => $('#tt-playstation-purchase'))
                             .then(container => {
@@ -8851,7 +8971,7 @@ let Initialize = async(START_OVER = false) => {
                                     .then(r => r.text())
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(DOM => {
-                                        let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', false, DOM)?.textContent;
+                                        let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent;
 
                                         if(!data?.length)
                                             return;
@@ -8881,7 +9001,7 @@ let Initialize = async(START_OVER = false) => {
                         WARN(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
                     });
 
-                    /*** Get the Xbox link (if applicable)
+                    /*** Get the Xbox link (if applicable) · 2,964 Games 2022-11-22 16:37 CST
                      *     __   ___
                      *     \ \ / / |
                      *      \ V /| |__   _____  __
@@ -8895,27 +9015,52 @@ let Initialize = async(START_OVER = false) => {
                         return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
-                                for(let item of data)
-                                    if(false
-                                        || item.name.equals(game)
-                                        || item.name
+                                let [best, ...othr] = data.sort((prev, next) =>
+                                    prev.name
+                                        .replace(NON_ASCII, '')
+                                        .replace(XboxRegExp, '')
+                                        .errs(game)
+                                    - next.name
+                                        .replace(NON_ASCII, '')
+                                        .replace(XboxRegExp, '')
+                                        .errs(game)
+                                )
+                                    .slice(0, 60)
+                                    .sort((prev, next) =>
+                                        prev.name
                                             .replace(NON_ASCII, '')
-                                            // Removes common trademarks → Xbox,Xbox 360,Xbox Live,Xbox One,Xbox One X|S,Xbox One X,Xbox One X Enhanced,Xbox One S,Xbox One Series X|S,Xbox One Series X,Xbox One Series X Enhanced,Xbox One Series S
-                                            .replace(/\bXbox\s*(\d+|live|one\s*(series\s*)?([x\|s]+\s*)?(enhanced)?)?.*$/i, '')
-                                            .errs(game) < .01
-                                    ) return ({
-                                        game,
-                                        name: item.name,
-                                        href: item.href,
-                                        img: item.image,
-                                        price: item.price,
-                                    });
+                                            .replace(XboxRegExp, '')
+                                            .distanceFrom(game)
+                                        - next.name
+                                            .replace(NON_ASCII, '')
+                                            .replace(XboxRegExp, '')
+                                            .distanceFrom(game)
+                                    );
 
-                                throw Symbol.search;
+                                if(false
+                                    || best.name.equals(game)
+                                    || best.name
+                                        .replace(NON_ASCII, '')
+                                        .replace(XboxRegExp, '')
+                                        .trim()
+                                        .equals(game)
+                                    || best.name
+                                        .replace(NON_ASCII, '')
+                                        .replace(XboxRegExp, '')
+                                        .errs(game) < .1
+                                ) return ({
+                                    game,
+                                    name: best.name,
+                                    href: best.href,
+                                    img: best.image,
+                                    price: best.price,
+                                });
+
+                                throw ITEM_NOT_FOUND;
                             })
                             .catch(error => {
                                 // Fallback: Search the store normally
-                                if(error == Symbol.search)
+                                if(error == ITEM_NOT_FOUND)
                                     return /*await*/ fetchURL.idempotent(`https://www.microsoft.com/msstoreapiprod/api/autosuggest?market=${ lang }&sources=DCatAll-Products&filter=%2BClientType%3AStoreWeb&query=${ gameURI }`)
                                         .then(r => r.json())
                                         .then(json => {
@@ -8960,7 +9105,7 @@ let Initialize = async(START_OVER = false) => {
                                     )
                                 );
 
-                            // $('.tt-store-purchase--price', false, purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
+                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
 
                             when.defined(() => $('#tt-xbox-purchase'))
                                 .then(container => {
@@ -8970,15 +9115,15 @@ let Initialize = async(START_OVER = false) => {
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
                                             let price = (null
-                                                ?? $('[itemprop="price"i]', false, DOM)?.content
+                                                ?? $('[itemprop="price"i]', DOM)?.content
                                                 ?? (null
-                                                    ?? $('[class^="price-mod"i][class*="discount"i]', false, DOM)
-                                                    ?? $('[class^="price-mod"i][class*="original"i]', false, DOM)
-                                                    ?? $('[class^="price-mod"i]', false, DOM)
-                                                    ?? $('[class$="price-text"i] *', false, DOM)
+                                                    ?? $('[class^="price-mod"i][class*="discount"i]', DOM)
+                                                    ?? $('[class^="price-mod"i][class*="original"i]', DOM)
+                                                    ?? $('[class^="price-mod"i]', DOM)
+                                                    ?? $('[class$="price-text"i] *', DOM)
                                                 )?.textContent?.trim()
                                             );
-                                            let rating = $('[class*="age"i][class*="rating"i] img', false, DOM),
+                                            let rating = $('[class*="age"i][class*="rating"i] img', DOM),
                                                 mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
 
                                             rating.modStyle(RATING_STYLING);
@@ -9057,6 +9202,264 @@ let Initialize = async(START_OVER = false) => {
                         .catch(error => {
                             WARN(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
                         });
+
+                        /*** Get the Nintendo link (if applicable) · 10,507 Games 2022-11-22 16:37 CST
+                         *      _   _ _       _                 _
+                         *     | \ | (_)     | |               | |
+                         *     |  \| |_ _ __ | |_ ___ _ __   __| | ___
+                         *     | . ` | | '_ \| __/ _ \ '_ \ / _` |/ _ \
+                         *     | |\  | | | | | ||  __/ | | | (_| | (_) |
+                         *     |_| \_|_|_| |_|\__\___|_| |_|\__,_|\___/
+                         *
+                         *
+                         */
+                        async function fetchNintendoGame(game) {
+                            return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                                .then(r => r.json())
+                                .then(data => {
+                                    let [best, ...othr] = data.sort((prev, next) =>
+                                        prev.name
+                                            .replace(NON_ASCII, '')
+                                            .replace(NintendoRegExp, '')
+                                            .errs(game)
+                                        - next.name
+                                            .replace(NON_ASCII, '')
+                                            .replace(NintendoRegExp, '')
+                                            .errs(game)
+                                    )
+                                        .slice(0, 60)
+                                        .sort((prev, next) =>
+                                            prev.name
+                                                .replace(NON_ASCII, '')
+                                                .replace(NintendoRegExp, '')
+                                                .distanceFrom(game)
+                                            - next.name
+                                                .replace(NON_ASCII, '')
+                                                .replace(NintendoRegExp, '')
+                                                .distanceFrom(game)
+                                        );
+
+                                    if(false
+                                        || best.name.equals(game)
+                                        || best.name
+                                            .replace(NON_ASCII, '')
+                                            .replace(NintendoRegExp, '')
+                                            .trim()
+                                            .equals(game)
+                                        || best.name
+                                            .replace(NON_ASCII, '')
+                                            .replace(NintendoRegExp, '')
+                                            .errs(game) < .07
+                                    ) return ({
+                                        game,
+                                        name: best.name,
+                                        href: best.href,
+                                        img: best.image,
+                                        price: best.price,
+                                        rating: best.rating,
+                                    });
+
+                                    throw ITEM_NOT_FOUND;
+                                })
+                                .catch(error => {
+                                    // Fallback: Search the store normally
+                                    if(error == ITEM_NOT_FOUND)
+                                        return /*await*/ fetchURL.idempotent(`https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.14.2)%3B%20Browser%3B%20JS%20Helper%20(3.11.1)%3B%20react%20(17.0.2)%3B%20react-instantsearch%20(6.38.0)`, {
+                                            headers: {
+                                                'accept': '*/*',
+                                                'accept-language': 'en-US,en;q=0.9',
+                                                'content-type': 'application/x-www-form-urlencoded',
+                                                'sec-ch-ua': '"Google Chrome";v="107", "Chromium";v="107", "Not=A?Brand";v="24"',
+                                                'sec-ch-ua-mobile': '?0',
+                                                'sec-ch-ua-platform': '"Windows"',
+                                                'sec-fetch-dest': 'empty',
+                                                'sec-fetch-mode': 'cors',
+                                                'sec-fetch-site': 'cross-site',
+                                                'x-algolia-api-key': 'a29c6927638bfd8cee23993e51e721c9',
+                                                'x-algolia-application-id': 'U3B6GR4UA3'
+                                            },
+                                            referrer: 'https://www.nintendo.com/',
+                                            referrerPolicy: 'strict-origin-when-cross-origin',
+                                            body: JSON.stringify({
+                                                    requests: [{
+                                                    indexName: 'store_all_products_en_us',
+                                                    query: game,
+                                                    params: encodeURI`filters=&hitsPerPage=120&analytics=false&facetingAfterDistinct=true&clickAnalytics=false&highlightPreTag=^*^^&highlightPostTag=^*&attributesToHighlight=["description"]`,
+                                                }]
+                                            }),
+                                            method: 'POST',
+                                            mode: 'cors',
+                                            credentials: 'omit'
+                                        })
+                                            .then(r => r.json())
+                                            /** Nintendo | Agolia Results (Object)
+                                             * results:array<object<{
+                                                exhaustive:object<{ nbHits:boolean, type:boolean }>
+                                                exhaustiveNbHits:boolean
+                                                exhaustiveTypo:boolean
+                                                hits:array<object<{
+                                                    availability:array<string>
+                                                    categoryIds:array<string>
+                                                    collectionPriceRange:string
+                                                    contentRatingCode:string
+                                                    corePlatforms:array<string>
+                                                    createdAt:string<ISO-Date>
+                                                    demoNsuid:string?
+                                                    description:string
+                                                    dlcType:string?
+                                                    editions:array<string>
+                                                    eshopDetails:object<{ discountedPriceEnd:string<ISO-Date>?, goldPoints:number<int>, baseGoldPoints:number<int> }>
+                                                    esrbDescriptors:array<string>
+                                                    esrbRating:string
+                                                    exclusive:boolean
+                                                    featuredProduct:boolean
+                                                    franchises:array<?>
+                                                    genres:array<string>
+                                                    hasDlc:boolean
+                                                    nsoFeatures:array<?>?
+                                                    nsuid:string
+                                                    objectId:string
+                                                    platform:string
+                                                    platformCode:string
+                                                    platinumPoints:number<int>?
+                                                    playModes:array<string>
+                                                    playerCount:string
+                                                    price:object<{ finalPrice:number<float>, regPrice:number<float>, salePrice:number<float>? }>
+                                                    priceRange:string
+                                                    productImage:string<URL-pathname>
+                                                    relaseDateDisplay:string<ISO-Date>?
+                                                    sku:string
+                                                    softwareDeveloper:string
+                                                    softwarePublisher:string
+                                                    stockStatus:string
+                                                    storeId:string
+                                                    title:string
+                                                    topLevelCategory:string
+                                                    topLevelCategoryCode:string
+                                                    topLevelFilters:array<string>
+                                                    updatedAt:string<ISO-Date>
+                                                    url:string<URL-pathname>
+                                                    urlKey:string
+                                                    visibleInSearch:boolean
+                                                    _distinctSeqId:number<?>
+                                                    _highlightResult:object<{ description:object<{ fullyHighlighted:boolean, matchLevel:string, matchedWords:array<string>, value:string }> }>
+                                                }>>
+                                                hitsPerPage:number<int>
+                                                index:string
+                                                nbHits:number<int>
+                                                nbPages:number<int>
+                                                page:number<int>
+                                                aprams:string<URL-search>
+                                                processingTimeMS:number<int>
+                                                processingTimingMS:object<{ total:number<int> }>
+                                                query:string
+                                                renderingContent:object<?>
+                                             }>>
+                                             */
+                                            .then(j =>
+                                                j.results.shift().hits
+                                                    .filter(item => item.topLevelCategoryCode.equals('GAMES') && item.topLevelFilters.missing('DLC', 'DLC bundle'))
+                                                    .map(item => ({
+                                                        name: item.title,
+                                                        price: (item.price?.regPrice || 'Free').toString().replace(/^\d/, '$$$&'),
+                                                        image: item.productImage,
+                                                        href: `https://www.nintendo.com${ item.url }`,
+                                                        uuid: item.nsuid,
+                                                        platforms: [item.platform],
+                                                        rating: ({ 'E': 'everyone', 'E10': 'everyone 10+', 'RP': 'rating pending', 'T': 'teen', 'M': 'mature 17+' }[item.esrbRating]) || item.esrbRating || 'none',
+                                                    }))
+                                            );
+
+                                    WARN(error);
+                                });
+                        }
+
+                        if(/(?:^Pokémon)/i.test(game)) {
+                            // Multiple versions are available
+                            let [, main, vers] = /(^Pokémon)\s+(.+)$/i.exec(game);
+
+                            vers = vers.split('/').map(v => v.trim());
+
+                            // Make multiple links...
+                            for(let ver of vers)
+                                fetchNintendoGame(main + ver)
+                                    .then((info = {}) => {
+                                        let { game, name, href, img, price, rating = 'none' } = info;
+
+                                        img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+
+                                        if(!href?.length)
+                                            return;
+
+                                        let f = furnish;
+
+                                        let purchase =
+                                            f(`.tt-store-purchase--container.is-nintendo[@versionName="${ main } ${ ver }"]`).with(
+                                                // Price
+                                                f('.tt-store-purchase--price').with(price),
+
+                                                // Link to Nintendo
+                                                f('.tt-store-purchase--handler').with(
+                                                    f(`a[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                                )
+                                            );
+
+                                        // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+
+                                        when.defined(() => $('#tt-nintendo-purchase'))
+                                            .then(container => {
+                                                container.replaceWith(purchase);
+
+                                                new Tooltip(purchase, `ESRB (USA): ${ rating.toUpperCase() }`, { from: 'top' });
+
+                                                if($.all('.is-nintendo').length < vers.length)
+                                                    $('#tt-purchase-container').append(
+                                                        f('#tt-nintendo-purchase')
+                                                    );
+                                            });
+
+                                        LOG(`Got "${ game }" data from Nintendo:`, info);
+                                    })
+                                    .catch(error => {
+                                        WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
+                                    });
+                        } else {
+                            // Just one version is available
+                            fetchNintendoGame(game)
+                                .then((info = {}) => {
+                                    let { game, name, href, img, price, rating = 'none' } = info;
+
+                                    img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+
+                                    if(!href?.length)
+                                        return;
+
+                                    let f = furnish;
+
+                                    let purchase =
+                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"]`).with(
+                                            // Price
+                                            f('.tt-store-purchase--price').with(price),
+
+                                            // Link to Nintendo
+                                            f('.tt-store-purchase--handler').with(
+                                                f(`a[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                            )
+                                        );
+
+                                    // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+
+                                    when.defined(() => $('#tt-nintendo-purchase'))
+                                        .then(container => {
+                                            container.replaceWith(purchase);
+                                        });
+
+                                    LOG(`Got "${ game }" data from Nintendo:`, info);
+                                })
+                                .catch(error => {
+                                    WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
+                                });
+                        }
             }
     };
 
@@ -9156,7 +9559,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.kill_extensions = () => {
         START__STOP_WATCH('kill_extensions');
 
-        let extension_views = $('[class^="extension-view"i]', true);
+        let extension_views = $.all('[class^="extension-view"i]');
 
         for(let view of extension_views)
             view.setAttribute('style', 'display:none!important');
@@ -9166,7 +9569,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.kill_extensions = -2_500;
 
     Unhandlers.kill_extensions = () => {
-        let extension_views = $('[class^="extension-view"i]', true);
+        let extension_views = $.all('[class^="extension-view"i]');
 
         for(let view of extension_views)
             view.removeAttribute('style');
@@ -9306,7 +9709,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.parse_commands = async() => {
-        let elements = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *', true)
+        let elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
             .map($0 => $0.getElementByText(/([!][\w\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/))
             .isolate()
             .filter(defined)
@@ -9336,14 +9739,14 @@ let Initialize = async(START_OVER = false) => {
                     });
                 });
 
-            $('[tt-parse-commands]:not([tt-parsed="true"i])', true).map(element => {
+            $.all('[tt-parse-commands]:not([tt-parsed="true"i])').map(element => {
                 element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
                 element.setAttribute('tt-parsed', true);
             });
         }
 
         wait(elements.length * 100).then(() => {
-            $('[tt-parsed][title]', true).map(element => {
+            $.all('[tt-parsed][title]').map(element => {
                 let title = decodeHTML(element.getAttribute('title'));
 
                 if(title.length < 1)
@@ -9523,7 +9926,7 @@ let Initialize = async(START_OVER = false) => {
                                                         if(!!button)
                                                             return;
 
-                                                        let command = $('.tt-chat-input-suggestion', false, target.closest('[id]'))?.getAttribute('command');
+                                                        let command = $('.tt-chat-input-suggestion', target.closest('[id]'))?.getAttribute('command');
                                                         if(defined(command)) {
                                                             let target = $('[data-a-target="chat-input"i]');
                                                             let match = (target?.value ?? target?.textContent ?? target?.innerText).match(/!(\S+|$)/),
@@ -9697,7 +10100,7 @@ let Initialize = async(START_OVER = false) => {
 
         let hosting = $.defined('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]'),
             next = await GetNextStreamer(),
-            host_banner = $('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]', true).map(element => element.textContent),
+            host_banner = $.all('[href^="/"] h1, [href^="/"] > p, [data-a-target="hosting-indicator"i]').map(element => element.textContent),
             host = (STREAMER.name ?? ''),
             [guest] = host_banner.filter(name => !RegExp(name, 'i').test(host));
 
@@ -9760,7 +10163,7 @@ let Initialize = async(START_OVER = false) => {
 
         if(false
             || CONTINUE_RAIDING
-            || !UP_NEXT_ALLOW_THIS_TAB
+            // || !UP_NEXT_ALLOW_THIS_TAB
         )
             return JUDGE__STOP_WATCH('prevent_raiding');
 
@@ -9769,7 +10172,7 @@ let Initialize = async(START_OVER = false) => {
             raided = parseBool(data.referrer?.equals('raid')),
             raiding = $.defined('[data-test-selector="raid-banner"i]'),
             next = await GetNextStreamer(),
-            raid_banner = $('[data-test-selector="raid-banner"i] strong', true).map(strong => strong?.textContent),
+            raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.textContent),
             from = (raided? null: STREAMER.name),
             [to] = (raided? [STREAMER.name]: raid_banner.filter(name => name.unlike(from)));
 
@@ -10259,7 +10662,7 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.time_zones = () => {
         let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
-        let cTitle = $('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]', true),
+        let cTitle = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]'),
             rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
 
         parsing:
@@ -10368,7 +10771,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         wait(2_5_0).then(() => {
-            $('[id^="tt-time-zone-"][tip-text--timezone]', true)
+            $.all('[id^="tt-time-zone-"][tip-text--timezone]')
                 .map(span => {
                     let oldText = span.getAttribute('tip-text--timezone');
 
@@ -10683,7 +11086,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('mention_audio');
     };
-    Timers.mention_audio = 1000;
+    Timers.mention_audio = -1000;
 
     Unhandlers.mention_audio = () => {
         NOTIFICATION_SOUND?.pause();
@@ -10743,12 +11146,8 @@ let Initialize = async(START_OVER = false) => {
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onwhisper ??= Chat.onwhisper = ({ unread, from, message }) => {
-            LOG('Got a new whisper', { unread, from, message });
-
             if(!unread && !from && !message)
                 return;
-
-            LOG('Playing notification sound...', NOTIFICATION_SOUND, { unread, from, message });
 
             NOTIFICATION_SOUND?.play();
         };
@@ -10972,7 +11371,7 @@ let Initialize = async(START_OVER = false) => {
                 if(nullish(points_receipt))
                     return RestartJob('points_receipt_placement');
 
-                let [chat] = $('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]', true);
+                let [chat] = $.all('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]');
 
                 if(nullish(chat)) {
                     let framedData = PostOffice.get('points_receipt_placement');
@@ -11030,12 +11429,14 @@ let Initialize = async(START_OVER = false) => {
     Unhandlers.points_receipt_placement = () => {
         [COUNTING_POINTS, DISPLAYING_RANK].map(clearInterval);
 
-        $('#tt-points-receipt, #tt-channel-point-ranking', true)
+        $.all('#tt-points-receipt, #tt-channel-point-ranking')
             .forEach(span => span?.parentElement?.remove());
 
         if(UnregisterJob.__reason__.equals('modify'))
             return;
     };
+
+    let REDEMPTION_LISTENERS = {};
 
     __PointsReceiptPlacement__:
     if(parseBool(Settings.points_receipt_placement)) {
@@ -11054,7 +11455,7 @@ let Initialize = async(START_OVER = false) => {
                     || message.contains(USERNAME)
 
                     // The message is from the user (for embedded messages)
-                    || $('[class*="message"i] [class*="username"i] [data-a-user]', false, element)?.dataset?.aUser?.equals(USERNAME)
+                    || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
                 )
             )) return;
 
@@ -11070,27 +11471,57 @@ let Initialize = async(START_OVER = false) => {
 
         AddRedemptionListener: {
             function addListener(address = 0b1111) {
-                if(address & 1)
+                // Points spent on unlocked rewards
+                if(address & 1) {
                     when.defined(() => $('[data-test-selector*="required"i]:empty'))
-                        .then(element => parseCoin(element?.previousSibling?.nodeValue))
-                        .then(amount => {
-                            let title = $('[id*="reward"i][id*="header"i]').textContent.trim();
+                        .then(element => {
+                            if(defined(REDEMPTION_LISTENERS.UNLOCKED_REWARDS))
+                                return;
+                            REDEMPTION_LISTENERS.UNLOCKED_REWARDS = true;
 
-                            TALLY.set(title, amount);
-                        })
-                        .catch(WARN)
-                        .finally(() => addListener(1));
+                            element.closest('button').addEventListener('mouseup', ({ currentTarget }) => {
+                                let title = $('[id*="reward"i][id*="header"i]').textContent.trim(),
+                                    amount = parseCoin(currentTarget?.previousSibling?.nodeValue);
 
-                if(address & 2)
+                                EXACT_POINTS_SPENT += amount;
+                                TALLY.set(`Reward: "${ title }" @ ${ (new Date).toJSON() }`, amount | 0);
+
+                                delete REDEMPTION_LISTENERS.UNLOCKED_REWARDS;
+                                addListener(1);
+
+                                LOG(`Spent ${ amount } on "${ title }"`, new Date);
+                            });
+                        });
+
+                    when.nullish(() => $('[data-test-selector*="required"i]:empty'))
+                        .then(() => delete REDEMPTION_LISTENERS.UNLOCKED_REWARDS);
+                }
+
+                // Points spent on votes
+                if(address & 2) {
                     when.defined(() => $('[class*="community"i][class*="stack"i] [data-test-selector^="expanded"i] button'))
-                        .then(button => button.addEventListener('mouseup', event => {
-                            let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *').textContent,
-                                [amount] = /\p{N}+/u.exec(this.textContent) || '';
+                        .then(button => {
+                            if(defined(REDEMPTION_LISTENERS.BRIBABLE_VOTES))
+                                return;
+                            REDEMPTION_LISTENERS.BRIBABLE_VOTES = true;
 
-                            TALLY.set(`Poll: ${ title }`, amount | 0);
-                        }))
-                        .catch(WARN)
-                        .finally(() => addListener(2));
+                            button.addEventListener('mouseup', ({ currentTarget }) => {
+                                let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *').textContent,
+                                    [amount] = /\p{N}+/u.exec(currentTarget.textContent) || '';
+
+                                EXACT_POINTS_SPENT += amount;
+                                TALLY.set(`Poll: "${ title }" @ ${ (new Date).toJSON() }`, amount | 0);
+
+                                delete REDEMPTION_LISTENERS.BRIBABLE_VOTES;
+                                addListener(2);
+
+                                LOG(`Spent ${ amount } on "${ title }"`, new Date);
+                            });
+                        });
+
+                    when.nullish(() => $('[class*="community"i][class*="stack"i] [data-test-selector^="expanded"i] button'))
+                        .then(() => delete REDEMPTION_LISTENERS.BRIBABLE_VOTES);
+                }
             }
 
             addListener();
@@ -11113,6 +11544,9 @@ let Initialize = async(START_OVER = false) => {
     Handlers.point_watcher_placement = async() => {
         // Display the points
         START__STOP_WATCH('point_watcher_placement');
+
+        if(top.__readyState__ == "unloading")
+            return;
 
         // Update the points (every 30s)
         if(++pointWatcherCounter % 120)
@@ -11170,7 +11604,7 @@ let Initialize = async(START_OVER = false) => {
             target = footer?.lastElementChild;
 
         if(nullish(subtitle)) {
-            let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true),
+            let [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *'),
                 rTarget = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="status"i]');
 
             title = rTitle;
@@ -11187,7 +11621,7 @@ let Initialize = async(START_OVER = false) => {
         game = game?.trim();
 
         // Remove the old face and values...
-        $(`:is(.tt-point-amount, .tt-point-face):not([name="${ name }"i])`, true).map(element => element?.remove());
+        $.all(`:is(.tt-point-amount, .tt-point-face):not([name="${ name }"i])`).map(element => element?.remove());
 
         // Update the rich tooltip display
         LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
@@ -11202,7 +11636,7 @@ let Initialize = async(START_OVER = false) => {
                 0
             );
 
-            let amounter = $(`.tt-point-amount[name="${ name }"i]`, false, target);
+            let amounter = $(`.tt-point-amount[name="${ name }"i]`, target);
             if(defined(amounter)) {
                 amounter.setAttribute('rainbow-border', notEarned == 0);
 
@@ -11236,7 +11670,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.point_watcher_placement = 250;
 
     Unhandlers.point_watcher_placement = () => {
-        $('.tt-point-amount', true)
+        $.all('.tt-point-amount')
             .forEach(span => span?.remove());
     };
 
@@ -11255,8 +11689,8 @@ let Initialize = async(START_OVER = false) => {
                         .then(button => {
                             button.click();
 
-                            for(let reward of $('[class*="reward"i][class*="item"i]', true)) {
-                                let [image, cost, title] = $('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', true, reward),
+                            for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
+                                let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward),
                                     backgroundColor = (false
                                         || $('button [style]')
                                             ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
@@ -11314,7 +11748,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stream_preview = async() => {
         START__STOP_WATCH('stream_preview');
 
-        let richTooltips = $(`[class*="channel-tooltip"i][class*="body"i]`, true),
+        let richTooltips = $.all(`[class*="channel-tooltip"i][class*="body"i]`),
             [richTooltip] = richTooltips;
 
         if(nullish(richTooltip)) {
@@ -11326,11 +11760,11 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
         }
 
-        let [title, subtitle] = $('[class*="channel-tooltip"i] > *', true, richTooltip),
+        let [title, subtitle] = $.all('[class*="channel-tooltip"i] > *', richTooltip),
             isOnline = parseBool(richTooltip.classList?.value?.missing('offline'));
 
         if(nullish(subtitle)) {
-            let [rTitle, rSubtitle] = $('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *', true);
+            let [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *');
 
             title = rTitle;
             subtitle = rSubtitle;
@@ -11357,7 +11791,7 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('stream_preview');
 
         let { top, left, bottom, right, height, width } = getOffset(richTooltip),
-            [body, video] = $('body, video', true).map(getOffset);
+            [body, video] = $.all('body, video').map(getOffset);
 
         STREAM_PREVIEW?.element?.remove();
 
@@ -11409,7 +11843,7 @@ let Initialize = async(START_OVER = false) => {
 
                         onload: event => {
                             $('.tt-stream-preview--poster')?.classList?.add('invisible');
-                            $('[class*="channel-tooltip"i]', true).at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
+                            $.all('[class*="channel-tooltip"i]').at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
 
                             if(!parseBool(Settings.stream_preview_sound))
                                 return;
@@ -11448,14 +11882,14 @@ let Initialize = async(START_OVER = false) => {
         top.onlocationchange = Unhandlers.stream_preview;
 
         // Add key event listeners to the card
-        $.body.addEventListener('keyup', ({ key, altKey, ctrlKey, metaKey, shiftKey }) => {
+        $.body.addEventListener('keyup', ({ key = '', altKey, ctrlKey, metaKey, shiftKey }) => {
             if(altKey || ctrlKey || metaKey || shiftKey)
                 return;
 
             if(!/^Arrow(Up|Down)$/i.test(key))
                 return;
 
-            let richTooltips = $(`[class*="channel-tooltip"i]`, true),
+            let richTooltips = $.all(`[class*="channel-tooltip"i]`),
                 { length } = richTooltips,
                 iframe = $('#tt-stream-preview--iframe');
 
@@ -11641,7 +12075,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     let AUTO_DVR__CHECKING, AUTO_DVR__CHECKING_INTERVAL,
-        MASTER_VIDEO = $('video', true).pop();
+        MASTER_VIDEO = $.all('video').pop();
 
     Handlers.video_clips__dvr = () => {
         START__STOP_WATCH('video_clips__dvr');
@@ -11689,9 +12123,9 @@ let Initialize = async(START_OVER = false) => {
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
-                            $('.tt-action-icon', false, currentTarget).innerHTML = icon;
-                            $('.tt-action-title', false, currentTarget).textContent = title;
-                            $('.tt-action-subtitle', false, currentTarget).textContent = subtitle;
+                            $('.tt-action-icon', currentTarget).innerHTML = icon;
+                            $('.tt-action-title', currentTarget).textContent = title;
+                            $('.tt-action-subtitle', currentTarget).textContent = subtitle;
 
                             // Add the DVR...
                             let message;
@@ -11903,7 +12337,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_frames = () => {
         START__STOP_WATCH('recover_frames');
 
-        let video = $('video') ?? $('video', false, $('#tt-embedded-video')?.contentDocument);
+        let video = $('video') ?? $('video', $('#tt-embedded-video')?.contentDocument);
 
         if(nullish(video))
             return JUDGE__STOP_WATCH('recover_frames');
@@ -11966,7 +12400,7 @@ let Initialize = async(START_OVER = false) => {
                                     if(nullish(doc))
                                         return /* No document */;
 
-                                    let video = $('video', false, doc);
+                                    let video = $('video', doc);
 
                                     if(nullish(video))
                                         return /* No video */;
@@ -11981,7 +12415,7 @@ let Initialize = async(START_OVER = false) => {
                     );
 
                     $('[data-a-player-state]')?.addEventListener?.('mouseup', ({ button = -1 }) => !button && ReloadPage());
-                    $('video', false, container).setAttribute('style', `display:none`);
+                    $('video', container).setAttribute('style', `display:none`);
 
                     new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
                 } else {
@@ -12185,7 +12619,7 @@ let Initialize = async(START_OVER = false) => {
      * May not always be present
      */
     wait(1000).then(() => {
-        $('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])', true).map(a => {
+        $.all('[data-a-target="followed-channel"i], [id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href^="/"], [data-test-selector*="search-result"i][data-test-selector*="channel"i] a:not([href*="/search?"])').map(a => {
             a.addEventListener('mouseup', async event => {
                 let { currentTarget, button = -1 } = event;
 
@@ -12211,18 +12645,18 @@ let Initialize = async(START_OVER = false) => {
      *                                                                         |___/
      */
     setInterval(() => {
-        $('.search-tray [role="cell"i] [data-a-target="nav-search-item"i]', true)
+        $.all('.search-tray [role="cell"i] [data-a-target="nav-search-item"i]')
             .map(element => {
                 let [thumbnail, searchTerm] = element.children;
-                let image = $('img', false, thumbnail)?.src,
+                let image = $('img', thumbnail)?.src,
                     name = searchTerm.textContent.trim(),
-                    live = $.defined('[data-test-selector="live-badge"i]', false, element);
+                    live = $.defined('[data-test-selector="live-badge"i]', element);
 
                 if(!live)
                     return;
 
                 let f = furnish;
-                let button = $('[tt-pip]', false, element.closest('[role]'));
+                let button = $('[tt-pip]', element.closest('[role]'));
 
                 if(defined(button))
                     return;
@@ -12333,9 +12767,9 @@ let Initialize = async(START_OVER = false) => {
         // Take screenshots of the stream
         // Alt + Shift + X | Opt + Shift + X
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X))
-            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X = function Take_a_Screenshot({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey) && altKey && shiftKey && key.equals('x'))
-                    $('video', true).pop().copyFrame()
+                    $.all('video').pop().copyFrame()
                         .then(async copied => await alert.timed(`Screenshot saved to clipboard!<p tt-x>${ (new UUID).value }</p>`, 5000))
                         .catch(async error => await alert.timed(`Failed to take screenshot: ${ error }<p tt-x>${ (new UUID).value }</p>`, 7000));
             });
@@ -12343,9 +12777,9 @@ let Initialize = async(START_OVER = false) => {
         // Begin recording the stream
         // Alt + Z | Opt + Z
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
-            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('z')) {
-                    let video = $('video', true).pop();
+                    let video = $.all('video').pop();
 
                     video.setAttribute('uuid', video.uuid ??= (new UUID).value);
 
@@ -12400,7 +12834,7 @@ let Initialize = async(START_OVER = false) => {
                             let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
 
                             feed?.setAttribute('halt', nullish(value));
-                            phantomClick($('.okay', false, feed));
+                            phantomClick($('.okay', feed));
 
                             video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
                         });
@@ -12437,7 +12871,7 @@ let Initialize = async(START_OVER = false) => {
                     } else {
                         let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
 
-                        phantomClick($('.okay', false, feed));
+                        phantomClick($('.okay', feed));
 
                         video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
                     }
@@ -12447,7 +12881,7 @@ let Initialize = async(START_OVER = false) => {
         // Send the previewed channel to the miniplayer
         // <Stream Preview>:hover → Z
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_Z))
-            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_Z = function Send_to_miniplayer({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_Z = function Send_to_miniplayer({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || altKey || shiftKey) && key.equals('z') && $.defined('#tt-stream-preview--iframe') && parseBool($('#tt-stream-preview--iframe').dataset.live))
                     MiniPlayer = $('#tt-stream-preview--iframe').dataset.name;
             });
@@ -12456,7 +12890,7 @@ let Initialize = async(START_OVER = false) => {
         let [help] = $.body.getElementsByInnerText('space/k', 'i').filter(element => element.tagName.equals('TBODY'));
 
         let f = furnish;
-        if(defined(help) && $.nullish('.tt-extra-keyboard-shortcuts', false, help))
+        if(defined(help) && $.nullish('.tt-extra-keyboard-shortcuts', help))
             for(let shortcut in GLOBAL_EVENT_LISTENERS)
                 if(/^(key(?:up|down)_)/i.test(shortcut)) {
                     let name = GLOBAL_EVENT_LISTENERS[shortcut].toTitle(),
@@ -12489,7 +12923,7 @@ let Initialize = async(START_OVER = false) => {
         let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
 
         // Maintains a timer of the clip
-        $('[tt-clip-timer]', true)
+        $.all('[tt-clip-timer]')
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     recorder = video.getRecording(EVENT_NAME);
@@ -12498,7 +12932,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Gets the clip's dimensions
-        $('[tt-clip-sizer]', true)
+        $.all('[tt-clip-sizer]')
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`);
 
@@ -12506,7 +12940,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Gets the clip's file type
-        $('[tt-clip-typer]', true)
+        $.all('[tt-clip-typer]')
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     [type] = (video?.mimeType ?? 'video/x-unknown').split(';');
@@ -12515,7 +12949,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Maintains the framerate of the clip
-        $('[tt-clip-rater]', true)
+        $.all('[tt-clip-rater]')
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     recorder = video.getRecording(EVENT_NAME),
@@ -12525,7 +12959,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Maintains the file size of the clip
-        $('[tt-clip-watcher]', true)
+        $.all('[tt-clip-watcher]')
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     recorder = video.getRecording(EVENT_NAME),
@@ -12535,7 +12969,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // All unit targets
-        $('[unit] input', true).map(input => {
+        $.all('[unit] input').map(input => {
             input.onfocus ??= ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', true);
             input.onblur ??= ({ currentTarget }) => currentTarget.closest('[unit]').setAttribute('focus', false);
 
@@ -12812,7 +13246,7 @@ if(top == window) {
                 && $.defined(`[data-a-target="follow-button"i], [data-a-target="unfollow-button"i]`)
 
                 // There are channel buttons on the side
-                && parseBool($('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]', true)?.length)
+                && parseBool($.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label]')?.length)
 
                 // There isn't an advertisement playing
                 && nullish(sadOverlay)
@@ -12825,7 +13259,7 @@ if(top == window) {
 
                     // There is an ongoing search
                     || (true
-                        && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]', true)
+                        && $.defined('[data-test-selector*="search-result"i][data-test-selector$="name"i]')
                         && $.defined('[data-a-target^="threads-box-"i]')
                     )
 
@@ -12966,13 +13400,13 @@ if(top == window) {
 
                     let [head, body] = line.children;
 
-                    if($.nullish(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, false, head))
+                    if($.nullish(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, head))
                         return;
 
-                    let user = ($('[data-a-target$="username"i]', false, body) || head).textContent.split(' ').shift();
+                    let user = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ').shift();
 
-                    let badges = $('img.chat-badge', true, body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1')),
-                        color = Color.destruct($('[data-a-target$="username"i]', false, body)?.style?.color || '#9147FF').RGB,
+                    let badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1')),
+                        color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').RGB,
                         mod = +STREAMER.perm.is('mod'),
                         sub = +STREAMER.paid,
                         shopID = await STREAMER.shop.find(entry => (true
@@ -13026,7 +13460,7 @@ if(top == window) {
 
             // Observe the volume changes
             VolumeObserver: {
-                $('video ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])', true)
+                $.all('video ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])')
                     .map(element => {
                         element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
                             currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
@@ -13085,8 +13519,8 @@ if(top == window) {
                     ],
                 };
 
-                for(let container of $('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button', true)) {
-                    let svg = $('svg', false, container);
+                for(let container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button')) {
+                    let svg = $('svg', container);
 
                     comparing:
                     for(let glyph in Glyphs)
@@ -13464,7 +13898,7 @@ if(top == window) {
 
                         // Point out the newly added buttons
                         wait(10_000).then(() => {
-                            for(let element of $('#tt-auto-claim-bonuses, [up-next--container]', true))
+                            for(let element of $.all('#tt-auto-claim-bonuses, [up-next--container]'))
                                 element.classList.add('tt-first-run');
 
                             let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
@@ -13472,7 +13906,7 @@ if(top == window) {
                             // Make sure the user goes to the Settings page
                             alert
                                 .timed(`Please visit the <a href="#" onmouseup="top.postMessage({action:'open-options-page'})">Settings</a> page or click the ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } to finalize setup`, 30_000, true)
-                                .then(action => $('.tt-first-run', true).forEach(element => element.classList.remove('tt-first-run')));
+                                .then(action => $.all('.tt-first-run').forEach(element => element.classList.remove('tt-first-run')));
                         });
                     } break;
                 }
@@ -13554,7 +13988,7 @@ if(top == window) {
                 .then(html => {
                     let dom = (new DOMParser).parseFromString(html, 'text/html');
 
-                    return $('#wiki-body', false, dom)?.children;
+                    return $('#wiki-body', dom)?.children;
                 })
                 .then(([main, footer]) => {
                     let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
@@ -13578,7 +14012,7 @@ if(top == window) {
                                 header, ...content
                             );
 
-                            $('a.anchor', true, article).map(a => a.remove());
+                            $.all('a.anchor', article).map(a => a.remove());
 
                             return article.outerHTML;
                         })
@@ -13595,7 +14029,7 @@ if(top == window) {
 
         CommsObserver: if(!RESERVED_TWITCH_PATHNAMES.test(location.pathname)) {
             let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
-                USERNAME = Search.cookies.login;
+                USERNAME = Search.cookies.login ?? `Anon_${ +new Date }`;
 
             CHANNEL = `#${ CHANNEL }`;
 
@@ -13736,7 +14170,7 @@ if(top == window) {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])', true)
+                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])')
                                             .find(element => {
                                                 if(false
                                                     // The element already has a UUID and type
@@ -13811,21 +14245,21 @@ if(top == window) {
                                     badges = Object.keys(tags?.badges ?? {}),
                                     // Have to wait on the page to play catch-up...
                                     element = when.defined((parameters, uuid) =>
-                                        $('[data-test-selector$="message-container"i] [data-a-target$="message"i]', true)
+                                        $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
                                             .find(message =>
-                                                $(`[data-a-user="${ author }"i]`, true, message)
+                                                $.all(`[data-a-user="${ author }"i]`, message)
                                                     .map(div => div.closest('[data-test-selector$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
                                                         let text = [],
-                                                            body = $('[data-test-selector$="message-body"i]', false, div);
+                                                            body = $('[data-test-selector$="message-body"i]', div);
 
                                                         if(nullish(body))
                                                             return;
 
                                                         for(let child of body.children)
                                                             if(child.dataset.testSelector?.equals('emote-button'))
-                                                                text.push($('img', false, child).alt);
+                                                                text.push($('img', child).alt);
                                                             else
                                                                 text.push(child.textContent);
 
@@ -13853,10 +14287,12 @@ if(top == window) {
                                     raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
                                     reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
                                     style = `color: ${ tags.color || '#9147FF' };`,
-                                    uuid = tags.id;
+                                    uuid = tags.id,
+                                    sent = (new Date).toJSON();
 
                                 let results = {
                                     raw,
+                                    sent,
                                     uuid,
                                     reply,
                                     style,
@@ -13871,7 +14307,7 @@ if(top == window) {
                                     highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
                                     get deleted() {
                                         return (async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
                                         }).call(this.element)
                                     },
                                 };
@@ -13943,22 +14379,22 @@ if(top == window) {
             // Play catch-up...
             when.defined(() => $('[data-test-selector$="message-container"i]'), 100)
                 .then(chat => {
-                    let unhandled = $('[data-a-target="chat-line-message"i]:not([data-uuid])', true, chat);
+                    let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
 
                     for(let element of unhandled) {
-                        let raw = $('[class*="message"i][class*="container"i]', false, element).textContent.trim(),
+                        let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim(),
                             uuid = UUID.from(raw).toString(),
-                            reply = $('button[data-test-selector*="reply"i]', false, element),
-                            style = $('[data-a-user]', false, element)?.getAttribute('style')?.trim(),
-                            author = $('[data-a-user]', false, element).dataset.aUser,
+                            reply = $('button[data-test-selector*="reply"i]', element),
+                            style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
+                            author = $('[data-a-user]', element).dataset.aUser,
                             emotes = new Set,
                             badges = new Set,
-                            __bs__ = $('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', true, element).map(e => badges.add(e.alt.toLowerCase())),
-                            handle = $('[data-a-user]', false, element).textContent,
+                            __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
+                            handle = $('[data-a-user]', element).textContent,
                             usable = false,
-                            message = $('[class*="message"i][class*="body"i] *', true, element).map(e => {
-                                if(e.dataset.testSelector.contains('emote')) {
-                                    let i = $('img', false, e);
+                            message = $.all('[class*="message"i][class*="body"i] *', element).map(e => {
+                                if(e.dataset.testSelector?.contains('emote')) {
+                                    let i = $('img', e);
 
                                     emotes.add(i.alt);
                                     Chat.__allemotes__.set(i.alt, i.src);
@@ -13968,7 +14404,7 @@ if(top == window) {
 
                                 return e.textContent?.trim?.() || '';
                             }).join(' '),
-                            mentions = $('[data-a-atrget*="mention"i]', true, element).map(e => e.textContent),
+                            mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
                             highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
                         element.dataset.uuid = uuid;
@@ -13992,7 +14428,7 @@ if(top == window) {
                             highlighted,
                             get deleted() {
                                 return (async function() {
-                                    return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', false, (await this));
+                                    return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
                                 }).call(this.element)
                             },
                         };

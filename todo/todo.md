@@ -31,6 +31,19 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31)
+- Modified game searching logic
+- Modified blank ad detection logic
+- Modified point spending logic
+- Fixed issue displaying runtimes over 24 hours
+- Overhauled `$`
+- Fixed minor issues on Settings page
+- Modified Store Integration logic
+- Modified user input logic to remove meta-clicking; no longer interrupts click events
+- Fixed issue with leaving raided channels when Up Next single-instance is enabled
+- Added option to hide pinned messages
+- Fixed issue where spam wasn't being marked
+
 > [`5.30`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.30)
 - Removed complex translations
 - Fixed issue with monitoring un-earned rewards
