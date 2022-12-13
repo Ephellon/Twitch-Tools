@@ -735,7 +735,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 REMARK("Adding BTTV emote event listener...");
 
                 // Run the bttv-emote changer on pre-populated messages
-                (Chat.onmessage = async line => {
+                Chat.get().map(Chat.onmessage = async line => {
                     let regexp,
                         holding = new Map;
 
@@ -796,7 +796,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                             REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
                         });
-                })//(Chat.get());
+                });
             });
 
         REMARK("Adding BTTV emote search listener...");
@@ -1023,7 +1023,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         REMARK("Adding emote event listener...");
 
         // Run the emote catcher on pre-populated messages
-        (Chat.onmessage = async line => {
+        Chat.get().map(Chat.onmessage = async line => {
             let regexp;
 
             for(let emote in line.emotes)
@@ -1092,7 +1092,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
                     });
                 }
-        })//(Chat.get());
+        });
 
         REMARK("Adding emote search listener...");
 
@@ -1221,8 +1221,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             element.setAttribute('tt-hidden-message', censor);
         };
 
-        // if(defined(MESSAGE_FILTER))
-        //     MESSAGE_FILTER(Chat.get(250, true));
+        if(defined(MESSAGE_FILTER))
+            Chat.get().map(MESSAGE_FILTER);
 
         JUDGE__STOP_WATCH('filter_messages');
     };
@@ -1455,7 +1455,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         };
 
         if(defined(PHRASE_HIGHLIGHTER))
-            PHRASE_HIGHLIGHTER(Chat.get(250, true));
+            Chat.get().map(PHRASE_HIGHLIGHTER);
 
         JUDGE__STOP_WATCH('highlight_phrases');
     };
@@ -1611,7 +1611,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/
      */
     Handlers.highlight_mentions = () => {
-        (Chat.onmessage = async line => {
+        Chat.get().map(Chat.onmessage = async line => {
             let usernames = [USERNAME];
 
             if(parseBool(Settings.highlight_mentions_extra))
@@ -1632,7 +1632,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 element.setAttribute('style', `background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
             }
-        })//(Chat.get());
+        });
     };
     Timers.highlight_mentions = -500;
 
@@ -1652,7 +1652,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                 |___/                 |___/           |___/                                         |_|         |_|
      */
     Handlers.highlight_mentions_popup = () => {
-        (Chat.onmessage = async line => {
+        Chat.get().map(Chat.onmessage = async line => {
             if(!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)))
                 return;
 
@@ -1686,7 +1686,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     },
                 });
             }
-        })//(Chat.get());
+        });
     };
     Timers.highlight_mentions_popup = -500;
 
@@ -1849,7 +1849,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             },
         };
 
-        Chat.get().forEach(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
+        Chat.get().map(NATIVE_REPLY_POLYFILL.AddNativeReplyButton);
 
         Chat.onmessage = NATIVE_REPLY_POLYFILL.AddNativeReplyButton;
 
@@ -1947,7 +1947,8 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Chat messages
         let marked = [];
-        (Chat.onmessage = async line => {
+
+        Chat.get().map(Chat.onmessage = async line => {
             if(!LINK_MAKER_ENABLED)
                 return;
 
@@ -2086,7 +2087,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     })
                     .catch(ERROR);
             }
-        })//(Chat.get());
+        });
     };
     Timers.link_maker__chat = -500;
 
@@ -2121,7 +2122,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.prevent_spam = () => {
         START__STOP_WATCH('prevent_spam');
 
-        (Chat.onmessage = async line => {
+        Chat.get().map(Chat.onmessage = async line => {
             let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
                 minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
                 minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
@@ -2169,7 +2170,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             wait(30, message, author)
                 .then((message, author) => spamChecker(message, author))
                 .then(message => SPAM = [...SPAM, message].isolate());
-        })//(Chat.get());
+        });
 
         JUDGE__STOP_WATCH('prevent_spam');
     };
@@ -2204,7 +2205,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(parseBool(Settings.simplify_chat_font))
             AddCustomCSSBlock_Chat('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
 
-        (Chat.defer.onmessage = async line => {
+        Chat.get().map(Chat.defer.onmessage = async line => {
             let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
             let element = await line.element;
             let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
@@ -2216,7 +2217,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .filter(node => /\btext\b/i.test(node.nodeName))
                     .map(text => text.nodeValue = text.nodeValue.normalize('NFKD'));
             }
-        })//(Chat.get());
+        });
     };
     Timers.simplify_chat = -250;
 
@@ -3669,15 +3670,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 let author = source.nick,
                                     badges = Object.keys(tags?.badges ?? {}),
                                     // Have to wait on the page to play catch-up...
-                                    element = when.defined(parameters =>
+                                    element = when.defined((parameters, uuid) =>
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
                                             .find(message =>
                                                 $.all(`[data-a-user="${ author }"i]`, message)
-                                                    .map(div => div.closest('[data-test-selector$="message"i]'))
+                                                    .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
                                                         let text = [],
-                                                            body = $('[data-test-selector$="message-body"i]', div);
+                                                            body = $('[data-test-selector$="message-body"i], [class*="message-container"i]', div);
 
                                                         if(nullish(body))
                                                             return;
@@ -3688,7 +3689,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                                             else
                                                                 text.push(child.textContent);
 
-                                                        let match = text.join('').sheer().equals(parameters.sheer());
+                                                        let match = text.join('').replace(RegExp(`^${ author }\\s*:`, 'i')).sheer().equals(parameters.sheer());
 
                                                         if(match)
                                                             div.dataset.uuid = uuid;
@@ -3696,7 +3697,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                                         return match
                                                     })
                                             )
-                                        , 100, parameters),
+                                        , 100, parameters, tags.id),
                                     emotes = Object.keys(tags.emotes ?? {}).map(key => {
                                         let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
                                             name = parameters.substring(+emote.startPosition, ++emote.endPosition),
@@ -3730,16 +3731,20 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     message,
                                     mentions,
                                     highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
-                                    get deleted() {
-                                        return (async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
-                                        }).call(this.element)
-                                    },
                                 };
+
+                                Object.defineProperties(results, {
+                                    deleted: {
+                                        get:(async function() {
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                        }).bind(element)
+                                    },
+                                });
 
                                 chat_log.get(channel).add(results);
 
                                 Chat.__allmessages__.set(uuid, results);
+
 
                                 for(let [name, callback] of Chat.__onmessage__)
                                     callback(results);
@@ -3851,16 +3856,20 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 message,
                                 mentions,
                                 highlighted,
-                                get deleted() {
-                                    return (async function() {
-                                        return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
-                                    }).call(this.element)
-                                },
                             };
+
+                            Object.defineProperties(results, {
+                                deleted: {
+                                    get:(async function() {
+                                        return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                    }).bind(element)
+                                },
+                            });
 
                             TTV_IRC.chat_log.get(CHANNEL).add(results);
 
                             Chat.__allmessages__.set(uuid, results);
+
 
                             for(let [name, callback] of Chat.__onmessage__)
                                 when(() => PAGE_IS_READY, 250).then(() => callback(results));

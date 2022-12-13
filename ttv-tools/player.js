@@ -331,7 +331,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
-        LOG(`Framed container ready → <iframe>:${ location.href }`);
+        LOG(`Framed container ready → <iframe>@${ location.href }`);
 
         Settings = await GetSettings();
 

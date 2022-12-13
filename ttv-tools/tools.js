@@ -9489,8 +9489,8 @@ let Initialize = async(START_OVER = false) => {
      */
     let STARTED_WATCHING = (+new Date);
 
-    LoadCache(['WatchTime'], ({ WatchTime = 0 }) => {
-        STARTED_WATCHING -= WatchTime;
+    LoadCache([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, WatchTimeAlt = 0 }) => {
+        STARTED_WATCHING -= (!UP_NEXT_ALLOW_THIS_TAB? WatchTimeAlt: WatchTime);
     });
 
     function GET_WATCH_TIME() {
@@ -11999,8 +11999,8 @@ let Initialize = async(START_OVER = false) => {
 
         extra({ parent, container, live_time, placement });
 
-        LoadCache(['WatchTime', 'Watching'], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME }) => {
-            if(NORMALIZED_PATHNAME != Watching)
+        LoadCache([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`, `Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME, WatchTimeAlt = 0, WatchingAlt = NORMALIZED_PATHNAME }) => {
+            if(NORMALIZED_PATHNAME != (!UP_NEXT_ALLOW_THIS_TAB? WatchingAlt: Watching))
                 STARTED_WATCHING = +($('#root').dataset.aPageLoaded ??= +new Date);
 
             WATCH_TIME_INTERVAL = setInterval(() => {
@@ -12019,9 +12019,9 @@ let Initialize = async(START_OVER = false) => {
                 if(parseBool(Settings.show_stats))
                     WATCH_TIME_TOOLTIP.innerHTML = comify(parseInt(time / 1000)) + 's';
 
-                SaveCache({ WatchTime: time });
+                SaveCache({ [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: time });
             }, 1000);
-        }).then(() => SaveCache({ Watching: NORMALIZED_PATHNAME }));
+        }).then(() => SaveCache({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: NORMALIZED_PATHNAME }));
     };
     Timers.watch_time_placement = -1000;
 
@@ -12039,7 +12039,7 @@ let Initialize = async(START_OVER = false) => {
         if(UnregisterJob.__reason__.equals('modify'))
             return;
 
-        SaveCache({ Watching: null, WatchTime: 0 });
+        SaveCache({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: null, [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: 0 });
     };
 
     __WatchTimePlacement__:
@@ -13668,7 +13668,7 @@ if(top == window) {
                     background-repeat: repeat !important;
                     background-size: 5rem !important;
                     background-position: center center !important;
-                    background-blend-mode: soft-light !important;
+                    background-blend-mode: difference !important;
                 }
 
                 #up-next-boost[speeding="true"i] {
@@ -14248,11 +14248,11 @@ if(top == window) {
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
                                             .find(message =>
                                                 $.all(`[data-a-user="${ author }"i]`, message)
-                                                    .map(div => div.closest('[data-test-selector$="message"i]'))
+                                                    .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
                                                         let text = [],
-                                                            body = $('[data-test-selector$="message-body"i]', div);
+                                                            body = $('[data-test-selector$="message-body"i], [class*="message-container"i]', div);
 
                                                         if(nullish(body))
                                                             return;
@@ -14263,7 +14263,7 @@ if(top == window) {
                                                             else
                                                                 text.push(child.textContent);
 
-                                                        let match = text.join('').sheer().equals(parameters.sheer());
+                                                        let match = text.join('').replace(RegExp(`^${ author }\\s*:`, 'i')).sheer().equals(parameters.sheer());
 
                                                         if(match)
                                                             div.dataset.uuid = uuid;
@@ -14305,16 +14305,20 @@ if(top == window) {
                                     message,
                                     mentions,
                                     highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
-                                    get deleted() {
-                                        return (async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
-                                        }).call(this.element)
-                                    },
                                 };
+
+                                Object.defineProperties(results, {
+                                    deleted: {
+                                        get:(async function() {
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                        }).bind(element)
+                                    },
+                                });
 
                                 chat_log.get(channel).add(results);
 
                                 Chat.__allmessages__.set(uuid, results);
+
 
                                 for(let [name, callback] of Chat.__onmessage__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
@@ -14426,16 +14430,20 @@ if(top == window) {
                             message,
                             mentions,
                             highlighted,
-                            get deleted() {
-                                return (async function() {
-                                    return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
-                                }).call(this.element)
-                            },
                         };
+
+                        Object.defineProperties(results, {
+                            deleted: {
+                                get:(async function() {
+                                    return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                }).bind(element)
+                            },
+                        });
 
                         TTV_IRC.chat_log?.get(CHANNEL)?.add(results);
 
                         Chat.__allmessages__.set(uuid, results);
+
 
                         for(let [name, callback] of Chat.__onmessage__)
                             when(() => PAGE_IS_READY, 250).then(() => callback(results));
