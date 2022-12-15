@@ -1045,6 +1045,10 @@ caption {
     animation: 2s linear infinite spinning-background;
 }
 
+[rainbow-text="true"i] [id*="reward"i][id*="header"i] * {
+    color: #fff8 !important;
+}
+
 @keyframes spinning-background {
     0% { background-position-x: 0% }
     100% { background-position-x: 200% }

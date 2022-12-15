@@ -28,12 +28,15 @@
 12. Garner user feedback → https://form.jotform.com/222442891146153
 13. Offer an option to use Live Reminder channels after live followed channels have been exhausted
 
-# TODO
-- Append owner status to `Watching` cache name(s)
-
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.2)
+- Updated Data Usage section on Settings page to include colored portions
+- Fixed scoring for non-English tags
+- Fixed reward rainbow-text effect
+- Modified chat messaging logic
+
 > [`5.31.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.1)
 - Fixed issue with gathering chat messages
 

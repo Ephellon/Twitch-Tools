@@ -69,7 +69,7 @@ top.onbeforeunload = event => {
 class Balloon {
     static #BALLOONS = new Map()
 
-    constructor({ title, icon = 'play' }, ...jobs) {
+    constructor({ title, icon = 'play', iconAttr = {} }, ...jobs) {
         let f = furnish;
 
         let [P] = $.all('.top-nav__menu > div').slice(-1),
@@ -137,7 +137,7 @@ class Balloon {
                                 f('div',
                                     {
                                         style: 'height:2rem; width:2rem',
-                                        innerHTML: Glyphs[icon],
+                                        innerHTML: Glyphs.modify(icon, iconAttr),
                                     }
                                 ),
 
@@ -159,10 +159,10 @@ class Balloon {
 
                                                     output.textContent = length;
 
-                                                    if(length < 1) {
-                                                        counter.setAttribute('style', 'visibility:hidden');
+                                                    if(isNaN(length) || length > 0) {
+                                                        counter.modStyle(`visibility:unset; font-size:75%`);
                                                     } else {
-                                                        counter.setAttribute('style', 'visibility:unset; font-size:75%');
+                                                        counter.modStyle(`visibility:hidden`);
                                                     }
                                                 }, 1000),
                                             })
@@ -5716,7 +5716,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Last directory in pathname
         try {
-            tags = tags.map(tag => tag.split(/\//).pop().toUpperCase().replace(/(%\d{2})/g, ($0, $1) => decodeURIComponent($1)));
+            tags = tags.map(tag => decodeURIComponent(tag.split(/\//).pop().toUpperCase()));
         } catch(error) {
             return;
         }
@@ -7012,7 +7012,7 @@ let Initialize = async(START_OVER = false) => {
     let FIRST_IN_LINE_BALLOON__INSURANCE =
     setInterval(() => {
         if(NORMAL_MODE && nullish(FIRST_IN_LINE_BALLOON)) {
-            FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: 'calendar' });
+            FIRST_IN_LINE_BALLOON = new Balloon({ title: 'Up Next', icon: (UP_NEXT_ALLOW_THIS_TAB? 'calendar': 'error') });
 
             // Up Next Boost Button
             let first_in_line_boost_button = FIRST_IN_LINE_BALLOON?.addButton({
@@ -7396,15 +7396,17 @@ let Initialize = async(START_OVER = false) => {
                             else
                                 body.append(container);
 
-                            // And remember kids, never ask a question on S.O.
+                            // And remember kids, never ask a question on StackOverflow
                             // If anyone besides me ever reads this, I answered my own question eventually
                             // Remember to take breaks and tackle the problem at a later date
                                 // https://stackoverflow.com/q/72803095/4211612
                             // Move the channels around to prioritize live ones...
                             if(live) {
+                                let data = LiveReminders[name];
+
                                 delete LiveReminders[name];
 
-                                LiveReminders = { [name]: time.toJSON(), ...LiveReminders };
+                                LiveReminders = { [name]: data, ...LiveReminders };
                             }
 
                             // Loading reminders (progress bar)...
@@ -10727,7 +10729,7 @@ let Initialize = async(START_OVER = false) => {
                         newTime = newDate.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                         noChange = convertWordsToTimes(originalText).equals(originalText);
 
-                    if(Number.isNaN(+newDate)) {
+                    if(isNaN(+newDate)) {
                         // Keep original text
                         let { groups, index, length } = regexp.exec(originalText);
 
@@ -11111,11 +11113,11 @@ let Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('phrase_audio');
 
         // Play sound on new message
-        NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = async line => {
-            let element = await line.element;
-
-            if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
-                NOTIFICATION_SOUND?.play();
+        NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = line => {
+            when(line => (defined(line.element)? line: false), 100, line).then(element => {
+                if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
+                    NOTIFICATION_SOUND?.play();
+            });
         };
 
         JUDGE__STOP_WATCH('phrase_audio');
@@ -11301,7 +11303,7 @@ let Initialize = async(START_OVER = false) => {
                     );
 
                 rank = (
-                    rank < 1 || Number.isNaN(rank)?
+                    rank < 1 || isNaN(rank)?
                         'Unknown':
                     place < 4?
                         `<span style="text-decoration:${ 4 - place }px underline ${ color }">${ string }</span>`:
@@ -14243,11 +14245,12 @@ if(top == window) {
 
                                 let author = source.nick,
                                     badges = Object.keys(tags?.badges ?? {}),
+                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:ACTION)\s*)([^]+)\1$/g, '$3').trim(),
                                     // Have to wait on the page to play catch-up...
-                                    element = when.defined((parameters, uuid) =>
+                                    element = when.defined((message, uuid) =>
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
-                                            .find(message =>
-                                                $.all(`[data-a-user="${ author }"i]`, message)
+                                            .find(div =>
+                                                $.all(`[data-a-user="${ author }"i]`, div)
                                                     .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
@@ -14257,13 +14260,13 @@ if(top == window) {
                                                         if(nullish(body))
                                                             return;
 
-                                                        for(let child of body.children)
+                                                        for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
                                                             if(child.dataset.testSelector?.equals('emote-button'))
                                                                 text.push($('img', child).alt);
                                                             else
                                                                 text.push(child.textContent);
 
-                                                        let match = text.join('').replace(RegExp(`^${ author }\\s*:`, 'i')).sheer().equals(parameters.sheer());
+                                                        let match = text.join('').mutilate(true).equals(message.mutilate(true));
 
                                                         if(match)
                                                             div.dataset.uuid = uuid;
@@ -14271,7 +14274,7 @@ if(top == window) {
                                                         return match
                                                     })
                                             )
-                                        , 100, parameters, tags.id),
+                                        , 100, message, tags.id),
                                     emotes = Object.keys(tags.emotes ?? {}).map(key => {
                                         let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
                                             name = parameters.substring(+emote.startPosition, ++emote.endPosition),
@@ -14283,9 +14286,8 @@ if(top == window) {
                                     }),
                                     handle = tags.display_name,
                                     mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                    message = parameters,
                                     raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
-                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
+                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('[class*="reply"i] button')),
                                     style = `color: ${ tags.color || '#9147FF' };`,
                                     uuid = tags.id,
                                     sent = (new Date).toJSON();
@@ -14304,7 +14306,7 @@ if(top == window) {
                                     element,
                                     message,
                                     mentions,
-                                    highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
+                                    highlighted: when.defined(e => e, 100, element).then(element => parseBool(element.dataset.testSelector?.contains('notice'))),
                                 };
 
                                 Object.defineProperties(results, {
@@ -14388,7 +14390,7 @@ if(top == window) {
                     for(let element of unhandled) {
                         let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim(),
                             uuid = UUID.from(raw).toString(),
-                            reply = $('button[data-test-selector*="reply"i]', element),
+                            reply = $('[class*="reply"i] button', element),
                             style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
                             author = $('[data-a-user]', element).dataset.aUser,
                             emotes = new Set,
@@ -14434,8 +14436,8 @@ if(top == window) {
 
                         Object.defineProperties(results, {
                             deleted: {
-                                get:(async function() {
-                                    return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                get:(function() {
+                                    return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', this);
                                 }).bind(element)
                             },
                         });

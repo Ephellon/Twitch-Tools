@@ -472,7 +472,7 @@ Object.defineProperties($, {
 // Returns whether a value is nullish or not
     // nullish(value:any?) → boolean
 function nullish(value) {
-    return value === undefined || value === null;
+    return value === undefined || value === null || value instanceof Promise;
 }
 
 // Returns whether a value is nullish or not

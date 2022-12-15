@@ -771,22 +771,22 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 )
                             );
 
-                            let element = await line.element;
+                            when.defined(async line => await line.element, 100, line).then(element => {
+                                alt = alt.replace(/\s+/g, '_');
 
-                            alt = alt.replace(/\s+/g, '_');
+                                $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
+                                    let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${alt}][@bttvOwner=${own}][@bttvOwnerId=${pid}]`).html(img.innerHTML),
+                                        converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
-                            $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
-                                let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${alt}][@bttvOwner=${own}][@bttvOwnerId=${pid}]`).html(img.innerHTML),
-                                    converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
+                                    converted.push(alt);
 
-                                converted.push(alt);
+                                    let tte = fragment.getAttribute('data-tt-emote') ?? '';
 
-                                let tte = fragment.getAttribute('data-tt-emote') ?? '';
-
-                                fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
-                                fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
-                                fragment.innerHTML = fragment.innerHTML.replace(regexp, UUID.from(alt).toString());
-                                holding.set(alt, container.outerHTML);
+                                    fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
+                                    fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
+                                    fragment.innerHTML = fragment.innerHTML.replace(regexp, UUID.from(alt).toString());
+                                    holding.set(alt, container.outerHTML);
+                                });
                             });
                         }
 
@@ -1068,28 +1068,28 @@ let Chat__Initialize = async(START_OVER = false) => {
                         )
                     );
 
-                    let element = await line.element;
+                    when(line => (defined(line.element)? line: false), 100, line).then(async element => {
+                        alt = alt.replace(/\s+/g, '_');
 
-                    alt = alt.replace(/\s+/g, '_');
+                        $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
+                            let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${alt}]`).html(img.innerHTML),
+                                converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
-                    $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
-                        let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${alt}]`).html(img.innerHTML),
-                            converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
+                            converted.push(alt);
 
-                        converted.push(alt);
+                            let tte = fragment.getAttribute('data-tt-emote') ?? '';
 
-                        let tte = fragment.getAttribute('data-tt-emote') ?? '';
+                            fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
+                            fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
+                            fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
 
-                        fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
-                        fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
-                        fragment.innerHTML = fragment.innerHTML.replace(regexp, container.outerHTML);
-
-                        $.all('[data-captured-emote]', fragment)
-                            .forEach(element => {
-                                let { capturedEmote } = element.dataset;
-                                // ... //
-                            });
-                        REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                            $.all('[data-captured-emote]', fragment)
+                                .forEach(element => {
+                                    let { capturedEmote } = element.dataset;
+                                    // ... //
+                                });
+                            REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                        });
                     });
                 }
         });
@@ -1172,53 +1172,54 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('filter_messages');
 
         MESSAGE_FILTER ??= Chat.onmessage = Chat.onpinned = async line => {
-            let Filter = UPDATE_RULES('filter');
+            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                let Filter = UPDATE_RULES('filter');
 
-            let { message, mentions, author, badges, emotes } = line,
-                element = await line.element,
-                reason, match;
+                let { message, mentions, author, badges, emotes, element } = line,
+                    reason, match;
 
-            let censoring = parseBool(element.getAttribute('tt-hidden-message'));
+                let censoring = parseBool(element.getAttribute('tt-hidden-message'));
 
-            if(censoring)
-                return;
+                if(censoring)
+                    return;
 
-            let censor = parseBool(false
-                // Filter users on all channels
-                || (Filter.user.test(author)? (match = author, reason = 'user'): false)
-                // Filter badges on all channels
-                || (Filter.badge.test(badges)? (match = badges, reason = 'badge'): false)
-                // Filter emotes on all channels
-                || (Filter.emote.test(emotes)? (match = emotes, reason = 'emote'): false)
-                // Filter messages (RegExp) on all channels
-                || (Filter.text.test(message)? (match = message, reason = 'text'): false)
-                // Filter messages/users on specific a channel
-                || Filter.channel.map(({ name, badge, emote, user, text }) => {
-                    let channel = (STREAMER?.name || "~Anonymous");
+                let censor = parseBool(false
+                    // Filter users on all channels
+                    || (Filter.user.test(author)? (match = author, reason = 'user'): false)
+                    // Filter badges on all channels
+                    || (Filter.badge.test(badges)? (match = badges, reason = 'badge'): false)
+                    // Filter emotes on all channels
+                    || (Filter.emote.test(emotes)? (match = emotes, reason = 'emote'): false)
+                    // Filter messages (RegExp) on all channels
+                    || (Filter.text.test(message)? (match = message, reason = 'text'): false)
+                    // Filter messages/users on specific a channel
+                    || Filter.channel.map(({ name, badge, emote, user, text }) => {
+                        let channel = (STREAMER?.name || "~Anonymous");
 
-                    return (true
-                        && (channel.replace(/^[^\/]/, '/$&').equals(name.replace(/^[^\/]/, '/$&')))
-                        && (false
-                            || (author.replace(/^[^@]/, '@$&').equals(user?.replace(/^[^@]/, '@$&'))? (match = author, reason = 'channel user'): false)
-                            || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? (match = badges, reason = 'channel badge'): false)
-                            || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? (match = emotes, reason = 'channel emote'): false)
-                            || (RegExp(text, 'i').test(message)? (match = text, reason = 'channel text'): false)
+                        return (true
+                            && (channel.replace(/^[^\/]/, '/$&').equals(name.replace(/^[^\/]/, '/$&')))
+                            && (false
+                                || (author.replace(/^[^@]/, '@$&').equals(user?.replace(/^[^@]/, '@$&'))? (match = author, reason = 'channel user'): false)
+                                || (!!~badges.findIndex(medal => medal.toLowerCase().contains(badge?.toLowerCase()) && medal.length && badge.length)? (match = badges, reason = 'channel badge'): false)
+                                || (!!~emotes.findIndex(glyph => glyph.toLowerCase().contains(emote?.toLowerCase()) && glyph.length && emote.length)? (match = emotes, reason = 'channel emote'): false)
+                                || (RegExp(text, 'i').test(message)? (match = text, reason = 'channel text'): false)
+                            )
                         )
-                    )
-                }).contains(true)
-            );
+                    }).contains(true)
+                );
 
-            if(!censor)
-                return;
+                if(!censor)
+                    return;
 
-            let hidden = parseBool(element.getAttribute('tt-hidden-message'));
+                let hidden = parseBool(element.getAttribute('tt-hidden-message'));
 
-            if(hidden || mentions.contains(USERNAME))
-                return;
+                if(hidden || mentions.contains(USERNAME))
+                    return;
 
-            LOG(`Censoring message because the ${ reason } matches: ${ match }`, line);
+                LOG(`Censoring message because the ${ reason } matches: ${ match }`, line);
 
-            element.setAttribute('tt-hidden-message', censor);
+                element.setAttribute('tt-hidden-message', censor);
+            });
         };
 
         if(defined(MESSAGE_FILTER))
@@ -1405,53 +1406,54 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('highlight_phrases');
 
         PHRASE_HIGHLIGHTER ??= Chat.onmessage = async line => {
-            let Phrases = UPDATE_RULES('phrase');
+            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                let Phrases = UPDATE_RULES('phrase');
 
-            let { message, mentions, author, badges, emotes, style } = line,
-                element = await line.element,
-                reason;
+                let { message, mentions, author, badges, emotes, style, element } = line,
+                    reason;
 
-            let censor = parseBool(false
-                // Phrase of users on all channels
-                || (Phrases.user.test(author)? reason = 'user': false)
-                // Phrase of badges on all channels
-                || (Phrases.badge.test(badges)? reason = 'badge': false)
-                // Phrase of emotes on all channels
-                || (Phrases.emote.test(emotes)? reason = 'emote': false)
-                // Phrase of messages (RegExp) on all channels
-                || (Phrases.text.test(message)? reason = 'text': false)
-                // Phrase of messages/users on specific a channel
-                || Phrases.channel.map(({ name, text, user, badge, emote }) => {
-                    if(nullish(STREAMER))
-                        return;
+                let censor = parseBool(false
+                    // Phrase of users on all channels
+                    || (Phrases.user.test(author)? reason = 'user': false)
+                    // Phrase of badges on all channels
+                    || (Phrases.badge.test(badges)? reason = 'badge': false)
+                    // Phrase of emotes on all channels
+                    || (Phrases.emote.test(emotes)? reason = 'emote': false)
+                    // Phrase of messages (RegExp) on all channels
+                    || (Phrases.text.test(message)? reason = 'text': false)
+                    // Phrase of messages/users on specific a channel
+                    || Phrases.channel.map(({ name, text, user, badge, emote }) => {
+                        if(nullish(STREAMER))
+                            return;
 
-                    let channel = STREAMER.name?.toLowerCase();
+                        let channel = STREAMER.name?.toLowerCase();
 
-                    return parseBool(false
-                        || channel == name.toLowerCase()
-                    ) && parseBool(false
-                        || (('@' + author) == user? reason = 'channel user': false)
-                        || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
-                        || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
-                        || (text?.test?.(message)? reason = 'channel text': false)
-                    )
-                }).contains(true)
-            );
+                        return parseBool(false
+                            || channel == name.toLowerCase()
+                        ) && parseBool(false
+                            || (('@' + author) == user? reason = 'channel user': false)
+                            || (!!~badges.findIndex(medal => medal.contains(badge) && medal.length && badge.length)? reason = 'channel badge': false)
+                            || (!!~emotes.findIndex(glyph => glyph.contains(emote) && glyph.length && emote.length)? reason = 'channel emote': false)
+                            || (text?.test?.(message)? reason = 'channel text': false)
+                        )
+                    }).contains(true)
+                );
 
-            if(!censor)
-                return;
+                if(!censor)
+                    return;
 
-            LOG(`Highlighting message because the ${ reason } matches`, line);
+                LOG(`Highlighting message because the ${ reason } matches`, line);
 
-            let highlight = parseBool(element.hasAttribute('tt-light'));
+                let highlight = parseBool(element.hasAttribute('tt-light'));
 
-            if(highlight)
-                return;
+                if(highlight)
+                    return;
 
-            let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
+                let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
 
-            element.setAttribute('tt-light', true);
-            element.modStyle(`border:1px solid ${ color }; border-radius:3px;`);
+                element.setAttribute('tt-light', true);
+                element.modStyle(`border:1px solid ${ color }; border-radius:3px;`);
+            });
         };
 
         if(defined(PHRASE_HIGHLIGHTER))
@@ -1623,14 +1625,15 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.messages.missing(line.uuid)) {
                 Queue.messages.push(line.uuid);
 
-                let { author, message, style } = line,
-                    element = await line.element;
+                when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                    let { author, message, style } = line;
 
-                // LOG('Highlighting message:', { author, message });
+                    // LOG('Highlighting message:', { author, message });
 
-                let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
+                    let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
 
-                element.setAttribute('style', `background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
+                    element.setAttribute('style', `background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
+                });
             }
         });
     };
@@ -1659,31 +1662,32 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.message_popups.missing(line.uuid)) {
                 Queue.message_popups.push(line.uuid);
 
-                let { author, message } = line,
-                    element = await line.element,
-                    reply = await line.reply;
+                when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                    let { author, message, element } = line,
+                        reply = await line.reply;
 
-                let existing = $('#tt-chat-footer');
+                    let existing = $('#tt-chat-footer');
 
-                if(defined(existing))
-                    return;
+                    if(defined(existing))
+                        return;
 
-                // LOG('Generating footer:', { author, message });
+                    // LOG('Generating footer:', { author, message });
 
-                new ChatFooter(`@${ author } mentioned you.`, {
-                    onclick: event => {
-                        let chatbox = $('[class*="chat-input"i] textarea'),
-                            existing = $('#tt-chat-footer');
+                    new ChatFooter(`@${ author } mentioned you.`, {
+                        onclick: event => {
+                            let chatbox = $('[class*="chat-input"i] textarea'),
+                                existing = $('#tt-chat-footer');
 
-                        if(defined(chatbox))
-                            chatbox.focus();
-                        if(defined(existing))
-                            existing.remove();
+                            if(defined(chatbox))
+                                chatbox.focus();
+                            if(defined(existing))
+                                existing.remove();
 
-                        LOG('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
+                            LOG('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
 
-                        (reply ?? $('button[data-test-selector*="reply"i]', element))?.click();
-                    },
+                            (reply ?? $('button[data-test-selector*="reply"i]', element))?.click();
+                        },
+                    });
                 });
             }
         });
@@ -1821,31 +1825,29 @@ let Chat__Initialize = async(START_OVER = false) => {
             },
 
             // Highlighter for chat elements
-            AddNativeReplyButton: async line => {
-                let { uuid, style, handle, message, mentions } = line,
-                    element = await line.element;
+            AddNativeReplyButton: line => {
+                when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                    let { uuid, style, handle, message, mentions, element } = line;
 
-                if(nullish(element))
-                    return;
+                    if($.defined('.chat-line__message-container', element))
+                        return;
 
-                if($.defined('.chat-line__message-container', element))
-                    return;
+                    if(handle == USERNAME)
+                        return;
 
-                if(handle == USERNAME)
-                    return;
+                    let parent = $('div', element);
+                    if(nullish(parent)) return;
 
-                let parent = $('div', element);
-                if(nullish(parent)) return;
+                    let target = $('div', parent);
+                    if(nullish(target)) return;
 
-                let target = $('div', parent);
-                if(nullish(target)) return;
+                    let highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@testSelector=chat-message-highlight]', {});
 
-                let highlighter = furnish('.chat-line__message-highlight.tt-absolute.tt-border-radius-medium[@testSelector=chat-message-highlight]', {});
+                    target.classList.add('chat-line__message-container');
 
-                target.classList.add('chat-line__message-container');
-
-                parent.insertBefore(highlighter, parent.firstElementChild);
-                parent.append(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
+                    parent.insertBefore(highlighter, parent.firstElementChild);
+                    parent.append(NATIVE_REPLY_POLYFILL.NewReplyButton({ uuid, style, handle, message, mentions, }));
+                });
             },
         };
 
@@ -1948,145 +1950,146 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Chat messages
         let marked = [];
 
-        Chat.get().map(Chat.onmessage = async line => {
+        Chat.get().map(Chat.onmessage = line => {
             if(!LINK_MAKER_ENABLED)
                 return;
 
             let HTMLParser = new DOMParser;
 
-            let { message, mentions, author } = line,
-                element = await line.element;
+            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                let { message, mentions, author, element } = line;
 
-            parsing: for(let { pattern } = parseURL, { length } = message, jndex = 0; pattern.test(message) && jndex < length | 0; ++jndex) {
-                let parsed = parseURL.pattern.exec(message);
+                parsing: for(let { pattern } = parseURL, { length } = message, jndex = 0; pattern.test(message) && jndex < length | 0; ++jndex) {
+                    let parsed = parseURL.pattern.exec(message);
 
-                if(!parsed?.length)
-                    continue;
+                    if(!parsed?.length)
+                        continue;
 
-                let [match] = parsed,
-                    { index, groups } = parsed,
-                    { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
+                    let [match] = parsed,
+                        { index, groups } = parsed,
+                        { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
-                if(href.length < 2)
-                    continue;
+                    if(href.length < 2)
+                        continue;
 
-                jndex = (index + match.length) - 1;
-                message = message.slice(jndex + 1);
+                    jndex = (index + match.length) - 1;
+                    message = message.slice(jndex + 1);
 
-                let unknown = Symbol('UNKNOWN');
-                let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
-                    [topDom = '', secDom = '', ...subDom] = url.domainPath;
+                    let unknown = Symbol('UNKNOWN');
+                    let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
+                        [topDom = '', secDom = '', ...subDom] = url.domainPath;
 
-                // Ignore pre-cardified links
-                if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
-                    continue;
+                    // Ignore pre-cardified links
+                    if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
+                        continue;
 
-                // Mobilize laggy URLs
-                if('instagram twitter'.split(' ').contains(secDom.toLowerCase()))
-                    continue; // subDom = ['mobile'];
+                    // Mobilize laggy URLs
+                    if('instagram twitter'.split(' ').contains(secDom.toLowerCase()))
+                        continue; // subDom = ['mobile'];
 
-                href = url.href.replace(url.hostname, [...subDom, secDom, topDom].filter(dom => dom.length).join('.'));
+                    href = url.href.replace(url.hostname, [...subDom, secDom, topDom].filter(dom => dom.length).join('.'));
 
-                if(CHAT_CARDIFIED.has(href)) {
-                    let card = CHAT_CARDIFIED.get(href);
+                    if(CHAT_CARDIFIED.has(href)) {
+                        let card = CHAT_CARDIFIED.get(href);
 
-                    if(nullish($(`#card-${ UUID.from(href).toStamp() }`, element)) && defined(card)) {
-                        element.insertAdjacentElement('beforeend', card);
+                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, element)) && defined(card)) {
+                            element.insertAdjacentElement('beforeend', card);
 
-                        if($.nullish('[class*="chat-paused"i]'))
-                            card.scrollIntoViewIfNeeded(true);
-                    }
-
-                    continue;
-                }
-
-                CHAT_CARDIFIED.set(href, null);
-                CHAT_CARDIFYING_TIMERS.set(href, +new Date);
-
-                /*await*/ fetchURL.idempotent(href, { mode: 'cors' })
-                    .then(response => response.text())
-                    .then(DOMParser.stripBody)
-                    .then(html => HTMLParser.parseFromString(html, 'text/html'))
-                    .catch(WARN)
-                    .then(DOM => {
-                        if(!(DOM instanceof Document))
-                            throw TypeError(`No DOM available. Page not loaded`);
-
-                        let f = furnish;
-                        let get = property => DOM.get(property);
-
-                        let [title = '', description = '', image] = ["title", "description", "image"].map(get),
-                            error = DOM.querySelector('parsererror')?.textContent;
-
-                        LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
-
-                        if(!title?.length || !image?.length) {
-                            CHAT_CARDIFIED.set(href, f.span());
-
-                            if(!error?.length)
-                                return;
-                            else
-                                throw error;
+                            if($.nullish('[class*="chat-paused"i]'))
+                                card.scrollIntoViewIfNeeded(true);
                         }
 
-                        let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
-                            f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
-                                f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
-                                    f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05').with(
-                                        // Preview image
-                                        f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center').with(
-                                            f('.tt-card-image').with(
-                                                f('.tt-aspect').with(
-                                                    f('div', {}),
-                                                    f('img.tt-image', {
-                                                        alt: title,
-                                                        src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
-                                                        height: 45,
-                                                        style: 'max-height:45px',
+                        continue;
+                    }
 
-                                                        onerror({ currentTarget }) { currentTarget.src = STREAMER.icon }
-                                                    })
+                    CHAT_CARDIFIED.set(href, null);
+                    CHAT_CARDIFYING_TIMERS.set(href, +new Date);
+
+                    /*await*/ fetchURL.idempotent(href, { mode: 'cors' })
+                        .then(response => response.text())
+                        .then(DOMParser.stripBody)
+                        .then(html => HTMLParser.parseFromString(html, 'text/html'))
+                        .catch(WARN)
+                        .then(DOM => {
+                            if(!(DOM instanceof Document))
+                                throw TypeError(`No DOM available. Page not loaded`);
+
+                            let f = furnish;
+                            let get = property => DOM.get(property);
+
+                            let [title = '', description = '', image] = ["title", "description", "image"].map(get),
+                                error = DOM.querySelector('parsererror')?.textContent;
+
+                            LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
+
+                            if(!title?.length || !image?.length) {
+                                CHAT_CARDIFIED.set(href, f.span());
+
+                                if(!error?.length)
+                                    return;
+                                else
+                                    throw error;
+                            }
+
+                            let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
+                                f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
+                                    f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
+                                        f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05').with(
+                                            // Preview image
+                                            f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center').with(
+                                                f('.tt-card-image').with(
+                                                    f('.tt-aspect').with(
+                                                        f('div', {}),
+                                                        f('img.tt-image', {
+                                                            alt: title,
+                                                            src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
+                                                            height: 45,
+                                                            style: 'max-height:45px',
+
+                                                            onerror({ currentTarget }) { currentTarget.src = STREAMER.icon }
+                                                        })
+                                                    )
+                                                )
+                                            ),
+                                            // Title & Subtitle
+                                            f('.tt-align-items-center.tt-flex.tt-overflow-hidden').with(
+                                                f('.tt-full-width.tt-pd-l-1').with(
+                                                    // Title
+                                                    f('.chat-card__title.tt-ellipsis').with(
+                                                        f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
+                                                    ),
+                                                    // Subtitle
+                                                    f('.tt-ellipsis').with(
+                                                        f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').with(description)
+                                                    ),
                                                 )
                                             )
-                                        ),
-                                        // Title & Subtitle
-                                        f('.tt-align-items-center.tt-flex.tt-overflow-hidden').with(
-                                            f('.tt-full-width.tt-pd-l-1').with(
-                                                // Title
-                                                f('.chat-card__title.tt-ellipsis').with(
-                                                    f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
-                                                ),
-                                                // Subtitle
-                                                f('.tt-ellipsis').with(
-                                                    f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').with(description)
-                                                ),
+                                        )
+                                    )
+                                )
+                            );
+
+                            let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
+                                f('.tt-relative').with(
+                                    f('.tt-relative.chat-line__message-container').with(
+                                        f('div').with(
+                                            f('.chat-line__no-background.tt-inline').with(
+                                                card
                                             )
                                         )
                                     )
                                 )
-                            )
-                        );
+                            );
 
-                        let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
-                            f('.tt-relative').with(
-                                f('.tt-relative.chat-line__message-container').with(
-                                    f('div').with(
-                                        f('.chat-line__no-background.tt-inline').with(
-                                            card
-                                        )
-                                    )
-                                )
-                            )
-                        );
+                            CHAT_CARDIFIED.set(href, container);
+                            element.insertAdjacentElement('beforeend', container);
 
-                        CHAT_CARDIFIED.set(href, container);
-                        element.insertAdjacentElement('beforeend', container);
-
-                        if($.nullish('[class*="chat-paused"i]'))
-                            container.scrollIntoViewIfNeeded(true);
-                    })
-                    .catch(ERROR);
-            }
+                            if($.nullish('[class*="chat-paused"i]'))
+                                container.scrollIntoViewIfNeeded(true);
+                        })
+                        .catch(ERROR);
+                }
+            });
         });
     };
     Timers.link_maker__chat = -500;
@@ -2122,54 +2125,55 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.prevent_spam = () => {
         START__STOP_WATCH('prevent_spam');
 
-        Chat.get().map(Chat.onmessage = async line => {
+        Chat.get().map(Chat.onmessage = line => {
             let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
                 minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
                 minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
 
-            let { handle, message, author } = line,
-                element = await line.element;
+            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                let { handle, message, author, element } = line;
 
-            let spam_placeholder = "chat-deleted-message-placeholder";
+                let spam_placeholder = "chat-deleted-message-placeholder";
 
-            function markAsSpam(element, type = 'spam', message) {
-                let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
+                function markAsSpam(element, type = 'spam', message) {
+                    let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
 
-                $.all('[data-test-selector="chat-message-separator"i] ~ * > *', element).forEach(sibling => sibling.remove());
-                $('[data-test-selector="chat-message-separator"i]', element).parentElement.append(span);
+                    $.all('[data-test-selector="chat-message-separator"i] ~ * > *', element).forEach(sibling => sibling.remove());
+                    $('[data-test-selector="chat-message-separator"i]', element).parentElement.append(span);
 
-                element.setAttribute(type, message);
+                    element.setAttribute(type, message);
 
-                let tooltip = new Tooltip(element, message, { direction: 'up' });
+                    let tooltip = new Tooltip(element, message, { direction: 'up' });
 
-                // Re-make the tooltip if the tooltip is too long to display correctly
-                // if(getOffset(tooltip).width > getOffset(element).width)
-                if(message.length > 60) {
-                    tooltip.closest('[class]:not([aria-describedby])')?.remove();
+                    // Re-make the tooltip if the tooltip is too long to display correctly
+                    // if(getOffset(tooltip).width > getOffset(element).width)
+                    if(message.length > 60) {
+                        tooltip.closest('[class]:not([aria-describedby])')?.remove();
 
-                    new Tooltip(element, message, { direction: 'up', style: `width:fit-content; height:auto; white-space:break-spaces;` });
+                        new Tooltip(element, message, { direction: 'up', style: `width:fit-content; height:auto; white-space:break-spaces;` });
+                    }
                 }
-            }
 
-            function spamChecker(message, author) {
-                if(message.length < 1 || RegExp(`^${USERNAME}$`, 'i').test(author))
+                function spamChecker(message, author) {
+                    if(message.length < 1 || RegExp(`^${USERNAME}$`, 'i').test(author))
+                        return message;
+
+                    // The same message is already posted (within X lines)
+                    if( [...SPAM].slice(-lookBack).contains(message) )
+                        markAsSpam(element, 'plagiarism', message);
+
+                    // The message contains repetitive (more than X instances) words/phrases
+                    if(RegExp(`([^]{${ minLen },})${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
+                        markAsSpam(element, 'repetitive', message);
+
                     return message;
+                }
 
-                // The same message is already posted (within X lines)
-                if( [...SPAM].slice(-lookBack).contains(message) )
-                    markAsSpam(element, 'plagiarism', message);
-
-                // The message contains repetitive (more than X instances) words/phrases
-                if(RegExp(`([^]{${ minLen },})${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
-                    markAsSpam(element, 'repetitive', message);
-
-                return message;
-            }
-
-            // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
-            wait(30, message, author)
-                .then((message, author) => spamChecker(message, author))
-                .then(message => SPAM = [...SPAM, message].isolate());
+                // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
+                wait(30, message, author)
+                    .then((message, author) => spamChecker(message, author))
+                    .then(message => SPAM = [...SPAM, message].isolate());
+            });
         });
 
         JUDGE__STOP_WATCH('prevent_spam');
@@ -2207,16 +2211,19 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         Chat.get().map(Chat.defer.onmessage = async line => {
             let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
-            let element = await line.element;
-            let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
 
-            if(keep) {
-                element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
+            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                let element = line.element;
+                let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
 
-                allNodes(element)
-                    .filter(node => /\btext\b/i.test(node.nodeName))
-                    .map(text => text.nodeValue = text.nodeValue.normalize('NFKD'));
-            }
+                if(keep) {
+                    element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
+
+                    allNodes(element)
+                        .filter(node => /\btext\b/i.test(node.nodeName))
+                        .map(text => text.nodeValue = text.nodeValue.normalize('NFKD'));
+                }
+            });
         });
     };
     Timers.simplify_chat = -250;
@@ -2945,113 +2952,114 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(RESTORED_MESSAGES.has(uuid))
                 continue restoring;
 
-            let { author, handle, message, emotes, badges, style } = line,
-                element = await line.element,
-                deleted = await line.deleted;
+            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                let { author, handle, message, emotes, badges, style, element } = line,
+                    deleted = await line.deleted;
 
-            if(!deleted || !message?.length || author.equals(USERNAME))
-                continue restoring;
+                if(!deleted || !message?.length || author.equals(USERNAME))
+                    return;
 
-            RESTORED_MESSAGES.add(uuid);
+                RESTORED_MESSAGES.add(uuid);
 
-            let f = furnish;
-            let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
+                let f = furnish;
+                let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
 
-            // The message was deleted before the element was placed
-            if(nullish(container)) {
-                container = f(`.chat-line__message[@aTarget="chat-line-message" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
-                    f('[style="position:relative"]').with(
-                        f('.chat-line__message-highlight[@testSelector="chat-message-highlight" style="border-radius:.4rem; position:absolute"]'),
-                        f('.chat-line__message-container[style="position:relative"]').with(
-                            f('').with(
-                                f('.chat-line__no-background[style="display:inline"]').with(
-                                    f('.chat-line__username-container[style="display:inline-block"]').with(
-                                        // Chat badges
-                                        f('span').with(
-                                            ...badges.map(name =>
-                                                f('button[@aTarget=chat-badge]').with(
-                                                    // /badges/{version}/{UUID}/{size}
-                                                    // Broadcaster → https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1
-                                                    f(`img.chat-badge[alt="${ name }"]`, { src: `//static-cdn.jtvnw.net/badges/v1/${ TTV_BADGES.get(name) }/1` })
+                // The message was deleted before the element was placed
+                if(nullish(container)) {
+                    container = f(`.chat-line__message[@aTarget="chat-line-message" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
+                        f('[style="position:relative"]').with(
+                            f('.chat-line__message-highlight[@testSelector="chat-message-highlight" style="border-radius:.4rem; position:absolute"]'),
+                            f('.chat-line__message-container[style="position:relative"]').with(
+                                f('').with(
+                                    f('.chat-line__no-background[style="display:inline"]').with(
+                                        f('.chat-line__username-container[style="display:inline-block"]').with(
+                                            // Chat badges
+                                            f('span').with(
+                                                ...badges.map(name =>
+                                                    f('button[@aTarget=chat-badge]').with(
+                                                        // /badges/{version}/{UUID}/{size}
+                                                        // Broadcaster → https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1
+                                                        f(`img.chat-badge[alt="${ name }"]`, { src: `//static-cdn.jtvnw.net/badges/v1/${ TTV_BADGES.get(name) }/1` })
+                                                    )
+                                                )
+                                            ),
+                                            f('span.chat-line__username[role=button]').with(
+                                                f.span(
+                                                    f(`span.chat-author__display-name[@aTarget="chat-message-username" @aUser="${ author }" @testSelector="message-username" style="${ style }"]`).text(handle)
                                                 )
                                             )
                                         ),
-                                        f('span.chat-line__username[role=button]').with(
-                                            f.span(
-                                                f(`span.chat-author__display-name[@aTarget="chat-message-username" @aUser="${ author }" @testSelector="message-username" style="${ style }"]`).text(handle)
-                                            )
-                                        )
-                                    ),
-                                    f('span[@testSelector=chat-message-separator]').text(': '),
-                                    f('span[@testSelector=chat-line-message-placeholder]').text('Restoring...')
+                                        f('span[@testSelector=chat-message-separator]').text(': '),
+                                        f('span[@testSelector=chat-line-message-placeholder]').text('Restoring...')
+                                    )
                                 )
-                            )
-                        ),
-                        f('.chat-line__icons')
-                    )
-                );
+                            ),
+                            f('.chat-line__icons')
+                        )
+                    );
 
-                $('[data-test-selector*="chat"i][role="log"i]').append(container);
-            }
+                    $('[data-test-selector*="chat"i][role="log"i]').append(container);
+                }
 
-            let body = $(`[data-test-selector$="message-placeholder"i]`, container),
-                user = $(`[data-a-user="${ author }"i]`, container);
+                let body = $(`[data-test-selector$="message-placeholder"i]`, container),
+                    user = $(`[data-a-user="${ author }"i]`, container);
 
-            if(nullish(body) || nullish(user))
-                continue restoring;
+                if(nullish(body) || nullish(user))
+                    return;
 
-            LOG(`Restoring message:`, line);
+                LOG(`Restoring message:`, line);
 
-            // Fragmented...
-            if(emotes.length > 0) {
-                let inter = [], final = [];
+                // Fragmented...
+                if(emotes.length > 0) {
+                    let inter = [], final = [];
 
-                for(let word of message.split(' ').filter(s => s.length))
-                    inter.push(
-                        emotes.contains(word)
-                        // Create an emote button...
-                        ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
-                            f('div').with(
-                                f('span[@aTarget=emote-name]').with(
-                                    f('.chat-image__container').with(
-                                        f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
+                    for(let word of message.split(' ').filter(s => s.length))
+                        inter.push(
+                            emotes.contains(word)
+                            // Create an emote button...
+                            ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                                f('div').with(
+                                    f('span[@aTarget=emote-name]').with(
+                                        f('.chat-image__container').with(
+                                            f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
+                                        )
                                     )
                                 )
                             )
-                        )
-                        // Just push the message...
-                        : word
-                    );
+                            // Just push the message...
+                            : word
+                        );
 
-                let fragments = [];
-                for(let word of inter)
-                    if(typeof word == 'string') {
-                        fragments.push(word);
-                    } else {
-                        if(fragments.length)
-                            final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
-                        final.push(word);
+                    let fragments = [];
+                    for(let word of inter)
+                        if(typeof word == 'string') {
+                            fragments.push(word);
+                        } else {
+                            if(fragments.length)
+                                final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
+                            final.push(word);
 
-                        fragments = [];
-                    }
+                            fragments = [];
+                        }
 
-                if(fragments.length)
-                    final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
+                    if(fragments.length)
+                        final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
 
-                body.innerHTML = final.map(e => e.outerHTML).join(' ');
-            } else {
-                body.innerText = message;
-            }
+                    body.innerHTML = final.map(e => e.outerHTML).join(' ');
+                } else {
+                    body.innerText = message;
+                }
 
-            container.dataset.uuid = uuid;
-            container.dataset.resurrected = true;
+                container.dataset.uuid = uuid;
+                container.dataset.resurrected = true;
 
-            let target = $('[data-a-target*="deleted"i]', container);
+                let target = $('[data-a-target*="deleted"i]', container);
 
-            if(defined(target))
-                target.dataset.aTarget = 'chat-restored-message-placeholder';
+                if(defined(target))
+                    target.dataset.aTarget = 'chat-restored-message-placeholder';
 
-            LOG(`Restored message "${ message }"`, { line, container });
+                LOG(`Restored message "${ message }"`, { line, container });
+            });
         }
 
         JUDGE__STOP_WATCH('recover_messages');
@@ -3669,11 +3677,12 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 let author = source.nick,
                                     badges = Object.keys(tags?.badges ?? {}),
+                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:ACTION)\s*)([^]+)\1$/g, '$3').trim(),
                                     // Have to wait on the page to play catch-up...
-                                    element = when.defined((parameters, uuid) =>
+                                    element = when.defined((message, uuid) =>
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
-                                            .find(message =>
-                                                $.all(`[data-a-user="${ author }"i]`, message)
+                                            .find(div =>
+                                                $.all(`[data-a-user="${ author }"i]`, div)
                                                     .map(div => div.closest('[data-test-selector$="message"i], [data-a-target$="message"i]'))
                                                     .filter(defined)
                                                     .find(div => {
@@ -3683,13 +3692,13 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                                         if(nullish(body))
                                                             return;
 
-                                                        for(let child of body.children)
+                                                        for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
                                                             if(child.dataset.testSelector?.equals('emote-button'))
                                                                 text.push($('img', child).alt);
                                                             else
                                                                 text.push(child.textContent);
 
-                                                        let match = text.join('').replace(RegExp(`^${ author }\\s*:`, 'i')).sheer().equals(parameters.sheer());
+                                                        let match = text.join('').mutilate(true).equals(message.mutilate(true));
 
                                                         if(match)
                                                             div.dataset.uuid = uuid;
@@ -3697,7 +3706,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                                         return match
                                                     })
                                             )
-                                        , 100, parameters, tags.id),
+                                        , 100, message, tags.id),
                                     emotes = Object.keys(tags.emotes ?? {}).map(key => {
                                         let emote = (tags.emotes[+key] || tags.emotes[key]).shift(),
                                             name = parameters.substring(+emote.startPosition, ++emote.endPosition),
@@ -3709,9 +3718,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     }),
                                     handle = tags.display_name,
                                     mentions = parameters.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                                    message = parameters,
                                     raw = [(handle.unlike(author)? `${ handle } (${ author })`: handle), message].join(': '),
-                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('button[data-test-selector="chat-reply-button"i]')),
+                                    reply = when.defined(e => e, 100, element).then(element => element?.querySelector('[class*="reply"i] button')),
                                     style = `color: ${ tags.color || '#9147FF' };`,
                                     uuid = tags.id,
                                     sent = (new Date).toJSON();
@@ -3730,7 +3738,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     element,
                                     message,
                                     mentions,
-                                    highlighted: when.defined(e => e, 100, element).then(element => element.dataset.testSelector.contains('notice')),
+                                    highlighted: when.defined(e => e, 100, element).then(element => parseBool(element.dataset.testSelector?.contains('notice'))),
                                 };
 
                                 Object.defineProperties(results, {
@@ -3814,7 +3822,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                         for(let element of unhandled) {
                             let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim(),
                                 uuid = UUID.from(raw).toString(),
-                                reply = $('button[data-test-selector*="reply"i]', element),
+                                reply = $('[class*="reply"i] button', element),
                                 style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
                                 author = $('[data-a-user]', element).dataset.aUser,
                                 emotes = new Set,
@@ -3860,8 +3868,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                             Object.defineProperties(results, {
                                 deleted: {
-                                    get:(async function() {
-                                        return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                    get:(function() {
+                                        return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', this);
                                     }).bind(element)
                                 },
                             });
@@ -4010,7 +4018,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             message = message.textContent;
 
             let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
-                style = $('[style]', handle).getAttribute('style'),
+                style = $('[style]', handle)?.getAttribute('style') ?? '',
                 { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle.parentElement.textContent).groups,
                 sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * (meridiem == 'PM'), minute, ':00'].join('')).toJSON();
 

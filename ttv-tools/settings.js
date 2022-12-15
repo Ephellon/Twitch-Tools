@@ -1738,7 +1738,7 @@ when.defined(() => SETTINGS)
         Storage.getBytesInUse(async BYTES_IN_USE => {
             let ESTIMATE = await navigator?.storage?.estimate?.();
             let MAX_BYTES = (Storage.QUOTA_BYTES || ESTIMATE?.quota),
-                PERC_IN_USE = (100 * ((BYTES_IN_USE || ESTIMATE?.usage) / MAX_BYTES)).toFixed(3);
+                PERC_IN_USE = (100 * ((BYTES_IN_USE || ESTIMATE?.usage) / MAX_BYTES)).toFixed(1);
 
             $.all('[id*="data-usage"i][id*="browser-storage"i][type="number"i]').map(input => {
                 let [amount, unit] = BYTES_IN_USE.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
@@ -1746,13 +1746,6 @@ when.defined(() => SETTINGS)
                 input.value = amount;
                 input.closest('[unit]')?.setAttribute('unit', unit);
             });
-
-            $.all('[id*="data-usage"i][id*="browser-storage"i][type="range"i]').map(input => {
-                input.value = PERC_IN_USE;
-
-                // new Tooltip(input, `${ PERC_IN_USE }%`, { direction: 'left' });
-            });
-
             $.all('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]').map(table => {
                 let allcBytes = 0,
                     miscBytes = 0;
@@ -1767,7 +1760,7 @@ when.defined(() => SETTINGS)
                 let [value, unit] = total.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
 
                 let f = furnish;
-                let body = f.tbody(
+                let tbody = f.tbody(
                     f.tr(
                         f.td(`Settings`),
                         f.td(allcBytes.suffix('B', 2)),
@@ -1778,14 +1771,40 @@ when.defined(() => SETTINGS)
                         f.td(miscBytes.suffix('B', 2)),
                         f.td((100 * (miscBytes / total)).suffix('%', 1))
                     ),
-
                     f.tr(
                         f.td(`Total`),
-                        f.td(total.suffix('B', 2))
+                        f.td(total.suffix('B', 2)),
+                        f.td(`${ PERC_IN_USE }%`)
                     )
                 );
 
-                table.append(body);
+                table.append(tbody);
+
+                let current = [allcBytes, miscBytes].map(Bytes => PERC_IN_USE * (Bytes / total)),
+                    add = (a, b) => (a + b),
+                    colors = 'igor-pink baby-blue baby-gold soft-purple green baby-grey'
+                        .split(' ')
+                        .slice(0, current.length)
+                        .map((color, index) => {
+                            let td = $(`tr:nth-child(${ ++index }) td`, tbody);
+
+                            td.modStyle(`text-decoration:2px underline var(--${ color })`);
+                            td.insertAdjacentElement('afterbegin', f(`span[style="color:var(--${ color })"]`).with('@'));
+
+                            return `var(--${ color }) 0 ${ current.slice(0, index).reduce(add, 0).suffix('%', 3) }`;
+                        })
+                        .join(', ');
+
+                $.all('[id*="data-usage"i][id*="browser-storage"i][id*="range"i]').map(element =>
+                    element.modStyle(`
+                        background: linear-gradient(90deg, ${ colors }, #fff4 0);
+                        border: 0;
+                        border-top-left-radius: 3px;
+                        border-bottom-left-radius: 3px;
+                        border-top-right-radius: 3px;
+                        border-bottom-right-radius: 3px;
+                    `)
+                );
             });
         });
     });
