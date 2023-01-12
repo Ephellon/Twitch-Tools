@@ -125,6 +125,15 @@ Object.defineProperties(parseURL, {
     },
 });
 
+// Go to a page
+    // goto(url:string<URL>, target:string?, pass:object?) → undefined
+function goto(url, target = '_self', pass = {}) {
+    // DVR save
+    top.beforeleavinghere?.(pass);
+
+    open(url, target);
+}
+
 // Create elements
     // furnish(tagname:string?, attributes:object?, ...children<Element>) → Element
 function furnish(tagname = 'div', attributes = null, ...children) {

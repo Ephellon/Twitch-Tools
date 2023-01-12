@@ -312,10 +312,11 @@ let // These are option names. Anything else will be removed
     ];
 
 // Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, direction:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
+    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
     // Tooltip.get(parent:Element) → Element<Tooltip>
 class Tooltip {
     static #TOOLTIPS = new Map()
+    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
 
     constructor(parent, text = '', fineTuning = {}) {
         let existing = Tooltip.#TOOLTIPS.get(parent);
@@ -323,7 +324,8 @@ class Tooltip {
         fineTuning.top |= 0;
         fineTuning.left |= 0;
 
-        fineTuning.direction ??= '';
+        fineTuning.from ??= '';
+        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
@@ -339,25 +341,23 @@ class Tooltip {
             uuid = value + (['', ':tooltip'][index] || '');
         }
 
-        tooltip.id = uuid;
+        parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
 
         parent.addEventListener('mouseenter', event => {
-            $.all('.tooltip-layer').map(layer => layer.remove());
-
             let { currentTarget } = event,
                 offset = getOffset(currentTarget),
                 screen = getOffset(document.body),
                 fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
 
-            let direction = fineTuning.direction.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
+            let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
             $('body').append(
-                furnish('.twitch-tools-tooltip-layer.tooltip-layer',
+                furnish('.tt-tooltip-layer.tooltip-layer',
                     {
                         style: (() => {
                             let style = 'animation:.3s fade-in 1;';
 
-                            switch(direction) {
+                            switch(from) {
                                 // case 'up':
                                 //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
 
@@ -377,24 +377,22 @@ class Tooltip {
                             return style;
                         })()
                     },
-                    furnish('div', { 'aria-describedby': tooltip.id, 'class': 'tt-inline-flex tt-relative tt-tooltip-wrapper tt-tooltip-wrapper--show' },
+                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         tooltip
                     )
                 )
             );
 
-            tooltip.setAttribute('style', `display:block;`);
+            tooltip.setAttribute('style', (fineTuning.style ?? ''));
         });
 
-        let hideTooltip = event => {
-            $('div#root .twitch-tools-tooltip-layer.tooltip-layer')?.remove();
+        parent.addEventListener('mouseleave', ({ currentTarget }) => {
+            let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
 
-            tooltip?.setAttribute('style', 'display:none');
-        };
-
-        parent.addEventListener('mouseleave', hideTooltip);
-        parent.addEventListener('mousedown', hideTooltip);
+            tooltip?.setAttribute('show', false);
+            tooltip?.setAttribute('tt-remove-me', true);
+        });
 
         Tooltip.#TOOLTIPS.set(parent, tooltip);
 

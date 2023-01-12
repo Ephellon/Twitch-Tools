@@ -581,13 +581,7 @@ class Balloon {
     // Tooltip.get(parent:Element) → Element<Tooltip>
 class Tooltip {
     static #TOOLTIPS = new Map()
-    static #CLEANER = setInterval(() => {
-        $.all('[tt-last-accessed]')
-            .map(tooltip => {
-                if(+new Date(tooltip.getAttribute('tt-last-accessed')) < +new Date - 1000)
-                    tooltip.closest('.tooltip-layer').remove();
-            });
-    }, 1000)
+    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
 
     constructor(parent, text = '', fineTuning = {}) {
         let existing = Tooltip.#TOOLTIPS.get(parent);
@@ -662,7 +656,7 @@ class Tooltip {
             let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
 
             tooltip?.setAttribute('show', false);
-            tooltip?.setAttribute('tt-last-accessed', (new Date).toJSON());
+            tooltip?.setAttribute('tt-remove-me', true);
         });
 
         Tooltip.#TOOLTIPS.set(parent, tooltip);
@@ -2697,7 +2691,7 @@ function SetVolume(volume = 0.5) {
         thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
         slider = $('video ~ * .player-controls + * [style]');
 
-    volume = parseFloat(volume?.toFixed(2) || 1);
+    volume = parseFloat(volume?.toFixed?.(2) || 1);
 
     if(defined(video))
         video.volume = volume;
@@ -3031,7 +3025,7 @@ function AddCustomCSSBlock(name, block) {
 
     let newHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
 
-    if(CUSTOM_CSS?.innerHTML?.equals(newHTML))
+    if(nullish(CUSTOM_CSS?.innerHTML) || CUSTOM_CSS?.innerHTML?.equals(newHTML))
         return;
 
     CUSTOM_CSS.innerHTML = newHTML;
@@ -3542,7 +3536,7 @@ try {
                                     Handlers.first_in_line({ href, textContent: `${ name } is live [Greedy Raiding]` });
                                 }
 
-                                open(`./${ from }?tool=raid-stopper--${ method }`, '_self');
+                                goto(`./${ from }?tool=raid-stopper--${ method }`);
                             } else {
                                 // The user clicked "Cancel"
                                 LOG('Canceled Greedy Raiding event', { from, to });
@@ -5847,7 +5841,7 @@ let Initialize = async(START_OVER = false) => {
                             bias = [];
 
                         analysisTime = parseInt(analysisTime);
-                        misMatchPercentage = parseFloat(misMatchPercentage);
+                        misMatchPercentage = parseFloat(misMatchPercentage) || 0;
 
                         for(let [mismatch, time, trend] of CAPTURE_HISTORY) {
                             threshold += parseFloat(mismatch);
@@ -5892,14 +5886,14 @@ let Initialize = async(START_OVER = false) => {
                                 { totalVideoFrames } = video.getVideoPlaybackQuality();
 
                             diffDat.innerHTML = `Frame #${ totalVideoFrames.toString(36).toUpperCase() } / ${ detectedTrend } ${ misMatchPercentage }% &#866${ 3 + (trend[0].equals('d')) }; / ${ ((stop - start) / 1000).suffix('s', 2) } / ${ size.suffix('B', 2) } / ${ videoHeight }p`;
-                            diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { from: 'left' });
+                            // diffDat.tooltip = new Tooltip(diffDat, `Frame ID / Overall Trend, Change Percentage, Current Trend / Time to Calculate Changes / Size of Changes (Bytes) / Image Resolution`, { from: 'left' });
                         } else {
                             diffImg?.remove();
                             diffDat?.remove();
                         }
 
                         /* Alter other settings according to the trend */
-                        let changes = [];
+                        let changes = ['changing trend detection level'];
 
                         if(bias.length > 30 && GET_TIME_REMAINING() > 60_000) {
                             // Positive activity trend; disable Lurking, pause Up Next
@@ -5907,7 +5901,7 @@ let Initialize = async(START_OVER = false) => {
                                 POSITIVE_TREND = true;
 
                                 // Pause Up Next
-                                __AutoFocus_Pause_UpNext__: {
+                                __AutoFocus_Pause_UpNext__: if(UP_NEXT_ALLOW_THIS_TAB) {
                                     let button = $('#up-next-control'),
                                         paused = parseBool(button?.getAttribute('paused'));
 
@@ -5940,7 +5934,7 @@ let Initialize = async(START_OVER = false) => {
                                 POSITIVE_TREND = false;
 
                                 // Resume Up Next
-                                __AutoFocus_Resume_UpNext__: {
+                                __AutoFocus_Resume_UpNext__: if(UP_NEXT_ALLOW_THIS_TAB) {
                                     let button = $('#up-next-control'),
                                         paused = parseBool(button?.getAttribute('paused'));
 
@@ -5977,7 +5971,7 @@ let Initialize = async(START_OVER = false) => {
                             --STALLED_FRAMES;
 
                         if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL * .75)) {
-                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's → ' + (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
+                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's →', (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
 
                             POLL_INTERVAL *= 1.1;
                             STALLED_FRAMES = 0;
@@ -6051,7 +6045,7 @@ let Initialize = async(START_OVER = false) => {
                 WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
                     ?.toNativeStack?.();
 
-                open(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href, '_self');
+                goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
             }
 
             return JUDGE__STOP_WATCH('away_mode');
@@ -6850,7 +6844,8 @@ let Initialize = async(START_OVER = false) => {
                     SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
                             // The user clicked "OK"
-                            open(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }).href, '_self');
+
+                            goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }).href);
                         } else {
                             // The user clicked "Cancel"
                             LOG('Canceled First in Line event', FIRST_IN_LINE_HREF);
@@ -6932,7 +6927,7 @@ let Initialize = async(START_OVER = false) => {
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                open(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }).href, '_self');
+                goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }).href);
             });
         }, 1000);
     }
@@ -6992,7 +6987,8 @@ let Initialize = async(START_OVER = false) => {
 
                         if(action) {
                             // The user clicked "OK"
-                            open(`./${ name }?tool=up-next--ok`, '_self');
+
+                            goto(`./${ name }?tool=up-next--ok`);
                         } else {
                             // The user clicked "Cancel"
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
@@ -7003,7 +6999,7 @@ let Initialize = async(START_OVER = false) => {
                         }
                     });
 
-                top.open(href, '_self');
+                // top.open(href, '_self');
             });
 
         clearInterval(FIRST_IN_LINE_SAFETY_CATCH);
@@ -7800,7 +7796,7 @@ let Initialize = async(START_OVER = false) => {
                                                 WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
                                                     ?.toNativeStack?.();
 
-                                                open($('a', container)?.href ?? '?', '_self');
+                                                goto($('a', container)?.href ?? '?');
                                             });
 
                                             return clearInterval(intervalID);
@@ -8045,9 +8041,10 @@ let Initialize = async(START_OVER = false) => {
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                                     SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
-                                        WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`);
+                                        WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
+                                            ?.toNativeStack?.();
 
-                                        open($('a', container)?.href ?? '?', '_self');
+                                        goto($('a', container)?.href ?? '?');
                                     });
 
                                     return clearInterval(intervalID);
@@ -8085,7 +8082,8 @@ let Initialize = async(START_OVER = false) => {
                     LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
-                    open(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href, '_self');
+
+                    goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href);
                 }
             }
         }
@@ -8846,7 +8844,7 @@ let Initialize = async(START_OVER = false) => {
                     NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i;
                     // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
 
-                async function fetchPlayStationGame(index = 1, pages = 1) {
+                async function fetchPlayStationGame(game, index = 1, pages = 1) {
                     return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                         .then(r => r.json())
                         .then(data => {
@@ -8936,7 +8934,7 @@ let Initialize = async(START_OVER = false) => {
                                             }
 
                                         if(index < pages)
-                                            return await fetchPlayStationGame(index + 1, pages);
+                                            return await fetchPlayStationGame(game, index + 1, pages);
                                         return {};
                                     });
 
@@ -8944,64 +8942,133 @@ let Initialize = async(START_OVER = false) => {
                         });
                 }
 
-                fetchPlayStationGame()
-                    .then((info = {}) => {
-                        let { game, name, href, img, price } = info;
+                if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
+                    // Multiple versions are available
+                    let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
 
-                        if(!href?.length)
-                            return;
+                    suff = suff.replace(/s$/, '');
 
-                        let f = furnish;
+                    let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
-                        let purchase =
-                            f(`.tt-store-purchase--container.is-playstation`).with(
-                                // Price
-                                f('.tt-store-purchase--price').with(price),
+                    // Make multipls links
+                    fetchPlayStationGame(jbpp)
+                        .then((info = {}) => {
+                            let { game, name, href, img, price } = info;
 
-                                // Link to PlayStation
-                                f('.tt-store-purchase--handler').with(
-                                    f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
-                                )
-                            );
+                            if(!href?.length)
+                                return;
 
-                        // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+                            let f = furnish;
 
-                        when.defined(() => $('#tt-playstation-purchase'))
-                            .then(container => {
-                                // Load the maturity warning (if applicable)...
-                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
-                                    .then(r => r.text())
-                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                    .then(DOM => {
-                                        let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent;
+                            let purchase =
+                                f(`.tt-store-purchase--container.is-playstation`).with(
+                                    // Price
+                                    f('.tt-store-purchase--price').with(price),
 
-                                        if(!data?.length)
-                                            return;
+                                    // Link to PlayStation
+                                    f('.tt-store-purchase--handler').with(
+                                        f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                    )
+                                );
 
-                                        data = JSON.parse(data);
+                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
 
-                                        finder: for(let key in data.cache)
-                                            if(/^product/i.test(key)) {
-                                                let { authority, description, name, url } = data.cache[key].contentRating;
+                            when.defined(() => $('#tt-playstation-purchase'))
+                                .then(container => {
+                                    // Load the maturity warning (if applicable)...
+                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        .then(r => r.text())
+                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                        .then(DOM => {
+                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent;
 
-                                                $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
-                                                $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
+                                            if(!data?.length)
+                                                return;
 
-                                                break finder;
-                                            }
-                                    })
-                                    .catch(error => {
-                                        WARN(`Unable to fetch PlayStation pricing information for "${ game }"`, error);
-                                    });
+                                            data = JSON.parse(data);
 
-                                container.replaceWith(purchase);
-                            });
+                                            finder: for(let key in data.cache)
+                                                if(/^product/i.test(key)) {
+                                                    let { authority, description, name, url } = data.cache[key].contentRating;
 
-                        LOG(`Got "${ game }" data from PlayStation:`, info);
-                    })
-                    .catch(error => {
-                        WARN(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
-                    });
+                                                    $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
+                                                    $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
+
+                                                    break finder;
+                                                }
+                                        })
+                                        .catch(error => {
+                                            WARN(`Unable to fetch PlayStation pricing information for "${ jbpp }"`, error);
+                                        });
+
+                                    container.replaceWith(purchase);
+                                });
+
+                            LOG(`Got "${ jbpp }" data from PlayStation:`, info);
+                        })
+                        .catch(error => {
+                            WARN(`Unable to connect to PlayStation. Tried to look for "${ jbpp }"`, error);
+                        });
+                } else {
+                    fetchPlayStationGame(game)
+                        .then((info = {}) => {
+                            let { game, name, href, img, price } = info;
+
+                            if(!href?.length)
+                                return;
+
+                            let f = furnish;
+
+                            let purchase =
+                                f(`.tt-store-purchase--container.is-playstation`).with(
+                                    // Price
+                                    f('.tt-store-purchase--price').with(price),
+
+                                    // Link to PlayStation
+                                    f('.tt-store-purchase--handler').with(
+                                        f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                    )
+                                );
+
+                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+
+                            when.defined(() => $('#tt-playstation-purchase'))
+                                .then(container => {
+                                    // Load the maturity warning (if applicable)...
+                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        .then(r => r.text())
+                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                        .then(DOM => {
+                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent;
+
+                                            if(!data?.length)
+                                                return;
+
+                                            data = JSON.parse(data);
+
+                                            finder: for(let key in data.cache)
+                                                if(/^product/i.test(key)) {
+                                                    let { authority, description, name, url } = data.cache[key].contentRating;
+
+                                                    $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
+                                                    $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
+
+                                                    break finder;
+                                                }
+                                        })
+                                        .catch(error => {
+                                            WARN(`Unable to fetch PlayStation pricing information for "${ game }"`, error);
+                                        });
+
+                                    container.replaceWith(purchase);
+                                });
+
+                            LOG(`Got "${ game }" data from PlayStation:`, info);
+                        })
+                        .catch(error => {
+                            WARN(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
+                        });
+                    }
 
                     /*** Get the Xbox link (if applicable) · 2,964 Games 2022-11-22 16:37 CST
                      *     __   ___
@@ -9013,7 +9080,7 @@ let Initialize = async(START_OVER = false) => {
                      *
                      *
                      */
-                    async function fetchXboxGame(index = 1) {
+                    async function fetchXboxGame(game) {
                         return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
@@ -9087,123 +9154,216 @@ let Initialize = async(START_OVER = false) => {
                             });
                     }
 
-                    fetchXboxGame()
-                        .then((info = {}) => {
-                            let { game, name, href, img, price } = info;
+                    if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
+                        // Multiple versions are available
+                        let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
 
-                            if(!href?.length)
-                                return;
+                        suff = suff.replace(/s$/, '');
 
-                            let f = furnish;
+                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
-                            let purchase =
-                                f('.tt-store-purchase--container.is-xbox').with(
-                                    // Price
-                                    f('.tt-store-purchase--price').with(price),
+                        // Make multipls links
+                        fetchXboxGame(jbpp)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price } = info;
 
-                                    // Link to Xbox
-                                    f('.tt-store-purchase--handler').with(
-                                        f(`a[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
-                                    )
-                                );
+                                if(!href?.length)
+                                    return;
 
-                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
+                                let f = furnish;
 
-                            when.defined(() => $('#tt-xbox-purchase'))
-                                .then(container => {
-                                    // Load the price & maturity warning (if applicable)...
-                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
-                                        .then(r => r.text())
-                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                        .then(DOM => {
-                                            let price = (null
-                                                ?? $('[itemprop="price"i]', DOM)?.content
-                                                ?? (null
-                                                    ?? $('[class^="price-mod"i][class*="discount"i]', DOM)
-                                                    ?? $('[class^="price-mod"i][class*="original"i]', DOM)
-                                                    ?? $('[class^="price-mod"i]', DOM)
-                                                    ?? $('[class$="price-text"i] *', DOM)
-                                                )?.textContent?.trim()
-                                            );
-                                            let rating = $('[class*="age"i][class*="rating"i] img', DOM),
-                                                mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
+                                let purchase =
+                                    f('.tt-store-purchase--container.is-xbox').with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
 
-                                            rating.modStyle(RATING_STYLING);
+                                        // Link to Xbox
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
+                                        )
+                                    );
 
-                                            $('.is-xbox .tt-store-purchase--price').textContent = price || info.price;
-                                            $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
-                                            $('#tt-content-rating-placeholder')?.replaceWith(rating);
-                                        })
-                                        .catch(error => {
-                                            WARN(`Unable to fetch Xbox pricing information for "${ game }"`, error);
-                                        });
+                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
 
-                                    // TODO: Make this faster somehow!
-                                    // Slow as hell!
-                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
-                                        .then(r => r.text())
-                                        .then(DOMParser.stripBody)
-                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                        .then(DOM => {
-                                            return /* TODO: Get this to work without freezing the machine */;
+                                when.defined(() => $('#tt-xbox-purchase'))
+                                    .then(container => {
+                                        // Load the price & maturity warning (if applicable)...
+                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                            .then(r => r.text())
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                let price = (null
+                                                    ?? $('[itemprop="price"i]', DOM)?.content
+                                                    ?? (null
+                                                        ?? $('[class^="price-mod"i][class*="discount"i]', DOM)
+                                                        ?? $('[class^="price-mod"i][class*="original"i]', DOM)
+                                                        ?? $('[class^="price-mod"i]', DOM)
+                                                        ?? $('[class$="price-text"i] *', DOM)
+                                                    )?.textContent?.trim()
+                                                );
+                                                let rating = $('[class*="age"i][class*="rating"i] img', DOM),
+                                                    mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
 
-                                            let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
+                                                rating.modStyle(RATING_STYLING);
 
-                                            if(data?.length) {
-                                                /** Xbox | Product Summaries
-                                                    accessibilityCapabilities: object<{ audio:array, gameplay:array, input:array, publisherInformationUri:string?, visual:array }>
-                                                    availableOn:array<["Xbox", "XboxOne", "XboxSeriesS", "XboxSeriesX"...]>
-                                                    averageRating:number<float>
-                                                    bundledProductIds:array<[...string]>
-                                                    bundlesBySeed:array<[...string]>
-                                                    capabilities:object<{ `CapabilityKey`:`CapabilityDescription` }>
-                                                    categories:array<[...string]>
-                                                    contentRating:object<{ boardName:string, description:string, disclaimers:array<[...string]>, descriptors:array<[...string]>, imageUri:string<URL>, imageLinkUri:string<URL>, interactiveDescriptions:array<[...string]>, rating:string, ratingAge:number<integer>, ratingDescription:string }>
-                                                    description:string
-                                                    developerName:string
-                                                    editions:array<[...string]>
-                                                    hasAddOns:boolean
-                                                    images:object<{ `ImageType`:object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels> }> }>
-                                                    includedWithPassesProductIds:array<[...string]>
-                                                    languagesSupported:object<{ `Language`:object<{ areSubtitlesSupported:boolean, isAudioSupported:boolean, isInterfaceSupported:boolean, languageDisplayName:string }> }>
-                                                    legalNotices:array<[...string]> of @@capabilities@key
-                                                    maxInstallSize:number<integer:Bytes>
-                                                    optimalSatisfyingPassId:string
-                                                    optimalSkuId:string
-                                                    preferredSkuId:string
-                                                    productFamily:string
-                                                    productId:string
-                                                    publisherName:string
-                                                    ratingCount:number<integer>
-                                                    releaseDate:string<Date:ISO>
-                                                    shortDescription:string
-                                                    showSupportedLanguageDisclaimer:boolean
-                                                    specificPrices:object<{ `PriceType`:array<[ ...object<{ skuId:string, availabilityId:string, listPrice:number<float>, msrp:number<float>, discountPercentage:number<float>, currencyCode:string, remediations:array<[]>, affirmationId:string?, priceEligibilityInfo:object?, availabilityActions:array<[...string]>, endDate:string<Date:ISO>, hasXPriceOffer:boolean }> ]> }>
-                                                    systemRequirements:array<[ object<{ minimum:string, recommended:string, title:string<RequirementType> }> ]>
-                                                    title:string
-                                                    videos:array<[ object<{ title:string, url:string<URL>, width:number<integer:pixels>, height:number<integer:pixels>, previewImage: object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels>, caption:string }>, purpose:string }> ]>
-                                                */
-                                                data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
+                                                $('.is-xbox .tt-store-purchase--price').textContent = price || info.price;
+                                                $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
+                                                $('#tt-content-rating-placeholder')?.replaceWith(rating);
+                                            })
+                                            .catch(error => {
+                                                WARN(`Unable to fetch Xbox pricing information for "${ jbpp }"`, error);
+                                            });
 
-                                                if(nullish(data?.specificPrices))
-                                                    return;
+                                        // TODO: Make this faster somehow!
+                                        // Slow as hell!
+                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                            .then(r => r.text())
+                                            .then(DOMParser.stripBody)
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                return /* TODO: Get this to work without freezing the machine */;
 
-                                                let mature = data.contentRating?.rating || '',
-                                                    price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+                                                let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
 
-                                                $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                $('.is-xbox .tt-store-purchase--price').textContent = price;
-                                            }
-                                        });
+                                                if(data?.length) {
+                                                    data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
 
-                                    container.replaceWith(purchase);
-                                });
+                                                    if(nullish(data?.specificPrices))
+                                                        return;
 
-                            LOG(`Got "${ game }" data from Xbox:`, info);
-                        })
-                        .catch(error => {
-                            WARN(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
-                        });
+                                                    let mature = data.contentRating?.rating || '',
+                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+
+                                                    $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = price;
+                                                }
+                                            });
+
+                                        container.replaceWith(purchase);
+                                    });
+                            })
+                            .catch(error => {
+                                WARN(`Unable to connect to Xbox. Tried to look for "${ jbpp }"`, error);
+                            });
+                    } else {
+                        fetchXboxGame(game)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price } = info;
+
+                                if(!href?.length)
+                                    return;
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f('.tt-store-purchase--container.is-xbox').with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to Xbox
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
+
+                                when.defined(() => $('#tt-xbox-purchase'))
+                                    .then(container => {
+                                        // Load the price & maturity warning (if applicable)...
+                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                            .then(r => r.text())
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                let price = (null
+                                                    ?? $('[itemprop="price"i]', DOM)?.content
+                                                    ?? (null
+                                                        ?? $('[class^="price-mod"i][class*="discount"i]', DOM)
+                                                        ?? $('[class^="price-mod"i][class*="original"i]', DOM)
+                                                        ?? $('[class^="price-mod"i]', DOM)
+                                                        ?? $('[class$="price-text"i] *', DOM)
+                                                    )?.textContent?.trim()
+                                                );
+                                                let rating = $('[class*="age"i][class*="rating"i] img', DOM),
+                                                    mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
+
+                                                rating.modStyle(RATING_STYLING);
+
+                                                $('.is-xbox .tt-store-purchase--price').textContent = price || info.price;
+                                                $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
+                                                $('#tt-content-rating-placeholder')?.replaceWith(rating);
+                                            })
+                                            .catch(error => {
+                                                WARN(`Unable to fetch Xbox pricing information for "${ game }"`, error);
+                                            });
+
+                                        // TODO: Make this faster somehow!
+                                        // Slow as hell!
+                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                            .then(r => r.text())
+                                            .then(DOMParser.stripBody)
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                return /* TODO: Get this to work without freezing the machine */;
+
+                                                let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
+
+                                                if(data?.length) {
+                                                    /** Xbox | Product Summaries
+                                                        accessibilityCapabilities: object<{ audio:array, gameplay:array, input:array, publisherInformationUri:string?, visual:array }>
+                                                        availableOn:array<["Xbox", "XboxOne", "XboxSeriesS", "XboxSeriesX"...]>
+                                                        averageRating:number<float>
+                                                        bundledProductIds:array<[...string]>
+                                                        bundlesBySeed:array<[...string]>
+                                                        capabilities:object<{ `CapabilityKey`:`CapabilityDescription` }>
+                                                        categories:array<[...string]>
+                                                        contentRating:object<{ boardName:string, description:string, disclaimers:array<[...string]>, descriptors:array<[...string]>, imageUri:string<URL>, imageLinkUri:string<URL>, interactiveDescriptions:array<[...string]>, rating:string, ratingAge:number<integer>, ratingDescription:string }>
+                                                        description:string
+                                                        developerName:string
+                                                        editions:array<[...string]>
+                                                        hasAddOns:boolean
+                                                        images:object<{ `ImageType`:object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels> }> }>
+                                                        includedWithPassesProductIds:array<[...string]>
+                                                        languagesSupported:object<{ `Language`:object<{ areSubtitlesSupported:boolean, isAudioSupported:boolean, isInterfaceSupported:boolean, languageDisplayName:string }> }>
+                                                        legalNotices:array<[...string]> of @@capabilities@key
+                                                        maxInstallSize:number<integer:Bytes>
+                                                        optimalSatisfyingPassId:string
+                                                        optimalSkuId:string
+                                                        preferredSkuId:string
+                                                        productFamily:string
+                                                        productId:string
+                                                        publisherName:string
+                                                        ratingCount:number<integer>
+                                                        releaseDate:string<Date:ISO>
+                                                        shortDescription:string
+                                                        showSupportedLanguageDisclaimer:boolean
+                                                        specificPrices:object<{ `PriceType`:array<[ ...object<{ skuId:string, availabilityId:string, listPrice:number<float>, msrp:number<float>, discountPercentage:number<float>, currencyCode:string, remediations:array<[]>, affirmationId:string?, priceEligibilityInfo:object?, availabilityActions:array<[...string]>, endDate:string<Date:ISO>, hasXPriceOffer:boolean }> ]> }>
+                                                        systemRequirements:array<[ object<{ minimum:string, recommended:string, title:string<RequirementType> }> ]>
+                                                        title:string
+                                                        videos:array<[ object<{ title:string, url:string<URL>, width:number<integer:pixels>, height:number<integer:pixels>, previewImage: object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels>, caption:string }>, purpose:string }> ]>
+                                                    */
+                                                    data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
+
+                                                    if(nullish(data?.specificPrices))
+                                                        return;
+
+                                                    let mature = data.contentRating?.rating || '',
+                                                        price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
+
+                                                    $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = price;
+                                                }
+                                            });
+
+                                        container.replaceWith(purchase);
+                                    });
+
+                                LOG(`Got "${ game }" data from Xbox:`, info);
+                            })
+                            .catch(error => {
+                                WARN(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
+                            });
+                        }
 
                         /*** Get the Nintendo link (if applicable) · 10,507 Games 2022-11-22 16:37 CST
                          *      _   _ _       _                 _
@@ -9376,9 +9536,9 @@ let Initialize = async(START_OVER = false) => {
                                 });
                         }
 
-                        if(/(?:^Pokémon)/i.test(game)) {
+                        if(/(?:^Pok[ée]mon)/i.test(game)) {
                             // Multiple versions are available
-                            let [, main, vers] = /(^Pokémon)\s+(.+)$/i.exec(game);
+                            let [, main, vers] = /(^Pok[ée]mon)\s+(.+)$/i.exec(game);
 
                             vers = vers.split('/').map(v => v.trim());
 
@@ -9425,6 +9585,44 @@ let Initialize = async(START_OVER = false) => {
                                     .catch(error => {
                                         WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
                                     });
+                        } else if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
+                            // Multiple versions are available
+                            let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
+
+                            suff = suff.replace(/s$/, '');
+
+                            let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+
+                            // Make multipls links
+                            fetchNintendoGame(jbpp)
+                                .then((info = {}) => {
+                                    let { game, name, href, img, price, rating = 'none' } = info;
+
+                                    img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+
+                                    if(!href?.length)
+                                        return;
+
+                                    let f = furnish;
+
+                                    let purchase =
+                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"]`).with(
+                                            // Price
+                                            f('.tt-store-purchase--price').with(price),
+
+                                            // Link to Nintendo
+                                            f('.tt-store-purchase--handler').with(
+                                                f(`a[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                            )
+                                        );
+
+                                    // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+
+                                    LOG(`Got "${ jbpp }" data from Nintendo:`, info);
+                                })
+                                .catch(error => {
+                                    WARN(`Unable to connect to Nintendo. Tried to look for "${ jbpp }"`, error);
+                                });
                         } else {
                             // Just one version is available
                             fetchNintendoGame(game)
@@ -10120,7 +10318,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(streamer)) {
                     LOG(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
-                    open(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }).href, '_self');
+                    goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }).href);
                     break host_stopper;
                 }
             }
@@ -10131,7 +10329,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                open(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }).href, '_self');
+                goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }).href);
             } else {
                 LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -10216,15 +10414,15 @@ let Initialize = async(START_OVER = false) => {
 
                 let next = await GetNextStreamer();
 
-                stopper:
+                raid_stopper:
                 if(defined(next)) {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                     // Don't leave if the raid is on this page...
                     if(raiding && ["greed"].contains(method))
-                        break stopper;
+                        break raid_stopper;
 
-                    open(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href, '_self');
+                    goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href);
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -10355,7 +10553,7 @@ let Initialize = async(START_OVER = false) => {
 
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
-                open(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`, '_self');
+                goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`);
             } else  {
                 WARN(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
@@ -11114,7 +11312,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = line => {
-            when(line => (defined(line.element)? line: false), 100, line).then(element => {
+            when(line => (defined(line.element)? line: false), 250, line).then(element => {
                 if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
                     NOTIFICATION_SOUND?.play();
             });
@@ -11249,27 +11447,7 @@ let Initialize = async(START_OVER = false) => {
             glyph = Glyphs.modify('channelpoints', { height: '20px', width: '20px', style: 'vertical-align:bottom' }),
             { abs } = Math;
 
-        switch(Settings.channelpoints_receipt_display) {
-            case "round100": {
-                // Round to nearest hundred
-                receipt = receipt.floorToNearest(100);
-            } break;
-
-            case "round50": {
-                // Round to nearest fifty (half)
-                receipt = receipt.floorToNearest(50);
-            } break;
-
-            case "round25": {
-                // Round to nearest twenty-five (quarter)
-                receipt = receipt.floorToNearest(25);
-            } break;
-
-            case "null":
-            default: {
-                // Do nothing...
-            } break;
-        }
+        receipt = receipt.floorToNearest(parseInt(Settings.channelpoints_receipt_display.replace('round', '')) || 1);
 
         RECEIPT_TOOLTIP.innerHTML = [abs(EXACT_POINTS_EARNED).suffix(' &uarr;', 1, 'natural'), abs(EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED).suffix(' &darr;', 1, 'natural')].join(' | ');
         $('#tt-points-receipt').innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
@@ -11388,7 +11566,7 @@ let Initialize = async(START_OVER = false) => {
                     exact_change ??= { textContent: framedData.exact_change };
                 }
 
-                EXACT_POINTS_DEBTED = parseCoin(exact_debt?.textContent ?? EXACT_POINTS_DEBTED);
+                EXACT_POINTS_DEBTED = parseCoin(exact_debt?.textContent ?? EXACT_POINTS_DEBTED) | 0;
 
                 let animationID = ((exact_change?.textContent ?? exact_debt?.textContent ?? -EXACT_POINTS_SPENT) | 0).toString(),
                     animationTimeStamp = +new Date;
@@ -11466,7 +11644,7 @@ let Initialize = async(START_OVER = false) => {
             if(nullish(item))
                 return;
 
-            EXACT_POINTS_SPENT += parseCoin(item.cost);
+            EXACT_POINTS_SPENT += parseCoin(item.cost) | 0;
 
             UpdateReceiptDisplay();
         };
@@ -11483,10 +11661,10 @@ let Initialize = async(START_OVER = false) => {
 
                             element.closest('button').addEventListener('mouseup', ({ currentTarget }) => {
                                 let title = $('[id*="reward"i][id*="header"i]').textContent.trim(),
-                                    amount = parseCoin(currentTarget?.previousSibling?.nodeValue);
+                                    amount = parseCoin(currentTarget?.previousSibling?.nodeValue) | 0;
 
                                 EXACT_POINTS_SPENT += amount;
-                                TALLY.set(`Reward: "${ title }" @ ${ (new Date).toJSON() }`, amount | 0);
+                                TALLY.set(`Reward: "${ title }" @ ${ (new Date).toJSON() }`, amount);
 
                                 delete REDEMPTION_LISTENERS.UNLOCKED_REWARDS;
                                 addListener(1);
@@ -11511,7 +11689,7 @@ let Initialize = async(START_OVER = false) => {
                                 let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *').textContent,
                                     [amount] = /\p{N}+/u.exec(currentTarget.textContent) || '';
 
-                                EXACT_POINTS_SPENT += amount;
+                                EXACT_POINTS_SPENT += (amount |= 0);
                                 TALLY.set(`Poll: "${ title }" @ ${ (new Date).toJSON() }`, amount | 0);
 
                                 delete REDEMPTION_LISTENERS.BRIBABLE_VOTES;
@@ -12096,8 +12274,8 @@ let Initialize = async(START_OVER = false) => {
                 DVR_ID = [STREAMER.name, STREAMER.sole, (new Date).getAbsoluteDay()].join('-'),
                 enabled = defined(DVRChannels[DVR_ID]),
                 [title, subtitle, icon] = [
-                    ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'rewind'],
-                    ['Turn DVR off', `${ s(STREAMER.name) } live streams will not be recorded`, 'host']
+                    ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
+                    ['Turn DVR off', `${ s(STREAMER.name) } live streams will no longer be recorded`, 'clip']
                 ][+!!enabled];
 
             icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
@@ -12119,8 +12297,8 @@ let Initialize = async(START_OVER = false) => {
                                 DVR_ID = [STREAMER.name, STREAMER.sole, (new Date).getAbsoluteDay()].join('-'),
                                 enabled = nullish(DVRChannels[DVR_ID]),
                                 [title, subtitle, icon] = [
-                                    ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'rewind'],
-                                    ['Turn DVR off', `${ s(STREAMER.name) } live streams will not be recorded`, 'host']
+                                    ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
+                                    ['Turn DVR off', `${ s(STREAMER.name) } live streams will no longer be recorded`, 'clip']
                                 ][+!!enabled];
 
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
@@ -12167,6 +12345,22 @@ let Initialize = async(START_OVER = false) => {
             );
 
             actionPanel.append(action);
+
+            // Run DVR if enabled...
+            if(enabled) {
+                SetQuality(VideoClips.quality, 'auto').then(() => {
+                    MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                        .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                });
+
+                STREAMER.onraid = STREAMER.onhost = top.onbeforeunload = top.beforeleavinghere = async({ hosting = false, raiding = false, raided = false, from, to }) => {
+                    let next = await GetNextStreamer();
+
+                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+
+                    MASTER_VIDEO.stopRecording().removeRecording();
+                };
+            }
         });
 
         JUDGE__STOP_WATCH('video_clips__dvr');
@@ -12181,7 +12375,7 @@ let Initialize = async(START_OVER = false) => {
         document.head.append(link);
         link.click();
 
-        MASTER_VIDEO.removeRecording();
+        MASTER_VIDEO.stopRecording().removeRecording();
 
         return link.href;
     };
@@ -12200,60 +12394,61 @@ let Initialize = async(START_OVER = false) => {
         setInterval(AUTO_DVR__CHECKING ??= () => {
             START__STOP_WATCH('video_clips__dvr__checking_interval');
 
-            LoadCache('DVRChannels', async({ DVRChannels }) => {
-                DVRChannels = JSON.parse(DVRChannels || '{}');
+            if(UP_NEXT_ALLOW_THIS_TAB)
+                LoadCache('DVRChannels', async({ DVRChannels }) => {
+                    DVRChannels = JSON.parse(DVRChannels || '{}');
 
-                checking:
-                // Only check for the stream when it's live; if the dates don't match, it just went live again
-                for(let DVR_ID in DVRChannels) {
-                    let [streamer, station, date] = DVR_ID.split('-');
-                    let channel = await new Search(streamer).then(Search.convertResults),
-                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                    checking:
+                    // Only check for the stream when it's live; if the dates don't match, it just went live again
+                    for(let DVR_ID in DVRChannels) {
+                        let [streamer, station, date] = DVR_ID.split('-');
+                        let channel = await new Search(streamer).then(Search.convertResults),
+                            ok = channel.icon?.pathname?.startsWith('/jtv_user');
 
-                    // Search did not complete...
-                    let num = 3;
-                    while(!ok && --num > 0) {
-                        Search.void(streamer);
+                        // Search did not complete...
+                        let num = 3;
+                        while(!ok && --num > 0) {
+                            Search.void(streamer);
 
-                        channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
-                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                            channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
+                            ok = channel.icon?.pathname?.startsWith('/jtv_user');
 
-                        // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
+                            // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
+                        }
+
+                        if(!parseBool(channel.live))
+                            continue checking;
+
+                        let slug = DVRChannels[DVR_ID];
+                        let { name, live, icon, href, data = { actualStartTime: null } } = channel;
+                        let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
+                            job = ALL_FIRST_IN_LINE_JOBS[index];
+
+                        if(defined(job) && name.toLowerCase() != STREAMER.name.toLowerCase()) {
+                            // Skip the queue!
+                            let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
+                                name = parseURL(removed).pathname.slice(1);
+
+                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
+
+                            // Skipper
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
+
+                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                                LOG('Skipping queue in favor of a DVR channel', job);
+
+                                goto(parseURL(job).addSearch({ dvr: true }).href);
+                            });
+                        }
                     }
 
-                    if(!parseBool(channel.live))
-                        continue checking;
+                    // Send the length to the settings page
+                    Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
 
-                    let slug = DVRChannels[DVR_ID];
-                    let { name, live, icon, href, data = { actualStartTime: null } } = channel;
-                    let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
-                        job = ALL_FIRST_IN_LINE_JOBS[index];
-
-                    if(defined(job) && name.toLowerCase() != STREAMER.name.toLowerCase()) {
-                        // Skip the queue!
-                        let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
-                            name = parseURL(removed).pathname.slice(1);
-
-                        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
-
-                        // Skipper
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
-
-                        REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                            LOG('Skipping queue in favor of a DVR channel', job);
-
-                            open(parseURL(job).addSearch({ dvr: true }).href, '_self');
-                        });
-                    }
-                }
-
-                // Send the length to the settings page
-                Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
-
-                JUDGE__STOP_WATCH('video_clips__dvr__checking_interval', 30_000);
-            });
+                    JUDGE__STOP_WATCH('video_clips__dvr__checking_interval', 30_000);
+                });
         }, 30_000);
 
         // Add the panel & button
@@ -12292,10 +12487,7 @@ let Initialize = async(START_OVER = false) => {
                                         .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                 });
 
-                                STREAMER.onraid = STREAMER.onhost = top.onbeforeunload = async({ hosting = false, raiding = false, raided = false }) => {
-                                    if(!hosting && !raiding && !raided)
-                                        return;
-
+                                STREAMER.onraid = STREAMER.onhost = top.onbeforeunload = top.beforeleavinghere = async({ hosting = false, raiding = false, raided = false }) => {
                                     let next = await GetNextStreamer();
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
@@ -12590,7 +12782,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Subscriber only, etc.
             if(defined(next))
-                open(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href, '_self');
+                goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
         } else {
             ERROR('The stream ran into an error:', errorMessage, new Date);
 
@@ -12718,7 +12910,7 @@ let Initialize = async(START_OVER = false) => {
         ERROR(message);
 
         if(/content.*unavailable/i.test(message) && defined(next))
-            open(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }).href, '_self');
+            goto(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }).href);
         else
             ReloadPage();
 
@@ -13524,12 +13716,15 @@ if(top == window) {
                 for(let container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button')) {
                     let svg = $('svg', container);
 
+                    if(nullish(svg))
+                        continue;
+
                     comparing:
                     for(let glyph in Glyphs)
                         if(Glyphs.__exclusionList__.contains(glyph))
                             continue comparing;
                         else
-                            resemble(svg?.toImage())
+                            resemble(svg.toImage())
                                 .compareTo(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode.toImage())
                                 .ignoreColors()
                                 .scaleToSameSize()
@@ -13963,7 +14158,7 @@ if(top == window) {
                     .then(channel => {
                         WARN(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
 
-                        open(channel.href, '_self');
+                        goto(channel.href);
                     })
             });
 
@@ -14172,7 +14367,7 @@ if(top == window) {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])')
+                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
                                                 if(false
                                                     // The element already has a UUID and type
@@ -14245,7 +14440,7 @@ if(top == window) {
 
                                 let author = source.nick,
                                     badges = Object.keys(tags?.badges ?? {}),
-                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:ACTION)\s*)([^]+)\1$/g, '$3').trim(),
+                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:\w+)\s*)([^]+)\1$/g, '$3').trim(),
                                     // Have to wait on the page to play catch-up...
                                     element = when.defined((message, uuid) =>
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
@@ -14261,10 +14456,20 @@ if(top == window) {
                                                             return;
 
                                                         for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
-                                                            if(child.dataset.testSelector?.equals('emote-button'))
+                                                            if(child.dataset.testSelector?.contains('emote')) {
                                                                 text.push($('img', child).alt);
-                                                            else
+                                                            } else if(child.dataset.aTarget?.contains('timestamp')) {
+                                                                continue;
+                                                            } else if($.defined('var', child)) {
+                                                                let { textContent } = child;
+
+                                                                for(let v of $.all('var', child))
+                                                                    textContent = textContent.replace(v.textContent, '');
+
+                                                                child.textContent = textContent;
+                                                            } else {
                                                                 text.push(child.textContent);
+                                                            }
 
                                                         let match = text.join('').mutilate(true).equals(message.mutilate(true));
 
@@ -14388,7 +14593,7 @@ if(top == window) {
                     let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
 
                     for(let element of unhandled) {
-                        let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim(),
+                        let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', ''),
                             uuid = UUID.from(raw).toString(),
                             reply = $('[class*="reply"i] button', element),
                             style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
@@ -14406,10 +14611,12 @@ if(top == window) {
                                     Chat.__allemotes__.set(i.alt, i.src);
 
                                     return i.alt;
+                                } else if(e.dataset.aTarget?.contains('timestamp')) {
+                                    return '';
                                 }
 
                                 return e.textContent?.trim?.() || '';
-                            }).join(' '),
+                            }).join(' ').trim(),
                             mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
                             highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
@@ -14445,7 +14652,6 @@ if(top == window) {
                         TTV_IRC.chat_log?.get(CHANNEL)?.add(results);
 
                         Chat.__allmessages__.set(uuid, results);
-
 
                         for(let [name, callback] of Chat.__onmessage__)
                             when(() => PAGE_IS_READY, 250).then(() => callback(results));

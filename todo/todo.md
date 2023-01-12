@@ -28,9 +28,19 @@
 12. Garner user feedback → https://form.jotform.com/222442891146153
 13. Offer an option to use Live Reminder channels after live followed channels have been exhausted
 
+### TODO
+
+- Ensure async message-handling does not bog-down the page
+
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.3)
+- Modified message filtering and highlighting logic
+- Fixed issue with resembling SVGs
+- Corrected versioning for Jackbox Party Packs
+- Fixed issue with DVR not recording
+
 > [`5.31.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.2)
 - Updated Data Usage section on Settings page to include colored portions
 - Fixed scoring for non-English tags

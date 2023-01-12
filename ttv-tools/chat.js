@@ -18,7 +18,7 @@ function AddCustomCSSBlock_Chat(name, block) {
 
     let newHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
 
-    if(Chat__CUSTOM_CSS?.innerHTML?.equals(newHTML))
+    if(nullish(Chat__CUSTOM_CSS?.innerHTML) || Chat__CUSTOM_CSS?.innerHTML?.equals(newHTML))
         return;
 
     Chat__CUSTOM_CSS.innerHTML = newHTML;
@@ -454,9 +454,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             keyword = (keyword || '').trim();
             provider = provider?.toString?.();
 
-            if(/:(\w+):/.test(keyword))
-                return;
-            if(keyword.length < 1)
+            if(/:(\w+):/.test(keyword) || keyword.length < 1)
                 return;
 
             if(nullish(provider)) {
@@ -771,7 +769,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 )
                             );
 
-                            when.defined(async line => await line.element, 100, line).then(element => {
+                            when(line => (defined(line.element)? line: false), 250, line).then(element => {
                                 alt = alt.replace(/\s+/g, '_');
 
                                 $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
@@ -1068,7 +1066,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         )
                     );
 
-                    when(line => (defined(line.element)? line: false), 100, line).then(async element => {
+                    when(line => (defined(line.element)? line: false), 250, line).then(async element => {
                         alt = alt.replace(/\s+/g, '_');
 
                         $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
@@ -1172,7 +1170,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('filter_messages');
 
         MESSAGE_FILTER ??= Chat.onmessage = Chat.onpinned = async line => {
-            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                 let Filter = UPDATE_RULES('filter');
 
                 let { message, mentions, author, badges, emotes, element } = line,
@@ -1285,6 +1283,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                     filter_rules.push(`@${ username }`);
                     filter_rules = filter_rules.join(',');
 
+                    $.all(`[data-a-user="${ username }"i]`).map(div => div.closest('[data-a-target="chat-line-message"i]').remove());
+
                     currentTarget.remove();
 
                     Storage.set({ filter_rules });
@@ -1316,6 +1316,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                     filter_rules = (filter_rules || '').split(',');
                     filter_rules.push(emote);
                     filter_rules = filter_rules.join(',');
+
+                    [
+                        ...$.getElementsByInnerText(emote).filter(div => div.classList.contains('text-fragment')),
+                        ...$.all(`img[alt="${ emote }"i]`),
+                    ].map(div => div.closest('[data-a-target="chat-line-message"i]').remove());
 
                     currentTarget.remove();
 
@@ -1406,7 +1411,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         START__STOP_WATCH('highlight_phrases');
 
         PHRASE_HIGHLIGHTER ??= Chat.onmessage = async line => {
-            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                 let Phrases = UPDATE_RULES('phrase');
 
                 let { message, mentions, author, badges, emotes, style, element } = line,
@@ -1519,6 +1524,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                     phrase_rules.push(`@${ username }`);
                     phrase_rules = phrase_rules.join(',');
 
+                    $.all(`[data-a-user="${ username }"i]`).map(div => div.closest('[data-a-target="chat-line-message"i]').setAttribute('tt-light', true));
+
                     currentTarget.setAttribute('tt-hidden-message', true);
 
                     Storage.set({ phrase_rules });
@@ -1550,6 +1557,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                     phrase_rules = (phrase_rules || '').split(',');
                     phrase_rules.push(emote);
                     phrase_rules = phrase_rules.join(',');
+
+                    [
+                        ...$.getElementsByInnerText(emote).filter(div => div.classList.contains('text-fragment')),
+                        ...$.all(`img[alt="${ emote }"i]`),
+                    ].map(div => div.closest('[data-a-target="chat-line-message"i]').setAttribute('tt-light', true));
 
                     currentTarget.remove();
 
@@ -1625,7 +1637,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.messages.missing(line.uuid)) {
                 Queue.messages.push(line.uuid);
 
-                when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                     let { author, message, style } = line;
 
                     // LOG('Highlighting message:', { author, message });
@@ -1662,7 +1674,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.message_popups.missing(line.uuid)) {
                 Queue.message_popups.push(line.uuid);
 
-                when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                     let { author, message, element } = line,
                         reply = await line.reply;
 
@@ -1826,7 +1838,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             // Highlighter for chat elements
             AddNativeReplyButton: line => {
-                when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+                when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                     let { uuid, style, handle, message, mentions, element } = line;
 
                     if($.defined('.chat-line__message-container', element))
@@ -1956,7 +1968,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let HTMLParser = new DOMParser;
 
-            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                 let { message, mentions, author, element } = line;
 
                 parsing: for(let { pattern } = parseURL, { length } = message, jndex = 0; pattern.test(message) && jndex < length | 0; ++jndex) {
@@ -2130,7 +2142,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
                 minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
 
-            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                 let { handle, message, author, element } = line;
 
                 let spam_placeholder = "chat-deleted-message-placeholder";
@@ -2212,7 +2224,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         Chat.get().map(Chat.defer.onmessage = async line => {
             let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
 
-            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                 let element = line.element;
                 let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
 
@@ -2279,7 +2291,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 usd = (bits * .01).toFixed(2);
 
-                header.textContent += ` ($${ comify(usd).replace(_0, '$10') })`;
+                header.append(furnish.var` ($${ comify(usd).replace(_0, '$10') })`);
 
                 header.setAttribute('tt-tusda', usd);
             });
@@ -2296,7 +2308,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     counter.setAttribute('tt-tusda', usd);
 
-                    return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
+                    return `${ $0 } ${ furnish.var(`($${ comify(usd).replace(_0, '$10') })`).outerHTML }`;
                 });
         }
 
@@ -2312,7 +2324,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     cheer.setAttribute('tt-tusda', usd);
 
-                    return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
+                    return `${ $0 } ${ furnish.var(`($${ comify(usd).replace(_0, '$10') })`).outerHTML }`;
                 });
         }
 
@@ -2328,7 +2340,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     train.setAttribute('tt-tusda', usd);
 
-                    return `${ $0 } ($${ comify(usd).replace(_0, '$10') })`;
+                    return `${ $0 } ${ furnish.var(`($${ comify(usd).replace(_0, '$10') })`).outerHTML }`;
                 });
         }
 
@@ -2951,15 +2963,15 @@ let Chat__Initialize = async(START_OVER = false) => {
         restoring: for(let [uuid, line] of Chat.messages) {
             if(RESTORED_MESSAGES.has(uuid))
                 continue restoring;
+            if($.defined(`[data-uuid="${ uuid }"i]`))
+                continue restoring;
 
-            when(line => (defined(line.element)? line: false), 100, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                 let { author, handle, message, emotes, badges, style, element } = line,
                     deleted = await line.deleted;
 
-                if(!deleted || !message?.length || author.equals(USERNAME))
+                if(!deleted || !message?.length)
                     return;
-
-                RESTORED_MESSAGES.add(uuid);
 
                 let f = furnish;
                 let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
@@ -3002,10 +3014,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                 }
 
                 let body = $(`[data-test-selector$="message-placeholder"i]`, container),
-                    user = $(`[data-a-user="${ author }"i]`, container);
+                    user = $(`[data-a-user="${ author }"i]`, container)?.dataset?.aUser;
 
                 if(nullish(body) || nullish(user))
                     return;
+                if(user.unlike(author) && user.unlike(handle))
+                    return;
+
+                RESTORED_MESSAGES.add(uuid);
 
                 LOG(`Restoring message:`, line);
 
@@ -3604,7 +3620,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="gift"i], [data-test-selector="announcement-line"i])')
+                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
                                                 if(false
                                                     // The element already has a UUID and type
@@ -3677,7 +3693,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 let author = source.nick,
                                     badges = Object.keys(tags?.badges ?? {}),
-                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:ACTION)\s*)([^]+)\1$/g, '$3').trim(),
+                                    message = parameters.replace(/^([\u0001-\u0007\u000e-\u001f])((?:\w+)\s*)([^]+)\1$/g, '$3').trim(),
                                     // Have to wait on the page to play catch-up...
                                     element = when.defined((message, uuid) =>
                                         $.all('[data-test-selector$="message-container"i] [data-a-target$="message"i]')
@@ -3693,10 +3709,20 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                                             return;
 
                                                         for(let child of $.all('[class*="username"i][class*="container"i] ~ :last-child > *', body))
-                                                            if(child.dataset.testSelector?.equals('emote-button'))
+                                                            if(child.dataset.testSelector?.equals('emote-button')) {
                                                                 text.push($('img', child).alt);
-                                                            else
+                                                            } else if(child.dataset.aTarget?.contains('timestamp')) {
+                                                                continue;
+                                                            } else if($.defined('var', child)) {
+                                                                let { textContent } = child;
+
+                                                                for(let v of $.all('var', child))
+                                                                    textContent = textContent.replace(v.textContent, '');
+
+                                                                child.textContent = textContent;
+                                                            } else {
                                                                 text.push(child.textContent);
+                                                            }
 
                                                         let match = text.join('').mutilate(true).equals(message.mutilate(true));
 
@@ -3820,7 +3846,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                         let unhandled = $.all('[data-a-target="chat-line-message"i]:not([data-uuid])', chat);
 
                         for(let element of unhandled) {
-                            let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim(),
+                            let raw = $('[class*="message"i][class*="container"i]', element).textContent.trim().replace($('[data-a-target="chat-timestamp"]', element)?.textContent || '', ''),
                                 uuid = UUID.from(raw).toString(),
                                 reply = $('[class*="reply"i] button', element),
                                 style = $('[data-a-user]', element)?.getAttribute('style')?.trim(),
@@ -3831,17 +3857,19 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 handle = $('[data-a-user]', element).textContent,
                                 usable = false,
                                 message = $.all('[class*="message"i][class*="body"i] *', element).map(e => {
-                                    if(e.dataset.testSelector.contains('emote')) {
+                                    if(e.dataset.testSelector?.contains('emote')) {
                                         let i = $('img', e);
 
                                         emotes.add(i.alt);
                                         Chat.__allemotes__.set(i.alt, i.src);
 
                                         return i.alt;
+                                    } else if(e.dataset.aTarget?.contains('timestamp')) {
+                                        return '';
                                     }
 
                                     return e.textContent?.trim?.() || '';
-                                }).join(' '),
+                                }).join(' ').trim(),
                                 mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
                                 highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
@@ -3877,7 +3905,6 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             TTV_IRC.chat_log.get(CHANNEL).add(results);
 
                             Chat.__allmessages__.set(uuid, results);
-
 
                             for(let [name, callback] of Chat.__onmessage__)
                                 when(() => PAGE_IS_READY, 250).then(() => callback(results));
