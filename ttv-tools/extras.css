@@ -859,6 +859,12 @@ caption {
     border-top-right-radius: 0;
 }
 
+.about-section__actions > [action-origin]:not(:last-child) {
+    border-bottom: var(--border-width-default) solid var(--color-border-base);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
 [tt-action] {
     background-color: var(--color-background-base);
     border-radius: 0.4rem;

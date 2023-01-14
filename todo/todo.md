@@ -28,13 +28,16 @@
 12. Garner user feedback → https://form.jotform.com/222442891146153
 13. Offer an option to use Live Reminder channels after live followed channels have been exhausted
 
-### TODO
-
-- Ensure async message-handling does not bog-down the page
-
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.4)
+- Changed DVR file names to be more informative
+- Added logic to ensure DVRs don't leave DVRs
+- Modified settings page (data usage)
+- Fixed issue with reloading chats
+- Modified game cataloging logic
+
 > [`5.31.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.3)
 - Modified message filtering and highlighting logic
 - Fixed issue with resembling SVGs

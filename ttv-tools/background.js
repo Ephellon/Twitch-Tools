@@ -20,7 +20,9 @@ function ReloadTab(tab, onlineOnly = true) {
     if(onlineOnly && TabIsOffline(tab))
         return;
 
-    Container.tabs.reload(tab.id);
+    Container.tabs.sendMessage(id, { action: 'reload' }, response => {
+        Container.tabs.reload(tab.id);
+    });
 }
 
 // Removes the tab
@@ -175,7 +177,7 @@ Storage.onChanged.addListener(changes => {
 });
 
 Runtime.onMessage.addListener((request, sender, respond) => {
-    let reloadAll,
+    let reloadAll = false,
         returningData;
 
     function reloadTabs(all = false) {
@@ -197,7 +199,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
     switch(request.action) {
         case 'CLAIM_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
-                let reloadAll = UP_NEXT_OWNER == null;
+                reloadAll ||= UP_NEXT_OWNER == null;
 
                 Container.tabs.query({
                     url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
@@ -220,18 +222,14 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                     Storage.set({ UP_NEXT_OWNER });
                 });
-
-                reloadTabs(reloadAll);
             });
         } break;
 
         case 'WAIVE_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
-                let reloadAll = UP_NEXT_OWNER != null;
+                reloadAll ||= UP_NEXT_OWNER != null;
 
                 Storage.set({ UP_NEXT_OWNER: null });
-
-                reloadTabs(reloadAll);
             });
         } break;
 
@@ -400,6 +398,7 @@ if(Runtime.lastError)
  *                   |_|
  */
 Runtime.onConnect.addListener(port => {
+    // Keep Alive
     if(port.name == 'PING')
         port.onMessage.addListener(ping => port.postMessage('PONG'));
 });

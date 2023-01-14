@@ -2077,7 +2077,7 @@ class Color {
 
 // https://www.reddit.com/r/Twitch/comments/dxgkhr/comment/f7q4bud/?utm_source=share&utm_medium=web2x&context=3
 // Returns a random string
-    // new ClipName() → string
+    // new ClipName(version:number?) → string
     // 2 Adj + 1 Noun + 1 Global Emote
 class ClipName extends String {
     static ADJECTIVES = 'adorable adventurous aggressive agreeable alert alive amused angry calm careful cautious charming cheerful clean clear clever cloudy clumsy eager easy elated elegant embarrassed enchanting encouraging bad beautiful better bewildered black bloody blue blue-eyed dangerous dark dead defeated defiant delightful depressed determined different fair faithful famous fancy fantastic fierce filthy fine annoyed annoying anxious arrogant ashamed attractive average awful colorful combative comfortable concerned condemned confused cooperative courageous curious cute energetic enthusiastic envious evil excited expensive exuberant blushing bored brainy brave breakable bright busy buttery difficult disgusted distinct disturbed dizzy doubtful drab dull dusty foolish fragile frail frantic friendly frightened funny furry gentle gifted glamorous gleaming glorious good ill important impossible inexpensive innocent inquisitive nasty naughty nervous nice nutty obedient obnoxious odd old-fashioned handsome happy healthy helpful helpless hilarious lazy light lively lonely long lovely lucky panicky perfect plain pleasant poised poor powerful gorgeous graceful grieving grotesque grumpy grungy itchy jealous jittery jolly joyous kind open outrageous outstanding homeless homely horrible hungry hurt hushed magnificent misty modern motionless muddy mushy mysterious precious prickly proud putrid puzzled quaint queasy real relieved repulsive rich scary selfish shiny shy silly sleepy smiling vast victorious vivacious wandering weary wicked wide-eyed talented tame tasty tender tense terrible thankful thoughtful thoughtless tired smoggy sore sparkling splendid spotless stormy strange stupid successful super svelte wild witty worried worrisome wrong zany zealous';
@@ -5582,7 +5582,7 @@ let Initialize = async(START_OVER = false) => {
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get CHANNEL details (3). ${ error }`)
-                                        .toNativeStack();
+                                        ?.toNativeStack?.();
 
                                     if(!ErrGet.length)
                                         PushToTopSearch({ 'tt-err-get': 'ch-tw-tracker' }, false);
@@ -8863,11 +8863,13 @@ let Initialize = async(START_OVER = false) => {
                                     prev.name
                                         .replace(NON_ASCII, '')
                                         .replace(PlayStationRegExp, '')
-                                        .distanceFrom(game)
+                                        .toLowerCase()
+                                        .distanceFrom(game.toLowerCase())
                                     - next.name
                                         .replace(NON_ASCII, '')
                                         .replace(PlayStationRegExp, '')
-                                        .distanceFrom(game)
+                                        .toLowerCase()
+                                        .distanceFrom(game.toLowerCase())
                                 );
 
                             if(false
@@ -9099,11 +9101,13 @@ let Initialize = async(START_OVER = false) => {
                                         prev.name
                                             .replace(NON_ASCII, '')
                                             .replace(XboxRegExp, '')
-                                            .distanceFrom(game)
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
                                         - next.name
                                             .replace(NON_ASCII, '')
                                             .replace(XboxRegExp, '')
-                                            .distanceFrom(game)
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
                                     );
 
                                 if(false
@@ -9394,11 +9398,13 @@ let Initialize = async(START_OVER = false) => {
                                             prev.name
                                                 .replace(NON_ASCII, '')
                                                 .replace(NintendoRegExp, '')
-                                                .distanceFrom(game)
+                                                .toLowerCase()
+                                                .distanceFrom(game.toLowerCase())
                                             - next.name
                                                 .replace(NON_ASCII, '')
                                                 .replace(NintendoRegExp, '')
-                                                .distanceFrom(game)
+                                                .toLowerCase()
+                                                .distanceFrom(game.toLowerCase())
                                         );
 
                                     if(false
@@ -11551,7 +11557,7 @@ let Initialize = async(START_OVER = false) => {
                 if(nullish(points_receipt))
                     return RestartJob('points_receipt_placement');
 
-                let [chat] = $.all('[role="log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]');
+                let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]');
 
                 if(nullish(chat)) {
                     let framedData = PostOffice.get('points_receipt_placement');
@@ -12310,10 +12316,9 @@ let Initialize = async(START_OVER = false) => {
                             // Add the DVR...
                             let message;
                             if(enabled) {
-                                let slug = DVRChannels[DVR_ID] = new ClipName(2),
-                                    { name } = STREAMER;
-
                                 message = `${ s(STREAMER.name) } streams will be recorded.`;
+
+                                DVRChannels[DVR_ID] = new ClipName(2);
 
                                 SetQuality(VideoClips.quality, 'auto').then(() => {
                                     MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
@@ -12347,13 +12352,13 @@ let Initialize = async(START_OVER = false) => {
             actionPanel.append(action);
 
             // Run DVR if enabled...
-            if(enabled) {
+            if(enabled && !STREAMER.redo) {
                 SetQuality(VideoClips.quality, 'auto').then(() => {
                     MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
                         .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                 });
 
-                STREAMER.onraid = STREAMER.onhost = top.onbeforeunload = top.beforeleavinghere = async({ hosting = false, raiding = false, raided = false, from, to }) => {
+                STREAMER.onraid = STREAMER.onhost = top.beforeleaving = async({ hosting = false, raiding = false, raided = false, from, to }) => {
                     let next = await GetNextStreamer();
 
                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
@@ -12368,7 +12373,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.video_clips__dvr = -2_500;
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = chunks => {
-        let name = `${ new ClipName(2) }.${ top.MIME_Types.find(MASTER_VIDEO.mimeType) }`;
+        let name = `${ STREAMER.name }-${ (new Date).toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-') }.${ top.MIME_Types.find(MASTER_VIDEO.mimeType) }`;
         let blob = new Blob(chunks, { type: chunks[0].type });
         let link = furnish('a', { href: URL.createObjectURL(blob), download: name, hidden: true }, name);
 
@@ -12424,7 +12429,10 @@ let Initialize = async(START_OVER = false) => {
                         let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
                             job = ALL_FIRST_IN_LINE_JOBS[index];
 
-                        if(defined(job) && name.toLowerCase() != STREAMER.name.toLowerCase()) {
+                        let Ant_DVR_ID = [STREAMER.name, STREAMER.sole, (new Date).getAbsoluteDay()].join('-'),
+                            anabled = defined(DVRChannels[Ant_DVR_ID]);
+
+                        if(defined(job) && name.unlike(STREAMER.name) && !anabled) {
                             // Skip the queue!
                             let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                                 name = parseURL(removed).pathname.slice(1);
@@ -12464,7 +12472,10 @@ let Initialize = async(START_OVER = false) => {
         }
 
         // Pause Up Next and handle DVR events
-        if(parseBool(parseURL(top.location.href).searchParameters?.dvr))
+        if(false
+            || parseBool(parseURL(top.location.href).searchParameters?.dvr)
+            || STREAMER?.redo === false
+        )
             LoadCache('DVRChannels', async({ DVRChannels }) => {
                 DVRChannels = JSON.parse(DVRChannels || '{}');
 
@@ -12487,7 +12498,7 @@ let Initialize = async(START_OVER = false) => {
                                         .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                 });
 
-                                STREAMER.onraid = STREAMER.onhost = top.onbeforeunload = top.beforeleavinghere = async({ hosting = false, raiding = false, raided = false }) => {
+                                STREAMER.onraid = STREAMER.onhost = top.beforeleaving = async({ hosting = false, raiding = false, raided = false }) => {
                                     let next = await GetNextStreamer();
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
@@ -14125,7 +14136,7 @@ if(top == window) {
 
             // Add message listeners; wait until the page is ready before adding this to ensure the background script can handle bad instances properly //
             // Receive messages from the background service worker
-            Runtime.onMessage.addListener((request, sender, respond) => {
+            Runtime.onMessage.addListener(async(request, sender, respond) => {
                 if(sender.id.unlike(Runtime.id))
                     return /* Not meant for us... */;
 
@@ -14136,7 +14147,15 @@ if(top == window) {
                         respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
                     } break;
 
+                    case 'reload': {
+                        await top.beforeleaving?.();
+
+                        respond({ ok: true });
+                    } break;
+
                     case 'close': {
+                        await top.beforeleaving?.();
+
                         respond({ ok: window.close() || true });
                     } break;
                 }
@@ -14367,7 +14386,7 @@ if(top == window) {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
+                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
                                                 if(false
                                                     // The element already has a UUID and type

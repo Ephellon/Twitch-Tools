@@ -2914,7 +2914,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.recover_chat = () => {
         START__STOP_WATCH('recover_chat');
 
-        let [chat] = $.all('[role="log"i], [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]'),
+        let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]'),
             error = $('[class*="chat"i][class*="content"] .core-error');
 
         if(defined(error)) {
@@ -3010,7 +3010,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         )
                     );
 
-                    $('[data-test-selector*="chat"i][role="log"i]').append(container);
+                    $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i])').append(container);
                 }
 
                 let body = $(`[data-test-selector$="message-placeholder"i]`, container),
@@ -3620,7 +3620,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $.all('[role="log"i] *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
+                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
                                                 if(false
                                                     // The element already has a UUID and type

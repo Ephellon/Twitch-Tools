@@ -1745,29 +1745,49 @@ when.defined(() => SETTINGS)
                 input.closest('[unit]')?.setAttribute('unit', unit);
             });
             $.all('[id*="data-usage"i][id*="browser-storage"i][id*="itemized"i]').map(table => {
-                let allcBytes = 0,
-                    miscBytes = 0;
+                let settBytes = 0,
+                    miscBytes = 0,
+                    liveBytes = 0,
+                    dvrBytes = 0,
+                    total = 0, size;
 
-                for(let key in SETTINGS)
+                for(let key in SETTINGS) {
+                    size = JSON.stringify({ [key]: SETTINGS[key] }).length;
+                    total += size;
+
                     if(usable_settings.contains(key))
-                        allcBytes += JSON.stringify({ [key]: SETTINGS[key] }).length;
+                        settBytes += size;
+                    else if(key.equals('LIVE_REMINDERS'))
+                        liveBytes += size;
+                    else if(key.equals('DVR_CHANNELS'))
+                        dvrBytes += size;
                     else
-                        miscBytes += JSON.stringify({ [key]: SETTINGS[key] }).length;
+                        miscBytes += size;
+                }
 
-                let total = allcBytes + miscBytes;
                 let [value, unit] = total.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
 
                 let f = furnish;
                 let tbody = f.tbody(
                     f.tr(
                         f.td(`Settings`),
-                        f.td(allcBytes.suffix('B', 2)),
-                        f.td((100 * (allcBytes / total)).suffix('%', 1))
+                        f.td(settBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td((100 * (settBytes / total)).toFixed(1) + '%')
+                    ),
+                    f.tr(
+                        f.td(`Reminders`),
+                        f.td(liveBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td((100 * (liveBytes / total)).toFixed(1) + '%')
+                    ),
+                    f.tr(
+                        f.td(`DVR`),
+                        f.td(dvrBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td((100 * (dvrBytes / total)).toFixed(1) + '%')
                     ),
                     f.tr(
                         f.td(`Miscellaneous`),
-                        f.td(miscBytes.suffix('B', 2)),
-                        f.td((100 * (miscBytes / total)).suffix('%', 1))
+                        f.td(miscBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td((100 * (miscBytes / total)).toFixed(1) + '%')
                     ),
                     f.tr(
                         f.td(`Total`),
@@ -1778,9 +1798,9 @@ when.defined(() => SETTINGS)
 
                 table.append(tbody);
 
-                let current = [allcBytes, miscBytes].map(Bytes => PERC_IN_USE * (Bytes / total)),
+                let current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => PERC_IN_USE * (B / total)),
                     add = (a, b) => (a + b),
-                    colors = 'igor-pink baby-blue baby-gold soft-purple green baby-grey'
+                    colors = 'baby-blue live-red baby-gold purple igor-pink'
                         .split(' ')
                         .slice(0, current.length)
                         .map((color, index) => {
@@ -1789,7 +1809,7 @@ when.defined(() => SETTINGS)
                             td.modStyle(`text-decoration:2px underline var(--${ color })`);
                             td.insertAdjacentElement('afterbegin', f(`span[style="color:var(--${ color })"]`).with('@'));
 
-                            return `var(--${ color }) 0 ${ current.slice(0, index).reduce(add, 0).suffix('%', 3) }`;
+                            return `var(--${ color }) 0 ${ current.slice(0, index).reduce(add, 0).toFixed(3) }%`;
                         })
                         .join(', ');
 
