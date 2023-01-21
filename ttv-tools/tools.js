@@ -2424,7 +2424,7 @@ function PushToTopSearch(newParameters, reload = true) {
 // Removevs parameters from the URL's search
     // RemoveFromTopSearch(keys:array, reload:boolean?) → string<URL-Search>
 function RemoveFromTopSearch(keys, reload = true) {
-    let url = parseURL(location).subSearch(keys);
+    let url = parseURL(location).delSearch(keys);
 
     if(reload)
         location.search = url.search;
@@ -3419,7 +3419,7 @@ try {
 
                                             stream.broadcaster = BroadcastSettings[channel];
                                             stream.game = Game[stream.game?.__ref];
-                                        } else if(channel.equals(STREAMER.sole)) {
+                                        } else if(channel.equals(STREAMER?.sole)) {
                                             let { name, sole, live, desc, game, coin, tags, poll, shop } = STREAMER;
 
                                             stream = {
@@ -3440,7 +3440,7 @@ try {
                                         }
 
                                         stream.tags = [
-                                            stream.tags?.map?.(({ __ref }) => Tags[__ref]?.localizedName),
+                                            stream.tags?.filter?.(defined)?.map(({ __ref }) => Tags[__ref]?.localizedName),
                                             stream.freeformTags?.map?.(({ __ref }) => Form[__ref]?.name),
                                         ].flat().filter(defined);
 
@@ -3722,8 +3722,17 @@ try {
                     SetQuality('auto').then(() => {
                         video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME });
 
-                        alert.timed(`Recording ${ STREAMER.name }...`, time)
-                            .then(() => {
+                        confirm.timed(`
+                            <div hidden controller
+                                icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
+                                okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
+                                deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
+                            ></div>`
+                        , time)
+                            .then(answer => {
+                                if(answer === false)
+                                    throw `Clip discarded!`;
+
                                 let video = $.all('video').pop(),
                                     chunks = (video?.getRecording(EVENT_NAME)?.data ?? []);
 
@@ -4038,7 +4047,7 @@ let TWITCH_PATHNAMES = [
 
         'activate',
         'bits(-checkout/?)?',
-        'clips?',
+        'clips',
         'checkout/', 'collections/?', 'communities/?',
         'dashboard/?', 'directory/?', 'downloads?', 'drops/?',
         'event/?',
@@ -5272,20 +5281,20 @@ let Initialize = async(START_OVER = false) => {
                          *
                          *
                          */
-                        // Stream details (JSON) → /Ayrun
-                            // activeDaysPerWeek: 3
-                            // actualStartTime: "2022-06-17T18:56:13.249Z"
-                            // dailyBroadcastTime: 17522433
-                            // dailyStartTimes: { 0: "07:30", 1: "08:15", 2: "09:15", 3: "08:00", 4: "08:15", 5: "10:00", 6: "08:15", Sun: "07:30", … }
-                            // dailyStopTimes: { 0: "11:15", 1: "12:00", 2: "13:00", 3: "12:45", 4: "12:00", 5: "14:45", 6: "12:00", Sun: "11:15", … }
-                            // dataRetrievedAt: 1655493917250
-                            // dataRetrievedOK: true
-                            // daysStreaming: ["Mon", "Wed", "Fri"]
-                            // projectedLastCall: "2022-06-17T23:33:15.682Z"
-                            // projectedStopTime: "2022-06-17T23:48:15.682Z"
-                            // projectedWindDownPeriod: "2022-06-17T23:19:03.438Z"
-                            // usualStartTime: "10:00"
-                            // usualStopTime: "14:45"
+                        // Stream details (JSON) → /StreamerDisplayName
+                            // activeDaysPerWeek:number<int>
+                            // actualStartTime:string<Date-ISO>
+                            // dailyBroadcastTime:number<int>
+                            // dailyStartTimes:object<{ "${ Index }": string<Date-Time<{HH:MM}>>, ... }>
+                            // dailyStopTimes:object<{ "${ Index }": string<Date-Time<{HH:MM}>>, ... }>
+                            // dataRetrievedAt:number<Date-Absolute>
+                            // dataRetrievedOK:boolean
+                            // daysStreaming:array[@activeDaysPerWeek]<{ string<Date-DayName>, ... }>
+                            // projectedLastCall:string<Date-ISO>
+                            // projectedStopTime:string<Date-ISO>
+                            // projectedWindDownPeriod:string<Date-ISO>
+                            // usualStartTime:string<Date-Time<{HH:MM}>>
+                            // usualStopTime:string<Date-Time<{HH:MM}>>
                         if(!FETCHED_OK) {
                             fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
                                 .then(response => response.json())
@@ -5452,21 +5461,21 @@ let Initialize = async(START_OVER = false) => {
                          *
                          *
                          */
-                        // Channel details (HTML → JSON) → /Ayrun
-                            // TEAMS: ""
-                            // averageViewers: 2373
-                            // averageViewersRanked: 3808
-                            // firstSeen: Tue Aug 23 2016 00:00:00 GMT-0600 (Mountain Daylight Time)
-                            // followers: 243155
-                            // followersRanked: 2174
-                            // games: { "Dead by Daylight": 36000000, "Dying Light 2: Stay Human": 1240000, "Video Horror Society": 5120000, "Propnight": 120000, "Nemesis: Distress": 3060000 }
-                            // highestViewers: 4926
-                            // highestViewersRanked: 6907
-                            // lastSeen: Fri Jun 17 2022 14:10:52 GMT-0600 (Mountain Daylight Time)
-                            // streamLang: "en"
-                            // subCount: 2400
-                            // totalViews: 4344374
-                            // totalViewsRanked: 4885
+                        // Channel details (HTML → JSON) → /StreamerDisplayName
+                            // TEAMS:string
+                            // averageViewers:number<int>
+                            // averageViewersRanked:number<int>
+                            // firstSeen:object<Date>
+                            // followers:number<int>
+                            // followersRanked:number<int>
+                            // games: object<{ "${Game_Name}":number<int>, ... }>
+                            // highestViewers:number<int>
+                            // highestViewersRanked:number<int>
+                            // lastSeen:object<Date>
+                            // streamLang:string[2]<Language-Code>
+                            // subCount:number<int>
+                            // totalViews:number<int>
+                            // totalViewsRanked:number<int>
                         if(!FETCHED_OK)
                             fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
                                 .then(response => response.text())
@@ -5643,8 +5652,8 @@ let Initialize = async(START_OVER = false) => {
 
     setInterval(update, 2_5_0);
 
-    let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true,      // Allow this tab to use Up Next
-        LIVE_REMINDERS__LISTING_INTERVAL;   // List the live time of Live Reminders
+    let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true, // Allow this tab to use Up Next
+        LIVE_REMINDERS__LISTING_INTERVAL; // List the live time of Live Reminders
 
     /*** Automation
      *                    _                        _   _
@@ -5808,7 +5817,7 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.auto_focus = () => {
-        let detectionThreshold = parseInt(Settings.auto_focus_detection_threshold) || STREAMER.mark,
+        let detectionThreshold = (parseInt(Settings.auto_focus_detection_threshold) || STREAMER.mark).clamp(5, 75),
             pollInterval = parseInt(Settings.auto_focus_poll_interval),
             imageType = Settings.auto_focus_poll_image_type,
             detectedTrend = '&bull;';
@@ -6356,7 +6365,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Give the loots time to load
         let waiter = setInterval(() => {
-            let stop = $.all('[href*="gaming.amazon.com"]').length;
+            let stop = $.all('[href*="gaming.amazon.com"i]').length;
 
             if(!stop) return;
 
@@ -6934,7 +6943,7 @@ let Initialize = async(START_OVER = false) => {
 
     function NEW_DUE_DATE(offset) {
         if(!UP_NEXT_ALLOW_THIS_TAB)
-            return (+new Date) + 3_600_000;
+            return (+new Date) + FIRST_IN_LINE_WAIT_TIME * 60_000;
 
         return (+new Date) + (null
             ?? offset
@@ -7105,7 +7114,7 @@ let Initialize = async(START_OVER = false) => {
                     let { currentTarget } = event,
                         parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
-                    LoadCache(['LiveReminders', 'ChannelPoints'], async({ LiveReminders = null, ChannelPoints = {} }) => {
+                    LoadCache(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
                         try {
                             LiveReminders = JSON.parse(LiveReminders || '{}');
                         } catch(error) {
@@ -7113,7 +7122,17 @@ let Initialize = async(START_OVER = false) => {
                             LiveReminders ??= {};
                         }
 
-                        let oldHash = UUID.from(JSON.stringify(LiveReminders)).value;
+                        try {
+                            DVRChannels = JSON.parse(DVRChannels || '{}');
+                        } catch(error) {
+                            // Probably an object already...
+                            DVRChannels ??= {};
+                        }
+
+                        let Hash = {
+                            live_reminders: UUID.from(JSON.stringify(LiveReminders)).value,
+                            dvr_channels: UUID.from(JSON.stringify(DVRChannels)).value,
+                        };
 
                         let f = furnish;
                         let body = $('#tt-reminder-listing'),
@@ -7233,7 +7252,7 @@ let Initialize = async(START_OVER = false) => {
                                         innerHTML: amount.toLocaleString(LANGUAGE),
                                     }).outerHTML,
                                 coinIcon = (
-                                    face?.length?
+                                    face?.contains('/')?
                                         furnish('span.tt-live-reminder-point-face', {
                                             innerHTML: furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: coinStyle.toString() }).outerHTML,
                                         }):
@@ -7374,6 +7393,66 @@ let Initialize = async(START_OVER = false) => {
                                                                 )
                                                             )
                                                         )
+                                                    ),
+                                                    (
+                                                        parseBool(Settings.video_clips__dvr)?
+                                                            f('.persistent-notification__popout.tt-absolute.tt-pd-l-1', { style: `top:5rem; right:0` },
+                                                                f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
+                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__popout]',
+                                                                        {
+                                                                            name,
+
+                                                                            onclick: event => {
+                                                                                let { currentTarget } = event,
+                                                                                    name = currentTarget.getAttribute('name');
+
+                                                                                LoadCache('DVRChannels', async({ DVRChannels }) => {
+                                                                                    DVRChannels = JSON.parse(DVRChannels || '{}');
+
+                                                                                    let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
+                                                                                        DVR_ID = name.toLowerCase(),
+                                                                                        enabled = nullish(DVRChannels[DVR_ID]),
+                                                                                        [title, subtitle, icon] = [
+                                                                                            ['Turn DVR on', `${ s(name) } live streams will be recorded`, 'host'],
+                                                                                            ['Turn DVR off', `${ s(name) } live streams will no longer be recorded`, 'clip']
+                                                                                        ][+!!enabled];
+
+                                                                                    icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
+
+                                                                                    $('.tt-button-icon__icon', currentTarget).innerHTML = icon;
+
+                                                                                    // Add the DVR...
+                                                                                    let message;
+                                                                                    if(enabled) {
+                                                                                        message = `${ s(name) } streams will be recorded.`;
+
+                                                                                        DVRChannels[DVR_ID] = new ClipName(2);
+                                                                                    }
+                                                                                    // Remove the DVR...
+                                                                                    else {
+                                                                                        message = `${ name } will not be recorded.`;
+
+                                                                                        delete DVRChannels[DVR_ID];
+                                                                                    }
+
+                                                                                    // FIX-ME: Live Reminder alerts will not display if another alert is present...
+                                                                                    SaveCache({ DVRChannels: JSON.stringify(DVRChannels) }, () => Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                                                                                });
+                                                                            },
+                                                                        },
+                                                                        f('span.tt-button-icon__icon').with(
+                                                                            f('div',
+                                                                                {
+                                                                                    style: 'height:1.6rem; width:1.6rem',
+                                                                                    innerHTML: Glyphs[['host','clip'][+parseBool(DVRChannels[_name])]],
+                                                                                },
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                )
+                                                            )
+                                                        // DVR is NOT enabled, so don't show anything here...
+                                                        : ''
                                                     )
                                                 )
                                             )
@@ -7412,8 +7491,11 @@ let Initialize = async(START_OVER = false) => {
                         wait(500)
                             .then(() => $('[up-next--body] > *').modStyle('border-bottom:2px solid #0000; transition:border .5s; border-image:linear-gradient(90deg, #0000, #0000) 1;'));
 
-                        if(oldHash != UUID.from(JSON.stringify(LiveReminders)).value)
-                            SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                        if(false
+                            || (Hash.live_reminders != UUID.from(JSON.stringify(LiveReminders)).value)
+                            || (Hash.dvr_channels != UUID.from(JSON.stringify(DVRChannels)).value)
+                        )
+                            SaveCache({ LiveReminders, DVRChannels: JSON.stringify(DVRChannels) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
                     });
                 },
             });
@@ -7531,7 +7613,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let streamer,
                     // Did the event originate from within the ballon?
-                    from_container = !~event.path.slice(0, 5).indexOf(FIRST_IN_LINE_BALLOON.body);
+                    from_container = !~event.path?.slice(0, 5)?.indexOf(FIRST_IN_LINE_BALLOON.body);
 
                 try {
                     streamer = JSON.parse(event.dataTransfer.getData('application/tt-streamer'));
@@ -11747,7 +11829,7 @@ let Initialize = async(START_OVER = false) => {
 
                 amount = (balance?.textContent ?? (hasPointsEnabled? amount: '&#128683;'));
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
-                face = (STREAMER?.face ?? face ?? '');
+                face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
                 notEarned = (
                     (allRewards?.length)?
                         allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
@@ -11836,7 +11918,7 @@ let Initialize = async(START_OVER = false) => {
                         'rainbow-border': notEarned == 0,
                         innerHTML: amount,
                     }),
-                    icon = face?.length?
+                    icon = face?.contains('/')?
                         furnish(pointFace, {
                             innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
                         }):
@@ -12277,7 +12359,7 @@ let Initialize = async(START_OVER = false) => {
 
             let f = furnish,
                 s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                DVR_ID = [STREAMER.name, STREAMER.sole, (new Date).getAbsoluteDay()].join('-'),
+                DVR_ID = STREAMER.name.toLowerCase(),
                 enabled = defined(DVRChannels[DVR_ID]),
                 [title, subtitle, icon] = [
                     ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
@@ -12300,7 +12382,7 @@ let Initialize = async(START_OVER = false) => {
                             DVRChannels = JSON.parse(DVRChannels || '{}');
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
-                                DVR_ID = [STREAMER.name, STREAMER.sole, (new Date).getAbsoluteDay()].join('-'),
+                                DVR_ID = STREAMER.name.toLowerCase(),
                                 enabled = nullish(DVRChannels[DVR_ID]),
                                 [title, subtitle, icon] = [
                                     ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
@@ -12320,10 +12402,13 @@ let Initialize = async(START_OVER = false) => {
 
                                 DVRChannels[DVR_ID] = new ClipName(2);
 
-                                SetQuality(VideoClips.quality, 'auto').then(() => {
-                                    MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
-                                        .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
-                                });
+                                when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
+                                    .then(() => {
+                                        SetQuality(VideoClips.quality, 'auto').then(() => {
+                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                                                .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                                        });
+                                    });
                             }
                             // Remove the DVR...
                             else {
@@ -12353,18 +12438,29 @@ let Initialize = async(START_OVER = false) => {
 
             // Run DVR if enabled...
             if(enabled && !STREAMER.redo) {
-                SetQuality(VideoClips.quality, 'auto').then(() => {
-                    MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
-                        .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
-                });
+                when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
+                    .then(() => {
+                        SetQuality(VideoClips.quality, 'auto').then(() => {
+                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                                .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                        });
+                    });
 
-                STREAMER.onraid = STREAMER.onhost = top.beforeleaving = async({ hosting = false, raiding = false, raided = false, from, to }) => {
+                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to }) => {
                     let next = await GetNextStreamer();
 
-                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                     MASTER_VIDEO.stopRecording().removeRecording();
                 };
+
+                setInterval(DVR_ID => {
+                    document.title = (
+                        MASTER_VIDEO.hasRecording()?
+                            `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording().creationTime, 'clock') }`:
+                        `${ STREAMER.name } - Twitch`
+                    );
+                }, 250, DVR_ID);
             }
         });
 
@@ -12373,6 +12469,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.video_clips__dvr = -2_500;
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = chunks => {
+        let DVR_ID = STREAMER.name.toLowerCase();
         let name = `${ STREAMER.name }-${ (new Date).toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-') }.${ top.MIME_Types.find(MASTER_VIDEO.mimeType) }`;
         let blob = new Blob(chunks, { type: chunks[0].type });
         let link = furnish('a', { href: URL.createObjectURL(blob), download: name, hidden: true }, name);
@@ -12386,12 +12483,67 @@ let Initialize = async(START_OVER = false) => {
     };
 
     Unhandlers.video_clips__dvr = () => {
+        let DVR_ID = STREAMER.name.toLowerCase();
+
         MASTER_VIDEO.cancelRecording().stopRecording().removeRecording();
     };
+
+    let AD_CACHE = new Map;
 
     __AutoDVR__:
     if(parseBool(Settings?.video_clips__dvr)) {
         REMARK('Adding DVR functionality...');
+
+        let HandleAd = adCountdown => {
+            let [main, mini] = $.all('video');
+
+            if(nullish(main) || nullish(mini))
+                return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
+
+            let recorders = Object.entries(main.recorders ?? {});
+
+            if(recorders.length < 1)
+                return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
+
+            REMARK(`► There is an ad playing... ${ toTimeString((new Date) - main.getRecording(recorders[0][0])?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini });
+
+            for(let [guid, recorder] of recorders) {
+                let key = mini.dataset.cacheKey = recorder.name;
+
+                AD_CACHE.set(key, {
+                    main, mini,
+
+                    at: main.latestBlobs.length
+                });
+
+                main.pauseRecording(key);
+
+                mini.startRecording(Infinity, { key })
+                    .then(chunks => {
+                        let { main, mini, at } = AD_CACHE.get(chunks.source.dataset.cacheKey);
+
+                        LOG(`► Chunks added to main <video>: ${ chunks.length } @ ${ at }`, main.latestBlobs, chunks);
+                    });
+
+                mini.getRecording(key).ondataavailable = event =>
+                    main.latestBlobs.push(event.data);
+
+                when.nullish(() => $('[data-a-target*="ad-countdown"i]'), 10, key)
+                    .then(key => {
+                        let { main, mini, at } = AD_CACHE.get(key);
+
+                        LOG(`► Ad is done playing... ${ toTimeString((new Date) - main.getRecording(key)?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini, key, at, blobs: main?.latestBlobs });
+
+                        mini.stopRecording(key).removeRecording(key);
+
+                        when.defined(() => $('[data-a-target*="ad-countdown"i]'))
+                            .then(HandleAd);
+                    });
+            }
+        };
+
+        when.defined(() => $('[data-a-target*="ad-countdown"i]'))
+            .then(HandleAd);
 
         // This is where the magic happens
             // Begin looking for DVR channels...
@@ -12429,7 +12581,7 @@ let Initialize = async(START_OVER = false) => {
                         let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
                             job = ALL_FIRST_IN_LINE_JOBS[index];
 
-                        let Ant_DVR_ID = [STREAMER.name, STREAMER.sole, (new Date).getAbsoluteDay()].join('-'),
+                        let Ant_DVR_ID = name.toLowerCase(),
                             anabled = defined(DVRChannels[Ant_DVR_ID]);
 
                         if(defined(job) && name.unlike(STREAMER.name) && !anabled) {
@@ -12441,8 +12593,6 @@ let Initialize = async(START_OVER = false) => {
 
                             // Skipper
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
-
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
                             SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                                 LOG('Skipping queue in favor of a DVR channel', job);
@@ -12480,9 +12630,9 @@ let Initialize = async(START_OVER = false) => {
                 DVRChannels = JSON.parse(DVRChannels || '{}');
 
                 for(let DVR_ID in DVRChannels) {
-                    let [streamer, station, date] = DVR_ID.split('-');
+                    let streamer = (DVR_ID + '').toLowerCase();
 
-                    if(parseBool(DVRChannels[DVR_ID]) && ((STREAMER.name == streamer) || (STREAMER.sole == station)))
+                    if(parseBool(DVRChannels[DVR_ID]) && [STREAMER.name, STREAMER.sole].map(s => (s + '').toLowerCase()).contains(streamer))
                         when.defined(() => $('#up-next-control'))
                             .then(button => {
                                 let paused = parseBool(button.getAttribute('paused'));
@@ -12493,18 +12643,47 @@ let Initialize = async(START_OVER = false) => {
                                 button?.click();
                             })
                             .then(() => {
-                                SetQuality(VideoClips.quality, 'auto').then(() => {
-                                    MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
-                                        .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
-                                });
+                                when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
+                                    .then(() => {
+                                        SetQuality(VideoClips.quality, 'auto').then(() => {
+                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                                                .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                                        });
+                                    });
 
-                                STREAMER.onraid = STREAMER.onhost = top.beforeleaving = async({ hosting = false, raiding = false, raided = false }) => {
+                                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to }) => {
                                     let next = await GetNextStreamer();
+                                    let DVR_ID = STREAMER.name.toLowerCase();
 
-                                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+                                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                                     MASTER_VIDEO.stopRecording().removeRecording();
                                 };
+
+                                confirm(`<div hidden controller deny="Why?" okay="Acknowledge (interact)"></div>
+                                    To automatically save DVRs when this page navigates to another stream (or reloads unexpectedly), you must interact with this page.
+                                `)
+                                    .then(answer => {
+                                        if(!answer)
+                                            open('https://developer.mozilla.org/en-US/docs/Web/Security/User_activation', '_blank');
+                                    });
+
+                                $.on('focusin', event => {
+                                    let DVR_ID = STREAMER.name.toLowerCase();
+
+                                    if(top.focusedin)
+                                        return;
+                                    top.focusedin = true;
+
+                                    top.addEventListener('beforeunload', leaveHandler);
+                                    setInterval(DVR_ID => {
+                                        document.title = (
+                                            MASTER_VIDEO.hasRecording()?
+                                                `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording().creationTime, 'clock') }`:
+                                            `${ STREAMER.name } - Twitch`
+                                        );
+                                    }, 250, DVR_ID);
+                                });
                             });
                 }
             });
@@ -13069,7 +13248,7 @@ let Initialize = async(START_OVER = false) => {
                             .finally(href => {
                                 DEFAULT_CLIP_NAME = new ClipName;
 
-                                video.removeRecording(EVENT_NAME);
+                                video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
 
                                 URL.revokeObjectURL(href);
                             });
@@ -13502,8 +13681,8 @@ if(top == window) {
 
             window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
 
-            // Give the storage 1s to perform any "catch-up"
-            wait(1000, ready).then(async ready => {
+            // Give the storage 5s to perform any "catch-up"
+            wait(5000, ready).then(async ready => {
                 await Initialize(ready)
                     .then(() => {
                         // TTV Tools has the max Timer amount to initilize correctly...
@@ -14148,15 +14327,21 @@ if(top == window) {
                     } break;
 
                     case 'reload': {
-                        await top.beforeleaving?.();
+                        if(UP_NEXT_ALLOW_THIS_TAB || request.forced) {
+                            await top.beforeleaving?.();
 
-                        respond({ ok: true });
+                            respond({ ok: true });
+                        } else {
+                            respond({ ok: false });
+                        }
                     } break;
 
                     case 'close': {
                         await top.beforeleaving?.();
 
-                        respond({ ok: window.close() || true });
+                        respond({ ok: true });
+
+                        wait(100).then(() => window.close());
                     } break;
                 }
             });

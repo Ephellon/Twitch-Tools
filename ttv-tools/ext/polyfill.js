@@ -105,7 +105,7 @@ function parseURL(url) {
             return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ searchParameters.map(parameter => parameter.join('=')).join('&') }$1`));
         },
 
-        subSearch(parameters) {
+        delSearch(parameters) {
             if(typeof url == 'string')
                 url = parseURL(url);
 
@@ -129,7 +129,7 @@ Object.defineProperties(parseURL, {
     // goto(url:string<URL>, target:string?, pass:object?) → undefined
 function goto(url, target = '_self', pass = {}) {
     // DVR save
-    top.beforeleavinghere?.(pass);
+    top.beforeleaving?.(pass);
 
     open(url, target);
 }
@@ -695,7 +695,7 @@ function getDOMPath(element, shorten = false) {
 
     path = path.slice(+!!shorten).join('>');
     for(let regexp = /[> ](?:(\w+)[> ]\1[^#:])+/; shorten && regexp.test(path);)
-        path = path.replace(regexp, ' $1');
+        path = path.replace(regexp, ' $1 ');
 
     return path;
 }
@@ -1601,7 +1601,8 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 // Records a video element
     // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
 HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = { mimeType: 'video/webm;codecs=vp9' }) {
-    let key = UUID.from(options?.key ?? 'DEFAULT_RECORDING').value,
+    let name = (options?.key ?? 'DEFAULT_RECORDING'),
+        key = UUID.from(name).value,
         { private = false } = options;
 
     this.recorders ??= {};
@@ -1615,15 +1616,18 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
     let RECORDER = this.recorders[key] = new MediaRecorder(this.captureStream(), options),
         DATA = (this.latestBlobs = []);
 
+    DATA.source = this;
+
     let configurable = false, writable = false, enumerable = false;
     Object.defineProperties(RECORDER, {
+        name: { value: name, configurable, writable },
         data: {
             get() {
                 return DATA.slice(RECORDER.slice);
             },
 
             set(value) {
-                return RECORDER.data;
+                return DATA.slice(RECORDER.slice = value);
             },
         },
 
@@ -1697,7 +1701,7 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
 
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.cancelRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
+HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING') {
     let recorder = this.recorders?.[ UUID.from(key).value ];
 
     if(defined(recorder))
@@ -1741,7 +1745,7 @@ HTMLVideoElement.prototype.supports ??= function supports(MIMEType = '') {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write#example_of_copying_canvas_contents_to_the_clipboard
 // Copies the current frame from a video element to the clipboard
-    // HTMLVideoElement..copyFrame() → undefined
+    // HTMLVideoElement..copyFrame() → Promise<boolean>
 HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     let { height, width, videoHeight, videoWidth } = this;
 
@@ -3033,6 +3037,13 @@ function phantomClick(...elements) {
     }
 }
 
+setInterval(() => {
+    if($.all('.tt-post').length > 1)
+        $('.tt-post [class*="container"i]').setAttribute('count', $.all('.tt-post').length);
+    else
+        $('.tt-post [class*="container"i]')?.removeAttribute('count');
+}, 250);
+
 /***
  *               _           _
  *         /\   | |         | |
@@ -3070,7 +3081,7 @@ function alert(message = '') {
     );
 
     let container =
-    f('.tt-alert', { uuid: UUID.from(message).value },
+    f('.tt-post.tt-alert', { uuid: UUID.from(message).value },
         f('.tt-alert-container', { ['icon'.repeat(+!!icon.length)]: icon },
             f('.tt-alert-header').html(title),
             f('.tt-alert-body').html(message),
@@ -3299,7 +3310,7 @@ function confirm(message = '') {
     );
 
     let container =
-    f('.tt-confirm', { uuid: UUID.from(message).value },
+    f('.tt-post.tt-confirm', { uuid: UUID.from(message).value },
         f('.tt-confirm-container', { ['icon'.repeat(+!!icon.length)]: icon },
             f('.tt-confirm-header').html(title),
             f('.tt-confirm-body').html(message),
@@ -3599,7 +3610,7 @@ function prompt(message = '', defaultValue = '') {
     );
 
     let container =
-    f('.tt-prompt', { uuid: UUID.from(message).value },
+    f('.tt-post.tt-prompt', { uuid: UUID.from(message).value },
         f('.tt-prompt-container', { ['icon'.repeat(+!!icon.length)]: icon },
             f('.tt-prompt-header').html(title),
             f('.tt-prompt-body').html(message),

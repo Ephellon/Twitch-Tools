@@ -2,35 +2,44 @@
 
 # TO-DO &mdash; Known Issues
 
-1. Accessibility options?
-2. Add the **option** to keep Up Next purely unique
+- [ ] Accessibility options?
+- [ ] Add the **option** to keep Up Next purely unique
     * Maybe the user wants to create a repeating queue
     * Up Next does not currently allow duplicates
-3. Add the "Sync Activity across devices" option
+- [ ] Add the "Sync Activity across devices" option
     * If a channel is already being watched on a different machine, go to a different, unique channel
-4. Up Next sometimes goes in an irregular order
+- [ ] Up Next sometimes goes in an irregular order
     * Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
         * Tentative fix `4.29`
         * Still present `5.23`
     * It might also not list jobs immediately
-5. Dead channels get re-added to Up Next sometimes
+- [ ] Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
-6. Pause First in Line when observing a raid
-7. Toggling Easy Lurk might cause theatre-mode to activate?
+- [ ] Pause First in Line when observing a raid
+- [ ] Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `v5.8`
-8. Live Reminders might re-add all live channels?
+- [ ] Live Reminders might re-add all live channels?
     * Usually during raids (semi-intentional)
-9. Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
-10. Add logic to (video) record channel point redemptions
+- [ ] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
+- [ ] Add logic to (video) record channel point redemptions
     * Like PSN trophies
-11. Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
-12. Garner user feedback → https://form.jotform.com/222442891146153
-13. Offer an option to use Live Reminder channels after live followed channels have been exhausted
+- [ ] Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
+- [ ] Garner user feedback → https://form.jotform.com/222442891146153
+- [ ] Offer an option to use Live Reminder channels after live followed channels have been exhausted
+- [ ] Sometimes, chat bullets do not register in the main "catcher;" may be related to the reflector (after the initializer) → `TTV_IRC.socket?.reflect?.(...)`
+- [ ] Modify DVR logic to record over ads
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.5)
+- Fixed issue with marking items as spam
+- Adjusted visibility of `alert`s `confirm`s and `prompt`s
+- Fixed issue with `getDOMPath`
+- Added ability to control DVRs from the Live Reminder listing
+- Modified background script timeout for children (should lessen number of reloads)
+
 > [`5.31.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.4)
 - Changed DVR file names to be more informative
 - Added logic to ensure DVRs don't leave DVRs

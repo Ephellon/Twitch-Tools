@@ -2150,8 +2150,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                 function markAsSpam(element, type = 'spam', message) {
                     let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
 
-                    $.all('[data-test-selector="chat-message-separator"i] ~ * > *', element).forEach(sibling => sibling.remove());
-                    $('[data-test-selector="chat-message-separator"i]', element).parentElement.append(span);
+                    $.all(':is([data-test-selector="chat-message-separator"i], [class*="username-container"i] + *) ~ * > *', element).forEach(sibling => sibling.remove());
+                    $('[data-test-selector="chat-message-separator"i], [class*="username-container"i] + *', element).parentElement.append(span);
 
                     element.setAttribute(type, message);
 
@@ -3220,7 +3220,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
             amount = (STREAMER.coin = balance?.innerText ?? (hasPointsEnabled? amount: '&#128683;'));
             fiat = (STREAMER.fiat ??= fiat ?? 0);
-            face = (STREAMER.face ??= face ?? '');
+            face = (STREAMER.face ??= face ?? `${ STREAMER.sole }`);
             notEarned = (
                 (allRewards?.length)?
                     allRewards.filter(amount => parseCoin(amount?.innerText) > STREAMER.coin).length:

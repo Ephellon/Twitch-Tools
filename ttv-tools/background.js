@@ -13,21 +13,24 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
 
+let RESERVED_TWITCH_PATHNAMES = ['activate', 'bits', 'bits-checkout', 'clips', 'checkout', 'collections', 'communities', 'dashboard', 'directory', 'downloads', 'drops', 'event', 'following', 'friends', 'inventory', 'jobs', 'moderator', 'popout', 'prime', 'products', 'search', 'settings', 'store', 'subs', 'subscriptions', 'team', 'turbo', 'user', 'videos', 'wallet', 'watchparty'];
+
 // Reloads the tab
-    // ReloadTab(tab:object<Tab>, onlineOnly:boolean?) → undefined
-function ReloadTab(tab, onlineOnly = true) {
+    // ReloadTab(tab:object<Tab>, onlineOnly:boolean?, forced:boolean?) → undefined
+function ReloadTab(tab, onlineOnly = true, forced = false) {
     // Tab is offline, do not reload
     if(onlineOnly && TabIsOffline(tab))
         return;
 
-    Container.tabs.sendMessage(id, { action: 'reload' }, response => {
-        Container.tabs.reload(tab.id);
+    Container.tabs.sendMessage(id, { action: 'reload', forced }, response => {
+        if(forced || response.ok)
+            Container.tabs.reload(tab.id);
     });
 }
 
 // Removes the tab
-    // RemoveTab(tab:object<Tab>, duplicateTab:boolean?) → undefined
-function RemoveTab(tab, duplicateTab = false) {
+    // RemoveTab(tab:object<Tab>, duplicateTab:boolean?, forced:boolean?) → undefined
+function RemoveTab(tab, duplicateTab = false, forced = true) {
     // Duplicate tab
     duplication: if(duplicateTab) {
         // Using `.duplicate` carries the frozen status to the new tab...
@@ -44,7 +47,10 @@ function RemoveTab(tab, duplicateTab = false) {
     }
 
     console.warn(`Removing tab #${ tab.id }...`);
-    Container.tabs.remove(tab.id);
+    Container.tabs.sendMessage(tab.id, { action: 'close', forced }, response => {
+        if(forced || response.ok)
+            Container.tabs.remove(tab.id);
+    });
 }
 
 Object.defineProperties(RemoveTab, {
@@ -142,7 +148,7 @@ let TabWatcherInterval = setInterval(() => {
                 else if(!OfflineTabs.has(tab.id))
                     OfflineTabs.add(tab.id);
                 else
-                    ReloadTab(tab, tab.status != UNLOADED);
+                    ReloadTab(tab, tab.status != UNLOADED, true);
         });
     } catch(error) {
         // Suppress query errors...
@@ -198,38 +204,65 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
     switch(request.action) {
         case 'CLAIM_UP_NEXT': {
-            Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
+            Storage.get(['UP_NEXT_OWNER', 'UP_NEXT_OWNER_NAME'], ({ UP_NEXT_OWNER = null, UP_NEXT_OWNER_NAME = null }) => {
                 reloadAll ||= UP_NEXT_OWNER == null;
 
                 Container.tabs.query({
                     url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
                 }, (tabs = []) => {
                     // An owner already exists and is active...
-                    let owner = null,
+                    let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
+                    let name = null,
+                        owner = null,
                         ownerAlive = false;
 
                     for(let tab of tabs)
-                        if(ownerAlive ||= tab.id == UP_NEXT_OWNER)
-                            owner ??= tab.id;
+                        if(!!~RESERVED_TWITCH_PATHNAMES.indexOf(getName(tab.url))) {
+                            continue;
+                        } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
+                            name = getName(tab.url);
+                            owner = tab.id;
+                        }
 
                     if(ownerAlive) {
+                        UP_NEXT_OWNER = owner;
+                        UP_NEXT_OWNER_NAME = name;
+
                         respond({ owner: owner == sender.tab.id });
                     } else {
-                        UP_NEXT_OWNER = sender.tab.id;
+                        name = owner = null;
 
-                        respond({ owner: true });
+                        for(let tab of tabs)
+                            if(!!~RESERVED_TWITCH_PATHNAMES.indexOf(getName(tab.url))) {
+                                continue;
+                            } else if(ownerAlive ||= (getName(tab.url) == UP_NEXT_OWNER_NAME)) {
+                                name ??= getName(tab.url);
+                                owner ??= tab.id;
+                            }
+
+                        if(ownerAlive) {
+                            UP_NEXT_OWNER = owner;
+                            UP_NEXT_OWNER_NAME = name;
+
+                            respond({ owner: owner == sender.tab.id });
+                        } else {
+                            UP_NEXT_OWNER = sender.tab.id;
+                            UP_NEXT_OWNER_NAME = getName(sender.tab.url);
+
+                            respond({ owner: true });
+                        }
                     }
 
-                    Storage.set({ UP_NEXT_OWNER });
+                    Storage.set({ UP_NEXT_OWNER, UP_NEXT_OWNER_NAME });
                 });
             });
         } break;
 
         case 'WAIVE_UP_NEXT': {
-            Storage.get(['UP_NEXT_OWNER'], ({ UP_NEXT_OWNER = null }) => {
+            Storage.get(['UP_NEXT_OWNER', 'UP_NEXT_OWNER_NAME'], ({ UP_NEXT_OWNER = null, UP_NEXT_OWNER_NAME = null }) => {
                 reloadAll ||= UP_NEXT_OWNER != null;
 
-                Storage.set({ UP_NEXT_OWNER: null });
+                Storage.set({ UP_NEXT_OWNER: null, UP_NEXT_OWNER_NAME: null });
             });
         } break;
 
@@ -273,7 +306,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 let REPORTS = new Map,
     GALLOWS = new Map,
     HANG_UP_CHECKER = new Map,
-    MAX_TIME_ALLOWED = 15_000;
+    MAX_TIME_ALLOWED = 35_000;
 
 let { COMPLETE, LOADING, UNLOADED } = Container.tabs.TabStatus;
 let LAG_REPORTER = setInterval(() => {

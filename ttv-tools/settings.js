@@ -1765,28 +1765,27 @@ when.defined(() => SETTINGS)
                         miscBytes += size;
                 }
 
-                let [value, unit] = total.suffix('B', false).split(/(\d+)(\D+)/).filter(s => s.length);
-
-                let f = furnish;
+                let f = furnish,
+                    dD = /\.0+([kMG]?B)/;
                 let tbody = f.tbody(
                     f.tr(
                         f.td(`Settings`),
-                        f.td(settBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td(settBytes.suffix('B', 2).replace(dD, '$1')),
                         f.td((100 * (settBytes / total)).toFixed(1) + '%')
                     ),
                     f.tr(
                         f.td(`Reminders`),
-                        f.td(liveBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td(liveBytes.suffix('B', 2).replace(dD, '$1')),
                         f.td((100 * (liveBytes / total)).toFixed(1) + '%')
                     ),
                     f.tr(
                         f.td(`DVR`),
-                        f.td(dvrBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td(dvrBytes.suffix('B', 2).replace(dD, '$1')),
                         f.td((100 * (dvrBytes / total)).toFixed(1) + '%')
                     ),
                     f.tr(
                         f.td(`Miscellaneous`),
-                        f.td(miscBytes.suffix('B', 2).replace(/[\.0]+([kMG]?B)/, '$1')),
+                        f.td(miscBytes.suffix('B', 2).replace(dD, '$1')),
                         f.td((100 * (miscBytes / total)).toFixed(1) + '%')
                     ),
                     f.tr(

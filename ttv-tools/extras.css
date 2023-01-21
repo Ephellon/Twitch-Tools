@@ -243,6 +243,33 @@ caption {
     border: 6px double var(--color-twitch-purple);
 }
 
+/* Ensure notices are first come, first serve */
+.tt-post:not(.tt-post ~ .tt-post) {
+    z-index: 999999999 !important;
+}
+
+.tt-post:not(.tt-post ~ .tt-post) > [count]:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::after {
+    content: attr(count);
+
+    background: var(--color-background-base);
+    border: 1px solid var(--channel-color);
+    border-radius: 10rem;
+    outline: none;
+    text-align: center;
+
+    position: absolute;
+    top: -5rem;
+    left: 50%;
+    transform: translate(-50%,50%);
+
+    padding: .65rem 1rem 1.5rem;
+
+    height: 1rem;
+    width: 6rem;
+
+    transition: all .5s ease-in;
+}
+
 .tt-tooltip-wrapper[show], img ~ .tt-tooltip, [tt-x] {
     display: none !important;
 }
@@ -631,8 +658,6 @@ caption {
 .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container) {
     transition: transform .6s, opacity .3s;
 
-    opacity: .6;
-
     top: 99%;
     transform: translate(-50%, calc(1% + .1em));
 }
@@ -641,6 +666,10 @@ caption {
     opacity: 1;
 
     transform: translate(-50%, -100%);
+}
+
+.tt-post:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) [count]:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container):is(:hover, :focus-within)::after {
+    opacity: 0;
 }
 
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-alert-container,
