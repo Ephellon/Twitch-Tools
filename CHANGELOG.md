@@ -36,7 +36,7 @@
 ----
 
 # DONE &mdash; Notable Changes
-> [`5.31.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.5)
+> [`5.31.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.6)
 - Moved change log to `CHANGELOG.md`
 - Fixed issue where non-first in line instances could change other instances
 - Fixed time-zone conversion issue
