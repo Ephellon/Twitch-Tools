@@ -558,17 +558,28 @@ function toTimeString(milliseconds = 0, format = 'natural') {
             result = time;
         } break;
 
-        case 'clock':
-            format = '!hour:!minute:!second';
-
         default: {
+            switch(format) {
+                case 'clock': {
+                    format = '!hour:!minute:!second';
+                } break;
+
+                case 'readable': {
+                    format = '&hour_h &minute_m &second_s';
+                } break;
+
+                case 'short': {
+                    format = '&hour_h&minute_m&second_s';
+                } break;
+            }
+
             joining_symbol = '';
 
             for(let [name, value] of times)
                 if(milliseconds >= value) {
                     let amount = (milliseconds / value) | 0;
 
-                    time.push(time[name] = (amount + '').padStart(2, '00'));
+                    time.push(time[name] = (amount + ''));
 
                     milliseconds -= amount * value;
                 }
@@ -577,7 +588,7 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 
             result = format
                 // Replace the text
-                .split(/([\!\?](?:year|day|hour|minute|(?:milli)?second))s?(?:\b|_)/g)
+                .split(/([&!?](?:year|day|hour|minute|(?:milli)?second))s?(?:\b|_)/g)
                 .map($1 => {
                     let [command, ...argument] = $1;
 
@@ -594,13 +605,22 @@ function toTimeString(milliseconds = 0, format = 'natural') {
                                     return Math.round(originalTime / times.get(name));
                         } break;
 
-                        // Radix amount (left over)
+                        // Radix amount (left over) with leading zero
                         case '!': {
                             for(let [name, value] of times)
                                 if(argument == 'millisecond')
                                     return milliseconds;
                                 else if(argument == name)
-                                    return time[name] ?? '00';
+                                    return time[name]?.padStart(2, '00') ?? '00';
+                        } break;
+
+                        // Radix amount (left over) without leading zero
+                        case '&': {
+                            for(let [name, value] of times)
+                                if(argument == 'millisecond')
+                                    return milliseconds;
+                                else if(argument == name)
+                                    return time[name] ?? '0';
                         } break;
                     }
 
@@ -693,8 +713,8 @@ function getDOMPath(element, shorten = false) {
         element = parent;
     }
 
-    path = path.slice(+!!shorten).join('>');
-    for(let regexp = /[> ](?:(\w+)[> ]\1[^#:])+/; shorten && regexp.test(path);)
+    path = path.slice(+!!shorten).join('>').replace(/#([^\a-z][^>\s]*)/ig, '[id="$1"]');
+    for(let regexp = /[> ](?:(\w+)[> ]\1[^#:\[\]])+/; shorten && regexp.test(path);)
         path = path.replace(regexp, ' $1 ');
 
     return path;
@@ -784,6 +804,12 @@ Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
         offset = (this - start) + ((start.getTimezoneOffset() - this.getTimezoneOffset()) * 60_000);
 
     return (offset / day).floor();
+};
+
+// Returns the current meridiem
+    // Date..getMeridiem() → string<{ "AM" | "PM" }>
+Date.prototype.getMeridiem ??= function getMeridiem() {
+    return this.getHours() > 11? 'PM': 'AM';
 };
 
 // Returns the milliseconds since an event
@@ -1614,9 +1640,7 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
         delete options[key];
 
     let RECORDER = this.recorders[key] = new MediaRecorder(this.captureStream(), options),
-        DATA = (this.latestBlobs = []);
-
-    DATA.source = this;
+        DATA = (this.blobs = []);
 
     let configurable = false, writable = false, enumerable = false;
     Object.defineProperties(RECORDER, {
@@ -1636,10 +1660,24 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
         creationTime: { value: +new Date, configurable, writable },
     });
 
+    Object.defineProperties(DATA, {
+        source: { value: this, configurable, writable },
+        recordingLength: {
+            get() {
+                return (new Date) - DATA.creationTime;
+            },
+
+            set(value) {
+                return (new Date) - DATA.creationTime;
+            },
+        },
+        creationTime: { value: +new Date, configurable, writable },
+    });
+
     RECORDER.ondataavailable = event => {
         this.mimeType ??= RECORDER.mimeType;
 
-        this.latestBlobs.push(event.data);
+        this.blobs.push(event.data);
     };
     RECORDER.start(1000);
     // Chunks per second
@@ -2961,7 +2999,7 @@ function ERROR(...messages) {
 };
 
 // Logs comments (blue)
-    // LOG(...messages:any) → undefined
+    // REMARK(...messages:any) → undefined
 function REMARK(...messages) {
     // return console.error(...messages);
 
@@ -2992,6 +3030,72 @@ function REMARK(...messages) {
     `;
 
     console.group(`%c\u22b3 [COMMENT] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/*.equals('o')*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+
+    return ({
+        toNativeStack(stack = console.log) {
+            stack(...messages);
+        },
+
+        toForeignStack(stack = console.log) {
+            return stack(messages.join(' '));
+        },
+    });
+};
+
+// Logs notices (pink)
+    // NOTICE(...messages:any) → undefined
+function NOTICE(...messages) {
+    // return console.error(...messages);
+
+    let CSS = `
+        background-color: #747;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #e8e;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.group(`%c\u22b3 [NOTICE] \u2014 Twitch Tools`, CSS);
 
     for(let message of messages) {
         let type = 'c';

@@ -21,18 +21,32 @@
     * Tentative fix `v5.8`
 - [ ] Live Reminders might re-add all live channels?
     * Usually during raids (semi-intentional)
-- [ ] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: 'repeat mini-button')
+- [ ] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
 - [ ] Add logic to (video) record channel point redemptions
     * Like PSN trophies
 - [ ] Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
 - [ ] Garner user feedback → https://form.jotform.com/222442891146153
 - [ ] Offer an option to use Live Reminder channels after live followed channels have been exhausted
 - [ ] Sometimes, chat bullets do not register in the main "catcher;" may be related to the reflector (after the initializer) → `TTV_IRC.socket?.reflect?.(...)`
+    * Typically affects only user generated messages
 - [ ] Modify DVR logic to record over ads
+    * Currently, skips entire ad section; does not substitute mini-video's contents in ads' place
+- [x] The First in Line timer gets reset every time the page reloads
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.5)
+- Moved change log to `CHANGELOG.md`
+- Fixed issue where non-first in line instances could change other instances
+- Fixed time-zone conversion issue
+- DVRs no longer record ads
+- Fixed issue preventing error-messages from being dismissed by the extension
+- The Channel Error now only activates if you are **not** logged in
+- Fixed issue with BTTV emotes
+- Fixed issue with Message Restoration
+- Modified DVR logic to save streams with friendlier filenames
+
 > [`5.31.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.5)
 - Fixed issue with marking items as spam
 - Adjusted visibility of `alert`s `confirm`s and `prompt`s

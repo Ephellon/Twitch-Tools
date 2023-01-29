@@ -48,6 +48,8 @@ function RemoveCustomCSSBlock_Chat(name, flags = '') {
     $('body').append(Chat__CUSTOM_CSS);
 }
 
+top.Queue ??= { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] };
+
 let Chat__Initialize = async(START_OVER = false) => {
     let {
         USERNAME,
@@ -734,67 +736,80 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 // Run the bttv-emote changer on pre-populated messages
                 Chat.get().map(Chat.onmessage = async line => {
-                    let regexp,
-                        holding = new Map;
-
                     // Replace BTTV emotes for the last 15 chat messages
                     if(Queue.bttv_emotes.contains(line.uuid))
                         return;
 
                     Queue.bttv_emotes.push(line.uuid);
-                    Queue.bttv_emotes = Queue.bttv_emotes.slice(-15);
+                    Queue.bttv_emotes = Queue.bttv_emotes.slice(-60);
 
-                    // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
-                    if(parseBool(Settings.auto_load_bttv_emotes))
-                        for(let word of line.message.split(/\s+/))
+                    for(let word of line.message.split(/\s+/)) {
+                        // This will recognise "emote" text, i.e. camel-cased text "emoteName" or all-caps "EMOTENAME"
+                        if(parseBool(Settings.auto_load_bttv_emotes))
                             if(!NON_EMOTE_PHRASES.has(word) && !QUEUED_EMOTES.has(word) && !BTTV_EMOTES.has(word) && word.length >= 3 && /[a-z\d][A-Z]|^[A-Z]+$/.test(word))
                                 await LOAD_BTTV_EMOTES(word, null, true);
 
-                    for(let [name, src] of BTTV_EMOTES)
-                        if((regexp = RegExp('\\b' + name.replace(/(\W)/g, '\\$1') + '\\b', 'g')).test(line.message)) {
-                            let alt = name,
+                        // This will search for all emotes in the "library"
+                        if(BTTV_EMOTES.has(word)) {
+                            let regexp = RegExp(`${ word.replace(/(\W)/g, '\\$1').replace(/^\w/, '\\b$&').replace(/\w$/, '$&\\b') }`, 'g'),
+                                alt = word,
+                                src = BTTV_EMOTES.get(alt),
                                 owner = BTTV_OWNERS.get(alt),
                                 own = owner?.displayName ?? 'Anonymous',
-                                pid = owner?.providerId;
+                                pid = owner?.providerId,
+                                style = `visibility:hidden!important`;
 
-                            let f = furnish;
-                            let img =
-                            f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
-                                f('span[@aTarget=emote-name]').with(
-                                    f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
-                                        f('img.bttv.chat-image.chat-line__message--emote', {
-                                            alt, src,
-                                        })
+                            let element = await line.element,
+                                uuid = UUID.from(alt).value;
+
+                            element.innerHTML = element.innerHTML.replace(regexp, uuid);
+
+                            for(let child of $.all('*', element))
+                                for(let { name, value } of child.attributes)
+                                    if(value == uuid)
+                                        child.setAttribute(name, word);
+
+                            element.innerHTML = element.innerHTML.replace(RegExp(uuid, 'g'), furnish('param.tt-convert-to-img', { alt, src, own, pid, style }).outerHTML);
+                        }
+                    }
+                });
+
+                setInterval(() => {
+                    $.all(`param.tt-convert-to-img`).map(child => {
+                        let f = furnish;
+                        let fragment = child.closest('[data-a-target$="message"i]'),
+                            converted = (fragment.getAttribute('tt-converted-emotes') ?? '').split(' '),
+                            tte = (fragment.getAttribute('data-tt-emote') ?? '');
+
+                        let alt = child.getAttribute('alt'),
+                            src = child.getAttribute('src'),
+                            own = child.getAttribute('own'),
+                            pid = child.getAttribute('pid');
+
+                        converted.push(alt);
+
+                        fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
+                        fragment.dataset.ttEmote = [...tte.split(' '), alt].join(' ').trim();
+
+                        child.parentElement.replaceChild(
+                            f(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${ alt }][@bttvOwner=${ own }][@bttvOwnerId=${ pid }]`).with(
+                                f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                                    f('span[@aTarget=emote-name]').with(
+                                        f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
+                                            f('img.bttv.chat-image.chat-line__message--emote', {
+                                                src,
+                                                alt: encodeHTML(alt),
+                                            })
+                                        )
                                     )
                                 )
-                            );
+                            )
+                            , child
+                        );
 
-                            when(line => (defined(line.element)? line: false), 250, line).then(element => {
-                                alt = alt.replace(/\s+/g, '_');
-
-                                $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
-                                    let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@bttvEmote=${alt}][@bttvOwner=${own}][@bttvOwnerId=${pid}]`).html(img.innerHTML),
-                                        converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
-
-                                    converted.push(alt);
-
-                                    let tte = fragment.getAttribute('data-tt-emote') ?? '';
-
-                                    fragment.setAttribute('data-tt-emote', [...tte.split(' '), alt].join(' '));
-                                    fragment.setAttribute('tt-converted-emotes', converted.join(' ').trim());
-                                    fragment.innerHTML = fragment.innerHTML.replace(regexp, UUID.from(alt).toString());
-                                    holding.set(alt, container.outerHTML);
-                                });
-                            });
-                        }
-
-                    for(let [alt, html] of holding)
-                        $.all(`.text-fragment[tt-converted-emotes~="${alt}"i]`).map(fragment => {
-                            fragment.innerHTML = fragment.innerHTML.replaceAll(UUID.from(alt).toString(), html);
-
-                            REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
-                        });
-                });
+                        REFURBISH_BTTV_EMOTE_TOOLTIPS(fragment);
+                    });
+                }, 250);
             });
 
         REMARK("Adding BTTV emote search listener...");
@@ -2966,116 +2981,117 @@ let Chat__Initialize = async(START_OVER = false) => {
             if($.defined(`[data-uuid="${ uuid }"i]`))
                 continue restoring;
 
-            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
-                let { author, handle, message, emotes, badges, style, element } = line,
-                    deleted = await line.deleted;
+            let { author, handle, message, emotes, badges, style } = line;
+            let element = await line.element,
+                deleted = await line.deleted;
 
-                if(!deleted || !message?.length)
-                    return;
+            element.dataset.uuid ||= uuid;
 
-                let f = furnish;
-                let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
+            if(!deleted || !message?.length)
+                continue restoring;
 
-                // The message was deleted before the element was placed
-                if(nullish(container)) {
-                    container = f(`.chat-line__message[@aTarget="chat-line-message" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
-                        f('[style="position:relative"]').with(
-                            f('.chat-line__message-highlight[@testSelector="chat-message-highlight" style="border-radius:.4rem; position:absolute"]'),
-                            f('.chat-line__message-container[style="position:relative"]').with(
-                                f('').with(
-                                    f('.chat-line__no-background[style="display:inline"]').with(
-                                        f('.chat-line__username-container[style="display:inline-block"]').with(
-                                            // Chat badges
-                                            f('span').with(
-                                                ...badges.map(name =>
-                                                    f('button[@aTarget=chat-badge]').with(
-                                                        // /badges/{version}/{UUID}/{size}
-                                                        // Broadcaster → https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1
-                                                        f(`img.chat-badge[alt="${ name }"]`, { src: `//static-cdn.jtvnw.net/badges/v1/${ TTV_BADGES.get(name) }/1` })
-                                                    )
-                                                )
-                                            ),
-                                            f('span.chat-line__username[role=button]').with(
-                                                f.span(
-                                                    f(`span.chat-author__display-name[@aTarget="chat-message-username" @aUser="${ author }" @testSelector="message-username" style="${ style }"]`).text(handle)
+            let f = furnish;
+            let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
+
+            // The message was deleted before the element was placed
+            if(nullish(container)) {
+                container = f(`.chat-line__message[@aTarget="chat-line-message" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
+                    f('[style="position:relative"]').with(
+                        f('.chat-line__message-highlight[@testSelector="chat-message-highlight" style="border-radius:.4rem; position:absolute"]'),
+                        f('.chat-line__message-container[style="position:relative"]').with(
+                            f('').with(
+                                f('.chat-line__no-background[style="display:inline"]').with(
+                                    f('.chat-line__username-container[style="display:inline-block"]').with(
+                                        // Chat badges
+                                        f('span').with(
+                                            ...badges.map(name =>
+                                                f('button[@aTarget=chat-badge]').with(
+                                                    // /badges/{version}/{UUID}/{size}
+                                                    // Broadcaster → https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1
+                                                    f(`img.chat-badge[alt="${ name }"]`, { src: `//static-cdn.jtvnw.net/badges/v1/${ TTV_BADGES.get(name) }/1` })
                                                 )
                                             )
                                         ),
-                                        f('span[@testSelector=chat-message-separator]').text(': '),
-                                        f('span[@testSelector=chat-line-message-placeholder]').text('Restoring...')
-                                    )
-                                )
-                            ),
-                            f('.chat-line__icons')
-                        )
-                    );
-
-                    $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i])').append(container);
-                }
-
-                let body = $(`[data-test-selector$="message-placeholder"i]`, container),
-                    user = $(`[data-a-user="${ author }"i]`, container)?.dataset?.aUser;
-
-                if(nullish(body) || nullish(user))
-                    return;
-                if(user.unlike(author) && user.unlike(handle))
-                    return;
-
-                RESTORED_MESSAGES.add(uuid);
-
-                LOG(`Restoring message:`, line);
-
-                // Fragmented...
-                if(emotes.length > 0) {
-                    let inter = [], final = [];
-
-                    for(let word of message.split(' ').filter(s => s.length))
-                        inter.push(
-                            emotes.contains(word)
-                            // Create an emote button...
-                            ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
-                                f('div').with(
-                                    f('span[@aTarget=emote-name]').with(
-                                        f('.chat-image__container').with(
-                                            f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
+                                        f('span.chat-line__username[role=button]').with(
+                                            f.span(
+                                                f(`span.chat-author__display-name[@aTarget="chat-message-username" @aUser="${ author }" @testSelector="message-username" style="${ style }"]`).text(handle)
+                                            )
                                         )
+                                    ),
+                                    f('span[@testSelector=chat-message-separator]').text(': '),
+                                    f('span[@testSelector=chat-line-message-placeholder]').text('Restoring...')
+                                )
+                            )
+                        ),
+                        f('.chat-line__icons')
+                    )
+                );
+
+                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i])').append(container);
+            }
+
+            let body = $(`[data-test-selector$="message-placeholder"i]`, container),
+                user = $(`[data-a-user="${ author }"i]`, container)?.dataset?.aUser;
+
+            if(nullish(body) || nullish(user))
+                continue restoring;
+            if(user.unlike(author) && user.unlike(handle))
+                continue restoring;
+
+            RESTORED_MESSAGES.add(uuid);
+
+            NOTICE(`Restoring message:`, line);
+
+            // Fragmented...
+            if(emotes.length > 0) {
+                let inter = [], final = [];
+
+                for(let word of message.split(' ').filter(s => s.length))
+                    inter.push(
+                        emotes.contains(word)
+                        // Create an emote button...
+                        ? f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                            f('div').with(
+                                f('span[@aTarget=emote-name]').with(
+                                    f('.chat-image__container').with(
+                                        f(`img.chat-image.chat-line__message--emote[alt="${ word }"][src="${ Chat.emotes.get(word) }"]`)
                                     )
                                 )
                             )
-                            // Just push the message...
-                            : word
-                        );
+                        )
+                        // Just push the message...
+                        : word
+                    );
 
-                    let fragments = [];
-                    for(let word of inter)
-                        if(typeof word == 'string') {
-                            fragments.push(word);
-                        } else {
-                            if(fragments.length)
-                                final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
-                            final.push(word);
+                let fragments = [];
+                for(let word of inter)
+                    if(typeof word == 'string') {
+                        fragments.push(word);
+                    } else {
+                        if(fragments.length)
+                            final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
+                        final.push(word);
 
-                            fragments = [];
-                        }
+                        fragments = [];
+                    }
 
-                    if(fragments.length)
-                        final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
+                if(fragments.length)
+                    final.push(f('.text-fragment[@aTarget=chat-message-text]').with(fragments.join(' ')));
 
-                    body.innerHTML = final.map(e => e.outerHTML).join(' ');
-                } else {
-                    body.innerText = message;
-                }
+                body.innerHTML = final.map(e => e.outerHTML).join(' ');
+            } else {
+                body.innerText = message;
+            }
 
-                container.dataset.uuid = uuid;
-                container.dataset.resurrected = true;
+            container.dataset.uuid = uuid;
+            container.dataset.resurrected = true;
 
-                let target = $('[data-a-target*="deleted"i]', container);
+            let target = $('[data-a-target*="deleted"i]', container);
 
-                if(defined(target))
-                    target.dataset.aTarget = 'chat-restored-message-placeholder';
+            if(defined(target))
+                target.dataset.aTarget = 'chat-restored-message-placeholder';
 
-                LOG(`Restored message "${ message }"`, { line, container });
-            });
+            NOTICE(`Restored message "${ message }"`, { line, container });
         }
 
         JUDGE__STOP_WATCH('recover_messages');

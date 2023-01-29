@@ -8,9 +8,9 @@
  *                             _/ |
  *                            |__/
  */
-let Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
-    Messages = new Map(),
-    PostOffice = new Map(),
+let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
+    Messages = top.Messages = new Map(),
+    PostOffice = top.PostOffice = new Map(),
     UserMenuToggleButton,
     // These won't change (often)
     ACTIVITY,
@@ -37,7 +37,7 @@ when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"
     .then(() => {
         UserMenuToggleButton.click();
         ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent ?? '';
-        USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? `Anon_${ +new Date }`;
+        USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? `User_Not_Logged_In_${ +new Date }`;
         THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
         ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
@@ -6816,6 +6816,8 @@ let Initialize = async(START_OVER = false) => {
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
             // TODO: Figure out a single pause controller for First in Line...
+            if(!UP_NEXT_ALLOW_THIS_TAB)
+                return;
             if(FIRST_IN_LINE_PAUSED)
                 return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
             if(timeRemaining > 60_000)
@@ -6888,6 +6890,8 @@ let Initialize = async(START_OVER = false) => {
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
             // The timer is paused
+            if(!UP_NEXT_ALLOW_THIS_TAB)
+                return;
             if(FIRST_IN_LINE_PAUSED)
                 return /* SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) }) */;
 
@@ -6943,7 +6947,7 @@ let Initialize = async(START_OVER = false) => {
 
     function NEW_DUE_DATE(offset) {
         if(!UP_NEXT_ALLOW_THIS_TAB)
-            return (+new Date) + FIRST_IN_LINE_WAIT_TIME * 60_000;
+            return (+new Date) + 3_600_000;
 
         return (+new Date) + (null
             ?? offset
@@ -7269,7 +7273,9 @@ let Initialize = async(START_OVER = false) => {
                             let liveFontColor = (THEME.equals('dark')? Color.white: Color.black);
                             let [liveBGColor] = [primaryColor.RGB, primaryColorDarker, primaryColorLighter].map(Color.destruct).sort((a, b) => Color.contrast(liveFontColor, [b.R, b.G, b.B]) - Color.contrast(liveFontColor, [a.R, a.G, a.B]));
 
-                            let status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em;${ (!live? '': `background-color:${ liveBGColor.RGB }`) }">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`
+                            let status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em;${ (!live? '': `background-color:${ liveBGColor.RGB }`) }">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
+
+                            let DVR_ON = parseBool(DVRChannels[_name]);
 
                             let container = f(`.tt-reminder`, { name, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                 f('.simplebar-scroll-content',
@@ -7444,7 +7450,7 @@ let Initialize = async(START_OVER = false) => {
                                                                             f('div',
                                                                                 {
                                                                                     style: 'height:1.6rem; width:1.6rem',
-                                                                                    innerHTML: Glyphs[['host','clip'][+parseBool(DVRChannels[_name])]],
+                                                                                    innerHTML: Glyphs.modify(['host','clip'][+DVR_ON], { style: `fill:${ ['currentcolor','#f59b00'][+DVR_ON] }` }),
                                                                                 },
                                                                             )
                                                                         )
@@ -8376,7 +8382,7 @@ let Initialize = async(START_OVER = false) => {
             SaveCache({ BAD_STREAMERS });
 
             // RemoveFromTopSearch(['tt-err-chn']);
-        } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]')) {
+        } else if(!/^User_Not_Logged_In_\d+$/.test(USERNAME) && $.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]')) {
             try {
                 $('[data-a-target="side-nav-arrow"i]')
                     .closest('[class*="expand"i]')
@@ -10990,10 +10996,10 @@ let Initialize = async(START_OVER = false) => {
                     if(offset.length > 0 && isNaN(parseInt(offset)))
                         continue;
 
-                    meridiem ||= 'ap'[+(autoMeridiem < 7 || autoMeridiem > 19)];
+                    meridiem ||= 'ap'[+(autoMeridiem > 11)];
 
                     hour = parseInt(hour);
-                    hour -= (/^a/i.test(meridiem) && hour > 11? 12: 0);
+                    hour -= (/^a/i.test(meridiem) && hour > 12? 12: 0);
                     hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
 
                     timezone ||= (offset.length? 'GMT': '');
@@ -12454,13 +12460,22 @@ let Initialize = async(START_OVER = false) => {
                     MASTER_VIDEO.stopRecording().removeRecording();
                 };
 
-                setInterval(DVR_ID => {
-                    document.title = (
-                        MASTER_VIDEO.hasRecording()?
-                            `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording().creationTime, 'clock') }`:
-                        `${ STREAMER.name } - Twitch`
-                    );
-                }, 250, DVR_ID);
+                $.on('focusin', event => {
+                    let DVR_ID = STREAMER.name.toLowerCase();
+
+                    if(top.focusedin)
+                        return;
+                    top.focusedin = true;
+
+                    top.addEventListener('beforeunload', leaveHandler);
+                    setInterval(DVR_ID => {
+                        document.title = (
+                            MASTER_VIDEO.hasRecording()?
+                                `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording().creationTime, 'clock') }`:
+                            `${ STREAMER.name } - Twitch`
+                        );
+                    }, 250, DVR_ID);
+                });
             }
         });
 
@@ -12469,8 +12484,22 @@ let Initialize = async(START_OVER = false) => {
     Timers.video_clips__dvr = -2_500;
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = chunks => {
+        let now = new Date;
         let DVR_ID = STREAMER.name.toLowerCase();
-        let name = `${ STREAMER.name }-${ (new Date).toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-') }.${ top.MIME_Types.find(MASTER_VIDEO.mimeType) }`;
+        let name = [
+            // File Name
+            [
+                STREAMER.name,
+                now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
+                `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
+            ]
+                .map(s => s?.trim?.())
+                .filter(s => s?.length)
+                .join(' ')
+            // File Extension
+            , top.MIME_Types.find(MASTER_VIDEO.mimeType)
+        ].join('.');
+
         let blob = new Blob(chunks, { type: chunks[0].type });
         let link = furnish('a', { href: URL.createObjectURL(blob), download: name, hidden: true }, name);
 
@@ -12488,7 +12517,7 @@ let Initialize = async(START_OVER = false) => {
         MASTER_VIDEO.cancelRecording().stopRecording().removeRecording();
     };
 
-    let AD_CACHE = new Map;
+    let FetchingChunks;
 
     __AutoDVR__:
     if(parseBool(Settings?.video_clips__dvr)) {
@@ -12497,49 +12526,44 @@ let Initialize = async(START_OVER = false) => {
         let HandleAd = adCountdown => {
             let [main, mini] = $.all('video');
 
-            if(nullish(main) || nullish(mini))
+            if(false
+                || nullish(main)
+                || nullish(mini)
+                || !main?.hasRecording()
+            )
                 return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
 
-            let recorders = Object.entries(main.recorders ?? {});
+            InsertChunksAt = main.blobs.length;
 
-            if(recorders.length < 1)
-                return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
+            main.pauseRecording();
 
-            REMARK(`► There is an ad playing... ${ toTimeString((new Date) - main.getRecording(recorders[0][0])?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini });
+            mini.startRecording();
 
-            for(let [guid, recorder] of recorders) {
-                let key = mini.dataset.cacheKey = recorder.name;
+            mini.getRecording().ondataavailable = event => {
+                NOTICE(`Adding chunks to main <video> @ ${ main?.blobs?.length } |`, ({ blobs: main.blobs, chunks: event.data, event }));
 
-                AD_CACHE.set(key, {
-                    main, mini,
+                main.blobs.push(event.data);
+            };
 
-                    at: main.latestBlobs.length
+            FetchingChunks = setInterval(mini => mini.getRecording().requestData(), 1000, mini);
+
+            when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
+                .then(() => {
+                    let [main, mini] = $.all('video');
+
+                    main?.resumeRecording();
+
+                    mini?.stopRecording()?.removeRecording();
+
+                    when.defined(() => $('[data-a-target*="ad-countdown"i]'))
+                        .then(HandleAd);
+
+                    clearInterval(FetchingChunks);
+
+                    NOTICE(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, ({ main, mini, blobs: main?.blobs, chunks: mini?.blobs }));
                 });
 
-                main.pauseRecording(key);
-
-                mini.startRecording(Infinity, { key })
-                    .then(chunks => {
-                        let { main, mini, at } = AD_CACHE.get(chunks.source.dataset.cacheKey);
-
-                        LOG(`► Chunks added to main <video>: ${ chunks.length } @ ${ at }`, main.latestBlobs, chunks);
-                    });
-
-                mini.getRecording(key).ondataavailable = event =>
-                    main.latestBlobs.push(event.data);
-
-                when.nullish(() => $('[data-a-target*="ad-countdown"i]'), 10, key)
-                    .then(key => {
-                        let { main, mini, at } = AD_CACHE.get(key);
-
-                        LOG(`► Ad is done playing... ${ toTimeString((new Date) - main.getRecording(key)?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini, key, at, blobs: main?.latestBlobs });
-
-                        mini.stopRecording(key).removeRecording(key);
-
-                        when.defined(() => $('[data-a-target*="ad-countdown"i]'))
-                            .then(HandleAd);
-                    });
-            }
+            NOTICE(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, ({ main, mini }));
         };
 
         when.defined(() => $('[data-a-target*="ad-countdown"i]'))
@@ -12558,7 +12582,7 @@ let Initialize = async(START_OVER = false) => {
                     checking:
                     // Only check for the stream when it's live; if the dates don't match, it just went live again
                     for(let DVR_ID in DVRChannels) {
-                        let [streamer, station, date] = DVR_ID.split('-');
+                        let streamer = (DVR_ID + '').toLowerCase();
                         let channel = await new Search(streamer).then(Search.convertResults),
                             ok = channel.icon?.pathname?.startsWith('/jtv_user');
 
@@ -12576,15 +12600,13 @@ let Initialize = async(START_OVER = false) => {
                         if(!parseBool(channel.live))
                             continue checking;
 
-                        let slug = DVRChannels[DVR_ID];
-                        let { name, live, icon, href, data = { actualStartTime: null } } = channel;
+                        let { name, live, icon, href, data = { actualStartTime: null } } = channel,
+                            slug = DVRChannels[name.toLowerCase()],
+                            enabled = defined(slug);
                         let index = (ALL_FIRST_IN_LINE_JOBS.findIndex(href => parseURL(href).pathname.slice(1).equals(name))),
                             job = ALL_FIRST_IN_LINE_JOBS[index];
 
-                        let Ant_DVR_ID = name.toLowerCase(),
-                            anabled = defined(DVRChannels[Ant_DVR_ID]);
-
-                        if(defined(job) && name.unlike(STREAMER.name) && !anabled) {
+                        if(defined(job) && name.unlike(STREAMER.name) && enabled) {
                             // Skip the queue!
                             let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                                 name = parseURL(removed).pathname.slice(1);
@@ -12632,7 +12654,7 @@ let Initialize = async(START_OVER = false) => {
                 for(let DVR_ID in DVRChannels) {
                     let streamer = (DVR_ID + '').toLowerCase();
 
-                    if(parseBool(DVRChannels[DVR_ID]) && [STREAMER.name, STREAMER.sole].map(s => (s + '').toLowerCase()).contains(streamer))
+                    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(DVRChannels[DVR_ID]) && [STREAMER.name, STREAMER.sole].map(s => (s + '').toLowerCase()).contains(streamer))
                         when.defined(() => $('#up-next-control'))
                             .then(button => {
                                 let paused = parseBool(button.getAttribute('paused'));
@@ -12808,7 +12830,7 @@ let Initialize = async(START_OVER = false) => {
                     if($('button[data-a-player-state]')?.dataset?.aPlayerState?.equals('playing')) {
                         $('button[data-a-player-state]').click();
 
-                        wait(1000).then(() => $('button[data-a-player-state]').click());
+                        wait(1000).then(() => $('button[data-a-player-state]')?.click());
                     }
                 }
             }
@@ -13089,7 +13111,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_pages = async() => {
         START__STOP_WATCH('recover_pages');
 
-        let error = $('main [data-a-target="core-error-message"i]');
+        let error = $('main :is([data-a-target="core-error-message"i], [data-test-selector="content-overlay"i])');
 
         if(nullish(error))
             return JUDGE__STOP_WATCH('recover_pages');
@@ -13651,7 +13673,7 @@ if(top == window) {
                     // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
 
                     // There is an error message
-                    || $.defined('[data-a-target="core-error-message"i]')
+                    || $.defined('[data-a-target="core-error-message"i], [data-test-selector="content-overlay"i]')
                 )
             );
 
@@ -14430,7 +14452,7 @@ if(top == window) {
 
         CommsObserver: if(!RESERVED_TWITCH_PATHNAMES.test(location.pathname)) {
             let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
-                USERNAME = Search.cookies.login ?? `Anon_${ +new Date }`;
+                USERNAME = Search.cookies.login ?? `User_Not_Logged_In_${ +new Date }`;
 
             CHANNEL = `#${ CHANNEL }`;
 
@@ -14726,10 +14748,9 @@ if(top == window) {
                                     },
                                 });
 
-                                chat_log.get(channel).add(results);
+                                chat_log.get(channel)?.add(results);
 
                                 Chat.__allmessages__.set(uuid, results);
-
 
                                 for(let [name, callback] of Chat.__onmessage__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));

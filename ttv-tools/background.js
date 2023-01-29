@@ -208,7 +208,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 reloadAll ||= UP_NEXT_OWNER == null;
 
                 Container.tabs.query({
-                    url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
+                    url: ["*://*.twitch.tv/*"],
                 }, (tabs = []) => {
                     // An owner already exists and is active...
                     let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
@@ -217,7 +217,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                         ownerAlive = false;
 
                     for(let tab of tabs)
-                        if(!!~RESERVED_TWITCH_PATHNAMES.indexOf(getName(tab.url))) {
+                        if(!!~RESERVED_TWITCH_PATHNAMES.indexOf(getName(tab.url)) || !!~new URL(tab.url).host.indexOf('player.') || !!~new URL(tab.url).host.indexOf('dev.')) {
                             continue;
                         } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
                             name = getName(tab.url);

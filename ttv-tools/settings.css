@@ -921,30 +921,37 @@ code[fill], [code][fill], [type^="code"i][fill] {
 }
 
 [style\:log] {
-    background-color: #00332b;
+    background-color: #033;
     border-bottom: 1px solid #0000;
     border-top: 1px solid #065;
     color: #f5f5f5;
 }
 
 [style\:warn] {
-    background-color: #332b00;
+    background-color: #330;
     border-bottom: 1px solid #0000;
     border-top: 1px solid #650;
     color: #f5f5f5;
 }
 
 [style\:error] {
-    background-color: #290000;
+    background-color: #300;
     border-bottom: 1px solid #0000;
-    border-top: 1px solid #5c0000;
+    border-top: 1px solid #600;
     color: #f5f5f5;
 }
 
 [style\:remark] {
-    background-color: #002b55;
+    background-color: #035;
     border-bottom: 1px solid #0000;
     border-top: 1px solid #057;
+    color: #f5f5f5;
+}
+
+[style\:notice] {
+    background-color: #747;
+    border-bottom: 1px solid #0000;
+    border-top: 1px solid #e8e;
     color: #f5f5f5;
 }
 

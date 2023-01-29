@@ -249,7 +249,7 @@ caption {
 }
 
 .tt-post:not(.tt-post ~ .tt-post) > [count]:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::after {
-    content: attr(count);
+    content: "All Messages (" attr(count) ")";
 
     background: var(--color-background-base);
     border: 1px solid var(--channel-color);

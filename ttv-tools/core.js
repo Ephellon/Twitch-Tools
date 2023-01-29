@@ -565,11 +565,11 @@ try {
             async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
-                        let value = await callback.apply(null, args);
+                        let array = await callback.apply(null, args);
 
-                        if(value?.length < 1) {
+                        if(array?.length < 1) {
                             clearInterval(interval);
-                            resolve(value);
+                            resolve(array);
                         }
                     }, ms, Array.from(args));
                 });
@@ -584,11 +584,11 @@ try {
             async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
-                        let value = await callback.apply(null, args);
+                        let array = await callback.apply(null, args);
 
-                        if(value?.length > 0) {
+                        if(array?.length > 0) {
                             clearInterval(interval);
-                            resolve(value);
+                            resolve(array);
                         }
                     }, ms, Array.from(args));
                 });

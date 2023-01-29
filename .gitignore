@@ -1,4 +1,7 @@
 # Ignore these folders
 /.profiles
+/ttv-tools.moz
 
 # Ignore these files
+*.pem
+*.crx
