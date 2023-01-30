@@ -377,6 +377,101 @@ class LZW {
     }
 };
 
+// Creates a Twitch-style tooltip
+    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
+    // Tooltip.get(parent:Element) → Element<Tooltip>
+class Tooltip {
+    static #TOOLTIPS = new Map()
+    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
+
+    constructor(parent, text = '', fineTuning = {}) {
+        let existing = Tooltip.#TOOLTIPS.get(parent);
+
+        fineTuning.top |= 0;
+        fineTuning.left |= 0;
+
+        fineTuning.from ??= '';
+        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from
+
+        parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
+
+        if(defined(existing))
+            return existing;
+
+        let uuid;
+        let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
+
+        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
+        for(let value, index = 0; nullish(value) && index < values.length; ++index) {
+            value = values[index];
+            uuid = value + (['', ':tooltip'][index] || '');
+        }
+
+        parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
+
+        parent.addEventListener('mouseenter', (function(event) {
+            let { currentTarget } = event,
+                offset = getOffset(currentTarget),
+                screen = getOffset(document.body),
+                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
+
+            let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
+
+            $.queryBy('div#root > *, body').first.append(
+                furnish('.tt-tooltip-layer.tooltip-layer',
+                    {
+                        style: (() => {
+                            let style = 'animation:.3s fade-in 1;';
+
+                            switch(from) {
+                                // case 'up':
+                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
+
+                                case 'down':
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 9999;`;
+
+                                // case 'left':
+                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
+                                //
+                                // case 'right':
+                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
+
+                                default:
+                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 9999;`;
+                            }
+
+                            return style;
+                        })()
+                    },
+                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': this.id, 'show': true },
+                        furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
+                        this
+                    )
+                )
+            );
+
+            if(parseBool(fineTuning.fit))
+                this.setAttribute('style', `max-width:${ offset.width }px`);
+            this.modStyle(fineTuning.style);
+        }).bind(tooltip));
+
+        parent.addEventListener('mouseleave', ({ currentTarget }) => {
+            let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
+
+            tooltip?.setAttribute('show', false);
+            tooltip?.setAttribute('tt-remove-me', true);
+        });
+
+        Tooltip.#TOOLTIPS.set(parent, tooltip);
+
+        return tooltip;
+    }
+
+    static get(container) {
+        return Tooltip.#TOOLTIPS.get(container);
+    }
+};
+
 // The following is just shared logic
     // $(selector:string, container:Node?, multiple:boolean?) → Array|Element
 function $(selector, container = document, multiple = false) {
@@ -601,14 +696,14 @@ try {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
 // Waits to execute a function
-    // wait(delay:number<integer>?, ...args:<any>) → Promise<number>
-function wait(delay = 100, ...args) {
-    return new Promise(resolve => setTimeout(resolve, delay, ...args));
+    // wait(delay:number<integer>?, value:<any>?) → Promise<number>
+function wait(delay = 100, value) {
+    return new Promise(resolve => setTimeout(resolve, delay, value));
 }
 
 // https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
 // Delay callbacks until the user is done...
-    // delay(fn:function, ms:number?, ...args<any>) → undefined
+    // delay(fn:function, ms:number<integer>?, ...args:<any>) → Function
 function delay(fn, ms = 0, ...args) {
     let timer = -1;
     return function(...args) {

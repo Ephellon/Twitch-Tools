@@ -2152,55 +2152,53 @@ let Chat__Initialize = async(START_OVER = false) => {
     Handlers.prevent_spam = () => {
         START__STOP_WATCH('prevent_spam');
 
-        Chat.get().map(Chat.onmessage = line => {
-            let lookBack = parseInt(Settings.prevent_spam_look_back ?? 15),
-                minLen = parseInt(Settings.prevent_spam_minimum_length ?? 3),
-                minOcc = parseInt(Settings.prevent_spam_ignore_under ?? 5);
+        function markAsSpam(element, type = 'spam', message, phrase = '') {
+            let spam_placeholder = "chat-deleted-message-placeholder";
+            let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
 
-            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
-                let { handle, message, author, element } = line;
+            $.all(':is([data-test-selector="chat-message-separator"i], [class*="username-container"i] + *) ~ * > *', element).forEach(sibling => sibling.remove());
+            $('[data-test-selector="chat-message-separator"i], [class*="username-container"i] + *', element).parentElement.append(span);
 
-                let spam_placeholder = "chat-deleted-message-placeholder";
+            element.setAttribute(type, message);
 
-                function markAsSpam(element, type = 'spam', message) {
-                    let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
+            if(phrase.length > 1) {
+                element.setAttribute(`${type}-phrase`, phrase);
+                message = message.replace(RegExp(phrase, 'ig'), `<del>${ phrase }</del>`);
+            }
 
-                    $.all(':is([data-test-selector="chat-message-separator"i], [class*="username-container"i] + *) ~ * > *', element).forEach(sibling => sibling.remove());
-                    $('[data-test-selector="chat-message-separator"i], [class*="username-container"i] + *', element).parentElement.append(span);
+            new Tooltip(element, message, { direction: 'up', fit: true });
+        }
 
-                    element.setAttribute(type, message);
+        async function spamChecker(element, message, author, lookBack, minLen, minOcc) {
+            if(message.length < 1 || RegExp(`^${USERNAME}$`, 'i').test(author))
+                return message;
 
-                    let tooltip = new Tooltip(element, message, { direction: 'up' });
+            // The same message is already posted (within X lines)
+            if(SPAM.slice(-lookBack).contains(message))
+                markAsSpam(await element, 'plagiarism', message);
 
-                    // Re-make the tooltip if the tooltip is too long to display correctly
-                    // if(getOffset(tooltip).width > getOffset(element).width)
-                    if(message.length > 60) {
-                        tooltip.closest('[class]:not([aria-describedby])')?.remove();
+            // The message contains repetitive (more than X instances) words/phrases
+            let regexp = RegExp(`(?<phrase>[\\S]{${ minLen },})${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i');
 
-                        new Tooltip(element, message, { direction: 'up', style: `width:fit-content; height:auto; white-space:break-spaces;` });
-                    }
-                }
+            if(regexp.test(message))
+                markAsSpam(await element, 'repetitive', message, regexp.exec(message).groups.phrase);
 
-                function spamChecker(message, author) {
-                    if(message.length < 1 || RegExp(`^${USERNAME}$`, 'i').test(author))
-                        return message;
+            return message;
+        }
 
-                    // The same message is already posted (within X lines)
-                    if( [...SPAM].slice(-lookBack).contains(message) )
-                        markAsSpam(element, 'plagiarism', message);
-
-                    // The message contains repetitive (more than X instances) words/phrases
-                    if(RegExp(`([^]{${ minLen },})${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i').test(message))
-                        markAsSpam(element, 'repetitive', message);
-
-                    return message;
-                }
-
-                // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
-                wait(30, message, author)
-                    .then((message, author) => spamChecker(message, author))
-                    .then(message => SPAM = [...SPAM, message].isolate());
-            });
+        Chat.get().map(Chat.onmessage = async line => {
+            // If not run asynchronously, `SPAM = ...` somehow runs before `spamChecker` and causes all messages to be marked as plagiarism
+            SPAM = [
+                ...SPAM,
+                await spamChecker(
+                    line.element,
+                    line.message,
+                    line.author,
+                    parseInt(Settings.prevent_spam_look_back ?? 15),
+                    parseInt(Settings.prevent_spam_minimum_length ?? 3),
+                    parseInt(Settings.prevent_spam_ignore_under ?? 5)
+                )
+            ].isolate();
         });
 
         JUDGE__STOP_WATCH('prevent_spam');
@@ -3040,7 +3038,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             RESTORED_MESSAGES.add(uuid);
 
-            NOTICE(`Restoring message:`, line);
+            // NOTICE(`Restoring message:`, line);
 
             // Fragmented...
             if(emotes.length > 0) {
@@ -3091,7 +3089,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(defined(target))
                 target.dataset.aTarget = 'chat-restored-message-placeholder';
 
-            NOTICE(`Restored message "${ message }"`, { line, container });
+            NOTICE(`Restored message "${ author }: ${ message }"`, { line, container });
         }
 
         JUDGE__STOP_WATCH('recover_messages');
@@ -3986,7 +3984,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             innerHTML: `
             /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
-            #tt-auto-claim-bonuses .tt-z-above, [plagiarism], [repetitive] { display: none }
+            #tt-auto-claim-bonuses .tt-z-above { display: none }
+            [plagiarism], [repetitive] { display: none }
             #tt-hidden-emote-container::after {
                 content: 'Collecting emotes...\\A Do not close this window';
                 text-align: center;

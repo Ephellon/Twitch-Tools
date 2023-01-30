@@ -16,11 +16,11 @@ function getURL(path = '') {
 }
 
 // Makes a Promised setInterval
-    // when(callback:function<boolean>, ms:number<milliseconds>?) → Promise<any>
-async function when(callback, ms = 100) {
+    // when(callback:function<boolean>, ms:number<integer>?, ...args<any>) → Promise<any>
+async function when(callback, ms = 100, ...args) {
     return new Promise((resolve, reject) => {
-        let interval = setInterval(async() => {
-            let value = await callback();
+        let interval = setInterval(async args => {
+            let value = await callback.apply(null, args);
 
             if(parseBool(value) !== false) {
                 clearInterval(interval);
@@ -32,7 +32,7 @@ async function when(callback, ms = 100) {
                     value
                 );
             }
-        }, ms);
+        }, ms, Array.from(args));
     });
 }
 
@@ -49,11 +49,11 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.defined(callback:function, ms:number<milliseconds>?) → Promise<any>
-            async function(callback, ms = 100) {
+                // when.defined(callback:function<any>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
-                    let interval = setInterval(async() => {
-                        let value = await callback();
+                    let interval = setInterval(async args => {
+                        let value = await callback.apply(null, args);
 
                         if(defined(value)) {
                             clearInterval(interval);
@@ -67,7 +67,64 @@ try {
                                 value
                             );
                         }
-                    }, ms);
+                    }, ms, Array.from(args));
+                });
+            },
+        },
+
+        "nullish": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.nullish(callback:function<any>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async args => {
+                        let value = await callback.apply(null, args);
+
+                        if(nullish(value)) {
+                            clearInterval(interval);
+                            resolve(value);
+                        }
+                    }, ms, Array.from(args));
+                });
+            },
+        },
+
+        "empty": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.empty(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async args => {
+                        let array = await callback.apply(null, args);
+
+                        if(array?.length < 1) {
+                            clearInterval(interval);
+                            resolve(array);
+                        }
+                    }, ms, Array.from(args));
+                });
+            },
+        },
+
+        "sated": {
+            value:
+            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+            // Makes a Promised setInterval
+                // when.sated(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
+            async function(callback, ms = 100, ...args) {
+                return new Promise((resolve, reject) => {
+                    let interval = setInterval(async args => {
+                        let array = await callback.apply(null, args);
+
+                        if(array?.length > 0) {
+                            clearInterval(interval);
+                            resolve(array);
+                        }
+                    }, ms, Array.from(args));
                 });
             },
         },
@@ -310,99 +367,6 @@ let // These are option names. Anything else will be removed
         /* "Hidden" options */
         'sync-token',
     ];
-
-// Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
-    // Tooltip.get(parent:Element) → Element<Tooltip>
-class Tooltip {
-    static #TOOLTIPS = new Map()
-    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
-
-    constructor(parent, text = '', fineTuning = {}) {
-        let existing = Tooltip.#TOOLTIPS.get(parent);
-
-        fineTuning.top |= 0;
-        fineTuning.left |= 0;
-
-        fineTuning.from ??= '';
-        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from
-
-        parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
-
-        if(defined(existing))
-            return existing;
-
-        let uuid;
-        let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
-
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
-        for(let value, index = 0; nullish(value) && index < values.length; ++index) {
-            value = values[index];
-            uuid = value + (['', ':tooltip'][index] || '');
-        }
-
-        parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
-
-        parent.addEventListener('mouseenter', event => {
-            let { currentTarget } = event,
-                offset = getOffset(currentTarget),
-                screen = getOffset(document.body),
-                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
-
-            let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
-
-            $('body').append(
-                furnish('.tt-tooltip-layer.tooltip-layer',
-                    {
-                        style: (() => {
-                            let style = 'animation:.3s fade-in 1;';
-
-                            switch(from) {
-                                // case 'up':
-                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
-
-                                case 'down':
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
-
-                                // case 'left':
-                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
-                                //
-                                // case 'right':
-                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
-
-                                default:
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 2000;`;
-                            }
-
-                            return style;
-                        })()
-                    },
-                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
-                        furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
-                        tooltip
-                    )
-                )
-            );
-
-            tooltip.setAttribute('style', (fineTuning.style ?? ''));
-        });
-
-        parent.addEventListener('mouseleave', ({ currentTarget }) => {
-            let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
-
-            tooltip?.setAttribute('show', false);
-            tooltip?.setAttribute('tt-remove-me', true);
-        });
-
-        Tooltip.#TOOLTIPS.set(parent, tooltip);
-
-        return tooltip;
-    }
-
-    static get(container) {
-        return Tooltip.#TOOLTIPS.get(container);
-    }
-}
 
 // Creates a new Twitch-style date input
     // new DatePicker() → Promise<array[object]>
@@ -1454,7 +1418,8 @@ let FETCHED_DATA = { wasFetched: false };
                 // Symbolic (x->y)
                 else if(/^([\w\-]+)->/.test(expression)) {
                     let [attribute, property] = expression.split('->', 2),
-                        value = property.replace(/\\(\w+\.\w+(?:[\.\w])?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
+                        // \object.property::type@base?pad
+                        value = property.replace(/\\(\w+\.\w+(?:[\.\w]+)?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
                             let prop = $1.split('.'),
                                 val;
 

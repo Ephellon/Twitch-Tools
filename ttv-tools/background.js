@@ -277,9 +277,13 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             Storage.get(['RaidEvents'], ({ RaidEvents = {} }) => {
                 let date = (new Date),
-                    week = `${ date.getFullYear() }/${ date.getWeek() }`;
+                    week = `${ date.getFullYear() }${ date.getWeek().padStart(2, '00') }`;
 
                 let events = ((RaidEvents[from] ??= {})[week] ??= []).push(to);
+
+                for(let wk in RaidEvents[from])
+                    if(parseInt(wk) < parseInt(week) - 4)
+                        delete RaidEvents[from][wk];
 
                 Storage.set({ RaidEvents });
 

@@ -576,99 +576,6 @@ class Balloon {
     }
 }
 
-// Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
-    // Tooltip.get(parent:Element) → Element<Tooltip>
-class Tooltip {
-    static #TOOLTIPS = new Map()
-    static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
-
-    constructor(parent, text = '', fineTuning = {}) {
-        let existing = Tooltip.#TOOLTIPS.get(parent);
-
-        fineTuning.top |= 0;
-        fineTuning.left |= 0;
-
-        fineTuning.from ??= '';
-        fineTuning.from = ({ top: 'up', bottom: 'down', above: 'up', below: 'down' })[fineTuning.from] ?? fineTuning.from
-
-        parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
-
-        if(defined(existing))
-            return existing;
-
-        let uuid;
-        let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
-
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
-        for(let value, index = 0; nullish(value) && index < values.length; ++index) {
-            value = values[index];
-            uuid = value + (['', ':tooltip'][index] || '');
-        }
-
-        parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
-
-        parent.addEventListener('mouseenter', event => {
-            let { currentTarget } = event,
-                offset = getOffset(currentTarget),
-                screen = getOffset(document.body),
-                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
-
-            let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
-
-            $('div#root > *').append(
-                furnish('.tt-tooltip-layer.tooltip-layer',
-                    {
-                        style: (() => {
-                            let style = 'animation:.3s fade-in 1;';
-
-                            switch(from) {
-                                // case 'up':
-                                //     style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
-
-                                case 'down':
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ (offset.bottom - screen.height - offset.height) + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 9999;`;
-
-                                // case 'left':
-                                //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
-                                //
-                                // case 'right':
-                                //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 9999;`;
-
-                                default:
-                                    style += `transform: translate(${ offset.left + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ 0 & offset.height }px; z-index: 9999;`;
-                            }
-
-                            return style;
-                        })()
-                    },
-                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': tooltip.id, 'show': true },
-                        furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
-                        tooltip
-                    )
-                )
-            );
-
-            tooltip.setAttribute('style', (fineTuning.style ?? ''));
-        });
-
-        parent.addEventListener('mouseleave', ({ currentTarget }) => {
-            let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
-
-            tooltip?.setAttribute('show', false);
-            tooltip?.setAttribute('tt-remove-me', true);
-        });
-
-        Tooltip.#TOOLTIPS.set(parent, tooltip);
-
-        return tooltip;
-    }
-
-    static get(container) {
-        return Tooltip.#TOOLTIPS.get(container);
-    }
-}
-
 // Creates a Twitch-style chat footer
     // new ChatFooter(title:string, options:object?) → Element<ChatFooter>
 class ChatFooter {
@@ -7876,7 +7783,7 @@ let Initialize = async(START_OVER = false) => {
                                     }
 
                                     if(time < 1000)
-                                        wait(5000, container, intervalID).then((container, intervalID) => {
+                                        wait(5000, [container, intervalID]).then(([container, intervalID]) => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
@@ -8123,7 +8030,7 @@ let Initialize = async(START_OVER = false) => {
                             }
 
                             if(time < 1000)
-                                wait(5000, container, intervalID).then((container, intervalID) => {
+                                wait(5000, [container, intervalID]).then(([container, intervalID]) => {
                                     LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 

@@ -925,7 +925,7 @@
                                 <div class=title tr-id='auto-chat:include-phrases'>Wait Time</div>
                                 <div class=summary>
                                     <p tr-id>
-                                        Wait <span unit=min><input id=auto_chat__wait_time type=number value=5 min=0 max=30 step=1 set='top-tooltip:this.min — this.max'></span> before sending the <b>message</b>.
+                                        Wait <span unit=min><input id=auto_chat__wait_time type=number value=5 min=0 max=30 step=1></span> before sending the <b>message</b>.
                                     </p>
                                 </div>
                             </div>
@@ -1050,7 +1050,7 @@
                                 <div class=title tr-id='prevent-spam:options'>Message History</div>
                                 <div class=summary>
                                     <p tr-id>
-                                        <b>Prevent Spam</b> will look back <span unit='¶'><input id=prevent_spam_look_back type=number value=15 min=1 max=250 step=1 set='top-tooltip:this.min — this.max'></span> lines to detect <b attention-text top-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.
+                                        <b>Prevent Spam</b> will look back <span unit='¶'><input id=prevent_spam_look_back type=number value=15 min=1 max=250 step=1></span> lines to detect <b attention-text top-tooltip='This will look for messages that match word-for-word'>plagiarism</b>.
                                     </p>
                                 </div>
                             </div>
@@ -1059,7 +1059,7 @@
                                 <div class=title tr-id>Minimum Word Length</div>
                                 <div class=summary>
                                     <p tr-id>
-                                        <b>Prevent Spam</b> will ignore messages if there are not any words longer than <span unit='🔣'><input id=prevent_spam_minimum_length type=number value=3 min=3 max=500 step=1 set='top-tooltip:this.min — this.max'></span> characters.
+                                        <b>Prevent Spam</b> will ignore messages if there are not any words longer than <span unit='🔣'><input id=prevent_spam_minimum_length type=number value=5 min=3 max=500 step=1></span> characters.
                                     </p>
                                 </div>
                             </div>
@@ -1068,7 +1068,7 @@
                                 <div class=title tr-id>Maximum Occurrences</div>
                                 <div class=summary>
                                     <p tr-id>
-                                        <b>Prevent Spam</b> will mark any message as <b>repetitious</b> after any word appears <span unit='≥'><input id=prevent_spam_ignore_under type=number value=5 min=1 max=150 step=1 set='top-tooltip:this.min — this.max'></span> or more times.
+                                        <b>Prevent Spam</b> will mark any message as <b>repetitious</b> after any word appears <span unit='≥'><input id=prevent_spam_ignore_under type=number value=5 min=1 max=150 step=1></span> or more times.
                                     </p>
                                 </div>
                             </div>

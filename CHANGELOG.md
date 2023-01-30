@@ -32,10 +32,17 @@
 - [ ] Modify DVR logic to record over ads
     * Currently, skips entire ad section; does not substitute mini-video's contents in ads' place
 - [x] The First in Line timer gets reset every time the page reloads
+- [ ] Add option to handle chat commands and messages
+    * Might just need to make another extension for that
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.31.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.7)
+- Fixed issue with marking messages as spam
+- Fixed issue with `alert` `confirm` `prompt` and `select`
+- Fixed issue saving Raid Events
+
 > [`5.31.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.6)
 - Moved change log to `CHANGELOG.md`
 - Fixed issue where non-first in line instances could change other instances

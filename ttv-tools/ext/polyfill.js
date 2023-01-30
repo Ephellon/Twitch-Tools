@@ -34,7 +34,6 @@
      * search → ?login=true
      * hash → #news
      */
-
 function parseURL(url) {
     if(nullish(url))
         return {};
@@ -781,11 +780,11 @@ Array.prototype.random ??= function random() {
 // Returns the current week of the year
     // Date..getWeek() → number<integer>
 Date.prototype.getWeek = function getWeek() {
-    let now = Date.UTC(
+    let now = new Date(Date.UTC(
         this.getFullYear(),
         this.getMonth(),
         this.getDate()
-    ),
+    )),
     day = now.getUTCDay() || 7;
 
     now.setUTCDate(now.getUTCDate() + 4 - day);
@@ -3361,7 +3360,7 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
             return clearInterval(intervalID);
 
         if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-alert-container')))
-            return time.setAttribute('due', due + 100);
+            return time.setAttribute('due', due + 250);
 
         time.closest('.tt-alert-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
@@ -3637,7 +3636,7 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
             return clearInterval(intervalID);
 
         if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-confirm-container')))
-            return time.setAttribute('due', due + 100);
+            return time.setAttribute('due', due + 250);
 
         time.closest('.tt-confirm-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
@@ -3930,7 +3929,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
             return clearInterval(intervalID);
 
         if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-prompt-container')))
-            return time.setAttribute('due', due + 100);
+            return time.setAttribute('due', due + 250);
 
         time.closest('.tt-prompt-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
@@ -3959,7 +3958,7 @@ function select(message = '', options = [], multiple = false) {
         return select.done.fetch(message);
 
     if($.defined('.tt-select'))
-        return when(() => $.nullish('.tt-select')).then(() => select(message, options));
+        return when(() => $.nullish('.tt-select')).then(() => select(message, options, multiple));
 
     let f = furnish;
     let $DOM = (select.parser ??= new DOMParser).parseFromString(message, 'text/html'),
@@ -4283,7 +4282,7 @@ select.timed ??= (message = '', options = [], multiple = false, milliseconds = 6
             return clearInterval(intervalID);
 
         if(pausable && $.all('*:is(:hover, :focus-within)').contains(time.closest('.tt-select-container')))
-            return time.setAttribute('due', due + 100);
+            return time.setAttribute('due', due + 250);
 
         time.closest('.tt-select-container').setAttribute('tt-time-left', time.innerText = toTimeString((milliseconds < 0? 0: milliseconds), 'clock').replace(/^[0:]+(?<!$)/, ''));
         time.setAttribute('tt-done', milliseconds < 0);
