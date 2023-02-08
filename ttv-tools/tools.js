@@ -252,9 +252,16 @@ class Balloon {
                                                                         let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                                         if(defined(element)) {
-                                                                            onremove({ ...event, uuid, guid, href, canceled: false });
-                                                                            clearInterval(+element.getAttribute('animationID'));
-                                                                            element.remove();
+                                                                            onremove({
+                                                                                ...event,
+                                                                                uuid, guid, href, element,
+                                                                                canceled: false,
+
+                                                                                callback(element) {
+                                                                                    clearInterval(+element.getAttribute('animationID'));
+                                                                                    element.remove();
+                                                                                },
+                                                                            });
                                                                         }
                                                                     },
                                                                 },
@@ -327,9 +334,16 @@ class Balloon {
                                                                                 let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                                                 if(defined(element)) {
-                                                                                    onremove({ ...event, uuid, guid, href, canceled: true });
-                                                                                    clearInterval(+element.getAttribute('animationID'));
-                                                                                    element.remove();
+                                                                                    onremove({
+                                                                                        ...event,
+                                                                                        uuid, guid, href, element,
+                                                                                        canceled: true,
+
+                                                                                        callback(element) {
+                                                                                            clearInterval(+element.getAttribute('animationID'));
+                                                                                            element.remove();
+                                                                                        },
+                                                                                    });
                                                                                 }
                                                                             },
                                                                         },
@@ -462,9 +476,16 @@ class Balloon {
                                                 let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                 if(defined(element)) {
-                                                    onremove({ ...event, uuid, guid, href, canceled: false });
-                                                    clearInterval(+element.getAttribute('animationID'));
-                                                    element.remove();
+                                                    onremove({
+                                                        ...event,
+                                                        uuid, guid, href, element,
+                                                        canceled: false,
+
+                                                        callback(element) {
+                                                            clearInterval(+element.getAttribute('animationID'));
+                                                            element.remove();
+                                                        },
+                                                    });
                                                 }
                                             },
                                         },
@@ -537,9 +558,16 @@ class Balloon {
                                                         let element = $(`#tt-balloon-job-${ connectedTo }`);
 
                                                         if(defined(element)) {
-                                                            onremove({ ...event, uuid, guid, href, canceled: true });
-                                                            clearInterval(+element.getAttribute('animationID'));
-                                                            element.remove();
+                                                            onremove({
+                                                                ...event,
+                                                                uuid, guid, href, element,
+                                                                canceled: true,
+
+                                                                callback(element) {
+                                                                    clearInterval(+element.getAttribute('animationID'));
+                                                                    element.remove();
+                                                                },
+                                                            });
                                                         }
                                                     },
                                                 },
@@ -2087,10 +2115,10 @@ Object.defineProperties(Chat, {
 
     reply: {
         // Replies to a message via the current chat
-            // Chat.send(to:string<&IRC-Msg-Id>, message:string?) → undefined
+            // Chat.send(to:string<IRC-Msg-Id>, message:string?) → undefined
         value:
         function reply(to = '', message = '') {
-            if(typeof to != 'string' || to.empty() || typeof message != 'string')
+            if(typeof to != 'string' || to.length < 1 || typeof message != 'string')
                 return;
 
             when(() => TTV_IRC.socket.readyState === WebSocket.OPEN)
@@ -3440,7 +3468,7 @@ try {
                                 if(!parseBool(Settings.first_in_line_none)) {
                                     let { name, href } = STREAMER;
 
-                                    Handlers.first_in_line({ href, textContent: `${ name } is live [Greedy Raiding]` });
+                                    Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` });
                                 }
 
                                 goto(`./${ from }?tool=raid-stopper--${ method }`);
@@ -3777,11 +3805,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
-                    let { currentTarget } = event;
-
-                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -3821,11 +3845,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
-                    let { currentTarget } = event;
-
-                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -3863,11 +3883,7 @@ async function update() {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
-                    let { currentTarget } = event;
-
-                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -3893,11 +3909,7 @@ async function update() {
                     return;
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
-                    let { currentTarget } = event;
-
-                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -3970,6 +3982,33 @@ let TWITCH_PATHNAMES = [
         'wallet', 'watchparty',
     ],
     RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
+
+/*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
+ *      ______ _          _     _         _      _              _    _      _
+ *     |  ____(_)        | |   (_)       | |    (_)            | |  | |    | |
+ *     | |__   _ _ __ ___| |_   _ _ __   | |     _ _ __   ___  | |__| | ___| |_ __   ___ _ __ ___
+ *     |  __| | | '__/ __| __| | | '_ \  | |    | | '_ \ / _ \ |  __  |/ _ \ | '_ \ / _ \ '__/ __|
+ *     | |    | | |  \__ \ |_  | | | | | | |____| | | | |  __/ | |  | |  __/ | |_) |  __/ |  \__ \
+ *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___| |_|  |_|\___|_| .__/ \___|_|  |___/
+ *                                                                           | |
+ *                                                                           |_|
+ */
+let FIRST_IN_LINE_JOB = null,           // The current job (interval)
+    FIRST_IN_LINE_HREF = '#',            // The upcoming HREF
+    FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
+    FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
+    FIRST_IN_LINE_PAUSED = false,       // The pause-state
+    FIRST_IN_LINE_BALLOON,              // The balloon controller
+    FIRST_IN_LINE_DUE_DATE,             // The due date of the next job
+    ALL_FIRST_IN_LINE_JOBS = [],        // All First in Line jobs
+    FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
+    FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
+    FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via timed confirmation dialog)
+    FIRST_IN_LINE_SAFETY_CATCH,         // Keeps the alert from not showing properly
+    FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
+    FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
+
+let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
 
 // Intializes the extension
     // Initialize(START_OVER:boolean) → undefined
@@ -4061,7 +4100,7 @@ let Initialize = async(START_OVER = false) => {
         // GetNextStreamer() → Object<Channel>
     function GetNextStreamer() {
         // Next channel in "Up Next"
-        if(!parseBool(Settings.first_in_line_none) && UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS?.length)
+        if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
             return GetNextStreamer.cachedStreamer = (null
                 ?? ALL_CHANNELS.find(channel => parseURL(channel?.href)?.pathname?.equals(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
                 ?? {
@@ -4241,11 +4280,7 @@ let Initialize = async(START_OVER = false) => {
                 };
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ ...channel, chat: null, jump: null, vods: null }));
                 element.ondragstart ??= event => {
-                    let { currentTarget } = event;
-
-                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -4517,8 +4552,12 @@ let Initialize = async(START_OVER = false) => {
             return (false
                 || SPECIAL_MODE
                 || (true
-                    && $.defined('[status] [class*="status-text"i]') && $.nullish(`[class*="offline-recommend"i]`)
-                    && !/^offline$/i.test($.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`).first?.textContent?.trim() ?? "")
+                    && $.defined('[class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i], [class*="channel"i][class*="info"i] [id*="live"i]:is([id*="channel"i], [id*="stream"i])')
+                    && !/(\b(?:offline|autohost)\b|^$)/i.test(null
+                        ?? $.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]:is(:not([class*="offline"i], [class*="autohost"i]))`).first?.textContent
+                        ?? $.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`).first?.classList?.value
+                        ?? 'offline'
+                    )
                 )
             )
         },
@@ -4843,11 +4882,7 @@ let Initialize = async(START_OVER = false) => {
         delete StreamerFilteredData[key];
 
     StreamerMainIcon.setAttribute('draggable', true);
-    StreamerMainIcon.setAttribute('tt-streamer-data', JSON.stringify({ ...STREAMER, chat: null, jump: null, vods: null }));
     StreamerMainIcon.ondragstart ??= event => {
-        let { currentTarget } = event;
-
-        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
         event.dataTransfer.dropEffect = 'move';
     };
 
@@ -4947,11 +4982,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                     element.ondragstart ??= event => {
-                        let { currentTarget } = event;
-
-                        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                         event.dataTransfer.dropEffect = 'move';
                     };
 
@@ -4995,11 +5026,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                     element.ondragstart ??= event => {
-                        let { currentTarget } = event;
-
-                        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                         event.dataTransfer.dropEffect = 'move';
                     };
 
@@ -5040,11 +5067,7 @@ let Initialize = async(START_OVER = false) => {
                     };
 
                     element.setAttribute('draggable', true);
-                    element.setAttribute('tt-streamer-data', JSON.stringify({ ...streamer, chat: null, jump: null, vods: null }));
                     element.ondragstart ??= event => {
-                        let { currentTarget } = event;
-
-                        event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                         event.dataTransfer.dropEffect = 'move';
                     };
 
@@ -5089,11 +5112,7 @@ let Initialize = async(START_OVER = false) => {
                     { href, icon, live, name } = STREAMER;
 
                 element.setAttribute('draggable', true);
-                element.setAttribute('tt-streamer-data', JSON.stringify({ href, icon, live, name }));
                 element.ondragstart ??= event => {
-                    let { currentTarget } = event;
-
-                    event.dataTransfer.setData('application/tt-streamer', currentTarget.getAttribute('tt-streamer-data'));
                     event.dataTransfer.dropEffect = 'move';
                 };
 
@@ -5585,7 +5604,7 @@ let Initialize = async(START_OVER = false) => {
     let IGNORE_ZOOM_STATE = false;
     Handlers.auto_accept_mature = () => {
         $([
-            '[data-a-target="player-overlay-mature-accept"i]',
+            '[data-a-target*="mature"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i])',
             '[data-a-target*="watchparty"i] button',
             (IGNORE_ZOOM_STATE? '': '.home:not([user-intended="true"i]) [data-a-target^="home"i]')
         ].filter(s => s.length).join(','))?.click();
@@ -6658,23 +6677,6 @@ let Initialize = async(START_OVER = false) => {
      *                                                                           | |
      *                                                                           |_|
      */
-    let FIRST_IN_LINE_JOB,                  // The current job (interval)
-        FIRST_IN_LINE_HREF,                 // The upcoming HREF
-        FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
-        FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
-        FIRST_IN_LINE_PAUSED,               // The pause-state
-        FIRST_IN_LINE_BALLOON,              // The balloon controller
-        FIRST_IN_LINE_DUE_DATE,             // The due date of the next job
-        ALL_FIRST_IN_LINE_JOBS,             // All First in Line jobs
-        FIRST_IN_LINE_WAIT_TIME,            // The wait time (from settings)
-        FIRST_IN_LINE_LISTING_JOB,          // The job (interval) for listing all jobs (under the ballon)
-        FIRST_IN_LINE_WARNING_JOB,          // The job for warning the user (via timed confirmation dialog)
-        FIRST_IN_LINE_SAFETY_CATCH,         // Keeps the alert from not showing properly
-        FIRST_IN_LINE_SORTING_HANDLER,      // The Sortable object to handle the balloon
-        FIRST_IN_LINE_WARNING_TEXT_UPDATE;  // Sub-job for the warning text
-
-    let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user already canceled the job
-
     // First in Line wait time
     FIRST_IN_LINE_WAIT_TIME = parseInt(
         parseBool(Settings.first_in_line)?
@@ -6688,6 +6690,7 @@ let Initialize = async(START_OVER = false) => {
 
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE(url:string<URL>?, search:object?) → <Promise>?undefined
+    top.REDO_FIRST_IN_LINE_QUEUE =
     async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
         if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
             return;
@@ -6715,7 +6718,7 @@ let Initialize = async(START_OVER = false) => {
         if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-        LOG(`Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
+        LOG(`[Queue Redo] Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             let timeRemaining = GET_TIME_REMAINING();
@@ -6850,8 +6853,9 @@ let Initialize = async(START_OVER = false) => {
                 goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }).href);
             });
         }, 1000);
-    }
+    };
 
+    top.NEW_DUE_DATE =
     function NEW_DUE_DATE(offset) {
         if(!UP_NEXT_ALLOW_THIS_TAB)
             return (+new Date) + 3_600_000;
@@ -6860,8 +6864,9 @@ let Initialize = async(START_OVER = false) => {
             ?? offset
             ?? FIRST_IN_LINE_WAIT_TIME * 60_000
         );
-    }
+    };
 
+    top.GET_TIME_REMAINING =
     function GET_TIME_REMAINING() {
         if(!UP_NEXT_ALLOW_THIS_TAB)
             return 3_600_000;
@@ -6870,9 +6875,9 @@ let Initialize = async(START_OVER = false) => {
             due = FIRST_IN_LINE_DUE_DATE;
 
         return (due - now);
-    }
+    };
 
-    if(Settings.up_next__one_instance)
+    if(parseBool(Settings.up_next__one_instance))
         Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => {
             UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = owner;
 
@@ -6943,13 +6948,14 @@ let Initialize = async(START_OVER = false) => {
                         speeding = parseBool(currentTarget.getAttribute('speeding'));
 
                     speeding = (FIRST_IN_LINE_BOOST = !speeding);
-                    speeding = (FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS?.length > 0 && FIRST_IN_LINE_HREF?.length > 0);
+                    speeding = (FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS?.length > 0);
 
                     currentTarget.querySelector('svg[fill]')?.setAttribute('fill', 'currentcolor');
                     currentTarget.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!speeding }; fill:currentcolor`);
                     currentTarget.setAttribute('speeding', speeding);
 
-                    currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
+                    if(defined(currentTarget.tooltip))
+                        currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
 
                     let up_next_button = $('[up-next--container] button');
 
@@ -7008,7 +7014,8 @@ let Initialize = async(START_OVER = false) => {
                     currentTarget.innerHTML = Glyphs[['pause','play'][+paused]];
                     currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
 
-                    currentTarget.tooltip.innerHTML = `${ ['Pause','Continue'][+paused] } the timer`;
+                    if(defined(currentTarget.tooltip))
+                        currentTarget.tooltip.innerHTML = `${ ['Pause','Continue'][+paused] } the timer`;
                 },
             });
 
@@ -7451,8 +7458,8 @@ let Initialize = async(START_OVER = false) => {
                     fiveMin = 5.5 * oneMin,
                     tenMin = 10 * oneMin;
 
-                ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
-                FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length) && parseBool(FIRST_IN_LINE_HREF?.length);
+                [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+                FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
                 FIRST_IN_LINE_DUE_DATE = (null
                     ?? cache.FIRST_IN_LINE_DUE_DATE
                     ?? (
@@ -7488,7 +7495,7 @@ let Initialize = async(START_OVER = false) => {
 
                     SaveCache({ FIRST_IN_LINE_DUE_DATE });
 
-                    REMARK(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname.slice(1) }"`);
+                    REMARK(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname?.slice(1) }"`);
                 } else {
                     REMARK(`Up Next Boost is disabled`);
                 }
@@ -7524,86 +7531,75 @@ let Initialize = async(START_OVER = false) => {
                 if(!UP_NEXT_ALLOW_THIS_TAB)
                     return;
 
-                let streamer,
-                    // Did the event originate from within the ballon?
-                    from_container = !~event.path?.slice(0, 5)?.indexOf(FIRST_IN_LINE_BALLOON.body);
+                // Try to see if it's a link...
+                let text = event.dataTransfer.getData('text');
 
-                try {
-                    streamer = JSON.parse(event.dataTransfer.getData('application/tt-streamer'));
-                } catch(error) {
-                    /* error suppression for sorting-related drops */;
-                    if(!from_container) {
-                        // Try to see if it's a link...
-                        let { href, hostname, pathname, domainPath } = parseURL(event.dataTransfer.getData('text'));
+                if(!parseURL.pattern.test(text))
+                    return;
 
-                        // No idea what the user just dropped
-                        if(!hostname?.length || !pathname?.length)
-                            return ERROR(error);
+                let { href, hostname, pathname, domainPath } = parseURL(text),
+                    name = pathname.slice(1).split('/').shift();
 
-                        if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
-                            return WARN(`Unable to add link to Up Next "${ href }"`);
+                // No idea what the user just dropped
+                if(!hostname?.length || !pathname?.length)
+                    return ERROR(error);
 
-                        streamer = await(null
-                            ?? ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(pathname))
-                            ?? (null
-                                ?? new Search(pathname.slice(1)).then(Search.convertResults)
-                                ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
-                            )
-                                .then(search => {
-                                    let found = ({
-                                        from: 'SEARCH',
-                                        href,
-                                        icon: (typeof search.icon == 'string'? Object.assign(new String(search.icon), parseURL(search.icon)): null),
-                                        live: parseBool(search.live),
-                                        name: search.name,
-                                    });
+                if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
+                    return WARN(`Unable to add link to Up Next "${ href }"`);
 
-                                    ALL_CHANNELS = [...ALL_CHANNELS, found].filter(defined).filter(uniqueChannels);
+                streamer = await(null
+                    ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals('/' + name))
+                    ?? (null
+                        ?? new Search(name).then(Search.convertResults)
+                        ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
+                    )
+                        .then(search => {
+                            let found = ({
+                                from: 'SEARCH',
+                                href,
+                                icon: (typeof search.icon == 'string'? Object.assign(new String(search.icon), parseURL(search.icon)): null),
+                                live: parseBool(search.live),
+                                name: search.name,
+                            });
 
-                                    return found;
-                                })
-                                .catch(WARN)
-                        )
-                    }
-                } finally {
-                    if(from_container) {
-                        // Most likely a sorting event
-                    } else {
-                        let { href } = (streamer ??= {});
+                            ALL_CHANNELS = [...ALL_CHANNELS, found].filter(defined).filter(uniqueChannels);
 
-                        LOG('Adding to Up Next [ondrop]:', { href, streamer });
+                            return found;
+                        })
+                        .catch(WARN)
+                )
 
-                        if(nullish(streamer?.icon)) {
-                            let name = (streamer?.name ?? parseURL(href).pathname?.slice(1));
+                LOG('Adding to Up Next [ondrop]:', { href, streamer });
 
-                            if(defined(name))
-                                new Search(name)
-                                    .then(Search.convertResults)
-                                    .then(streamer => {
-                                        let restored = ({
-                                            from: 'SEARCH',
-                                            href,
-                                            icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
-                                            live: parseBool(streamer.live),
-                                            name: streamer.name,
-                                        });
+                if(nullish(streamer?.icon)) {
+                    let name = (streamer?.name ?? parseURL(href).pathname?.slice(1));
 
-                                        ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
-                                    });
-                        }
+                    if(defined(name))
+                        new Search(name)
+                            .then(Search.convertResults)
+                            .then(streamer => {
+                                let restored = ({
+                                    from: 'SEARCH',
+                                    href,
+                                    icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
+                                    live: parseBool(streamer.live),
+                                    name: streamer.name,
+                                });
 
-                        // Jobs are unknown. Restart timer
-                        if(ALL_FIRST_IN_LINE_JOBS.length < 1)
-                            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-
-                        // LOG('Accessing here... #1');
-                        ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
-
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                            REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
-                        });
-                    }
+                                ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
+                            });
                 }
+
+                // Jobs are unknown. Restart timer
+                if(ALL_FIRST_IN_LINE_JOBS.length < 1)
+                    FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+
+                // LOG('Accessing here... #1');
+                ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+
+                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                    REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
+                });
             };
 
             FIRST_IN_LINE_BALLOON.icon.onmouseenter ??= event => {
@@ -7702,7 +7698,7 @@ let Initialize = async(START_OVER = false) => {
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                                     name = parseURL(removed).pathname?.slice(1);
 
-                                LOG(`Removed from Up Next (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
+                                NOTICE(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
@@ -7710,7 +7706,7 @@ let Initialize = async(START_OVER = false) => {
                                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                                 if(index > 0) {
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
                                 } else {
                                     LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
 
@@ -7719,7 +7715,7 @@ let Initialize = async(START_OVER = false) => {
                                     FIRST_IN_LINE_HREF = undefined;
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]));
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
                                 }
                             },
 
@@ -7787,11 +7783,11 @@ let Initialize = async(START_OVER = false) => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
-                                            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
+                                            SaveCache({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                                 WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
                                                     ?.toNativeStack?.();
 
-                                                goto($('a', container)?.href ?? '?');
+                                                goto(FIRST_IN_LINE_HREF);
                                             });
 
                                             return clearInterval(intervalID);
@@ -7864,8 +7860,8 @@ let Initialize = async(START_OVER = false) => {
                 continue;
 
             let { href, pathname } = parseURL(action.href.toLowerCase()),
-                { textContent } = action,
-                uuid = UUID.from(textContent).value;
+                { innerText } = action,
+                uuid = UUID.from(innerText).value;
 
             if(HANDLED_NOTIFICATIONS.contains(uuid))
                 continue;
@@ -7875,12 +7871,12 @@ let Initialize = async(START_OVER = false) => {
                 continue;
 
             if(true
-                && !/\blive\b/i.test(textContent)
+                && !/\blive\b/i.test(innerText)
                 && $.nullish('[class*="toast"i][class*="action"i]', notification)
             )
                 continue;
 
-            LOG('Received an actionable notification:', textContent, new Date);
+            LOG('Received an actionable notification:', innerText, new Date);
 
             if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
                 if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
@@ -7945,7 +7941,7 @@ let Initialize = async(START_OVER = false) => {
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                             name = parseURL(removed).pathname?.slice(1);
 
-                        LOG('Removed from Up Next:', removed, 'Was it canceled?', event.canceled);
+                        NOTICE(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
 
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
@@ -7953,7 +7949,7 @@ let Initialize = async(START_OVER = false) => {
                         REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                         if(index > 0) {
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
                         } else {
                             LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
 
@@ -7961,7 +7957,7 @@ let Initialize = async(START_OVER = false) => {
 
                             FIRST_IN_LINE_HREF = undefined;
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]));
+                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
                         }
                     },
 
@@ -8035,11 +8031,11 @@ let Initialize = async(START_OVER = false) => {
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                                    SaveCache({ FIRST_IN_LINE_DUE_DATE }, () => {
+                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                         WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
                                             ?.toNativeStack?.();
 
-                                        goto($('a', container)?.href ?? '?');
+                                        goto(FIRST_IN_LINE_HREF);
                                     });
 
                                     return clearInterval(intervalID);
@@ -8117,8 +8113,8 @@ let Initialize = async(START_OVER = false) => {
                 fiveMin = 5.5 * oneMin,
                 tenMin = 10 * oneMin;
 
-            ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
-            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length) && parseBool(FIRST_IN_LINE_HREF?.length);
+            [FIRST_IN_LINE_HREF] = ALL_FIRST_IN_LINE_JOBS = (cache.ALL_FIRST_IN_LINE_JOBS ?? []);
+            FIRST_IN_LINE_BOOST = parseBool(cache.FIRST_IN_LINE_BOOST) && parseBool(ALL_FIRST_IN_LINE_JOBS?.length);
             FIRST_IN_LINE_DUE_DATE = (null
                 ?? cache.FIRST_IN_LINE_DUE_DATE
                 ?? (
@@ -8228,7 +8224,7 @@ let Initialize = async(START_OVER = false) => {
 
                 break __FirstInLine__;
             } else if(!first) {
-                // Handlers.first_in_line({ href, textContent: `${ channel.name } is live [First in Line]` });
+                // Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
 
                 // WARN('Forcing queue update for', href);
                 REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
@@ -8352,7 +8348,7 @@ let Initialize = async(START_OVER = false) => {
 
             LOG('A channel just appeared:', name, new Date);
 
-            Handlers.first_in_line({ href, textContent: `${ name } is live [First in Line+]` });
+            Handlers.first_in_line({ href, innerText: `${ name } is live [First in Line+]` });
         }
 
         OLD_STREAMERS = NEW_STREAMERS;
@@ -8447,8 +8443,8 @@ let Initialize = async(START_OVER = false) => {
                             icon = Glyphs.modify(icon, { style: 'fill:var(--user-contrast-color)!important', height: '20px', width: '20px' });
 
                             $('.tt-action-icon', currentTarget).innerHTML = icon;
-                            $('.tt-action-title', currentTarget).textContent = title;
-                            $('.tt-action-subtitle', currentTarget).textContent = subtitle;
+                            $('.tt-action-title', currentTarget).innerText = title;
+                            $('.tt-action-subtitle', currentTarget).innerText = subtitle;
 
                             // Add the reminder...
                             let message;
@@ -8544,7 +8540,7 @@ let Initialize = async(START_OVER = false) => {
                         SaveCache({ LiveReminders }, async() => {
                             // TODO: Currently, only one option looks for Live Reminder notifications...
                             Handle_phantom_notification: {
-                                let notification = { href, textContent: `${ name } is live [Live Reminders]` },
+                                let notification = { href, innerText: `${ name } is live [Live Reminders]` },
                                     [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
 
                                 // If already on the stream, break
@@ -8706,8 +8702,8 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                new Tooltip($('[data-a-target$="game-link"i]'), `Read about <span style=text-decoration:underline>${ title }</span> below`, { from: 'top' });
-                $('.about-section__panel--content').closest('*:not([style]):not([class]):not([id])').insertAdjacentElement('afterend', container);
+                new Tooltip($('[data-a-target$="game-link"i]'), `Read about <ins>${ title }</ins> below`, { from: 'top' });
+                $('.about-section__panel--content')?.closest('*:not([style]):not([class]):not([id])')?.insertAdjacentElement('afterend', container);
             })
             .catch(ERROR);
 
@@ -10365,6 +10361,7 @@ let Initialize = async(START_OVER = false) => {
         if(false
             || CONTINUE_RAIDING
             // || !UP_NEXT_ALLOW_THIS_TAB
+            // ↑ Stops unfollowed channels from sticking around...
         )
             return JUDGE__STOP_WATCH('prevent_raiding');
 
@@ -10423,7 +10420,20 @@ let Initialize = async(START_OVER = false) => {
                     if(raiding && ["greed"].contains(method))
                         break raid_stopper;
 
-                    goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href);
+                    if(UP_NEXT_ALLOW_THIS_TAB)
+                        goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href);
+                    else
+                        Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, from: STREAMER?.name, method }, ({ next, from, method }) => {
+                            NOTICE(`Stealing an Up Next job (raid): ${ from } → ${ next }`);
+
+                            goto(parseURL(next).addSearch({ tool: `raid-stopper--${ method }` }).href);
+                        });
+
+                    let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
+                        [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+
+                    if(UP_NEXT_ALLOW_THIS_TAB)
+                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -10554,7 +10564,17 @@ let Initialize = async(START_OVER = false) => {
 
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
-                goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`);
+                let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
+                    [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
+
+                if(UP_NEXT_ALLOW_THIS_TAB)
+                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`));
+                else
+                    Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
+                        NOTICE(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
+
+                        goto(`${ next }?obit=${ obit }&tool=stay-live`);
+                    });
             } else  {
                 WARN(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
@@ -10569,7 +10589,7 @@ let Initialize = async(START_OVER = false) => {
 
         JUDGE__STOP_WATCH('stay_live');
     };
-    Timers.stay_live = 7000;
+    Timers.stay_live = 3000;
 
     __StayLive__:
     if(parseBool(Settings.stay_live)) {
@@ -11552,7 +11572,7 @@ let Initialize = async(START_OVER = false) => {
                 if(nullish(points_receipt))
                     return RestartJob('points_receipt_placement');
 
-                let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]');
+                let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [data-test-selector*="banned"i][data-test-selector*="message"i], [data-test-selector^="video-chat"i]');
 
                 if(nullish(chat)) {
                     let framedData = PostOffice.get('points_receipt_placement');
@@ -12364,7 +12384,8 @@ let Initialize = async(START_OVER = false) => {
 
                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
-                    MASTER_VIDEO.stopRecording().removeRecording();
+                    for(let recorder in MASTER_VIDEO.recorders)
+                        MASTER_VIDEO.stopRecording(recorder.name).removeRecording(recorder.name);
                 };
 
                 $.on('focusin', event => {
@@ -12586,7 +12607,8 @@ let Initialize = async(START_OVER = false) => {
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
-                                    MASTER_VIDEO.stopRecording().removeRecording();
+                                    for(let recorder in MASTER_VIDEO.recorders)
+                                        MASTER_VIDEO.stopRecording(recorder.name).removeRecording(recorder.name);
                                 };
 
                                 confirm(`<div hidden controller deny="Why?" okay="Acknowledge (interact)"></div>
@@ -12816,8 +12838,7 @@ let Initialize = async(START_OVER = false) => {
             let playing = video.play();
 
             if(defined(playing))
-                playing
-                    .catch(error => { throw error });
+                playing.catch(error => { throw error });
         } catch(error) {
             ERROR(error);
 
@@ -12841,7 +12862,7 @@ let Initialize = async(START_OVER = false) => {
             } else if(playing) {
                 // PLAYING → PAUSE, PLAY
                 control.click();
-                control.click();
+                wait(250).then(control.click);
             }
 
             control.dataset.recoveryAttempts = ++attempts;
@@ -13018,7 +13039,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_pages = async() => {
         START__STOP_WATCH('recover_pages');
 
-        let error = $('main :is([data-a-target="core-error-message"i], [data-test-selector="content-overlay"i])');
+        let error = $('main :is([data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i])');
 
         if(nullish(error))
             return JUDGE__STOP_WATCH('recover_pages');
@@ -13194,7 +13215,7 @@ let Initialize = async(START_OVER = false) => {
         // Send the previewed channel to the miniplayer
         // <Stream Preview>:hover → Z
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_Z))
-            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_Z = function Send_to_miniplayer({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
+            $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_Z = function Send_to_Miniplayer({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || altKey || shiftKey) && key.equals('z') && $.defined('#tt-stream-preview--iframe') && parseBool($('#tt-stream-preview--iframe').dataset.live))
                     MiniPlayer = $('#tt-stream-preview--iframe').dataset.name;
             });
@@ -13580,7 +13601,10 @@ if(top == window) {
                     // || /^((?:Channel|Video)Watch|(?:Squad)Stream)Page$/i.test($('#root')?.dataset?.aPageLoadedName)
 
                     // There is an error message
-                    || $.defined('[data-a-target="core-error-message"i], [data-test-selector="content-overlay"i]')
+                    || $.defined('[data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i]')
+
+                    // There is a "muted segments" warning
+                    || $.defined('[data-test-selector*="muted"i][data-test-selector*="overlay"i]')
                 )
             );
 
@@ -14255,6 +14279,18 @@ if(top == window) {
                         respond({ ok: true, performance: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize), timestamp: +new Date });
                     } break;
 
+                    case 'consume-up-next': {
+                        let { next, obit } = request,
+                            name = parseURL(next).pathname.slice(1);
+
+                        NOTICE(`Job stolen "${ name }" by "${ obit }" tab`);
+
+                        when.defined(name => $(`[id^="tt-balloon-job"i][name="${ name }"i]`), 100, name)
+                            .then(element => {
+                                $('button[data-test-selector*="delete"i]', element)?.click();
+                            });
+                    } break;
+
                     case 'reload': {
                         if(UP_NEXT_ALLOW_THIS_TAB || request.forced) {
                             await top.beforeleaving?.();
@@ -14318,9 +14354,12 @@ if(top == window) {
                 .then(html => {
                     let dom = (new DOMParser).parseFromString(html, 'text/html');
 
-                    return $('#wiki-body', dom)?.children;
+                    return $('#wiki-body', dom)?.children ?? [];
                 })
                 .then(([main, footer]) => {
+                    if(nullish(main))
+                        return;
+
                     let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
                         .filter(({ tagName }) => /^h\d$/i.test(tagName))
                         .map(header => {

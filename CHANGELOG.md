@@ -31,13 +31,25 @@
     * Typically affects only user generated messages
 - [ ] Modify DVR logic to record over ads
     * Currently, skips entire ad section; does not substitute mini-video's contents in ads' place
-- [x] The First in Line timer gets reset every time the page reloads
 - [ ] Add option to handle chat commands and messages
     * Might just need to make another extension for that
+    * Responds to chat input (aka, a chat bot)
+- [ ] Display a "Hey, these are new!" alert on the settings page
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32)
+- Fixed issue with selections not displaying correctly
+- Modified Up Next logic to consume events across tabs
+- Modified `alert` `confirm` `prompt` and `select` styling
+- Enabled ID-v2 for saving settings
+- Fixed issue with getting live status for offline channels
+- Fixed issue with reloading errored channels
+- Modified `beforeunload` logic to stop all active recorders
+- Modified "you are banned" logic to still leave banned channels that are not live
+- Modified `get live` logic
+
 > [`5.31.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.31.7)
 - Fixed issue with marking messages as spam
 - Fixed issue with `alert` `confirm` `prompt` and `select`

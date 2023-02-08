@@ -685,6 +685,35 @@
                 </div>
             </section>
 
+            <!-- Command Handling → -->
+            <!-- TODO →
+            <section new='5.32'>
+                <div class=title><span small gold glyph=thread></span> Chat Commands</div>
+                <div class=summary>
+                    <div class=toggle>
+                        <input id=chat_commands type=checkbox>
+                        <label for=chat_commands></label>
+                    </div>
+                    <p tr-id>
+                        Handles <b alert-text top-tooltip='!command'>commands</b> in <b attention-text top-tooltip='Type "#mine" to claim channels you own'>your</b> chat(s).
+                    </p>
+                    <p tr-id>
+                        Please see <a href='https://github.com/Ephellon/Twitch-Tools/wiki/Chat-Commands'>TTV Tools Wiki — Chat Commands</a> for assistance.
+                    </p>
+                    <details>
+                        <summary tr-id='command-handling:options' subtitle='View, or remove commands'>Commands</summary>
+                        <div id=commands type=list>
+                            <div>
+                                <h2 tr-id>
+                                    Get started by <a href='#chat_commands' target=_self>adding</a> some commands.
+                                </h2>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+            -->
+
             <!-- [[Convert Emotes]] -->
 
             <!-- Filter Messages → advertisement,aid,announcements,appliance,arrest,assault,assistance,avenue,backing,benefit,block,break in,briefing,broadcast,bulletins,capture,carrier,channels,charge,clean,compensation,contribution,cooperation,device,disclosure,dispatch,drain,dribble,filter,gear,gizmo,handling,handout,help,incursion,invasion,leak,machinery,management,manipulation,means,mechanism,medium,messages,news,notice,onslaught,oversight,penetrate,percolate,permeate,pin,pinned,plan,points,policy,prediction,publication,prevent,raids,refine,release,relief,report,revelation,route,rules,service,sift,sortie,statement,stop,strategy,subscriptions,support,surprise attack,sweep,tools,transaction,treatment,trickle,tunnel,winnow,writing -->
@@ -1375,14 +1404,14 @@
         <header tr-id='header:networking' subtitle='Data here will interact with the Internet.'>Networking</header>
         <article>
             <!-- Export Settings → cloud,download,dump,export,id,load,log in,network,settings,ship,smuggle,transport,upload -->
-            <section new='4.12'>
+            <section new='5.32'>
                 <div class=title tr-id='networking:sync-settings'><span small glyph=export></span> Export Settings</div>
                 <div class=summary style='width:fit-content'>
                     <p tr-id>
-                        If you would like to <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter the <b attention-text top-tooltip='8 or more letters, numbers and/or dashes'>Upload ID</b>.
+                        If you would like to <b attention-text top-tooltip='Save settings from somewhere else to this device'>download settings</b>, enter the <b attention-text top-tooltip='6 or more letters, numbers and/or dashes'>Upload ID</b>.
                     </p>
                     <p>
-                        <input id=sync-token type=text value=TTV-TOOL style='width:-webkit-fill-available; width:-moz-available; font-family: monospace; letter-spacing:1em; text-align:center; text-transform:uppercase; text-overflow:clip' placeholder=ABCD1234 pattern='[\w\-]{8,}'>
+                        <input id=sync-token type=text value=TTV-TOOL style='width:-webkit-fill-available; width:-moz-available; font-family: monospace; letter-spacing:1em; text-align:center; --text-transform:uppercase; text-overflow:clip' placeholder=ABC123 pattern='[\w\-]{6,}'>
                         <div id=sync-status class=subtitle style='margin-left:0.5rem; transition: all .5s;;'>&nbsp;</div>
                     </p>
 

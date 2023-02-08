@@ -491,7 +491,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     .catch(WARN);
             // Load emotes with a certain name
             else if(keyword?.length)
-                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0; (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
+                for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0 && !NON_EMOTE_PHRASES.has(keyword); (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
                     await fetchURL.idempotent(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
                         .then(response => response.json())
                         .then(emotes => {
@@ -2163,7 +2163,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(phrase.length > 1) {
                 element.setAttribute(`${type}-phrase`, phrase);
-                message = message.replace(RegExp(phrase, 'ig'), `<del>${ phrase }</del>`);
+                message = message.replace(RegExp(phrase.replace(/\W/g, '\\$&'), 'ig'), `<del>${ phrase }</del>`);
             }
 
             new Tooltip(element, message, { direction: 'up', fit: true });
@@ -2178,7 +2178,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 markAsSpam(await element, 'plagiarism', message);
 
             // The message contains repetitive (more than X instances) words/phrases
-            let regexp = RegExp(`(?<phrase>[\\S]{${ minLen },})${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i');
+            let regexp = RegExp(`(?<phrase>[\\S]{${ minLen },}?)${ "(?:(?:[^]+)?\\1)".repeat(minOcc - 1) }`, 'i');
 
             if(regexp.test(message))
                 markAsSpam(await element, 'repetitive', message, regexp.exec(message).groups.phrase);

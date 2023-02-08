@@ -1387,7 +1387,7 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false) 
             .filter(declaration => declaration.length > 4)
             // Shortest possible declaration → `--n:0`
             .map(declaration => {
-                let [property, value = ''] = declaration.split(':', 2).map(string => string.trim()),
+                let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
                     important = value.toLowerCase().endsWith('!important');
 
                 value = value.replace(/!important\b/i, '');
@@ -4032,7 +4032,7 @@ function select(message = '', options = [], multiple = false) {
 
     let uuid = UUID.from(message).value;
     let container =
-    f('.tt-select', { uuid, options: encodeHTML(JSON.stringify(__values__)), keys: encodeHTML(JSON.stringify(__names__)) },
+    f('.tt-post.tt-select', { uuid, options: encodeHTML(JSON.stringify(__values__)), keys: encodeHTML(JSON.stringify(__names__)) },
         f('.tt-select-container', { ['icon'.repeat(+!!icon.length)]: icon },
             f('.tt-select-header').html(title),
             f('.tt-select-body').html(message),

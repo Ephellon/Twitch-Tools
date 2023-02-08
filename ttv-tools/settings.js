@@ -15,124 +15,6 @@ function getURL(path = '') {
     return url.origin + path.replace(/^(?!\/)/, '/');
 }
 
-// Makes a Promised setInterval
-    // when(callback:function<boolean>, ms:number<integer>?, ...args<any>) → Promise<any>
-async function when(callback, ms = 100, ...args) {
-    return new Promise((resolve, reject) => {
-        let interval = setInterval(async args => {
-            let value = await callback.apply(null, args);
-
-            if(parseBool(value) !== false) {
-                clearInterval(interval);
-                resolve(
-                    (value === when.false)?
-                        false:
-                    (value === when.true)?
-                        true:
-                    value
-                );
-            }
-        }, ms, Array.from(args));
-    });
-}
-
-try {
-    Object.defineProperties(when, {
-        "false": { value: Symbol(false) },
-        "true": { value: Symbol(true) },
-
-        "null": { value: Symbol(null) },
-        "void": { value: Symbol(void undefined) },
-        "undefined": { value: Symbol(undefined) },
-
-        "defined": {
-            value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-            // Makes a Promised setInterval
-                // when.defined(callback:function<any>, ms:number<integer>?) → Promise<any>
-            async function(callback, ms = 100, ...args) {
-                return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let value = await callback.apply(null, args);
-
-                        if(defined(value)) {
-                            clearInterval(interval);
-                            resolve(
-                                (value === when.null)?
-                                    null:
-                                (value === when.void)?
-                                    void undefined:
-                                (value === when.undefined)?
-                                    undefined:
-                                value
-                            );
-                        }
-                    }, ms, Array.from(args));
-                });
-            },
-        },
-
-        "nullish": {
-            value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-            // Makes a Promised setInterval
-                // when.nullish(callback:function<any>, ms:number<integer>?) → Promise<any>
-            async function(callback, ms = 100, ...args) {
-                return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let value = await callback.apply(null, args);
-
-                        if(nullish(value)) {
-                            clearInterval(interval);
-                            resolve(value);
-                        }
-                    }, ms, Array.from(args));
-                });
-            },
-        },
-
-        "empty": {
-            value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-            // Makes a Promised setInterval
-                // when.empty(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
-            async function(callback, ms = 100, ...args) {
-                return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let array = await callback.apply(null, args);
-
-                        if(array?.length < 1) {
-                            clearInterval(interval);
-                            resolve(array);
-                        }
-                    }, ms, Array.from(args));
-                });
-            },
-        },
-
-        "sated": {
-            value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
-            // Makes a Promised setInterval
-                // when.sated(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
-            async function(callback, ms = 100, ...args) {
-                return new Promise((resolve, reject) => {
-                    let interval = setInterval(async args => {
-                        let array = await callback.apply(null, args);
-
-                        if(array?.length > 0) {
-                            clearInterval(interval);
-                            resolve(array);
-                        }
-                    }, ms, Array.from(args));
-                });
-            },
-        },
-    });
-} catch(error) {
-    /* Ignore the error... */
-}
-
 let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
 
 const PRIVATE_OBJECT_CONFIGURATION = Object.freeze({
@@ -255,6 +137,9 @@ let // These are option names. Anything else will be removed
             'bttv_emotes_location',
             'bttv_emotes_channel',
             'bttv_emotes_extras',
+        // TODO: Chat Commands
+        // 'chat_commands',
+        //     'commands',
         // Convert Emotes*
         'convert_emotes',
         // Link Maker (chat)
@@ -369,7 +254,7 @@ let // These are option names. Anything else will be removed
     ];
 
 // Creates a new Twitch-style date input
-    // new DatePicker() → Promise<array[object]>
+    // new DatePicker(defaultDate:Date, defaultStatus:boolean?, defaultTime:number<hour{0...23}>?, defaultDuration:number<milliseconds>?) → Promise<array[object]>
 class DatePicker {
     static values = [];
     static weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ');
@@ -449,7 +334,7 @@ class DatePicker {
                         f('.tt-modal-content.details.context-body').with(
                             f('div', { style: 'width:-webkit-fill-available; width:-moz-available' },
                                 // Frequency
-                                f('div', { 'pad-bottom': '' },
+                                f('div', { 'pad-bottom': true },
                                     f('.title').with('Frequency'),
                                     f('.summary').with(
                                         daySelect,
@@ -461,7 +346,7 @@ class DatePicker {
                                 ),
 
                                 // Status & Functionality
-                                f('div', { 'pad-bottom': '' },
+                                f('div', { 'pad-bottom': true },
                                     f('.title').with('Functionality'),
                                     f('.summary').with(
                                         statusSelect,
@@ -477,11 +362,11 @@ class DatePicker {
                                 ),
 
                                 // Submit / Cancel
-                                f('div', { 'pad-bottom': '' },
+                                f('div', { 'pad-bottom': true },
                                     // Add more
                                     f('div', { style: 'width:fit-content' },
                                         f('.checkbox.left', { onmouseup: event => $('input', event.currentTarget).click() },
-                                            f('input#add-more', { type: 'checkbox', name: 'add-more-times' }),
+                                            f('input.add-more', { type: 'checkbox', name: 'add-more-times' }),
                                             f('label', { for: 'add-more-times' }, 'Add another schedule')
                                         )
                                     ),
@@ -504,7 +389,7 @@ class DatePicker {
 
                                         onmouseup: event => {
                                             let { currentTarget } = event,
-                                                addNew = $('#add-more', currentTarget.closest(':not(button)')).checked;
+                                                addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
 
                                             if(addNew)
                                                 new DatePicker();
@@ -544,6 +429,232 @@ class DatePicker {
         document.body.append(container);
 
         return when.defined(() => JSON.parse($('#date-picker-value')?.value || 'null')).then(values => { DatePicker.values = []; return values });
+    }
+}
+
+// FIX-ME
+// Creates a new Twitch-style command input
+    // new CommandMaker(defaultName:string, defaultStatus:boolean?, defaultLevel:number<Command-Authority>?, defaultCooldown:number<seconds>?, defaultType:string?) → Promise<array[object]>
+class CommandMaker {
+    static values = [];
+    /** User Levels → StreamElements | NightBot
+     * Everyone         →   100  | everyone
+     * Subscriber       →   250  | subscriber
+     * Regular          →   300  | regular
+     * VIP              →   400  | twitch_vip
+     * Moderator        →   500  | moderator
+     * Super Moderator  →   1000 | admin
+     * Broadcaster      →   1500 | owner
+     */
+    static levels = [['Everyone',100],['Follower',250],['Subscriber',300],['VIP',400],['Moderator',500],['Admin',1000],['Owner',1500]].map(([who, authority]) => [new String(who), authority]).map(([who, authority]) =>
+        CommandMaker[who.toLowerCase()] = Object.defineProperties(who, {
+            find: {
+                value(value) {
+                    let levels = {
+                        owner: 1500,
+                        broadcaster: 1500,
+                        administrator: 1000,
+                        moderator: 500,
+                        vip: 400,
+                        subscriber: 300,
+                        regular: 250,
+                        follower: 250,
+                        everyone: 100,
+                        anyone: 100,
+                    };
+
+                    for(let level in levels)
+                        if(level.startsWith(value?.toLowerCase?.()))
+                            return levels[level];
+
+                    return value;
+                }
+            },
+            level: { value: authority },
+            not: { value(level) { return this.level < this.find(level) } },
+            is: { value(level) { return this.level >= this.find(level) } },
+        })
+    );
+
+    static badges = {
+        everyone: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
+        follower: 'https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3',
+        subscriber: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
+        vip: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
+        moderator: 'https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3',
+        admin: 'https://static-cdn.jtvnw.net/badges/v1/d97c37bd-a6f5-4c38-8f57-4e4bef88af34/3',
+        owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
+    };
+
+    constructor(defaultName, defaultStatus = true, defaultLevel = CommandMaker.everyone, defaultCooldown = { user: 10, global: 3 }, defaultType = 'reply') {
+        let f = furnish;
+        let locale = SETTINGS?.user_language_preference ?? 'en';
+        let preExisting = defaultName?.length > 0;
+
+        let who = f('select.edit#authority', {
+            value: defaultLevel,
+            style: `background-image:url("${ CommandMaker.badges.everyone }")`,
+
+            onchange({ target }) {
+                let [selected] = target.selectedOptions,
+                    who = selected.getAttribute('name');
+
+                target.modStyle(`background-image:url("${ CommandMaker.badges[who] }")`);
+            },
+        }).with(
+            ...CommandMaker.levels.map(who =>
+                f(`option[value=${ who.level }][name=${ who.toLowerCase() }]`).with(
+                    who.replace(/[^aeiou]$/i, '$&s')
+                        .replace(/^(admin|staff)s$/i, 'Twitch Staff & $&')
+                        .replace(/^(owner)s$/i, 'Only you ($1)')
+                )
+            )
+        ),
+            type = f('select.edit#type', {
+                value: defaultType,
+
+                onchange({ target }) {
+                    let [selected] = target.selectedOptions,
+                        type = selected.value;
+                },
+            }).with(
+                f('option[value=reply]').with('Individual reply'), // An individual response
+                f('option[value=announcement]').with('General reply (announcement)'), // A general response
+                f('option[value=recurring]').with('A recurring announcement'), // A recurring-notice
+            ),
+            each = f('span[unit=sec]').with(f(`input#cooldown.edit`, { type: 'number', min: 0, max: 86_400, value: 10 }));
+
+        let conversionTable = [3600, 7200, 14400, 28800, 86400].map(s => `${ toTimeString(s * 1000) } = ${ comify(s) }`).join(' • ');
+
+        let container =
+            f(`.tt-modal-wrapper.context-root`).with(
+                f(`.tt-modal-body`).with(
+                    f(`.tt-modal-container`).with(
+                        // Header
+                        f('.tt-modal-header').with(
+                            f('h3', { innerHTML: Glyphs.modify('chat', { height: 30, width: 30 }).toString() }, ' Create a new command')
+                        ),
+
+                        // Body
+                        f('.tt-modal-content.details.context-body').with(
+                            f('div', { style: 'width:-webkit-fill-available; width:-moz-available' },
+                                // Frequency
+                                f('div', { 'pad-bottom': true },
+                                    f('.title').with('Metadata'),
+                                    f('.summary').with(
+                                        f.h4('Name'),
+                                        f('span[pre-unit=!]').with(f(`input#command`, { placeholder: 'Command name', pattern: '.{1,100}' })),
+                                        f('.subtitle', {
+                                            style: 'margin-bottom: .5rem',
+                                            innerHTML: `This is what users type into chat to activate the command.`
+                                        }),
+
+                                        f.h4('Type'),
+                                        type,
+                                        f('.subtitle', {
+                                            style: 'margin-bottom: .5rem',
+                                            innerHTML: `This determines how the command is handled.`
+                                        }),
+
+                                        f.h4('Response'),
+                                        f(`input#aliases`, { placeholder: 'Reply...', type: 'text' }),
+                                        f('.subtitle', {
+                                            style: 'margin-bottom: .5rem',
+                                            innerHTML: `This is what will be replied to chat.`
+                                        })
+                                    )
+                                ),
+
+                                // Functionality
+                                f('div', { 'pad-bottom': true },
+                                    f('.title').with('User(s)'),
+                                    f('.summary').with(
+                                        f.div(who, 'can use the command.')
+                                    )
+                                ),
+
+                                f('div', { 'pad-bottom': true },
+                                    f('.title').with('Cooldown'),
+                                    f('.summary').with(
+                                        f.div('The ', f.ins('per person'), ' cooldown is ', each),
+                                        f.hr(),
+                                        f('.subtitle').with(conversionTable)
+                                    )
+                                ),
+
+                                // Submit / Cancel
+                                f('div', { 'pad-bottom': true },
+                                    // Notice...
+                                    f('.subtitle', {
+                                        innerHTML: `Commands will only be available while you are <b alert-text top-tooltip='Have chat open'>online</b>.`
+                                    }),
+
+                                    // Add more
+                                    f('div', { style: 'width:fit-content' },
+                                        f('.checkbox.left', { onmouseup: event => $('input', event.currentTarget).click() },
+                                            f('input.add-more', { type: 'checkbox', name: 'add-similar-commands' }),
+                                            f('label', { for: 'add-similar-commands' }, 'Add an alias')
+                                        )
+                                    ),
+
+                                    // Continue
+                                    f('button', {
+                                        'tr-id': 'ok',
+
+                                        onmousedown: event => {
+                                            let { currentTarget } = event;
+
+                                            let values = $.all('[id]', currentTarget.closest('.context-body')).map(element => [element.getAttribute('id'), (element.multiple? [...element.selectedOptions].map(option => option.value): element.value)]);
+
+                                            let object = {};
+                                            for(let [key, value] of values)
+                                                object[key] = value;
+
+                                            CommandMaker.values.push(object);
+                                        },
+
+                                        onmouseup: event => {
+                                            let { currentTarget } = event,
+                                                addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
+
+                                            if(addNew)
+                                                new CommandMaker();
+                                            else
+                                                $('.command-maker-value').value = JSON.stringify(CommandMaker.values.filter(defined));
+
+                                            wait(100).then(() => currentTarget.closest('.context-root')?.remove());
+                                        },
+                                    }, ['Continue', 'Save'][+preExisting]),
+
+                                    // Cancel
+                                    f(`button.${ ['edit', 'remove'][+preExisting] }`, {
+                                        'tr-id': ['nk', 'rm'][+preExisting],
+
+                                        onmousedown: event => CommandMaker.values.push(null),
+
+                                        onmouseup: event => {
+                                            let { currentTarget } = event;
+
+                                            $('.command-maker-value').value = JSON.stringify(CommandMaker.values.filter(defined));
+
+                                            wait(100).then(() => currentTarget.closest('.context-root')?.remove());
+                                        },
+                                    }, ['Cancel', 'Delete'][+preExisting]),
+
+                                    // Hidden
+                                    f('input.command-maker-value', { type: 'text', style: 'display:none!important' })
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+        Translate(locale, container);
+
+        document.body.append(container);
+
+        return when.defined(() => JSON.parse($('.command-maker-value')?.value || 'null')).then(values => { CommandMaker.values = []; return values });
     }
 }
 
@@ -939,16 +1050,17 @@ function depadName(string) {
 }
 
 /* Auto-making tooltips */
+setInterval(() => {
+    $.all('input[type="number"i]:is([min], [max]):not([tooled])')
+        .map(input => {
+            let parent = input.closest(':not(input)'),
+                min = input.getAttribute('min') || input.getAttribute('value') || '0',
+                max = input.getAttribute('max') || '&infin;';
 
-$.all('input[type="number"i]:is([min], [max])')
-    .map(input => {
-        let parent = input.closest(':not(input)'),
-            min = input.getAttribute('min') || input.getAttribute('value') || '0',
-            max = input.getAttribute('max') || '&infin;';
-
-        return ({ parent, min, max });
-    })
-    .map(({ parent, min, max }) => parent.setAttribute('top-tooltip', `${ min } &mdash; ${ max }`));
+            return ({ parent, min, max });
+        })
+        .map(({ parent, min, max }) => parent.setAttribute('top-tooltip', `${ min } &mdash; ${ max }`));
+}, 250);
 
 /* All of the "clickables" */
 
@@ -1067,6 +1179,10 @@ clearSyncStatus.clearID = -1;
 
 wait(1000).then(clearSyncStatus);
 
+function Sym(string = '') {
+    return string.replace(/([a-z\-]+)?_+([a-z\-]+)/gi, ($0, $1 = '', $2, $$, $_) => ($1[0]??'')+$2[0].toUpperCase());
+}
+
 $('#sync-settings--upload').onmouseup = async event => {
     let syncToken = $('#sync-token'),
         { currentTarget } = event;
@@ -1076,27 +1192,34 @@ $('#sync-settings--upload').onmouseup = async event => {
             PostSyncStatus('Uploading...');
             currentTarget.classList.add('spin');
 
-            let CloudExport = {
-                ...SETTINGS,
-                syncDate: new Date().toJSON()
-            };
+            let CloudExport = { ...SETTINGS };
 
-            for(let key of 'LIVE_REMINDERS_SIZE LIVE_REMINDERS RaidEvents SyncSettings'.split(' '))
-                delete CloudExport[key];
+            for(let key in CloudExport)
+                if(usable_settings.missing(key))
+                    delete CloudExport[key];
+
+            CloudExport.syncDate = new Date().toJSON();
 
             let id = parseURL(getURL('')).host;
 
-            if(compareVersions(`${ Manifest.version } < 99`)) {
-                let url = parseURL(`https://www.tinyurl.com/api-create.php`)
-                    .addSearch({
-                        url: encodeURIComponent(
-                            parseURL(`json://${ id }.settings.js/`)
-                                .addSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
-                                .href
-                        )
-                    });
+            if(compareVersions(`${ Manifest.version } < 5.32`)) {
+                await fetchURL(`https://tinyurl.com/app/api/create`, {
+                    // mode: 'cors',
 
-                await fetchURL(url.href/*, { mode: 'cors' } */)
+                    method: 'POST',
+                    body: JSON.stringify({
+                        domain: 'tinyurl.com',
+                        url: parseURL(`json://${ id }.settings.js/`)
+                            .addSearch({ json: encodeURIComponent(JSON.stringify(CloudExport)) })
+                            .href,
+
+                        alias: '',
+                        busy: true,
+                        errors: { errors: {} },
+                        successful: false,
+                        tags: [],
+                    }),
+                })
                     .then(response => response.text())
                     .then(token => {
                         let { pathname } = parseURL(token);
@@ -1111,12 +1234,116 @@ $('#sync-settings--upload').onmouseup = async event => {
                     .catch(PostSyncStatus.warning)
                     .finally(() => currentTarget.classList.remove('spin'));
             } else {
+                let settings = [];
+                for(let index = 0, value, place; index < usable_settings.length; ++index) {
+                    let ID = usable_settings[index], element = $(`#${ ID }`);
+
+                    ID = Sym(ID);
+
+                    switch(ID) {
+                        case 'filter_rules': {
+                            let rules = [],
+                                input = extractValue($('#filter_rules-input'));
+
+                            if(parseBool(input))
+                                rules = input.split(',');
+
+                            for(let rule of $.all('#filter_rules code'))
+                                rules.push(rule.textContent);
+                            rules = rules.isolate().filter(rule => rule.length);
+
+                            value = rules.sort().join(',');
+                        } break;
+
+                        case 'phrase_rules': {
+                            let rules = [],
+                                input = extractValue($('#phrase_rules-input'));
+
+                            if(parseBool(input))
+                                rules = input.split(',');
+
+                            for(let rule of $.all('#phrase_rules code'))
+                                rules.push(rule.textContent);
+                            rules = rules.isolate().filter(rule => rule.length);
+
+                            value = rules.sort().join(',');
+                        } break;
+
+                        case 'away_mode_schedule': {
+                            let times = [];
+                            for(let button of $.all('#away_mode_schedule button[duration]')) {
+                                let day = parseInt(button.getAttribute('day')),
+                                    time = parseInt(button.getAttribute('time')),
+                                    duration = parseInt(button.getAttribute('duration')),
+                                    status = parseBool(button.getAttribute('status'));
+
+                                times.push({ day, time, duration, status });
+                            }
+
+                            let validTimes = [];
+                            for(let object of times) {
+                                let { day, time, duration } = object;
+
+                                if(false
+                                    || (day < 0 || day > 6)
+                                    || (time < 0 || time > 23)
+                                    || (duration < 1)
+                                )
+                                    continue;
+
+                                validTimes.push(object);
+                            }
+
+                            value = JSON.stringify(validTimes.isolate());
+                        } break;
+
+                        case 'away_mode__volume': {
+                            let volume = extractValue($('#away_mode__volume'));
+
+                            value = parseFloat(volume) / 100;
+                        } break;
+
+                        case 'user_language_preference': {
+                            let preferred = extractValue($('#user_language_preference'));
+
+                            value = preferred.toLowerCase();
+                        } break;
+
+                        default: {
+                            if(nullish(element)) {
+                                settings.push([ID, 'X']);
+                                continue;
+                            }
+
+                            value = SaveSettings.extractValue(element);
+                            place = element.options?.selectedIndex;
+                        } break;
+                    }
+
+                    if(defined(place))
+                        settings.push([ID, `!${place}`]);
+                    else
+                        settings.push([ID,
+                            (nullish(value))?
+                                '_':
+                            (value === false)?
+                                'F':
+                            (value === true)?
+                                'T':
+                            (+value == value)?
+                                value:
+                            `**${value}**`
+                        ]);
+                }
+
+                let json = encodeURIComponent(settings.map(([key, value]) => `${key}(${value}`).join(')') + ')');
+
                 let url = parseURL(`https://is.gd/create.php`)
                     .addSearch({
                         format: 'json',
                         url: encodeURIComponent(
                             parseURL(`https://${ id }.settings.js/v2`)
-                                .addSearch({ json: btoa(escape(JSON.stringify(CloudExport))) })
+                                .addSearch({ json })
                                 .href
                         )
                     });
@@ -1127,7 +1354,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                         if(parseInt(errorcode) > 0)
                             throw `Unable to upload. ${ errormessage }`;
 
-                        return `Uploaded. Your Upload ID is ${ (syncToken.value = shorturl) }`;
+                        return `Uploaded. Your Upload ID is ${ (syncToken.value = parseURL(shorturl).pathname.slice(1)) }`;
                     })
                     .then(PostSyncStatus.success)
                     .then(SaveSettings)
@@ -1142,14 +1369,14 @@ $('#sync-settings--download').onmouseup = async event => {
     let syncToken = $('#sync-token').value,
         { currentTarget } = event;
 
-    if((syncToken?.replace(/\W+/g, '')?.length | 0) < 8)
+    if((syncToken?.replace(/\W+/g, '')?.length | 0) < 6)
         return PostSyncStatus.warning('Please use a valid Upload ID');
 
     PostSyncStatus('Downloading...');
     currentTarget.classList.add('spin');
 
     try {
-        if(compareVersions(`${ Manifest.version } < 99`))
+        if(compareVersions(`${ Manifest.version } < 5.32`))
             throw 'ID-v2 not supported';
 
         await fetchURL(`https://is.gd/forward.php?format=json&shorturl=${ syncToken }`)
@@ -1163,9 +1390,138 @@ $('#sync-settings--download').onmouseup = async event => {
                         throw `Invalid Upload ID "${ syncToken }"`;
                 }
 
-                let data;
+                let data = new Map;
                 try {
-                    data = JSON.parse(unescape(atob(decodeURIComponent(parseURL(url).searchParameters.json))));
+                    let raw = decodeURIComponent(parseURL(url).searchParameters.json);
+                    let mode = 'get-key', key = '', val = '', thread = '';
+
+                    parsing:for(let char of raw)
+                        switch(mode) {
+                            case 'get-key': {
+                                if(char == '(') {
+                                    mode = 'get-val';
+
+                                    continue parsing;
+                                }
+
+                                key += char;
+                            } break;
+
+                            case 'get-val': {
+                                if(char == '*') thread += char;
+
+                                if(thread == '**') {
+                                    mode = 'get-str';
+
+                                    continue parsing;
+                                } else if(thread.length > 2) {
+                                    thread = thread.substr(1, 2);
+                                }
+
+                                if(char == ')') {
+                                    mode = 'get-key';
+
+                                    data.set(key, val);
+
+                                    key = '';
+                                    val = '';
+                                    thread = '';
+                                    continue parsing;
+                                }
+
+                                val += char;
+                            } break;
+
+                            case 'get-str': {
+                                if(char == '*') thread += char;
+                                if(char == ')') thread += char;
+
+                                if(thread == '**)') {
+                                    mode = 'get-key';
+
+                                    data.set(key, val.slice(1, -3));
+
+                                    key = '';
+                                    val = '';
+                                    thread = '';
+                                    continue parsing;
+                                } else if(thread.length > 3) {
+                                    thread = thread.substr(1, 3);
+                                }
+
+                                val += char;
+                            } break;
+                        };
+
+                    // LOG('Raw data:', { url, raw, data });
+
+                    let parsed = {};
+
+                    loading:for(let index = 0; index < usable_settings.length; ++index) {
+                        let id = usable_settings[index],
+                            ID = Sym(id),
+                            element = $(`#${ id }:not([data-rest-id])`);
+
+                        if(nullish(element) || !data.has(ID))
+                            continue;
+                        element.dataset.restId = ID;
+
+                        let value = data.get(ID);
+
+                        parsed[ID] = value;
+
+                        switch(id) {
+                            case 'filter_rules': {
+                                RedoRuleElements(value, 'filter');
+                            } break;
+
+                            case 'phrase_rules': {
+                                RedoRuleElements(value, 'phrase');
+                            } break;
+
+                            case 'away_mode_schedule': {
+                                RedoTimeElements(value, 'away_mode');
+                            } break;
+
+                            case 'away_mode__volume': {
+                                assignValue(element, value * 100);
+                            } break;
+
+                            case 'user_language_preference': {
+                                value ||= (top.navigator?.userLanguage ?? top.navigator?.language ?? 'en').toLowerCase().split('-').reverse().pop();
+
+                                assignValue(element, value);
+
+                                if(TRANSLATED) continue loading;
+
+                                Translate(document.documentElement.lang = value.toLowerCase());
+                            } break;
+
+                            case 'simplify_chat_font': {
+                                $(`#${ id }`).setAttribute('style', `font-family:${ value } !important`);
+
+                                assignValue(element, value);
+                            } break;
+
+                            default: {
+                                if(/^!(\d+)/.test(value) && element.options?.length) {
+                                    let selected = value.replace('!', '');
+
+                                    LoadSettings.assignValue(element, element.options[selected].value);
+                                } else if('TF_X'.contains(value) && value?.length) {
+                                    let library = { T: true, F: false, _: null, X: '' };
+
+                                    LoadSettings.assignValue(element, library[value]);
+                                } else {
+                                    LoadSettings.assignValue(element, value);
+                                }
+                            } break;
+                        }
+                    }
+
+                    $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
+
+                    // LOG('Parsed data:', parsed);
                 } catch(error) {
                     throw error;
                 }
@@ -2059,14 +2415,18 @@ document.body.onload = async() => {
                     ($(input.getAttribute('controller')).onchange = estimate)({ currentTarget: input });
                 });
 
-                $.all([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].join(',')).map(element => {
-                    let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
-                        direction = tooltip.replace(/-?tooltip$/, '');
+                setInterval(() => {
+                    $.all([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].map(s => s + ':not([tooled])').join(',')).map(element => {
+                        let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
+                            direction = tooltip.replace(/-?tooltip$/, '');
 
-                    direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
+                        direction = ({ top: 'up', bottom: 'down', })[direction] ?? direction;
 
-                    new Tooltip(element, element.getAttribute(tooltip), { direction });
-                });
+                        new Tooltip(element, element.getAttribute(tooltip), { direction });
+
+                        element.setAttribute('tooled', true);
+                    });
+                }, 250);
 
                 // All experimental features - auto-enable "Experimental Features" if a feature is turned on
                 $.all('[id=":settings--experimental"i] section > .summary .toggle input').map(input => {

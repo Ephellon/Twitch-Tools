@@ -249,7 +249,7 @@ caption {
 }
 
 .tt-post:not(.tt-post ~ .tt-post) > [count]:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::after {
-    content: "All Messages (" attr(count) ")";
+    content: "Messages (" attr(count) ")";
 
     background: var(--color-background-base);
     border: 1px solid var(--channel-color);
@@ -262,13 +262,23 @@ caption {
     left: 50%;
     transform: translate(-50%,50%);
 
-    padding: .65rem 1rem 1.5rem;
+    padding: .65rem 1rem;
 
-    height: 1rem;
+    min-height: fit-content;
+    height: 1.5rem;
+    min-width: fit-content;
     width: 6rem;
 
     transition: all .5s ease-in;
 }
+
+.tt-veiled .tt-alert-container::before { background-color:#e6cb00!important; color:#000!important }
+
+.tt-veiled .tt-confirm-container::before { background-color:#22fa7c!important; color:#000!important }
+
+.tt-veiled .tt-prompt-container::before { background-color:#387aff!important; color:#000!important }
+
+.tt-veiled .tt-select-container::before { background-color:#ff9ab4!important; color:#000!important }
 
 .tt-tooltip-wrapper[show], img ~ .tt-tooltip, [tt-x] {
     display: none !important;
@@ -700,28 +710,31 @@ caption {
     transition: opacity .3s, top .6s;
     transition-delay: .3s;
 
-    background: inherit;
-    /* border: 1px solid var(--current-border-color); */
-    border-radius: 0.25em;
-    display: inline-block;
-    font-size: 1em;
+    background: var(--color-background-base);
+    border: 1px solid var(--channel-color);
+    border-radius: 10rem;
+    font-size: 1.3em;
     font-weight: bold;
-    mix-blend-mode: darken;
-    opacity: 1;
+    outline: none;
     text-align: center;
 
-    margin-top: -1em;
-    position: fixed;
+    position: absolute;
+    top: -5rem;
     left: 50%;
-    top: 0;
+    transform: translate(-50%,50%);
 
-    padding: .1em .5em .4em;
+    padding: .35rem 1rem 1rem;
 
-    height: 1em;
-    width: -moz-fit-content;
-    width: fit-content;
+    min-height: fit-content;
+    height: 1.5rem;
+    min-width: fit-content;
+    width: 6rem;
 
-    transform: translate(-50%, -50%);
+    transition: all .5s ease-in;
+}
+
+.tt-post + .tt-post :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before, [count]:is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
+    opacity: 0 !important;
 }
 
 .tt-silent.tt-veiled:is(.tt-alert) :is(.tt-alert-container)::before {
@@ -747,11 +760,6 @@ caption {
 .tt-silent.tt-veiled :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)[icon]::before {
     content: attr(icon)!important;
 }
-
-.tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
-    top: 3px;
-}
-
 .tt-silent.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select):is(:hover, :focus-within) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     opacity: 0;
     top: 3em;
@@ -777,19 +785,19 @@ caption {
 
 @keyframes shake {
     10%, 90% {
-        transform: translate(-55%, -50%);
+        transform: translateX(-55%);
     }
 
     20%, 80% {
-        transform: translate(-45%, -50%);
+        transform: translateX(-45%);
     }
 
     30%, 50%, 70% {
-        transform: translate(-52.5%, -50%);
+        transform: translateX(-52.5%);
     }
 
     40%, 60% {
-        transform: translate(-42.5%, -50%);
+        transform: translateX(-42.5%);
     }
 }
 

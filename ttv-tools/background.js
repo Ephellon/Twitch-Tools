@@ -14,6 +14,9 @@ let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
 
 let RESERVED_TWITCH_PATHNAMES = ['activate', 'bits', 'bits-checkout', 'clips', 'checkout', 'collections', 'communities', 'dashboard', 'directory', 'downloads', 'drops', 'event', 'following', 'friends', 'inventory', 'jobs', 'moderator', 'popout', 'prime', 'products', 'search', 'settings', 'store', 'subs', 'subscriptions', 'team', 'turbo', 'user', 'videos', 'wallet', 'watchparty'];
+Object.defineProperties(RESERVED_TWITCH_PATHNAMES, {
+    has: { value(value) { return !!~this.indexOf(value) } },
+});
 
 // Reloads the tab
     // ReloadTab(tab:object<Tab>, onlineOnly:boolean?, forced:boolean?) → undefined
@@ -203,6 +206,19 @@ Runtime.onMessage.addListener((request, sender, respond) => {
     }
 
     switch(request.action) {
+        case 'STEAL_UP_NEXT': {
+            delete request.action;
+
+            Container.tabs.query({
+                url: ["*://*.twitch.tv/*"],
+            }, (tabs = []) => {
+                for(let tab of tabs)
+                    Container.tabs.sendMessage(tab.id, { action: 'consume-up-next', ...request });
+
+                respond(request);
+            });
+        } break;
+
         case 'CLAIM_UP_NEXT': {
             Storage.get(['UP_NEXT_OWNER', 'UP_NEXT_OWNER_NAME'], ({ UP_NEXT_OWNER = null, UP_NEXT_OWNER_NAME = null }) => {
                 reloadAll ||= UP_NEXT_OWNER == null;
@@ -212,16 +228,23 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 }, (tabs = []) => {
                     // An owner already exists and is active...
                     let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
+                    let hostHas = (url, ...doms) => {
+                        for(let dom of doms)
+                            if(!!~new URL(url).host.indexOf(dom))
+                                return true;
+                        return false;
+                    };
                     let name = null,
                         owner = null,
                         ownerAlive = false;
 
+                    // Does the Tab ID match?
                     for(let tab of tabs)
-                        if(!!~RESERVED_TWITCH_PATHNAMES.indexOf(getName(tab.url)) || !!~new URL(tab.url).host.indexOf('player.') || !!~new URL(tab.url).host.indexOf('dev.')) {
+                        if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url)) || hostHas(tab.url, 'player.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.')) {
                             continue;
                         } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
-                            name = getName(tab.url);
-                            owner = tab.id;
+                            owner ??= tab.id;
+                            name ??= getName(tab.url);
                         }
 
                     if(ownerAlive) {
@@ -230,14 +253,13 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                         respond({ owner: owner == sender.tab.id });
                     } else {
-                        name = owner = null;
-
+                        // Does the streamer name match?
                         for(let tab of tabs)
-                            if(!!~RESERVED_TWITCH_PATHNAMES.indexOf(getName(tab.url))) {
+                            if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
                                 continue;
                             } else if(ownerAlive ||= (getName(tab.url) == UP_NEXT_OWNER_NAME)) {
-                                name ??= getName(tab.url);
                                 owner ??= tab.id;
+                                name ??= getName(tab.url);
                             }
 
                         if(ownerAlive) {
@@ -246,6 +268,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                             respond({ owner: owner == sender.tab.id });
                         } else {
+                            // This Tab is the new owner
                             UP_NEXT_OWNER = sender.tab.id;
                             UP_NEXT_OWNER_NAME = getName(sender.tab.url);
 
@@ -277,7 +300,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             Storage.get(['RaidEvents'], ({ RaidEvents = {} }) => {
                 let date = (new Date),
-                    week = `${ date.getFullYear() }${ date.getWeek().padStart(2, '00') }`;
+                    week = `${ date.getFullYear() }${ date.getWeek().toString().padStart(2, '00') }`;
 
                 let events = ((RaidEvents[from] ??= {})[week] ??= []).push(to);
 
