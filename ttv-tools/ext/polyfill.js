@@ -120,7 +120,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?\/\/)?(?:(?<username>[^:]*):(?<password>[^@]*)@)?(?<host>(?<hostname>\w+(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?\/\/)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\w{2,}(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -184,6 +184,13 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
                     if(esc)
                         continue;
+
+                    let escs = { 'b': '\b', 'c': '\c', 'f': '\f', 'n': '\n', 'r': '\r', 't': '\t', 'v': '\v' };
+
+                    if(char in escs) {
+                        value += escs[char];
+                        continue;
+                    }
                 } else if(!esc) {
                     if(char == ']') {
                         attributes[name] = value;

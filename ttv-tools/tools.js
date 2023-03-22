@@ -2345,7 +2345,7 @@ Object.defineProperties(Chat, {
 
 // Pushes parameters to the URL's search
     // PushToTopSearch(newParameters:object, reload:boolean?) → string<URL-Search>
-function PushToTopSearch(newParameters, reload = true) {
+function PushToTopSearch(newParameters, reload = false) {
     let url = parseURL(location).addSearch(newParameters, false);
 
     if(reload)
@@ -4615,13 +4615,13 @@ let Initialize = async(START_OVER = false) => {
 
         get perm() {
             /** User Levels → StreamElements | NightBot
-             * Everyone         →   100  | everyone
-             * Subscriber       →   250  | subscriber
-             * Regular          →   300  | regular
-             * VIP              →   400  | twitch_vip
-             * Moderator        →   500  | moderator
-             * Super Moderator  →   1000 | admin
              * Broadcaster      →   1500 | owner
+             * Super Moderator  →   1000 | admin
+             * Moderator        →   500  | moderator
+             * VIP              →   400  | twitch_vip
+             * Follower         →   300  | regular
+             * Subscriber       →   250  | subscriber
+             * Everyone         →   100  | everyone
              */
             let level = 0;
             let string = new String(
@@ -4629,20 +4629,20 @@ let Initialize = async(START_OVER = false) => {
                     (level = 1500, 'owner'):
                 (parseBool(Search.cookies?.twilight_user?.roles?.isStaff))?
                     (level = 1000, 'admin'):
-                (Chat.mods.contains(USERNAME.toLowerCase()))?
+                ((STREAMER.mods = Chat.mods).contains(USERNAME.toLowerCase()))?
                     (level = 500, 'moderator'):
-                (Chat.vips.contains(USERNAME.toLowerCase()))?
+                ((STREAMER.vips = Chat.vips).contains(USERNAME.toLowerCase()))?
                     (level = 400, 'vip'):
-                (STREAMER.paid)?
-                    (level = 300, 'subscriber'):
                 (STREAMER.ping)?
-                    (level = 250, 'regular'):
+                    (level = 300, 'regular'):
+                (STREAMER.paid)?
+                    (level = 250, 'subscriber'):
                 (level = 100, 'everyone')
             );
 
             Object.defineProperties(string, {
                 find: {
-                    value(value) {
+                    value(permission) {
                         let levels = {
                             owner: 1500,
                             broadcaster: 1500,
@@ -4657,15 +4657,17 @@ let Initialize = async(START_OVER = false) => {
                         };
 
                         for(let level in levels)
-                            if(level.startsWith(value?.toLowerCase?.()))
+                            if(level.startsWith(permission?.toLowerCase?.()))
                                 return levels[level];
 
-                        return value;
+                        return permission;
                     }
                 },
                 level: { value: level },
-                not: { value(level) { return this.level < this.find(level) } },
-                is: { value(level) { return this.level >= this.find(level) } },
+                lacks: { value(permission) { return this.level < this.find(permission) } },
+                not: { value(permission) { return this.level != this.find(permission) } },
+                is: { value(permission) { return this.level == this.find(permission) } },
+                has: { value(permission) { return this.level >= this.find(permission) } },
             });
 
             return string;
@@ -5334,7 +5336,7 @@ let Initialize = async(START_OVER = false) => {
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'st-tw-metrics' }, false);
+                                        PushToTopSearch({ 'tt-err-get': 'st-tw-metrics' });
                                 });
 
                             // Channel details (HTML → JSON)
@@ -5373,7 +5375,7 @@ let Initialize = async(START_OVER = false) => {
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-metrics' }, false);
+                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-metrics' });
                                 });
                         }
 
@@ -5480,7 +5482,7 @@ let Initialize = async(START_OVER = false) => {
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-stats' }, false);
+                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-stats' });
                                 });
 
                         /***
@@ -5520,7 +5522,7 @@ let Initialize = async(START_OVER = false) => {
                                         ?.toNativeStack?.();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-tracker' }, false);
+                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-tracker' });
                                 });
 
                         /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
@@ -5569,7 +5571,7 @@ let Initialize = async(START_OVER = false) => {
                         //                 .toNativeStack();
                         //
                         //             if(!ErrGet.length)
-                        //                 PushToTopSearch({ 'tt-err-get': 'ch-tw' }, false);
+                        //                 PushToTopSearch({ 'tt-err-get': 'ch-tw' });
                         //         });
                     }
                 }
@@ -8297,7 +8299,7 @@ let Initialize = async(START_OVER = false) => {
                 SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
 
                 // Failed to get channel at...
-                PushToTopSearch({ 'tt-err-chn': (+new Date).toString(36) });
+                PushToTopSearch({ 'tt-err-chn': (+new Date).toString(36) }, true);
             }
 
             return /* Fail "gracefully" */;
@@ -8832,8 +8834,11 @@ let Initialize = async(START_OVER = false) => {
                     XboxRegExp = /\bXbox\s*(\d+|live|one\s*(series\s*)?([x\|s]+\s*)?(enhanced)?)?.*$/i,
                     // Removes common trademarks → Xbox,Xbox 360,Xbox Live,Xbox One,Xbox One X|S,Xbox One X,Xbox One X Enhanced,Xbox One S,Xbox One Series X|S,Xbox One Series X,Xbox One Series X Enhanced,Xbox One Series S
 
-                    NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i;
+                    NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i,
                     // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
+
+                    EditionsRegExp = /((?:[:-~]\s*)?(\p{L}|[-']){3,}\s*)Editions?/iu;
+                    // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,etc.
 
                 async function fetchPlayStationGame(game, index = 1, pages = 1) {
                     return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
@@ -8843,10 +8848,12 @@ let Initialize = async(START_OVER = false) => {
                                 prev.name
                                     .replace(NON_ASCII, '')
                                     .replace(PlayStationRegExp, '')
+                                    .replace(EditionsRegExp, '')
                                     .errs(game)
                                 - next.name
                                     .replace(NON_ASCII, '')
                                     .replace(PlayStationRegExp, '')
+                                    .replace(EditionsRegExp, '')
                                     .errs(game)
                             )
                                 .slice(0, 60)
@@ -8854,11 +8861,13 @@ let Initialize = async(START_OVER = false) => {
                                     prev.name
                                         .replace(NON_ASCII, '')
                                         .replace(PlayStationRegExp, '')
+                                        .replace(EditionsRegExp, '')
                                         .toLowerCase()
                                         .distanceFrom(game.toLowerCase())
                                     - next.name
                                         .replace(NON_ASCII, '')
                                         .replace(PlayStationRegExp, '')
+                                        .replace(EditionsRegExp, '')
                                         .toLowerCase()
                                         .distanceFrom(game.toLowerCase())
                                 );
@@ -8868,11 +8877,13 @@ let Initialize = async(START_OVER = false) => {
                                 || best.name
                                     .replace(NON_ASCII, '')
                                     .replace(PlayStationRegExp, '')
+                                    .replace(EditionsRegExp, '')
                                     .trim()
                                     .equals(game)
                                 || best.name
                                     .replace(NON_ASCII, '')
                                     .replace(PlayStationRegExp, '')
+                                    .replace(EditionsRegExp, '')
                                     .errs(game) < .1
                             ) return ({
                                 game,
@@ -8891,7 +8902,7 @@ let Initialize = async(START_OVER = false) => {
                                     .then(r => r.text())
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(async DOM => {
-                                        return /* TODO: Get this to work without again */;
+                                        return /* TODO: Get this to work again */;
 
                                         let items = JSON.parse($('script[id*="data"i]', DOM)?.textContent || null)?.props?.apolloState;
 
@@ -8909,11 +8920,13 @@ let Initialize = async(START_OVER = false) => {
                                                                 ?.replace(NON_ASCII, '')
                                                                 // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
                                                                 ?.replace(PlayStationRegExp, '')
+                                                                ?.replace(EditionsRegExp, '')
                                                         )
                                                         || item?.name
                                                             ?.replace(NON_ASCII, '')
                                                             // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
                                                             ?.replace(PlayStationRegExp, '')
+                                                            ?.replace(EditionsRegExp, '')
                                                             ?.errs(game) < .01
                                                     )
                                                 )
@@ -9081,10 +9094,12 @@ let Initialize = async(START_OVER = false) => {
                                     prev.name
                                         .replace(NON_ASCII, '')
                                         .replace(XboxRegExp, '')
+                                        .replace(EditionsRegExp, '')
                                         .errs(game)
                                     - next.name
                                         .replace(NON_ASCII, '')
                                         .replace(XboxRegExp, '')
+                                        .replace(EditionsRegExp, '')
                                         .errs(game)
                                 )
                                     .slice(0, 60)
@@ -9092,11 +9107,13 @@ let Initialize = async(START_OVER = false) => {
                                         prev.name
                                             .replace(NON_ASCII, '')
                                             .replace(XboxRegExp, '')
+                                            .replace(EditionsRegExp, '')
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                         - next.name
                                             .replace(NON_ASCII, '')
                                             .replace(XboxRegExp, '')
+                                            .replace(EditionsRegExp, '')
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     );
@@ -9106,11 +9123,13 @@ let Initialize = async(START_OVER = false) => {
                                     || best.name
                                         .replace(NON_ASCII, '')
                                         .replace(XboxRegExp, '')
+                                        .replace(EditionsRegExp, '')
                                         .trim()
                                         .equals(game)
                                     || best.name
                                         .replace(NON_ASCII, '')
                                         .replace(XboxRegExp, '')
+                                        .replace(EditionsRegExp, '')
                                         .errs(game) < .1
                                 ) return ({
                                     game,
@@ -9378,10 +9397,12 @@ let Initialize = async(START_OVER = false) => {
                                         prev.name
                                             .replace(NON_ASCII, '')
                                             .replace(NintendoRegExp, '')
+                                            .replace(EditionsRegExp, '')
                                             .errs(game)
                                         - next.name
                                             .replace(NON_ASCII, '')
                                             .replace(NintendoRegExp, '')
+                                            .replace(EditionsRegExp, '')
                                             .errs(game)
                                     )
                                         .slice(0, 60)
@@ -9389,11 +9410,13 @@ let Initialize = async(START_OVER = false) => {
                                             prev.name
                                                 .replace(NON_ASCII, '')
                                                 .replace(NintendoRegExp, '')
+                                                .replace(EditionsRegExp, '')
                                                 .toLowerCase()
                                                 .distanceFrom(game.toLowerCase())
                                             - next.name
                                                 .replace(NON_ASCII, '')
                                                 .replace(NintendoRegExp, '')
+                                                .replace(EditionsRegExp, '')
                                                 .toLowerCase()
                                                 .distanceFrom(game.toLowerCase())
                                         );
@@ -9403,11 +9426,13 @@ let Initialize = async(START_OVER = false) => {
                                         || best.name
                                             .replace(NON_ASCII, '')
                                             .replace(NintendoRegExp, '')
+                                            .replace(EditionsRegExp, '')
                                             .trim()
                                             .equals(game)
                                         || best.name
                                             .replace(NON_ASCII, '')
                                             .replace(NintendoRegExp, '')
+                                            .replace(EditionsRegExp, '')
                                             .errs(game) < .07
                                     ) return ({
                                         game,
@@ -12927,7 +12952,7 @@ let Initialize = async(START_OVER = false) => {
             ERROR('The stream ran into an error:', errorMessage, new Date);
 
             // Failed to play video at...
-            PushToTopSearch({ 'tt-err-vid': 'video-recovery--non-subscriber' }, false);
+            PushToTopSearch({ 'tt-err-vid': 'video-recovery--non-subscriber' });
         }
 
         JUDGE__STOP_WATCH('recover_video');
@@ -13721,7 +13746,7 @@ if(top == window) {
                                         RestartJob(job, 'failure_to_activate');
 
                             // Failed to activate job at...
-                            // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) });
+                            // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) }, true);
 
                             Initialize.ready = ready;
                         }, Math.max(...Object.values(Timers)));
@@ -13735,10 +13760,13 @@ if(top == window) {
                     if(nullish(line))
                         return;
 
-                    let [head, body] = line.children;
+                    let [head, body] = line.children,
+                        type = 'unknown';
 
-                    if($.nullish(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, head))
-                        return;
+                    if($.defined(`img[class*="channel-points"i][class*="icon"i][alt="${ fiat }"i], [class*="channel-points"i][class*="icon"i] svg`, head))
+                        type = 'coin';
+                    else if($.defined(`a[target="_blank"i]:is([rel~="noopener"i], [rel~="noreferrer"i])`))
+                        type = 'shoutout';
 
                     let user = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ').shift();
 
@@ -13749,14 +13777,20 @@ if(top == window) {
                         shopID = await STREAMER.shop.find(entry => (true
                             && head.textContent.contains(entry.title)
                             && head.textContent.contains(comify(entry.cost))
-                        ))?.id;
+                        ))?.id,
+                        spotlight = $('a[target="_blank"i]', body)?.textContent;
 
                     line.dataset.uuid = UUID.from(line.getPath());
 
-                    if(nullish(shopID))
-                        return;
+                    let data = `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;<!>;subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ head.innerText.trim().replace(/\s+/g, ' ') } ${ body?.innerText?.trim()?.replace(/\s+/g, ' ') || '' }`;
 
-                    TTV_IRC.socket?.reflect?.({ data: `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;msg-param-shop-id=${ shopID };subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ head.innerText.trim().replace(/\s+/g, ' ') }` });
+                    if(defined(shopID))
+                        data = data.replace('<!>', `msg-param-shop-id=${ shopID }`);
+                    else if(defined(spotlight))
+                        data = data.replace('<!>', `msg-param-spotlight=${ spotlight }`);
+                    data = data.replace('<!>;', '');
+
+                    TTV_IRC.socket?.reflect?.({ data });
                 }, 100);
 
                 // Handle saved states...
@@ -13920,7 +13954,7 @@ if(top == window) {
 
                         for(let key in states)
                             if(parseBool(states[key]))
-                                PushToTopSearch({ [key]: states[key] }, false);
+                                PushToTopSearch({ [key]: states[key] });
 
                         break Reinitialize;
                     }
@@ -14541,11 +14575,13 @@ if(top == window) {
                                         // TODO: get bullets via text content
                                         $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
+                                                let [A, B] = [message, element.textContent].map(string => string.mutilate()).sort((a, b) => b.length - a.length);
+
                                                 if(false
                                                     // The element already has a UUID and type
                                                     || (element.dataset.uuid && element.dataset.type)
-                                                    // The text matches less than 20% of the message
-                                                    || message.mutilate().errs(element.textContent.mutilate()) > .8
+                                                    // The text matches less than 40% of the message
+                                                    || A.slice(0, B.length).errs(B) > .6
                                                 )
                                                     return false;
 

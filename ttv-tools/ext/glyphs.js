@@ -13,6 +13,7 @@
  * checkmark
  * translate
  * incognito
+ * highlight
  * calendar
  * collapse
  * download
@@ -66,6 +67,7 @@
  * video
  * bits
  * bolt
+ * cake
  * clip
  * chat
  * flag
@@ -90,6 +92,8 @@
  * map
  * mod
  * cog
+ * vip
+ * at
  * x
  */
 
@@ -167,6 +171,7 @@ window.Glyphs ??= {
     checkmark: `<svg fill="#22fa7c"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10l5 5 8-8-1.5-1.5L9 12 5.5 8.5 4 10z"></path></g></svg>`,
     translate: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 27 26" x="0px" y="0px"><path d="M20.859 9.2L26.787 26h-3.822l-1.214-3.983h-6.1L14.439 26h-3.822l5.905-16.8h4.338zm-2.152 2.598c-.252.975-.973 3.39-2.163 7.244h4.36L19.01 12.92c-.14-.474-.242-.847-.303-1.122zM9.622 0a5.153 5.153 0 00-.1 1.021v1.021h3.987c.81.01 1.621-.03 2.428-.117v3.029c-.737-.067-1.39-.1-2.376-.1a13.167 13.167 0 01-1.145 3.232c-.497.98-1.121 1.891-1.857 2.707a14.381 14.381 0 003.14 1.387l-1.062 3.022a19.389 19.389 0 01-4.37-2.351 21.456 21.456 0 01-6.661 3.079A9.699 9.699 0 000 12.968a18.235 18.235 0 005.94-2.191 14.565 14.565 0 01-2.158-3.062c-.484-.911-.871-1.87-1.155-2.862-.988 0-1.556.034-2.393.1V1.926c.806.087 1.616.126 2.426.117H6.36V1.038A5.08 5.08 0 006.259 0zm.652 4.853H5.84a9.543 9.543 0 002.342 4.049 9.434 9.434 0 002.092-4.049z" fill-rule="nonzero"></path></svg>`,
     incognito: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 120 120" x="0px" y="0px"><g fill="none" fill-rule="evenodd"><path d="M0 0h120v120H0z"/><path fill="#dadce0" d="M60 0c33.137 0 60 26.863 60 60s-26.863 60-60 60S0 93.137 0 60 26.863 0 60 0zm17.5 64.837c-6.456 0-11.822 4.502-13.222 10.516-3.267-1.397-6.3-1.009-8.556-.039C54.283 69.3 48.917 64.837 42.5 64.837c-7.506 0-13.611 6.092-13.611 13.582C28.889 85.908 34.994 92 42.5 92c7.156 0 12.95-5.51 13.494-12.495 1.167-.815 4.24-2.328 8.012.078C64.628 86.529 70.383 92 77.5 92c7.506 0 13.611-6.092 13.611-13.581 0-7.49-6.105-13.582-13.611-13.582zm-35 3.88c5.367 0 9.722 4.347 9.722 9.702 0 5.355-4.355 9.7-9.722 9.7-5.367 0-9.722-4.345-9.722-9.7 0-5.355 4.355-9.701 9.722-9.701zm35 0c5.367 0 9.722 4.347 9.722 9.702 0 5.355-4.355 9.7-9.722 9.7-5.367 0-9.722-4.345-9.722-9.7 0-5.355 4.355-9.701 9.722-9.701zM95 57H25v4h70v-4zM72.874 29.34c-.8-1.82-2.866-2.78-4.785-2.143L60 29.914l-8.128-2.717-.192-.058c-1.928-.533-3.954.51-4.669 2.387L38.144 53h43.712L72.95 29.526z"/></g></svg>`,
+    highlight: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 120 120" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M4 2V4H16V2H18V6.28078L17.0299 6.52331C15.2492 6.96848 14 8.56841 14 10.4039V15.7808L6 17.7808V10.4039C6 8.56841 4.75081 6.96848 2.97014 6.52331L2 6.28078V2H4ZM8 12V15.2192L12 14.2192V12H8ZM6.07534 6H13.9247C12.823 7.02027 12.118 8.44067 12.0135 10H7.98651C7.88205 8.44067 7.17701 7.02027 6.07534 6Z"></path></svg>`,
 
     calendar: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8 9v2H6V9h2z"></path><path fill-rule="evenodd" d="M5 2h2v1h6V2h2v1h1a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h1V2zm11 5H4v9h12V7z" clip-rule="evenodd"></path></g></svg>`,
     collapse: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M14 7h-2v6h2V7z"></path><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm2 0h12v10H4V5z" clip-rule="evenodd"></path></g></svg>`,
@@ -228,6 +233,7 @@ window.Glyphs ??= {
 
     bits: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M3 12l7-10 7 10-7 6-7-6zm2.678-.338L10 5.487l4.322 6.173-.85.728L10 11l-3.473 1.39-.849-.729z"></path></g></svg>`,
     bolt: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M14.91 2.073L13 9l1.88 1.071a1 1 0 01.036 1.717l-9.825 6.14L7 11 5.12 9.929a1 1 0 01-.035-1.717l9.824-6.14zm-6.784 11.6L9 10 7 9l4.874-2.672L11 10l2 1-4.874 2.673z" clip-rule="evenodd"></path></g></svg>`,
+    cake: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M11 2H9v3H4a2 2 0 00-2 2v11h16V7a2 2 0 00-2-2h-5V2zM4 16h12v-3.586l-1-1a1.414 1.414 0 00-2 0l-.586.586a3.414 3.414 0 01-4.828 0L7 11.414a1.414 1.414 0 00-2 0l-1 1V16zm10-7c.723 0 1.422.23 2 .647V7H4v2.647A3.414 3.414 0 018.414 10l.586.586a1.414 1.414 0 002 0l.586-.586c.64-.64 1.509-1 2.414-1z" clip-rule="evenodd"></path></g></svg>`,
     clip: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M14.594 4.495l-.585-1.91L15.922 2l.585 1.91-1.913.585zM11.14 3.46l.585 1.911 1.913-.584-.585-1.91-1.913.583zM8.856 6.247l-.584-1.91 1.912-.584.585 1.91-1.913.584zM5.403 5.213l.584 1.91L7.9 6.54l-.585-1.911-1.912.584zM2.534 6.09L3.118 8l1.913-.584-.585-1.91-1.912.583zM5 9H3v7a2 2 0 002 2h10a2 2 0 002-2V9h-2v7H5V9z"></path><path d="M8 9H6v2h2V9zM9 9h2v2H9V9zM14 9h-2v2h2V9z"></path></g></svg>`,
     chat: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7.828 13L10 15.172 12.172 13H15V5H5v8h2.828zM10 18l-3-3H5a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2l-3 3z" clip-rule="evenodd"></path></g></svg>`,
     flag: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M18 2l-4 6 4 6H4v4H2V2h16zM4 12h10.263l-2.667-4 2.667-4H4v8z" clip-rule="evenodd"></path></g></svg>`,
@@ -253,6 +259,9 @@ window.Glyphs ??= {
     map: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M2 3l8 2.5L18 3v12l-7 2H9l-7-2V3zm9 4.283l5-1.563v7.771l-5 1.429V7.283zm-2 0L4 5.72v7.771l5 1.429V7.283z" clip-rule="evenodd"></path></g></svg>`,
     mod: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M5.003 3.947A10 10 0 009.519 2.32L10 2l.48.32A10 10 0 0016.029 4H17l-.494 5.641a9 9 0 01-4.044 6.751L10 18l-2.462-1.608a9 9 0 01-4.044-6.75L3 4h.972c.346 0 .69-.018 1.031-.053zm.174 1.992l.309 3.528a7 7 0 003.146 5.25l1.368.894 1.368-.893a7 7 0 003.146-5.25l.309-3.529A12 12 0 0110 4.376 12 12 0 015.177 5.94z" clip-rule="evenodd"></path></g></svg>`,
     cog: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M10 8a2 2 0 100 4 2 2 0 000-4z"></path><path fill-rule="evenodd" d="M9 2h2a2.01 2.01 0 001.235 1.855l.53.22a2.01 2.01 0 002.185-.439l1.414 1.414a2.01 2.01 0 00-.439 2.185l.22.53A2.01 2.01 0 0018 9v2a2.01 2.01 0 00-1.855 1.235l-.22.53a2.01 2.01 0 00.44 2.185l-1.415 1.414a2.01 2.01 0 00-2.184-.439l-.531.22A2.01 2.01 0 0011 18H9a2.01 2.01 0 00-1.235-1.854l-.53-.22a2.009 2.009 0 00-2.185.438L3.636 14.95a2.009 2.009 0 00.438-2.184l-.22-.531A2.01 2.01 0 002 11V9c.809 0 1.545-.487 1.854-1.235l.22-.53a2.009 2.009 0 00-.438-2.185L5.05 3.636a2.01 2.01 0 002.185.438l.53-.22A2.01 2.01 0 009 2zm-4 8l1.464 3.536L10 15l3.535-1.464L15 10l-1.465-3.536L10 5 6.464 6.464 5 10z" clip-rule="evenodd"></path></g></svg>`,
+    vip: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M18 8l-4-4H6L2 8l8 8 8-8zm-4.828 2L10 13.172 6.828 10h6.344zM4.828 8l2-2h6.344l2 2H4.828z"></path></svg>`,
+
+    at: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path d="M12 4H8a4 4 0 00-4 4v4a4 4 0 004 4h5v2H8a6 6 0 01-6-6V8a6 6 0 016-6h4a6 6 0 015.995 5.75H18v2.75a3.5 3.5 0 01-6 2.45 3.5 3.5 0 01-6-2.45v-1a3.5 3.5 0 015-3.163V6h2v4.5a1.5 1.5 0 003 0V8a4 4 0 00-4-4zm-1 5.5a1.5 1.5 0 00-3 0v1a1.5 1.5 0 003 0v-1z"></path></svg>`,
 
     x: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"></path></g></svg>`,
 

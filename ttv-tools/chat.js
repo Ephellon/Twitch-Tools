@@ -2985,7 +2985,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             element.dataset.uuid ||= uuid;
 
-            if(!deleted || !message?.length)
+            if(!deleted || !message?.length || author.equals(USERNAME))
                 continue restoring;
 
             let f = furnish;
@@ -3025,7 +3025,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i])').append(container);
+                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) [role]').append(container);
             }
 
             let body = $(`[data-test-selector$="message-placeholder"i]`, container),
@@ -3636,11 +3636,13 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                         // TODO: get bullets via text content
                                         $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
+                                                let [A, B] = [message, element.textContent].map(string => string.mutilate()).sort((a, b) => b.length - a.length);
+
                                                 if(false
                                                     // The element already has a UUID and type
                                                     || (element.dataset.uuid && element.dataset.type)
-                                                    // The text matches less than 20% of the message
-                                                    || message.mutilate().errs(element.textContent.mutilate()) > .8
+                                                    // The text matches less than 40% of the message
+                                                    || A.slice(0, B.length).errs(B) > .6
                                                 )
                                                     return false;
 

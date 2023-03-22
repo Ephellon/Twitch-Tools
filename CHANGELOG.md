@@ -39,6 +39,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.1)
+- Changed game searching logic to find game "editions"
+
 > [`5.32`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32)
 - Fixed issue with selections not displaying correctly
 - Modified Up Next logic to consume events across tabs
