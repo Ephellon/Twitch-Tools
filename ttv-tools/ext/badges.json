@@ -348,6 +348,10 @@
         "uuid": "199a0dba-58f3-494e-a7fc-1fa0a1001fb8"
     },
     {
+        "name": "No video",
+        "uuid": "aef2cd08-f29b-45a1-8c12-d44d7fd5e6f0"
+    },
+    {
         "name": "Moderator",
         "uuid": "3267646d-33f0-4b17-b3df-f923a41db1d0"
     },
@@ -632,8 +636,16 @@
         "uuid": "d12a2e27-16f6-41d0-ab77-b780518f00a3"
     },
     {
+        "name": "Partner",
+        "uuid": "d12a2e27-16f6-41d0-ab77-b780518f00a3"
+    },
+    {
         "name": "Watching without audio",
         "uuid": "aef2cd08-f29b-45a1-8c12-d44d7fd5e6f0"
+    },
+    {
+        "name": "No sound",
+        "uuid": "199a0dba-58f3-494e-a7fc-1fa0a1001fb8"
     },
     {
         "name": "White Ranger",

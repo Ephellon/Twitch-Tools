@@ -389,118 +389,118 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 Object.defineProperties(furnish, {
-    "a": { value: function Anchor(...children) { return furnish('a', null, ...children) } },
-    "abbr": { value: function Abbreviation(...children) { return furnish('abbr', null, ...children) } },
-    "address": { value: function Address(...children) { return furnish('address', null, ...children) } },
-    "area": { value: function Area(attributes) { return furnish('area', attributes) } },
-    "article": { value: function Article(...children) { return furnish('article', null, ...children) } },
-    "aside": { value: function Aside(...children) { return furnish('aside', null, ...children) } },
-    "audio": { value: function Audio(...children) { return furnish('audio', null, ...children) } },
-    "b": { value: function Bold(...children) { return furnish('b', null, ...children) } },
-    "base": { value: function Base(attributes) { return furnish('base', attributes) } },
-    "bdi": { value: function BidirectionalTextInsertion(...children) { return furnish('bdi', null, ...children) } },
-    "bdo": { value: function BidirectionalTextOverride(...children) { return furnish('bdo', null, ...children) } },
-    "blockquote": { value: function BlockQuote(...children) { return furnish('blockquote', null, ...children) } },
-    "body": { value: function Body(...children) { return furnish('body', null, ...children) } },
-    "br": { value: function Break(...children) { return furnish('br', null, ...children) } },
-    "button": { value: function Button(...children) { return furnish('button', null, ...children) } },
-    "canvas": { value: function Canvas(...children) { return furnish('canvas', null, ...children) } },
-    "caption": { value: function Caption(...children) { return furnish('caption', null, ...children) } },
-    "cite": { value: function Cite(...children) { return furnish('cite', null, ...children) } },
-    "code": { value: function Code(...children) { return furnish('code', null, ...children) } },
-    "col": { value: function Column(attributes) { return furnish('col', attributes) } },
-    "colgroup": { value: function ColumnGroup(...children) { return furnish('colgroup', null, ...children) } },
-    "data": { value: function Data(...children) { return furnish('data', null, ...children) } },
-    "datalist": { value: function DataList(...children) { return furnish('datalist', null, ...children) } },
-    "dd": { value: function Description(...children) { return furnish('dd', null, ...children) } },
-    "del": { value: function Deleted(...children) { return furnish('del', null, ...children) } },
-    "details": { value: function Details(...children) { return furnish('details', null, ...children) } },
-    "dfn": { value: function Definition(...children) { return furnish('dfn', null, ...children) } },
-    "dialog": { value: function Dialog(...children) { return furnish('dialog', null, ...children) } },
-    "div": { value: function Divider(...children) { return furnish('div', null, ...children) } },
-    "dl": { value: function DescriptionList(...children) { return furnish('dl', null, ...children) } },
-    "dt": { value: function DescriptionTerm(...children) { return furnish('dt', null, ...children) } },
-    "em": { value: function Emphasis(...children) { return furnish('em', null, ...children) } },
-    "embed": { value: function Embed(attributes) { return furnish('embed', attributes) } },
-    "fieldset": { value: function Fieldset(...children) { return furnish('fieldset', null, ...children) } },
-    "figcaption": { value: function FigureCaption(...children) { return furnish('figcaption', null, ...children) } },
-    "figure": { value: function Figure(...children) { return furnish('figure', null, ...children) } },
-    "footer": { value: function Footer(...children) { return furnish('footer', null, ...children) } },
-    "form": { value: function Form(...children) { return furnish('form', null, ...children) } },
-    "h1": { value: function HeaderSize1(...children) { return furnish('h1', null, ...children) } },
-    "h2": { value: function HeaderSize2(...children) { return furnish('h2', null, ...children) } },
-    "h3": { value: function HeaderSize3(...children) { return furnish('h3', null, ...children) } },
-    "h4": { value: function HeaderSize4(...children) { return furnish('h4', null, ...children) } },
-    "h5": { value: function HeaderSize5(...children) { return furnish('h5', null, ...children) } },
-    "h6": { value: function HeaderSize6(...children) { return furnish('h6', null, ...children) } },
-    "head": { value: function Head(...children) { return furnish('head', null, ...children) } },
-    "header": { value: function Header(...children) { return furnish('header', null, ...children) } },
-    "hr": { value: function Horizontal(...children) { return furnish('hr', null, ...children) } },
-    "html": { value: function HTML(...children) { return furnish('html', null, ...children) } },
-    "i": { value: function Italics(...children) { return furnish('i', null, ...children) } },
-    "iframe": { value: function Iframe(...children) { return furnish('iframe', null, ...children) } },
-    "img": { value: function Image(attributes) { return furnish('img', attributes) } },
-    "input": { value: function Input(attributes) { return furnish('input', attributes) } },
-    "ins": { value: function Insertion(...children) { return furnish('ins', null, ...children) } },
-    "kbd": { value: function Keyboard(...children) { return furnish('kbd', null, ...children) } },
-    "label": { value: function Label(...children) { return furnish('label', null, ...children) } },
-    "legend": { value: function Legend(...children) { return furnish('legend', null, ...children) } },
-    "li": { value: function ListItem(...children) { return furnish('li', null, ...children) } },
-    "link": { value: function Link(attributes) { return furnish('link', attributes) } },
-    "main": { value: function Main(...children) { return furnish('main', null, ...children) } },
-    "map": { value: function Map(...children) { return furnish('map', null, ...children) } },
-    "mark": { value: function Mark(...children) { return furnish('mark', null, ...children) } },
-    "menu": { value: function Menu(...children) { return furnish('menu', null, ...children) } },
-    "meta": { value: function Metadata(attributes) { return furnish('meta', attributes) } },
-    "meter": { value: function Meter(...children) { return furnish('meter', null, ...children) } },
-    "nav": { value: function Navigation(...children) { return furnish('nav', null, ...children) } },
-    "noscript": { value: function Noscript(...children) { return furnish('noscript', null, ...children) } },
-    "object": { value: function Object(...children) { return furnish('object', null, ...children) } },
-    "ol": { value: function OrderedList(...children) { return furnish('ol', null, ...children) } },
-    "optgroup": { value: function OptionGroup(...children) { return furnish('optgroup', null, ...children) } },
-    "option": { value: function Option(...children) { return furnish('option', null, ...children) } },
-    "output": { value: function Output(...children) { return furnish('output', null, ...children) } },
-    "p": { value: function Paragraph(...children) { return furnish('p', null, ...children) } },
-    "picture": { value: function Picture(...children) { return furnish('picture', null, ...children) } },
-    "portal": { value: function Portal(...children) { return furnish('portal', null, ...children) } },
-    "pre": { value: function Preformatted(...children) { return furnish('pre', null, ...children) } },
-    "progress": { value: function Progress(...children) { return furnish('progress', null, ...children) } },
-    "q": { value: function Quote(...children) { return furnish('q', null, ...children) } },
-    "rp": { value: function RubyParenthesis(...children) { return furnish('rp', null, ...children) } },
-    "rt": { value: function RubyText(...children) { return furnish('rt', null, ...children) } },
-    "ruby": { value: function Ruby(...children) { return furnish('ruby', null, ...children) } },
-    "s": { value: function Strikethrough(...children) { return furnish('s', null, ...children) } },
-    "samp": { value: function Sample(...children) { return furnish('samp', null, ...children) } },
-    "script": { value: function Script(...children) { return furnish('script', null, ...children) } },
-    "section": { value: function Section(...children) { return furnish('section', null, ...children) } },
-    "select": { value: function Select(...children) { return furnish('select', null, ...children) } },
-    "slot": { value: function Slot(...children) { return furnish('slot', null, ...children) } },
-    "small": { value: function Small(...children) { return furnish('small', null, ...children) } },
-    "source": { value: function Source(attributes) { return furnish('source', attributes) } },
-    "span": { value: function Span(...children) { return furnish('span', null, ...children) } },
-    "strong": { value: function Strong(...children) { return furnish('strong', null, ...children) } },
-    "style": { value: function Style(...children) { return furnish('style', null, ...children) } },
-    "sub": { value: function Subscript(...children) { return furnish('sub', null, ...children) } },
-    "summary": { value: function Summary(...children) { return furnish('summary', null, ...children) } },
-    "sup": { value: function Superscript(...children) { return furnish('sup', null, ...children) } },
-    "svg": { value: function SVG(...children) { return furnish('svg', null, ...children) } },
-    "table": { value: function Table(...children) { return furnish('table', null, ...children) } },
-    "tbody": { value: function TableBody(...children) { return furnish('tbody', null, ...children) } },
-    "td": { value: function TableData(...children) { return furnish('td', null, ...children) } },
-    "template": { value: function Template(...children) { return furnish('template', null, ...children) } },
-    "textarea": { value: function Textarea(...children) { return furnish('textarea', null, ...children) } },
-    "tfoot": { value: function TableFooter(...children) { return furnish('tfoot', null, ...children) } },
-    "th": { value: function TableHeaderCell(...children) { return furnish('th', null, ...children) } },
-    "thead": { value: function TableHeader(...children) { return furnish('thead', null, ...children) } },
-    "time": { value: function Time(...children) { return furnish('time', null, ...children) } },
-    "title": { value: function Title(...children) { return furnish('title', null, ...children) } },
-    "tr": { value: function TableRow(...children) { return furnish('tr', null, ...children) } },
-    "track": { value: function Track(attributes) { return furnish('track', attributes) } },
-    "u": { value: function Underline(...children) { return furnish('u', null, ...children) } },
-    "ul": { value: function UnorderedList(...children) { return furnish('ul', null, ...children) } },
-    "var": { value: function Variable(...children) { return furnish('var', null, ...children) } },
-    "video": { value: function Video(...children) { return furnish('video', null, ...children) } },
-    "wbr": { value: function WBR(attributes) { return furnish('wbr', attributes) } }
+    a: { value: function Anchor(...children) { return furnish('a', null, ...children) } },
+    abbr: { value: function Abbreviation(...children) { return furnish('abbr', null, ...children) } },
+    address: { value: function Address(...children) { return furnish('address', null, ...children) } },
+    area: { value: function Area(attributes) { return furnish('area', attributes) } },
+    article: { value: function Article(...children) { return furnish('article', null, ...children) } },
+    aside: { value: function Aside(...children) { return furnish('aside', null, ...children) } },
+    audio: { value: function Audio(...children) { return furnish('audio', null, ...children) } },
+    b: { value: function Bold(...children) { return furnish('b', null, ...children) } },
+    base: { value: function Base(attributes) { return furnish('base', attributes) } },
+    bdi: { value: function BidirectionalTextInsertion(...children) { return furnish('bdi', null, ...children) } },
+    bdo: { value: function BidirectionalTextOverride(...children) { return furnish('bdo', null, ...children) } },
+    blockquote: { value: function BlockQuote(...children) { return furnish('blockquote', null, ...children) } },
+    body: { value: function Body(...children) { return furnish('body', null, ...children) } },
+    br: { value: function Break(...children) { return furnish('br', null, ...children) } },
+    button: { value: function Button(...children) { return furnish('button', null, ...children) } },
+    canvas: { value: function Canvas(...children) { return furnish('canvas', null, ...children) } },
+    caption: { value: function Caption(...children) { return furnish('caption', null, ...children) } },
+    cite: { value: function Cite(...children) { return furnish('cite', null, ...children) } },
+    code: { value: function Code(...children) { return furnish('code', null, ...children) } },
+    col: { value: function Column(attributes) { return furnish('col', attributes) } },
+    colgroup: { value: function ColumnGroup(...children) { return furnish('colgroup', null, ...children) } },
+    data: { value: function Data(...children) { return furnish('data', null, ...children) } },
+    datalist: { value: function DataList(...children) { return furnish('datalist', null, ...children) } },
+    dd: { value: function Description(...children) { return furnish('dd', null, ...children) } },
+    del: { value: function Deleted(...children) { return furnish('del', null, ...children) } },
+    details: { value: function Details(...children) { return furnish('details', null, ...children) } },
+    dfn: { value: function Definition(...children) { return furnish('dfn', null, ...children) } },
+    dialog: { value: function Dialog(...children) { return furnish('dialog', null, ...children) } },
+    div: { value: function Divider(...children) { return furnish('div', null, ...children) } },
+    dl: { value: function DescriptionList(...children) { return furnish('dl', null, ...children) } },
+    dt: { value: function DescriptionTerm(...children) { return furnish('dt', null, ...children) } },
+    em: { value: function Emphasis(...children) { return furnish('em', null, ...children) } },
+    embed: { value: function Embed(attributes) { return furnish('embed', attributes) } },
+    fieldset: { value: function Fieldset(...children) { return furnish('fieldset', null, ...children) } },
+    figcaption: { value: function FigureCaption(...children) { return furnish('figcaption', null, ...children) } },
+    figure: { value: function Figure(...children) { return furnish('figure', null, ...children) } },
+    footer: { value: function Footer(...children) { return furnish('footer', null, ...children) } },
+    form: { value: function Form(...children) { return furnish('form', null, ...children) } },
+    h1: { value: function HeaderSize1(...children) { return furnish('h1', null, ...children) } },
+    h2: { value: function HeaderSize2(...children) { return furnish('h2', null, ...children) } },
+    h3: { value: function HeaderSize3(...children) { return furnish('h3', null, ...children) } },
+    h4: { value: function HeaderSize4(...children) { return furnish('h4', null, ...children) } },
+    h5: { value: function HeaderSize5(...children) { return furnish('h5', null, ...children) } },
+    h6: { value: function HeaderSize6(...children) { return furnish('h6', null, ...children) } },
+    head: { value: function Head(...children) { return furnish('head', null, ...children) } },
+    header: { value: function Header(...children) { return furnish('header', null, ...children) } },
+    hr: { value: function Horizontal(...children) { return furnish('hr', null, ...children) } },
+    html: { value: function HTML(...children) { return furnish('html', null, ...children) } },
+    i: { value: function Italics(...children) { return furnish('i', null, ...children) } },
+    iframe: { value: function Iframe(...children) { return furnish('iframe', null, ...children) } },
+    img: { value: function Image(attributes) { return furnish('img', attributes) } },
+    input: { value: function Input(attributes) { return furnish('input', attributes) } },
+    ins: { value: function Insertion(...children) { return furnish('ins', null, ...children) } },
+    kbd: { value: function Keyboard(...children) { return furnish('kbd', null, ...children) } },
+    label: { value: function Label(...children) { return furnish('label', null, ...children) } },
+    legend: { value: function Legend(...children) { return furnish('legend', null, ...children) } },
+    li: { value: function ListItem(...children) { return furnish('li', null, ...children) } },
+    link: { value: function Link(attributes) { return furnish('link', attributes) } },
+    main: { value: function Main(...children) { return furnish('main', null, ...children) } },
+    map: { value: function Map(...children) { return furnish('map', null, ...children) } },
+    mark: { value: function Mark(...children) { return furnish('mark', null, ...children) } },
+    menu: { value: function Menu(...children) { return furnish('menu', null, ...children) } },
+    meta: { value: function Metadata(attributes) { return furnish('meta', attributes) } },
+    meter: { value: function Meter(...children) { return furnish('meter', null, ...children) } },
+    nav: { value: function Navigation(...children) { return furnish('nav', null, ...children) } },
+    noscript: { value: function Noscript(...children) { return furnish('noscript', null, ...children) } },
+    object: { value: function Object(...children) { return furnish('object', null, ...children) } },
+    ol: { value: function OrderedList(...children) { return furnish('ol', null, ...children) } },
+    optgroup: { value: function OptionGroup(...children) { return furnish('optgroup', null, ...children) } },
+    option: { value: function Option(...children) { return furnish('option', null, ...children) } },
+    output: { value: function Output(...children) { return furnish('output', null, ...children) } },
+    p: { value: function Paragraph(...children) { return furnish('p', null, ...children) } },
+    picture: { value: function Picture(...children) { return furnish('picture', null, ...children) } },
+    portal: { value: function Portal(...children) { return furnish('portal', null, ...children) } },
+    pre: { value: function Preformatted(...children) { return furnish('pre', null, ...children) } },
+    progress: { value: function Progress(...children) { return furnish('progress', null, ...children) } },
+    q: { value: function Quote(...children) { return furnish('q', null, ...children) } },
+    rp: { value: function RubyParenthesis(...children) { return furnish('rp', null, ...children) } },
+    rt: { value: function RubyText(...children) { return furnish('rt', null, ...children) } },
+    ruby: { value: function Ruby(...children) { return furnish('ruby', null, ...children) } },
+    s: { value: function Strikethrough(...children) { return furnish('s', null, ...children) } },
+    samp: { value: function Sample(...children) { return furnish('samp', null, ...children) } },
+    script: { value: function Script(...children) { return furnish('script', null, ...children) } },
+    section: { value: function Section(...children) { return furnish('section', null, ...children) } },
+    select: { value: function Select(...children) { return furnish('select', null, ...children) } },
+    slot: { value: function Slot(...children) { return furnish('slot', null, ...children) } },
+    small: { value: function Small(...children) { return furnish('small', null, ...children) } },
+    source: { value: function Source(attributes) { return furnish('source', attributes) } },
+    span: { value: function Span(...children) { return furnish('span', null, ...children) } },
+    strong: { value: function Strong(...children) { return furnish('strong', null, ...children) } },
+    style: { value: function Style(...children) { return furnish('style', null, ...children) } },
+    sub: { value: function Subscript(...children) { return furnish('sub', null, ...children) } },
+    summary: { value: function Summary(...children) { return furnish('summary', null, ...children) } },
+    sup: { value: function Superscript(...children) { return furnish('sup', null, ...children) } },
+    svg: { value: function SVG(...children) { return furnish('svg', null, ...children) } },
+    table: { value: function Table(...children) { return furnish('table', null, ...children) } },
+    tbody: { value: function TableBody(...children) { return furnish('tbody', null, ...children) } },
+    td: { value: function TableData(...children) { return furnish('td', null, ...children) } },
+    template: { value: function Template(...children) { return furnish('template', null, ...children) } },
+    textarea: { value: function Textarea(...children) { return furnish('textarea', null, ...children) } },
+    tfoot: { value: function TableFooter(...children) { return furnish('tfoot', null, ...children) } },
+    th: { value: function TableHeaderCell(...children) { return furnish('th', null, ...children) } },
+    thead: { value: function TableHeader(...children) { return furnish('thead', null, ...children) } },
+    time: { value: function Time(...children) { return furnish('time', null, ...children) } },
+    title: { value: function Title(...children) { return furnish('title', null, ...children) } },
+    tr: { value: function TableRow(...children) { return furnish('tr', null, ...children) } },
+    track: { value: function Track(attributes) { return furnish('track', attributes) } },
+    u: { value: function Underline(...children) { return furnish('u', null, ...children) } },
+    ul: { value: function UnorderedList(...children) { return furnish('ul', null, ...children) } },
+    var: { value: function Variable(...children) { return furnish('var', null, ...children) } },
+    video: { value: function Video(...children) { return furnish('video', null, ...children) } },
+    wbr: { value: function WBR(attributes) { return furnish('wbr', attributes) } },
 });
 
 // Gets the X and Y offset (in pixels)
@@ -594,16 +594,16 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 
             result = format
                 // Replace the text
-                .split(/([&!?](?:year|day|hour|minute|(?:milli)?second))s?(?:\b|_)/g)
+                .split(/([&!?~](?:year|day|hour|minute|(?:milli)?second))s?(?:\b|_)/g)
                 .map($1 => {
                     let [command, ...argument] = $1;
 
                     argument = argument.join('');
 
-                    // Syntax `!hour:!minutes:!seconds → ?hour → ?minutes → ?seconds` → `01:00:00 → 1 → 60 → 3600`
+                    // Syntax `!hour:!minutes:!seconds → ~hour → ~minutes → ~seconds` → `01:00:00 → 1 → 60 → 3600`
                     switch(command) {
-                        // Total amount
-                        case '?': {
+                        // Total amount (rounded)
+                        case '~': {
                             for(let [name, value] of times)
                                 if(argument == 'millisecond')
                                     return milliseconds;
@@ -611,7 +611,16 @@ function toTimeString(milliseconds = 0, format = 'natural') {
                                     return Math.round(originalTime / times.get(name));
                         } break;
 
-                        // Radix amount (left over) with leading zero
+                        // Total amount (not rounded)
+                        case '?': {
+                            for(let [name, value] of times)
+                                if(argument == 'millisecond')
+                                    return milliseconds;
+                                else if(argument == name)
+                                    return originalTime / times.get(name);
+                        } break;
+
+                        // Remaining amount (left over) with leading zero
                         case '!': {
                             for(let [name, value] of times)
                                 if(argument == 'millisecond')
@@ -620,7 +629,7 @@ function toTimeString(milliseconds = 0, format = 'natural') {
                                     return time[name]?.padStart(2, '00') ?? '00';
                         } break;
 
-                        // Radix amount (left over) without leading zero
+                        // Remaining amount (left over) without leading zero
                         case '&': {
                             for(let [name, value] of times)
                                 if(argument == 'millisecond')
@@ -740,19 +749,25 @@ function getDOMPath(element, shorten = false) {
 // Finds the last index using the same format as `Array..findIndex`
     // Array..findLastIndex(predicate:function, thisArg:object?) → number<integer>
 Array.prototype.findLastIndex ??= function findLastIndex(predicate, thisArg = null) {
-    return (this.length - this.reverse().findIndex(predicate, thisArg)) - 1;
+    let index = this.reverse().findIndex(predicate, thisArg);
+
+    return !!~index? (this.length - index) - 1: index;
 };
 
 // Determines if the array contains any of the value(s)
     // Array..contains(...values:any) → boolean
 Array.prototype.contains ??= function contains(...values) {
-    let has = false;
-
     for(let value of values)
-        if(has ||= !!~this.indexOf(value))
-            break;
+        if(false
+            || (true
+                && typeof value == 'function'
+                && !!this.filter(value).length
+            )
+            || !!~this.indexOf(value)
+        )
+            return true;
 
-    return has;
+    return false;
 };
 
 // Determines if the array is missing all of the value(s)
@@ -768,7 +783,7 @@ Array.prototype.isolate ??= function isolate() {
 };
 
 // (Randomly) Shuffles the array
-    // Array..shuffle() → any
+    // Array..shuffle() → array
 Array.prototype.shuffle ??= function shuffle() {
     let { random } = Math;
 
@@ -1149,8 +1164,8 @@ Element.prototype.isVisible ??= function isVisible() {
         { display = 'none', visibility = 'hidden', opacity = 0 } = style;
 
     if(false
-        || (display == 'none')
-        || (visibility != 'visible')
+        || (display.equals('none'))
+        || (visibility.unlike('visible'))
         || (opacity < 0.1)
     ) return false;
 
@@ -1161,10 +1176,15 @@ Element.prototype.isVisible ??= function isVisible() {
         h = (document.documentElement.clientHeight ?? window.innerHeight ?? 0) | 0;
 
     if(false
-        || (x < 0)
-        || (x > w)
-        || (y < 0)
-        || (y > h)
+        // right-most edge off-screen
+        || (x + (width / 2) < 0)
+        // left-most edge off-screen
+        || (x - (width / 2) > w)
+        // bottom edge off-screen
+        || (y + (height / 2) < 0)
+        // top edge off-screen
+        || (y - (height / 2) > h)
+        // non-dimensional (no height, width, padding, margin, or border)
         || !(0
             + this.offsetWidth
             + this.offsetHeight
@@ -1427,6 +1447,55 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false) 
 
     this.setAttribute('style', final.join(';'));
 }
+
+// Simply gives back the attributes of the elemenet
+    // Element..attr
+try {
+    Object.defineProperties(Element.prototype, {
+        attr: {
+            get() {
+                return new Proxy(this.attributes, {
+                    get(self, key) {
+                        return self.getNamedItem(key) ?? null;
+                    },
+
+                    set(self, key, value) {
+                        return Object.defineProperty(self, key, { value });
+                    },
+
+                    ownKeys(self) {
+                        return Object.keys(self);
+                    },
+
+                    has(self, key) {
+                        return self.getNamedItem(key) != null;
+                    },
+
+                    defineProperty(self, key, descriptor) {
+                        if('value' in descriptor) {
+                            let node;
+                            if(!self.hasOwnProperty(key))
+                                node = document.createAtribute(key);
+                            else
+                                node = self.getNamedItem(key);
+
+                            node.value = descriptor.value;
+                            self.setNamedItem(node);
+
+                            return true;
+                        }
+
+                        return false;
+                    },
+
+                    deleteProperty(self, key) {
+                        return self.removeNamedItem(key);
+                    },
+                });
+            },
+        },
+    });
+} catch(error) {/* Do nothing */}
 
 // Returns a function's name as a formatted title
     // Function..toTitle() → string
@@ -1873,11 +1942,8 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
         width ||= this?.getAttribute('width');
     }
 
-    height = parseFloat(height);
-    width = parseFloat(width);
-
-    if(!(height | 0) || !(width | 0))
-        throw `Unable to make a canvas of size ${ width }x${ height }`;
+    height = parseFloat(height) | 0;
+    width = parseFloat(width) | 0;
 
     let canvas = furnish('canvas', { height, width }),
         context = canvas.getContext('2d');

@@ -1134,7 +1134,7 @@ class Search {
                     .catch(error => {
                         WARN(error);
 
-                        Storage.remove('searchToken', ReloadPage);
+                        Settings.remove('searchToken', ReloadPage);
                     });
             } break;
 
@@ -1152,7 +1152,7 @@ class Search {
                     .catch(error => {
                         WARN(error);
 
-                        Storage.remove('searchToken', ReloadPage);
+                        Settings.remove('searchToken', ReloadPage);
                     });
             } break;
 
@@ -1526,17 +1526,17 @@ class Search {
                 data.data[to] ??= deeperDataLevels[key];
         }
 
-        return new Promise(resolve => resolve(data));
+        return new Promise(resolve => resolve({ ok: parseBool(parseURL(data.icon).pathname.startsWith('/jtv_user')), ...data }));
     }
 }
 
 // Search helpers...
     // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
 (async() => {
-    let { searchToken, searchClientID } = ((await Storage.get(['searchToken', 'searchClientID'])) ?? {});
+    let { searchToken, searchClientID = 'gp762nuuoqcoxypju8c569th9wz7q5' } = await Settings.get(['searchToken', 'searchClientID']);
 
-    if(nullish(searchToken) || nullish(searchClientID))
-        fetchURL(`https://www.twitchtokengenerator.com/api/refresh/w7lwaxc73n49y6etcp2w3o4uipbvcudiqse6zngiybmkstawl9`)
+    if(nullish(searchToken) || nullish(searchClientID)) {
+        fetchURL(`https://www.twitchtokengenerator.com/api/refresh/hlbsw1j2uoaiqrv4ght4d4xi0sdg4cz5zpdtsp2a6en9dfxvoi`)
             .then(r => r.json())
             .then(json => {
                 let { token = searchToken, success = false } = json;
@@ -1544,11 +1544,17 @@ class Search {
                 if(!success)
                     throw 'Unable to generate tokens...';
 
-                Storage.set({ searchToken });
+                Settings.set({ searchToken: token, searchClientID });
 
                 Search.authorization = `Bearer ${ token }`;
-                Search.clientID = 'gp762nuuoqcoxypju8c569th9wz7q5';
             });
+    } else {
+        Settings.set({ searchToken, searchClientID });
+
+        Search.authorization = `Bearer ${ searchToken }`;
+    }
+
+    Search.clientID = searchClientID;
 })();
 
 // https://stackoverflow.com/a/45205645/4211612
@@ -2045,25 +2051,6 @@ class ClipName extends String {
     }
 }
 
-// Get the current settings
-    // GetSettings() → object
-function GetSettings() {
-    return new Promise((resolve, reject) => {
-        function ParseSettings(settings) {
-            for(let setting in settings)
-                settings[setting] ??= null;
-
-            resolve(settings);
-        }
-
-        Storage.get(null, settings =>
-            Runtime.lastError?
-                Storage.get(null, ParseSettings):
-            ParseSettings(settings)
-        );
-    });
-}
-
 function Chat(user = '', message = '') {
     if(!user.length && !message.length)
         return Chat.get();
@@ -2346,7 +2333,7 @@ Object.defineProperties(Chat, {
 // Pushes parameters to the URL's search
     // PushToTopSearch(newParameters:object, reload:boolean?) → string<URL-Search>
 function PushToTopSearch(newParameters, reload = false) {
-    let url = parseURL(location).addSearch(newParameters, false);
+    let url = parseURL(location).addSearch(newParameters, true);
 
     if(reload)
         location.search = url.search;
@@ -2358,7 +2345,7 @@ function PushToTopSearch(newParameters, reload = false) {
 
 // Removevs parameters from the URL's search
     // RemoveFromTopSearch(keys:array, reload:boolean?) → string<URL-Search>
-function RemoveFromTopSearch(keys, reload = true) {
+function RemoveFromTopSearch(keys, reload = false) {
     let url = parseURL(location).delSearch(keys);
 
     if(reload)
@@ -3061,19 +3048,19 @@ try {
                 let f = furnish;
                 let src = `https://player.twitch.tv/?channel=${ name }&controls=false&muted=true&parent=twitch.tv&quality=360p&private=true`;
 
-                let pbyp = $('.picture-by-picture-player video'),
+                let pbyp = $('[class*="picture-by-picture-player"i] video'),
                     pip = $('#tt-pip-player');
 
                 $('#tt-exit-pip')?.remove();
-                $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed');
+                $('[class*="picture-by-picture-player"i]')?.classList?.remove('picture-by-picture-player--collapsed');
 
                 if(nullish(pbyp))
                     $('.stream-chat').insertAdjacentElement('beforebegin',
-                        f('.picture-by-picture-player--background[data-test-selector=picture-by-picture-player-background]').with(
-                            f('.picture-by-picture-player.picture-by-picture-player--collapsed[data-test-selector=picture-by-picture-player-container]').with(
+                        f('[class="picture-by-picture-player"i][data-test-selector=picture-by-picture-player-background]').with(
+                            f('[class="picture-by-picture-player"i][data-test-selector=picture-by-picture-player-container]').with(
                                 f('.tw-aspect').with(
                                     f.div(),
-                                    f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('.picture-by-picture-player--collapsed')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
+                                    f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('[class*="picture-by-picture-player"i]')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
                                         pbyp = f('video[webkit-playsinline][playsinline]', {
                                             oncontextmenu: () => false,
                                         })
@@ -3102,18 +3089,36 @@ try {
                         style: 'position:absolute;left:0;margin-left:1rem;',
 
                         onmousedown(event) {
-                            $('#tt-exit-pip').modStyle('transition:opacity .5s; opacity:0;');
-                            $('.picture-by-picture-player')?.classList?.add('picture-by-picture-player--collapsed');
+                            $.all('#tt-exit-pip, [class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]').map(el => el.modStyle('transition:opacity .5s; opacity:0;'));
 
                             wait(500).then(() => {
+                                RemoveFromTopSearch(['mini']);
+
                                 $('#tt-exit-pip')?.remove();
-                                $('.picture-by-picture-player iframe[src*="player.twitch.tv"i]')?.remove();
+                                $('[class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]')?.remove();
+                                $('[class*="picture-by-picture-player"i]')?.classList?.add('picture-by-picture-player--collapsed');
                             });
                         },
 
                         innerHTML: Glyphs.modify('exit_picture_in_picture', { height: 15, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' }),
                     })
                 );
+
+                function keepOpen() {
+                    when.defined(() => $('[class*="picture-by-picture-player"i]'))
+                        .then(player => {
+                            let keep = $.defined('#tt-exit-pip');
+
+                            if(keep)
+                                player.classList.remove('picture-by-picture-player--collapsed');
+
+                            return keep;
+                        })
+                        .then(keep => (keep? keepOpen(): null));
+                }
+
+                keepOpen();
+                PushToTopSearch({ mini: name });
             },
         },
     });
@@ -3147,7 +3152,7 @@ try {
     }
 
     // Add storage listener
-    Storage.onChanged.addListener((changes, namespace) => {
+    Settings.onChanged.addListener((changes, namespace) => {
         let reload = false,
             refresh = [];
 
@@ -4113,7 +4118,7 @@ let Initialize = async(START_OVER = false) => {
         if(parseBool(Settings.stay_live) && defined(GetNextStreamer?.cachedStreamer))
             return GetNextStreamer.cachedStreamer;
 
-        LoadCache('ChannelPoints', ({ ChannelPoints = {} }) => {
+        Cache.load('ChannelPoints', ({ ChannelPoints = {} }) => {
             let { random, round } = Math;
             let online = STREAMERS.filter(isLive),
                 mostWatched = null,
@@ -4340,9 +4345,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get coin() {
-            let points = parseCoin($('[data-test-selector="balance-string"i]')?.textContent);
-
-            return points > -1? points: (STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance)
+            return STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance ?? parseCoin($('[data-test-selector="balance-string"i]')?.textContent);
         },
 
         get coms() {
@@ -4629,9 +4632,9 @@ let Initialize = async(START_OVER = false) => {
                     (level = 1500, 'owner'):
                 (parseBool(Search.cookies?.twilight_user?.roles?.isStaff))?
                     (level = 1000, 'admin'):
-                ((STREAMER.mods = Chat.mods).contains(USERNAME.toLowerCase()))?
+                ((STREAMER.mods = Chat.mods).contains(mod => mod.equals(USERNAME)))?
                     (level = 500, 'moderator'):
-                ((STREAMER.vips = Chat.vips).contains(USERNAME.toLowerCase()))?
+                ((STREAMER.vips = Chat.vips).contains(vip => vip.equals(USERNAME)))?
                     (level = 400, 'vip'):
                 (STREAMER.ping)?
                     (level = 300, 'regular'):
@@ -4741,10 +4744,14 @@ let Initialize = async(START_OVER = false) => {
                     premium: parseBool(_.isSubOnly),
                     prompt: (_.prompt || ""),
                     skips: parseBool(_.shouldRedemptionsSkipRequestQueue),
-                    title: (_.title || ""),
+                    title: (_.title || "").trim(),
                     updated: (_.updatedForIndicatorAt || _.globallyUpdatedForIndicatorAt),
                 });
             }
+
+            for(let __item__ of STREAMER.__shop__)
+                if(inventory.missing(item => item.title.equals(__item__.title) && item.cost == __item__.cost))
+                    inventory.push(__item__);
 
             return inventory.sort((a, b) => a.cost - b.cost)
         },
@@ -4897,7 +4904,7 @@ let Initialize = async(START_OVER = false) => {
 
         LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
-        SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
+        Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
     };
 
     /** Notification Array - the visible, actionable notifications
@@ -5162,7 +5169,7 @@ let Initialize = async(START_OVER = false) => {
 
                     // First, attempt to retrieve the cached data (no older than 4h)
                     try {
-                        await LoadCache(`data/${ STREAMER.name }`, cache => {
+                        await Cache.load(`data/${ STREAMER.name }`, cache => {
                             let data = cache[`data/${ STREAMER.name }`],
                                 { dataRetrievedAt, dataRetrievedOK } = data;
 
@@ -5329,7 +5336,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then(data => {
                                     data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
 
-                                    SaveCache({ [`data/${ STREAMER.name }`]: data });
+                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get STREAM details. ${ error }`)
@@ -5368,7 +5375,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then(data => {
                                     data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
 
-                                    SaveCache({ [`data/${ STREAMER.name }`]: data });
+                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get CHANNEL details (1). ${ error }`)
@@ -5475,7 +5482,7 @@ let Initialize = async(START_OVER = false) => {
                                 .then(data => {
                                     data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
 
-                                    SaveCache({ [`data/${ STREAMER.name }`]: data });
+                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get CHANNEL details (2). ${ error }`)
@@ -5515,7 +5522,7 @@ let Initialize = async(START_OVER = false) => {
                                     for(let key in json)
                                         data[table[key]] = json[key];
 
-                                    SaveCache({ [`data/${ STREAMER.name }`]: { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
+                                    Cache.save({ [`data/${ STREAMER.name }`]: { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get CHANNEL details (3). ${ error }`)
@@ -5564,7 +5571,7 @@ let Initialize = async(START_OVER = false) => {
                         //         .then(data => {
                         //             data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.ally)), dataRetrievedAt: +new Date };
                         //
-                        //             SaveCache({ [`data/${ STREAMER.name }`]: data });
+                        //             Cache.save({ [`data/${ STREAMER.name }`]: data });
                         //         })
                         //         .catch(error => {
                         //             WARN(`Failed to get CHANNEL details (4). ${ error }`)
@@ -5988,7 +5995,7 @@ let Initialize = async(START_OVER = false) => {
             return JUDGE__STOP_WATCH('away_mode');
         }
 
-        await LoadCache({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
+        await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
 
         let enabled = AwayModeStatus = AwayModeEnabled || (currentQuality.low && !(currentQuality.auto || currentQuality.high || currentQuality.source));
 
@@ -6159,7 +6166,7 @@ let Initialize = async(START_OVER = false) => {
                         ][+enabled])();
                 });
 
-            SaveCache({ AwayModeEnabled: (AwayModeStatus = enabled) });
+            Cache.save({ AwayModeEnabled: (AwayModeStatus = enabled) });
         };
 
         button.container.onmouseenter ??= event => {
@@ -6325,13 +6332,13 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.claim_prime = () => {
-        LoadCache(['PrimeSubscription', 'PrimeSubscriptionReclaims'], ({ PrimeSubscription, PrimeSubscriptionReclaims }) => {
+        Cache.load(['PrimeSubscription', 'PrimeSubscriptionReclaims'], ({ PrimeSubscription, PrimeSubscriptionReclaims }) => {
             PrimeSubscription ??= '';
             PrimeSubscriptionReclaims ??= 0;
 
             // Set the current streamer for auto-renewal...
             if(PrimeSubscription.length < 1 && STREAMER.main)
-                SaveCache({ PrimeSubscription: (PrimeSubscription = STREAMER.sole.toString(36).toUpperCase()), PrimeSubscriptionReclaims: (PrimeSubscriptionReclaims = parseInt(Settings.claim_prime__max_claims)) });
+                Cache.save({ PrimeSubscription: (PrimeSubscription = STREAMER.sole.toString(36).toUpperCase()), PrimeSubscriptionReclaims: (PrimeSubscriptionReclaims = parseInt(Settings.claim_prime__max_claims)) });
 
             resubscribing:
             if(PrimeSubscription.equals(STREAMER.sole.toString(36))) {
@@ -6343,7 +6350,7 @@ let Initialize = async(START_OVER = false) => {
                                 postMessage({ action: 'open-options-page' });
                             // Cancel → Remove the warning and reset the setting
                             else if(answer === false)
-                                SaveCache({ PrimeSubscription: '', PrimeSubscriptionReclaims: 0 });
+                                Cache.save({ PrimeSubscription: '', PrimeSubscriptionReclaims: 0 });
                         });
 
                 if(PrimeSubscriptionReclaims < 1)
@@ -6358,11 +6365,11 @@ let Initialize = async(START_OVER = false) => {
                 when.defined(() => $('.channel-root .support-panel input[type="checkbox"i]:not(:checked)'))
                     .then(input => {
                         input.checked = true;
-                        input.closest('.support-panel').querySelector('button[state]:only-child')?.click();
+                        input.closest('.support-panel').querySelector('button:only-child')?.click();
 
                         when(() => STREAMER.main)
                             .then(() => {
-                                SaveCache({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
+                                Cache.save({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
 
                                 WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)?.toNativeStack?.();
                             });
@@ -6393,7 +6400,7 @@ let Initialize = async(START_OVER = false) => {
         REWARDS_ON_COOLDOWN = new Map;
 
     Handlers.claim_reward = () => {
-        LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
+        Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
             AutoClaimRewards ??= {};
 
             for(let sole in AutoClaimRewards)
@@ -6452,7 +6459,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                         AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => !i.equals(id));
                                                     })
-                                                    .finally(() => SaveCache({ AutoClaimRewards }));
+                                                    .finally(() => Cache.save({ AutoClaimRewards }));
                                             })
                                             .finally(() => button.click());
                                     });
@@ -6473,11 +6480,11 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('claim_reward');
 
         DISPLAY_BUY_LATER_BUTTON = setInterval(() => {
-            let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), [state][disabled] [data-test-selector="RequiredPoints"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
+            let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), button[disabled] [data-test-selector="RequiredPoints"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
                     ?.closest?.('button, [class*="error"i]'),
                 handler = $('#tt-auto-claim-reward-handler');
 
-            // Rainbow border, Cooldown timer, and Unlock all button
+            // Rainbow border, Cooldown timer, Unlock all, and Modify many buttons //
             Unlock_All_Emotes: {
                 let emoteCheckout = $('[class*="unlock"i][class*="emote"i][class*="checkout"i]');
 
@@ -6489,7 +6496,8 @@ let Initialize = async(START_OVER = false) => {
                             if($.defined('#tt-unlock-all-emotes') || available < 2)
                                 return;
 
-                            let cost = (await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('CHOSEN_SUB_EMOTE_UNLOCK'))?.cost) | 0,
+                            let item = await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('CHOSEN_SUB_EMOTE_UNLOCK')),
+                                cost = item?.cost | 0,
                                 face = (STREAMER.face? furnish.img({ src: STREAMER.face }).outerHTML: Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint })),
                                 coin = (STREAMER?.coin) | 0,
                                 amount = (coin / cost).floor().clamp(0, available);
@@ -6497,27 +6505,30 @@ let Initialize = async(START_OVER = false) => {
                             if(amount < 1)
                                 return;
 
-                            emoteCheckout.firstElementChild.lastElementChild.insertAdjacentElement('beforebegin', furnish(`button#tt-unlock-all-emotes.tt-button.purple[@available=${ available }]`, {
+                            emoteCheckout.firstElementChild.lastElementChild.insertAdjacentElement('beforebegin', furnish(`button#tt-unlock-all-emotes.tt-button.purple[@available=${ available }][@cost=${ cost }]`, {
                                 style: `margin:0.5rem 0`,
 
                                 onmouseup({ currentTarget }) {
-                                    let { available } = currentTarget.dataset;
+                                    let { available, cost } = currentTarget.dataset;
 
                                     // Auto-buy rewards
                                     function buyOut(count = 1) {
                                         count *= +$.defined('[class*="reward-center"i]');
+                                        available |= 0;
+                                        cost |= 0;
 
                                         if(count > 0)
                                             when.defined(() => $.all('[class*="unlock"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]')?.random()?.closest('button'))
                                                 .then(emote => {
                                                     emote.click();
 
-                                                    when.defined(() => $('[class*="unlock"i][class*="emote"i][class*="checkout"i] button[state]'))
-                                                        .then(confirmation => {
-                                                            confirmation.click();
+                                                    when.defined(() => $('[class*="unlock"i][class*="emote"i][class*="checkout"i] button'))
+                                                        .then(unlock => {
+                                                            unlock.click();
 
-                                                            when.defined(() => $('.reward-center-body [data-test-selector^="share"i][data-test-selector*="emote"i]'))
+                                                            when.defined(() => $('.reward-center-body [data-test-selector^="share"i][data-test-selector*="emote"i]'), 2_500)
                                                                 .then(success => {
+                                                                    EXACT_POINTS_SPENT += cost;
                                                                     $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="left"i] button').click();
 
                                                                     wait(250).then(() => buyOut(--count));
@@ -6536,13 +6547,112 @@ let Initialize = async(START_OVER = false) => {
                         });
             }
 
+            Modify_All_Emotes: {
+                let emoteCheckout = $('[class*="modify"i][class*="emote"i][class*="checkout"i]'),
+                    modifiers = 'BW HF SG SQ TK'.split(' '),
+                    modified = new Map;
+
+                if(defined(emoteCheckout))
+                    when.sated(() => $.all('[data-test-selector^="emote"i]', emoteCheckout))
+                        .then(async available => {
+                            available = available.length * modifiers.length;
+
+                            if($.defined('#tt-modify-all-emotes') || available < 2)
+                                return;
+
+                            let item = await STREAMER.shop.find(({ title, id }) => $('#channel-points-reward-center-header')?.textContent?.equals(title) || id.toUpperCase().contains('MODIFY_SUB_EMOTE')),
+                                cost = item?.cost | 0,
+                                face = (STREAMER.face? furnish.img({ src: STREAMER.face }).outerHTML: Glyphs.modify('channelpoints', { height: 16, width: 16, fill: STREAMER.tint })),
+                                coin = (STREAMER?.coin) | 0,
+                                amount = (coin / cost).floor().clamp(0, available);
+
+                            if(amount < 1)
+                                return;
+
+                            emoteCheckout.firstElementChild.lastElementChild.insertAdjacentElement('beforebegin', furnish(`button#tt-modify-all-emotes.tt-button.purple[@available=${ available }][@cost=${ cost }][@modifiers=${ modifiers }]`, {
+                                style: `margin:0.5rem 0`,
+
+                                onmouseup({ currentTarget }) {
+                                    let { available, modifiers, cost } = currentTarget.dataset;
+
+                                    modifiers = modifiers.split(',');
+
+                                    // Auto-buy rewards
+                                    function buyOut(count = 1) {
+                                        let rewardsBackButton = $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="left"i] button');
+
+                                        count *= +$.defined('[class*="reward-center"i]');
+                                        available |= 0;
+                                        cost |= 0;
+
+                                        if(count > 0)
+                                            when.defined(() => $.all('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]')?.random()?.closest('button'), 500)
+                                                .then(emote => {
+                                                    emote.click();
+
+                                                    when.defined(() => $.all('[class*="reward-center"i] button:not(:disabled) img')?.random()?.closest('button'), 500)
+                                                        .then(modifier => {
+                                                            modifier.click();
+
+                                                            wait(1500).then(() => {
+                                                                let name = $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify"i][data-test-selector*="emote"i][data-test-selector*="preview"i]')?.textContent;
+
+                                                                if(nullish(name))
+                                                                    return /* There should always be a name */;
+
+                                                                let [em, md] = name.split('_', 2);
+
+                                                                if(!modified.has(em))
+                                                                    modified.set(em, [md]);
+                                                                else if(modified.get(em)?.missing(md))
+                                                                    modified.set(em, [...modified.get(em), md]);
+                                                                else // if(modified.get(em).length >= modifiers.length)
+                                                                    return buyOut(count, rewardsBackButton.click());
+
+                                                                when.defined(() => $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify-emote-preview"i] ~ * ~ * button'), 250)
+                                                                    .then(unlock => {
+                                                                        unlock.click();
+                                                                        modified.set(name);
+
+                                                                        when.defined(() => $('[class*="modify"i][class*="emote"i][class*="checkout"i] button:not([state])'), 2_500)
+                                                                            .then(success => {
+                                                                                EXACT_POINTS_SPENT += cost;
+                                                                                rewardsBackButton.click();
+
+                                                                                wait(250).then(() => buyOut(--count));
+                                                                            });
+                                                                    });
+                                                            });
+                                                        });
+
+                                                    wait(1200).then(() => {
+                                                        if($.nullish('[class*="reward-center"i] button:not(:disabled) img')) {
+                                                            rewardsBackButton.click();
+
+                                                            when.defined(() => $.all('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]')?.random()?.closest('button'), 500)
+                                                                .then(emote => emote.click());
+                                                        }
+                                                    });
+                                                });
+                                        else
+                                            $('[class*="reward-center"i] [class*="pop"i][class*="head"i] > [class*="right"i]:last-of-type')?.click();
+                                    }
+
+                                    buyOut(amount);
+                                },
+
+                                innerHTML: `Modify ${ amount >= available? available: amount } ${ 'emote'.pluralSuffix(amount) }${ (cost > 0? ` for ${ (cost * amount).suffix('',1).replace('.0','') }`: '') }`
+                            }));
+                        });
+            }
+
             Wallet_Display: {
                 let rewards = $.all('.rewards-list .reward-list-item:not([tt-wallet])');
 
                 if(rewards.length < 1)
                     break Wallet_Display;
 
-                LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
+                Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
                     AutoClaimRewards ??= {};
 
                     rewards.map(async reward => {
@@ -6550,7 +6660,7 @@ let Initialize = async(START_OVER = false) => {
                             $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent),
                             $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
 
-                        let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
+                        let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                             (false
                                 || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
                                 || (title.equals($title) && (cost == $cost || image.url.equals($image.url)))
@@ -6576,16 +6686,16 @@ let Initialize = async(START_OVER = false) => {
 
             let f = furnish;
 
-            LoadCache('AutoClaimRewards', async({ AutoClaimRewards }) => {
+            Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
                 AutoClaimRewards ??= {};
 
                 let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
                     $title = ($('#channel-points-reward-center-header', head)?.textContent || '').trim(),
                     $prompt = ($('.reward-center-body p', body)?.textContent || '').trim(),
                     $image = $('.reward-icon img', body)?.src,
-                    [$cost = 0] = (($('[state]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
+                    [$cost = 0] = (($('[disabled]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
-                let [item] = await STREAMER.shop.filter(({ type, id, title, cost, image }) =>
+                let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                     (false
                         || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
                         || (type.unlike("custom") && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
@@ -6622,7 +6732,7 @@ let Initialize = async(START_OVER = false) => {
                                         if(nullish(item))
                                             return;
 
-                                        LoadCache('AutoClaimRewards', ({ AutoClaimRewards }) => {
+                                        Cache.load('AutoClaimRewards', ({ AutoClaimRewards }) => {
                                             AutoClaimRewards ??= {};
 
                                             let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []);
@@ -6649,7 +6759,7 @@ let Initialize = async(START_OVER = false) => {
 
                                             currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);
 
-                                            SaveCache({ AutoClaimRewards });
+                                            Cache.save({ AutoClaimRewards });
                                         });
                                     },
                                 },
@@ -6665,7 +6775,7 @@ let Initialize = async(START_OVER = false) => {
                 );
             });
 
-            $('.reward-icon')?.closest(':not(.reward-icon)')?.setAttribute('tt-rewards-calc', 'after');
+            $('.reward-center-body img')?.closest(':not(img,:only-child)')?.setAttribute('tt-rewards-calc', 'after');
         }, 300);
     }
 
@@ -6731,7 +6841,7 @@ let Initialize = async(START_OVER = false) => {
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return;
             if(FIRST_IN_LINE_PAUSED)
-                return SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                return Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
             if(timeRemaining > 60_000)
                 return /* There's more than 1 minute left */;
 
@@ -6764,7 +6874,7 @@ let Initialize = async(START_OVER = false) => {
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                     // FIX-ME: Pressing "Skip" may destroy the queue (logically)
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                         if(action) {
                             // The user clicked "OK"
 
@@ -6805,7 +6915,7 @@ let Initialize = async(START_OVER = false) => {
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return;
             if(FIRST_IN_LINE_PAUSED)
-                return /* SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) }) */;
+                return /* Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) }) */;
 
             if(nullish(channel)) {
                 LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
@@ -6833,7 +6943,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => !RegExp(url, 'i').test(FIRST_IN_LINE_HREF));
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
                             WARN(error);
@@ -6847,7 +6957,7 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
+            Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
                 LOG('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
@@ -6995,7 +7105,7 @@ let Initialize = async(START_OVER = false) => {
 
                     $.all(`[up-next--body] [time]`).forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER));
 
-                    SaveCache({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
+                    Cache.save({ FIRST_IN_LINE_BOOST, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
                 },
             });
 
@@ -7034,7 +7144,7 @@ let Initialize = async(START_OVER = false) => {
                     let { currentTarget } = event,
                         parent = currentTarget.closest('[id^="tt-balloon-container"i]');
 
-                    LoadCache(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
+                    Cache.load(['LiveReminders', 'ChannelPoints', 'DVRChannels'], async({ LiveReminders = null, ChannelPoints = {}, DVRChannels = null }) => {
                         try {
                             LiveReminders = JSON.parse(LiveReminders || '{}');
                         } catch(error) {
@@ -7100,7 +7210,7 @@ let Initialize = async(START_OVER = false) => {
                                 ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
                                 ?? new Search(name).then(Search.convertResults)
                             ),
-                                ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                                ok = parseBool(channel?.ok);
 
                             // Search did not complete...
                             let num = 3;
@@ -7108,7 +7218,7 @@ let Initialize = async(START_OVER = false) => {
                                 Search.void(name);
 
                                 channel = await when.defined(() => new Search(name).then(Search.convertResults), 500);
-                                ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                                ok = parseBool(channel?.ok);
 
                                 // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
                             }
@@ -7126,22 +7236,22 @@ let Initialize = async(START_OVER = false) => {
                                     WARN(`Updating details about (#${ sole }) "${ name }" → "${ real }"`);
 
                                     // Correct the cache...
-                                    LoadCache(`data/${ name }`, cache => {
-                                        SaveCache({ [`data/${ real }`]: cache[`data/${ name }`] });
-                                        RemoveCache(`data/${ name }`);
+                                    Cache.load(`data/${ name }`, cache => {
+                                        Cache.save({ [`data/${ real }`]: cache[`data/${ name }`] });
+                                        Cache.remove(`data/${ name }`);
                                     });
 
                                     // Correc the channel points...
                                     ChannelPoints[real] = ChannelPoints[name];
                                     delete ChannelPoints[name];
 
-                                    SaveCache({ ChannelPoints });
+                                    Cache.save({ ChannelPoints });
 
                                     // Correct the live reminders...
                                     LiveReminders[real] = LiveReminders[name];
                                     delete LiveReminders[name];
 
-                                    SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                    Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
                                     // Continue with the new name...
                                     reminders.push({ name: real, time });
@@ -7160,7 +7270,7 @@ let Initialize = async(START_OVER = false) => {
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
                                 live = (channel.live || (abs(+now - +time) / 3_600_000 < 1/3)),
-                                [since] = toTimeString(abs(+now - +time), '?hour hour|?minute minute|?second second').split('|').filter(parseFloat),
+                                [since] = toTimeString(abs(+now - +time), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
                             let _name = name.toLowerCase();
@@ -7228,9 +7338,15 @@ let Initialize = async(START_OVER = false) => {
                                                             f('.tt-flex.tt-flex-column.tt-flex-nowrap.tt-mg-x-1').with(
                                                                 f('.persistent-notification__body.tt-overflow-hidden[@testSelector=persistent-notification__body]').with(
                                                                     f('span.tt-c-text-alt').with(
-                                                                        f('p.tt-balloon-message', {
-                                                                            innerHTML: (!live? `<strong>${ name }</strong>`: `<strong>${ [name, game].filter(s => s.length).join(' &mdash; ') }</strong> <span class="tt-time-elapsed" start="${ time.toJSON() }">${ hour }</span><p class="tt-hide-text-overflow" style="text-indent:0.25em" title="${ encodeHTML(desc) }">${ desc }</p>`)
-                                                                        })
+                                                                        f('p.tt-balloon-message').with(
+                                                                            !live?
+                                                                                f.strong(name):
+                                                                            f.span(
+                                                                                f.strong([name, game].filter(s => s.length).join(' &mdash; ')),
+                                                                                f(`span.tt-time-elapsed[start=${ time.toJSON() }]`).with(hour),
+                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em][title="${ encodeHTML(desc) }"]`).with(desc),
+                                                                            )
+                                                                        )
                                                                     )
                                                                 ),
                                                                 // Subheader
@@ -7254,7 +7370,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         let { currentTarget } = event,
                                                                             name = currentTarget.getAttribute('name');
 
-                                                                        LoadCache('LiveReminders', async({ LiveReminders }) => {
+                                                                        Cache.load('LiveReminders', async({ LiveReminders }) => {
                                                                             try {
                                                                                 LiveReminders = JSON.parse(LiveReminders || '{}');
                                                                             } catch(error) {
@@ -7266,7 +7382,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                                             $(`.tt-reminder[name="${ name }"i]`)?.remove();
                                                                             delete LiveReminders[name];
-                                                                            SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                                                            Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
 
                                                                             await confirm
                                                                                 .timed(`Reminder for <a href="/${ name }">${ name }</a> removed successfully!<p tt-x>${ UUID.from(name).value }</p>`, 5000)
@@ -7276,7 +7392,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                         return;
 
                                                                                     // The user pressed "Cancel"
-                                                                                    SaveCache({ LiveReminders: { ...LiveReminders, [name]: justInCase } }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                                                                    Cache.save({ LiveReminders: { ...LiveReminders, [name]: justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                                                                                 });
                                                                         });
                                                                     },
@@ -7328,7 +7444,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                 let { currentTarget } = event,
                                                                                     name = currentTarget.getAttribute('name');
 
-                                                                                LoadCache('DVRChannels', async({ DVRChannels }) => {
+                                                                                Cache.load('DVRChannels', async({ DVRChannels }) => {
                                                                                     DVRChannels = JSON.parse(DVRChannels || '{}');
 
                                                                                     let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
@@ -7358,7 +7474,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                     }
 
                                                                                     // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                                                                                    SaveCache({ DVRChannels: JSON.stringify(DVRChannels) }, () => Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                                                                                    Cache.save({ DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                                                                                 });
                                                                             },
                                                                         },
@@ -7397,7 +7513,7 @@ let Initialize = async(START_OVER = false) => {
                             // If anyone besides me ever reads this, I answered my own question eventually
                             // Remember to take breaks and tackle the problem at a later date
                                 // https://stackoverflow.com/q/72803095/4211612
-                            // Move the channels around to prioritize live ones...
+                            // Move the channels around to prioritize live ones... Does NOT need to be exact
                             if(live) {
                                 let data = LiveReminders[name];
 
@@ -7417,7 +7533,7 @@ let Initialize = async(START_OVER = false) => {
                             || (Hash.live_reminders != UUID.from(JSON.stringify(LiveReminders)).value)
                             || (Hash.dvr_channels != UUID.from(JSON.stringify(DVRChannels)).value)
                         )
-                            SaveCache({ LiveReminders, DVRChannels: JSON.stringify(DVRChannels) }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
+                            Cache.save({ LiveReminders, DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
                     });
                 },
             });
@@ -7427,7 +7543,7 @@ let Initialize = async(START_OVER = false) => {
             LIVE_REMINDERS__LISTING_INTERVAL ??=
             setInterval(() => {
                 for(let span of $.all('.tt-time-elapsed'))
-                    span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), '?hour:!minute:!second').replace(/^\d:/, '0$&');
+                    span.innerHTML = toTimeString(+new Date - +new Date(span.getAttribute('start')), '!hour:!minute:!second');
             }, 1000);
 
             // Help Button
@@ -7455,7 +7571,7 @@ let Initialize = async(START_OVER = false) => {
             }, 1000);
 
             // Load cache
-            LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+            Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
                 let oneMin = 60_000,
                     fiveMin = 5.5 * oneMin,
                     tenMin = 10 * oneMin;
@@ -7495,7 +7611,7 @@ let Initialize = async(START_OVER = false) => {
 
                     wait(5000).then(() => $.all('[up-next--body] [time]:not([index="0"])').forEach(element => element.setAttribute('time', FIRST_IN_LINE_TIMER = fiveMin)));
 
-                    SaveCache({ FIRST_IN_LINE_DUE_DATE });
+                    Cache.save({ FIRST_IN_LINE_DUE_DATE });
 
                     REMARK(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname?.slice(1) }"`);
                 } else {
@@ -7599,7 +7715,7 @@ let Initialize = async(START_OVER = false) => {
                 // LOG('Accessing here... #1');
                 ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                 });
             };
@@ -7662,7 +7778,7 @@ let Initialize = async(START_OVER = false) => {
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0].href);
                     // LOG('Redid First in Line queue [Sorting Handler]...', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
 
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 },
             });
 
@@ -7708,7 +7824,7 @@ let Initialize = async(START_OVER = false) => {
                                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                                 if(index > 0) {
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
+                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
                                 } else {
                                     LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
 
@@ -7717,7 +7833,7 @@ let Initialize = async(START_OVER = false) => {
                                     FIRST_IN_LINE_HREF = undefined;
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
+                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
                                 }
                             },
 
@@ -7742,7 +7858,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     /* First in Line is paused */
                                     if(FIRST_IN_LINE_PAUSED) {
-                                        // SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                        // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                         JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000);
 
                                         return;
@@ -7769,7 +7885,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                                        SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                                        Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                                     }
 
                                     if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
@@ -7785,7 +7901,7 @@ let Initialize = async(START_OVER = false) => {
                                             LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
-                                            SaveCache({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
+                                            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                                 WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
                                                     ?.toNativeStack?.();
 
@@ -7895,7 +8011,7 @@ let Initialize = async(START_OVER = false) => {
                 }
 
                 // To wait, or not to wait
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                Cache.save({ ALL_FIRST_IN_LINE_JOBS });
 
                 continue;
             } else {
@@ -7907,7 +8023,7 @@ let Initialize = async(START_OVER = false) => {
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
                 });
             }
@@ -7951,7 +8067,7 @@ let Initialize = async(START_OVER = false) => {
                         REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                         if(index > 0) {
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
                         } else {
                             LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
 
@@ -7959,7 +8075,7 @@ let Initialize = async(START_OVER = false) => {
 
                             FIRST_IN_LINE_HREF = undefined;
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => { REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]); event.callback(event.element) });
                         }
                     },
 
@@ -7987,13 +8103,13 @@ let Initialize = async(START_OVER = false) => {
 
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
-                                // SaveCache({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                 JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000);
 
                                 return;
                             }
 
-                            SaveCache({ FIRST_IN_LINE_BOOST });
+                            Cache.save({ FIRST_IN_LINE_BOOST });
 
                             let name = container.getAttribute('name'),
                                 channel = await(null
@@ -8016,7 +8132,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                                SaveCache({ ALL_FIRST_IN_LINE_JOBS });
+                                Cache.save({ ALL_FIRST_IN_LINE_JOBS });
                             }
 
                             if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
@@ -8033,7 +8149,7 @@ let Initialize = async(START_OVER = false) => {
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
-                                    SaveCache({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
+                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                         WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
                                             ?.toNativeStack?.();
 
@@ -8105,12 +8221,12 @@ let Initialize = async(START_OVER = false) => {
         ALL_FIRST_IN_LINE_JOBS = [];
         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
     };
 
     __FirstInLine__:
     if(parseBool(Settings.first_in_line) || parseBool(Settings.first_in_line_plus) || parseBool(Settings.first_in_line_all)) {
-        await LoadCache(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
+        await Cache.load(['ALL_FIRST_IN_LINE_JOBS', 'FIRST_IN_LINE_DUE_DATE', 'FIRST_IN_LINE_BOOST'], cache => {
             let oneMin = 60_000,
                 fiveMin = 5.5 * oneMin,
                 tenMin = 10 * oneMin;
@@ -8219,7 +8335,7 @@ let Initialize = async(START_OVER = false) => {
                             // Necromancer
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
+                        Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
                             WARN(`Unable to perform search for "${ name }" - ${ error }`, removed);
                         });
                     });
@@ -8239,7 +8355,7 @@ let Initialize = async(START_OVER = false) => {
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                SaveCache({ ALL_FIRST_IN_LINE_JOBS }, () => {
+                Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
                     WARN('Removed duplicate job', removed);
                 });
             }
@@ -8258,7 +8374,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let OLD_STREAMERS, NEW_STREAMERS, BAD_STREAMERS, ON_INSTALLED_REASON;
 
-    await LoadCache(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
+    await Cache.load(['OLD_STREAMERS', 'BAD_STREAMERS'], cache => {
         OLD_STREAMERS = cache.OLD_STREAMERS ?? "";
         BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
@@ -8284,7 +8400,7 @@ let Initialize = async(START_OVER = false) => {
 
             BAD_STREAMERS = "";
 
-            SaveCache({ BAD_STREAMERS });
+            Cache.save({ BAD_STREAMERS });
 
             // RemoveFromTopSearch(['tt-err-chn']);
         } else if(!/^User_Not_Logged_In_\d+$/.test(USERNAME) && $.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]')) {
@@ -8296,7 +8412,7 @@ let Initialize = async(START_OVER = false) => {
             } catch(error) {
                 WARN("[Followed Channels] is missing. Reloading...");
 
-                SaveCache({ BAD_STREAMERS: OLD_STREAMERS });
+                Cache.save({ BAD_STREAMERS: OLD_STREAMERS });
 
                 // Failed to get channel at...
                 PushToTopSearch({ 'tt-err-chn': (+new Date).toString(36) }, true);
@@ -8306,14 +8422,14 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(OLD_STREAMERS == NEW_STREAMERS)
-            return JUDGE__STOP_WATCH('first_in_line_plus'), SaveCache({ OLD_STREAMERS });
+            return JUDGE__STOP_WATCH('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
 
         new_names = new_names
             .filter(name => old_names.missing(name))
             .filter(name => bad_names.missing(name));
 
         if(new_names.length < 1)
-            return JUDGE__STOP_WATCH('first_in_line_plus'), SaveCache({ OLD_STREAMERS });
+            return JUDGE__STOP_WATCH('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
@@ -8355,7 +8471,7 @@ let Initialize = async(START_OVER = false) => {
 
         OLD_STREAMERS = NEW_STREAMERS;
 
-        SaveCache({ OLD_STREAMERS });
+        Cache.save({ OLD_STREAMERS });
 
         JUDGE__STOP_WATCH('first_in_line_plus');
     };
@@ -8378,7 +8494,6 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let LIVE_REMINDERS__CHECKING_INTERVAL;
     Handlers.live_reminders = () => {
         START__STOP_WATCH('live_reminders');
 
@@ -8393,7 +8508,7 @@ let Initialize = async(START_OVER = false) => {
         if(defined(action))
             return JUDGE__STOP_WATCH('live_reminders');
 
-        LoadCache('LiveReminders', async({ LiveReminders }) => {
+        Cache.load('LiveReminders', async({ LiveReminders }) => {
             try {
                 LiveReminders = JSON.parse(LiveReminders || '{}');
             } catch(error) {
@@ -8424,7 +8539,7 @@ let Initialize = async(START_OVER = false) => {
                         if(!!button)
                             return /* Not the primary button */;
 
-                        LoadCache('LiveReminders', async({ LiveReminders }) => {
+                        Cache.load('LiveReminders', async({ LiveReminders }) => {
                             try {
                                 LiveReminders = JSON.parse(LiveReminders || '{}');
                             } catch(error) {
@@ -8463,7 +8578,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            SaveCache({ LiveReminders }, () => Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                            Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
                 }, f.div(
@@ -8484,20 +8599,23 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.live_reminders = () => {
         $.all('[tt-action="live-reminders"i]').map(action => action.remove());
-        [LIVE_REMINDERS__CHECKING_INTERVAL, LIVE_REMINDERS__LISTING_INTERVAL].map(clearInterval);
+        [LIVE_REMINDERS__LISTING_INTERVAL].map(clearInterval);
     };
 
     __Live_Reminders__:
-    // On by Default (ObD; v5.15)
-    if(nullish(Settings.live_reminders) || parseBool(Settings.live_reminders)) {
+    // On by Default (ObD; v5.15) -- only on the tab that has Up Next enabled
+    if(true
+        // && parseBool(UP_NEXT_ALLOW_THIS_TAB)
+        && (false
+            || nullish(Settings.live_reminders)
+            || parseBool(Settings.live_reminders)
+        )
+    ) {
         REMARK('Adding Live Reminders...');
 
         // See if there are any notifications to push...
-        LIVE_REMINDERS__CHECKING_INTERVAL =
-        setInterval(() => {
-            START__STOP_WATCH('live_reminders__reminder_checking_interval');
-
-            LoadCache('LiveReminders', async({ LiveReminders }) => {
+        let LIVE_REMINDERS__CHECKER = () => {
+            Cache.load('LiveReminders', async({ LiveReminders }) => {
                 try {
                     LiveReminders = JSON.parse(LiveReminders || '{}');
                 } catch(error) {
@@ -8505,11 +8623,13 @@ let Initialize = async(START_OVER = false) => {
                     LiveReminders ??= {};
                 }
 
+                let REMINDERS_INDEX = 0, REMINDERS_LENGTH = Object.keys(LiveReminders);
+
                 checking:
                 // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
                     let channel = await new Search(reminderName).then(Search.convertResults),
-                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                        ok = parseBool(channel?.ok);
 
                     // Search did not complete...
                     let num = 3;
@@ -8517,13 +8637,16 @@ let Initialize = async(START_OVER = false) => {
                         Search.void(reminderName);
 
                         channel = await when.defined(() => new Search(reminderName).then(Search.convertResults), 500);
-                        ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                        ok = parseBool(channel?.ok);
 
                         // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Reminders]: "${ reminderName }" → OK = ${ ok }`);
                     }
 
-                    if(!channel.live)
+                    if(!channel.live) {
+                        // Ignore this reminder (channel not live)
+                        ++REMINDERS_INDEX;
                         continue checking;
+                    }
 
                     let { name, live, icon, href, data = { actualStartTime: null, lastSeen: null } } = channel;
                     let lastOnline = new Date((+new Date(LiveReminders[reminderName])).floorToNearest(1000)).toJSON(),
@@ -8539,7 +8662,7 @@ let Initialize = async(START_OVER = false) => {
                             delete LiveReminders[reminderName];
                         }
 
-                        SaveCache({ LiveReminders }, async() => {
+                        Cache.save({ LiveReminders }, async() => {
                             // TODO: Currently, only one option looks for Live Reminder notifications...
                             Handle_phantom_notification: {
                                 let notification = { href, innerText: `${ name } is live [Live Reminders]` },
@@ -8559,16 +8682,21 @@ let Initialize = async(START_OVER = false) => {
                                 }
                             }
 
+                            // The reminder has been parsed
+                            ++REMINDERS_INDEX;
                         });
+                    } else {
+                        // The reminder hasn't been changed
+                        ++REMINDERS_INDEX;
                     }
                 }
 
                 // Send the length to the settings page
-                Storage.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
-            });
+                Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
 
-            JUDGE__STOP_WATCH('live_reminders__reminder_checking_interval', 30_000);
-        }, 30_000);
+                when(() => REMINDERS_INDEX >= REMINDERS_LENGTH).then(LIVE_REMINDERS__CHECKER);
+            });
+        };
 
         // Add the panel & button
         let actionPanel = $('.about-section__actions');
@@ -8582,6 +8710,7 @@ let Initialize = async(START_OVER = false) => {
                 child.setAttribute('action-origin', 'native');
         }
 
+        setTimeout(LIVE_REMINDERS__CHECKER, 2_500);
         RegisterJob('live_reminders');
     }
 
@@ -8753,9 +8882,9 @@ let Initialize = async(START_OVER = false) => {
                         .then(DOM => {
                             for(let item of $.all('[data-ds-appid]', DOM)) {
                                 let href = item.href,
-                                    name = $('[class*="name"i]', item).textContent.replace(NON_ASCII, ''),
-                                    img = $('[class*="img"i] img', item).src,
-                                    price = $('[class*="price"i]', item).textContent || 'More...';
+                                    name = $('[class*="name"i]', item)?.textContent?.replace(NON_ASCII, ''),
+                                    img = $('[class*="img"i] img', item)?.src,
+                                    price = $('[class*="price"i]', item)?.textContent || 'More...';
 
                                 if(game.errs(name) < .01)
                                     return { game, name, href, img, price };
@@ -9711,7 +9840,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let STARTED_WATCHING = (+new Date);
 
-    LoadCache([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, WatchTimeAlt = 0 }) => {
+    Cache.load([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, WatchTimeAlt = 0 }) => {
         STARTED_WATCHING -= (!UP_NEXT_ALLOW_THIS_TAB? WatchTimeAlt: WatchTime);
     });
 
@@ -9729,10 +9858,17 @@ let Initialize = async(START_OVER = false) => {
             data = url.searchParameters;
 
         let { like, follow } = STREAMER,
-            raid = data.referrer.equals('raid');
+            raid = parseBool(data.referrer?.equals('raid') || data.raided);
 
         if(!like && raid)
             follow();
+
+        Cache.load('LastRaid', ({ LastRaid }) => {
+            let { from, to, type } = LastRaid || {};
+
+            if(!like && to?.equals?.(STREAMER.name))
+                follow();
+        });
 
         JUDGE__STOP_WATCH('auto_follow_raids');
     };
@@ -10378,7 +10514,8 @@ let Initialize = async(START_OVER = false) => {
      *                     | |                                   __/ |
      *                     |_|                                  |___/
      */
-    let CONTINUE_RAIDING = false;
+    let CONTINUE_RAIDING = false,
+        SHADOW_RAID = false;
 
     Handlers.prevent_raiding = async() => {
         START__STOP_WATCH('prevent_raiding');
@@ -10392,7 +10529,7 @@ let Initialize = async(START_OVER = false) => {
 
         let url = parseURL(location),
             data = url.searchParameters,
-            raided = parseBool(data.referrer?.equals('raid')),
+            raided = parseBool(data.referrer?.equals('raid') || data.raided),
             raiding = $.defined('[data-test-selector="raid-banner"i]'),
             next = await GetNextStreamer(),
             raid_banner = $.all('[data-test-selector="raid-banner"i] strong').map(strong => strong?.textContent),
@@ -10402,16 +10539,19 @@ let Initialize = async(START_OVER = false) => {
         let method = Settings.prevent_raiding ?? "none";
 
         raid_stopper:
-        if(raiding || raided) {
-            top.onlocationchange = () => wait(5000).then(() => CONTINUE_RAIDING = false);
+        if(raiding || raided || SHADOW_RAID) {
+            top.onlocationchange = () => wait(5000).then(() => CONTINUE_RAIDING = SHADOW_RAID = false);
 
             // Ignore followed channels
-            if(["greed", "unfollowed"].contains(method)) {
+            if(["greed", "unfollowed"].contains(method, SHADOW_RAID)) {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
                 if(raiding && method.equals("greed")) {
-                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid' }, true).href);
+                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid', raided: true }, true).href);
 
+                    PushToTopSearch({ referrer: 'raid', raided: true });
+
+                    Cache.save({ LastRaid: { from, to, type: method } });
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
@@ -10426,7 +10566,8 @@ let Initialize = async(START_OVER = false) => {
                 else if(raided && STREAMER.like) {
                     LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
 
-                    RemoveFromTopSearch(['referrer']);
+                    Cache.save({ LastRaid: {} });
+                    RemoveFromTopSearch(['referrer', 'raided']);
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
@@ -10458,11 +10599,11 @@ let Initialize = async(START_OVER = false) => {
                         [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                     if(UP_NEXT_ALLOW_THIS_TAB)
-                        SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+                        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 } else {
                     LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
-                    ReloadPage();
+                    // ReloadPage();
                 }
             };
 
@@ -10480,6 +10621,14 @@ let Initialize = async(START_OVER = false) => {
     __PreventRaiding__:
     if(Settings.prevent_raiding.unlike("none")) {
         RegisterJob('prevent_raiding');
+
+        Cache.load('LastRaid', ({ LastRaid }) => {
+            let { from, to, type } = LastRaid || {};
+
+            SHADOW_RAID = to?.length > 0 && to?.equals?.(STREAMER?.name)? type: false;
+
+            Cache.save({ LastRaid: {} });
+        });
     }
 
     /*** Greedy Raiding
@@ -10560,14 +10709,14 @@ let Initialize = async(START_OVER = false) => {
             { pathname } = location;
 
         try {
-            await LoadCache('UserIntent', async({ UserIntent }) => {
+            await Cache.load('UserIntent', async({ UserIntent }) => {
                 if(parseBool(UserIntent))
                     TWITCH_PATHNAMES.push(UserIntent);
 
-                RemoveCache('UserIntent');
+                Cache.remove('UserIntent');
             });
         } catch(error) {
-            return JUDGE__STOP_WATCH('stay_live'), RemoveCache('UserIntent');
+            return JUDGE__STOP_WATCH('stay_live'), Cache.remove('UserIntent');
         }
 
         NotLive:
@@ -10593,7 +10742,7 @@ let Initialize = async(START_OVER = false) => {
                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
-                    SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`));
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`));
                 else
                     Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
                         NOTICE(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
@@ -10605,11 +10754,11 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // After 30 seconds, remove the intent
-            ClearIntent ??= setTimeout(RemoveCache, 30_000, 'UserIntent');
+            ClearIntent ??= setTimeout(Cache.remove, 30_000, 'UserIntent');
         } else if(/\/search\b/i.test(pathname)) {
             let { term } = parseURL(location).searchParameters;
 
-            SaveCache({ UserIntent: term });
+            Cache.save({ UserIntent: term });
         }
 
         JUDGE__STOP_WATCH('stay_live');
@@ -11215,7 +11364,7 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         wait(parseInt(Settings.auto_chat__wait_time) * 60_000).then(() => {
-            LoadCache(lastAutoChatName, results => {
+            Cache.load(lastAutoChatName, results => {
                 let old = results[lastAutoChatName],
                     now = new Date;
 
@@ -11230,7 +11379,7 @@ let Initialize = async(START_OVER = false) => {
 
                 Chat.send(Settings.auto_chat__lurking_message || 'Just going to !lurk');
 
-                SaveCache({ [lastAutoChatName]: now.toJSON() });
+                Cache.save({ [lastAutoChatName]: now.toJSON() });
             });
         });
 
@@ -11776,7 +11925,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Update the points (every 30s)
         if(++pointWatcherCounter % 120)
-            LoadCache(['ChannelPoints'], async({ ChannelPoints }) => {
+            Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
                 ChannelPoints ??= {};
 
                 let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
@@ -11811,7 +11960,7 @@ let Initialize = async(START_OVER = false) => {
 
                 ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
-                SaveCache({ ChannelPoints });
+                Cache.save({ ChannelPoints });
             });
 
         // Color the balance text
@@ -11850,7 +11999,7 @@ let Initialize = async(START_OVER = false) => {
         $.all(`:is(.tt-point-amount, .tt-point-face):not([name="${ name }"i])`).map(element => element?.remove());
 
         // Update the rich tooltip display
-        LoadCache(['ChannelPoints'], async({ ChannelPoints = {} }) => {
+        Cache.load(['ChannelPoints'], async({ ChannelPoints = {} }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
@@ -11909,53 +12058,69 @@ let Initialize = async(START_OVER = false) => {
 
                 let shop = (await STREAMER.shop);
 
-                if(shop.length < 1)
-                    when.defined(() => $('[data-test-selector="balance-string"i]'))
-                        .then(balance => balance.closest('button'))
-                        .then(button => {
-                            button.click();
+                when.defined(() => $('[data-test-selector="balance-string"i]'))
+                    .then(balance => balance.closest('button'))
+                    .then(button => {
+                        button.click();
 
-                            for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
-                                let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward),
-                                    backgroundColor = (false
-                                        || $('button [style]')
-                                            ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
-                                            ?.getPropertyValue?.('background-color')
-                                        || '#9147FF'
-                                    ).toUpperCase();
+                        for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
+                            let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward),
+                                backgroundColor = (false
+                                    || $('button [style]')
+                                        ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
+                                        ?.getPropertyValue?.('background-color')
+                                    || '#9147FF'
+                                ).toUpperCase();
 
-                                image = image.src;
-                                cost = parseCoin(cost.textContent) | 0;
-                                title = title.textContent.trim() || "";
+                            image = image.src;
+                            cost = parseCoin(cost.textContent) | 0;
+                            title = (title.textContent || "").trim();
 
-                                STREAMER.__shop__.push({
-                                    title, cost,
-                                    image: { url: image },
+                            let imgURL = parseURL(image),
+                                imgPath = imgURL.pathname.slice(1),
+                                [imgType, imgName] = imgPath.split('/'),
+                                realId = (
+                                    imgType.contains('auto') && imgType.contains('reward')?
+                                        ({
+                                            'subsonly': 'SUB_ONLY_MESSAGE',
+                                            'highlight': 'HIGHLIGHT_MESSAGE',
+                                            'modify-emote': 'MODIFY_SUB_EMOTE',
+                                            'random-emote': 'RANDOM_SUB_EMOTE_UNLOCK',
+                                            'choose-emote': 'CHOSEN_SUB_EMOTE_UNLOCK',
+                                        }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '')]):
+                                    null
+                                );
 
-                                    backgroundColor: Color.destruct(backgroundColor).RGB,
-                                    id: UUID.from([image, title, cost].join('|$|'), true).value,
-                                    type: "UNKNOWN",
+                            let item = {
+                                title, cost,
+                                image: { url: image },
 
-                                    enabled: true,
-                                    available: true,
-                                    count: 0,
-                                    hidden: false,
-                                    maximum: {
-                                        global: 0,
-                                        user: 0,
-                                    },
-                                    needsInput: false,
-                                    paused: false,
-                                    premium: false,
-                                    prompt: "",
-                                    skips: false,
-                                    updated: (new Date).toJSON(),
-                                });
-                            }
+                                backgroundColor: Color.destruct(backgroundColor).RGB,
+                                id: (realId ?? UUID.from([image, title, cost].join('|$|'), true).value),
+                                type: (realId ?? "UNKNOWN"),
 
-                            when(() => STREAMER.__shop__.length > 1)
-                                .then(() => button.click());
-                        });
+                                enabled: true,
+                                available: true,
+                                count: 0,
+                                hidden: false,
+                                maximum: {
+                                    global: 0,
+                                    user: 0,
+                                },
+                                needsInput: false,
+                                paused: false,
+                                premium: false,
+                                prompt: "",
+                                skips: false,
+                                updated: (new Date).toJSON(),
+                            };
+
+                            STREAMER.__shop__.push(item);
+                        }
+
+                        when(() => STREAMER.__shop__.length > 1)
+                            .then(() => button.click());
+                    });
             });
     }
 
@@ -12225,7 +12390,7 @@ let Initialize = async(START_OVER = false) => {
 
         extra({ parent, container, live_time, placement });
 
-        LoadCache([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`, `Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME, WatchTimeAlt = 0, WatchingAlt = NORMALIZED_PATHNAME }) => {
+        Cache.load([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`, `Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME, WatchTimeAlt = 0, WatchingAlt = NORMALIZED_PATHNAME }) => {
             if(NORMALIZED_PATHNAME != (!UP_NEXT_ALLOW_THIS_TAB? WatchingAlt: Watching))
                 STARTED_WATCHING = +($('#root').dataset.aPageLoaded ??= +new Date);
 
@@ -12245,9 +12410,9 @@ let Initialize = async(START_OVER = false) => {
                 if(parseBool(Settings.show_stats))
                     WATCH_TIME_TOOLTIP.innerHTML = comify(parseInt(time / 1000)) + 's';
 
-                SaveCache({ [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: time });
+                Cache.save({ [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: time });
             }, 1000);
-        }).then(() => SaveCache({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: NORMALIZED_PATHNAME }));
+        }).then(() => Cache.save({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: NORMALIZED_PATHNAME }));
     };
     Timers.watch_time_placement = -1000;
 
@@ -12265,7 +12430,7 @@ let Initialize = async(START_OVER = false) => {
         if(UnregisterJob.__reason__.equals('modify'))
             return;
 
-        SaveCache({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: null, [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: 0 });
+        Cache.save({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: null, [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: 0 });
     };
 
     __WatchTimePlacement__:
@@ -12312,7 +12477,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(actionPanel))
             return JUDGE__STOP_WATCH('video_clips__dvr');
 
-        LoadCache('DVRChannels', async({ DVRChannels }) => {
+        Cache.load('DVRChannels', async({ DVRChannels }) => {
             DVRChannels = JSON.parse(DVRChannels || '{}');
 
             let f = furnish,
@@ -12336,7 +12501,7 @@ let Initialize = async(START_OVER = false) => {
                         if(!!button)
                             return /* Not the primary button */;
 
-                        LoadCache('DVRChannels', async({ DVRChannels }) => {
+                        Cache.load('DVRChannels', async({ DVRChannels }) => {
                             DVRChannels = JSON.parse(DVRChannels || '{}');
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
@@ -12380,7 +12545,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            SaveCache({ DVRChannels: JSON.stringify(DVRChannels) }, () => Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                            Cache.save({ DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
                 }, f.div(
@@ -12529,7 +12694,7 @@ let Initialize = async(START_OVER = false) => {
             START__STOP_WATCH('video_clips__dvr__checking_interval');
 
             if(UP_NEXT_ALLOW_THIS_TAB)
-                LoadCache('DVRChannels', async({ DVRChannels }) => {
+                Cache.load('DVRChannels', async({ DVRChannels }) => {
                     DVRChannels = JSON.parse(DVRChannels || '{}');
 
                     checking:
@@ -12537,7 +12702,7 @@ let Initialize = async(START_OVER = false) => {
                     for(let DVR_ID in DVRChannels) {
                         let streamer = (DVR_ID + '').toLowerCase();
                         let channel = await new Search(streamer).then(Search.convertResults),
-                            ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                            ok = parseBool(channel?.ok);
 
                         // Search did not complete...
                         let num = 3;
@@ -12545,7 +12710,7 @@ let Initialize = async(START_OVER = false) => {
                             Search.void(streamer);
 
                             channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
-                            ok = channel.icon?.pathname?.startsWith('/jtv_user');
+                            ok = parseBool(channel?.ok);
 
                             // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
                         }
@@ -12569,7 +12734,7 @@ let Initialize = async(START_OVER = false) => {
                             // Skipper
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
-                            SaveCache({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
+                            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                                 LOG('Skipping queue in favor of a DVR channel', job);
 
                                 goto(parseURL(job).addSearch({ dvr: true }).href);
@@ -12578,7 +12743,7 @@ let Initialize = async(START_OVER = false) => {
                     }
 
                     // Send the length to the settings page
-                    Storage.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
+                    Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
 
                     JUDGE__STOP_WATCH('video_clips__dvr__checking_interval', 30_000);
                 });
@@ -12601,7 +12766,7 @@ let Initialize = async(START_OVER = false) => {
             || parseBool(parseURL(top.location.href).searchParameters?.dvr)
             || STREAMER?.redo === false
         )
-            LoadCache('DVRChannels', async({ DVRChannels }) => {
+            Cache.load('DVRChannels', async({ DVRChannels }) => {
                 DVRChannels = JSON.parse(DVRChannels || '{}');
 
                 for(let DVR_ID in DVRChannels) {
@@ -12988,7 +13153,7 @@ let Initialize = async(START_OVER = false) => {
                 let url = parseURL(currentTarget.href),
                     UserIntent = url.pathname.replace('/', '');
 
-                SaveCache({ UserIntent });
+                Cache.save({ UserIntent });
             });
         });
     });
@@ -13457,7 +13622,7 @@ let Initialize = async(START_OVER = false) => {
                 Glyphs,
             };
 
-            await Storage.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
+            await Settings.get(['buildVersion', 'chromeVersion', 'githubVersion', 'versionRetrivalDate'], async({ buildVersion, chromeVersion, githubVersion, versionRetrivalDate }) => {
                 buildVersion ??= properties.version.installed;
                 versionRetrivalDate ||= 0;
 
@@ -13479,9 +13644,9 @@ let Initialize = async(START_OVER = false) => {
 
                             return properties.version.github = metadata.tag_name;
                         })
-                        .then(version => Storage.set({ githubVersion: version }))
+                        .then(version => Settings.set({ githubVersion: version }))
                         .catch(async error => {
-                            await Storage.get(['githubVersion'], ({ githubVersion }) => {
+                            await Settings.get(['githubVersion'], ({ githubVersion }) => {
                                 if(defined(githubVersion))
                                     properties.version.github = githubVersion;
                             });
@@ -13491,12 +13656,12 @@ let Initialize = async(START_OVER = false) => {
                                 chromeUpdateAvailable = false;
 
                             FETCHED_DATA = { ...FETCHED_DATA, ...properties };
-                            Storage.set({ githubUpdateAvailable });
+                            Settings.set({ githubUpdateAvailable });
 
                             // Only applies to versions installed from the Chrome Web Store
                             __ChromeOnly__:
                             if(installedFromWebstore)
-                                Storage.set({ chromeUpdateAvailable: githubUpdateAvailable });
+                                Settings.set({ chromeUpdateAvailable: githubUpdateAvailable });
 
                             if((!installedFromWebstore && githubUpdateAvailable) || (installedFromWebstore && chromeUpdateAvailable))
                                 confirm
@@ -13518,7 +13683,7 @@ let Initialize = async(START_OVER = false) => {
                         FETCHED_DATA.wasFetched = true;
                         versionRetrivalDate = +new Date;
 
-                        Storage.set({ versionRetrivalDate });
+                        Settings.set({ versionRetrivalDate });
                     }
                 }
                 // The data hasn't expired yet
@@ -13566,7 +13731,7 @@ if(top == window) {
 
             // Ensure settings are loaded
             if(nullish(Settings?.versionRetrivalDate))
-                Settings = await GetSettings();
+                await Settings.get();
 
             // Set the ad volume, if applicable
             // Ensures the volume gets set once; just in case the user actually wants to hear it
@@ -13659,8 +13824,8 @@ if(top == window) {
 
             window.LANGUAGE = LANGUAGE = Settings.user_language_preference || documentLanguage;
 
-            // Give the storage 5s to perform any "catch-up"
-            wait(5000, ready).then(async ready => {
+            // Give the storage 3s to perform any "catch-up"
+            wait(3000, ready).then(async ready => {
                 await Initialize(ready)
                     .then(() => {
                         // TTV Tools has the max Timer amount to initilize correctly...
@@ -14268,7 +14433,7 @@ if(top == window) {
                             // Capitalizing the language code notifies the Settings page the code was not manually input
                         let [user_language_preference] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toUpperCase().split('-');
 
-                        Storage.set({ user_language_preference });
+                        Settings.set({ user_language_preference });
 
                         // Point out the newly added buttons
                         wait(10_000).then(() => {
@@ -14285,7 +14450,7 @@ if(top == window) {
                     } break;
                 }
 
-                Storage.set({ onInstalledReason: null });
+                Settings.set({ onInstalledReason: null });
             }
 
             // Jump some frames
@@ -14379,7 +14544,7 @@ if(top == window) {
 
         // Alerts for users
         DisplayNews:
-        LoadCache('ReadNews', async({ ReadNews }) => {
+        Cache.load('ReadNews', async({ ReadNews }) => {
             let TTVToolsNewsURL = `https://github.com/Ephellon/Twitch-Tools/wiki/News?fetched-at=${ +new Date }`,
                 TTVToolsNewsArticles = ReadNews || [];
 
@@ -14423,7 +14588,7 @@ if(top == window) {
 
                     if(articles.length)
                         confirm.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"/> ${ articles.join('<br>') }`)
-                        .then(ok => ok && SaveCache({ ReadNews: TTVToolsNewsArticles.isolate() }));
+                        .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
                 });
         });
 
@@ -14461,7 +14626,6 @@ if(top == window) {
                         socket.send(`NICK ${ USERNAME.toLowerCase() }`);
                     });
 
-                let chat_log = (TTV_IRC.chat_log ??= new Map);
                 let restrictions = (TTV_IRC.restrictions ??= new Map);
 
                 socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
@@ -14472,9 +14636,6 @@ if(top == window) {
                     for(let { command, parameters, source, tags } of messages) {
                         const channel = (command.channel ?? CHANNEL).toLowerCase();
                         const usable = parseBool(channel.equals(CHANNEL));
-
-                        if(channel.startsWith('#') && !chat_log.has(channel))
-                            chat_log.set(channel, new Set);
 
                         switch(command.command) {
                             // Successful login attempt
@@ -14730,8 +14891,6 @@ if(top == window) {
                                     },
                                 });
 
-                                chat_log.get(channel)?.add(results);
-
                                 Chat.__allmessages__.set(uuid, results);
 
                                 for(let [name, callback] of Chat.__onmessage__)
@@ -14855,8 +15014,6 @@ if(top == window) {
                                 }).bind(element)
                             },
                         });
-
-                        TTV_IRC.chat_log?.get(CHANNEL)?.add(results);
 
                         Chat.__allmessages__.set(uuid, results);
 

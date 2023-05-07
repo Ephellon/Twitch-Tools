@@ -739,13 +739,13 @@ function fetchURL(url, options = {}) {
         || host.startsWith('.')
         || allowedDomains.contains(domain.toLowerCase())
         || allowedSites.contains(site.toLowerCase())
-    ) {
-        // Do nothing...
-    }
+    )
+        /* Do nothing... */;
 
     // CORS required
     else {
         options.mode = 'cors';
+        // www.whateverorigin.org/get?url=
         href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
     }
 
@@ -758,115 +758,163 @@ Object.defineProperties(fetchURL, {
     // Reduce duplicates
     idempotent: {
         value: (url, options) => {
-            return fetchURL.requests.set(url, fetchURL(url, options)).get(url);
+            let [request, date] = fetchURL.requests.get(url) ?? [];
+
+            if(nullish(request) || (+new Date - +date > 60_000)) {
+                request = fetchURL(url, options);
+
+                fetchURL.requests.set(url, [request, new Date]);
+            }
+
+            return request;
         },
     },
 });
 
 // The following facilitates communication between pages
-// Get the current settings
-   // GetSettings() → object
-function GetSettings() {
-   return new Promise((resolve, reject) => {
-       function ParseSettings(settings) {
-           for(let setting in settings)
-               settings[setting] ??= null;
+// Extension (permanent) data
+let Settings = window.Settings = {
+    // Settings.get(keys:string|array?) → Promise<object>
+    get(keys = null) {
+        return new Promise((resolve, reject) => {
+            function ParseSettings(settings) {
+                for(let setting in settings)
+                    Settings[setting] = settings[setting] ?? null;
 
-           resolve(settings);
-       }
-
-       window.Storage.get(null, settings =>
-           window.Runtime.lastError?
-               window.Storage.get(null, ParseSettings):
-           ParseSettings(settings)
-       );
-   });
-}
-
-// Saves data to the page's storage
-    // SaveCache(keys:object, callback:function?) → undefined
-async function SaveCache(keys = {}, callback = () => {}) {
-    let set = (key, value) => StorageSpace.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
-
-    for(let key in keys)
-        set(key, JSON.stringify(keys[key]));
-
-    if(typeof callback == 'function')
-        callback();
-}
-
-// Loads data from the page's storage
-    // LoadCache(keys:string|array|object, callback:function?) → undefined
-async function LoadCache(keys = null, callback = () => {}) {
-    let results = {},
-        get = key => {
-            let value =
-                // New save name
-                StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
-                // Old save name
-                // if (value === undefined)
-                //     value = StorageSpace.getItem(key);
-
-            try {
-                value = JSON.parse(value);
-            } catch(error) {
-                value = value;
+                resolve(Settings);
             }
 
-            return value;
-        };
+            window.Storage.get(keys, settings =>
+                window.Runtime.lastError?
+                    window.Storage.get(null, ParseSettings):
+                ParseSettings(settings)
+            );
+        });
+    },
 
-    if(keys === null) {
-        keys = {};
+    // Settings.set(keys:object?) → Promise<undefined>
+    set(keys = {}) {
+        return Storage.set(keys);
+    },
+};
 
-        for(let key in StorageSpace)
-            keys[key] = null;
-    }
+// Page (temporary) data
+let Cache = window.Cache = {
+    // Saves data to the page's storage
+        // Cache.save(keys:object, callback:function?) → undefined
+    async save(keys = {}, callback = () => {}) {
+        let set = (key, value) => StorageSpace.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
-    switch(keys.constructor) {
-        case String:
-            results[keys] = get(keys);
-            break;
+        for(let key in keys)
+            set(key, JSON.stringify(keys[key]));
 
-        case Array:
-            for(let key of keys)
-                results[key] = get(key);
-            break;
+        if(typeof callback == 'function')
+            callback();
+    },
 
-        case Object:
-            for(let key in keys)
-                results[key] = get(key) ?? keys[key];
-            break;
+    // Loads data from the page's storage
+        // Cache.load(keys:string|array|object, callback:function?) → Promise<object>
+    async load(keys = null, callback) {
+        let results = {},
+            get = key => {
+                let value =
+                    // New save name
+                    StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+                    // Old save name
+                    // if (value === undefined)
+                    //     value = StorageSpace.getItem(key);
 
-        default: return;
-    }
+                try {
+                    value = JSON.parse(value);
+                } catch(error) {
+                    value = value;
+                }
 
-    if(typeof callback == 'function')
-        callback(results);
-}
+                return value;
+            };
 
-// Removes data from the page's storage
-    // RemoveCache(keys:string|array, callback:function?)
-async function RemoveCache(keys, callback = () => {}) {
-    let remove = key => StorageSpace.removeItem(`ext.twitch-tools/${ encodeURI(key) }`);
+        keys ??= [...Object.keys(StorageSpace)];
 
-    if(nullish(keys))
-        return;
+        switch(keys.constructor) {
+            case String:
+                results[keys] = get(keys);
+                break;
 
-    switch(keys.constructor) {
-        case String:
-            remove(keys);
-            break;
+            case Array:
+                for(let key of keys)
+                    results[key] = get(key);
+                break;
 
-        case Array:
-            for(let key of keys)
-                remove(key);
-            break;
-    }
+            case Object:
+                for(let key in keys)
+                    results[key] = get(key) ?? keys[key];
+                break;
+        }
 
-    if(typeof callback == 'function')
-        callback();
-}
+        if(typeof callback == 'function')
+            callback(results);
+
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(results);
+            } catch(error) {
+                reject(error);
+            }
+        });
+    },
+
+    // Removes data from the page's storage
+        // Cache.remove(keys:string|array, callback:function?) → Promise<object>
+    async remove(keys, callback) {
+        let remove = key => StorageSpace.removeItem(`ext.twitch-tools/${ encodeURI(key) }`);let results = {},
+            get = key => {
+                let value = StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+
+                try {
+                    value = JSON.parse(value);
+                } catch(error) {
+                    value = value;
+                }
+
+                return value;
+            };
+
+        if(nullish(keys))
+            return;
+
+        switch(keys.constructor) {
+            case String:
+                results[keys] = get(keys);
+                remove(keys);
+                break;
+
+            case Array:
+                for(let key of keys) {
+                    results[key] = get(key);
+                    remove(key);
+                }
+                break;
+
+            case Object:
+                for(let key in keys) {
+                    results[key] = get(key);
+                    remove(key);
+                }
+                break;
+        }
+
+        if(typeof callback == 'function')
+            callback(results);
+
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(results);
+            } catch(error) {
+                reject(error);
+            }
+        });
+    },
+};
 
 // Convert strings to RegExps
     // RegExp lookers
@@ -944,8 +992,7 @@ __STATIC__: {
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-    let Settings = {},
-        Jobs = {},
+    let Jobs = {},
         Timers = {},
         Handlers = {
             __reasons__: new Map(),
@@ -954,7 +1001,6 @@ __STATIC__: {
             __reasons__: new Map(),
         };
 
-    window.Settings = Settings;
     window.Jobs = Jobs;
     window.Timers = Timers;
     window.Handlers = Handlers;

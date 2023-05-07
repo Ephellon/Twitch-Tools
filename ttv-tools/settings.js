@@ -251,6 +251,8 @@ let // These are option names. Anything else will be removed
 
         /* "Hidden" options */
         'sync-token',
+        'searchToken',
+        'searchClientID',
     ];
 
 // Creates a new Twitch-style date input
@@ -1332,7 +1334,9 @@ $('#sync-settings--upload').onmouseup = async event => {
                                 'T':
                             (+value == value)?
                                 value:
-                            `**${value}**`
+                            (value.length)?
+                                `**${value}**`:
+                            'X'
                         ]);
                 }
 
@@ -1395,7 +1399,7 @@ $('#sync-settings--download').onmouseup = async event => {
                     let raw = decodeURIComponent(parseURL(url).searchParameters.json);
                     let mode = 'get-key', key = '', val = '', thread = '';
 
-                    parsing:for(let char of raw)
+                    parsing: for(let char of raw)
                         switch(mode) {
                             case 'get-key': {
                                 if(char == '(') {
@@ -1457,7 +1461,7 @@ $('#sync-settings--download').onmouseup = async event => {
 
                     let parsed = {};
 
-                    loading:for(let index = 0; index < usable_settings.length; ++index) {
+                    loading: for(let index = 0; index < usable_settings.length; ++index) {
                         let id = usable_settings[index],
                             ID = Sym(id),
                             element = $(`#${ id }:not([data-rest-id])`);
@@ -1535,7 +1539,7 @@ $('#sync-settings--download').onmouseup = async event => {
                             uploadAge = +new Date() - +new Date(settings.syncDate);
 
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
-                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '?days days') } old</span>`);
+                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '~days days') } old</span>`);
 
                             LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
                         }
@@ -1581,7 +1585,7 @@ $('#sync-settings--download').onmouseup = async event => {
                             uploadAge = +new Date() - +new Date(settings.syncDate);
 
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
-                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '?days days') } old</span>`);
+                            messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '~days days') } old</span>`);
 
                             LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
                         }

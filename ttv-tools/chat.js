@@ -1302,7 +1302,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     currentTarget.remove();
 
-                    Storage.set({ filter_rules });
+                    Settings.set({ filter_rules });
                 },
 
                 innerHTML: `${ Glyphs.trash } Filter messages from @${ name }`,
@@ -1339,7 +1339,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     currentTarget.remove();
 
-                    Storage.set({ filter_rules });
+                    Settings.set({ filter_rules });
                 },
 
                 innerHTML: `${ Glyphs.trash } Filter <strong>${ name }</strong>`,
@@ -1543,7 +1543,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     currentTarget.setAttribute('tt-hidden-message', true);
 
-                    Storage.set({ phrase_rules });
+                    Settings.set({ phrase_rules });
                 },
 
                 innerHTML: `${ Glyphs.star } Highlight messages from @${ name }`,
@@ -1580,7 +1580,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     currentTarget.remove();
 
-                    Storage.set({ phrase_rules });
+                    Settings.set({ phrase_rules });
                 },
 
                 innerHTML: `${ Glyphs.star } Highlight <strong>${ name }</strong>`,
@@ -3225,7 +3225,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         if(top.__readyState__ == "unloading")
             return;
 
-        LoadCache(['ChannelPoints'], ({ ChannelPoints }) => {
+        Cache.load(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
                 balance = $('[data-test-selector="balance-string"i]'),
                 allRewards = ALL_CHANNEL_POINT_REWARDS;
@@ -3258,7 +3258,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
             ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
-            SaveCache({ ChannelPoints });
+            Cache.save({ ChannelPoints });
         });
     };
     Timers.point_watcher_helper = 15_000;
@@ -3412,7 +3412,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         wait(5000).then(() => Chat__Initialize_Safe_Mode({ banned, hidden }));
         clearInterval(Chat__PAGE_CHECKER);
 
-        return Settings = await GetSettings();
+        return await Settings.get();
     }
 
     // Only executes if the user is NOT banned
@@ -3461,7 +3461,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
     LOG("Child container ready");
 
-    Settings = await GetSettings();
+    await Settings.get();
 
     wait(5000).then(Chat__Initialize);
     clearInterval(Chat__PAGE_CHECKER);
@@ -3528,7 +3528,6 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                         socket.send(`NICK ${ USERNAME.toLowerCase() }`);
                     });
 
-                let chat_log = (TTV_IRC.chat_log ??= new Map);
                 let restrictions = (TTV_IRC.restrictions ??= new Map);
 
                 socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
@@ -3539,9 +3538,6 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                     for(let { command, parameters, source, tags } of messages) {
                         const channel = (command.channel ?? CHANNEL).toLowerCase();
                         const usable = parseBool(channel.equals(CHANNEL));
-
-                        if(channel.startsWith('#') && !chat_log.has(channel))
-                            chat_log.set(channel, new Set);
 
                         switch(command.command) {
                             // Successful login attempt
@@ -3791,8 +3787,6 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     },
                                 });
 
-                                chat_log.get(channel).add(results);
-
                                 Chat.__allmessages__.set(uuid, results);
 
 
@@ -3918,8 +3912,6 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 },
                             });
 
-                            TTV_IRC.chat_log.get(CHANNEL).add(results);
-
                             Chat.__allmessages__.set(uuid, results);
 
                             for(let [name, callback] of Chat.__onmessage__)
@@ -4039,7 +4031,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             } break;
         }
 
-        Storage.set({ onInstalledReason: null });
+        Settings.set({ onInstalledReason: null });
     }
 
     // Handle pinned messages...

@@ -647,6 +647,10 @@ summary + * > [opt]:not(:first-child) {
     margin-top: .5rem;
 }
 
+[opt]:not(:last-child) {
+    border-bottom: 1px solid var(--border-light);
+}
+
 details[open] {
     padding-bottom: .5rem;
 

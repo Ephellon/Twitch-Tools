@@ -315,7 +315,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     if([banned].contains(true)) {
         WARN('[NON_FATAL] Framed container unavailable. Reason:', { banned });
 
-        Settings = await GetSettings();
+        await Settings.get();
 
         wait(5000).then(Player__Initialize_Safe_Mode);
         clearInterval(Player__PAGE_CHECKER);
@@ -333,7 +333,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     if(ready) {
         LOG(`Framed container ready → <iframe>@${ location.href }`);
 
-        Settings = await GetSettings();
+        await Settings.get();
 
         wait(5000).then(Player__Initialize);
         clearInterval(Player__PAGE_CHECKER);

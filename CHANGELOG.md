@@ -21,7 +21,7 @@
     * Tentative fix `v5.8`
 - [ ] Live Reminders might re-add all live channels?
     * Usually during raids (semi-intentional)
-- [ ] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
+- [-] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
 - [ ] Add logic to (video) record channel point redemptions
     * Like PSN trophies
 - [ ] Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
@@ -31,14 +31,29 @@
     * Typically affects only user generated messages
 - [ ] Modify DVR logic to record over ads
     * Currently, skips entire ad section; does not substitute mini-video's contents in ads' place
-- [ ] Add option to handle chat commands and messages
+- [-] Add option to handle chat commands and messages
     * Might just need to make another extension for that
     * Responds to chat input (aka, a chat bot)
+    * Made this at one point... didn't really see the need of it past nuance
 - [ ] Display a "Hey, these are new!" alert on the settings page
+- [ ] Add cache logic to detect raids
+    - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.2)
+- Minor bug fixes
+- Minor changes to lessen page refreshes
+- Fixed issue with automatic channel rewards not being added to the shop
+- Fixed issue with Steam not displaying
+- Added logic to reload Mini Player on page refresh
+- Added logic to deduct channel points when auto-purchasing the "Choose an Emote" redemption
+- Fixed issue where some rewards would not display a calculator
+- Adjusted Live Reminder logic to only show the "{User} just went live" message on the Up Next tab
+- Renamed/overhauled logic for storages: `Settings` (extension) and `Cache` (page)
+- Modified Live Reminder and Search logic to load, process, and handle reminders faster
+
 > [`5.32.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.1)
 - Changed game searching logic to find game "editions"
 
