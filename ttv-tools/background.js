@@ -226,7 +226,6 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 Container.tabs.query({
                     url: ["*://*.twitch.tv/*"],
                 }, (tabs = []) => {
-                    // An owner already exists and is active...
                     let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
                     let hostHas = (url, ...doms) => {
                         for(let dom of doms)
@@ -240,13 +239,16 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                     // Does the Tab ID match?
                     for(let tab of tabs)
-                        if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url)) || hostHas(tab.url, 'player.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.')) {
+                        if(hostHas(tab.url, 'player.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.') || RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
                             continue;
                         } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
-                            owner ??= tab.id;
-                            name ??= getName(tab.url);
+                            owner = tab.id;
+                            name = getName(tab.url);
+
+                            break;
                         }
 
+                    // An owner already exists and is active...
                     if(ownerAlive) {
                         UP_NEXT_OWNER = owner;
                         UP_NEXT_OWNER_NAME = name;
@@ -258,8 +260,10 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                             if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
                                 continue;
                             } else if(ownerAlive ||= (getName(tab.url) == UP_NEXT_OWNER_NAME)) {
-                                owner ??= tab.id;
-                                name ??= getName(tab.url);
+                                owner = tab.id;
+                                name = getName(tab.url);
+
+                                break;
                             }
 
                         if(ownerAlive) {

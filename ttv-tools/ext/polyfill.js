@@ -1404,7 +1404,7 @@ Element.prototype.modAttribute ??= function modAttribute(attribute, value = '') 
 
 // Modifies an element's style attribute
     // Element..modStyle(value:string?) → undefined
-Element.prototype.modStyle ??= function modStyle(value = '', important = false) {
+Element.prototype.modStyle ??= function modStyle(value = '', important = false, deleted = false) {
     function destruct(string) {
         let css = new Map;
 
@@ -1412,14 +1412,15 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false) 
             .split(';')
             .map(declaration => declaration.trim())
             .filter(declaration => declaration.length > 4)
-            // Shortest possible declaration → `--n:0`
+                // Shortest possible declaration → `--n:0`
             .map(declaration => {
                 let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
-                    important = value.toLowerCase().endsWith('!important');
+                    important = value.toLowerCase().endsWith('!important'),
+                    deleted = value.toLowerCase().endsWith('!delete');
 
-                value = value.replace(/!important\b/i, '');
+                value = value.replace(/!(important|delete)\b/i, '');
 
-                css.set(property, { value, important });
+                css.set(property, { value, important, deleted });
             });
 
         return css;
@@ -1432,7 +1433,7 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false) 
     for(let [property, _o] of _old) {
         let _n = _new.get(property);
 
-        if(_n?.value === 0)
+        if((_n?.value === 0) || (defined(_n) && (_n.deleted || deleted)))
             continue;
         else if(defined(_n) && (!_o.important || _n.important || important))
             final.push([property,_n.value].join(':') + (_n.important? '!important': ''));
@@ -1454,33 +1455,46 @@ try {
     Object.defineProperties(Element.prototype, {
         attr: {
             get() {
-                return new Proxy(this.attributes, {
-                    get(self, key) {
-                        return self.getNamedItem(key) ?? null;
+                return this[Symbol.toPrimitive] ??= new Proxy(this.attributes, {
+                    get(real, key) {
+                        return real.getNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()))?.value ?? null;
                     },
 
-                    set(self, key, value) {
-                        return Object.defineProperty(self, key, { value });
+                    set(real, key, value) {
+                        key = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+                        let node;
+                        if(!real.hasOwnProperty(key))
+                            node = document.createAttribute(key);
+                        else
+                            node = real.getNamedItem(key);
+
+                        node.value = value;
+                        real.setNamedItem(node);
+
+                        return value;
                     },
 
-                    ownKeys(self) {
-                        return Object.keys(self);
+                    ownKeys(real) {
+                        return Object.keys(real);
                     },
 
-                    has(self, key) {
-                        return self.getNamedItem(key) != null;
+                    has(real, key) {
+                        return real.getNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase())) != null;
                     },
 
-                    defineProperty(self, key, descriptor) {
+                    defineProperty(real, key, descriptor) {
                         if('value' in descriptor) {
+                            key = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
                             let node;
-                            if(!self.hasOwnProperty(key))
-                                node = document.createAtribute(key);
+                            if(!real.hasOwnProperty(key))
+                                node = document.createAttribute(key);
                             else
-                                node = self.getNamedItem(key);
+                                node = real.getNamedItem(key);
 
                             node.value = descriptor.value;
-                            self.setNamedItem(node);
+                            real.setNamedItem(node);
 
                             return true;
                         }
@@ -1488,8 +1502,8 @@ try {
                         return false;
                     },
 
-                    deleteProperty(self, key) {
-                        return self.removeNamedItem(key);
+                    deleteProperty(real, key) {
+                        return real.removeNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()));
                     },
                 });
             },

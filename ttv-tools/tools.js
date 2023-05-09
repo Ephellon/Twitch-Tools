@@ -1526,7 +1526,7 @@ class Search {
                 data.data[to] ??= deeperDataLevels[key];
         }
 
-        return new Promise(resolve => resolve({ ok: parseBool(parseURL(data.icon).pathname.startsWith('/jtv_user')), ...data }));
+        return new Promise(resolve => resolve({ ok: parseBool(parseURL(data.icon).pathname?.startsWith('/jtv_user')), ...data }));
     }
 }
 
@@ -3052,15 +3052,16 @@ try {
                     pip = $('#tt-pip-player');
 
                 $('#tt-exit-pip')?.remove();
-                $('[class*="picture-by-picture-player"i]')?.classList?.remove('picture-by-picture-player--collapsed');
+                $('[data-test-selector="picture-by-picture-player-container"i]')?.modStyle('max-height:!delete');
+                $('[data-test-selector="picture-by-picture-player-container"i]')?.classList?.remove('picture-by-picture-player--collapsed');
 
                 if(nullish(pbyp))
                     $('.stream-chat').insertAdjacentElement('beforebegin',
-                        f('[class="picture-by-picture-player"i][data-test-selector=picture-by-picture-player-background]').with(
-                            f('[class="picture-by-picture-player"i][data-test-selector=picture-by-picture-player-container]').with(
+                        f('[class="picture-by-picture-player"][data-test-selector=picture-by-picture-player-background]').with(
+                            f('[class="picture-by-picture-player"][data-test-selector=picture-by-picture-player-container]').with(
                                 f('.tw-aspect').with(
                                     f.div(),
-                                    f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('[class*="picture-by-picture-player"i]')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
+                                    f('.pbyp-player-instance', { autodisplay: setTimeout(() => $('[data-test-selector="picture-by-picture-player-container"i]')?.classList?.remove('picture-by-picture-player--collapsed'), 500) },
                                         pbyp = f('video[webkit-playsinline][playsinline]', {
                                             oncontextmenu: () => false,
                                         })
@@ -3076,10 +3077,11 @@ try {
                     pip = f('iframe#tt-pip-player', {
                         src,
 
-                        style: 'height:auto;width:-webkit-fill-available;width:-moz-available;z-index:9;position:relative',
+                        style: 'height:auto;min-height:7em;width:-webkit-fill-available;width:-moz-available;margin-bottom:7em;position:relative;z-index:9',
                     });
 
                 pip.remove();
+                pbyp.modStyle('height:initial');
                 pbyp.insertAdjacentElement('afterend', pip);
 
                 pip.dataset.name = name;
@@ -3090,13 +3092,14 @@ try {
 
                         onmousedown(event) {
                             $.all('#tt-exit-pip, [class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]').map(el => el.modStyle('transition:opacity .5s; opacity:0;'));
+                            $('[data-test-selector="picture-by-picture-player-container"i]').modStyle('max-height:0');
 
                             wait(500).then(() => {
                                 RemoveFromTopSearch(['mini']);
 
                                 $('#tt-exit-pip')?.remove();
                                 $('[class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]')?.remove();
-                                $('[class*="picture-by-picture-player"i]')?.classList?.add('picture-by-picture-player--collapsed');
+                                $('[data-test-selector="picture-by-picture-player-container"i]')?.classList?.add('picture-by-picture-player--collapsed');
                             });
                         },
 
@@ -3105,7 +3108,7 @@ try {
                 );
 
                 function keepOpen() {
-                    when.defined(() => $('[class*="picture-by-picture-player"i]'))
+                    when.defined(() => $('[data-test-selector="picture-by-picture-player-container"i][class*="collapsed"i]'))
                         .then(player => {
                             let keep = $.defined('#tt-exit-pip');
 
@@ -14409,6 +14412,10 @@ if(top == window) {
                 video ~ * .player-controls[data-automatic="true"i] :is([data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
                     border: var(--border-width-default) solid var(--color-warn);
                     background-color: var(--color-warn);
+                }
+
+                [data-test-selector="picture-by-picture-player-background"i] ~ [data-test-selector="picture-by-picture-player-background"i] {
+                    --display: none !important;
                 }
 
                 /* Chat */

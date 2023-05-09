@@ -3025,7 +3025,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) [role]').append(container);
+                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) [role]')?.append(container);
             }
 
             let body = $(`[data-test-selector$="message-placeholder"i]`, container),

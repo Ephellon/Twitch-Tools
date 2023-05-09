@@ -38,10 +38,15 @@
 - [ ] Display a "Hey, these are new!" alert on the settings page
 - [ ] Add cache logic to detect raids
     - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
+- [ ] There is an issue where all tabs will **not** be the Up Next owner
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.3)
+- Fixed issue with MiniPlayer not displaying
+- Changed all attribute accessors to proxies (`Element..attr...`)
+
 > [`5.32.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.2)
 - Minor bug fixes
 - Minor changes to lessen page refreshes
