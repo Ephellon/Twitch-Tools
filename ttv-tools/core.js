@@ -712,10 +712,12 @@ function delay(fn, ms = 0, ...args) {
     }
 }
 
+// https://dmitripavlutin.com/timeout-fetch-request/
 // Fetches resources with automatic CORS-sense
     // fetchURL(url:string<URL>, options:object?) → Promise<fetch>
 function fetchURL(url, options = {}) {
     let empty = {};
+    let { timeout = 0, native = false } = options;
 
     empty.then = empty.catch = empty.finally = (function() { return this }).bind(empty);
 
@@ -734,6 +736,7 @@ function fetchURL(url, options = {}) {
 
     // No CORS required
     if(false
+        || native
         || protocol.equals('chrome:')
         || protocol.equals('chrome-extension:')
         || host.startsWith('.')
@@ -747,6 +750,17 @@ function fetchURL(url, options = {}) {
         options.mode = 'cors';
         // www.whateverorigin.org/get?url=
         href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
+    }
+
+    if(timeout > 0) {
+        let controller = new AbortController();
+        let timeoutID = setTimeout(() => controller.abort(), timeout);
+
+        return fetch(href, { ...options, signal: controller.signal }).then(response => {
+            clearTimeout(timeoutID);
+
+            return response;
+        });
     }
 
     return fetch(href, options);
@@ -801,9 +815,9 @@ let Settings = window.Settings = {
 // Page (temporary) data
 let Cache = window.Cache = {
     // Saves data to the page's storage
-        // Cache.save(keys:object, callback:function?) → undefined
-    async save(keys = {}, callback = () => {}) {
-        let set = (key, value) => StorageSpace.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
+        // Cache.save(keys:object?, callback:function?) → undefined
+    async save(keys = {}, callback = null) {
+        let set = (key, value) => CacheStorageArea.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
         for(let key in keys)
             set(key, JSON.stringify(keys[key]));
@@ -813,27 +827,27 @@ let Cache = window.Cache = {
     },
 
     // Loads data from the page's storage
-        // Cache.load(keys:string|array|object, callback:function?) → Promise<object>
-    async load(keys = null, callback) {
-        let results = {},
-            get = key => {
+        // Cache.load(keys:string|array|object?, callback:function?) → Promise<object>
+    async load(keys = null, callback = null) {
+        let results = {};
+        let get = key => {
                 let value =
                     // New save name
-                    StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+                    CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
                     // Old save name
                     // if (value === undefined)
-                    //     value = StorageSpace.getItem(key);
+                    //     value = CacheStorageArea.getItem(key);
 
                 try {
                     value = JSON.parse(value);
                 } catch(error) {
-                    value = value;
+                    // Suppress
                 }
 
                 return value;
             };
 
-        keys ??= [...Object.keys(StorageSpace)];
+        keys ??= await Cache.keys();
 
         switch(keys.constructor) {
             case String:
@@ -865,15 +879,16 @@ let Cache = window.Cache = {
 
     // Removes data from the page's storage
         // Cache.remove(keys:string|array, callback:function?) → Promise<object>
-    async remove(keys, callback) {
-        let remove = key => StorageSpace.removeItem(`ext.twitch-tools/${ encodeURI(key) }`);let results = {},
+    async remove(keys, callback = null) {
+        let results = {};
+        let remove = key => CacheStorageArea.removeItem(`ext.twitch-tools/${ encodeURI(key) }`),
             get = key => {
-                let value = StorageSpace.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+                let value = CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
 
                 try {
                     value = JSON.parse(value);
                 } catch(error) {
-                    value = value;
+                    // Suppress
                 }
 
                 return value;
@@ -913,6 +928,194 @@ let Cache = window.Cache = {
                 reject(error);
             }
         });
+    },
+
+    // Returns the number of Bytes in use
+        // Cache.getBytesInUse(keys:string|array?) → Promise<number>
+    async getBytesInUse(keys) {
+        let bytesUsed = 0;
+        let size = key => {
+                let value =
+                    // New save name
+                    CacheStorageArea.getItem(`ext.twitch-tools/${ encodeURI(key) }`);
+                    // Old save name
+                    // if (value === undefined)
+                    //     value = CacheStorageArea.getItem(key);
+
+                try {
+                    value = JSON.parse(value);
+                } catch(error) {
+                    // Suppress
+                }
+
+                return (key?.length | 0) + (JSON.stringify(value)?.length | 0);
+            };
+
+        keys ??= await Cache.keys();
+
+        switch(keys.constructor) {
+            case String:
+                bytesUsed += size(keys);
+                break;
+
+            case Array:
+                for(let key of keys)
+                    bytesUsed += size(key);
+                break;
+
+            case Object:
+                for(let key in keys)
+                    bytesUsed += size(key) ?? ((key?.length | 0) + (JSON.stringify(keys[key])?.length | 0));
+                break;
+        }
+
+        if(typeof callback == 'function')
+            callback(bytesUsed);
+
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(bytesUsed);
+            } catch(error) {
+                reject(error);
+            }
+        });
+    },
+
+    async keys() {
+        return [...Object.keys(CacheStorageArea)].filter(key => key.startsWith('ext.twitch-tools/')).map(key => key.replace('ext.twitch-tools/', ''));
+    },
+
+    large: {
+        // Saves data to the page's storage
+            // Cache.save(keys:object?, callback:function?) → undefined
+        async save(keys = {}, callback = null) {
+            let set = (key, value) => LargeCacheStorageArea.setItem(key, value);
+
+            for(let key in keys)
+                set(key, keys[key]);
+
+            if(typeof callback == 'function')
+                callback();
+        },
+
+        // Loads data from the page's storage
+            // Cache.load(keys:string|array|object?, callback:function?) → Promise<object>
+        async load(keys = null, callback = null) {
+            let results = {};
+            let get = key => LargeCacheStorageArea.getItem(key);
+
+            keys ??= await Cache.large.keys();
+
+            switch(keys.constructor) {
+                case String:
+                    results[keys] = await get(keys);
+                    break;
+
+                case Array:
+                    for(let key of keys)
+                        results[key] = await get(key);
+                    break;
+
+                case Object:
+                    for(let key in keys)
+                        results[key] = await get(key) ?? keys[key];
+                    break;
+            }
+
+            if(typeof callback == 'function')
+                callback(results);
+
+            return new Promise((resolve, reject) => {
+                try {
+                    resolve(results);
+                } catch(error) {
+                    reject(error);
+                }
+            });
+        },
+
+        // Removes data from the page's storage
+            // Cache.remove(keys:string|array, callback:function?) → Promise<object>
+        async remove(keys, callback = null) {
+            let results = {};
+            let remove = key => LargeCacheStorageArea.removeItem(key),
+                get = key => LargeCacheStorageArea.getItem(key);
+
+            if(nullish(keys))
+                return;
+
+            switch(keys.constructor) {
+                case String:
+                    results[keys] = await get(keys);
+                    remove(keys);
+                    break;
+
+                case Array:
+                    for(let key of keys) {
+                        results[key] = await get(key);
+                        remove(key);
+                    }
+                    break;
+
+                case Object:
+                    for(let key in keys) {
+                        results[key] = await get(key);
+                        remove(key);
+                    }
+                    break;
+            }
+
+            if(typeof callback == 'function')
+                callback(results);
+
+            return new Promise((resolve, reject) => {
+                try {
+                    resolve(results);
+                } catch(error) {
+                    reject(error);
+                }
+            });
+        },
+
+        // Returns the number of Bytes in use
+            // Cache.getBytesInUse(keys:string|array?) → Promise<number>
+        async getBytesInUse(keys) {
+            let bytesUsed = 0;
+            let size = async key => (key?.length | 0) + (JSON.stringify(await LargeCacheStorageArea.getItem(key))?.length | 0);
+
+            keys ??= await Cache.large.keys();
+
+            switch(keys.constructor) {
+                case String:
+                    bytesUsed += await size(keys);
+                    break;
+
+                case Array:
+                    for(let key of keys)
+                        bytesUsed += await size(key);
+                    break;
+
+                case Object:
+                    for(let key in keys)
+                        bytesUsed += await size(key);
+                    break;
+            }
+
+            if(typeof callback == 'function')
+                callback(bytesUsed);
+
+            return new Promise((resolve, reject) => {
+                try {
+                    resolve(bytesUsed);
+                } catch(error) {
+                    reject(error);
+                }
+            });
+        },
+
+        async keys() {
+            return LargeCacheStorageArea.keys();
+        },
     },
 };
 
@@ -959,7 +1162,7 @@ __STATIC__: {
             Extension = Container.extension;
             Manifest = Runtime.getManifest();
 
-            Storage = Storage.sync ?? Storage.local;
+            Storage = Storage.local ?? Storage.sync;
         } break;
 
         case 'chrome':
@@ -969,7 +1172,7 @@ __STATIC__: {
             Extension = Container.extension;
             Manifest = Runtime.getManifest();
 
-            Storage = Storage.sync ?? Storage.local;
+            Storage = Storage.local ?? Storage.sync;
         } break;
     }
 
@@ -986,9 +1189,21 @@ __STATIC__: {
     window.SHARED_MODULE_UPDATE = SHARED_MODULE_UPDATE;
     window.UPDATE = UPDATE;
 
-    let StorageSpace = localStorage ?? sessionStorage;
+    let CacheStorageArea = localStorage ?? sessionStorage;
 
-    window.StorageSpace = StorageSpace;
+    window.CacheStorageArea = CacheStorageArea;
+
+    let LargeCacheStorageArea = localforage;
+
+    LargeCacheStorageArea.config({
+        name: Manifest.name,
+        storeName: Manifest.name,
+        version: Manifest.version,
+        description: Manifest.description,
+        driver: [localforage.INDEXEDDB, localforage.LOCALSTORAGE],
+    });
+
+    window.LargeCacheStorageArea = LargeCacheStorageArea;
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 

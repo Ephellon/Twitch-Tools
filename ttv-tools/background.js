@@ -25,7 +25,8 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
     if(onlineOnly && TabIsOffline(tab))
         return;
 
-    Container.tabs.sendMessage(id, { action: 'reload', forced }, response => {
+    console.warn(`Reloading tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
+    Container.tabs.sendMessage(tab.id, { action: 'reload', forced }, response => {
         if(forced || response.ok)
             Container.tabs.reload(tab.id);
     });
@@ -87,7 +88,19 @@ switch(BrowserNamespace) {
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
 
-        Storage = Storage.sync ?? Storage.local;
+        let _storage = {};
+
+        Storage.sync.get().then(_sync => {
+            Object.assign(_storage, _sync);
+
+            (Storage?.local ?? Storage).get().then(_local => {
+                Object.assign(_storage, _local);
+
+                (Storage?.local ?? Storage).set(_storage);
+            });
+        });
+
+        Storage = Storage.local ?? Storage.sync;
     } break;
 
     case 'chrome':
@@ -97,7 +110,19 @@ switch(BrowserNamespace) {
         Extension = Container.extension;
         Manifest = Runtime.getManifest();
 
-        Storage = Storage.sync ?? Storage.local;
+        let _storage = {};
+
+        Storage.sync.get().then(_sync => {
+            Object.assign(_storage, _sync);
+
+            (Storage?.local ?? Storage).get().then(_local => {
+                Object.assign(_storage, _local);
+
+                (Storage?.local ?? Storage).set(_storage);
+            });
+        });
+
+        Storage = Storage.local ?? Storage.sync;
     } break;
 }
 
@@ -212,6 +237,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             Container.tabs.query({
                 url: ["*://*.twitch.tv/*"],
             }, (tabs = []) => {
+                console.warn(`Consuming Up Next...`);
                 for(let tab of tabs)
                     Container.tabs.sendMessage(tab.id, { action: 'consume-up-next', ...request });
 
@@ -226,6 +252,8 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 Container.tabs.query({
                     url: ["*://*.twitch.tv/*"],
                 }, (tabs = []) => {
+                    console.warn(`Claiming Up Next...`);
+
                     let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
                     let hostHas = (url, ...doms) => {
                         for(let dom of doms)

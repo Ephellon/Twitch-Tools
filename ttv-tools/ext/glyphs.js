@@ -21,8 +21,10 @@
  * ne_arrow
  * streamer
  * verified
+ * battery
  * compass
  * dislike
+ * dropper
  * predict
  * refresh
  * station
@@ -181,8 +183,10 @@ window.Glyphs ??= {
     streamer: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M7 2a4 4 0 00-1.015 7.87c-.098.64-.651 1.13-1.318 1.13A2.667 2.667 0 002 13.667V18h2v-4.333c0-.368.298-.667.667-.667.908 0 1.732-.363 2.333-.953.601.59 1.425.953 2.333.953.369 0 .667.299.667.667V18h2v-4.333A2.667 2.667 0 009.333 11c-.667 0-1.22-.49-1.318-1.13A4.002 4.002 0 007 2zM5 6a2 2 0 104 0 2 2 0 00-4 0z" clip-rule="evenodd"></path><path d="M12 8h4v1.51V9l2-1v4l-2-1v1h-4V8z"></path></g></svg>`,
     verified: `<svg fill="#9147ff"      width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.5 3.5L8 2L3.5 3.5L2 8L3.5 12.5L8 14L12.5 12.5L14 8L12.5 3.5ZM7.00008 11L11.5 6.5L10 5L7.00008 8L5.5 6.5L4 8L7.00008 11Z"></path></svg>`,
 
+    battery: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path d="M10.114 9.622 11 7 7.175 9.323a.382.382 0 0 0 .013.65l.698.405L7 13l3.825-2.323a.382.382 0 0 0-.012-.65l-.699-.405z"></path><path fill-rule="evenodd" d="M18 7h-2V4H2v12h14v-3h2V7zm-4-1v3h2v2h-2v3H4V6h10z" clip-rule="evenodd"></path></svg>`,
     compass: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M8.949 7.684L14 6l-1.684 5.051a2 2 0 01-1.265 1.265L6 14l1.684-5.051a2 2 0 011.265-1.265zM11 10a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"></path></g></svg>`,
     dislike: `<svg fill="#bb1411"      width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M9.188 4.188L9.17 4.17A4 4 0 006.343 3H6a4 4 0 00-4 4v.343a4 4 0 001.172 2.829l5.367 5.367L10.484 11H6.538l2.65-6.812z"></path><path d="M10.154 16.846l6.674-6.674A4 4 0 0018 7.343V7a4 4 0 00-4-4h-.343a4 4 0 00-2.091.59L9.462 9h4.055l-3.363 7.846z"></path></g></svg>`,
+    dropper: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path fill-rule="evenodd" d="M16.908 8.364 14.272 11l-.636-.636L9 15l-4 3-3-3 3-4 4.636-4.636L9 5.728l2.636-2.636a3.728 3.728 0 0 1 5.272 5.272zm-5.858-.586-4.535 4.536-1.874 2.498.547.547 2.498-1.874 4.536-4.535-1.172-1.172z" clip-rule="evenodd"></path></svg>`,
     predict: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M3 9c0-.621.08-1.223.233-1.796l1.122.441.654 1.663a5 5 0 105.3-5.299l-1.664-.654-.441-1.122a7 7 0 015.014 12.985L14 16a2 2 0 012 2H4a2 2 0 012-2l.782-.782A7 7 0 013 9z"></path><path d="M7.489 4.511L10 5.5l-2.511.989L6.5 9l-.989-2.511L3 5.5l2.511-.989L6.5 2l.989 2.511zM12 9l-1.435-.565L10 7l-.565 1.435L8 9l1.435.565L10 11l.565-1.435L12 9z"></path></g></svg>`,
     refresh: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 10a6 6 0 0110.472-4H13v2h5V3h-2v1.708A8 8 0 002 10h2zM7 14H5.528A6 6 0 0016 10h2a8 8 0 01-14 5.292V17H2v-5h5v2z"></path></g></svg>`,
     station: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path d="M15 9a4.977 4.977 0 01-1 3l.722 2.167a7 7 0 10-9.445 0L6 12a5 5 0 119-3z"></path><path d="M13 9c0 .981-.471 1.853-1.2 2.4L14 18h-2l-2-6-2 6H6l2.2-6.6A3 3 0 1113 9z"></path></svg>`,

@@ -15,39 +15,27 @@ function getURL(path = '') {
     return url.origin + path.replace(/^(?!\/)/, '/');
 }
 
-let browser, Storage, Runtime, Manifest, Container, BrowserNamespace;
+// Handle updates here
+(async function(version) {
+    if(compareVersions(`${ version } = 5.32.4`)) {
+        // Handle storage change
+        let v5_32_4 = await Storage.get('v5_32_4');
+        Storage_change: if(parseBool(v5_32_4) == false)
+            await alert.silent(`There is a new storage system in place, please press OK to proceed. All settings will be transferred.`).then(async() => {
+                let sync = await Container.storage.sync.get();
+
+                for(let key in sync)
+                    Container.storage.local.set({ [key]: sync[key] });
+                Storage.set({ v5_32_4: true });
+            });
+    }
+})(Manifest.version);
 
 const PRIVATE_OBJECT_CONFIGURATION = Object.freeze({
     writable: false,
     enumerable: false,
     configurable: false,
 });
-
-if(browser && browser.runtime)
-    BrowserNamespace = 'browser';
-else if(chrome && chrome.extension)
-    BrowserNamespace = 'chrome';
-
-Container = window[BrowserNamespace];
-
-switch(BrowserNamespace) {
-    case 'browser': {
-        Runtime = Container.runtime;
-        Storage = Container.storage;
-        Manifest = Runtime.getManifest();
-
-        Storage = Storage.sync || Storage.local;
-    } break;
-
-    case 'chrome':
-    default:{
-        Runtime = Container.extension;
-        Storage = Container.storage;
-        Manifest = Container.runtime.getManifest();
-
-        Storage = Storage.sync || Storage.local;
-    } break;
-}
 
 let // These are option names. Anything else will be removed
     usable_settings = [
@@ -215,6 +203,8 @@ let // These are option names. Anything else will be removed
         'video_clips__quality',
         'video_clips__length',
         'video_clips__dvr',
+        'video_clips__trophy',
+            'video_clips__trophy_length',
 
         /* Error Recovery */
         // Recover Video
@@ -677,7 +667,7 @@ let Glyphs = {
     chrome: '<svg width="100%" height="100%" version="1.1" viewbox="0 0 190 190" x="0px" y="0px"><circle fill="#FFF" cx="85.314" cy="85.713" r="83.805"/><path fill-opacity=".1" d="M138.644 100.95c0-29.454-23.877-53.331-53.33-53.331-29.454 0-53.331 23.877-53.331 53.331H47.22c0-21.039 17.055-38.094 38.093-38.094s38.093 17.055 38.093 38.094"/><circle fill-opacity=".1" cx="89.123" cy="96.379" r="28.951"/><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-149.309" y1="-72.211" x2="-149.309" y2="-71.45" gradientTransform="matrix(82 0 0 82 12328.615 5975.868)"><stop offset="0" stop-color="#81b4e0"/><stop offset="1" stop-color="#0c5a94"/></linearGradient><circle fill="url(#a)" cx="85.314" cy="85.712" r="31.236"/><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-114.66" y1="591.553" x2="-114.66" y2="660.884" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#f06b59"/><stop offset="1" stop-color="#df2227"/></linearGradient><path fill="url(#b)" d="M161.5 47.619C140.525 5.419 89.312-11.788 47.111 9.186a85.315 85.315 0 0 0-32.65 28.529l34.284 59.426c-6.313-20.068 4.837-41.456 24.905-47.77a38.128 38.128 0 0 1 10.902-1.752"/><linearGradient id="c" gradientUnits="userSpaceOnUse" x1="-181.879" y1="737.534" x2="-146.834" y2="679.634" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#388b41"/><stop offset="1" stop-color="#4cb749"/></linearGradient><path fill="url(#c)" d="M14.461 37.716c-26.24 39.145-15.78 92.148 23.363 118.39a85.33 85.33 0 0 0 40.633 14.175l35.809-60.948c-13.39 16.229-37.397 18.529-53.625 5.141a38.096 38.096 0 0 1-11.896-17.33"/><linearGradient id="d" gradientUnits="userSpaceOnUse" x1="-64.479" y1="743.693" x2="-101.81" y2="653.794" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-color="#e4b022"/><stop offset=".3" stop-color="#fcd209"/></linearGradient><path fill="url(#d)" d="M78.457 170.28c46.991 3.552 87.965-31.662 91.519-78.653a85.312 85.312 0 0 0-8.477-44.007H84.552c21.036.097 38.014 17.23 37.917 38.269a38.099 38.099 0 0 1-8.205 23.443"/><linearGradient id="e" gradientUnits="userSpaceOnUse" x1="-170.276" y1="686.026" x2="-170.276" y2="625.078" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#e)" d="M14.461 37.716l34.284 59.426a38.093 38.093 0 0 1 1.523-25.904L15.984 35.43"/><linearGradient id="f" gradientUnits="userSpaceOnUse" x1="-86.149" y1="705.707" x2="-128.05" y2="748.37" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#f)" d="M78.457 170.28l35.809-60.948a38.105 38.105 0 0 1-22.095 12.951L76.933 170.28"/><linearGradient id="chrome-logo-gradient" gradientUnits="userSpaceOnUse" x1="-86.757" y1="717.981" x2="-80.662" y2="657.797" gradientTransform="translate(202.64 -591.17)"><stop offset="0" stop-opacity=".15"/><stop offset=".3" stop-opacity=".06"/><stop offset="1" stop-opacity=".03"/></linearGradient><path fill="url(#chrome-logo-gradient)" d="M161.5 47.619H84.552a38.094 38.094 0 0 1 29.712 14.476l48.759-12.189"/></svg>',
 };
 
-let SETTINGS = {},
+let SETTINGS,
     TRANSLATED = false,
     INITIAL_LOAD = true;
 let SUPPORTED_LANGUAGES = ["bg","cs","da","de","el","es","fi","fr","hu","it","ja","ko","nl","no","pl","ro","ru","sk","sv","th","tr","vi"];
@@ -1161,7 +1151,7 @@ function PostSyncStatus(message = '&nbsp;', type = 'alert') {
 
     $('#sync-status').setAttribute('style', $('#sync-status').getAttribute('style').replace(/;;[^]*$/, ';; opacity: 1'));
 
-    message = $('#sync-status').innerHTML = `<span ${type}-text>${message}</span>`;
+    message = $('#sync-status').innerHTML = `<span ${ type }-text>${ message }</span>`;
 
     clearSyncStatus.clearID = setTimeout(clearSyncStatus, message.split(/\s+/).length * 1_500);
 }
@@ -1186,6 +1176,7 @@ function Sym(string = '') {
 }
 
 $('#sync-settings--upload').onmouseup = async event => {
+    let extractValue = SaveSettings.extractValue;
     let syncToken = $('#sync-token'),
         { currentTarget } = event;
 
@@ -1201,6 +1192,9 @@ $('#sync-settings--upload').onmouseup = async event => {
                     delete CloudExport[key];
 
             CloudExport.syncDate = new Date().toJSON();
+
+            // Export to Sync servers
+            chrome.storage.sync.set(CloudExport);
 
             let id = parseURL(getURL('')).host;
 
@@ -1323,7 +1317,7 @@ $('#sync-settings--upload').onmouseup = async event => {
                     }
 
                     if(defined(place))
-                        settings.push([ID, `!${place}`]);
+                        settings.push([ID, `!${ place }`]);
                     else
                         settings.push([ID,
                             (nullish(value))?
@@ -1335,12 +1329,12 @@ $('#sync-settings--upload').onmouseup = async event => {
                             (+value == value)?
                                 value:
                             (value.length)?
-                                `**${value}**`:
+                                `**${ value }**`:
                             'X'
                         ]);
                 }
 
-                let json = encodeURIComponent(settings.map(([key, value]) => `${key}(${value}`).join(')') + ')');
+                let json = encodeURIComponent(settings.map(([key, value]) => `${ key }(${ value }`).join(')') + ')');
 
                 let url = parseURL(`https://is.gd/create.php`)
                     .addSearch({
@@ -1370,6 +1364,7 @@ $('#sync-settings--upload').onmouseup = async event => {
 };
 
 $('#sync-settings--download').onmouseup = async event => {
+    let assignValue = LoadSettings.assignValue;
     let syncToken = $('#sync-token').value,
         { currentTarget } = event;
 
@@ -1511,13 +1506,13 @@ $('#sync-settings--download').onmouseup = async event => {
                                 if(/^!(\d+)/.test(value) && element.options?.length) {
                                     let selected = value.replace('!', '');
 
-                                    LoadSettings.assignValue(element, element.options[selected].value);
+                                    assignValue(element, element.options[selected].value);
                                 } else if('TF_X'.contains(value) && value?.length) {
                                     let library = { T: true, F: false, _: null, X: '' };
 
-                                    LoadSettings.assignValue(element, library[value]);
+                                    assignValue(element, library[value]);
                                 } else {
-                                    LoadSettings.assignValue(element, value);
+                                    assignValue(element, value);
                                 }
                             } break;
                         }
@@ -1605,7 +1600,7 @@ $('#sync-settings--share').onmousedown = async event => {
         { currentTarget } = event;
 
     if(!syncToken?.length)
-        return PostSyncStatus.warning('Nothing to share');
+        return PostSyncStatus.warning('Nothing to copy');
 
     await navigator.clipboard.writeText(syncToken)
         .then(() => PostSyncStatus.success('Copied to clipboard'))
@@ -1852,7 +1847,7 @@ $.all('a[continue-search]').map(a => {
         let { searchParameters } = parseURL(target.href);
 
         for(let parameter in searchParameters)
-            parameters.push(`${ parameter }=${searchParameters[parameter]}`);
+            parameters.push(`${ parameter }=${ searchParameters[parameter] }`);
     }
 
     if(parameters.length < 1)
@@ -2378,7 +2373,7 @@ document.body.onload = async() => {
 
                 // Dynamically adjust the elements' heights
                 summary.id = uuid;
-                $.all('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${uuid} > ${e}${ not.map(n=>`:not(${n})`).join('') }`).join(','), summary)
+                $.all('details, summary, input, img, div, h1, h2, h3, h4, h5, h6, ol, ul, p'.split(',').map(e=>`#${ uuid } > ${ e }${ not.map(n=>`:not(${ n })`).join('') }`).join(','), summary)
                     .map(element => {
                         let height = getHeight(element);
 
@@ -2420,7 +2415,7 @@ document.body.onload = async() => {
                 });
 
                 setInterval(() => {
-                    $.all([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${dir}-tooltip]`), '[tooltip]'].map(s => s + ':not([tooled])').join(',')).map(element => {
+                    $.all([...['up', 'down', 'left', 'right', 'top', 'bottom'].map(dir => `[${ dir }-tooltip]`), '[tooltip]'].map(s => s + ':not([tooled])').join(',')).map(element => {
                         let tooltip = [...element.attributes].map(attribute => attribute.name).find(attribute => /^(?:(up|top|down|bottom|left|right)-)?tooltip$/i.test(attribute)),
                             direction = tooltip.replace(/-?tooltip$/, '');
 

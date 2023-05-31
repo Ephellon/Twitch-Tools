@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "5.32.3",
+    "version": "5.32.4",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -28,6 +28,7 @@
             "all_frames": true,
             "run_at": "document_end",
             "js": [
+                "ext/localforage.js",
                 "ext/polyfill.js",
                 "ext/resemble.js",
                 "ext/glyphs.js",
@@ -45,6 +46,7 @@
             "all_frames": true,
             "run_at": "document_end",
             "js": [
+                "ext/localforage.js",
                 "ext/polyfill.js",
                 "ext/resemble.js",
                 "ext/sortable.js",
@@ -64,6 +66,7 @@
             "all_frames": true,
             "run_at": "document_end",
             "js": [
+                "ext/localforage.js",
                 "ext/polyfill.js",
                 "ext/resemble.js",
                 "ext/sortable.js",
@@ -113,7 +116,7 @@
     ],
 
     "web_accessible_resources": [{
-        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "_locales/*/translations.json"],
+        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "_locales/*/*.json"],
         "matches": [
             "*://player.twitch.tv/*",
             "*://www.twitch.tv/*",

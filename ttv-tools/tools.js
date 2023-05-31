@@ -30,7 +30,7 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
     JUMPED_FRAMES = false,
     JUMP_DATA = {};
 
-top.__readyState__ = document.readyState;
+top.WINDOW_STATE = document.readyState;
 
 // Populate the username field by quickly showing the menu
 when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
@@ -46,8 +46,8 @@ when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"
         UserMenuToggleButton.click();
     });
 
-top.onbeforeunload = event => {
-    top.__readyState__ = "unloading";
+top.onpagehide = ({ persisted }) => {
+    top.WINDOW_STATE = (persisted? document.readyState: 'unloading');
 };
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
@@ -690,7 +690,7 @@ class Card {
             else
                 unit ??= "";
 
-            styling.push(`${key}:${value}${unit}`);
+            styling.push(`${ key }:${ value }${ unit }`);
         }
 
         styling = styling.join(';');
@@ -829,7 +829,7 @@ class Card {
                 else
                     unit ??= "";
 
-                styling.push(`${key}:${value}${unit}`);
+                styling.push(`${ key }:${ value }${ unit }`);
             }
 
             styling = styling.join(';');
@@ -921,7 +921,7 @@ class ContextMenu {
             else
                 unit ??= "";
 
-            styling.push(`${key}:${value}${unit}`);
+            styling.push(`${ key }:${ value }${ unit }`);
         }
 
         styling = styling.join(';');
@@ -1532,11 +1532,9 @@ class Search {
 
 // Search helpers...
     // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
-(async() => {
-    let { searchToken, searchClientID = 'gp762nuuoqcoxypju8c569th9wz7q5' } = await Settings.get(['searchToken', 'searchClientID']);
-
+Cache.load(['searchToken', 'searchClientID'], async({ searchToken, searchClientID = 'gp762nuuoqcoxypju8c569th9wz7q5' }) => {
     if(nullish(searchToken) || nullish(searchClientID)) {
-        fetchURL(`https://www.twitchtokengenerator.com/api/refresh/hlbsw1j2uoaiqrv4ght4d4xi0sdg4cz5zpdtsp2a6en9dfxvoi`)
+        fetchURL(`https://www.twitchtokengenerator.com/api/refresh/gjh4mq5hl82lo1opurv4ropup3kzsmlzt87sp51wnt7r4n4114`)
             .then(r => r.json())
             .then(json => {
                 let { token = searchToken, success = false } = json;
@@ -1544,44 +1542,157 @@ class Search {
                 if(!success)
                     throw 'Unable to generate tokens...';
 
-                Settings.set({ searchToken: token, searchClientID });
+                Cache.save({ searchToken: token, searchClientID });
 
                 Search.authorization = `Bearer ${ token }`;
-            });
+            })
+            .catch(WARN);
     } else {
-        Settings.set({ searchToken, searchClientID });
+        Cache.save({ searchToken, searchClientID });
 
         Search.authorization = `Bearer ${ searchToken }`;
     }
 
     Search.clientID = searchClientID;
-})();
+});
 
 // https://stackoverflow.com/a/45205645/4211612
-// Creates a CSS object that can be used to easily transform an object to a CSS string
+// Creates a CSS object that can be used to easily transform an object to a CSS string, JSON, or object
     // new CSSObject({ ...css-properties }) → Object<CSSObject>
 class CSSObject {
     constructor(properties = {}) {
-        for(let key in properties)
-            this[key] = properties[key];
-
-        return this;
+        return Object.assign(this, properties);
     }
 
-    toString() {
-        return Object.entries(this).map(([key, value]) => {
-            key = key.replace(/([A-Z])/g, ($0, $1, $$, $_) => '-' + $1.toLowerCase());
-
-            return [key, value].join(':');
-        })
-        .join(';');
+    toRule(selector = '*', vendors, stylized = false) {
+        return `${ selector } {${ this.toString(vendors, stylized).replace(/^|$/g, $0 => stylized? '\n': '') }}`;
     }
 
-    toObject() {
+    toJSON(vendors, replacer = null, spaces = '') {
+        return JSON.stringify(this.toObject(vendors), replacer, spaces);
+    }
+
+    toString(vendors, stylized = false) {
+        if(stylized) {
+            let partitions = [
+                ['meta', 'container-* counter-* user-* view-* will-change writing-*'],
+                ['animation', 'animation-* transition-*'],
+                ['content', 'accent-* all break-* caret-* content-*'],
+                ['appearance', 'appearance backdrop-* backface-* break-* border-* box-* clear color-* contain-* cursor direction display filter font forced-* hanging-* hyphenate-* hyphens image-* initial-* justify-* letter-* line-* mask-* math-* mix-blend-mode opacity outline-* overflow-* overscroll-* page-* paint-* pointer-* print-* quotes text-* touch-* visibility white-space word-*'],
+                ['position', 'align-* bottom break-* clear flex-* float grid-* inset-* isolation left margin-* masonry-* object-* offset-* order orphans padding-* perspective-* place-* position right rotate ruby-* scale scroll-* scrollbar-* top transform-* translate vertical-* widows z-index'],
+                ['size', 'aspect-ratio block-size height inline-* max-* min-* resize shape-* width zoom'],
+                ['list', 'list-*'],
+                ['table', 'caption-* column-* columns empty-cells gap row-gap tab-size table-*'],
+            ].map(([partition, subjects]) => [partition, subjects.split(/\s+/).map(subject => RegExp('^(-\\w+-)?' + subject.replace('-*', '(-[\\w-]+)?')))]);
+
+            return Object.entries(this.toObject(vendors)).map(([property, value]) => {
+                property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+                let position = partitions.length;
+
+                search: for(let index = 0; index < partitions.length; ++index) {
+                    let [partition, subjects] = partitions[index];
+
+                    for(let subject of subjects)
+                        if(subject.test(property)) {
+                            position = index;
+                            break search;
+                        }
+                }
+
+                return [position, `\t${ property }: ${ value };`];
+            })
+            .sort(([A], [B]) => A - B)
+            .map(([position, declaration], index, array) => (position != array[index + 1]?.[0])? declaration + '\n': declaration)
+            .join('\n');
+        } else {
+            return Object.entries(this.toObject(vendors)).map(([property, value]) => {
+                property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+                return [property, value].join(':');
+            })
+            .join(';');
+        }
+    }
+
+    toObject(vendors = []) {
         let object = {};
 
+        if(vendors.equals?.('all'))
+            vendors = 'ms moz o webkit khtml';
+        if(typeof vendors == 'string')
+            vendors = vendors.split(/[^\w-]+/).filter(string => string.length);
+
         for(let key in this) {
-            let properKey = key.replace(/([A-Z])/g, ($0, $1, $$, $_) => '-' + $1.toLowerCase());
+            let properKey = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+            for(let vendor of vendors)
+                switch(vendor.toLowerCase().replace(/^-+|-+$/g, '')) {
+                    case 'ms':
+                    case 'microsoft':
+                    case 'internet-explorer':
+                    case 'edge': {
+                        let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "backface-visibility", "background", "background-image", "border-bottom-left-radius", "border-bottom-right-radius", "border-image", "border-radius", "border-top-left-radius", "border-top-right-radius", "content", "list-style", "list-style-image", "mask", "mask-image", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function"];
+
+                        if(keys.contains(properKey))
+                            object[`-ms-${ properKey }`] = this[key];
+                    } break;
+
+                    case 'moz':
+                    case 'gecko':
+                    case 'mozilla':
+                    case 'firefox': {
+                        let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "appearance", "backface-visibility", "background-clip", "background-inline-policy", "background-origin", "background-size", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-image", "border-start", "border-start-color", "border-start-style", "border-start-width", "box-align", "box-direction", "box-flex", "box-ordinal-group", "box-orient", "box-pack", "box-sizing", "column-count", "column-fill", "column-gap", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-width", "float-edge", "font-feature-settings", "font-language-override", "force-broken-image-icon", "hyphens", "image-region", "margin-end", "margin-start", "opacity", "orient", "osx-font-smoothing", "outline", "outline-color", "outline-offset", "outline-style", "outline-width", "padding-end", "padding-start", "perspective", "perspective-origin", "tab-size", "text-align-last", "text-decoration-color", "text-decoration-line", "text-decoration-style", "text-size-adjust", "transform", "transform-origin", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-focus", "user-input", "user-modify", "user-select"];
+                        let supers = {
+                            "box-decoration-break": "background-inline-policy",
+                            "border-inline-end": "border-end",
+                            "border-inline-end-color": "border-end-color",
+                            "border-inline-end-style": "border-end-style",
+                            "border-inline-end-width": "border-end-width",
+                            "border-inline-start": "border-start",
+                            "border-inline-start-color": "border-start-color",
+                            "border-inline-start-style": "border-start-style",
+                            "border-inline-start-width": "border-start-width",
+                            "margin-inline-end": "margin-end",
+                            "margin-inline-start": "margin-start",
+                            "padding-inline-end": "padding-end",
+                            "padding-inline-start": "padding-start",
+                        };
+
+                        if(keys.contains(properKey))
+                            object[`-moz-${ properKey }`] = this[key];
+                        else if(properKey in supers)
+                            object[`-moz-${ supers[properKey] }`] = this[key];
+                    } break;
+
+                    case 'o':
+                    case 'opera': {
+                        let keys = ["backface-visibility", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "replace", "set-link-source", "transform-style", "use-link-source"];
+
+                        if(keys.contains(properKey))
+                            object[`-o-${ properKey }`] = this[key];
+                    } break;
+
+                    case 'webkit':
+                    case 'apple':
+                    case 'safari':
+                    case 'google':
+                    case 'chrome':
+                    case 'chromium': {
+                        let keys = ["align-content", "align-items", "align-self", "alt", "animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "animation-trigger", "app-region", "appearance", "aspect-ratio", "backdrop-filter", "backface-visibility", "background-clip", "background-composite", "background-origin", "background-size", "border-after", "border-after-color", "border-after-style", "border-after-width", "border-before", "border-before-color", "border-before-style", "border-before-width", "border-bottom-left-radius", "border-bottom-right-radius", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-fit", "border-horizontal-spacing", "border-image", "border-radius", "border-start", "border-start-color", "border-start-style", "border-start-width", "border-top-left-radius", "border-top-right-radius", "border-vertical-spacing", "box-align", "box-decoration-break", "box-direction", "box-flex", "box-flex-group", "box-lines", "box-ordinal-group", "box-orient", "box-pack", "box-reflect", "box-shadow", "box-sizing", "clip-path", "color-correction", "column-axis", "column-break-after", "column-break-before", "column-break-inside", "column-count", "column-fill", "column-gap", "column-progression", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-span", "column-width", "columns", "cursor-visibility", "dashboard-region", "device-pixel-ratio", "filter", "flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink", "flex-wrap", "flow-from", "flow-into", "font-feature-settings", "font-kerning", "font-size-delta", "font-smoothing", "font-variant-ligatures", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow", "grid-auto-rows", "grid-column", "grid-column-end", "grid-column-gap", "grid-column-start", "grid-gap", "grid-row", "grid-row-end", "grid-row-gap", "grid-row-start", "grid-template", "grid-template-areas", "grid-template-columns", "grid-template-rows", "highlight", "hyphenate-character", "hyphenate-charset", "hyphenate-limit-after", "hyphenate-limit-before", "hyphenate-limit-lines", "hyphens", "image-set", "initial-letter", "justify-content", "justify-items", "justify-self", "line-align", "line-box-contain", "line-break", "line-clamp", "line-grid", "line-snap", "locale", "logical-height", "logical-width", "margin-after", "margin-after-collapse", "margin-before", "margin-before-collapse", "margin-bottom-collapse", "margin-collapse", "margin-end", "margin-start", "margin-top-collapse", "marquee", "marquee-direction", "marquee-increment", "marquee-repetition", "marquee-speed", "marquee-style", "mask", "mask-attachment", "mask-box-image", "mask-box-image-outset", "mask-box-image-repeat", "mask-box-image-slice", "mask-box-image-source", "mask-box-image-width", "mask-clip", "mask-composite", "mask-image", "mask-origin", "mask-position", "mask-position-x", "mask-position-y", "mask-repeat", "mask-repeat-x", "mask-repeat-y", "mask-size", "mask-source-type", "match-nearest-mail-blockquote-color", "max-logical-height", "max-logical-width", "min-logical-height", "min-logical-width", "nbsp-mode", "opacity", "order", "overflow-scrolling", "padding-after", "padding-before", "padding-end", "padding-start", "perspective", "perspective-origin", "perspective-origin-x", "perspective-origin-y", "print-color-adjust", "region-break-after", "region-break-before", "region-break-inside", "region-fragment", "rtl-ordering", "ruby-position", "scroll-snap-type", "shape-image-threshold", "shape-inside", "shape-margin", "shape-outside", "svg-shadow", "tap-highlight-color", "text-color-decoration", "text-combine", "text-decoration", "text-decoration-line", "text-decoration-skip", "text-decoration-style", "text-decorations-in-effect", "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style", "text-fill-color", "text-justify", "text-orientation", "text-security", "text-size-adjust", "text-stroke", "text-stroke-color", "text-stroke-width", "text-underline-position", "text-zoom", "touch-action", "transform", "transform-2d", "transform-3d", "transform-origin", "transform-origin-x", "transform-origin-y", "transform-origin-z", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-drag", "user-modify", "user-select", "word-break", "writing-mode"];
+
+                        if(keys.contains(properKey))
+                            object[`-webkit-${ properKey }`] = this[key];
+                    } break;
+
+                    case 'khtml':
+                    case 'konqueror': {
+                        let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "box-shadow", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-select"];
+
+                        if(keys.contains(properKey))
+                            object[`-khtml-${ properKey }`] = this[key];
+                    } break;
+                }
 
             object[properKey] = this[key];
         }
@@ -1601,22 +1712,162 @@ class Color {
 
     static CONTRASTS = [Color.LOW_CONTRAST, Color.NORMAL_CONTRAST, Color.HIGH_CONTRAST, Color.PERFECT_CONTRAST];
 
-    static white    = [0xFF, 0xFF, 0xFF];
-    static black    = [0x00, 0x00, 0x00];
-    static grey     = [0x88, 0x88, 0x88];
-    static red      = [0xFF, 0x00, 0xFF];
-    static pink     = [0xFF, 0x00, 0x88];
-    static orange   = [0xFF, 0x88, 0x00];
-    static brown    = [0x44, 0x22, 0x00];
-    static yellow   = [0xFF, 0xFF, 0x00];
-    static green    = [0x00, 0xFF, 0x00];
-    static blue     = [0x00, 0x00, 0xFF];
-    static purple   = [0xFF, 0x00, 0xFF];
+    // https://www.w3schools.com/lib/w3color.js
+    static aliceblue            = [0xF0,0xF8,0xFF];
+    static antiquewhite         = [0xFA,0xEB,0xD7];
+    static aqua                 = [0x00,0xFF,0xFF];
+    static aquamarine           = [0x7F,0xFF,0xD4];
+    static azure                = [0xF0,0xFF,0xFF];
+    static beige                = [0xF5,0xF5,0xDC];
+    static bisque               = [0xFF,0xE4,0xC4];
+    static black                = [0x00,0x00,0x00];
+    static blanchedalmond       = [0xFF,0xEB,0xCD];
+    static blue                 = [0x00,0x00,0xFF];
+    static blueviolet           = [0x8A,0x2B,0xE2];
+    static brown                = [0xA5,0x2A,0x2A];
+    static burlywood            = [0xDE,0xB8,0x87];
+    static cadetblue            = [0x5F,0x9E,0xA0];
+    static chartreuse           = [0x7F,0xFF,0x00];
+    static chocolate            = [0xD2,0x69,0x1E];
+    static coral                = [0xFF,0x7F,0x50];
+    static cornflowerblue       = [0x64,0x95,0xED];
+    static cornsilk             = [0xFF,0xF8,0xDC];
+    static crimson              = [0xDC,0x14,0x3C];
+    static cyan                 = [0x00,0xFF,0xFF];
+    static darkblue             = [0x00,0x00,0x8B];
+    static darkcyan             = [0x00,0x8B,0x8B];
+    static darkgoldenrod        = [0xB8,0x86,0x0B];
+    static darkgray             = [0xA9,0xA9,0xA9];
+    static darkgreen            = [0xA9,0xA9,0xA9];
+    static darkgrey             = [0x00,0x64,0x00];
+    static darkkhaki            = [0xBD,0xB7,0x6B];
+    static darkmagenta          = [0x8B,0x00,0x8B];
+    static darkolivegreen       = [0x55,0x6B,0x2F];
+    static darkorange           = [0xFF,0x8C,0x00];
+    static darkorchid           = [0x99,0x32,0xCC];
+    static darkred              = [0x8B,0x00,0x00];
+    static darksalmon           = [0xE9,0x96,0x7A];
+    static darkseagreen         = [0x8F,0xBC,0x8F];
+    static darkslateblue        = [0x48,0x3D,0x8B];
+    static darkslategray        = [0x2F,0x4F,0x4F];
+    static darkslategrey        = [0x2F,0x4F,0x4F];
+    static darkturquoise        = [0x00,0xCE,0xD1];
+    static darkviolet           = [0x94,0x00,0xD3];
+    static deeppink             = [0xFF,0x14,0x93];
+    static deepskyblue          = [0x00,0xBF,0xFF];
+    static dimgray              = [0x69,0x69,0x69];
+    static dimgrey              = [0x69,0x69,0x69];
+    static dodgerblue           = [0x1E,0x90,0xFF];
+    static firebrick            = [0xB2,0x22,0x22];
+    static floralwhite          = [0xFF,0xFA,0xF0];
+    static forestgreen          = [0x22,0x8B,0x22];
+    static fuchsia              = [0xFF,0x00,0xFF];
+    static gainsboro            = [0xDC,0xDC,0xDC];
+    static ghostwhite           = [0xF8,0xF8,0xFF];
+    static gold                 = [0xFF,0xD7,0x00];
+    static goldenrod            = [0xDA,0xA5,0x20];
+    static gray                 = [0x80,0x80,0x80];
+    static green                = [0x80,0x80,0x80];
+    static greenyellow          = [0x00,0x80,0x00];
+    static grey                 = [0xAD,0xFF,0x2F];
+    static honeydew             = [0xF0,0xFF,0xF0];
+    static hotpink              = [0xFF,0x69,0xB4];
+    static indianred            = [0xCD,0x5C,0x5C];
+    static indigo               = [0x4B,0x00,0x82];
+    static ivory                = [0xFF,0xFF,0xF0];
+    static khaki                = [0xF0,0xE6,0x8C];
+    static lavender             = [0xE6,0xE6,0xFA];
+    static lavenderblush        = [0xFF,0xF0,0xF5];
+    static lawngreen            = [0x7C,0xFC,0x00];
+    static lemonchiffon         = [0xFF,0xFA,0xCD];
+    static lightblue            = [0xAD,0xD8,0xE6];
+    static lightcoral           = [0xF0,0x80,0x80];
+    static lightcyan            = [0xE0,0xFF,0xFF];
+    static lightgoldenrodyellow = [0xFA,0xFA,0xD2];
+    static lightgray            = [0xD3,0xD3,0xD3];
+    static lightgreen           = [0xD3,0xD3,0xD3];
+    static lightgrey            = [0x90,0xEE,0x90];
+    static lightpink            = [0xFF,0xB6,0xC1];
+    static lightsalmon          = [0xFF,0xA0,0x7A];
+    static lightseagreen        = [0x20,0xB2,0xAA];
+    static lightskyblue         = [0x87,0xCE,0xFA];
+    static lightslategray       = [0x77,0x88,0x99];
+    static lightslategrey       = [0x77,0x88,0x99];
+    static lightsteelblue       = [0xB0,0xC4,0xDE];
+    static lightyellow          = [0xFF,0xFF,0xE0];
+    static lime                 = [0x00,0xFF,0x00];
+    static limegreen            = [0x32,0xCD,0x32];
+    static linen                = [0xFA,0xF0,0xE6];
+    static magenta              = [0xFF,0x00,0xFF];
+    static maroon               = [0x80,0x00,0x00];
+    static mediumaquamarine     = [0x66,0xCD,0xAA];
+    static mediumblue           = [0x00,0x00,0xCD];
+    static mediumorchid         = [0xBA,0x55,0xD3];
+    static mediumpurple         = [0x93,0x70,0xDB];
+    static mediumseagreen       = [0x3C,0xB3,0x71];
+    static mediumslateblue      = [0x7B,0x68,0xEE];
+    static mediumspringgreen    = [0x00,0xFA,0x9A];
+    static mediumturquoise      = [0x48,0xD1,0xCC];
+    static mediumvioletred      = [0xC7,0x15,0x85];
+    static midnightblue         = [0x19,0x19,0x70];
+    static mintcream            = [0xF5,0xFF,0xFA];
+    static mistyrose            = [0xFF,0xE4,0xE1];
+    static moccasin             = [0xFF,0xE4,0xB5];
+    static navajowhite          = [0xFF,0xDE,0xAD];
+    static navy                 = [0x00,0x00,0x80];
+    static oldlace              = [0xFD,0xF5,0xE6];
+    static olive                = [0x80,0x80,0x00];
+    static olivedrab            = [0x6B,0x8E,0x23];
+    static orange               = [0xFF,0xA5,0x00];
+    static orangered            = [0xFF,0x45,0x00];
+    static orchid               = [0xDA,0x70,0xD6];
+    static palegoldenrod        = [0xEE,0xE8,0xAA];
+    static palegreen            = [0x98,0xFB,0x98];
+    static paleturquoise        = [0xAF,0xEE,0xEE];
+    static palevioletred        = [0xDB,0x70,0x93];
+    static papayawhip           = [0xFF,0xEF,0xD5];
+    static peachpuff            = [0xFF,0xDA,0xB9];
+    static peru                 = [0xCD,0x85,0x3F];
+    static pink                 = [0xFF,0xC0,0xCB];
+    static plum                 = [0xDD,0xA0,0xDD];
+    static powderblue           = [0xB0,0xE0,0xE6];
+    static purple               = [0x80,0x00,0x80];
+    static rebeccapurple        = [0x66,0x33,0x99];
+    static red                  = [0xFF,0x00,0x00];
+    static rosybrown            = [0xBC,0x8F,0x8F];
+    static royalblue            = [0x41,0x69,0xE1];
+    static saddlebrown          = [0x8B,0x45,0x13];
+    static salmon               = [0xFA,0x80,0x72];
+    static sandybrown           = [0xF4,0xA4,0x60];
+    static seagreen             = [0x2E,0x8B,0x57];
+    static seashell             = [0xFF,0xF5,0xEE];
+    static sienna               = [0xA0,0x52,0x2D];
+    static silver               = [0xC0,0xC0,0xC0];
+    static skyblue              = [0x87,0xCE,0xEB];
+    static slateblue            = [0x6A,0x5A,0xCD];
+    static slategray            = [0x70,0x80,0x90];
+    static slategrey            = [0x70,0x80,0x90];
+    static snow                 = [0xFF,0xFA,0xFA];
+    static springgreen          = [0x00,0xFF,0x7F];
+    static steelblue            = [0x46,0x82,0xB4];
+    static tan                  = [0xD2,0xB4,0x8C];
+    static teal                 = [0x00,0x80,0x80];
+    static thistle              = [0xD8,0xBF,0xD8];
+    static tomato               = [0xFF,0x63,0x47];
+    static turquoise            = [0x40,0xE0,0xD0];
+    static violet               = [0xEE,0x82,0xEE];
+    static wheat                = [0xF5,0xDE,0xB3];
+    static white                = [0xFF,0xFF,0xFF];
+    static whitesmoke           = [0xF5,0xF5,0xF5];
+    static yellow               = [0xFF,0xFF,0x00];
+    static yellowgreen          = [0x9A,0xCD,0x32];
 
-    constructor() {}
+    constructor(...args) {
+        return Object.assign(this, Color.destruct.apply(null, args));
+    }
 
     // Converts Hex color values to a color-object
-        // Color.HEXtoColor(hex:string<CSS-Color>) → Object<Color>
+        // Color.HEXtoColor(hex:string<String#CSS-Color>) → Object<Color>
     static HEXtoColor(hex = '#000') {
         hex = hex.replace('#', '');
 
@@ -1678,12 +1929,15 @@ class Color {
             H, S, L, A,
             hue: H, saturation: S, lightness: L, alpha: A,
             HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
-            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
+            HSLA: `hsla(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
 
             R, G, B,
             red: R, green: G, blue: B,
-            RGB: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            RGBA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -1727,13 +1981,174 @@ class Color {
             H, S, L, A,
             hue, saturation, lightness, alpha: A,
             HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
-            HSLA: `hsl(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
+            HSLA: `hsla(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
 
             R, G, B,
             red: R, green: G, blue: B,
-            RGB: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            RGBA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
         };
+    }
+
+    // https://www.w3schools.com/lib/w3color.js
+    static RGBtoHWB(R = 0, G = 0, B = 0, A = 1) {
+        // Similar to .RGBtoHSL
+        // Convert RGB to fractions of 1
+        let r = R / 255,
+            g = G / 255,
+            b = B / 255;
+
+        // Find channel values
+        let Cmin = Math.min(r, g, b),
+            Cmax = Math.max(r, g, b),
+            delta = Cmax - Cmin;
+
+        let H = 0, W = 0, K = 0;
+
+        // Calculate the hue
+        if(delta == 0)
+            H = 0;
+        else if(r == Cmax)
+            H = (((g - b) / delta) % 6) * 360;
+        else if (g == Cmax)
+            H = (((b - r) / delta) + 2) * 360;
+        else
+            H = (((r - g) / delta) + 4) * 360;
+
+        W = Cmin;
+        K = 1 - Cmax;
+
+        return {
+            H, W, K,
+            hue: H, white: W, black: K, alpha: A,
+            HWK: `hwb(${ H }deg,${ W }%,${ K }%)`,
+
+            R, G, B, A,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // Converts HWB to RGB → https://www.w3schools.com/lib/w3color.js
+        // Color.HWBtoRGB(hue:number<Degrees>?, white:number<Percentage>?, black:number<Percentage>?) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
+    static HWBtoRGB(hue = 0, white = 0, black = 0, alpha = 1) {
+        let { R, G, B } = Color.HSLtoRGB(hue, 1, .5);
+        let E = white + black;
+
+        if(E > 1) {
+            white = Number((white / E).toFixed(2));
+            black = Number((black / E).toFixed(2));
+        }
+
+        let f = c => (
+            c *= (1 - white - black),
+            c += white,
+            c *= 255
+        );
+
+        R = f(R);
+        G = f(G);
+        B = f(B);
+
+        return {
+            H: hue, W: white, K: black,
+            hue, white, black, alpha,
+            HWK: `hwb(${ H }deg,${ W }%,${ K }%)`,
+
+            R, G, B, A: alpha,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, alpha.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, alpha * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://www.w3schools.com/lib/w3color.js
+    static RGBtoCMYK(R = 0, G = 0, B = 0, A = 1) {
+        // Similar to .RGBtoHSL
+        // Convert RGB to fractions of 1
+        let r = R / 255,
+            g = G / 255,
+            b = B / 255;
+
+        // Find channel values
+        let Cmax = Math.max(r, g, b),
+            K = 1 - Cmax,
+            k = 1 - K;
+
+        let C = 0, M = 0, Y = 0;
+
+        // Calculate the hue
+        if(K > 0) {
+            C = (1 - R - K) / k;
+            M = (1 - G - K) / k;
+            Y = (1 - B - K) / k;
+        }
+
+        return {
+            C, M, Y, K,
+            cyan: C, magenta: M, yellow: Y, black: K, alpha: A,
+            CMYK: `cmyk(${ C }%,${ M }%,${ Y }%,${ K }%)`,
+
+            R, G, B, A,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://www.w3schools.com/lib/w3color.js
+    static CMYKtoRGB(C = 0, M = 0, Y = 0, K = 0) {
+        let R = 255 - ((Math.min(1, C * (1 - K) + K)) * 255),
+            G = 255 - ((Math.min(1, M * (1 - K) + K)) * 255),
+            B = 255 - ((Math.min(1, Y * (1 - K) + K)) * 255),
+            A = 1;
+
+        return {
+            C, M, Y, K,
+            cyan: C, magenta: M, yellow: Y, black: K, alpha: A,
+            CMYK: `cmyk(${ C }%,${ M }%,${ Y }%,${ K }%)`,
+
+            R, G, B, A,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    toRGB() {
+        return `rgb(${ this.R },${ this.G },${ this.B })`;
+    }
+
+    toHEX() {
+        return this.HEX;
+    }
+
+    toHSL() {
+        return this.HSL;
+    }
+
+    toHWB() {
+        return Color.RGBtoHWB(this.R, this.G, this.B, this.A).HSL;
+    }
+
+    toCMYK() {
+        return Color.RGBtoCMYK(this.R, this.G, this.B, this.A).CMYK;
     }
 
     // https://stackoverflow.com/a/9733420/4211612
@@ -1751,6 +2166,24 @@ class Color {
         });
 
         return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
+    }
+
+    isDarkerThan(color) {
+        if(!color instanceof Color)
+            throw TypeError(`The opposing color argument must be a Color object. Use "new Color(color:string)"`);
+
+        let { K = .5 } = Color.RGBtoCMYK(color.R, color.G, color.B);
+
+        return ((this.R * 299 + this.G * 587 + this.B * 114) / 1e3) < (K * 255);
+    }
+
+    isLighterThan(color) {
+        if(!color instanceof Color)
+            throw TypeError(`The opposing color argument must be a Color object. Use "new Color(color:string)"`);
+
+        let { W = .5 } = Color.RGBtoCMYK(color.R, color.G, color.B);
+
+        return ((this.R * 299 + this.G * 587 + this.B * 114) / 1e3) > (W * 255);
     }
 
     // https://stackoverflow.com/a/9733420/4211612
@@ -1788,6 +2221,9 @@ class Color {
     static destruct(color) {
         color = (color || '#000').toString().trim();
 
+        if(/^(\w+)$/.test(color) && color in Color && Color[color].length == 3)
+            return Color.HEXtoColor(Color[color].map(c => c.toString(16).padStart(2, '00')).join(''));
+
         let colorRegExps = [
             // #RGB #RRGGBB
             /^([#]?)(?<red>[\da-f]{1,2}?)(?<green>[\da-f]{1,2}?)(?<blue>[\da-f]{1,2}?)(?<alpha>[\da-f]{1,2}?)?$/i,
@@ -1799,6 +2235,13 @@ class Color {
             // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hsl
             // hsl(hue, saturation, lightness) hsl(hue saturation lightness) hsla(hue, saturation, lightness, alpha) hsla(hue saturation lightness / alpha)
             /^(hsla?)\((?<hue>[\d\.]+)(?:deg(?:rees?)?)?[\s,]+(?<saturation>[\d\.]+)(?:[%])?[\s,]+(?<lightness>[\d\.]+)(?:[%])?(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
+
+            // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hwb
+            // hwb(hue, white, black) hwb(hue white black)
+            /^(hwb)\((?<hue>[\d\.]+)(?:deg(?:rees?)?)?[\s,]+(?<white>[\d\.]+)(?:[%])?[\s,]+(?<black>[\d\.]+)(?:[%])?\)$/i,
+
+            // cmyk(cyan, magenta, yellow, black) cmyk(cyan magenta yellow black)
+            /^(cmyk)\((?<cyan>[\d\.]+)(?:[%])?[\s,]+(?<magenta>[\d\.]+)(?:[%])?[\s,]+(?<yellow>[\d\.]+)(?:[%])?[\s,]+(?<black>[\d\.]+)(?:[%])?\)$/i,
         ];
 
         for(let regexp of colorRegExps)
@@ -1821,6 +2264,14 @@ class Color {
                         case 'hsl':
                         case 'hsla': {
                             computed = Color.HSLtoRGB(...[$2, $3, $4, $5 ?? 1].map(parseFloat));
+                        } break;
+
+                        case 'hwb': {
+                            computed = Color.HWBtoRGB(...[$2, $3, $4].map(parseFloat));
+                        } break;
+
+                        case 'cmyk': {
+                            computed = Color.CMYKtoRGB(...[$2, $3, $4, $5].map(parseFloat));
                         } break;
 
                         default: return;
@@ -2407,7 +2858,7 @@ function parseCoin(amount = '') {
     };
 
     let units = getUnits(LITERATURE);
-    let points = amount.toString().replace(RegExp(`(\\d{1,3})(${ '(?:\\D\\d{1,3})?'.repeat(9) })?(?:\\s*(\\D))?`, 'i'), ($0, $1, $2 = '0', $3 = '_', $$, $_) => {
+    let points = amount?.toString()?.replace(RegExp(`(\\d{1,3})(${ '(?:\\D\\d{1,3})?'.repeat(9) })?(?:\\s*(\\D))?`, 'i'), ($0, $1, $2 = '0', $3 = '_', $$, $_) => {
         $2 = $2.replace(/\D/g, '');
 
         return parseFloat([$1, $2].join($2.length > 2? '': '.')) * (1e3 ** units[$3.toUpperCase()]);
@@ -2752,7 +3203,7 @@ async function GetLanguage() {
 
 // Reloads the webpage
     // ReloadPage(onlineOnly:boolean?) → undefined
-function ReloadPage(onlineOnly = true) {
+async function ReloadPage(onlineOnly = true) {
     // Navigaotr is offline, do not reload
     if(true
         && onlineOnly
@@ -2761,6 +3212,8 @@ function ReloadPage(onlineOnly = true) {
             || navigator.onLine === false
         )
     ) return;
+
+    await top.beforeleaving?.({});
 
     location.reload();
 }
@@ -3086,26 +3539,27 @@ try {
 
                 pip.dataset.name = name;
 
-                $('.stream-chat-header').insertAdjacentElement('afterbegin',
-                    f('button#tt-exit-pip', {
-                        style: 'position:absolute;left:0;margin-left:1rem;',
+                when.defined(() => $('.stream-chat-header'))
+                    .then(parent => parent.insertAdjacentElement('afterbegin',
+                        f('button#tt-exit-pip', {
+                            style: 'position:absolute;left:0;margin-left:1rem;',
 
-                        onmousedown(event) {
-                            $.all('#tt-exit-pip, [class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]').map(el => el.modStyle('transition:opacity .5s; opacity:0;'));
-                            $('[data-test-selector="picture-by-picture-player-container"i]').modStyle('max-height:0');
+                            onmousedown(event) {
+                                $.all('#tt-exit-pip, [class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]').map(el => el.modStyle('transition:opacity .5s; opacity:0;'));
+                                $('[data-test-selector="picture-by-picture-player-container"i]').modStyle('max-height:0');
 
-                            wait(500).then(() => {
-                                RemoveFromTopSearch(['mini']);
+                                wait(500).then(() => {
+                                    RemoveFromTopSearch(['mini']);
 
-                                $('#tt-exit-pip')?.remove();
-                                $('[class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]')?.remove();
-                                $('[data-test-selector="picture-by-picture-player-container"i]')?.classList?.add('picture-by-picture-player--collapsed');
-                            });
-                        },
+                                    $('#tt-exit-pip')?.remove();
+                                    $('[class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]')?.remove();
+                                    $('[data-test-selector="picture-by-picture-player-container"i]')?.classList?.add('picture-by-picture-player--collapsed');
+                                });
+                            },
 
-                        innerHTML: Glyphs.modify('exit_picture_in_picture', { height: 15, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' }),
-                    })
-                );
+                            innerHTML: Glyphs.modify('exit_picture_in_picture', { height: 15, width: 20, fill: 'currentcolor', style: 'vertical-align:middle' }),
+                        })
+                    ));
 
                 function keepOpen() {
                     when.defined(() => $('[data-test-selector="picture-by-picture-player-container"i][class*="collapsed"i]'))
@@ -3129,33 +3583,37 @@ try {
     // Automatic garbage collection...
     REMARK(`Removing expired cache data...`, new Date);
 
-    purging:
-    for(let key in StorageSpace) {
-        if(!/^ext\.twitch-tools\/data\/(\w+)?/i.test(key))
-            continue purging;
+    Cache.load(null, cache => {
+        Object.keys(cache)
+            .filter(key => key.startsWith('data/'))
+            .map(async key => {
+                let data;
 
-        let data = JSON.parse(StorageSpace[key]),
-            { dataRetrievedAt } = data;
+                try {
+                    data = JSON.parse(await Cache.load(key));
+                } catch(error) {
+                    data = await Cache.load(key);
+                }
 
-        // If there isn't a proper date, remove the data...
-        if(+dataRetrievedAt < 0) {
-            StorageSpace.removeItem(key);
+                let { dataRetrievedAt } = data;
 
-            continue purging;
-        }
+                // If there isn't a proper date, remove the data...
+                if(+dataRetrievedAt < 0)
+                    return Cache.remove(key);
 
-        let lastFetch = Math.abs(dataRetrievedAt - +new Date);
+                let lastFetch = Math.abs(dataRetrievedAt - +new Date);
 
-        // If the last fetch was more than 30 days ago, remove the data...
-        if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
-            WARN(`\tThe last fetch for "${ key }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
+                // If the last fetch was more than 30 days ago, remove the data...
+                if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
+                    WARN(`\tThe last fetch for "${ key }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
 
-            StorageSpace.removeItem(key);
-        }
-    }
+                    Cache.remove(key);
+                }
+            });
+    });
 
     // Add storage listener
-    Settings.onChanged.addListener((changes, namespace) => {
+    Storage.onChanged.addListener((changes, namespace) => {
         let reload = false,
             refresh = [];
 
@@ -3676,19 +4134,11 @@ try {
                                 if(answer === false)
                                     throw `Clip discarded!`;
 
-                                let video = $.all('video').pop(),
-                                    chunks = (video?.getRecording(EVENT_NAME)?.data ?? []);
+                                let video = $.all('video').pop();
 
-                                if(chunks.length < 1)
-                                    throw `Unable to save clip. No recording data available.`;
+                                video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME).removeRecording(EVENT_NAME);
 
-                                let name = new ClipName;
-                                let blob = new Blob(chunks, { type: chunks[0].type });
-                                let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(video.mimeType) }` }, name);
-
-                                video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
-
-                                return link;
+                                return video.links.get(EVENT_NAME);
                             })
                             .then(link => alert.silent(`Clip available! ${ link.outerHTML }`))
                             .catch(alert.silent);
@@ -3717,40 +4167,82 @@ try {
                 icon: 'download',
                 shortcut: 'ctrl+s',
                 action: async event => {
-                    await alert.timed(`Getting ready to save page...<p tt-x>${ (new UUID).value }</p>`, 7000);
+                    alert.timed(`Gathering resources. Saving page in the background...<p tt-x>${ (new UUID).value }</p>`, 7000);
 
                     let DOM = document.cloneNode(true);
                     let type = DOM.contentType,
                         name = DOM.title;
 
-                    let scripts = [...DOM.scripts].filter(script => script.src?.length);
-                    for(let script of scripts)
-                        await fetchURL(script.src)
-                            .then(response => response.text())
-                            .then(js => {
-                                script.removeAttribute('src');
-                                script.textContent = js;
-                            });
-
-                    let styles = [...DOM.styleSheets].filter(style => style.href?.length);
-                    for(let style of styles)
-                        await fetchURL(style.href)
-                            .then(response => response.text())
-                            .then(css => {
-                                style.removeAttribute('href');
-                                style.textContent = css;
-                            });
-
+                    // Remove all TTV Tools helpers
                     for(let element of $.all('[id*="tt-"i], [class*="tt-"i], [data-a-target*="tt-"i]', DOM))
                         element.remove();
 
-                    let blob = new Blob([
-                            `<!DOCTYPE ${ DOM.doctype.name }${ DOM.doctype.publicId.replace(/^([^$]+)$/, ' PUBLIC "$1"') }${ DOM.doctype.systemId.replace(/^([^$]+)$/, ' "$1"') }>\n${ DOM.documentElement.outerHTML }`
-                        ], { type }),
-                        link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.html`, hidden: true }, [name, (new Date).toJSON()].join('/'));
+                    // Download all scripts
+                    let scripts = $.all('script[src]', DOM).filter(script => /^(https?|\/\/)/i.test(parseURL(script.src).scheme)),
+                        JS_index = 0, JS_length = scripts.length;
 
-                    document.head.append(link);
-                    link.click();
+                    // Remove non-HTTP(s) sources
+                    $.all('script[src]', DOM)
+                        .filter(script => !/^(https?|\/)/i.test(parseURL(script.src).scheme))
+                        .map(script => script.remove());
+
+                    for(let script of scripts) {
+                        fetchURL(script.src, { timeout: 10_000, native: true })
+                            .then(response => response.text())
+                            .then(js => {
+                                LOG('Saving scripts...', script.src, (100 * (JS_index / JS_length)).suffix('%', 2), (js.length).suffix('B', 2, 'data'));
+
+                                script.removeAttribute('src');
+                                script.textContent = js;
+                            })
+                            .catch(error => {
+                                if(error.name == 'AbortError')
+                                    throw `The request to [ ${ script.src } ] timed out.`;
+                                else
+                                    script.setAttribute('src', `https://api.allorigins.win/raw?url=${ encodeURIComponent(script.src) }`);
+                            })
+                            .finally(() => ++JS_index);
+                    }
+
+                    // Download all styles
+                    let styles = $.all('style[href], link[rel="stylesheet"i]', DOM).filter(style => /^(https?|\/\/)/i.test(parseURL(style.href).scheme)),
+                        CSS_index = 0, CSS_length = styles.length;
+
+                    // Remove non-HTTP(s) sources
+                    $.all('style[href], link[rel="stylesheet"i]', DOM)
+                        .filter(style => !/^(https?|\/)/i.test(parseURL(style.href).scheme))
+                        .map(style => style.remove());
+
+                    for(let style of styles) {
+                        fetchURL(style.href, { timeout: 10_000, native: true })
+                            .then(response => response.text())
+                            .then(css => {
+                                LOG('Saving styles...', style.href, (100 * (CSS_index / CSS_length)).suffix('%', 2), (css.length).suffix('B', 2, 'data'));
+
+                                style.removeAttribute('href');
+                                style.textContent = css;
+                            })
+                            .catch(error => {
+                                if(error.name == 'AbortError')
+                                    throw `The request to [ ${ style.href } ] timed out.`;
+                                else
+                                    style.setAttribute('href', `https://api.allorigins.win/raw?url=${ encodeURIComponent(style.href) }`);
+                            })
+                            .finally(() => ++CSS_index);
+                    }
+
+                    // Wait for completion
+                    when(() => ((JS_index >= JS_length) && (CSS_index >= CSS_length))).then(() => {
+                        let blob = new Blob([
+                                `<!DOCTYPE ${ DOM.doctype.name }${ DOM.doctype.publicId.replace(/^([^$]+)$/, ' PUBLIC "$1"') }${ DOM.doctype.systemId.replace(/^([^$]+)$/, ' "$1"') }>\n${ DOM.documentElement.outerHTML }`
+                            ], { type });
+                        let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.html`, hidden: true }, [name, (new Date).toJSON()].join('/'));
+
+                        document.head.append(link);
+                        link.click();
+
+                        alert.silent(`HTML content <a href="${ link.href }">ready to save</a>!`);
+                    });
                 },
             },{
                 text: `Print...`,
@@ -4299,7 +4791,7 @@ let Initialize = async(START_OVER = false) => {
     ].filter(uniqueChannels);
 
     /** Streamer Array - the current streamer/channel
-     * aego:string*      - GETTER: GETTER: the channel's complementary accent color (if applicable)
+     * aego:string*      - GETTER: the channel's complementary accent color (if applicable)
      * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
      * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
      * coms:array*       - GETTER: returns the channel commands (if available)
@@ -4348,7 +4840,13 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get coin() {
-            return STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance ?? parseCoin($('[data-test-selector="balance-string"i]')?.textContent);
+            let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
+                current = parseCoin($('[data-test-selector="balance-string"i]')?.textContent),
+                _e = exact?.suffix('', 1, 'natural'), _c = current?.suffix('', 1, 'natural');
+
+            if(nullish(exact))
+                return current;
+            return _e == _c? exact: current;
         },
 
         get coms() {
@@ -4559,6 +5057,7 @@ let Initialize = async(START_OVER = false) => {
                 || SPECIAL_MODE
                 || (true
                     && $.defined('[class*="channel"i][class*="info"i] [class*="home"i][class*="head"i] [status="live"i], [class*="channel"i][class*="info"i] [id*="live"i]:is([id*="channel"i], [id*="stream"i])')
+                    && $.nullish('[class*="offline-recommendations"i], [data-test-selector="follow-panel-overlay"i]')
                     && !/(\b(?:offline|autohost)\b|^$)/i.test(null
                         ?? $.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]:is(:not([class*="offline"i], [class*="autohost"i]))`).first?.textContent
                         ?? $.queryBy(`[class*="video-player"i] [class*="media-card"i], [class*="channel"i][class*="status"i]`).first?.classList?.value
@@ -4583,6 +5082,8 @@ let Initialize = async(START_OVER = false) => {
                     let score = scoreTagActivity(href);
 
                     new Tooltip(element, `${ '+-'[+(score < 0)] }${ score }`, { from: 'top' });
+
+                    element.modStyle(`border-color:#00c85a${ (255 * (score / 20)).clamp(0x40, 0xff).round().toString(16).padStart(2, '00') }`);
                 }
 
                 tags.push(href);
@@ -4810,13 +5311,13 @@ let Initialize = async(START_OVER = false) => {
             let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint),
                 [min, max] = [[0,30],[70,100]][+(THEME.equals('light'))];
 
-            return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).RGB.toUpperCase()
+            return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).HEX.toUpperCase()
         },
 
         get aego() {
             let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint);
 
-            return Color.HSLtoRGB(H + 180, S, L).RGB.toUpperCase()
+            return Color.HSLtoRGB(H + 180, S, L).HEX.toUpperCase()
         },
 
         get veto() {
@@ -5406,7 +5907,7 @@ let Initialize = async(START_OVER = false) => {
                             // firstSeen:object<Date>
                             // followers:number<int>
                             // followersRanked:number<int>
-                            // games: object<{ "${Game_Name}":number<int>, ... }>
+                            // games: object<{ "${ Game_Name }":number<int>, ... }>
                             // highestViewers:number<int>
                             // highestViewersRanked:number<int>
                             // lastSeen:object<Date>
@@ -6412,19 +6913,20 @@ let Initialize = async(START_OVER = false) => {
                         await STREAMER.shop
                             .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
-                            .map(async({ id, cost, title, needsInput }) => {
-                                if(REWARDS_ON_COOLDOWN.has(id)) {
+                            .map(async({ id, cost, title, needsInput = false }) => {
+                                if(REWARDS_ON_COOLDOWN.has(id))
                                     if(REWARDS_ON_COOLDOWN.get(id) < +new Date)
                                         REWARDS_ON_COOLDOWN.delete(id);
                                     else
                                         return;
-                                }
+                                else if(needsInput)
+                                    return;
 
                                 cost = parseInt(cost);
                                 title = title.trim();
 
                                 await when.defined(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i] button'))
-                                    .then(async button => {
+                                    .then(async rewardsMenuButton => {
                                         let { coin, fiat } = STREAMER;
 
                                         // LOG(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
@@ -6432,39 +6934,77 @@ let Initialize = async(START_OVER = false) => {
                                         if(coin < cost)
                                             return;
 
-                                        button.click();
+                                        rewardsMenuButton.click();
 
                                         LOG(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
 
                                         // Purchase and remove
-                                        await when.defined(() => $('.rewards-list')?.getElementsByInnerText(title, 'i').filter(item => item.textContent.equals(title)).pop()?.closest('.reward-list-item')?.querySelector('button'))
-                                            .then(async button => {
-                                                button.click();
+                                        await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
+                                            .then(async rewardButton => {
+                                                rewardButton.click();
 
-                                                await when.defined(() => $('.reward-center-body button'))
-                                                    .then(button => {
-                                                        let cooldown = parseTime(button.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
+                                                when.defined(() => $('.reward-center-body [data-test-selector="RequiredPoints"i]')?.closest('button'), 500)
+                                                    .then(purchaseButton => {
+                                                        let cooldown = parseTime(purchaseButton.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
 
                                                         if(cooldown > 0) {
-                                                            LOG(`Unable to purchase "${ title }" yet. Waiting ${ toTimeString(cooldown) }`);
+                                                            LOG(`Unable to purchase "${ title }" right now. Waiting ${ toTimeString(cooldown) }`);
                                                             REWARDS_ON_COOLDOWN.set(id, +(new Date) + cooldown);
 
                                                             return false;
                                                         }
 
-                                                        button.click();
+                                                        if(true
+                                                            && parseBool(Settings.video_clips__trophy)
+                                                            && ['SINGLE_MESSAGE_BYPASS_SUB_MODE', 'SEND_HIGHLIGHTED_MESSAGE', 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK', 'RANDOM_SUB_EMOTE_UNLOCK', 'CHOSEN_SUB_EMOTE_UNLOCK']
+                                                                .missing(ID => ID.contains(id))
+                                                        )   // Start recording, then click the button
+                                                            SetQuality('auto').then(() => {
+                                                                let video = $.all('video').pop();
+                                                                let time = parseInt(Settings.video_clips__trophy_length) * 1000;
+
+                                                                video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: title });
+                                                                video.dataset.trophyId = title;
+
+                                                                confirm.timed(`
+                                                                    <div hidden controller
+                                                                        icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
+                                                                        okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
+                                                                        deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
+                                                                    ></div>`
+                                                                , time)
+                                                                    .then(answer => {
+                                                                        let video = $(`video[data-trophy-id]`),
+                                                                            title = video.dataset.trophyId;
+
+                                                                        if(answer === false) {
+                                                                            video.stopRecording(title).removeRecording(title);
+
+                                                                            throw `Clip discarded!`;
+                                                                        }
+
+                                                                        video.stopRecording(title).saveRecording(title, [STREAMER.name, title].join(' - ')).removeRecording(title);
+
+                                                                        return video.links.get(title);
+                                                                    })
+                                                                    .then(link => alert.silent(`Trophy clip available! ${ link.outerHTML }`))
+                                                                    .catch(alert.silent);
+                                                            }).finally(() => {
+                                                                // Click the button
+                                                                purchaseButton.click();
+                                                            });
+                                                        else
+                                                            // Click the button
+                                                            purchaseButton.click();
 
                                                         return true;
                                                     })
                                                     .then(ok => {
-                                                        if(!ok)
-                                                            return;
-
-                                                        AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => !i.equals(id));
+                                                        if(ok)
+                                                            AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
                                                     })
                                                     .finally(() => Cache.save({ AutoClaimRewards }));
-                                            })
-                                            .finally(() => button.click());
+                                            });
                                     });
                             });
         });
@@ -6593,11 +7133,11 @@ let Initialize = async(START_OVER = false) => {
                                                 .then(emote => {
                                                     emote.click();
 
-                                                    when.defined(() => $.all('[class*="reward-center"i] button:not(:disabled) img')?.random()?.closest('button'), 500)
+                                                    when.defined(() => $.all('[class*="reward-center"i] button:not(:disabled) img')?.random()?.closest('button'), 1000)
                                                         .then(modifier => {
                                                             modifier.click();
 
-                                                            wait(1500).then(() => {
+                                                            when.defined(() => $('button [class*="selected"i] img')).then(img => {
                                                                 let name = $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify"i][data-test-selector*="emote"i][data-test-selector*="preview"i]')?.textContent;
 
                                                                 if(nullish(name))
@@ -6610,19 +7150,20 @@ let Initialize = async(START_OVER = false) => {
                                                                 else if(modified.get(em)?.missing(md))
                                                                     modified.set(em, [...modified.get(em), md]);
                                                                 else // if(modified.get(em).length >= modifiers.length)
-                                                                    return buyOut(count, rewardsBackButton.click());
+                                                                    return buyOut(count, rewardsBackButton?.click());
+
+                                                                REMARK(`Buying emote: "${ name }" for ${ cost }`);
 
                                                                 when.defined(() => $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify-emote-preview"i] ~ * ~ * button'), 250)
                                                                     .then(unlock => {
                                                                         unlock.click();
-                                                                        modified.set(name);
 
-                                                                        when.defined(() => $('[class*="modify"i][class*="emote"i][class*="checkout"i] button:not([state])'), 2_500)
+                                                                        when.defined(() => $(`[data-a-target*="animat"i] img[alt="${ name }"i]`), 2_500)
                                                                             .then(success => {
                                                                                 EXACT_POINTS_SPENT += cost;
-                                                                                rewardsBackButton.click();
+                                                                                rewardsBackButton?.click();
 
-                                                                                wait(250).then(() => buyOut(--count));
+                                                                                wait(500).then(() => buyOut(--count));
                                                                             });
                                                                     });
                                                             });
@@ -6630,7 +7171,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                     wait(1200).then(() => {
                                                         if($.nullish('[class*="reward-center"i] button:not(:disabled) img')) {
-                                                            rewardsBackButton.click();
+                                                            rewardsBackButton?.click();
 
                                                             when.defined(() => $.all('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector^="emote"i]')?.random()?.closest('button'), 500)
                                                                 .then(emote => emote.click());
@@ -7287,7 +7828,7 @@ let Initialize = async(START_OVER = false) => {
                                 coinIcon = (
                                     face?.contains('/')?
                                         furnish('span.tt-live-reminder-point-face', {
-                                            innerHTML: furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: coinStyle.toString() }).outerHTML,
+                                            innerHTML: furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${ face }`, style: coinStyle.toString() }).outerHTML,
                                         }):
                                     furnish('span.tt-live-reminder-point-face', {
                                         innerHTML: Glyphs.modify('channelpoints', { style: `vertical-align:bottom; ${ coinStyle.toString() }` }),
@@ -7300,9 +7841,9 @@ let Initialize = async(START_OVER = false) => {
                                 primaryColorLighter = `hsl(${ primaryColor.H }deg,${ primaryColor.S }%,${ (primaryColor.L * 1.1).clamp(25, 100) }%)`;
 
                             let liveFontColor = (THEME.equals('dark')? Color.white: Color.black);
-                            let [liveBGColor] = [primaryColor.RGB, primaryColorDarker, primaryColorLighter].map(Color.destruct).sort((a, b) => Color.contrast(liveFontColor, [b.R, b.G, b.B]) - Color.contrast(liveFontColor, [a.R, a.G, a.B]));
+                            let [liveBGColor] = [primaryColor.HEX, primaryColorDarker, primaryColorLighter].map(Color.destruct).sort((a, b) => Color.contrast(liveFontColor, [b.R, b.G, b.B]) - Color.contrast(liveFontColor, [a.R, a.G, a.B]));
 
-                            let status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em;${ (!live? '': `background-color:${ liveBGColor.RGB }`) }">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
+                            let status = `<span class="tt-${ (live? 'live': 'offline') }" style="min-width:3.5em;${ (!live? '': `background-color:${ liveBGColor.HEX }`) }">${ (live? 'LIVE': recent? tense_A + since.pluralSuffix(parseFloat(since)) + tense_B: [day, hour].join(' ')) }</span>`;
 
                             let DVR_ON = parseBool(DVRChannels[_name]);
 
@@ -7331,7 +7872,7 @@ let Initialize = async(START_OVER = false) => {
                                                         f('.persistent-notification__area.tt-flex.tt-flex-nowrap.tt-pd-b-1.tt-pd-l-1.tt-pd-r-3.tt-pd-t-1').with(
                                                             // Avatar
                                                             f.div(
-                                                                f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live? '': `border:3px solid ${ primaryColor.RGB }`) },
+                                                                f('.tt-border-radius-rounded.tt-card-img.tt-card-img--size-4.tt-flex-shrink-0.tt-overflow-hidden', { style: (!live? '': `border:3px solid ${ primaryColor.HEX }`) },
                                                                     f('.tt-aspect.tt-aspect--align-top').with(
                                                                         f('img.tt-balloon-avatar.tt-image', { src: icon })
                                                                     )
@@ -7345,9 +7886,9 @@ let Initialize = async(START_OVER = false) => {
                                                                             !live?
                                                                                 f.strong(name):
                                                                             f.span(
-                                                                                f.strong([name, game].filter(s => s.length).join(' &mdash; ')),
+                                                                                f(`strong`, { innerHTML: [name, game].filter(s => s.length).join(' &mdash; ') }),
                                                                                 f(`span.tt-time-elapsed[start=${ time.toJSON() }]`).with(hour),
-                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em][title="${ encodeHTML(desc) }"]`).with(desc),
+                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em]`, { title: desc }).with(desc),
                                                                             )
                                                                         )
                                                                     )
@@ -7922,7 +8463,7 @@ let Initialize = async(START_OVER = false) => {
                                     let theme = { light: 'w', dark: 'b' }[THEME];
 
                                     $('a', container)
-                                        .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
+                                        .setAttribute('style', `background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
 
                                     if(container.getAttribute('live') != (live + '')) {
                                         $('.tt-balloon-message', container).innerHTML =
@@ -8007,9 +8548,9 @@ let Initialize = async(START_OVER = false) => {
                     ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
                 } else {
                     WARN('Not pushing to First in Line:', href, new Date);
-                    LOG('Reason?', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
-                        'It is the next job:', FIRST_IN_LINE_HREF === href,
-                        'It is in the queue already:', ALL_FIRST_IN_LINE_JOBS.contains(href),
+                    LOG('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
+                        `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
+                        `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`,
                     );
                 }
 
@@ -8170,7 +8711,7 @@ let Initialize = async(START_OVER = false) => {
                             let theme = { light: 'w', dark: 'b' }[THEME];
 
                             $('a', container)
-                                .setAttribute('style', `background-color: var(--color-opac-${theme}-${ index > 15? 1: 15 - index })`);
+                                .setAttribute('style', `background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
 
                             if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', container).innerHTML =
@@ -8617,6 +9158,8 @@ let Initialize = async(START_OVER = false) => {
         REMARK('Adding Live Reminders...');
 
         // See if there are any notifications to push...
+        let REMINDERS_INDEX = -1, REMINDERS_LENGTH = 0, PARSED_REMINDERS = [];
+
         let LIVE_REMINDERS__CHECKER = () => {
             Cache.load('LiveReminders', async({ LiveReminders }) => {
                 try {
@@ -8626,11 +9169,17 @@ let Initialize = async(START_OVER = false) => {
                     LiveReminders ??= {};
                 }
 
-                let REMINDERS_INDEX = 0, REMINDERS_LENGTH = Object.keys(LiveReminders);
+                REMINDERS_INDEX = 0;
+                REMINDERS_LENGTH = Object.keys(LiveReminders).length;
+
+                when(() => REMINDERS_INDEX >= REMINDERS_LENGTH).then(LIVE_REMINDERS__CHECKER);
 
                 checking:
                 // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
+                    if(PARSED_REMINDERS.contains(reminderName))
+                        continue;
+
                     let channel = await new Search(reminderName).then(Search.convertResults),
                         ok = parseBool(channel?.ok);
 
@@ -8657,8 +9206,10 @@ let Initialize = async(START_OVER = false) => {
 
                     // The channel just went live!
                     if(lastOnline != justOnline) {
+                        PARSED_REMINDERS.push(reminderName);
+
                         if(parseBool(Settings.keep_live_reminders)) {
-                            LiveReminders[reminderName] = new Date(justOnline);
+                            LiveReminders[reminderName] = justOnline;
                         } else {
                             $(`[tt-action="live-reminders"i][for="${ reminderName }"i][remind="true"i] button`)
                                 ?.dispatchEvent?.(new MouseEvent('mouseup', { bubbles: false }));
@@ -8696,8 +9247,6 @@ let Initialize = async(START_OVER = false) => {
 
                 // Send the length to the settings page
                 Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
-
-                when(() => REMINDERS_INDEX >= REMINDERS_LENGTH).then(LIVE_REMINDERS__CHECKER);
             });
         };
 
@@ -9099,7 +9648,7 @@ let Initialize = async(START_OVER = false) => {
                             let f = furnish;
 
                             let purchase =
-                                f(`.tt-store-purchase--container.is-playstation`).with(
+                                f(`.tt-store-purchase--container.is-playstation[name="${ encodeHTML(name) }"]`).with(
                                     // Price
                                     f('.tt-store-purchase--price').with(price),
 
@@ -9158,7 +9707,7 @@ let Initialize = async(START_OVER = false) => {
                             let f = furnish;
 
                             let purchase =
-                                f(`.tt-store-purchase--container.is-playstation`).with(
+                                f(`.tt-store-purchase--container.is-playstation[name="${ encodeHTML(name) }"]`).with(
                                     // Price
                                     f('.tt-store-purchase--price').with(price),
 
@@ -10473,7 +11022,7 @@ let Initialize = async(START_OVER = false) => {
         if(hosting) {
             // Ignore followed channels
             if(["unfollowed"].contains(method)) {
-                let streamer = STREAMERS.find(channel => RegExp(`^${guest}$`, 'i').test(channel.name));
+                let streamer = STREAMERS.find(channel => RegExp(`^${ guest }$`, 'i').test(channel.name));
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
                 if(defined(streamer)) {
@@ -10559,7 +11108,7 @@ let Initialize = async(START_OVER = false) => {
                     break raid_stopper;
                 }
                 // #2 - The channel being raided (to) is already in "followed." No need to leave
-                else if(raiding && defined(STREAMERS.find(channel => RegExp(`^${to}$`, 'i').test(channel.name)))) {
+                else if(raiding && defined(STREAMERS.find(channel => RegExp(`^${ to }$`, 'i').test(channel.name)))) {
                     LOG(`[RAIDING] ${ to } is already followed. No need to leave the raid`);
 
                     CONTINUE_RAIDING = true;
@@ -10791,15 +11340,15 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST | 3:00PM (EST) | 3PM (EST) | 3:00P (EST) | 3P (EST) | 3:00 (EST) | 3 (EST)
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))?/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?/iu,
             // EST 15:00 | EST 1500
             /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))/iu,
             // 3:00PM | 3PM
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))/iu,
             // 15:00
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)[ \t]*/iu,
 
@@ -11046,7 +11595,7 @@ let Initialize = async(START_OVER = false) => {
             .replace(/\b(?:to|2)(?:day|night|morrow)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
 
             // Replaces ranges
-            .replace(/\b(\d+)(\s*\-\s*)(\d+)(\s*[ap]m?|AOE|GMT|UTC|[A-WY]{2,4}T)\b/ig, '$1$4$2$3$4');
+            .replace(/\b(\d+)(\s*\-\s*)(\d+)(\s*[ap]\.?m?\.?|AOE|GMT|UTC|[A-WY]{2,4}T)\b/ig, '$1$4$2$3$4');
     }
 
     convertWordsToTimes.inReverse ??= (string = '') => {
@@ -11105,6 +11654,7 @@ let Initialize = async(START_OVER = false) => {
                     hour = parseInt(hour);
                     hour -= (/^a/i.test(meridiem) && hour > 12? 12: 0);
                     hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
+                    hour += +Date.isDST();
 
                     timezone ||= (offset.length? 'GMT': '');
 
@@ -11923,7 +12473,7 @@ let Initialize = async(START_OVER = false) => {
         // Display the points
         START__STOP_WATCH('point_watcher_placement');
 
-        if(top.__readyState__ == "unloading")
+        if(top.WINDOW_STATE == "unloading")
             return;
 
         // Update the points (every 30s)
@@ -12030,7 +12580,7 @@ let Initialize = async(START_OVER = false) => {
                     }),
                     icon = face?.contains('/')?
                         furnish(pointFace, {
-                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${face}`, style: style.toString() }).outerHTML } `,
+                            innerHTML: ` | ${ furnish('img', { src: `https://static-cdn.jtvnw.net/channel-points-icons/${ face }`, style: style.toString() }).outerHTML } `,
                         }):
                     furnish(pointFace, {
                         innerHTML: ` | ${ Glyphs.modify('channelpoints', { style, ...style.toObject() }) } `,
@@ -12081,16 +12631,25 @@ let Initialize = async(START_OVER = false) => {
 
                             let imgURL = parseURL(image),
                                 imgPath = imgURL.pathname.slice(1),
-                                [imgType, imgName] = imgPath.split('/'),
+                                [imgType, imgName, imgSub = ''] = imgPath.split('/'),
                                 realId = (
                                     imgType.contains('auto') && imgType.contains('reward')?
                                         ({
-                                            'subsonly': 'SUB_ONLY_MESSAGE',
-                                            'highlight': 'HIGHLIGHT_MESSAGE',
-                                            'modify-emote': 'MODIFY_SUB_EMOTE',
+                                            'subsonly': 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
+                                            SINGLE_MESSAGE_BYPASS_SUB_MODE: 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
+
+                                            'highlight': 'SEND_HIGHLIGHTED_MESSAGE',
+                                            SEND_HIGHLIGHTED_MESSAGE: 'SEND_HIGHLIGHTED_MESSAGE',
+
+                                            'modify-emote': 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK',
+                                            CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK: 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK',
+
                                             'random-emote': 'RANDOM_SUB_EMOTE_UNLOCK',
+                                            RANDOM_SUB_EMOTE_UNLOCK: 'RANDOM_SUB_EMOTE_UNLOCK',
+
                                             'choose-emote': 'CHOSEN_SUB_EMOTE_UNLOCK',
-                                        }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '')]):
+                                            CHOSEN_SUB_EMOTE_UNLOCK: 'CHOSEN_SUB_EMOTE_UNLOCK',
+                                        }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '').replace(/^(\d+)$/, imgSub.toUpperCase())]):
                                     null
                                 );
 
@@ -12098,7 +12657,7 @@ let Initialize = async(START_OVER = false) => {
                                 title, cost,
                                 image: { url: image },
 
-                                backgroundColor: Color.destruct(backgroundColor).RGB,
+                                backgroundColor: Color.destruct(backgroundColor).HEX,
                                 id: (realId ?? UUID.from([image, title, cost].join('|$|'), true).value),
                                 type: (realId ?? "UNKNOWN"),
 
@@ -12542,7 +13101,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 delete DVRChannels[DVR_ID];
 
-                                MASTER_VIDEO.cancelRecording().stopRecording().removeRecording();
+                                MASTER_VIDEO.stopRecording().saveRecording().removeRecording();
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
@@ -12572,13 +13131,16 @@ let Initialize = async(START_OVER = false) => {
                         });
                     });
 
-                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to }) => {
+                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
                     let next = await GetNextStreamer();
 
                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
-                    for(let recorder in MASTER_VIDEO.recorders)
-                        MASTER_VIDEO.stopRecording(recorder.name).removeRecording(recorder.name);
+                    for(let [uuid, recorder] of MASTER_VIDEO.recorders)
+                        if(recorder.name == 'DEFAULT_RECORDING')
+                            Handlers.__MASTER_AUTO_DVR_HANDLER__(recorder.data);
+                        else
+                            MASTER_VIDEO.stopRecording(recorder.name).saveRecording(recorder.name).removeRecording(recorder.name);
                 };
 
                 $.on('focusin', event => {
@@ -12587,8 +13149,9 @@ let Initialize = async(START_OVER = false) => {
                     if(top.focusedin)
                         return;
                     top.focusedin = true;
-
                     top.addEventListener('beforeunload', leaveHandler);
+
+                    // top.addEventListener('visibilitychange', leaveHandler);
                     setInterval(DVR_ID => {
                         document.title = (
                             MASTER_VIDEO.hasRecording()?
@@ -12604,39 +13167,40 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.video_clips__dvr = -2_500;
 
+    let DVR_CLIP_PRECOMP_NAME = '';
+
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = chunks => {
-        let now = new Date;
+        MASTER_VIDEO.stopRecording().saveRecording(null, DVR_CLIP_PRECOMP_NAME).removeRecording();
+    };
+
+    Unhandlers.video_clips__dvr = () => {
         let DVR_ID = STREAMER.name.toLowerCase();
-        let name = [
+
+        MASTER_VIDEO.stopRecording().removeRecording();
+    };
+
+    setInterval(() => {
+        let chunks = MASTER_VIDEO.getRecording()?.blobs;
+
+        if(!chunks?.length)
+            return;
+
+        let now = new Date;
+
+        DVR_CLIP_PRECOMP_NAME = [
             // File Name
             [
                 STREAMER.name,
                 now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
                 `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
             ]
-                .map(s => s?.trim?.())
                 .filter(s => s?.length)
+                .map(s => s.trim())
                 .join(' ')
             // File Extension
             , top.MIME_Types.find(MASTER_VIDEO.mimeType)
         ].join('.');
-
-        let blob = new Blob(chunks, { type: chunks[0].type });
-        let link = furnish('a', { href: URL.createObjectURL(blob), download: name, hidden: true }, name);
-
-        document.head.append(link);
-        link.click();
-
-        MASTER_VIDEO.stopRecording().removeRecording();
-
-        return link.href;
-    };
-
-    Unhandlers.video_clips__dvr = () => {
-        let DVR_ID = STREAMER.name.toLowerCase();
-
-        MASTER_VIDEO.cancelRecording().stopRecording().removeRecording();
-    };
+    }, 1000);
 
     let FetchingChunks;
 
@@ -12661,9 +13225,9 @@ let Initialize = async(START_OVER = false) => {
             mini.startRecording();
 
             mini.getRecording().ondataavailable = event => {
-                NOTICE(`Adding chunks to main <video> @ ${ main?.blobs?.length } |`, ({ blobs: main.blobs, chunks: event.data, event }));
+                NOTICE(`Adding chunks to main <video> @ ${ main?.blobs?.length } |`, { blobs: main.blobs, chunks: event.data, event });
 
-                main.blobs.push(event.data);
+                main.blobs?.push(event.data);
             };
 
             FetchingChunks = setInterval(mini => mini.getRecording().requestData(), 1000, mini);
@@ -12681,10 +13245,10 @@ let Initialize = async(START_OVER = false) => {
 
                     clearInterval(FetchingChunks);
 
-                    NOTICE(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, ({ main, mini, blobs: main?.blobs, chunks: mini?.blobs }));
+                    NOTICE(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs: main?.blobs, chunks: mini?.blobs });
                 });
 
-            NOTICE(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, ({ main, mini }));
+            NOTICE(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
         };
 
         when.defined(() => $('[data-a-target*="ad-countdown"i]'))
@@ -12794,14 +13358,17 @@ let Initialize = async(START_OVER = false) => {
                                         });
                                     });
 
-                                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to }) => {
+                                let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
                                     let next = await GetNextStreamer();
                                     let DVR_ID = STREAMER.name.toLowerCase();
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
-                                    for(let recorder in MASTER_VIDEO.recorders)
-                                        MASTER_VIDEO.stopRecording(recorder.name).removeRecording(recorder.name);
+                                    for(let [uuid, recorder] of MASTER_VIDEO.recorders)
+                                        if(recorder.name == 'DEFAULT_RECORDING')
+                                            Handlers.__MASTER_AUTO_DVR_HANDLER__(recorder.data);
+                                        else
+                                            MASTER_VIDEO.stopRecording(recorder.name).saveRecording(recorder.name).removeRecording(recorder.name);
                                 };
 
                                 confirm(`<div hidden controller deny="Why?" okay="Acknowledge (interact)"></div>
@@ -12818,8 +13385,9 @@ let Initialize = async(START_OVER = false) => {
                                     if(top.focusedin)
                                         return;
                                     top.focusedin = true;
-
                                     top.addEventListener('beforeunload', leaveHandler);
+
+                                    // top.addEventListener('visibilitychange', leaveHandler);
                                     setInterval(DVR_ID => {
                                         document.title = (
                                             MASTER_VIDEO.hasRecording()?
@@ -13372,28 +13940,19 @@ let Initialize = async(START_OVER = false) => {
                                     halt = parseBool(feed?.getAttribute('halt')),
                                     name = (feed?.getAttribute('value') || DEFAULT_CLIP_NAME);
 
-                                if(halt)
-                                    return;
-
-                                let blob = new Blob(chunks, { type: chunks[0].type });
-                                let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(video.mimeType) }`, hidden: true }, name);
-
-                                document.head.append(link);
-                                link.click();
-
-                                return link.href;
+                                return name;
                             })
                             .catch(error => {
                                 WARN(error);
 
                                 alert.timed(error, 7000);
+
+                                return DEFAULT_CLIP_NAME;
                             })
-                            .finally(href => {
+                            .finally(name => {
                                 DEFAULT_CLIP_NAME = new ClipName;
 
-                                video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
-
-                                URL.revokeObjectURL(href);
+                                video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, name).removeRecording(EVENT_NAME);
                             });
                     } else {
                         let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
@@ -13530,7 +14089,7 @@ let Initialize = async(START_OVER = false) => {
 
                 return Color.contrast(background, [C1.R, C1.G, C1.B]) - Color.contrast(background, [C2.R, C2.G, C2.B]);
             })
-            .map(color => color.RGB);
+            .map(color => color.HEX);
 
         THEME__CHANNEL_DARK = (THEME.equals('dark')? PRIMARY: SECONDARY);
         THEME__CHANNEL_LIGHT = (THEME.unlike('dark')? PRIMARY: SECONDARY);
@@ -13939,7 +14498,7 @@ if(top == window) {
                     let user = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ').shift();
 
                     let badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1')),
-                        color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').RGB,
+                        color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').HEX,
                         mod = +STREAMER.perm.is('mod'),
                         sub = +STREAMER.paid,
                         shopID = await STREAMER.shop.find(entry => (true
@@ -14415,7 +14974,7 @@ if(top == window) {
                 }
 
                 [data-test-selector="picture-by-picture-player-background"i] ~ [data-test-selector="picture-by-picture-player-background"i] {
-                    --display: none !important;
+                    display: none !important;
                 }
 
                 /* Chat */
@@ -14423,6 +14982,11 @@ if(top == window) {
                     overflow-x: hidden !important;
 
                     margin-bottom: -14px !important;
+                }
+
+                /* Ads */
+                [class*="stream"][class*="-ad"i] {
+                    display: none !important;
                 }
                 `;
 
@@ -14499,7 +15063,7 @@ if(top == window) {
 
                     case 'reload': {
                         if(UP_NEXT_ALLOW_THIS_TAB || request.forced) {
-                            await top.beforeleaving?.();
+                            await top.beforeleaving?.({});
 
                             respond({ ok: true });
                         } else {
@@ -14508,7 +15072,7 @@ if(top == window) {
                     } break;
 
                     case 'close': {
-                        await top.beforeleaving?.();
+                        await top.beforeleaving?.({});
 
                         respond({ ok: true });
 
@@ -14766,6 +15330,7 @@ if(top == window) {
                                     message,
                                     subject,
                                     mentions,
+                                    timestamp: new Date,
 
                                     // TODO: see if there are extra `msg_id` values
                                     // msg_id,
@@ -14887,13 +15452,14 @@ if(top == window) {
                                     element,
                                     message,
                                     mentions,
+                                    timestamp: new Date,
                                     highlighted: when.defined(e => e, 100, element).then(element => parseBool(element.dataset.testSelector?.contains('notice'))),
                                 };
 
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', (await this));
                                         }).bind(element)
                                     },
                                 });
@@ -14911,7 +15477,7 @@ if(top == window) {
 
                             // Got a whisper
                             case 'WHISPER': {
-                                let results = { unread: 1, from: channel, message: parameters };
+                                let results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
 
                                 for(let [name, callback] of Chat.__onwhisper__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
@@ -14950,7 +15516,7 @@ if(top == window) {
                     wait(5000)
                         .then(() => {
                             if(parseBool(Settings.recover_chat))
-                                return location.reload();
+                                return ReloadPage(true);
                             return TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL_chat);
                         })
                         .then(() => {
@@ -14990,7 +15556,7 @@ if(top == window) {
 
                                 return e.textContent?.trim?.() || '';
                             }).join(' ').trim(),
-                            mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
+                            mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent),
                             highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
                         element.dataset.uuid = uuid;
@@ -15017,7 +15583,7 @@ if(top == window) {
                         Object.defineProperties(results, {
                             deleted: {
                                 get:(function() {
-                                    return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', this);
+                                    return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', this);
                                 }).bind(element)
                             },
                         });

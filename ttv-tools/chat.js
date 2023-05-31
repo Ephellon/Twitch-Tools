@@ -387,8 +387,47 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     let BTTV_EMOTES = (top.BTTV_EMOTES ??= new Map),
-        BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map),
-        BTTV_LOADED_INDEX = 0,
+        BTTV_OWNERS = (top.BTTV_OWNERS ??= new Map);
+
+    // Size limit per key is 5MiB
+    Cache.large.load(['BTTV_EMOTES', 'BTTV_OWNERS'], data => {
+        Object.entries(data?.BTTV_EMOTES ?? {})
+            .map(([name, id]) => BTTV_EMOTES.set(name, `//cdn.betterttv.net/emote/${ id }/3x`));
+
+        Object.entries(data?.BTTV_OWNERS ?? {})
+            .map(([ids, emotes]) => {
+                let [name, displayName, providerId, userId] = ids.split('/');
+
+                displayName ||= name;
+
+                for(let emote of emotes)
+                    BTTV_OWNERS.set(emote, { name, displayName, providerId, userId });
+            });
+    });
+
+    setInterval(() => {
+        let emotes = {};
+        let emotesUUID = UUID.from([...BTTV_EMOTES.keys()].sort().join(',')).value;
+        if(BTTV_EMOTES.uuid != emotesUUID) {
+            BTTV_EMOTES.uuid = emotesUUID;
+
+            [...BTTV_EMOTES].map(([name, src]) => emotes[name] = parseURL(src).pathname.slice(1).split('/').slice(-2).shift());
+
+            Cache.large.save({ BTTV_EMOTES: emotes });
+        }
+
+        let owners = {};
+        let ownersUUID = UUID.from([...BTTV_OWNERS.keys()].sort().join(',')).value;
+        if(BTTV_OWNERS.uuid != ownersUUID) {
+            BTTV_OWNERS.uuid = ownersUUID;
+
+            [...BTTV_OWNERS].map(([emote, { name = '', displayName = '', providerId = '', userId = '' }]) => (owners[[name, displayName.replace(name, ''), providerId, userId].join('/')] ??= []).push(emote));
+
+            Cache.large.save({ BTTV_OWNERS: owners });
+        }
+    }, 30_000);
+
+    let BTTV_LOADED_INDEX = 0,
         BTTV_MAX_EMOTES = parseInt(Settings.bttv_emotes_maximum ??= 30),
         NON_EMOTE_PHRASES = new Set,
         QUEUED_EMOTES = new Set,
@@ -405,7 +444,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             f(`#bttv_emote__${ UUID.from(name).toStamp() }.tt-emote-bttv.tt-pd-x-05.tt-relative`).with(
                 f('.emote-button').with(
                     f('.tt-inline-flex').with(
-                        f(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${name}]`,
+                        f(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${ name }]`,
                             {
                                 'aria-label': name,
                                 name,
@@ -414,7 +453,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     let name = event.currentTarget.getAttribute('name'),
                                         chat = $('[data-a-target="chat-input"i]');
 
-                                    // chat.innerHTML = (chat.value += `${name} `);
+                                    // chat.innerHTML = (chat.value += `${ name } `);
                                 },
 
                                 ondragstart: event => {
@@ -459,7 +498,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(/:(\w+):/.test(keyword) || keyword.length < 1)
                 return;
 
-            if(nullish(provider)) {
+            if(nullish(provider) || Number.isNaN(provider)) {
                 if(QUEUED_EMOTES.has(keyword) || NON_EMOTE_PHRASES.has(keyword) || BTTV_EMOTES.has(keyword))
                     return BTTV_EMOTES.get(keyword);
                 QUEUED_EMOTES.add(keyword);
@@ -857,7 +896,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             furnish('.tt-emote-captured.tt-pd-x-05.tt-relative').with(
                 furnish('.emote-button').with(
                     furnish('.tt-inline-flex').with(
-                        furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${name}]`,
+                        furnish(`button.emote-button__link.tt-align-items-center.tt-flex.tt-justify-content-center[@testSelector=emote-button-clickable][@aTarget=${ name }]`,
                             {
                                 'aria-label': name,
                                 name,
@@ -866,7 +905,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     let name = event.currentTarget.getAttribute('name'),
                                         chat = $('[data-a-target="chat-input"i]');
 
-                                    // chat.innerHTML = (chat.value += `${name} `);
+                                    // chat.innerHTML = (chat.value += `${ name } `);
                                 },
 
                                 ondragstart: event => {
@@ -1084,8 +1123,8 @@ let Chat__Initialize = async(START_OVER = false) => {
                     when(line => (defined(line.element)? line: false), 250, line).then(async element => {
                         alt = alt.replace(/\s+/g, '_');
 
-                        $.all(`.text-fragment:not([tt-converted-emotes~="${alt}"i])`, element).map(fragment => {
-                            let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${alt}]`).html(img.innerHTML),
+                        $.all(`.text-fragment:not([tt-converted-emotes~="${ alt }"i])`, element).map(fragment => {
+                            let container = furnish(`.chat-line__message--emote-button[@testSelector=emote-button][@capturedEmote=${ alt }]`).html(img.innerHTML),
                                 converted = (fragment.getAttribute('tt-converted-emotes') ?? "").split(' ');
 
                             converted.push(alt);
@@ -1646,7 +1685,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(parseBool(Settings.highlight_mentions_extra))
                 usernames.push('all', 'chat', 'everyone');
 
-            if(!~line.mentions.findIndex(username => RegExp(`^(${usernames.join('|')})$`, 'i').test(username)))
+            if(!~line.mentions.findIndex(username => RegExp(`^(${ usernames.join('|') })$`, 'i').test(username)))
                 return;
 
             if(Queue.messages.missing(line.uuid)) {
@@ -1654,6 +1693,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 when(line => (defined(line.element)? line: false), 250, line).then(async line => {
                     let { author, message, style } = line;
+                    let element = await line.element;
 
                     // LOG('Highlighting message:', { author, message });
 
@@ -1683,7 +1723,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      */
     Handlers.highlight_mentions_popup = () => {
         Chat.get().map(Chat.onmessage = async line => {
-            if(!~line.mentions.findIndex(username => RegExp(`^${USERNAME}$`, 'i').test(username)))
+            if(!~line.mentions.findIndex(username => RegExp(`^${ USERNAME }$`, 'i').test(username)))
                 return;
 
             if(Queue.message_popups.missing(line.uuid)) {
@@ -1796,7 +1836,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                                                     handle, message, mentions,
 
-                                                    innerHTML: `Replying to <span style="${ style }">@${handle}</span>`,
+                                                    innerHTML: `Replying to <span style="${ style }">@${ handle }</span>`,
                                                 })
                                             ),
                                             f('.tt-right-0.tt-top-0').with(
@@ -2154,7 +2194,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         function markAsSpam(element, type = 'spam', message, phrase = '') {
             let spam_placeholder = "chat-deleted-message-placeholder";
-            let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${spam_placeholder}][@testSelector=${spam_placeholder}]`).with(`message marked as ${ type }.`);
+            let span = furnish(`span.chat-line__message--deleted-notice.tt-spam-filter-${ type }[@aTarget=${ spam_placeholder }][@testSelector=${ spam_placeholder }]`).with(`message marked as ${ type }.`);
 
             $.all(':is([data-test-selector="chat-message-separator"i], [class*="username-container"i] + *) ~ * > *', element).forEach(sibling => sibling.remove());
             $('[data-test-selector="chat-message-separator"i], [class*="username-container"i] + *', element).parentElement.append(span);
@@ -2162,7 +2202,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             element.setAttribute(type, message);
 
             if(phrase.length > 1) {
-                element.setAttribute(`${type}-phrase`, phrase);
+                element.setAttribute(`${ type }-phrase`, phrase);
                 message = message.replace(RegExp(phrase.replace(/\W/g, '\\$&'), 'ig'), `<del>${ phrase }</del>`);
             }
 
@@ -2170,7 +2210,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         }
 
         async function spamChecker(element, message, author, lookBack, minLen, minOcc) {
-            if(message.length < 1 || RegExp(`^${USERNAME}$`, 'i').test(author))
+            if(message.length < 1 || RegExp(`^${ USERNAME }$`, 'i').test(author))
                 return message;
 
             // The same message is already posted (within X lines)
@@ -2304,7 +2344,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 usd = (bits * .01).toFixed(2);
 
-                header.append(furnish.var` ($${ comify(usd).replace(_0, '$10') })`);
+                header.append(furnish.var(` ($${ comify(usd).replace(_0, '$10') })`));
 
                 header.setAttribute('tt-tusda', usd);
             });
@@ -2931,7 +2971,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             error = $('[class*="chat"i][class*="content"] .core-error');
 
         if(defined(error)) {
-            $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${error.textContent}`));
+            $('[data-a-target*="welcome"i]')?.append(furnish('p', { style: 'text-decoration:underline var(--color-error)' }, `There was an error loading chat: ${ error.textContent }`));
             error.remove();
         }
 
@@ -2942,7 +2982,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let [,name] = ([,STREAMER?.name] ?? top.location.pathname.split(/\W/, 2)),
             input = $('.chat-input'),
             iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative`, {
-                src: `./popout/${name}/chat`,
+                src: `./popout/${ name }/chat`,
                 role: "tt-log",
             }),
             container = $('.chat-shell', top.document);
@@ -3103,7 +3143,10 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Adjust the tiemr dynamically...
         setInterval(() => {
-            let desired = 500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0).floorToNearest(100),
+            let desired = (0
+                    || (500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0))
+                    || Timers.recover_messages
+                ).floorToNearest(100),
                 actual = Timers.recover_messages,
                 min = Math.min(desired, actual),
                 max = Math.max(desired, actual);
@@ -3400,14 +3443,14 @@ let Chat__CUSTOM_CSS,
 
 Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     // Only executes if the user is banned
-    let banned = STREAMER?.veto || parseBool($.all('[class*="banned"i]')?.length);
+    let banned = parseBool(STREAMER?.veto || $.all('[class*="banned"i]')?.length);
 
     // Keep hidden iframes from loading resources
-    let { hidden } = parseURL(location).searchParameters;
+    let hidden = parseBool(parseURL(location).searchParameters?.hidden);
 
     if([banned, hidden].map(parseBool).contains(true)) {
         if(!parseBool(hidden))
-            WARN('[NON_FATAL] Child container unavailable. Reason:', { banned, hidden });
+            WARN('[NON_FATAL] Child container unavailable. Is it a ban? ', ['No', 'Yes'][+banned], 'Is chat embedded and hidden?', ['No', 'Yes'][+hidden]);
 
         wait(5000).then(() => Chat__Initialize_Safe_Mode({ banned, hidden }));
         clearInterval(Chat__PAGE_CHECKER);
@@ -3655,6 +3698,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     message,
                                     subject,
                                     mentions,
+                                    timestamp: new Date,
 
                                     // TODO: see if there are extra `msg_id` values
                                     msg_id,
@@ -3776,13 +3820,14 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     element,
                                     message,
                                     mentions,
+                                    timestamp: new Date,
                                     highlighted: when.defined(e => e, 100, element).then(element => parseBool(element.dataset.testSelector?.contains('notice'))),
                                 };
 
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', (await this));
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', (await this));
                                         }).bind(element)
                                     },
                                 });
@@ -3801,7 +3846,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                             // Got a whisper
                             case 'WHISPER': {
-                                let results = { unread: 1, from: channel, message: parameters };
+                                let results = { unread: 1, from: channel, message: parameters, timestamp: new Date };
 
                                 for(let [name, callback] of Chat.__onwhisper__)
                                     callback(results);
@@ -3907,7 +3952,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             Object.defineProperties(results, {
                                 deleted: {
                                     get:(function() {
-                                        return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i])', this);
+                                        return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', this);
                                     }).bind(element)
                                 },
                             });

@@ -22,8 +22,6 @@
 - [ ] Live Reminders might re-add all live channels?
     * Usually during raids (semi-intentional)
 - [-] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
-- [ ] Add logic to (video) record channel point redemptions
-    * Like PSN trophies
 - [ ] Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
 - [ ] Garner user feedback → https://form.jotform.com/222442891146153
 - [ ] Offer an option to use Live Reminder channels after live followed channels have been exhausted
@@ -39,10 +37,28 @@
 - [ ] Add cache logic to detect raids
     - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
+- [ ] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.4)
+- Fixed issue with detecting offline channels
+- Added CSS to hide banner ads
+- Adjusted Recover Messages logic
+- Fixed issue with Color transforming to HSLA
+- Added `HWB` and `CMYK` color functions; and `isDarkerThan` and `isLighterThan`
+- Added `HTMLVideoElement..saveRecording` method
+- Added option to record Channel Point Redemptions, "Trophies"
+- Fixed issue with Live Reminders not loading
+- Fixed issue with synchronizing settings
+- Modified storage to save locally by default instead of synchronized
+- Added logic to time zone tooltips to adjust for Daylight Savings (even though it's obsolete)
+- Modified purse logic to better represent the user's current status
+- Added `Cache.large` ([indexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)) logic to handle > 5MB data entries
+    - Uses [localForage](https://localforage.github.io/localForage/)
+- Fixed issue displaying Bit conversions
+
 > [`5.32.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.3)
 - Fixed issue with MiniPlayer not displaying
 - Changed all attribute accessors to proxies (`Element..attr...`)

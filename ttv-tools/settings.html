@@ -1455,8 +1455,8 @@
                 </div>
             </section>
 
-            <!-- Video Clips → allocation,alt,avenue,bar,beginning,block,book,break,breathing space,carrier,case,channels,charge,chunk,clips,conclusion,current,data,dawn,default,delinquency,directory,dossier,excerpt,file,flood,flow,folder,fraction,fragment,halt,handling,hesitation,hiatus,hitch,information,interlude,intermission,interruption,interval,kickoff,lapse,layoff,letup,list,lot,lull,management,manipulation,means,medium,mow,nonpayment,notebook,opening,outset,oversight,part,pause,piece,plan,policy,portions,prune,quantity,queue,recess,recording,respite,route,rush,section,segment,serving,shave,shear,snip,spate,start,stoppage,strategy,streams,surge,suspension,televised,tide,torrent,transaction,treatment,tributary,trim,tunnel,video,video -->
-            <section new='5.15' beta='5.28'>
+            <!-- Video Clips → allocation,alt,avenue,bar,beginning,block,book,break,breathing space,carrier,case,channels,charge,chunk,citation,clips,collectibles,conclusion,crown,cup,current,data,dawn,decoration,default,delinquency,directory,dossier,dvr,excerpt,file,flood,flow,folder,fraction,fragment,gold,halt,handling,hesitation,hiatus,hitch,information,interlude,intermission,interruption,interval,keepsake,kickoff,lapse,layoff,letup,list,lot,lull,management,manipulation,means,medal,medium,memento,mow,nonpayment,notebook,opening,outset,oversight,part,pause,piece,plan,policy,portions,prize,prune,quantity,queue,recess,record,recording,respite,route,rush,section,segment,serving,shave,shear,snip,souvenir,spate,start,stoppage,strategy,streams,surge,suspension,televised,tide,torrent,transaction,treatment,tributary,trim,trophies,trophy,tunnel,video -->
+            <section new='5.32.4' beta='5.28'>
                 <div class=title tr-id='networking:video-clips'><span small glyph=download></span> Video Clips</div>
                 <div class=summary>
                     <p tr-id>
@@ -1520,6 +1520,19 @@
                                     </div>
                                     <p tr-id>
                                         Automatically record (and save) certain streams. Channels marked as <b>DVR</b> will skip and pause the <b>First in Line</b> queue.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class=title tr-id='video-clips:trophy'>Trophies</div>
+                                <div class=summary>
+                                    <div class=toggle>
+                                        <input id=video_clips__trophy type=checkbox>
+                                        <label for=video_clips__trophy></label>
+                                    </div>
+                                    <p tr-id>
+                                        Automatically record (and save) channel point redemption clips. Clips will be <span unit=sec><input id=video_clips__trophy_length type=number value=60 step=15 min=15 max=1200></span> long.
                                     </p>
                                 </div>
                             </div>
@@ -2122,6 +2135,7 @@
 
         <button id=save class=ripple></button>
 
+        <script src='ext/localforage.js'></script>
         <script src='ext/polyfill.js'></script>
         <script src='ext/glyphs.js'></script>
         <script src='core.js'></script>

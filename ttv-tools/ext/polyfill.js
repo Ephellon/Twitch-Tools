@@ -777,9 +777,9 @@ Array.prototype.missing ??= function missing(...values) {
 };
 
 // Returns an array of purely unique elements
-    // Array..isolate() → array<Set>
-Array.prototype.isolate ??= function isolate() {
-    return [...new Set(this)];
+    // Array..isolate(against:array?) → array<Set>
+Array.prototype.isolate ??= function isolate(against = []) {
+    return [...new Set(this)].filter(value => against.missing(value));
 };
 
 // (Randomly) Shuffles the array
@@ -831,6 +831,17 @@ Date.prototype.getAbsoluteDay ??= function getAbsoluteDay() {
     // Date..getMeridiem() → string<{ "AM" | "PM" }>
 Date.prototype.getMeridiem ??= function getMeridiem() {
     return this.getHours() > 11? 'PM': 'AM';
+};
+
+// https://stackoverflow.com/a/11888430/4211612
+// Returns whether or not Daylight Savings Time is in effect
+    // Date.isDST() → boolean
+Date.isDST ??= function isDST() {
+    let now = new Date;
+    let Jan = new Date(now.getFullYear(), 0, 1),
+        Jul = new Date(now.getFullYear(), 6, 1);
+
+    return now.getTimezoneOffset() < Math.max(Jan.getTimezoneOffset(), Jul.getTimezoneOffset());
 };
 
 // Returns the milliseconds since an event
@@ -1716,59 +1727,67 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
 // Records a video element
     // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
 HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = { mimeType: 'video/webm;codecs=vp9' }) {
+    const configurable = false, writable = false, enumerable = false;
     let name = (options?.key ?? 'DEFAULT_RECORDING'),
-        key = UUID.from(name).value,
+        uuid = UUID.from(name).value,
         { private = false } = options;
 
-    this.recorders ??= {};
+    this.recorders ??= new Map;
+    this.blobs ??= new Map;
+    this.links ??= new Map;
 
-    if(defined(this.recorders[key]))
-        throw `There is already an active recording for "${ options.key }." You must delete the previous recording: HTMLVideoElement.prototype.removeRecording("${ options.key }")`;
+    if(this.recorders.has(uuid))
+        throw `There is already an active recording for "${ name }." You must delete the previous recording: <HTMLVideoElement>.removeRecording("${ name }")`;
 
     for(let key of ['key', 'private'])
         delete options[key];
 
-    let RECORDER = this.recorders[key] = new MediaRecorder(this.captureStream(), options),
-        DATA = (this.blobs = []);
+    let RECORDER = this.recorders.get(uuid) ?? new MediaRecorder(this.captureStream(), options),
+        BLOBS = new Array;
 
-    let configurable = false, writable = false, enumerable = false;
+    this.recorders.set(uuid, RECORDER);
+    this.blobs.set(uuid, BLOBS);
+
     Object.defineProperties(RECORDER, {
         name: { value: name, configurable, writable },
         data: {
             get() {
-                return DATA.slice(RECORDER.slice);
+                return this.blobs.slice(this.slice);
             },
 
             set(value) {
-                return DATA.slice(RECORDER.slice = value);
+                return this.blobs.slice(this.slice = value);
             },
         },
 
-        slice: { value: DATA.length },
+        uuid: { value: uuid, configurable, writable },
+        blobs: { value: BLOBS },
+        slice: { value: BLOBS.length },
         private: { value: private, configurable, writable },
         creationTime: { value: +new Date, configurable, writable },
     });
 
-    Object.defineProperties(DATA, {
+    Object.defineProperties(BLOBS, {
         source: { value: this, configurable, writable },
         recordingLength: {
             get() {
-                return (new Date) - DATA.creationTime;
+                return (new Date) - this.creationTime;
             },
 
             set(value) {
-                return (new Date) - DATA.creationTime;
+                return new Date(value) - this.creationTime;
             },
         },
         creationTime: { value: +new Date, configurable, writable },
     });
 
+    // Actually record the data...
     RECORDER.ondataavailable = event => {
         this.mimeType ??= RECORDER.mimeType;
 
-        this.blobs.push(event.data);
+        this.blobs.get(event.target.uuid).push(event.data);
     };
-    RECORDER.start(1000);
+    when(_ => _.videoTracks?.length, 100, this).then(() => RECORDER.start(1000));
     // Chunks per second
         // 1k → 1cps
         // 42 → 24cps
@@ -1787,25 +1806,26 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = 
     if(Number.isFinite(maxTime))
         stop = wait(maxTime).then(() => this.stopRecording());
 
-    return Promise.all([halt, stop]).then(() => DATA);
+    return Promise.all([halt, stop]).then(() => BLOBS);
 };
+
 
 // Gets a recording of a video element
     // HTMLVideoElement..getRecording(key:string?) → MediaRecorder
 HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDING') {
-    return this.recorders?.[ UUID.from(key).value ];
+    return this.recorders?.get(UUID.from(key).value);
 };
 
 // Determines if there is a recording of a video element
     // HTMLVideoElement..hasRecording(key:string?) → boolean
 HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDING') {
-    return defined(this.recorders?.[ UUID.from(key).value ]);
+    return this.recorders?.has(UUID.from(key).value);
 };
 
 // Removes a recording of a video element
     // HTMLVideoElement..removeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
-    delete this.recorders?.[ UUID.from(key).value ];
+    this.recorders?.delete(UUID.from(key).value);
 
     return this;
 };
@@ -1813,7 +1833,7 @@ HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'D
 // Pauses a recording of a video element
     // HTMLVideoElement..pauseRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDING') {
-    this.recorders?.[ UUID.from(key).value ]?.pause();
+    this.getRecording(key)?.pause();
 
     return this;
 };
@@ -1821,7 +1841,7 @@ HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEF
 // Resumes a recording of a video element
     // HTMLVideoElement..resumeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDING') {
-    this.recorders?.[ UUID.from(key).value ]?.resume();
+    this.getRecording(key)?.resume();
 
     return this;
 };
@@ -1829,7 +1849,7 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING') {
-    let recorder = this.recorders?.[ UUID.from(key).value ];
+    let recorder = this.getRecording(key);
 
     if(defined(recorder))
         recorder.slice = Infinity;
@@ -1841,11 +1861,11 @@ HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'D
 // Stops recording a video element
     // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDING') {
-    let recorder = this.recorders?.[ UUID.from(key).value ],
+    let recorder = this.getRecording(key),
         stream = recorder?.stream;
 
     if(nullish(stream))
-        throw `There are no active recordings with the key "${ key }". You must create a recording: HTMLVideoElement.prototype.startRecording(maxTime:number?, options:object?)`;
+        throw `There are no active recordings with the key "${ key }". You must create a recording: <HTMLVideoElement>.startRecording(maxTime:number?, options:object?)`;
 
     try {
         recorder.stop();
@@ -1855,11 +1875,31 @@ HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAU
     }
 
     let isActive = false;
-    for(let guid in this.recorders)
-        if(isActive ||= (this.recorders[guid].state == "recording"))
+    for(let [guid, recorder] of this.recorders)
+        if(isActive ||= (recorder.state == "recording"))
             break;
 
     this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', isActive);
+
+    return this;
+};
+
+// Saves a video element recording
+    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLVideoElement
+HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = new ClipName) {
+    key ??= 'DEFAULT_RECORDING';
+
+    let chunks = this.getRecording(key)?.data ?? [];
+
+    if(chunks.length < 1)
+        throw `Unable to save clip. No recording data available.`;
+
+    let blob = new Blob(chunks, { type: chunks[0].type });
+    let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(this.mimeType) }` }, name);
+
+    link.click();
+
+    this.links.set(key, link);
 
     return this;
 };
@@ -1881,9 +1921,15 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
 
     context.drawImage(this, 0, 0);
 
-    let promise = new Promise((resolve, reject) => canvas.toBlob(blob => navigator.clipboard.write([ new ClipboardItem({ [blob?.type]: blob }) ]).then(resolve).catch(reject)));
-
-    canvas?.remove();
+    let promise = new Promise((resolve, reject) =>
+        canvas.toBlob(blob =>
+            navigator.clipboard
+                .write([ new ClipboardItem({ [blob?.type]: blob }) ])
+                .then(resolve)
+                .catch(reject)
+                .finally(() => canvas?.remove())
+        )
+    );
 
     return promise;
 };
