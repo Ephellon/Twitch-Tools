@@ -17,7 +17,7 @@ function getURL(path = '') {
 
 // Handle updates here
 (async function(version) {
-    if(compareVersions(`${ version } = 5.32.4`)) {
+    if(compareVersions(`${ version } ≥ 5.32.4`)) {
         // Handle storage change
         let v5_32_4 = await Storage.get('v5_32_4');
         Storage_change: if(parseBool(v5_32_4) == false)
@@ -28,6 +28,14 @@ function getURL(path = '') {
                     Container.storage.local.set({ [key]: sync[key] });
                 Storage.set({ v5_32_4: true });
             });
+    }
+
+    if(compareVersions(`${ version } = 5.32.5`)) {
+        // Convert settings
+        let opt = 'auto_chat__vip';
+        let val = (await Storage.get(opt))?.[opt];
+
+        Storage.set({ [opt]: val === true? 'vip': val === false? null: val });
     }
 })(Manifest.version);
 
@@ -1729,13 +1737,14 @@ let FETCHED_DATA = { wasFetched: false };
 
         // Modify all [set] elements
         $.all('[set]').map(async(element) => {
-            properties.this = Object.fromEntries([...element.attributes].map(({ name, value }) => [name, value]));
+            properties.this = Object.fromEntries([...element.attributes, { name: 'innerHTML', value: element.innerHTML }, { name: 'innerText', value: element.innerText }, { name: 'textContent', value: element.textContent }].map(({ name, value }) => [name, value]));
 
             // Continue with the data...
             let expressions = element.getAttribute('set').split(/(?<!&#?\w+);/);
+            let directProperties = ['innerHTML', 'innerText', 'textContent'];
 
             for(let expression of expressions) {
-                // Literal (x=y)
+                // Literal (x=y) - Sets attribute to right-hand
                 if(/^([\w\-]+)=/.test(expression)) {
                     let [attribute, property] = expression.split('=', 2),
                         value;
@@ -1749,9 +1758,12 @@ let FETCHED_DATA = { wasFetched: false };
                         value = value[key];
                     }
 
-                    element.setAttribute(attribute, value);
+                    if(directProperties.contains(attribute))
+                        element[attribute] = value;
+                    else
+                        element.setAttribute(attribute, value);
                 }
-                // Metaphorical (x:y)
+                // Metaphorical (x:y) - Sets attribute to parsed right-hand
                 else if(/^([\w\-]+):/.test(expression)) {
                     let [attribute, property] = expression.split(':', 2),
                         value = property.replace(/(\w+\.\w+(?:[\.\w])?)/g, ($0, $1, $$, $_) => {
@@ -1768,11 +1780,14 @@ let FETCHED_DATA = { wasFetched: false };
                             return val;
                         });
 
-                    element.setAttribute(attribute, value);
+                        if(directProperties.contains(attribute))
+                            element[attribute] = value;
+                        else
+                            element.setAttribute(attribute, value);
                 }
-                // Symbolic (x->y)
-                else if(/^([\w\-]+)->/.test(expression)) {
-                    let [attribute, property] = expression.split('->', 2),
+                // Symbolic (x→y) - Sets attribute to parsed, unescaped right-hand
+                else if(/^([\w\-]+)(?:->|→)/.test(expression)) {
+                    let [attribute, property] = expression.split(/(?:->|→)/, 2),
                         // \object.property::type@base?pad
                         value = property.replace(/\\(\w+\.\w+(?:[\.\w]+)?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
                             let prop = $1.split('.'),
@@ -1832,7 +1847,10 @@ let FETCHED_DATA = { wasFetched: false };
                             return val;
                         });
 
-                    element.setAttribute(attribute, value);
+                        if(directProperties.contains(attribute))
+                            element[attribute] = value;
+                        else
+                            element.setAttribute(attribute, value);
                 }
             }
         });

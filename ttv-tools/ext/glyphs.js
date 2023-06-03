@@ -304,6 +304,8 @@ window.Glyphs ??= {
     },
 
     get utf8() {
+        let cc = '\u{D83D}\u{DCB3}';
+
         return ({
             // 1st batch
             bonuschannelpoints: "\u{1F9F0}",
@@ -338,7 +340,7 @@ window.Glyphs ??= {
             loot: "\u{1FA82}",
             moon: "\u{1F319}",
             play: "\u{25B6}",
-            star: "\u{2606}",
+            star: "\u{2B50}",
             show: "\u{1F441}",
             fav: "\u{2605}",
             mod: "\u{1F6E1}",
@@ -415,6 +417,17 @@ window.Glyphs ??= {
             ribbon: "\u{1F397}",
             cheer: "\u{1F941}",
             error: "\u26D4",
+
+            // 11th batch
+            cake: '\u{D83C}\u{DF82}',
+            vip: '\u{D83D}\u{DC8E}',
+            at: '@',
+            battery: '\u{D83D}\u{DD0B}',
+            jcb: cc,
+            maestro: cc,
+            mastercard: cc,
+            paypal: cc,
+            visa: cc,
         });
     },
 

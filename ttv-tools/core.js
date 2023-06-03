@@ -788,8 +788,8 @@ Object.defineProperties(fetchURL, {
 // The following facilitates communication between pages
 // Extension (permanent) data
 let Settings = window.Settings = {
-    // Settings.get(keys:string|array?) → Promise<object>
-    get(keys = null) {
+    // Settings.get(properties:string|array?) → Promise<object>
+    get(properties = null) {
         return new Promise((resolve, reject) => {
             function ParseSettings(settings) {
                 for(let setting in settings)
@@ -798,7 +798,7 @@ let Settings = window.Settings = {
                 resolve(Settings);
             }
 
-            window.Storage.get(keys, settings =>
+            window.Storage.get(properties, settings =>
                 window.Runtime.lastError?
                     window.Storage.get(null, ParseSettings):
                 ParseSettings(settings)
@@ -806,29 +806,32 @@ let Settings = window.Settings = {
         });
     },
 
-    // Settings.set(keys:object?) → Promise<undefined>
-    set(keys = {}) {
-        return Storage.set(keys);
+    // Settings.set(properties:object?) → Promise<undefined>
+    set(properties = {}) {
+        for(let key in properties)
+            Settings[key] = properties[key];
+
+        return Storage.set(properties);
     },
 };
 
 // Page (temporary) data
 let Cache = window.Cache = {
     // Saves data to the page's storage
-        // Cache.save(keys:object?, callback:function?) → undefined
-    async save(keys = {}, callback = null) {
+        // Cache.save(properties:object?, callback:function?) → undefined
+    async save(properties = {}, callback = null) {
         let set = (key, value) => CacheStorageArea.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
-        for(let key in keys)
-            set(key, JSON.stringify(keys[key]));
+        for(let key in properties)
+            set(key, JSON.stringify(properties[key]));
 
         if(typeof callback == 'function')
             callback();
     },
 
     // Loads data from the page's storage
-        // Cache.load(keys:string|array|object?, callback:function?) → Promise<object>
-    async load(keys = null, callback = null) {
+        // Cache.load(properties:string|array|object?, callback:function?) → Promise<object>
+    async load(properties = null, callback = null) {
         let results = {};
         let get = key => {
                 let value =
@@ -847,21 +850,21 @@ let Cache = window.Cache = {
                 return value;
             };
 
-        keys ??= await Cache.keys();
+        properties ??= await Cache.keys();
 
-        switch(keys.constructor) {
+        switch(properties.constructor) {
             case String:
-                results[keys] = get(keys);
+                results[properties] = get(properties);
                 break;
 
             case Array:
-                for(let key of keys)
+                for(let key of properties)
                     results[key] = get(key);
                 break;
 
             case Object:
-                for(let key in keys)
-                    results[key] = get(key) ?? keys[key];
+                for(let key in properties)
+                    results[key] = get(key) ?? properties[key];
                 break;
         }
 
@@ -878,8 +881,8 @@ let Cache = window.Cache = {
     },
 
     // Removes data from the page's storage
-        // Cache.remove(keys:string|array, callback:function?) → Promise<object>
-    async remove(keys, callback = null) {
+        // Cache.remove(properties:string|array, callback:function?) → Promise<object>
+    async remove(properties, callback = null) {
         let results = {};
         let remove = key => CacheStorageArea.removeItem(`ext.twitch-tools/${ encodeURI(key) }`),
             get = key => {
@@ -894,24 +897,24 @@ let Cache = window.Cache = {
                 return value;
             };
 
-        if(nullish(keys))
+        if(nullish(properties))
             return;
 
-        switch(keys.constructor) {
+        switch(properties.constructor) {
             case String:
-                results[keys] = get(keys);
-                remove(keys);
+                results[properties] = get(properties);
+                remove(properties);
                 break;
 
             case Array:
-                for(let key of keys) {
+                for(let key of properties) {
                     results[key] = get(key);
                     remove(key);
                 }
                 break;
 
             case Object:
-                for(let key in keys) {
+                for(let key in properties) {
                     results[key] = get(key);
                     remove(key);
                 }
@@ -931,8 +934,8 @@ let Cache = window.Cache = {
     },
 
     // Returns the number of Bytes in use
-        // Cache.getBytesInUse(keys:string|array?) → Promise<number>
-    async getBytesInUse(keys) {
+        // Cache.getBytesInUse(properties:string|array?) → Promise<number>
+    async getBytesInUse(properties) {
         let bytesUsed = 0;
         let size = key => {
                 let value =
@@ -951,21 +954,21 @@ let Cache = window.Cache = {
                 return (key?.length | 0) + (JSON.stringify(value)?.length | 0);
             };
 
-        keys ??= await Cache.keys();
+        properties ??= await Cache.keys();
 
-        switch(keys.constructor) {
+        switch(properties.constructor) {
             case String:
-                bytesUsed += size(keys);
+                bytesUsed += size(properties);
                 break;
 
             case Array:
-                for(let key of keys)
+                for(let key of properties)
                     bytesUsed += size(key);
                 break;
 
             case Object:
-                for(let key in keys)
-                    bytesUsed += size(key) ?? ((key?.length | 0) + (JSON.stringify(keys[key])?.length | 0));
+                for(let key in properties)
+                    bytesUsed += size(key) ?? ((key?.length | 0) + (JSON.stringify(properties[key])?.length | 0));
                 break;
         }
 

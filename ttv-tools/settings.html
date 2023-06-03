@@ -914,18 +914,22 @@
             </section>
 
             <!-- Lurking Message → channels,charge,directive,handling,information,letter,management,manipulation,memo,memorandum,message,news,note,notice,oversight,plan,policy,report,strategy,transaction,treatment,vip,word -->
-            <section new='5.29'>
+            <section new='5.32.5'>
                 <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurking Message</div>
                 <div class=summary>
-                    <div class=toggle>
-                        <select id=auto_chat__vip>
-                            <option value=Everyone>Everyone</option>
-                            <option value=VIP>VIP Only</option>
-                        </select>
-                    </div>
                     <p tr-id>
-                        For channels where you are a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip=VIP>VIP</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                        For channels where you own a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide'>special badge</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                     </p>
+                    <p>
+                        The badge level that should send the message:
+                    </p>
+                    <select id=auto_chat__vip>
+                        <option value=null set='textContent→\Glyphs.utf8.error \this.textContent'>Disabled (never send message)</option>
+                        <option value=moderator set='textContent→\Glyphs.utf8.sword \this.textContent'>Moderator</option>
+                        <option value=vip set='textContent→\Glyphs.utf8.vip \this.textContent'>VIP</option>
+                        <option value=subscriber set='textContent→\Glyphs.utf8.fav \this.textContent'>Subscriber</option>
+                        <option value=everyone set='textContent→\Glyphs.utf8.intro \this.textContent'>Everyone (always send message)</option>
+                    </select>
 
                     <details>
                         <summary tr-id=options subtitle='Adjust options for &quot;Lurking Message&quot;'>Options</summary>
@@ -2146,7 +2150,7 @@
             <input id=search type=search placeholder='Search for a setting...' autocomplete=off>
         </div>
 
-        <div id=context-id set='content=context.id;style->text-decoration:2px dotted underline #\context.id::int@16?8'></div>
+        <div id=context-id set='content=context.id;style→text-decoration:2px dotted underline #\context.id::int@16?8'></div>
 
         <button id=save class=ripple></button>
 
