@@ -1874,6 +1874,45 @@ $.all('[id^="key:"i]').map(element => element.textContent = GetMacro(element.tex
 // Get the supported video types here...
 $.all('#video_clips__file_type option').filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
 
+// Handle any fixable units
+$.all('[fix-unit]').map(element => {
+    let type = element.attr.fixUnit;
+    let onchange;
+
+    switch(type[0].toLowerCase()) {
+        case 'd':
+        case 'h':
+        case 'm':
+        case 's': {
+            onchange = function(event) {
+                let self = event.currentTarget;
+
+                self.closest('[fix-unit]').attr.fixedValue = toTimeString(parseTime(self.value, type), '&minutes_m &seconds_s');
+            };
+        } break;
+
+        default: {
+            onchange = function(event) {
+                let self = event.currentTarget;
+                let value = self.value;
+
+                if(!isNaN(parseInt(value)))
+                    value = parseInt(value).suffix('', 1);
+                else if(!isNaN(parseValue(value)))
+                    value = parseValue(value).suffix('', 1);
+
+                self.closest('[fix-unit]').attr.fixedValue = value;
+            };
+        } break;
+    }
+
+    $.all('input', element).map(input => {
+        input.addEventListener('keyup', onchange);
+        input.addEventListener('change', onchange);
+        wait(1000, input).then(input => onchange({ currentTarget: input }));
+    });
+});
+
 // Search for a setting...
 $.body.onkeydown = event => {
     if(!event.altKey && event.ctrlKey && !event.metaKey && event.key.equals('f')) {

@@ -9220,7 +9220,7 @@ let Initialize = async(START_OVER = false) => {
                             // TODO: Currently, only one option looks for Live Reminder notifications...
                             Handle_phantom_notification: {
                                 let notification = { href, innerText: `${ name } is live [Live Reminders]` },
-                                    [page, note] = [STREAMER.href, href].map(parseURL).map(({ pathname }) => pathname);
+                                    [page, note] = [STREAMER.href, href].map(url => parseURL(url).pathname);
 
                                 // If already on the stream, break
                                 if(page.equals(note))
@@ -9229,10 +9229,14 @@ let Initialize = async(START_OVER = false) => {
                                 // All of the Live Reminder handlers...
                                 Handlers.first_in_line(notification);
 
+                                let last = new Date(lastOnline);
+                                let just = new Date(justOnline);
+                                let instance = (last - just < 60_000)? 'just now': toTimeString((last - just).abs().floorToNearest(60_000), '?minutes minutes ago');
+
                                 // Show a notification
                                 Display_phantom_notification: {
-                                    WARN(`Live Reminders: ${ name } just went live`, new Date);
-                                    await alert.timed(`<a href='/${ name }'>${ name }</a> just went live!`, 7000);
+                                    WARN(`Live Reminders: ${ name } went live ${ instance }`, new Date);
+                                    await alert.timed(`<a href='/${ name }'>${ name }</a> went live ${ instance }!`, 7000);
                                 }
                             }
 

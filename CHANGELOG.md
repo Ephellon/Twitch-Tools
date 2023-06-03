@@ -42,6 +42,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.5)
+- Adjusted input visibility and interactions on Settings page
+    + Inputs with difficult entries are more visible, and have clearer values
+
 > [`5.32.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.4)
 - Fixed issue with detecting offline channels
 - Added CSS to hide banner ads

@@ -648,16 +648,41 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 }
 
 // Convert a time-formatted string into its corresponding millisecond value
-    // parseTime(time:string) → number
-function parseTime(time = '') {
-    let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit)),
-        ms = 0;
+    // parseTime(time:string, type:string?) → number
+function parseTime(time = '', type = null) {
+    let ms = 0;
 
-    if(parseTime.pattern.test(time))
-        time = time.replace(/(\d+\s*d)?(\s*\d+\s*h)?(\s*\d+\s*m)?(\s*\d+\s*s)?/i, ($0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $$, $_) => [$1, $2, $3, $4].join(':'));
+    if(defined(type)) {
+        switch(type.slice(0, 3).toLowerCase()) {
+            case 'mil':
+                ms = parseInt(time);
+                break;
 
-    for(let unit of time.split(':').reverse())
-        ms += parseInt(unit) * units.splice(0,1)[0];
+            case 'sec':
+                ms = parseInt(time) * 1000;
+                break;
+
+            case 'min':
+                ms = parseInt(time) * 1000 * 60;
+                break;
+
+            case 'hou':
+                ms = parseInt(time) * 1000 * 60 * 60;
+                break;
+
+            case 'day':
+                ms = parseInt(time) * 1000 * 60 * 60 * 24;
+                break;
+        }
+    } else {
+        let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit));
+
+        if(parseTime.pattern.test(time))
+            time = time.replace(/(\d+\s*d\w*)?(\s*\d+\s*h\w*)?(\s*\d+\s*m\w*)?(\s*\d+\s*s\w*)?/i, ($0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $$, $_) => [$1, $2, $3, $4].join(':'));
+
+        for(let unit of time.split(':').reverse())
+            ms += parseInt(unit) * units.splice(0,1)[0];
+    }
 
     return ms;
 }
