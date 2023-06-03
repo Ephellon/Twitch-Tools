@@ -11917,7 +11917,7 @@ let Initialize = async(START_OVER = false) => {
     let lastAutoChatName = `auto-chat/${ STREAMER.sole }`;
 
     Handlers.auto_chat__vip = () => {
-        if(STREAMER.perm.not('vip'))
+        if(STREAMER.perm.not(Settings.auto_chat__vip))
             return;
 
         wait(parseInt(Settings.auto_chat__wait_time) * 60_000).then(() => {
