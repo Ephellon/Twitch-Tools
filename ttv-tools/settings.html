@@ -918,8 +918,10 @@
                 <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurking Message</div>
                 <div class=summary>
                     <div class=toggle>
-                        <input id=auto_chat__vip type=checkbox>
-                        <label for=auto_chat__vip></label>
+                        <select id=auto_chat__vip>
+                            <option value=Everyone>Everyone</option>
+                            <option value=VIP>VIP Only</option>
+                        </select>
                     </div>
                     <p tr-id>
                         For channels where you are a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip=VIP>VIP</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
