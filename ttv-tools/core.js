@@ -1182,6 +1182,7 @@ __STATIC__: {
     window.Runtime = Runtime;
     window.Storage = Storage;
     window.Extension = Extension;
+    window.Container = Container;
     window.Manifest = Manifest;
     window.Storage = Storage;
 

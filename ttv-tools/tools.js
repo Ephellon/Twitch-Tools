@@ -1206,12 +1206,12 @@ class Search {
                             },
 
                             async text() {
-                                JSON.stringify(json);
+                                return JSON.stringify(json);
                             },
 
                             async formData() {
                                 let form = new FormData;
-                                for(let key in json)
+                                for(let key of Object.keys(json))
                                     form.set(key, json[key]);
                                 return form;
                             },
@@ -1357,6 +1357,8 @@ class Search {
 
         let searchID = UUID.from([ID, type, as, new Date((+new Date).floorToNearest(Search.cacheLeaseTime)).toJSON()].join('~')).value;
 
+        SEARCH_CACHE.delete(ID?.toLowerCase());
+
         return Search.#cache.delete(searchID);
     }
 
@@ -1377,7 +1379,7 @@ class Search {
                 }
             });
 
-            request.withCredentials = 'include' == query.credentials;
+            request.withCredentials = parseBool(query.credentials?.equals('include'));
             request.onerror = onError;
             request.onload = () => onSuccess({
                 status: request.status,
@@ -2472,27 +2474,26 @@ class Color {
     // new ClipName(version:number?) → string
     // 2 Adj + 1 Noun + 1 Global Emote
 class ClipName extends String {
-    static ADJECTIVES = 'adorable adventurous aggressive agreeable alert alive amused angry calm careful cautious charming cheerful clean clear clever cloudy clumsy eager easy elated elegant embarrassed enchanting encouraging bad beautiful better bewildered black bloody blue blue-eyed dangerous dark dead defeated defiant delightful depressed determined different fair faithful famous fancy fantastic fierce filthy fine annoyed annoying anxious arrogant ashamed attractive average awful colorful combative comfortable concerned condemned confused cooperative courageous curious cute energetic enthusiastic envious evil excited expensive exuberant blushing bored brainy brave breakable bright busy buttery difficult disgusted distinct disturbed dizzy doubtful drab dull dusty foolish fragile frail frantic friendly frightened funny furry gentle gifted glamorous gleaming glorious good ill important impossible inexpensive innocent inquisitive nasty naughty nervous nice nutty obedient obnoxious odd old-fashioned handsome happy healthy helpful helpless hilarious lazy light lively lonely long lovely lucky panicky perfect plain pleasant poised poor powerful gorgeous graceful grieving grotesque grumpy grungy itchy jealous jittery jolly joyous kind open outrageous outstanding homeless homely horrible hungry hurt hushed magnificent misty modern motionless muddy mushy mysterious precious prickly proud putrid puzzled quaint queasy real relieved repulsive rich scary selfish shiny shy silly sleepy smiling vast victorious vivacious wandering weary wicked wide-eyed talented tame tasty tender tense terrible thankful thoughtful thoughtless tired smoggy sore sparkling splendid spotless stormy strange stupid successful super svelte wild witty worried worrisome wrong zany zealous';
-    static NOUNS = 'account achiever acoustics act action activity actor addition adjustment advertisement advice aftermath afternoon afterthought agreement air airplane airport alarm amount amusement anger angle animal answer ant ants apparatus apparel apple apples appliance approval arch argument arithmetic arm army art attack attempt attention attraction aunt authority babies baby back badge bag bait balance ball balloon balls banana band base baseball basin basket basketball bat bath battle bead beam bean bear bears beast bed bedroom beds bee beef beetle beggar beginner behavior belief believe bell bells berry bike bikes bird birds birth birthday bit bite blade blood blow board boat boats body bomb bone book books boot border bottle boundary box boy boys brain brake branch brass bread breakfast breath brick bridge brother brothers brush bubble bucket building bulb bun burn burst bushes business butter button cabbage cable cactus cake cakes calculator calendar camera camp can cannon canvas cap caption car card care carpenter carriage cars cart cast cat cats cattle cause cave celery cellar cemetery cent chain chair chairs chalk chance change channel cheese cherries cherry chess chicken chickens children chin church circle clam class clock clocks cloth cloud clouds clover club coach coal coast coat cobweb coil collar color comb comfort committee company comparison competition condition connection control cook copper copy cord cork corn cough country cover cow cows crack cracker crate crayon cream creator creature credit crib crime crook crow crowd crown crush cry cub cup current curtain curve cushion dad daughter day death debt decision deer degree design desire desk destruction detail development digestion dime dinner dinosaurs direction dirt discovery discussion disease disgust distance distribution division dock doctor dog dogs doll dolls donkey door downtown drain drawer dress drink driving drop drug drum duck ducks dust ear earth earthquake edge education effect egg eggnog eggs elbow end engine error event example exchange existence expansion experience expert eye eyes face fact fairies fall family fan fang farm farmer father father faucet fear feast feather feeling feet fiction field fifth fight finger finger fire fireman fish flag flame flavor flesh flight flock floor flower flowers fly fog fold food foot force fork form fowl frame friction friend friends frog frogs front fruit fuel furniture galley game garden gate geese ghost giants giraffe girl girls glass glove glue goat gold goldfish good-bye goose government governor grade grain grandfather grandmother grape grass grip ground group growth guide guitar gun hair haircut hall hammer hand hands harbor harmony hat hate head health hearing heart heat help hen hill history hobbies hole holiday home honey hook hope horn horse horses hose hospital hot hour house houses humor hydrant ice icicle idea impulse income increase industry ink insect instrument insurance interest invention iron island jail jam jar jeans jelly jellyfish jewel join joke journey judge juice jump kettle key kick kiss kite kitten kittens kitty knee knife knot knowledge laborer lace ladybug lake lamp land language laugh lawyer lead leaf learning leather leg legs letter letters lettuce level library lift light limit line linen lip liquid list lizards loaf lock locket look loss love low lumber lunch lunchroom machine magic maid mailbox man manager map marble mark market mask mass match meal measure meat meeting memory men metal mice middle milk mind mine minister mint minute mist mitten mom money monkey month moon morning mother motion mountain mouth move muscle music nail name nation neck need needle nerve nest net news night noise north nose note notebook number nut oatmeal observation ocean offer office oil operation opinion orange oranges order organization ornament oven owl owner';
-    static EMOTES = 'ANELE ArgieB8 ArsonNoSexy AsexualPride AsianGlow BCWarrior BOP BabyRage BatChest BegWan BibleThump BigBrother BigPhish BisexualPride BlackLivesMatter BlargNaut BloodTrail BrainSlug BrokeBack BuddhaBar CaitlynS CarlSmile ChefFrank CoolCat CoolStoryBob CorgiDerp CrreamAwk CurseLit DAESuppy DBstyle DansGame DarkKnight DarkMode DatSheffy DendiFace DogFace DoritosChip DxCat EarthDay EleGiggle EntropyWins ExtraLife FBBlock FBCatch FBChallenge FBPass FBPenalty FBRun FBSpiral FBtouchdown FUNgineer FailFish FamilyMan FootBall FootGoal FootYellow FrankerZ FreakinStinkin FutureMan GayPride GenderFluidPride GingerPower GivePLZ GlitchCat GlitchLit GlitchNRG GrammarKing GunRun HSCheers HSWP HarleyWink HassaanChop HeyGuys HolidayCookie HolidayLog HolidayPresent HolidaySanta HolidayTree HotPokket HungryPaimon ImTyping IntersexPride InuyoFace ItsBoshyTime JKanStyle Jebaited Jebasted JonCarnage KAPOW KEKHeim Kappa Kappa KappaClaus KappaPride KappaRoss KappaWealth Kappu Keepo KevinTurtle Kippa KomodoHype KonCha Kreygasm LUL LaundryBasket LesbianPride MVGame Mau5 MaxLOL MechaRobot MercyWing1 MercyWing2 MikeHogu MingLee ModLove MorphinTime MrDestructoid MyAvatar NewRecord NinjaGrumpy NomNom NonbinaryPride NotATK NotLikeThis OSFrog OhMyDog OneHand OpieOP OptimizePrime PJSalt PJSugar PMSTwin PRChase PanicVis PansexualPride PartyHat PartyTime PeoplesChamp PermaSmug PicoMause PinkMercy PipeHype PixelBob PizzaTime PogBones PogChamp Poooound PopCorn PoroSad PotFriend PowerUpL PowerUpR PraiseIt PrimeMe PunOko PunchTrees RaccAttack RalpherZ RedCoat ResidentSleeper RitzMitz RlyTho RuleFive RyuChamp SMOrc SSSsss SabaPing SeemsGood SeriousSloth ShadyLulu ShazBotstix Shush SingsMic SingsNote SmoocherZ SoBayed SoonerLater Squid1 Squid2 Squid3 Squid4 StinkyCheese StinkyGlitch StoneLightning StrawBeary SuperVinlin SwiftRage TBAngel TF2John TPFufun TPcrunchyroll TTours TakeNRG TearGlove TehePelo ThankEgg TheIlluminati TheRinger TheTarFu TheThing ThunBeast TinyFace TombRaid TooSpicy TransgenderPride TriHard TwitchLit TwitchRPG TwitchSings TwitchUnity TwitchVotes UWot UnSane UncleNox VirtualHug VoHiYo VoteNay VoteYea WTRuck WholeWheat WhySoSerious WutFace YouDontSay YouWHY bleedPurple cmonBruh copyThis duDudu imGlitch mcaT panicBasket pastaThat riPepperonis twitchRaid';
+    static ADJECTIVES = 'adorable adventurous aggressive agreeable alert alive amused angry calm careful cautious charming cheerful clean clear clever cloudy clumsy eager easy elated elegant embarrassed enchanting encouraging bad beautiful better bewildered black bloody blue blue-eyed dangerous dark dead defeated defiant delightful depressed determined different fair faithful famous fancy fantastic fierce filthy fine annoyed annoying anxious arrogant ashamed attractive average awful colorful combative comfortable concerned condemned confused cooperative courageous curious cute energetic enthusiastic envious evil excited expensive exuberant blushing bored brainy brave breakable bright busy buttery difficult disgusted distinct disturbed dizzy doubtful drab dull dusty foolish fragile frail frantic friendly frightened funny furry gentle gifted glamorous gleaming glorious good ill important impossible inexpensive innocent inquisitive nasty naughty nervous nice nutty obedient obnoxious odd old-fashioned handsome happy healthy helpful helpless hilarious lazy light lively lonely long lovely lucky panicky perfect plain pleasant poised poor powerful gorgeous graceful grieving grotesque grumpy grungy itchy jealous jittery jolly joyous kind open outrageous outstanding homeless homely horrible hungry hurt hushed magnificent misty modern motionless muddy mushy mysterious precious prickly proud putrid puzzled quaint queasy real relieved repulsive rich scary selfish shiny shy silly sleepy smiling vast victorious vivacious wandering weary wicked wide-eyed talented tame tasty tender tense terrible thankful thoughtful thoughtless tired smoggy sore sparkling splendid spotless stormy strange stupid successful super svelte wild witty worried worrisome wrong zany zealous'
+        .split(' ');
+    static NOUNS = 'account achiever acoustics act action activity actor addition adjustment advertisement advice aftermath afternoon afterthought agreement air airplane airport alarm amount amusement anger angle animal answer ant ants apparatus apparel apple apples appliance approval arch argument arithmetic arm army art attack attempt attention attraction aunt authority babies baby back badge bag bait balance ball balloon balls banana band base baseball basin basket basketball bat bath battle bead beam bean bear bears beast bed bedroom beds bee beef beetle beggar beginner behavior belief believe bell bells berry bike bikes bird birds birth birthday bit bite blade blood blow board boat boats body bomb bone book books boot border bottle boundary box boy boys brain brake branch brass bread breakfast breath brick bridge brother brothers brush bubble bucket building bulb bun burn burst bushes business butter button cabbage cable cactus cake cakes calculator calendar camera camp can cannon canvas cap caption car card care carpenter carriage cars cart cast cat cats cattle cause cave celery cellar cemetery cent chain chair chairs chalk chance change channel cheese cherries cherry chess chicken chickens children chin church circle clam class clock clocks cloth cloud clouds clover club coach coal coast coat cobweb coil collar color comb comfort committee company comparison competition condition connection control cook copper copy cord cork corn cough country cover cow cows crack cracker crate crayon cream creator creature credit crib crime crook crow crowd crown crush cry cub cup current curtain curve cushion dad daughter day death debt decision deer degree design desire desk destruction detail development digestion dime dinner dinosaurs direction dirt discovery discussion disease disgust distance distribution division dock doctor dog dogs doll dolls donkey door downtown drain drawer dress drink driving drop drug drum duck ducks dust ear earth earthquake edge education effect egg eggnog eggs elbow end engine error event example exchange existence expansion experience expert eye eyes face fact fairies fall family fan fang farm farmer father father faucet fear feast feather feeling feet fiction field fifth fight finger finger fire fireman fish flag flame flavor flesh flight flock floor flower flowers fly fog fold food foot force fork form fowl frame friction friend friends frog frogs front fruit fuel furniture galley game garden gate geese ghost giants giraffe girl girls glass glove glue goat gold goldfish good-bye goose government governor grade grain grandfather grandmother grape grass grip ground group growth guide guitar gun hair haircut hall hammer hand hands harbor harmony hat hate head health hearing heart heat help hen hill history hobbies hole holiday home honey hook hope horn horse horses hose hospital hot hour house houses humor hydrant ice icicle idea impulse income increase industry ink insect instrument insurance interest invention iron island jail jam jar jeans jelly jellyfish jewel join joke journey judge juice jump kettle key kick kiss kite kitten kittens kitty knee knife knot knowledge laborer lace ladybug lake lamp land language laugh lawyer lead leaf learning leather leg legs letter letters lettuce level library lift light limit line linen lip liquid list lizards loaf lock locket look loss love low lumber lunch lunchroom machine magic maid mailbox man manager map marble mark market mask mass match meal measure meat meeting memory men metal mice middle milk mind mine minister mint minute mist mitten mom money monkey month moon morning mother motion mountain mouth move muscle music nail name nation neck need needle nerve nest net news night noise north nose note notebook number nut oatmeal observation ocean offer office oil operation opinion orange oranges order organization ornament oven owl owner'
+        .split(' ');
+    static EMOTES = 'ANELE ArgieB8 ArsonNoSexy AsexualPride AsianGlow BCWarrior BOP BabyRage BatChest BegWan BibleThump BigBrother BigPhish BisexualPride BlackLivesMatter BlargNaut BloodTrail BrainSlug BrokeBack BuddhaBar CaitlynS CarlSmile ChefFrank CoolCat CoolStoryBob CorgiDerp CrreamAwk CurseLit DAESuppy DBstyle DansGame DarkKnight DarkMode DatSheffy DendiFace DogFace DoritosChip DxCat EarthDay EleGiggle EntropyWins ExtraLife FBBlock FBCatch FBChallenge FBPass FBPenalty FBRun FBSpiral FBtouchdown FUNgineer FailFish FamilyMan FootBall FootGoal FootYellow FrankerZ FreakinStinkin FutureMan GayPride GenderFluidPride GingerPower GivePLZ GlitchCat GlitchLit GlitchNRG GrammarKing GunRun HSCheers HSWP HarleyWink HassaanChop HeyGuys HolidayCookie HolidayLog HolidayPresent HolidaySanta HolidayTree HotPokket HungryPaimon ImTyping IntersexPride InuyoFace ItsBoshyTime JKanStyle Jebaited Jebasted JonCarnage KAPOW KEKHeim Kappa Kappa KappaClaus KappaPride KappaRoss KappaWealth Kappu Keepo KevinTurtle Kippa KomodoHype KonCha Kreygasm LUL LaundryBasket LesbianPride MVGame Mau5 MaxLOL MechaRobot MercyWing1 MercyWing2 MikeHogu MingLee ModLove MorphinTime MrDestructoid MyAvatar NewRecord NinjaGrumpy NomNom NonbinaryPride NotATK NotLikeThis OSFrog OhMyDog OneHand OpieOP OptimizePrime PJSalt PJSugar PMSTwin PRChase PanicVis PansexualPride PartyHat PartyTime PeoplesChamp PermaSmug PicoMause PinkMercy PipeHype PixelBob PizzaTime PogBones PogChamp Poooound PopCorn PoroSad PotFriend PowerUpL PowerUpR PraiseIt PrimeMe PunOko PunchTrees RaccAttack RalpherZ RedCoat ResidentSleeper RitzMitz RlyTho RuleFive RyuChamp SMOrc SSSsss SabaPing SeemsGood SeriousSloth ShadyLulu ShazBotstix Shush SingsMic SingsNote SmoocherZ SoBayed SoonerLater Squid1 Squid2 Squid3 Squid4 StinkyCheese StinkyGlitch StoneLightning StrawBeary SuperVinlin SwiftRage TBAngel TF2John TPFufun TPcrunchyroll TTours TakeNRG TearGlove TehePelo ThankEgg TheIlluminati TheRinger TheTarFu TheThing ThunBeast TinyFace TombRaid TooSpicy TransgenderPride TriHard TwitchLit TwitchRPG TwitchSings TwitchUnity TwitchVotes UWot UnSane UncleNox VirtualHug VoHiYo VoteNay VoteYea WTRuck WholeWheat WhySoSerious WutFace YouDontSay YouWHY bleedPurple cmonBruh copyThis duDudu imGlitch mcaT panicBasket pastaThat riPepperonis twitchRaid'
+        .split(' ');
 
     constructor(version = 1) {
-        let r = () => Math.random() > 0.5? +1: -1;
+        let r = /(?:^|-)(\w)/g,
+            R = ($0, $1, $$, $_) => $1.toUpperCase();
+
         let _ = {
             get a() {
-                let v = ClipName.ADJECTIVES.split(' ').sort(r).pop().replace(/(?:^|-)(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
-
-                return v;
+                return ClipName.ADJECTIVES.shuffle().random().replace(r, R);
             },
             get n() {
-                let v = ClipName.NOUNS.split(' ').sort(r).pop().replace(/(?:^|-)(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
-
-                return v;
+                return ClipName.NOUNS.shuffle().random().replace(r, R);
             },
             get e() {
-                let v = ClipName.EMOTES.split(' ').sort(r).pop().replace(/(?:^|-)(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase());
-
-                return v;
+                return ClipName.EMOTES.shuffle().random().replace(r, R);
             },
         };
 
@@ -4121,7 +4122,7 @@ try {
                         video = $.all('video').pop();
 
                     SetQuality('auto').then(() => {
-                        video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME });
+                        video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME, private: !Settings.show_stats });
 
                         confirm.timed(`
                             <div hidden controller
@@ -6963,7 +6964,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 let video = $.all('video').pop();
                                                                 let time = parseInt(Settings.video_clips__trophy_length) * 1000;
 
-                                                                video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: title });
+                                                                video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: title, private: !Settings.show_stats });
                                                                 video.dataset.trophyId = title;
 
                                                                 confirm.timed(`
@@ -9440,10 +9441,11 @@ let Initialize = async(START_OVER = false) => {
                                 let href = item.href,
                                     name = $('[class*="name"i]', item)?.textContent?.replace(NON_ASCII, ''),
                                     img = $('[class*="img"i] img', item)?.src,
-                                    price = $('[class*="price"i]', item)?.textContent || 'More...';
+                                    price = $('[class*="price"i]', item)?.textContent || 'More...',
+                                    good = game.errs(name) < .01;
 
-                                if(game.errs(name) < .01)
-                                    return { game, name, href, img, price };
+                                if(good)
+                                    return { game, name, href, img, price, good };
                             }
 
                             return {};
@@ -9452,7 +9454,7 @@ let Initialize = async(START_OVER = false) => {
 
                 fetchSteamGame()
                     .then((info = {}) => {
-                        let { game, name, href, img, price } = info;
+                        let { game, name, href, img, price, good = false } = info;
 
                         if(!href?.length)
                             return;
@@ -9460,7 +9462,7 @@ let Initialize = async(START_OVER = false) => {
                         let f = furnish;
 
                         let purchase =
-                            f(`.tt-store-purchase--container.is-steam`).with(
+                            f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
                                 // Price
                                 f('.tt-store-purchase--price').with(price),
 
@@ -9572,6 +9574,13 @@ let Initialize = async(START_OVER = false) => {
                                     .errs(game) < .1
                             ) return ({
                                 game,
+                                good: (
+                                    best.name
+                                        .replace(NON_ASCII, '')
+                                        .replace(PlayStationRegExp, '')
+                                        .replace(EditionsRegExp, '')
+                                        .errs(game) < .02
+                                ),
                                 name: best.name,
                                 href: best.href,
                                 img: best.image,
@@ -9617,6 +9626,14 @@ let Initialize = async(START_OVER = false) => {
                                                 )
                                                     return {
                                                         game,
+                                                        good: (
+                                                            item?.name
+                                                                ?.replace(NON_ASCII, '')
+                                                                // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+                                                                ?.replace(PlayStationRegExp, '')
+                                                                ?.replace(EditionsRegExp, '')
+                                                                ?.errs(game) < .02
+                                                        ) || 0,
                                                         name: item.name,
                                                         href: `https://store.playstation.com/${ lang }/product/${ item.id }`,
                                                         img: (item.media?.map(m => items[m.id]).find(m => m?.type?.equals?.('image'))?.url),
@@ -9644,7 +9661,7 @@ let Initialize = async(START_OVER = false) => {
                     // Make multipls links
                     fetchPlayStationGame(jbpp)
                         .then((info = {}) => {
-                            let { game, name, href, img, price } = info;
+                            let { game, name, href, img, price, good = false } = info;
 
                             if(!href?.length)
                                 return;
@@ -9652,7 +9669,7 @@ let Initialize = async(START_OVER = false) => {
                             let f = furnish;
 
                             let purchase =
-                                f(`.tt-store-purchase--container.is-playstation[name="${ encodeHTML(name) }"]`).with(
+                                f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
                                     // Price
                                     f('.tt-store-purchase--price').with(price),
 
@@ -9703,7 +9720,7 @@ let Initialize = async(START_OVER = false) => {
                 } else {
                     fetchPlayStationGame(game)
                         .then((info = {}) => {
-                            let { game, name, href, img, price } = info;
+                            let { game, name, href, img, price, good = false } = info;
 
                             if(!href?.length)
                                 return;
@@ -9711,7 +9728,7 @@ let Initialize = async(START_OVER = false) => {
                             let f = furnish;
 
                             let purchase =
-                                f(`.tt-store-purchase--container.is-playstation[name="${ encodeHTML(name) }"]`).with(
+                                f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
                                     // Price
                                     f('.tt-store-purchase--price').with(price),
 
@@ -9818,6 +9835,13 @@ let Initialize = async(START_OVER = false) => {
                                         .errs(game) < .1
                                 ) return ({
                                     game,
+                                    good: (
+                                        best.name
+                                            .replace(NON_ASCII, '')
+                                            .replace(XboxRegExp, '')
+                                            .replace(EditionsRegExp, '')
+                                            .errs(game) < .02
+                                    ),
                                     name: best.name,
                                     href: best.href,
                                     img: best.image,
@@ -9844,9 +9868,10 @@ let Initialize = async(START_OVER = false) => {
                                             let name = info.Title.replace(NON_ASCII, ''),
                                                 href = info.Url,
                                                 img = info.ImageUrl,
-                                                price = 'More...';
+                                                price = 'More...',
+                                                errs = parseBool(Title?.errs(game) < .02);
 
-                                            return { game, name, href, img, price };
+                                            return { game, name, href, img, price, errs };
                                         });
 
                                 WARN(error);
@@ -9864,7 +9889,7 @@ let Initialize = async(START_OVER = false) => {
                         // Make multipls links
                         fetchXboxGame(jbpp)
                             .then((info = {}) => {
-                                let { game, name, href, img, price } = info;
+                                let { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
@@ -9872,7 +9897,7 @@ let Initialize = async(START_OVER = false) => {
                                 let f = furnish;
 
                                 let purchase =
-                                    f('.tt-store-purchase--container.is-xbox').with(
+                                    f(`.tt-store-purchase--container.is-xbox[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
 
@@ -9947,7 +9972,7 @@ let Initialize = async(START_OVER = false) => {
                     } else {
                         fetchXboxGame(game)
                             .then((info = {}) => {
-                                let { game, name, href, img, price } = info;
+                                let { game, name, href, img, price, good = false } = info;
 
                                 if(!href?.length)
                                     return;
@@ -9955,7 +9980,7 @@ let Initialize = async(START_OVER = false) => {
                                 let f = furnish;
 
                                 let purchase =
-                                    f('.tt-store-purchase--container.is-xbox').with(
+                                    f(`.tt-store-purchase--container.is-xbox[name="${ name }"][@goodMatch=${ good }]`).with(
                                         // Price
                                         f('.tt-store-purchase--price').with(price),
 
@@ -10121,6 +10146,13 @@ let Initialize = async(START_OVER = false) => {
                                             .errs(game) < .07
                                     ) return ({
                                         game,
+                                        good: (
+                                            best.name
+                                                .replace(NON_ASCII, '')
+                                                .replace(NintendoRegExp, '')
+                                                .replace(EditionsRegExp, '')
+                                                .errs(game) < .02
+                                        ),
                                         name: best.name,
                                         href: best.href,
                                         img: best.image,
@@ -10253,7 +10285,7 @@ let Initialize = async(START_OVER = false) => {
                             for(let ver of vers)
                                 fetchNintendoGame(main + ver)
                                     .then((info = {}) => {
-                                        let { game, name, href, img, price, rating = 'none' } = info;
+                                        let { game, name, href, img, price, rating = 'none', good = false } = info;
 
                                         img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
@@ -10263,7 +10295,7 @@ let Initialize = async(START_OVER = false) => {
                                         let f = furnish;
 
                                         let purchase =
-                                            f(`.tt-store-purchase--container.is-nintendo[@versionName="${ main } ${ ver }"]`).with(
+                                            f(`.tt-store-purchase--container.is-nintendo[name="${ name }"][@versionName="${ main } ${ ver }"][@goodMatch=${ good }]`).with(
                                                 // Price
                                                 f('.tt-store-purchase--price').with(price),
 
@@ -10303,7 +10335,7 @@ let Initialize = async(START_OVER = false) => {
                             // Make multipls links
                             fetchNintendoGame(jbpp)
                                 .then((info = {}) => {
-                                    let { game, name, href, img, price, rating = 'none' } = info;
+                                    let { game, name, href, img, price, rating = 'none', good = false } = info;
 
                                     img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
@@ -10313,7 +10345,7 @@ let Initialize = async(START_OVER = false) => {
                                     let f = furnish;
 
                                     let purchase =
-                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"]`).with(
+                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
                                             // Price
                                             f('.tt-store-purchase--price').with(price),
 
@@ -10334,7 +10366,7 @@ let Initialize = async(START_OVER = false) => {
                             // Just one version is available
                             fetchNintendoGame(game)
                                 .then((info = {}) => {
-                                    let { game, name, href, img, price, rating = 'none' } = info;
+                                    let { game, name, href, img, price, rating = 'none', good = false } = info;
 
                                     img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
 
@@ -10344,7 +10376,7 @@ let Initialize = async(START_OVER = false) => {
                                     let f = furnish;
 
                                     let purchase =
-                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"]`).with(
+                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
                                             // Price
                                             f('.tt-store-purchase--price').with(price),
 
@@ -11644,21 +11676,28 @@ let Initialize = async(START_OVER = false) => {
 
                     let { groups, index, length } = regexp.exec(convertedText),
                         { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups;
+
                     let now = new Date,
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
                         day = now.getDate(),
-                        autoMeridiem = new Date(STREAMER.data?.actualStartTime || now).getHours();
+                        autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 11)];
 
                     if(offset.length > 0 && isNaN(parseInt(offset)))
                         continue;
 
-                    meridiem ||= 'ap'[+(autoMeridiem > 11)];
+                    meridiem ||= autoMeridiem;
 
                     hour = parseInt(hour);
                     hour -= (/^a/i.test(meridiem) && hour > 12? 12: 0);
                     hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
-                    hour += +Date.isDST();
+                    hour += (
+                        Date.isDST()?
+                            // Daylight Savings is active and Standard Time was detected
+                            -/\Bst$/i.test(timezone):
+                        // Daylight Savings is inactive and Daylight Time was detected
+                        +/\Bdt$/i.test(timezone)
+                    );
 
                     timezone ||= (offset.length? 'GMT': '');
 
@@ -13099,7 +13138,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, private: !Settings.show_stats })
                                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                         });
                                     });
@@ -13135,7 +13174,7 @@ let Initialize = async(START_OVER = false) => {
                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(() => {
                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, private: !Settings.show_stats })
                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                         });
                     });
@@ -13362,7 +13401,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }` })
+                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, private: !Settings.show_stats })
                                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                         });
                                     });
@@ -13940,10 +13979,10 @@ let Initialize = async(START_OVER = false) => {
                             feed?.setAttribute('halt', nullish(value));
                             phantomClick($('.okay', feed));
 
-                            video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
+                            video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME).removeRecording(EVENT_NAME);
                         });
 
-                        video.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME })
+                        video.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME, private: !Settings.show_stats })
                             .then(chunks => {
                                 let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
                                     halt = parseBool(feed?.getAttribute('halt')),
@@ -13968,7 +14007,7 @@ let Initialize = async(START_OVER = false) => {
 
                         phantomClick($('.okay', feed));
 
-                        video.stopRecording(EVENT_NAME).removeRecording(EVENT_NAME);
+                        video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME).removeRecording(EVENT_NAME);
                     }
                 }
             });
@@ -14405,7 +14444,7 @@ if(top == window) {
                             let NOT_LOADED_CORRECTLY = [],
                                 ALL_LOADED_CORRECTLY = (true
                                     // Lurking
-                                    &&  parseBool(
+                                    && parseBool(
                                             parseBool(Settings.away_mode)?
                                                 (false
                                                     || $.defined('#away-mode')
@@ -14430,7 +14469,7 @@ if(top == window) {
                                         )
 
                                     // Up Next
-                                    &&  parseBool(
+                                    && parseBool(
                                             !parseBool(Settings.first_in_line_none)?
                                                 (false
                                                     || $.defined('[up-next--container]')
@@ -14441,7 +14480,7 @@ if(top == window) {
                                         )
 
                                     // Watch Time
-                                    &&  parseBool(
+                                    && parseBool(
                                             parseBool(Settings.watch_time_placement)?
                                                 (false
                                                     || $.defined('#tt-watch-time')
@@ -14452,7 +14491,7 @@ if(top == window) {
                                         )
 
                                     // Channel Points Receipt
-                                    &&  parseBool(
+                                    && parseBool(
                                             parseBool(Settings.points_receipt_placement)?
                                                 (false
                                                     || $.defined('#tt-points-receipt')

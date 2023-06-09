@@ -2068,7 +2068,7 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
             // true → 123.456.suffix('m', true) => "123.456m"
             // false → 123.456.suffix('m', false) => "123m"
             // 1 → 123.456.suffix('m', 1) => "123.4m"
-        // format = "metric" | "imperial" | "natural" | "readable" | "data"
+        // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data"
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
         sign = (number < 0? '-': ''),
@@ -2097,16 +2097,21 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
         } break;
 
         case 'data': {
-            system.large = 'kMGTPEZY';
-            system.small = 'mμnpfazy';
+            system.large = 'kMGTPEZYRQ';
+            system.small = 'mμnpfazyrq';
 
             capacity = 1_024;
         } break;
 
+        case 'full': {
+            system.large = 'kilo mega giga tera peta exa zetta yotta ronna quetta'.split(' ');
+            system.small = 'milli micro nano pico femto atto zepto yocto ronto quecto'.split(' ');
+        } break;
+
         case 'metric':
         default: {
-            system.large = 'kMGTPEZY';
-            system.small = 'mμnpfazy';
+            system.large = 'kMGTPEZYRQ';
+            system.small = 'mμnpfazyrq';
         } break;
     }
 
@@ -2150,10 +2155,10 @@ Number.prototype.floorToNearest ??= function floorToNearest(number) {
 // Clamps (keeps) a number between two points
     // Number..clamp(min:number, max:number?) → number
 Number.prototype.clamp ??= function clamp(min, max) {
-    if(Number.isNaN(min))
+    if(Number.isNaN(min) || nullish(min))
         throw TypeError('[min] must be a number');
 
-    if(Number.isNaN(max))
+    if(Number.isNaN(max) || nullish(max))
         max = ((min < 0)? min - 1: min + 1);
 
     // Keep everything in order

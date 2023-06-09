@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "5.32.5",
+    "version": "5.32.6",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -74,7 +74,11 @@
                 "ext/irc.js",
                 "core.js",
                 "tools.js",
-                "chat.js"
+                "chat.js",
+                "ext/tracking.js",
+                "ext/face.js",
+                "ext/eye.js",
+                "ext/mouth.js"
             ],
             "css": [
                 "core.css",

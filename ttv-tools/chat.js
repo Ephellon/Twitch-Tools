@@ -600,75 +600,58 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                         // Raw Search...
                             // FIX-ME: New Search logic does not complete?
-                        await fetchURL.idempotent(`./${ bttvOwner }`)
-                            .then(response => response.text())
-                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                            .then(({ documentElement }) => documentElement)
-                            .then(async doc => {
-                                let languages = `bg cs da de el en es es-mx fi fr hu it ja ko nl no pl ro ru sk sv th tr vi zh-cn zh-tw x-default`.split(' ');
-                                let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang),
-                                    [data] = JSON.parse($('script[type^="application"i][type$="json"i]', doc)?.textContent || "[]");
+                        new Search(bttvOwner)
+                            .then(Search.convertResults)
+                            .then(({ ok = false, live = false }) => {
+                                let count = ownedEmotes.length,
+                                    owner = BTTV_OWNERS.get(bttvEmote).userId,
+                                    f = furnish;
 
-                                let display_name = await when.defined(() => $('meta[name$="title"i]', doc)?.content?.split(/\s/, 1)?.pop()),
-                                    [language] = languages.filter(lang => alt_languages.missing(lang)),
-                                    name = display_name?.toLowerCase(),
-                                    profile_image = $('meta[property$="image"i]', doc)?.content,
-                                    live = parseBool(data?.publication?.isLiveBroadcast),
-                                    started_at = new Date(data?.publication?.startDate).toJSON(),
-                                    status = (data?.description ?? $('meta[name$="description"i]', doc)?.content),
-                                    updated_at = new Date(data?.publication?.endDate).toJSON();
+                                if(!ok)
+                                    throw `Search failed to complete for "${ bttvOwner }"`;
 
-                                await Search.convertResults({
-                                    json() { return { display_name, language, live, name, profile_image, started_at, status, updated_at }; }
-                                })
-                                .then(({ live = false }) => {
-                                    let count = ownedEmotes.length,
-                                        owner = BTTV_OWNERS.get(bttvEmote).userId,
-                                        f = furnish;
-
-                                    let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
-                                        f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
-                                            f('span[@aTarget=emote-name]').with(
-                                                f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
-                                                    f('img.bttv.chat-image.chat-line__message--emote', {
-                                                        src: BTTV_EMOTES.get(emote),
-                                                        alt: emote,
-                                                    })
-                                                )
+                                let list = ownedEmotes.slice(0, 8).map(({ emote, displayName, name, providerId }) =>
+                                    f('.chat-line__message--emote-button[@testSelector=emote-button]').with(
+                                        f('span[@aTarget=emote-name]').with(
+                                            f('.class.chat-image__container.tt-align-center.tt-inline-block').with(
+                                                f('img.bttv.chat-image.chat-line__message--emote', {
+                                                    src: BTTV_EMOTES.get(emote),
+                                                    alt: emote,
+                                                })
                                             )
                                         )
-                                    ).map(div => div.outerHTML).join('');
+                                    )
+                                ).map(div => div.outerHTML).join('');
 
-                                    resultCard.post({
-                                        title: bttvEmote,
-                                        subtitle: `BetterTTV Emote (${ bttvOwner })`,
-                                        description: `Visit <a href="https://betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } ${ Glyphs.modify('ne_arrow', { height: 16, width: 16, style: 'vertical-align:-3px' }) }</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
+                                resultCard.post({
+                                    title: bttvEmote,
+                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                    description: `Visit <a href="https://betterttv.com/users/${ owner }" target="_blank">${ bttvOwner } ${ Glyphs.modify('ne_arrow', { height: 16, width: 16, style: 'vertical-align:-3px' }) }</a> to view more emotes. <!-- <p style="margin-top:1rem">${ list }</p> <!-- / -->`,
 
-                                        icon: {
-                                            src: BTTV_EMOTES.get(bttvEmote),
-                                            alt: bttvEmote,
-                                        },
-                                        footer: {
-                                            href: `./${ bttvOwner }`,
-                                            name: bttvOwner,
-                                            live,
-                                        },
-                                        fineTuning: { top }
-                                    });
-                                })
-                                .catch(error => {
-                                    WARN(error);
+                                    icon: {
+                                        src: BTTV_EMOTES.get(bttvEmote),
+                                        alt: bttvEmote,
+                                    },
+                                    footer: {
+                                        href: `./${ bttvOwner }`,
+                                        name: bttvOwner,
+                                        live,
+                                    },
+                                    fineTuning: { top }
+                                });
+                            })
+                            .catch(error => {
+                                WARN(error);
 
-                                    resultCard.post({
-                                        title: bttvEmote,
-                                        subtitle: `BetterTTV Emote (${ bttvOwner })`,
+                                resultCard.post({
+                                    title: bttvEmote,
+                                    subtitle: `BetterTTV Emote (${ bttvOwner })`,
 
-                                        icon: {
-                                            src: BTTV_EMOTES.get(bttvEmote),
-                                            alt: bttvEmote,
-                                        },
-                                        fineTuning: { top }
-                                    });
+                                    icon: {
+                                        src: BTTV_EMOTES.get(bttvEmote),
+                                        alt: bttvEmote,
+                                    },
+                                    fineTuning: { top }
                                 });
                             })
                             .finally(() => clearTimeout(redoSearch));

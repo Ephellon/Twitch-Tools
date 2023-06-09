@@ -38,10 +38,18 @@
     - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
 - [ ] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
+- [ ] Pause Up Next during trophy recording
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.6)
+- Added new SI units to suffix-handler
+- Fixed search issue when converting responses to text
+- Added an indicator to store-links to games that don't quite match
+- Fixed issue with Time Zones not correcting for Daylight Saving Time
+- Fixed Settings conversion issue
+
 > [`5.32.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.5)
 - Adjusted input visibility and interactions on Settings page
     + Inputs with difficult entries are more visible, and have clearer values

@@ -1277,6 +1277,10 @@ caption {
     display: none;
 }
 
+:is([data-mature-content], [data-version-name], [data-good-match]) {
+    max-width: 20rem;
+}
+
 :is([data-mature-content], [data-version-name])::before {
     border: 0;
     border-radius: 3px;
@@ -1289,7 +1293,6 @@ caption {
     transform: translate(0,-90%);
 
     width: -moz-fit-content;
-
     width: fit-content;
 }
 
@@ -1307,6 +1310,19 @@ caption {
 
 [data-version-name]:not([data-version-name=""i])::before {
     content: attr(data-version-name);
+}
+
+[name][data-good-match="false"i]::after {
+    content: attr(name);
+
+    color: var(--color-border-overlay-warn);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    padding: 0 0 0 3px;
+
+    width: 100%;
 }
 
 [data-mature-content="true"i]::before {
