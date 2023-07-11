@@ -157,11 +157,14 @@ let // These are option names. Anything else will be removed
             'prevent_spam_look_back',
             'prevent_spam_minimum_length',
             'prevent_spam_ignore_under',
-        // Simplify Chat
-        'simplify_chat',
-            'simplify_chat_monotone_usernames',
-            'simplify_chat_font',
-            // 'simplify_chat_reverse_emotes',
+        // Accessibility
+            // Chat
+            'simplify_chat',
+                'simplify_chat_monotone_usernames',
+                'simplify_chat_font',
+                // 'simplify_chat_reverse_emotes',
+            // Display
+            'simplify_look_auto_marquee',
         // Recover chat
         'recover_chat',
         // Recover messages
@@ -249,12 +252,12 @@ let // These are option names. Anything else will be removed
 
         /* "Hidden" options */
         'sync-token',
-        'searchToken',
-        'searchClientID',
+        'clientID',
+        'oauthToken',
     ];
 
 // Creates a new Twitch-style date input
-    // new DatePicker(defaultDate:Date, defaultStatus:boolean?, defaultTime:number<hour{0...23}>?, defaultDuration:number<milliseconds>?) → Promise<array[object]>
+    // new DatePicker(defaultDate:Date, defaultStatus:boolean?, defaultTime:number?<hour{0...23}>, defaultDuration:number?<milliseconds>) → Promise<array[object]>
 class DatePicker {
     static values = [];
     static weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ');
@@ -432,9 +435,9 @@ class DatePicker {
     }
 }
 
-// FIX-ME
+// FIX-ME: Command Maker
 // Creates a new Twitch-style command input
-    // new CommandMaker(defaultName:string, defaultStatus:boolean?, defaultLevel:number<Command-Authority>?, defaultCooldown:number<seconds>?, defaultType:string?) → Promise<array[object]>
+    // new CommandMaker(defaultName:string, defaultStatus:boolean?, defaultLevel:number?<Command-Authority>, defaultCooldown:number?<seconds>, defaultType:string?) → Promise<array[object]>
 class CommandMaker {
     static values = [];
     /** User Levels → StreamElements | NightBot
@@ -1152,6 +1155,10 @@ $.all('#save, .save').map(element => element.onclick = async event => {
                 currentTarget.classList.remove('spin');
             });
         });
+});
+
+$.all('#help, .help').map(element => element.onclick = async event => {
+    $('#accessibility').scrollIntoView();
 });
 
 function PostSyncStatus(message = '&nbsp;', type = 'alert') {

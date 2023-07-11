@@ -32,6 +32,8 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
 
 top.WINDOW_STATE = document.readyState;
 
+Cache.large.load('JumpedData', ({ JumpedData }) => Object.assign(JUMP_DATA, JumpedData ?? {}));
+
 // Populate the username field by quickly showing the menu
 when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
     .then(() => {
@@ -64,7 +66,7 @@ top.onpagehide = ({ persisted }) => {
 // Displays a balloon (popup)
     // new Balloon({ title:string, icon:string? }, ...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → object
     // Balloon.prototype.add(...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → Element
-    // Balloon.prototype.addButton({ left:boolean?, icon:string<Glyphs>?, onclick:function?, attributes:object? }) → Element
+    // Balloon.prototype.addButton({ left:boolean?, icon:string?<Glyphs>, onclick:function?, attributes:object? }) → Element
     // Balloon.prototype.remove() → undefined
 class Balloon {
     static #BALLOONS = new Map()
@@ -975,9 +977,8 @@ class Search {
             for(let cookie of cookies) {
                 let [name, value] = cookie.split('=', 2);
 
-                value = /^[\{\[]/.test(value)?
-                    JSON.parse(decodeURIComponent(value)):
-                value;
+                if(/^[\{\[]/.test(value))
+                    value = JSON.parse(decodeURIComponent(value));
 
                 object[name.replace(/\W+/g, '_')] = value;
             }
@@ -1094,30 +1095,37 @@ class Search {
             } break;
 
             case '.legacy': {
-                // https://api.twitch.tv/kraken/channels/39367256
-                //     broadcaster_language: "en"
-                //     broadcaster_software: "unknown_rtmp"
-                //     broadcaster_type: "partner"
-                //     created_at: "2013-01-15T20:07:57Z"
-                //     description: "I stream a lot of Dead by Daylight but I also like occasionally playing a variety of games. My gaming/content creator roots started in Runescape (making RSMVs ~2007) and since then I’ve branched out to so much more! My stream is about community so be sure to talk in chat and introduce yourself!"
-                //     display_name: "AimzAtchu"
-                //     followers: 157824
-                //     game: "Dead by Daylight"
-                //     language: "en"
-                //     logo: "https://static-cdn.jtvnw.net/jtv_user_pictures/6a3138ef-333d-4932-b891-1b5a88accc0f-profile_image-300x300.jpg"
-                //     mature: false
-                //     name: "aimzatchu"
-                //     partner: true
-                //     privacy_options_enabled: false
-                //     private_video: false
-                //     profile_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/3887c3fa-9ed8-4465-b873-03c78dbec505-profile_banner-480.png"
-                //     profile_banner_background_color: "#030303"
-                //     status: "🎃Happy !PTB Day!👻Are Boons OP? Let's Find Out! #DeadbyDaylightPartner"
-                //     updated_at: "2021-09-29T01:39:51Z"
-                //     url: "https://www.twitch.tv/aimzatchu"
-                //     video_banner: "https://static-cdn.jtvnw.net/jtv_user_pictures/aimzatchu-channel_offline_image-c8fb4fef334d2afa-1920x1080.png"
-                //     views: 5919706
-                //     _id: "39367256"
+                // https://api.twitch.tv/helix/channels?broadcaster_id=39367256
+                // {
+                //     "broadcaster_id": "39367256",
+                //     "broadcaster_login": "aimzatchu",
+                //     "broadcaster_name": "AimzAtchu",
+                //     "broadcaster_language": "en",
+                //     "game_id": "491487",
+                //     "game_name": "Dead by Daylight",
+                //     "title": "FriYAYY ❤️",
+                //     "delay": 0,
+                //     "tags": [
+                //         "ClosedCaptions",
+                //         "Ally",
+                //         "English",
+                //         "Interactive",
+                //         "fogwhisperer",
+                //         "PlayingwithViewers",
+                //         "MentalHealth",
+                //         "ChronicIllness"
+                //     ]
+                // }
+                return fetchURL.idempotent(`https://api.twitch.tv/helix/channels?broadcaster_id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                    .then(response => response.json())
+                    .then(json => {
+                        let id = parseInt(json?.data?.shift?.()?.broadcaster_id);
+
+                        if(nullish(id))
+                            throw `${ json.error }: ${ json.message }`;
+
+                        return id;
+                    });
             } break;
 
             case 'getID': {
@@ -1134,7 +1142,7 @@ class Search {
                     .catch(error => {
                         WARN(error);
 
-                        Settings.remove('searchToken', ReloadPage);
+                        Settings.remove('oauthToken', ReloadPage);
                     });
             } break;
 
@@ -1152,8 +1160,19 @@ class Search {
                     .catch(error => {
                         WARN(error);
 
-                        Settings.remove('searchToken', ReloadPage);
+                        Settings.remove('oauthToken', ReloadPage);
                     });
+            } break;
+
+            case 'status.live': {
+                return fetchURL.idempotent(`//api.twitch.tv/helix/streams?user_id=${ ID }&type=live`, {
+                    headers: {
+                        Authorization: Search.authorization,
+                        'Client-Id': Search.clientID,
+                    },
+                })
+                    .then(response => response.json())
+                    .then(json => parseBool(json?.data?.shift()?.type));
             } break;
 
             default: {
@@ -1386,11 +1405,11 @@ class Search {
                 statusText: request.statusText,
                 body: request.response || request.responseText,
                 ok: request.status >= 200 && request.status < 300,
-                json: () => new Promise((onSuccess, onError) => {
+                json: () => new Promise((onsuccess, onerror) => {
                     try {
-                        onSuccess(JSON.parse(query.body));
+                        onsuccess(JSON.parse(query.body));
                     } catch(query) {
-                        onError(query);
+                        onerror(query);
                     }
                 })
             });
@@ -1532,38 +1551,43 @@ class Search {
     }
 }
 
-// Search helpers...
-    // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
-Cache.load(['searchToken', 'searchClientID'], async({ searchToken, searchClientID = 'gp762nuuoqcoxypju8c569th9wz7q5' }) => {
-    if(nullish(searchToken) || nullish(searchClientID)) {
-        fetchURL(`https://www.twitchtokengenerator.com/api/refresh/gjh4mq5hl82lo1opurv4ropup3kzsmlzt87sp51wnt7r4n4114`)
-            .then(r => r.json())
-            .then(json => {
-                let { token = searchToken, success = false } = json;
-
-                if(!success)
-                    throw 'Unable to generate tokens...';
-
-                Cache.save({ searchToken: token, searchClientID });
-
-                Search.authorization = `Bearer ${ token }`;
-            })
-            .catch(WARN);
-    } else {
-        Cache.save({ searchToken, searchClientID });
-
-        Search.authorization = `Bearer ${ searchToken }`;
-    }
-
-    Search.clientID = searchClientID;
-});
-
 // https://stackoverflow.com/a/45205645/4211612
 // Creates a CSS object that can be used to easily transform an object to a CSS string, JSON, or object
-    // new CSSObject({ ...css-properties }) → Object<CSSObject>
+    // new CSSObject({ ...css-properties }, important:boolean?) → Object<CSSObject>
 class CSSObject {
-    constructor(properties = {}) {
-        return Object.assign(this, properties);
+    constructor(properties = {}, important = false) {
+        switch (typeof properties) {
+            case 'string': {
+                let destructed = CSSObject.destruct(properties);
+
+                properties = {};
+                for(let [key, { value, important, deleted }] of destructed)
+                    properties[key] = (deleted? 'initial': value) + (important || deleted? '!important': '');
+            } break;
+        }
+
+        return Object.assign(this, { ...properties, '!important': important });
+    }
+
+    static destruct(string) {
+        let css = new Map;
+
+        (string || '')
+            .split(';')
+            .map(declaration => declaration.trim())
+            .filter(declaration => declaration.length > 4)
+                // Shortest possible declaration → `--n:0`
+            .map(declaration => {
+                let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
+                    important = value.toLowerCase().endsWith('!important'),
+                    deleted = value.toLowerCase().endsWith('!delete');
+
+                value = value.replace(/!(important|delete)\b/i, '');
+
+                css.set(property, { value, important, deleted });
+            });
+
+        return css;
     }
 
     toRule(selector = '*', vendors, stylized = false) {
@@ -1575,17 +1599,23 @@ class CSSObject {
     }
 
     toString(vendors, stylized = false) {
+        let $important = this['!important'] ?? false,
+            $delete = this['!delete'] ?? false;
+
+        for(let key of ['!important', '!delete'])
+            delete this[key];
+
         if(stylized) {
             let partitions = [
-                ['meta', 'container-* counter-* user-* view-* will-change writing-*'],
-                ['animation', 'animation-* transition-*'],
-                ['content', 'accent-* all break-* caret-* content-*'],
-                ['appearance', 'appearance backdrop-* backface-* break-* border-* box-* clear color-* contain-* cursor direction display filter font forced-* hanging-* hyphenate-* hyphens image-* initial-* justify-* letter-* line-* mask-* math-* mix-blend-mode opacity outline-* overflow-* overscroll-* page-* paint-* pointer-* print-* quotes text-* touch-* visibility white-space word-*'],
-                ['position', 'align-* bottom break-* clear flex-* float grid-* inset-* isolation left margin-* masonry-* object-* offset-* order orphans padding-* perspective-* place-* position right rotate ruby-* scale scroll-* scrollbar-* top transform-* translate vertical-* widows z-index'],
-                ['size', 'aspect-ratio block-size height inline-* max-* min-* resize shape-* width zoom'],
-                ['list', 'list-*'],
-                ['table', 'caption-* column-* columns empty-cells gap row-gap tab-size table-*'],
-            ].map(([partition, subjects]) => [partition, subjects.split(/\s+/).map(subject => RegExp('^(-\\w+-)?' + subject.replace('-*', '(-[\\w-]+)?')))]);
+                ['Meta', 'container-* counter-* user-* view-* will-change writing-*'],
+                ['Animation', 'animation-* transition-*'],
+                ['Content', 'accent-* all break-* caret-* content-*'],
+                ['Appearance', 'appearance backdrop-* backface-* background-* break-* border-* box-* clear color-* contain-* cursor direction display filter font forced-* hanging-* hyphenate-* hyphens image-* initial-* justify-* letter-* line-* mask-* math-* mix-blend-mode opacity outline-* overflow-* overscroll-* page-* paint-* pointer-* print-* quotes text-* touch-* visibility white-space word-*'],
+                ['Position', 'align-* bottom break-* clear flex-* float grid-* inset-* isolation left margin-* masonry-* object-* offset-* order orphans padding-* perspective-* place-* position right rotate ruby-* scroll-* scrollbar-* top transform-* translate vertical-* widows z-index'],
+                ['Size', 'aspect-ratio block-size height inline-* max-* min-* resize scale shape-* width zoom'],
+                ['List', 'list-*'],
+                ['Table', 'caption-* column-* columns empty-cells gap row-gap tab-size table-*'],
+            ].map(([partition, subjects]) => [partition, subjects.split(/\s+/).map(subject => RegExp('^(-\\w+-|-{2,})?' + subject.replace('-*', '(-[\\w-]+)?')))]);
 
             return Object.entries(this.toObject(vendors)).map(([property, value]) => {
                 property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
@@ -1602,16 +1632,24 @@ class CSSObject {
                         }
                 }
 
-                return [position, `\t${ property }: ${ value };`];
+                return [position, `\t${ property }: ${ ($delete? 'initial': value) }${ ($important || $delete)? ' !important': '' };`];
             })
+            // Alphabetical sort
+            .sort(([,A], [,B]) => {
+                let C = [A, B].sort();
+
+                return C.indexOf(A) - C.indexOf(B);
+            })
+            // Property-class sort
             .sort(([A], [B]) => A - B)
+            // Property-class separation
             .map(([position, declaration], index, array) => (position != array[index + 1]?.[0])? declaration + '\n': declaration)
             .join('\n');
         } else {
             return Object.entries(this.toObject(vendors)).map(([property, value]) => {
                 property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
 
-                return [property, value].join(':');
+                return [property, `${ ($delete? 'initial': value) }${ ($important || $delete? '!important': '') }`].join(':');
             })
             .join(';');
         }
@@ -1625,8 +1663,19 @@ class CSSObject {
         if(typeof vendors == 'string')
             vendors = vendors.split(/[^\w-]+/).filter(string => string.length);
 
+        let $delete = this['!delete'] ?? false,
+            $important = this['!important'] || $delete;
+
+        for(let key of ['!important', '!delete'])
+            delete this[key];
+
+        $important = ($important? '!important': '');
+        $delete = ($delete? 'initial': '');
+
         for(let key in this) {
             let properKey = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+            this[key] = $delete || this[key];
 
             for(let vendor of vendors)
                 switch(vendor.toLowerCase().replace(/^-+|-+$/g, '')) {
@@ -1637,7 +1686,7 @@ class CSSObject {
                         let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "backface-visibility", "background", "background-image", "border-bottom-left-radius", "border-bottom-right-radius", "border-image", "border-radius", "border-top-left-radius", "border-top-right-radius", "content", "list-style", "list-style-image", "mask", "mask-image", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function"];
 
                         if(keys.contains(properKey))
-                            object[`-ms-${ properKey }`] = this[key];
+                            object[`-ms-${ properKey }`] = this[key] + $important;
                     } break;
 
                     case 'moz':
@@ -1662,9 +1711,9 @@ class CSSObject {
                         };
 
                         if(keys.contains(properKey))
-                            object[`-moz-${ properKey }`] = this[key];
-                        else if(properKey in supers)
-                            object[`-moz-${ supers[properKey] }`] = this[key];
+                            object[`-moz-${ properKey }`] = this[key] + $important;
+                        else if((properKey in supers))
+                            object[`-moz-${ supers[properKey] }`] = this[key] + $important;
                     } break;
 
                     case 'o':
@@ -1672,7 +1721,7 @@ class CSSObject {
                         let keys = ["backface-visibility", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "replace", "set-link-source", "transform-style", "use-link-source"];
 
                         if(keys.contains(properKey))
-                            object[`-o-${ properKey }`] = this[key];
+                            object[`-o-${ properKey }`] = this[key] + $important;
                     } break;
 
                     case 'webkit':
@@ -1684,7 +1733,7 @@ class CSSObject {
                         let keys = ["align-content", "align-items", "align-self", "alt", "animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "animation-trigger", "app-region", "appearance", "aspect-ratio", "backdrop-filter", "backface-visibility", "background-clip", "background-composite", "background-origin", "background-size", "border-after", "border-after-color", "border-after-style", "border-after-width", "border-before", "border-before-color", "border-before-style", "border-before-width", "border-bottom-left-radius", "border-bottom-right-radius", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-fit", "border-horizontal-spacing", "border-image", "border-radius", "border-start", "border-start-color", "border-start-style", "border-start-width", "border-top-left-radius", "border-top-right-radius", "border-vertical-spacing", "box-align", "box-decoration-break", "box-direction", "box-flex", "box-flex-group", "box-lines", "box-ordinal-group", "box-orient", "box-pack", "box-reflect", "box-shadow", "box-sizing", "clip-path", "color-correction", "column-axis", "column-break-after", "column-break-before", "column-break-inside", "column-count", "column-fill", "column-gap", "column-progression", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-span", "column-width", "columns", "cursor-visibility", "dashboard-region", "device-pixel-ratio", "filter", "flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink", "flex-wrap", "flow-from", "flow-into", "font-feature-settings", "font-kerning", "font-size-delta", "font-smoothing", "font-variant-ligatures", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow", "grid-auto-rows", "grid-column", "grid-column-end", "grid-column-gap", "grid-column-start", "grid-gap", "grid-row", "grid-row-end", "grid-row-gap", "grid-row-start", "grid-template", "grid-template-areas", "grid-template-columns", "grid-template-rows", "highlight", "hyphenate-character", "hyphenate-charset", "hyphenate-limit-after", "hyphenate-limit-before", "hyphenate-limit-lines", "hyphens", "image-set", "initial-letter", "justify-content", "justify-items", "justify-self", "line-align", "line-box-contain", "line-break", "line-clamp", "line-grid", "line-snap", "locale", "logical-height", "logical-width", "margin-after", "margin-after-collapse", "margin-before", "margin-before-collapse", "margin-bottom-collapse", "margin-collapse", "margin-end", "margin-start", "margin-top-collapse", "marquee", "marquee-direction", "marquee-increment", "marquee-repetition", "marquee-speed", "marquee-style", "mask", "mask-attachment", "mask-box-image", "mask-box-image-outset", "mask-box-image-repeat", "mask-box-image-slice", "mask-box-image-source", "mask-box-image-width", "mask-clip", "mask-composite", "mask-image", "mask-origin", "mask-position", "mask-position-x", "mask-position-y", "mask-repeat", "mask-repeat-x", "mask-repeat-y", "mask-size", "mask-source-type", "match-nearest-mail-blockquote-color", "max-logical-height", "max-logical-width", "min-logical-height", "min-logical-width", "nbsp-mode", "opacity", "order", "overflow-scrolling", "padding-after", "padding-before", "padding-end", "padding-start", "perspective", "perspective-origin", "perspective-origin-x", "perspective-origin-y", "print-color-adjust", "region-break-after", "region-break-before", "region-break-inside", "region-fragment", "rtl-ordering", "ruby-position", "scroll-snap-type", "shape-image-threshold", "shape-inside", "shape-margin", "shape-outside", "svg-shadow", "tap-highlight-color", "text-color-decoration", "text-combine", "text-decoration", "text-decoration-line", "text-decoration-skip", "text-decoration-style", "text-decorations-in-effect", "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style", "text-fill-color", "text-justify", "text-orientation", "text-security", "text-size-adjust", "text-stroke", "text-stroke-color", "text-stroke-width", "text-underline-position", "text-zoom", "touch-action", "transform", "transform-2d", "transform-3d", "transform-origin", "transform-origin-x", "transform-origin-y", "transform-origin-z", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-drag", "user-modify", "user-select", "word-break", "writing-mode"];
 
                         if(keys.contains(properKey))
-                            object[`-webkit-${ properKey }`] = this[key];
+                            object[`-webkit-${ properKey }`] = this[key] + $important;
                     } break;
 
                     case 'khtml':
@@ -1692,11 +1741,11 @@ class CSSObject {
                         let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "box-shadow", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-select"];
 
                         if(keys.contains(properKey))
-                            object[`-khtml-${ properKey }`] = this[key];
+                            object[`-khtml-${ properKey }`] = this[key] + $important;
                     } break;
                 }
 
-            object[properKey] = this[key];
+            object[properKey] = this[key] + $important;
         }
 
         return object;
@@ -1887,7 +1936,7 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
     // Converts RGB to HSL
-        // Color.RGBtoHSL(red:number<uint8>?, green:number<uint8>?, blue:number<uint8>?, alpha:number<Percentage>?) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+        // Color.RGBtoHSL(red:number<uint8>?, green:number?<uint8>, blue:number?<uint8>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
     static RGBtoHSL(R = 0, G = 0, B = 0, A = 1) {
         // Convert RGB to fractions of 1
         let r = R / 255,
@@ -1946,7 +1995,7 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/hsl-to-rgb.html
     // Converts HSL to RGB
-        // Color.HSLtoRGB(hue:number<Degrees>?, saturation:number<Percentage>?, lightness:number<Percentage>?, alpha:number<Percentage>?) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+        // Color.HSLtoRGB(hue:number<Degrees>?, saturation:number?<Percentage>, lightness:number?<Percentage>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
     static HSLtoRGB(hue = 0, saturation = 0, lightness = 0, alpha = 1) {
         let H = (hue % 360),
             S = (saturation / 100),
@@ -2039,7 +2088,7 @@ class Color {
     }
 
     // Converts HWB to RGB → https://www.w3schools.com/lib/w3color.js
-        // Color.HWBtoRGB(hue:number<Degrees>?, white:number<Percentage>?, black:number<Percentage>?) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
+        // Color.HWBtoRGB(hue:number<Degrees>?, white:number?<Percentage>, black:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
     static HWBtoRGB(hue = 0, white = 0, black = 0, alpha = 1) {
         let { R, G, B } = Color.HSLtoRGB(hue, 1, .5);
         let E = white + black;
@@ -2220,6 +2269,8 @@ class Color {
         return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
     }
 
+    // Returns a Color object
+        // Color.destruct(color:string<Color>) → Color
     static destruct(color) {
         color = (color || '#000').toString().trim();
 
@@ -2497,9 +2548,9 @@ class ClipName extends String {
             },
         };
 
-        let data = [[_.a, _.a, _.n, _.e].join(''), (new UUID).toStamp()];
+        let data = [[_.a, _.a, _.n, _.e].join(''), (new UUID).toStamp(), (new UUID).toStamp()];
 
-        return super(data.slice(0, version.clamp(0, data.length)).join('-'));
+        return super(data.slice(0, version.clamp(1, data.length)).join('-'));
     }
 }
 
@@ -3900,6 +3951,7 @@ try {
                                 JUMP_DATA[login] = { id: parseFloat(id), title, displayName, login, primaryColorHex, profileImageURL, stream };
                             }
 
+                        Cache.large.save({ JumpedData: JUMP_DATA });
                         // LOG('Jumped frames, retrieved:', JUMP_DATA);
                     }
                 }
@@ -3990,13 +4042,16 @@ try {
             { innerHeight, innerWidth } = window;
 
         // Anchors
-        let anchor = event.target.closest('a');
+        let anchor = event.target.closest('a, [href]');
 
         // Selections
         let selectionText = getSelection(),
             { baseNode, baseOffset, extentNode, extentOffset } = selectionText;
 
         selectionText = (selectionText + '').trim().normalize('NFKD');
+
+        // Images
+        let image = event.target.closest('img, picture');
 
         // Videos
         let video = event.target.closest('[data-a-target="video-player"i]');
@@ -4089,13 +4144,49 @@ try {
                 extras.push({
                     text: `Search Twitch for <strong>${ selectionText }</strong>`,
                     icon: 'twitch',
-                    action: event => top.open(`https://www.twitch.tv/search?term=${ encodeURIComponent(selectionText).split(/(?:%20\b)+/).join(' ') }`, '_self'),
+                    action: event => top.open(`https://www.twitch.tv/search?term=${ encodeURIComponent(selectionText.trim().replace(/\s+/g, ' ')).split(/(?:%20)+/).join(' ') }`, '_self'),
                 },{
                     text: `Search Google for <strong>${ selectionText }</strong>`,
                     icon: 'search',
-                    action: event => top.open(`https://www.google.com/search?q=${ encodeURIComponent(selectionText).split(/(?:%20\b)+/).join('+').replace(/%22\b/g, '"') }`, '_blank'),
+                    action: event => top.open(`https://www.google.com/search?q=${ encodeURIComponent(selectionText.trim().replace(/\s+/g, ' ')).split(/(?:%20)+/).join('+').replace(/%22\b/g, '"') }`, '_blank'),
                 });
             }
+        }
+
+        // Image
+
+        else if(defined(image)) {
+            let { src } = image;
+            let [name = image.alt, tail = 'png'] = parseURL(src).filename?.split('.') ?? [];
+            let type = `image/${ tail }`,
+                real = MIME_Types.find(type);
+
+            if(type == real)
+                [,real] = type.split('/');
+
+            extras.push({
+                text: `Open image in new tab`,
+                icon: 'popout',
+                action: event => top.open(src, '_blank'),
+            },{
+                text: `Save image as...`,
+                icon: 'download',
+                action: event => showSaveFilePicker({
+                    suggestedName: image.alt || tail,
+                    types: [{
+                        description: `${ tail.toUpperCase() } Image`,
+                        accept: { [type]: [`.${ real }`] },
+                    }],
+                }),
+            },{
+                text: `Copy image`,
+                icon: 'loot',
+                action: event => image.copy(),
+            },{
+                text: `Copy image address`,
+                icon: 'bolt',
+                action: event => navigator.clipboard.writeText(src),
+            });
         }
 
         // Video
@@ -4108,8 +4199,12 @@ try {
             };
 
             extras.push({
+                text: `Open video in new tab`,
+                icon: 'popout',
+                action: event => top.open(`//player.twitch.tv/?channel=${ STREAMER.name }&parent=twitch.tv`, '_blank'),
+            },{
                 text: GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X.toTitle(),
-                icon: 'bolt',
+                icon: 'loot',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_SHIFT_X)? 'alt+shift+x': ''),
                 action: event => $.all('video').pop().copyFrame(),
             },{
@@ -4117,12 +4212,23 @@ try {
                 icon: 'video',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z)? 'alt+z': ''),
                 action: event => {
-                    let EVENT_NAME = 'Event mousedown<right>';
-                    let time = VideoClips.length,
-                        video = $.all('video').pop();
-
                     SetQuality('auto').then(() => {
-                        video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME, private: !Settings.show_stats });
+                        let video = $.all('video').pop();
+                        let time = VideoClips.length;
+                        let name = 'Event mousedown<right>';
+
+                        let recording = new Recording(video, { name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+
+                        // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
+                        recording
+                            .then(({ target }) => target.recording.save())
+                            .then(link => alert.silent(`
+                                <video controller controls
+                                    title="Clip Saved - ${ link.download }"
+                                    src="${ link.href }" style="max-width:-webkit-fill-available"
+                                ></video>
+                                `)
+                            );
 
                         confirm.timed(`
                             <div hidden controller
@@ -4134,15 +4240,12 @@ try {
                             .then(answer => {
                                 if(answer === false)
                                     throw `Clip discarded!`;
-
-                                let video = $.all('video').pop();
-
-                                video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME).removeRecording(EVENT_NAME);
-
-                                return video.links.get(EVENT_NAME);
+                                recording.stop();
                             })
-                            .then(link => alert.silent(`Clip available! ${ link.outerHTML }`))
-                            .catch(alert.silent);
+                            .catch(error => {
+                                alert.silent(error);
+                                recording.controller.abort(error);
+                            });
                     });
                 },
             });
@@ -5028,7 +5131,14 @@ let Initialize = async(START_OVER = false) => {
                 game = new String(name ?? "");
 
             Object.defineProperties(game, {
-                href: { value: element?.href }
+                href: {
+                    value: Object.defineProperties(new String(element?.href ?? ""), {
+                        steam: { get() { return $('#steam-link')?.href } },
+                        playstation: { get() { return $('#playstation-link')?.href } },
+                        xbox: { get() { return $('#xbox-link')?.href } },
+                        nintendo: { get() { return $('#nintendo-link')?.href } },
+                    }),
+                },
             });
 
             return game ?? LIVE_CACHE.get('game')
@@ -5267,6 +5377,17 @@ let Initialize = async(START_OVER = false) => {
             return (0
                 || parseInt(channel_id ?? LIVE_CACHE.get('sole'))
             )
+        },
+
+        get song() {
+            let element = $('[class*="soundtrack"i]');
+            let song = new String(element?.textContent);
+
+            // Object.defineProperties(song, {
+            //     href: { value: element?.closest('[href]')?.href }
+            // });
+
+            return song;
         },
 
         get tags() {
@@ -5687,7 +5808,7 @@ let Initialize = async(START_OVER = false) => {
                             else if((dataRetrievedAt + (4 * 60 * 60 * 1000)) < +new Date)
                                 throw "The data likely expired";
                             else
-                                STREAMER.data = { ...STREAMER.data, ...data };
+                                STREAMER.data = { ...STREAMER.data, ...data, streamerID: STREAMER.sole };
 
                             REMARK(`Cached details about "${ STREAMER.name }"`, data);
                         });
@@ -5736,7 +5857,7 @@ let Initialize = async(START_OVER = false) => {
                             // usualStartTime:string<Date-Time<{HH:MM}>>
                             // usualStopTime:string<Date-Time<{HH:MM}>>
                         if(!FETCHED_OK) {
-                            fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
+                            await fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
                                 .then(response => response.json())
                                 .then(json => {
                                     let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
@@ -5839,12 +5960,12 @@ let Initialize = async(START_OVER = false) => {
                                     return STREAMER.data = { ...STREAMER.data, ...data };
                                 })
                                 .then(data => {
-                                    data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
+                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
 
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get STREAM details. ${ error }`)
+                                    WARN(`Failed to get STREAM details (1§1): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
@@ -5852,7 +5973,7 @@ let Initialize = async(START_OVER = false) => {
                                 });
 
                             // Channel details (HTML → JSON)
-                            fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
+                            await fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(DOM => {
@@ -5878,12 +5999,12 @@ let Initialize = async(START_OVER = false) => {
                                     return STREAMER.data = { ...STREAMER.data, ...data };
                                 })
                                 .then(data => {
-                                    data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
 
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (1). ${ error }`)
+                                    WARN(`Failed to get CHANNEL details (1§2): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
@@ -5917,7 +6038,7 @@ let Initialize = async(START_OVER = false) => {
                             // totalViews:number<int>
                             // totalViewsRanked:number<int>
                         if(!FETCHED_OK)
-                            fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
+                            await fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(dom => {
@@ -5933,7 +6054,7 @@ let Initialize = async(START_OVER = false) => {
                                             /^\d/.test(string)?
                                                 parseFloat(string.replace(/[^\d\.]+/g, '')) + '':
                                             /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(string)?
-                                                new Date(string):
+                                                new Date(string) + '':
                                             string
                                         );
 
@@ -5985,12 +6106,12 @@ let Initialize = async(START_OVER = false) => {
                                     return obj;
                                 })
                                 .then(data => {
-                                    data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
 
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (2). ${ error }`)
+                                    WARN(`Failed to get CHANNEL details (2): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
@@ -6009,7 +6130,7 @@ let Initialize = async(START_OVER = false) => {
                          */
                         // Channel details (JSON)
                         if(!FETCHED_OK)
-                            fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
+                            await fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
                                 .then(text => text.json())
                                 .then(json => {
                                     let data = {};
@@ -6027,10 +6148,10 @@ let Initialize = async(START_OVER = false) => {
                                     for(let key in json)
                                         data[table[key]] = json[key];
 
-                                    Cache.save({ [`data/${ STREAMER.name }`]: { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
+                                    Cache.save({ [`data/${ STREAMER.name }`]: { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (3). ${ error }`)
+                                    WARN(`Failed to get CHANNEL details (3): ${ error }`)
                                         ?.toNativeStack?.();
 
                                     if(!ErrGet.length)
@@ -6047,44 +6168,59 @@ let Initialize = async(START_OVER = false) => {
                          *
                          *
                          */
-                        // Channel details (JSON) →
-                        // if(!FETCHED_OK)
-                        //     fetchURL(`https://api.twitch.tv/api/${ type }s/${ value }/access_token?oauth_token=${ token }&need_https=true&platform=web&player_type=site&player_backend=mediaplayer`)
-                        //         .then(response => response.json())
-                        //         .then(json => JSON.parse(json.token ?? "null"))
-                        //         .then(json => {
-                        //             if(nullish(json))
-                        //                 throw "Fine Detail JSON data could not be parsed...";
-                        //
-                        //             REMARK('Getting fine details...', { [type]: value, cookies }, json);
-                        //
-                        //             let conversion = {
-                        //                 paid: 'subscriber',
-                        //
-                        //                 ally: 'partner',
-                        //                 fast: 'turbo',
-                        //                 nsfw: 'mature',
-                        //                 sole: 'channel_id',
-                        //             };
-                        //
-                        //             let data = {};
-                        //             for(let key in conversion)
-                        //                 data[key] = json[conversion[key]];
-                        //
-                        //             return data;
-                        //         })
-                        //         .then(data => {
-                        //             data = { ...data, dataRetrievedOK: (FETCHED_OK ||= defined(data?.ally)), dataRetrievedAt: +new Date };
-                        //
-                        //             Cache.save({ [`data/${ STREAMER.name }`]: data });
-                        //         })
-                        //         .catch(error => {
-                        //             WARN(`Failed to get CHANNEL details (4). ${ error }`)
-                        //                 .toNativeStack();
-                        //
-                        //             if(!ErrGet.length)
-                        //                 PushToTopSearch({ 'tt-err-get': 'ch-tw' });
-                        //         });
+                        // Channel details (JSON)
+                            // data:array<{
+                            //     id:string«User ID»,
+                            //     login:string«User login»,
+                            //     display_name:string«User name»,
+                            //     type:string<"admin" | "global_mod" | "staff" | "">,
+                            //     broadcaster_type:string<"affiliate" | "partner" | "">,
+                            //     description:string,
+                            //     profile_image_url:string<URL>,
+                            //     offline_image_url:string<URL>,
+                            //     view_count:number<integer>?!Deprecated,
+                            //     email:string<e-mail>?,
+                            //     created_at:string<Date.UTC>,
+                            // }>
+                        if(!FETCHED_OK)
+                            await fetchURL(`//api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                                headers: {
+                                    Authorization: Search.authorization,
+                                    'Client-Id': Search.clientID,
+                                },
+                            })
+                                .then(response => response.json())
+                                .then(json => JSON.parse(json.data ?? "null"))
+                                .then(json => {
+                                    if(nullish(json))
+                                        throw "Fine Detail JSON data could not be parsed...";
+
+                                    REMARK('Getting fine details...', { [type]: value, cookies }, json);
+
+                                    let conversion = {
+                                        ally: 'broadcaster_type',
+                                        perm: 'type',
+                                        sole: 'id',
+                                    };
+
+                                    let data = {};
+                                    for(let key in conversion)
+                                        data[key] = json[conversion[key]];
+
+                                    return data;
+                                })
+                                .then(data => {
+                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.ally)), dataRetrievedAt: +new Date };
+
+                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
+                                })
+                                .catch(error => {
+                                    WARN(`Failed to get CHANNEL details (4): ${ error }`)
+                                        .toNativeStack();
+
+                                    if(!ErrGet.length)
+                                        PushToTopSearch({ 'tt-err-get': 'ch-tw' });
+                                });
                     }
                 }
             };
@@ -6118,7 +6254,8 @@ let Initialize = async(START_OVER = false) => {
     let IGNORE_ZOOM_STATE = false;
     Handlers.auto_accept_mature = () => {
         $([
-            '[data-a-target*="mature"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i])',
+            '[data-a-target*="mature"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
+            '[data-a-target*="class"i]:is([data-a-target*="overlay"i], [data-a-target*="accept"i]) button',
             '[data-a-target*="watchparty"i] button',
             (IGNORE_ZOOM_STATE? '': '.home:not([user-intended="true"i]) [data-a-target^="home"i]')
         ].filter(s => s.length).join(','))?.click();
@@ -6963,9 +7100,22 @@ let Initialize = async(START_OVER = false) => {
                                                             SetQuality('auto').then(() => {
                                                                 let video = $.all('video').pop();
                                                                 let time = parseInt(Settings.video_clips__trophy_length) * 1000;
+                                                                let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
 
-                                                                video.startRecording(time, { mimeType: `video/${ VideoClips.filetype }`, key: title, private: !Settings.show_stats });
                                                                 video.dataset.trophyId = title;
+
+                                                                let recording = new Recording(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+
+                                                                // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
+                                                                recording
+                                                                    .then(({ target }) => target.recording.save())
+                                                                    .then(link => alert.silent(`
+                                                                        <video controller controls
+                                                                            title="Trophy Clip Saved - ${ link.download }"
+                                                                            src="${ link.href }" style="max-width:-webkit-fill-available"
+                                                                        ></video>
+                                                                        `)
+                                                                    );
 
                                                                 confirm.timed(`
                                                                     <div hidden controller
@@ -6975,21 +7125,14 @@ let Initialize = async(START_OVER = false) => {
                                                                     ></div>`
                                                                 , time)
                                                                     .then(answer => {
-                                                                        let video = $(`video[data-trophy-id]`),
-                                                                            title = video.dataset.trophyId;
-
-                                                                        if(answer === false) {
-                                                                            video.stopRecording(title).removeRecording(title);
-
-                                                                            throw `Clip discarded!`;
-                                                                        }
-
-                                                                        video.stopRecording(title).saveRecording(title, [STREAMER.name, title].join(' - ')).removeRecording(title);
-
-                                                                        return video.links.get(title);
+                                                                        if(answer === false)
+                                                                            throw `Trophy clip discarded!`;
+                                                                        recording.stop();
                                                                     })
-                                                                    .then(link => alert.silent(`Trophy clip available! ${ link.outerHTML }`))
-                                                                    .catch(alert.silent);
+                                                                    .catch(error => {
+                                                                        alert.silent(error);
+                                                                        recording.controller.abort(error);
+                                                                    });
                                                             }).finally(() => {
                                                                 // Click the button
                                                                 purchaseButton.click();
@@ -7539,6 +7682,104 @@ let Initialize = async(START_OVER = false) => {
             UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = owner;
 
             LOG('This tab is the Up Next owner', owner);
+
+            if(UP_NEXT_ALLOW_THIS_TAB) {
+                // Search helpers...
+                    // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
+                Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
+                    if(clientID?.equals('.DENIED') || oauthToken?.equals('.DENIED'))
+                        return;
+
+                    // Client-ID = wyf7fkavkuhwmmdq5xyfq2zyarejxs
+                    // OAuth = 1dv9ja8g1alr9en1fqjimicwl4r5ou
+
+                    if(nullish(clientID) || nullish(oauthToken)) {
+                        fetchURL(`https://id.twitch.tv/oauth2/token`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
+                        }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
+                            if(error && error_description)
+                                throw new Error(`${ error }: ${ error_description }`);
+                            oauthToken = access_token;
+
+                            Cache.save({ oauthToken, clientID });
+
+                            Search.authorization = `Bearer ${ oauthToken }`;
+                            Search.clientID = clientID;
+                        }).catch(error => {
+                            WARN(error);
+
+                            confirm(`<div controller
+                                okay="Grant access"
+                                deny="Never ask again"
+                                >TTV Tools would like to use Twitch's APIs on your behalf.</div>`)
+                            .then(answer => {
+                                if(answer === false)
+                                    return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
+
+                                let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ encodeURIComponent("https://ephellon.github.io/") }&response_type=token&scope=${ encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join('+')) }&state=${ (new UUID).value }`, '_blank');
+
+                                when(() => oauth.closed).then(async() => {
+                                    let { oauthToken } = await Settings.get('oauthToken');
+
+                                    Cache.save({ oauthToken, clientID });
+
+                                    Search.authorization = `Bearer ${ oauthToken }`;
+                                    Search.clientID = clientID;
+                                });
+                            });
+                        });
+                    } else {
+                        Cache.save({ oauthToken, clientID });
+
+                        Search.authorization = `Bearer ${ oauthToken }`;
+                        Search.clientID = clientID;
+                    }
+                });
+            } else {
+                Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
+                    if(false
+                        || nullish(clientID)
+                        || nullish(oauthToken)
+                        || clientID.equals('.DENIED')
+                        || oauthToken.equals('.DENIED')
+                    )
+                        return;
+
+                    fetchURL(`https://id.twitch.tv/oauth2/validate`, {
+                        method: 'GET',
+                        headers: { Authorization: `OAuth ${ oauthToken }` },
+
+                        timeout: 30_000,
+                    }).then(response => response.json()).then(({ client_id, login, scopes, user_id, expires_in, status, message }) => {
+                        if(status && message)
+                            throw new TypeError(`HTTP Error (${ status }): ${ message }`);
+
+                        Search.authorization = `Bearer ${ oauthToken }`;
+                        Search.clientID = client_id;
+
+                        Cache.save({ clientID: clientID, oauthToken });
+                    }).catch(error => {
+                        WARN(error);
+
+                        fetchURL(`https://id.twitch.tv/oauth2/token`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
+                        }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
+                            if(error && error_description)
+                                throw new Error(`${ error }: ${ error_description }`);
+                            oauthToken = access_token;
+
+                            Cache.save({ oauthToken, clientID });
+
+                            Search.authorization = `Bearer ${ oauthToken }`;
+                            Search.clientID = clientID;
+                        }).catch(WARN);
+                    });
+                });
+            }
         });
     else
         Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
@@ -7742,7 +7983,7 @@ let Initialize = async(START_OVER = false) => {
                         reminders = reminders.sort((a, b) => (abs(+now - +a.time) < abs(+now - +b.time))? -1: +1);
 
                         if(!reminders.length)
-                            return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID).value }</p>`, 7000);
+                            return await alert.timed(`There are no Live Reminders to display<p tt-x>${ (new UUID) }</p>`, 7000);
 
                         listing:
                         for(let index = 0; index < reminders.length; ++index) {
@@ -7759,7 +8000,7 @@ let Initialize = async(START_OVER = false) => {
 
                             // Search did not complete...
                             let num = 3;
-                            while(!ok && --num > 0 && $.defined(`#tt-reminder-listing`)) {
+                            while(!ok && num-- > 0 && $.defined(`#tt-reminder-listing`)) {
                                 Search.void(name);
 
                                 channel = await when.defined(() => new Search(name).then(Search.convertResults), 500);
@@ -7814,7 +8055,7 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                live = (channel.live || (abs(+now - +time) / 3_600_000 < 1/3)),
+                                live = (channel.live || await new Search(sole, 'channel', 'status.live') || (abs(+now - +time) / 3_600_000 < 1/3)),
                                 [since] = toTimeString(abs(+now - +time), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
@@ -9186,7 +9427,7 @@ let Initialize = async(START_OVER = false) => {
 
                     // Search did not complete...
                     let num = 3;
-                    while(!ok && --num > 0) {
+                    while(!ok && num-- > 0) {
                         Search.void(reminderName);
 
                         channel = await when.defined(() => new Search(reminderName).then(Search.convertResults), 500);
@@ -9296,7 +9537,7 @@ let Initialize = async(START_OVER = false) => {
         let timerStart = +new Date;
 
         let MATURE_HINTS = ['ADULT', 'MATUR', 'NSFW', ...16..to(99)],
-            RATING_STYLING = `max-height:6rem; max-width:4rem; position:absolute; left:0; bottom:-6rem; transform:translate(50%);`;
+            RATING_STYLING = `max-height:10rem; max-width:6rem; position:absolute; left:50%; bottom:-9rem; transform:translate(-50%);`;
 
         /*await*/ fetchURL.idempotent(href)
             .then(response => response.text())
@@ -9333,18 +9574,18 @@ let Initialize = async(START_OVER = false) => {
                     f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
                         f('.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { style: 'color:inherit; text-decoration:none; min-height:12rem; height:fit-content' },
                             f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05', {
-                                style: 'min-height:20rem',
+                                style: 'min-height:30rem',
                             },
                                 // Preview image
                                 f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center', {
-                                    style: 'background-color:#0000!important'
+                                    style: 'background-color:#0000!important;height:4.5rem;width:15rem'
                                 },
                                     f('.tt-card-image').with(
                                         f('.tt-aspect', { style: 'transform:translate(0,40%)' },
                                             f('img.tt-image', {
                                                 alt: title,
                                                 src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
-                                                style: 'height:11rem',
+                                                style: 'height:15rem',
                                             }),
                                             f('img#tt-content-rating-placeholder', { src: `//image.api.playstation.com/grc/images/ratings/hd/esrb/rp.png`, style: RATING_STYLING })
                                         )
@@ -9355,11 +9596,11 @@ let Initialize = async(START_OVER = false) => {
                                     f('.tt-full-width.tt-pd-l-1').with(
                                         // Title
                                         f('.chat-card__title.tt-ellipsis').with(
-                                            f('h3.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
+                                            f('h3.tt-strong.tt-ellipsis.tt-auto-marquee[@testSelector=chat-card-title]').with(title)
                                         ),
                                         // Subtitle
                                         f('.tt-ellipsis').with(
-                                            f('p.tt-c-text-alt-2[@testSelector=chat-card-description]', { style: 'white-space:break-spaces' }).with(description)
+                                            f('p.tt-c-text-alt-2[@testSelector=chat-card-description][@twitch-provided-description]', { style: 'white-space:break-spaces;max-height:40vh;overflow:auto' }).with(description)
                                         ),
                                         // Footer
                                         f('#tt-purchase-container.tt-ellipsis').with(
@@ -9395,6 +9636,20 @@ let Initialize = async(START_OVER = false) => {
             })
             .catch(ERROR);
 
+            if(parseBool(Settings.simplify_look_auto_marquee))
+                setInterval(() => {
+                    for(let auto of $.all('.tt-auto-marquee')) {
+                        let { textOverflowX = false } = getOffset(auto);
+
+                        if(textOverflowX) {
+                            let html = auto.innerHTML;
+
+                            auto.innerHTML = furnish(`marquee[behavior=alternate][scrollamount=2]`).html(html).outerHTML;
+                            auto.classList.remove('tt-auto-marquee');
+                        }
+                    }
+                }, 3_000);
+
             /***
              *       _____ _                   _____       _                       _   _
              *      / ____| |                 |_   _|     | |                     | | (_)
@@ -9416,11 +9671,16 @@ let Initialize = async(START_OVER = false) => {
                     game = STREAMER.game,
                     gameURI = encodeURIComponent(game);
 
+                let timeout = 15_000;
+
                 // Removes symbols like ™ ® © etc.
                 let NON_ASCII = /[^\p{L}\d `\-=~!@#\$%^&\*\(\)\+\{\}\|\[\]\\:;"'<>\?,\.\/]/gu;
 
                 // The item can not be found
                 const ITEM_NOT_FOUND = Symbol('NOT_FOUND');
+
+                // The imperfect match threshold percentage: 1.5%
+                const PARTIAL_MATCH_THRESHOLD = .015;
 
                 /*** Get the Steam link (if applicable)
                  *       _____ _
@@ -9442,7 +9702,7 @@ let Initialize = async(START_OVER = false) => {
                                     name = $('[class*="name"i]', item)?.textContent?.replace(NON_ASCII, ''),
                                     img = $('[class*="img"i] img', item)?.src,
                                     price = $('[class*="price"i]', item)?.textContent || 'More...',
-                                    good = game.errs(name) < .01;
+                                    good = game.errs(name, true) < .05;
 
                                 if(good)
                                     return { game, name, href, img, price, good };
@@ -9468,7 +9728,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Link to Steam
                                 f('.tt-store-purchase--handler').with(
-                                    f(`a[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
+                                    f(`a#steam-link[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
                                 )
                             );
 
@@ -9524,7 +9784,7 @@ let Initialize = async(START_OVER = false) => {
                     NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i,
                     // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
 
-                    EditionsRegExp = /((?:[:-~]\s*)?(\p{L}|[-']){3,}\s*)Editions?/iu;
+                    EditionsRegExp = /\s*(([-~:]\s*)?(\p{L}|[-']){3,}\s*)Editions?/iu;
                     // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,etc.
 
                 async function fetchPlayStationGame(game, index = 1, pages = 1) {
@@ -9571,7 +9831,7 @@ let Initialize = async(START_OVER = false) => {
                                     .replace(NON_ASCII, '')
                                     .replace(PlayStationRegExp, '')
                                     .replace(EditionsRegExp, '')
-                                    .errs(game) < .1
+                                    .errs(game) < PARTIAL_MATCH_THRESHOLD
                             ) return ({
                                 game,
                                 good: (
@@ -9579,7 +9839,7 @@ let Initialize = async(START_OVER = false) => {
                                         .replace(NON_ASCII, '')
                                         .replace(PlayStationRegExp, '')
                                         .replace(EditionsRegExp, '')
-                                        .errs(game) < .02
+                                        .errs(game, true) < PARTIAL_MATCH_THRESHOLD
                                 ),
                                 name: best.name,
                                 href: best.href,
@@ -9592,57 +9852,85 @@ let Initialize = async(START_OVER = false) => {
                         .catch(error => {
                             // Fallback: Search the store normally
                             if(error == ITEM_NOT_FOUND)
-                                return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ lang }/search/${ gameURI }/${ index }`)
+                                return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ lang }/search/${ gameURI }`)
                                     .then(r => r.text())
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(async DOM => {
-                                        return /* TODO: Get this to work again */;
+                                        let items = [];
 
-                                        let items = JSON.parse($('script[id*="data"i]', DOM)?.textContent || null)?.props?.apolloState;
+                                        for(let element of $.all('#main li > [data-qa^="search"i]', DOM))
+                                            items.push({
+                                                id: $('[href]', element)?.href?.slice(1).split('/').pop(),
+                                                name: $('[data-qa*="product-name"i]', element)?.textContent,
+                                                href: $('[href]', element)?.href?.replace(/^\/([^\/].+)$/, 'https://store.playstation.com/$1'),
+                                                img: $('img[loading]', element)?.src,
+                                                price: $('[data-qa*="display-price"i]', element)?.textContent,
+                                                platforms: $.all('[data-qa*="game"i][data-qa*="tag"i]', element).map(tag => tag.textContent.trim()),
+                                            });
 
-                                        pages = parseInt($.all('[data-qa*="#page"i]', DOM).pop()?.value) || pages;
+                                        items = items.sort((prev, next) =>
+                                            prev.name
+                                                .replace(NON_ASCII, '')
+                                                .replace(PlayStationRegExp, '')
+                                                .replace(EditionsRegExp, '')
+                                                .errs(game)
+                                            - next.name
+                                                .replace(NON_ASCII, '')
+                                                .replace(PlayStationRegExp, '')
+                                                .replace(EditionsRegExp, '')
+                                                .errs(game)
+                                        )
+                                            .slice(0, 60)
+                                            .sort((prev, next) =>
+                                                prev.name
+                                                    .replace(NON_ASCII, '')
+                                                    .replace(PlayStationRegExp, '')
+                                                    .replace(EditionsRegExp, '')
+                                                    .toLowerCase()
+                                                    .distanceFrom(game.toLowerCase())
+                                                - next.name
+                                                    .replace(NON_ASCII, '')
+                                                    .replace(PlayStationRegExp, '')
+                                                    .replace(EditionsRegExp, '')
+                                                    .toLowerCase()
+                                                    .distanceFrom(game.toLowerCase())
+                                            );
 
-                                        for(let item in items)
-                                            if(/^Product:/i.test(item)) {
-                                                item = items[item];
-
-                                                if(true
-                                                    && item?.storeDisplayClassification?.toLowerCase()?.contains('game')
-                                                    && (false
-                                                        || item?.name?.equals(
-                                                            game
-                                                                ?.replace(NON_ASCII, '')
-                                                                // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                                                ?.replace(PlayStationRegExp, '')
-                                                                ?.replace(EditionsRegExp, '')
-                                                        )
-                                                        || item?.name
+                                        for(let item of items)
+                                            if(true
+                                                && item.platforms?.length
+                                                && (false
+                                                    || item.name?.equals(
+                                                        game
                                                             ?.replace(NON_ASCII, '')
                                                             // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
                                                             ?.replace(PlayStationRegExp, '')
                                                             ?.replace(EditionsRegExp, '')
-                                                            ?.errs(game) < .01
                                                     )
+                                                    || item.name
+                                                        ?.replace(NON_ASCII, '')
+                                                        // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+                                                        ?.replace(PlayStationRegExp, '')
+                                                        ?.replace(EditionsRegExp, '')
+                                                        ?.errs(game) < PARTIAL_MATCH_THRESHOLD
                                                 )
-                                                    return {
-                                                        game,
-                                                        good: (
-                                                            item?.name
-                                                                ?.replace(NON_ASCII, '')
-                                                                // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                                                ?.replace(PlayStationRegExp, '')
-                                                                ?.replace(EditionsRegExp, '')
-                                                                ?.errs(game) < .02
-                                                        ) || 0,
-                                                        name: item.name,
-                                                        href: `https://store.playstation.com/${ lang }/product/${ item.id }`,
-                                                        img: (item.media?.map(m => items[m.id]).find(m => m?.type?.equals?.('image'))?.url),
-                                                        price: (items[item.price?.id]?.basePrice || 'More...'),
-                                                    };
-                                            }
+                                            )
+                                                return ({
+                                                    game,
+                                                    good: (
+                                                        item.name
+                                                            ?.replace(NON_ASCII, '')
+                                                            // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
+                                                            ?.replace(PlayStationRegExp, '')
+                                                            ?.replace(EditionsRegExp, '')
+                                                            ?.errs(game, true) < PARTIAL_MATCH_THRESHOLD
+                                                    ) || 0,
+                                                    name: item.name,
+                                                    href: `https://store.playstation.com/${ lang }/product/${ item.id }`,
+                                                    img: item.img,
+                                                    price: (item.price || 'More...'),
+                                                });
 
-                                        if(index < pages)
-                                            return await fetchPlayStationGame(game, index + 1, pages);
                                         return {};
                                     });
 
@@ -9675,7 +9963,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     // Link to PlayStation
                                     f('.tt-store-purchase--handler').with(
-                                        f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                        f(`a#playstation-link[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
                                     )
                                 );
 
@@ -9688,7 +9976,18 @@ let Initialize = async(START_OVER = false) => {
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
-                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent;
+                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
+                                                description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
+
+                                            // Load an actual game description
+                                            let gameDesc = $('[data-twitch-provided-description]');
+
+                                            if(defined(gameDesc) && good) {
+                                                $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
+
+                                                gameDesc.innerHTML = description?.replace(/([\.!\?])\s*([^\.!\?]+(?:\.{3}|…))\s*$/, '$1') || gameDesc.innerHTML;
+                                                gameDesc.removeAttribute('data-twitch-provided-description');
+                                            }
 
                                             if(!data?.length)
                                                 return;
@@ -9734,7 +10033,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     // Link to PlayStation
                                     f('.tt-store-purchase--handler').with(
-                                        f(`a[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                        f(`a#playstation-link[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
                                     )
                                 );
 
@@ -9742,13 +10041,27 @@ let Initialize = async(START_OVER = false) => {
 
                             when.defined(() => $('#tt-playstation-purchase'))
                                 .then(container => {
+                                    href = href.replace(/^\/\//, 'https:$&');
+
                                     // Load the maturity warning (if applicable)...
-                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    fetchURL.idempotent(href)
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
-                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent;
+                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
+                                                description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
 
+                                            // Load an actual game description
+                                            let gameDesc = $('[data-twitch-provided-description]');
+
+                                            if(defined(gameDesc) && good) {
+                                                $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
+
+                                                gameDesc.innerHTML = description || gameDesc.innerHTML;
+                                                gameDesc.removeAttribute('data-twitch-provided-description');
+                                            }
+
+                                            // Load the game's data
                                             if(!data?.length)
                                                 return;
 
@@ -9832,7 +10145,7 @@ let Initialize = async(START_OVER = false) => {
                                         .replace(NON_ASCII, '')
                                         .replace(XboxRegExp, '')
                                         .replace(EditionsRegExp, '')
-                                        .errs(game) < .1
+                                        .errs(game) < PARTIAL_MATCH_THRESHOLD
                                 ) return ({
                                     game,
                                     good: (
@@ -9840,7 +10153,7 @@ let Initialize = async(START_OVER = false) => {
                                             .replace(NON_ASCII, '')
                                             .replace(XboxRegExp, '')
                                             .replace(EditionsRegExp, '')
-                                            .errs(game) < .02
+                                            .errs(game, true) < PARTIAL_MATCH_THRESHOLD
                                     ),
                                     name: best.name,
                                     href: best.href,
@@ -9860,7 +10173,7 @@ let Initialize = async(START_OVER = false) => {
                                                 ?.ResultSets
                                                 ?.shift()
                                                 ?.Suggests
-                                                ?.find(({ Description, ImageUrl, Metas, Source, Title, Url }) => Source?.equals('games') && Title?.errs(game) < .01);
+                                                ?.find(({ Description, ImageUrl, Metas, Source, Title, Url }) => Source?.equals('games') && Title?.errs(game) < PARTIAL_MATCH_THRESHOLD);
 
                                             if(nullish(info))
                                                 return {};
@@ -9869,7 +10182,7 @@ let Initialize = async(START_OVER = false) => {
                                                 href = info.Url,
                                                 img = info.ImageUrl,
                                                 price = 'More...',
-                                                errs = parseBool(Title?.errs(game) < .02);
+                                                errs = parseBool(Title?.errs(game) < PARTIAL_MATCH_THRESHOLD);
 
                                             return { game, name, href, img, price, errs };
                                         });
@@ -9903,7 +10216,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         // Link to Xbox
                                         f('.tt-store-purchase--handler').with(
-                                            f(`a[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
+                                            f(`a#xbox-link[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
                                         )
                                     );
 
@@ -9930,7 +10243,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                 rating.modStyle(RATING_STYLING);
 
-                                                $('.is-xbox .tt-store-purchase--price').textContent = price || info.price;
+                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price)? price: info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
@@ -9945,6 +10258,21 @@ let Initialize = async(START_OVER = false) => {
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
+                                                let description = (null
+                                                    ?? $('[id][class*="description"i]')?.textContent
+                                                    ?? $('meta[name="description"i]', DOM)?.content
+                                                );
+
+                                                // Load an actual game description
+                                                let gameDesc = $('[data-twitch-provided-description]');
+
+                                                if(defined(gameDesc) && good) {
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Xbox&reg;';
+
+                                                    gameDesc.innerText = description || gameDesc.innerText;
+                                                    gameDesc.removeAttribute('data-twitch-provided-description');
+                                                }
+
                                                 return /* TODO: Get this to work without freezing the machine */;
 
                                                 let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
@@ -9959,7 +10287,7 @@ let Initialize = async(START_OVER = false) => {
                                                         price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                    $('.is-xbox .tt-store-purchase--price').textContent = price;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price)? price: info.price;
                                                 }
                                             });
 
@@ -9986,7 +10314,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         // Link to Xbox
                                         f('.tt-store-purchase--handler').with(
-                                            f(`a[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
+                                            f(`a#xbox-link[href="${ href }"][target=_blank]`).html(`Xbox&reg;`)
                                         )
                                     );
 
@@ -10013,7 +10341,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                 rating.modStyle(RATING_STYLING);
 
-                                                $('.is-xbox .tt-store-purchase--price').textContent = price || info.price;
+                                                $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price)? price: info.price;
                                                 $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
@@ -10028,7 +10356,32 @@ let Initialize = async(START_OVER = false) => {
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
+                                                let description = (null
+                                                    ?? $('[id][class*="description"i]')?.textContent
+                                                    ?? $('meta[name="description"i]', DOM)?.content
+                                                );
+
+                                                // Load an actual game description
+                                                let gameDesc = $('[data-twitch-provided-description]');
+
+                                                if(defined(gameDesc) && good) {
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Xbox&reg;';
+
+                                                    gameDesc.innerText = description || gameDesc.innerText;
+                                                    gameDesc.removeAttribute('data-twitch-provided-description');
+                                                }
+
                                                 return /* TODO: Get this to work without freezing the machine */;
+
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
+                                                /* 🍌🍌🍌🍌🍌🍌🍌🍌 */
 
                                                 let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
 
@@ -10075,7 +10428,7 @@ let Initialize = async(START_OVER = false) => {
                                                         price = data.specificPrices?.purchaseable?.shift?.()?.listPrice;
 
                                                     $('.tt-store-purchase--container.is-xbox').dataset.matureContent = mature;
-                                                    $('.is-xbox .tt-store-purchase--price').textContent = price;
+                                                    $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price)? price: info.price;
                                                 }
                                             });
 
@@ -10151,7 +10504,7 @@ let Initialize = async(START_OVER = false) => {
                                                 .replace(NON_ASCII, '')
                                                 .replace(NintendoRegExp, '')
                                                 .replace(EditionsRegExp, '')
-                                                .errs(game) < .02
+                                                .errs(game, true) < PARTIAL_MATCH_THRESHOLD
                                         ),
                                         name: best.name,
                                         href: best.href,
@@ -10225,7 +10578,7 @@ let Initialize = async(START_OVER = false) => {
                                                     platinumPoints:number<int>?
                                                     playModes:array<string>
                                                     playerCount:string
-                                                    price:object<{ finalPrice:number<float>, regPrice:number<float>, salePrice:number<float>? }>
+                                                    price:object<{ finalPrice:number<float>, regPrice:number?<float>, salePrice:number<float> }>
                                                     priceRange:string
                                                     productImage:string<URL-pathname>
                                                     relaseDateDisplay:string<ISO-Date>?
@@ -10292,6 +10645,27 @@ let Initialize = async(START_OVER = false) => {
                                         if(!href?.length)
                                             return;
 
+                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                            .then(r => r.text())
+                                            .then(DOMParser.stripBody)
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                let description = (null
+                                                    ?? JSON.parse($('script[id*="data"i][type$="json"i]')?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                                    ?? $('meta[name="description"i]', DOM)?.content
+                                                );
+
+                                                // Load an actual game description
+                                                let gameDesc = $('[data-twitch-provided-description]');
+
+                                                if(defined(gameDesc) && good) {
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
+
+                                                    gameDesc.innerText = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
+                                                    gameDesc.removeAttribute('data-twitch-provided-description');
+                                                }
+                                            });
+
                                         let f = furnish;
 
                                         let purchase =
@@ -10301,7 +10675,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                 // Link to Nintendo
                                                 f('.tt-store-purchase--handler').with(
-                                                    f(`a[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                                    f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
                                                 )
                                             );
 
@@ -10351,7 +10725,7 @@ let Initialize = async(START_OVER = false) => {
 
                                             // Link to Nintendo
                                             f('.tt-store-purchase--handler').with(
-                                                f(`a[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                                f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
                                             )
                                         );
 
@@ -10373,6 +10747,26 @@ let Initialize = async(START_OVER = false) => {
                                     if(!href?.length)
                                         return;
 
+                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        .then(r => r.text())
+                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                        .then(DOM => {
+                                            let description = (null
+                                                ?? JSON.parse($('script[id*="data"i][type$="json"i]')?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                                ?? $('meta[name="description"i]', DOM)?.content
+                                            );
+
+                                            // Load an actual game description
+                                            let gameDesc = $('[data-twitch-provided-description]');
+
+                                            if(defined(gameDesc) && good) {
+                                                $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
+
+                                                gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
+                                                gameDesc.removeAttribute('data-twitch-provided-description');
+                                            }
+                                        });
+
                                     let f = furnish;
 
                                     let purchase =
@@ -10382,7 +10776,7 @@ let Initialize = async(START_OVER = false) => {
 
                                             // Link to Nintendo
                                             f('.tt-store-purchase--handler').with(
-                                                f(`a[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                                f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
                                             )
                                         );
 
@@ -10544,7 +10938,7 @@ let Initialize = async(START_OVER = false) => {
             string = string.replace(regexp, ($0, $1, $$, $_) => {
                 let path = $1.replace(/^[\(\[\{]|[\}\]\)]$/g, '').split(/[\s\.]+/).filter(string => !!string.length);
 
-                let gameText = $('[data-a-target*="stream"i][data-a-target*="game"i][data-a-target*="link"i]').textContent;
+                let gameText = STREAMER.game + '';
                 let properties = ({
                     // StreamElements
                     user: {
@@ -11234,7 +11628,19 @@ let Initialize = async(START_OVER = false) => {
         let online = [STREAMER, ...STREAMERS].filter(isLive),
             container = (null
                 ?? $('#tt-greedy-raiding--container')
-                ?? furnish('#tt-greedy-raiding--container', { style: 'height:0!important; width:0!important; visibility:hidden!important; position:absolute!important; top:-100vh!important; left:-100vw!important; display:none!important' })
+                ?? furnish('#tt-greedy-raiding--container', {
+                    style: new CSSObject(`
+                        display: none;
+                        visibility: hidden;
+
+                        position: absolute;
+                        top: -100vh;
+                        left: -100vw;
+
+                        height: 0;
+                        width: 0;
+                    `, true).toString('all'),
+                })
             );
 
         for(let channel of online) {
@@ -11254,8 +11660,8 @@ let Initialize = async(START_OVER = false) => {
                 container.append(frame);
         }
 
-        if([...document.body.children].missing(container))
-            document.body.append(container);
+        if([...$.body.children].missing(container))
+            $.body.append(container);
     };
     Timers.greedy_raiding = 5000;
 
@@ -11376,13 +11782,13 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST | 3:00PM (EST) | 3PM (EST) | 3:00P (EST) | 3P (EST) | 3:00 (EST) | 3 (EST)
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?/iu,
             // EST 15:00 | EST 1500
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-WY]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))/iu,
             // 3:00PM | 3PM
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))/iu,
             // 15:00
@@ -11616,7 +12022,9 @@ let Initialize = async(START_OVER = false) => {
             YAPT: "+10:00",
             YEKST: "+6:00",
             YEKT: "+5:00",
-        };
+        },
+
+        NON_TIME_ZONE_WORDS = await fetchURL(`get:./ext/[A-Y]{2,4}T.json`).then(response => response.json());
 
     // Convert text to times
     function convertWordsToTimes(string = '') {
@@ -11631,7 +12039,7 @@ let Initialize = async(START_OVER = false) => {
             .replace(/\b(?:to|2)(?:day|night|morrow)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
 
             // Replaces ranges
-            .replace(/\b(\d+)(\s*\-\s*)(\d+)(\s*[ap]\.?m?\.?|AOE|GMT|UTC|[A-WY]{2,4}T)\b/ig, '$1$4$2$3$4');
+            .replace(/\b(\d+)(\s*\-\s*)(\d+)(\s*[ap]\.?m?\.?|AOE|GMT|UTC|[A-Y]{2,4}T)\b/ig, '$1$4$2$3$4');
     }
 
     convertWordsToTimes.inReverse ??= (string = '') => {
@@ -11675,22 +12083,24 @@ let Initialize = async(START_OVER = false) => {
                         continue searching;
 
                     let { groups, index, length } = regexp.exec(convertedText),
-                        { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups;
+                        { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
+                        misint = timezone.mutilate(),
+                        MISINT = timezone.toUpperCase();
+
+                    // This isn't a timezone... it's a word...
+                    if(!(MISINT in TIME_ZONE__CONVERSIONS) && NON_TIME_ZONE_WORDS[misint[0]]?.[misint.length]?.contains(misint))
+                        continue searching;
 
                     let now = new Date,
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
                         day = now.getDate(),
-                        autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 11)];
+                        autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 12)];
 
                     if(offset.length > 0 && isNaN(parseInt(offset)))
                         continue;
 
-                    meridiem ||= autoMeridiem;
-
-                    hour = parseInt(hour);
-                    hour -= (/^a/i.test(meridiem) && hour > 12? 12: 0);
-                    hour += (/^p/i.test(meridiem) && hour < 12? 12: 0);
+                    let houl = hour = parseInt(hour);
                     hour += (
                         Date.isDST()?
                             // Daylight Savings is active and Standard Time was detected
@@ -11699,7 +12109,17 @@ let Initialize = async(START_OVER = false) => {
                         +/\Bdt$/i.test(timezone)
                     );
 
+                    hour -= (/^a/i.test(meridiem) && (hour > 12)? 12: 0);
+                    hour += (/^p/i.test(meridiem) && (hour < 13)? 12: 0);
+                    hour %= 24;
+
                     timezone ||= (offset.length? 'GMT': '');
+
+                    // Change the meridiem
+                    if(hour < houl && !(houl % 12))
+                        hour += 12;
+                    else if(hour > houl && !(houl % 12))
+                        hour -= 12;
 
                     if(timezone.length) {
                         let name = timezone = timezone.toUpperCase().replace(/[^\w\+\-]+/g, '');
@@ -11740,7 +12160,7 @@ let Initialize = async(START_OVER = false) => {
             node.innerHTML = node.innerHTML.replace(text, `<!--!time#${ TZC.push(tzc) }-->`);
         }
 
-        allNodes(document.body)
+        allNodes($.body)
             .filter(node => /\bcomment\b/i.test(node.nodeName) && node.textContent.startsWith('!time#'))
             .map(comment => {
                 let index = parseInt(comment.textContent.replace('!time#', '')) - 1;
@@ -12749,7 +13169,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stream_preview = async() => {
         START__STOP_WATCH('stream_preview');
 
-        let richTooltips = $.all(`[class*="channel-tooltip"i][class*="body"i]`),
+        let richTooltips = $.all(`:is([class*="channel"i], [class*="guest-star"i])[class*="tooltip"i][class*="body"i]`),
             [richTooltip] = richTooltips;
 
         if(nullish(richTooltip)) {
@@ -12864,7 +13284,7 @@ let Initialize = async(START_OVER = false) => {
                 )
         };
 
-        document.body.append(STREAM_PREVIEW.element);
+        $.body.append(STREAM_PREVIEW.element);
 
         wait(2_5_0).then(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'));
 
@@ -13133,13 +13553,14 @@ let Initialize = async(START_OVER = false) => {
                             if(enabled) {
                                 message = `${ s(STREAMER.name) } streams will be recorded.`;
 
-                                DVRChannels[DVR_ID] = new ClipName(2);
+                                DVRChannels[DVR_ID] = DVR_CLIP_PRECOMP_NAME;
 
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, private: !Settings.show_stats })
-                                                .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                                            MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.startRecording({ name: 'AUTO_DVR:MOUSEUP_EVENT', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+
+                                            MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                         });
                                     });
                             }
@@ -13149,7 +13570,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 delete DVRChannels[DVR_ID];
 
-                                MASTER_VIDEO.stopRecording().saveRecording().removeRecording();
+                                MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save();
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
@@ -13174,7 +13595,7 @@ let Initialize = async(START_OVER = false) => {
                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(() => {
                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, private: !Settings.show_stats })
+                            MASTER_VIDEO.startRecording({ name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                         });
                     });
@@ -13184,11 +13605,8 @@ let Initialize = async(START_OVER = false) => {
 
                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
-                    for(let [uuid, recorder] of MASTER_VIDEO.recorders)
-                        if(recorder.name == 'DEFAULT_RECORDING')
-                            Handlers.__MASTER_AUTO_DVR_HANDLER__(recorder.data);
-                        else
-                            MASTER_VIDEO.stopRecording(recorder.name).saveRecording(recorder.name).removeRecording(recorder.name);
+                    for(let [guid, { recording }] of Recording.__RECORDERS__)
+                        recording.stop().save();
                 };
 
                 $.on('focusin', event => {
@@ -13200,13 +13618,14 @@ let Initialize = async(START_OVER = false) => {
                     top.addEventListener('beforeunload', leaveHandler);
 
                     // top.addEventListener('visibilitychange', leaveHandler);
-                    setInterval(DVR_ID => {
-                        document.title = (
-                            MASTER_VIDEO.hasRecording()?
-                                `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording().creationTime, 'clock') }`:
-                            `${ STREAMER.name } - Twitch`
-                        );
-                    }, 250, DVR_ID);
+                    if(nullish(top.titleInterval))
+                        top.titleInterval = setInterval(DVR_ID => {
+                            document.title = (
+                                MASTER_VIDEO.hasRecording('AUTO_DVR')?
+                                    `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording('AUTO_DVR')?.creationTime, 'clock') }`:
+                                `${ STREAMER.name } - Twitch`
+                            );
+                        }, 250, DVR_ID);
                 });
             }
         });
@@ -13217,18 +13636,18 @@ let Initialize = async(START_OVER = false) => {
 
     let DVR_CLIP_PRECOMP_NAME = '';
 
-    Handlers.__MASTER_AUTO_DVR_HANDLER__ = chunks => {
-        MASTER_VIDEO.stopRecording().saveRecording(null, DVR_CLIP_PRECOMP_NAME).removeRecording();
+    Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
+        MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save();
     };
 
     Unhandlers.video_clips__dvr = () => {
         let DVR_ID = STREAMER.name.toLowerCase();
 
-        MASTER_VIDEO.stopRecording().removeRecording();
+        MASTER_VIDEO.DEFAULT_RECORDING?.stop();
     };
 
     setInterval(() => {
-        let chunks = MASTER_VIDEO.getRecording()?.blobs;
+        let chunks = MASTER_VIDEO.DEFAULT_RECORDING?.blobs;
 
         if(!chunks?.length)
             return;
@@ -13246,11 +13665,11 @@ let Initialize = async(START_OVER = false) => {
                 .map(s => s.trim())
                 .join(' ')
             // File Extension
-            , top.MIME_Types.find(MASTER_VIDEO.mimeType)
+            , MIME_Types.find(MASTER_VIDEO.mimeType)
         ].join('.');
     }, 1000);
 
-    let FetchingChunks;
+    let InsertChunksAt;
 
     __AutoDVR__:
     if(parseBool(Settings?.video_clips__dvr)) {
@@ -13261,40 +13680,39 @@ let Initialize = async(START_OVER = false) => {
 
             if(false
                 || nullish(main)
+                || !main.hasRecording('AUTO_DVR')
                 || nullish(mini)
-                || !main?.hasRecording()
             )
                 return when.defined(() => $('[data-a-target*="ad-countdown"i]')).then(HandleAd);
 
-            InsertChunksAt = main.blobs.length;
+            let blobs = main.getRecording('AUTO_DVR')?.blobs ?? [];
 
-            main.pauseRecording();
+            InsertChunksAt = blobs.length;
 
-            mini.startRecording();
+            let AdBreak = new Recording(mini, { mimeType: main.mimeType });
 
-            mini.getRecording().ondataavailable = event => {
-                NOTICE(`Adding chunks to main <video> @ ${ main?.blobs?.length } |`, { blobs: main.blobs, chunks: event.data, event });
+            AdBreak.then(({ target }) => {
+                let chunks = AdBreak.blobs;
 
-                main.blobs?.push(event.data);
-            };
+                NOTICE(`Adding chunks to main <video> @ ${ InsertChunksAt } |`, { blobs, chunks, event });
 
-            FetchingChunks = setInterval(mini => mini.getRecording().requestData(), 1000, mini);
+                blobs.push(...chunks);
+            });
 
             when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                 .then(() => {
                     let [main, mini] = $.all('video');
 
                     main?.resumeRecording();
-
-                    mini?.stopRecording()?.removeRecording();
+                    mini?.stopRecording();
 
                     when.defined(() => $('[data-a-target*="ad-countdown"i]'))
                         .then(HandleAd);
 
-                    clearInterval(FetchingChunks);
-
-                    NOTICE(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs: main?.blobs, chunks: mini?.blobs });
+                    NOTICE(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs, chunks: mini?.getRecording()?.blobs });
                 });
+
+            main.pauseRecording();
 
             NOTICE(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
         };
@@ -13321,7 +13739,7 @@ let Initialize = async(START_OVER = false) => {
 
                         // Search did not complete...
                         let num = 3;
-                        while(!ok && --num > 0) {
+                        while(!ok && num-- > 0) {
                             Search.void(streamer);
 
                             channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
@@ -13398,11 +13816,27 @@ let Initialize = async(START_OVER = false) => {
                                 button?.click();
                             })
                             .then(() => {
+                                confirm(`<div hidden controller deny="Why?" okay="Acknowledge (interact)"></div>
+                                    To automatically save DVRs when this page navigates to another stream (or reloads unexpectedly), you must interact with this page.
+                                `)
+                                    .then(answer => {
+                                        if(!answer)
+                                            open('https://developer.mozilla.org/en-US/docs/Web/Security/User_activation', '_blank');
+                                    });
+
+                                // Extra handler. This is suppose to handle ad-recording. But it's above (see `enabled && !STREAMER.redo`)
+                                if(MASTER_VIDEO.hasRecording('AUTO_DVR'))
+                                    return /* Already recording over ads... */;
+
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, private: !Settings.show_stats })
+                                            MASTER_VIDEO.startRecording({ name: 'AUTO_DVR:AD_COUNTDOWN', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+
+                                            when(() => MASTER_VIDEO.hasRecording('AUTO_DVR')).then(() => {
+                                                MASTER_VIDEO.cancelRecording('AUTO_DVR:AD_COUNTDOWN', `Master recording ("AUTO_DVR") already exists. Removing "AUTO_DVR:AD_COUNTDOWN"`).removeRecording('AUTO_DVR:AD_COUNTDOWN');
+                                            });
                                         });
                                     });
 
@@ -13412,20 +13846,9 @@ let Initialize = async(START_OVER = false) => {
 
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
-                                    for(let [uuid, recorder] of MASTER_VIDEO.recorders)
-                                        if(recorder.name == 'DEFAULT_RECORDING')
-                                            Handlers.__MASTER_AUTO_DVR_HANDLER__(recorder.data);
-                                        else
-                                            MASTER_VIDEO.stopRecording(recorder.name).saveRecording(recorder.name).removeRecording(recorder.name);
+                                    for(let [guid, { recording }] of Recording.__RECORDERS__)
+                                        recording.stop().save();
                                 };
-
-                                confirm(`<div hidden controller deny="Why?" okay="Acknowledge (interact)"></div>
-                                    To automatically save DVRs when this page navigates to another stream (or reloads unexpectedly), you must interact with this page.
-                                `)
-                                    .then(answer => {
-                                        if(!answer)
-                                            open('https://developer.mozilla.org/en-US/docs/Web/Security/User_activation', '_blank');
-                                    });
 
                                 $.on('focusin', event => {
                                     let DVR_ID = STREAMER.name.toLowerCase();
@@ -13436,13 +13859,14 @@ let Initialize = async(START_OVER = false) => {
                                     top.addEventListener('beforeunload', leaveHandler);
 
                                     // top.addEventListener('visibilitychange', leaveHandler);
-                                    setInterval(DVR_ID => {
-                                        document.title = (
-                                            MASTER_VIDEO.hasRecording()?
-                                                `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording().creationTime, 'clock') }`:
-                                            `${ STREAMER.name } - Twitch`
-                                        );
-                                    }, 250, DVR_ID);
+                                    if(nullish(top.titleInterval))
+                                        top.titleInterval = setInterval(DVR_ID => {
+                                            document.title = (
+                                                MASTER_VIDEO.hasRecording('AUTO_DVR:AD_COUNTDOWN') || MASTER_VIDEO.hasRecording('AUTO_DVR')?
+                                                    `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording('AUTO_DVR:AD_COUNTDOWN')?.creationTime, 'clock') }`:
+                                                `${ STREAMER.name } - Twitch`
+                                            );
+                                        }, 250, DVR_ID);
                                 });
                             });
                 }
@@ -13922,20 +14346,14 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
             $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('z')) {
-                    let video = $.all('video').pop();
+                    let video = MASTER_VIDEO;
 
                     video.setAttribute('uuid', video.uuid ??= (new UUID).value);
 
                     let body = `<input hidden controller
                         icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
                         placeholder="${ DEFAULT_CLIP_NAME }"
-                        pattern="${
-                            GetOS('Windows')?
-                                '^(?!(^|PRN|AUX|CLOCK\\$|NUL|CON|(COM|LPT)[1-9])(\\..*)?$)[^\\x00-\\x1f\\\\?*:\\x22;|\\/]+$':
-                            GetOS('Mac')?
-                                '[^\\x00-\\x1f:]':
-                            '[^\\0/]'
-                        }"
+                        pattern="${ GetFileSystem().acceptableFilenames.source }"
 
                         okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
                         deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
@@ -13972,6 +14390,8 @@ let Initialize = async(START_OVER = false) => {
                         </table>`;
 
                     let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
+                    let SAVE_NAME = DEFAULT_CLIP_NAME;
+
                     if(!video.hasRecording(EVENT_NAME)) {
                         prompt.silent(body).then(value => {
                             let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
@@ -13979,35 +14399,34 @@ let Initialize = async(START_OVER = false) => {
                             feed?.setAttribute('halt', nullish(value));
                             phantomClick($('.okay', feed));
 
-                            video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME).removeRecording(EVENT_NAME);
+                            video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME = value);
                         });
 
-                        video.startRecording(Infinity, { mimeType: `video/${ VideoClips.filetype }`, key: EVENT_NAME, private: !Settings.show_stats })
-                            .then(chunks => {
+                        video.startRecording({ name: EVENT_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
+                            .then(({ target }) => {
+                                let chunks = target.blobs;
                                 let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
                                     halt = parseBool(feed?.getAttribute('halt')),
-                                    name = (feed?.getAttribute('value') || DEFAULT_CLIP_NAME);
+                                    name = (feed?.getAttribute('value') || SAVE_NAME);
 
-                                return name;
+                                return SAVE_NAME = name;
                             })
                             .catch(error => {
                                 WARN(error);
 
                                 alert.timed(error, 7000);
-
-                                return DEFAULT_CLIP_NAME;
                             })
-                            .finally(name => {
-                                DEFAULT_CLIP_NAME = new ClipName;
+                            .finally(() => {
+                                DEFAULT_CLIP_NAME = new ClipName(2);
 
-                                video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, name).removeRecording(EVENT_NAME);
+                                video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME);
                             });
                     } else {
                         let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
 
                         phantomClick($('.okay', feed));
 
-                        video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME).removeRecording(EVENT_NAME);
+                        video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME);
                     }
                 }
             });
@@ -14052,7 +14471,7 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('extra_keyboard_shortcuts');
     }
 
-    let DEFAULT_CLIP_NAME = new ClipName;
+    let DEFAULT_CLIP_NAME = new ClipName(2);
     let GLOBAL_CLIP_HANDLER = setInterval(() => {
         let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
 
@@ -14079,7 +14498,7 @@ let Initialize = async(START_OVER = false) => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     [type] = (video?.mimeType ?? 'video/x-unknown').split(';');
 
-                element.innerHTML =  `<code>${ top.MIME_Types.find(type) }</code> <code>${ type }</code>`;
+                element.innerHTML =  `<code>${ MIME_Types.find(type) }</code> <code>${ type }</code>`;
             });
 
         // Maintains the framerate of the clip
@@ -14087,7 +14506,7 @@ let Initialize = async(START_OVER = false) => {
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     recorder = video.getRecording(EVENT_NAME),
-                    data = recorder?.data;
+                    data = recorder?.blobs;
 
                 element.innerHTML = `<code>${ video.videoHeight }p</code> <code>${ ((data?.reduce((total, { size = 0 }) => total += size, 0) / data?.length) | 0).suffix('bps', false, 'data') }</code>`;
             });
@@ -14097,7 +14516,7 @@ let Initialize = async(START_OVER = false) => {
             .map(element => {
                 let video = $(`video[uuid="${ element.dataset.connectedTo }"]`),
                     recorder = video.getRecording(EVENT_NAME),
-                    data = recorder?.data;
+                    data = recorder?.blobs;
 
                 element.innerHTML = data?.reduce((total, { size = 0 }) => total += size, 0)?.suffix('B', 2);
             });
@@ -14313,6 +14732,7 @@ let CUSTOM_CSS,
     PAGE_CHECKER,
     WAIT_FOR_PAGE,
     PAGE_IS_READY = false,
+    RECOVERY_TRIALS = 0,
     VIDEO_AD_COUNTDOWN,
     NORMALIZED_AD_VOLUME = false,
     NORMALIZED_AD_COUNTER = 0,
@@ -14513,12 +14933,15 @@ if(top == window) {
 
                             WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
 
-                            if(parseBool(Settings.recover_pages))
-                                return ReloadPage();
-                            else
-                                for(let job of NOT_LOADED_CORRECTLY)
-                                    if(defined(job))
-                                        RestartJob(job, 'failure_to_activate');
+                            for(let job of NOT_LOADED_CORRECTLY)
+                                if(defined(job))
+                                    RestartJob(job, 'FAILED_TO_ACTIVATE');
+
+                            if(parseBool(Settings.recover_pages)) {
+                                if(++RECOVERY_TRIALS > 10)
+                                    return ReloadPage();
+                                return false;
+                            }
 
                             // Failed to activate job at...
                             // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) }, true);
@@ -14543,7 +14966,7 @@ if(top == window) {
                     else if($.defined(`a[target="_blank"i]:is([rel~="noopener"i], [rel~="noreferrer"i])`))
                         type = 'shoutout';
 
-                    let user = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ').shift();
+                    let [user] = ($('[data-a-target$="username"i]', body) || head).textContent.split(' ');
 
                     let badges = $.all('img.chat-badge', body).map(badge => badge.alt.toLowerCase() + badge.src.replace(/^.*?\/(?:v(\d+))\/.*$/i, '/$1')),
                         color = Color.destruct($('[data-a-target$="username"i]', body)?.style?.color || '#9147FF').HEX,
@@ -14557,7 +14980,7 @@ if(top == window) {
 
                     line.dataset.uuid = UUID.from(line.getPath());
 
-                    let data = `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;<!>;subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ head.innerText.trim().replace(/\s+/g, ' ') } ${ body?.innerText?.trim()?.replace(/\s+/g, ' ') || '' }`;
+                    let data = `@color=${ color };display-name=${ user };login=${ user.toLowerCase() };mod=${ mod };msg-id=pointsredeemed;<!>;subscriber=${ sub } :tmi.twitch.tv USERNOTICE #${ name } :${ [head, body].filter(defined).map(element => element.innerText.trim().replace(/\s+/g, ' ')).join(' ') }`;
 
                     if(defined(shopID))
                         data = data.replace('<!>', `msg-param-shop-id=${ shopID }`);
@@ -15389,10 +15812,8 @@ if(top == window) {
                                 for(let [name, callback] of Chat.__onbullet__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                wait(100, results).then(async results => {
-                                    for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
-                                        when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                });
+                                for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
+                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // The channel is hosting...
@@ -15419,10 +15840,8 @@ if(top == window) {
                                     for(let [name, callback] of Chat.__oncommand__)
                                         when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
-                                            when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                    });
+                                    for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                        when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
 
                                     continue;
                                 }
@@ -15517,10 +15936,8 @@ if(top == window) {
                                 for(let [name, callback] of Chat.__onmessage__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                wait(100, results).then(async results => {
-                                    for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                        when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                });
+                                for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // Got a whisper
@@ -15530,10 +15947,8 @@ if(top == window) {
                                 for(let [name, callback] of Chat.__onwhisper__)
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                                wait(100, results).then(async results => {
-                                    for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                        when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                                });
+                                for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             default: continue;
@@ -15641,10 +16056,8 @@ if(top == window) {
                         for(let [name, callback] of Chat.__onmessage__)
                             when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                        wait(100, results).then(async results => {
-                            for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                        });
+                        for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                            when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                     }
                 });
         }

@@ -21,7 +21,7 @@
 // Parse a URL
     // parseURL(url:string) → object
     /** Breaking down a URL → https://user:pass@example.com:56/action?login=true#news
-     * href → https://user:pass@example.com:56/action?login=true#news
+     * href → https://user:pass@example.com:56/action.html?login=true#news
      * origin → https://
      * protocol → https:
      * scheme → https
@@ -30,7 +30,8 @@
      * host → example.com:56
      * hostname → example.com
      * port → 56
-     * pathname → /action
+     * pathname → /action.html
+     * filename → action.html
      * search → ?login=true
      * hash → #news
      */
@@ -51,6 +52,7 @@ function parseURL(url) {
         hostname = '',
         port = '',
         pathname = '',
+        filename = '',
         search = '',
         hash = '',
     } = parseURL.pattern
@@ -64,6 +66,8 @@ function parseURL(url) {
 
     return {
         href, origin, protocol, scheme, username, password, host, hostname, port, pathname, search, hash,
+
+        filename: pathname.split('/').pop(),
 
         domainPath: hostname.split('.').reverse(),
         searchParameters: (data => {
@@ -120,7 +124,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?\/\/)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\w{2,}(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\w{2,}(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -507,6 +511,7 @@ Object.defineProperties(furnish, {
     // getOffset(element:Element) → Object<{ height:number, width:number, left:number, top:number, right:number, bottom:number }>
 function getOffset(element) {
     let bounds = element.getBoundingClientRect(),
+        { offsetHeight, scrollHeight, offsetWidth, scrollWidth } = element,
         { height, width } = bounds;
 
     return {
@@ -519,6 +524,11 @@ function getOffset(element) {
 
         right:  bounds.right  + (window.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
         bottom: bounds.bottom + (window.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+
+        // https://stackoverflow.com/a/41988106/4211612
+        textOverflow: (offsetWidth < scrollWidth || offsetHeight < scrollHeight),
+        textOverflowX: (offsetWidth < scrollWidth),
+        textOverflowY: (offsetHeight < scrollHeight),
     };
 }
 
@@ -719,42 +729,59 @@ function parseBool(value = null) {
 }
 
 // Returns the DOM path of an element
-    // getDOMPath(element:Element, shorten:boolean?) → string
+    // getDOMPath(element:Element, length:number?<int>) → string
+        // getDOMPath(element, +2) → Adds ids, classes, and non-spaced attributes to the path
+            // html>body>div#root.root[data-a-page-loaded-name="ChannelWatchPage"][data-a-page-loaded="1686805563781"][data-a-page-events-submitted="1686805565437"]>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
+        // getDOMPath(element, +1) → Adds ids and classes to the path
+            // html>body>div#root.root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
+        // getDOMPath(element, +0) → Adds ids to the path
+            // html>body>div#root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
+        // getDOMPath(element, -1) → Finds the first id and stops, or traverses up the entire tree. Removes single-tag generations ("div>div>div>div..." → "div div")
+            // #root>div>div:nth-child(2)>div>main>div>div:nth-child(3) div div:nth-child(2) div div:nth-child(3)>div:nth-child(3) div div:nth-child(7) div p:nth-child(5)>a
 // https://stackoverflow.com/a/16742828/4211612
-function getDOMPath(element, shorten = false) {
+function getDOMPath(element, length = 0) {
     if(nullish(element))
-        throw 'Unable to get path of non-element';
+        throw 'Unable to get path of non-Node';
 
     let path = [];
     while(defined(element.parentNode)) {
         let parent = element.parentNode,
-            siblings = parent.childNodes;
+            siblings = parent.children;
 
-        let nthChild = 0;
-        nth: for(let index = 0; index < siblings.length; ++index) {
-            let sibling = siblings[index];
-
-            if(sibling === element) {
-                nthChild = index;
-
+        let nthChild = 1, sameTag = false;
+        nth: for(let sibling of siblings)
+            if(sibling === element)
                 break nth;
-            }
-        }
+            else if(sameTag ||= (sibling.nodeName.equals(element.nodeName)))
+                ++nthChild;
 
         let nodeName = element.nodeName.toLowerCase();
+        let attributes = [...element.attributes].filter(attr => !/\s/.test(attr.value) && !/^(id|class)$/i.test(attr.name)).map(attr => `[${ attr.name }="${ attr.value }"]`).join('');
 
-        if(element.id.length)
-            path.unshift(`${ nodeName }#${ element.id }`);
-        else if(nthChild > 1)
-            path.unshift(`${ nodeName }:nth-child(${ nthChild + 1 })`);
-        else
-            path.unshift(nodeName);
+        if(element.id.length) {
+            path.unshift(`${
+                (length < 0? '': nodeName)
+                    }#${
+                element.id
+                    }${
+                (length > 0? ['', ...element.classList].join('.'): '')
+                    }${
+                (length > 1? attributes: '')
+            }`);
+
+            if(length < 0)
+                break;
+        } else if(nthChild > 1) {
+            path.unshift(`${ nodeName }${ (length > 1? attributes: '') }:nth-child(${ nthChild })`);
+        } else {
+            path.unshift(`${ nodeName }${ (length > 1? attributes: '') }`);
+        }
 
         element = parent;
     }
 
-    path = path.slice(+!!shorten).join('>').replace(/#([^\a-z][^>\s]*)/ig, '[id="$1"]');
-    for(let regexp = /[> ](?:(\w+)[> ]\1[^#:\[\]])+/; shorten && regexp.test(path);)
+    path = path.join('>').replace(/#([^\a-z][^>\s]*)/ig, '[id="$1"]');
+    for(let regexp = /[> ](?:(\w+)[> ]\1[^#:\[\]])+/; length < 0 && regexp.test(path);)
         path = path.replace(regexp, ' $1 ');
 
     return path;
@@ -770,6 +797,12 @@ function getDOMPath(element, shorten = false) {
  *                                    __/ | |
  *                                   |___/|_|
  */
+
+ // Binds the function the same way as `Function..bind` but uses an `argument array` instead of an `argument spread`
+    // Function..wrap(thisArg:object|null, argArray:array?<any>) → Function
+Function.prototype.wrap ??= function wrap(thisArg, argArray = []) {
+    return this.bind.apply(this, [thisArg].concat(argArray));
+};
 
 // Finds the last index using the same format as `Array..findIndex`
     // Array..findLastIndex(predicate:function, thisArg:object?) → number<integer>
@@ -1186,9 +1219,9 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
 };
 
 // Gets the DOM path of an element
-    // Element..getPath(shorten:boolean?) → string
-Element.prototype.getPath ??= function getPath(shorten = false) {
-    return getDOMPath(this, shorten);
+    // Element..getPath(length:number?<int>) → string
+Element.prototype.getPath ??= function getPath(length = 0) {
+    return getDOMPath(this, length);
 };
 
 // https://stackoverflow.com/a/41698614/4211612
@@ -1545,6 +1578,75 @@ try {
             },
         },
     });
+
+    // https://github.com/MaxArt2501/base64-js
+    Object.defineProperties(top, {
+        "atоb": {
+            get() {
+                return (function atob(string) {
+                    string = String(string).replace(/[\t\n\f\r ]+/g, "");
+
+                    if(!this.regexp.test(string))
+                        throw new TypeError("Failed to execute 'atob' on 'Window': The string to be decoded is not correctly encoded.");
+
+                    string += "==".slice(2 - (string.length & 3));
+
+                    let bm, r1, r2,
+                        i = 0, R = "",
+                        k = this.key;
+
+                    for(; i< string.length;) {
+                        bm = k.indexOf(string.charAt(i++)) << 18
+                            | k.indexOf(string.charAt(i++)) << 12
+                            | (r1 = k.indexOf(string.charAt(i++))) << 6
+                            | (r2 = k.indexOf(string.charAt(i++)))
+
+                        R += r1 == 64?
+                            String.fromCharCode(bm >> 16 & 255):
+                        r2 == 64?
+                            String.fromCharCode(bm >> 16 & 255, bm >> 8 & 255):
+                        String.fromCharCode(bm >> 16 & 255, bm >> 8 & 255, bm & 255);
+                    }
+
+                    return R.replace(/\0+$/, '');
+                }).bind({
+                    key: top['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
+                    regexp: /^(?:[A-Z\d+\/\=]{4})*?(?:[A-Z\d+\/]{2}(?:==)?|[A-Z\d+\/]{3}=?)?$/i,
+                });
+            }
+        },
+
+        "btоa": {
+            get() {
+                return (function btoa(string) {
+                    string = String(string);
+
+                    let bm, a, b, c,
+                        R = "", i = 0,
+                        r = string.length % 3,
+                        k = this.key;
+
+                    for(; i < string.length;) {
+                        if(false
+                            || (a = string.charCodeAt(i++)) > 255
+                            || (b = string.charCodeAt(i++)) > 255
+                            || (c = string.charCodeAt(i++)) > 255
+                        ) throw new TypeError("Failed to execute 'btoa' on 'Window': The string to be encoded contains characters outside of the Latin1 range.");
+
+                        bm = (a << 16) | (b << 8) | c;
+                        R += k.charAt(bm >> 18 & 63)
+                            + k.charAt(bm >> 12 & 63)
+                            + k.charAt(bm >> 6 & 63)
+                            + k.charAt(bm & 63);
+                    }
+
+                    return R;
+                }).bind({
+                    key: top['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
+                });
+            }
+        },
+    });
 } catch(error) {/* Do nothing */}
 
 // Returns a function's name as a formatted title
@@ -1623,16 +1725,22 @@ String.prototype.mutilate ??= function mutilate(normalize = false) {
 };
 
 // Matches two strings and returns a comparison of how much text matched
-    // String..errs(string:string) → number<float>
-String.prototype.errs ??= function errs(string) {
+    // String..errs(string:string, positionDependent:boolean?) → number<float>
+String.prototype.errs ??= function errs(string, positionDependent = false) {
     let [B, A] = [this, string?.toString() || ''].map(s => s.sheer().normalize('NFKD').toLowerCase()).sort((a, b) => a.length - b.length),
         C = '';
 
-    for(let char of A)
-        if(B.contains(char)) {
-            C += char;
-            B.replace(char, '');
-        }
+    if(positionDependent) {
+        for(let i = 0, l = Math.min(A.length, B.length); i < l; ++i)
+            if(A[i] == B[i])
+                C += A[i];
+    } else {
+        for(let char of A)
+            if(B.contains(char)) {
+                C += char;
+                B.replace(char, '');
+            }
+    }
 
     return 1 - C.length / A.length
 };
@@ -1705,6 +1813,34 @@ HTMLCollection.prototype.splice         ??= Array.prototype.splice;
 HTMLCollection.prototype.unshift        ??= Array.prototype.unshift;
 HTMLCollection.prototype.values         ??= Array.prototype.values;
 
+// https://learnersbucket.com/examples/interview/promise-any-polyfill/
+// Resovles to a non-empty Promise
+    // Promise.anySettled(promises:array<Promise>) → Promise
+Promise.anySettled = function anySettled(promises) {
+    let errors = new Array(promises.length);
+    let errd = 0;
+
+    return new Promise((resolve, reject) => {
+        promises.map((promise, index) => {
+            Promise.resolve(promise)
+                // Resolve the promise to a non-empty value
+                .then(result => {
+                    if(nullish(result))
+                        throw result;
+                    resolve(result);
+                })
+                // Reject the value, immediately
+                .catch(error => {
+                    errors[index] = error;
+
+                    // All promises rejected; reject parent
+                    if(++errd == promises.length)
+                        reject(errors);
+                });
+        });
+    });
+};
+
 // https://stackoverflow.com/a/35859991/4211612
 // Captures the current frame from a video element
     // HTMLVideoElement..captureFrame(imageType:string?, returnType:string?) → string<dataURL> | object | HTMLImageElement
@@ -1748,109 +1884,275 @@ HTMLVideoElement.prototype.captureFrame ??= function captureFrame(imageType = "i
     return data;
 };
 
+// Records a video element
+    // new Recording(video:HTMLVideoElement|HTMLAudioElement|HTMLCanvasElement, options:object?) → Promise
+class Recording {
+    static __BLOBS__ = new Map;
+    static __LINKS__ = new Map;
+    static __RECORDERS__ = new Map;
+
+    constructor(streamable, options = { name: 'DEFAULT_RECORDING', as: new ClipName, maxTime: Infinity, mimeType: 'video/webm;codecs=vp9', hidden: false, chunksPerSecond: 1 }) {
+        if(['HTMLVideoElement', 'HTMLAudioElement', 'HTMLCanvasElement'].missing(streamable?.constructor?.name))
+            throw `new Recording(...) must be called on a streamable element: <video>, <audio>, or <canvas>`;
+
+        const configurable = false, writable = false, enumerable = false;
+
+        let { name = 'DEFAULT_RECORDING', as = new ClipName, maxTime = Infinity, mimeType = 'video/webm;codecs=vp9', hidden = false, chunksPerSecond = 1 } = options;
+        let guid = `${ name } [${ (new UUID).toStamp() }]`;
+        let uuid = UUID.from(guid).value;
+
+        for(let key of ['name', 'key', 'hidden', 'maxTime', 'chunksPerSecond'])
+            delete options[key];
+
+        let recorder = new MediaRecorder(streamable.captureStream(), options);
+        let blobs = new Array;
+
+        let controller = new AbortController;
+        let { signal } = controller;
+
+        streamable.recorders ??= new Map;
+        streamable.recorders.set(name, recorder);
+
+        Object.defineProperties(recorder, {
+            controller: { value: controller, configurable, writable, enumerable },
+
+            name: { value: name, configurable, writable },
+            data: {
+                get() {
+                    return this.blobs.slice(this.slice);
+                },
+
+                set(value) {
+                    return this.blobs.slice(this.slice = value);
+                },
+            },
+
+            guid: { value: guid, configurable, writable },
+            uuid: { value: uuid, configurable, writable },
+            blobs: { value: blobs },
+            slice: { value: blobs.length },
+            hidden: { value: hidden, configurable, writable },
+            source: { value: streamable, configurable, writable },
+            creationTime: { value: +new Date, configurable, writable },
+            recordingLength: {
+                get() {
+                    return (new Date) - this.blobs.creationTime;
+                },
+
+                set(value) {
+                    return new Date(value) - this.blobs.creationTime;
+                },
+            },
+        });
+
+        Object.defineProperties(blobs, {
+            controller: { value: controller, configurable, writable, enumerable },
+
+            name: { value: name, configurable, writable },
+
+            guid: { value: guid, configurable, writable },
+            uuid: { value: uuid, configurable, writable },
+            hidden: { value: hidden, configurable, writable },
+            source: { value: streamable, configurable, writable },
+            creationTime: { value: +new Date, configurable, writable },
+            recordingLength: {
+                get() {
+                    return (new Date) - this.creationTime;
+                },
+
+                set(value) {
+                    return new Date(value) - this.creationTime;
+                },
+            },
+        });
+
+        Recording.__RECORDERS__.set(guid, recorder);
+        Recording.__BLOBS__.set(guid, blobs);
+
+        // Actually record the data...
+        recorder.ondataavailable = (async function(event) {
+            this.mimeType ??= recorder.mimeType;
+
+            Recording.__BLOBS__.get(event.target.guid).push(event.data);
+        }).bind(streamable);
+
+        // Chunks per second: 1k → 1cps | 42 → 24cps | 33 → 30cps | 17 → 60cps
+        when(streamable => streamable.videoTracks?.length, 100, streamable)
+            .then(length => {
+                recorder.start((1000 / chunksPerSecond).round().clamp(1, 1000));
+                streamable.closest('[data-a-player-state]')?.setAttribute('data-recording-status', !hidden);
+            });
+
+        // Define stopping conditions
+        // HALT
+        let halted = new Promise((resolve, reject) => {
+            recorder.onstop =
+                event => resolve(event);
+
+            recorder.onerror =
+            signal.onabort =
+                event => reject(event);
+        });
+
+        // STOP
+        let stopped;
+
+        if(Number.isFinite(maxTime))
+            stopped = wait(maxTime, recorder).then(recorder => recorder.stop());
+        else
+            stopped = when(() => top.WINDOW_STATE == "unloading").then(unloading => recorder.stop());
+
+        // ABORT
+        let aborted = when(() => recorder.controller.signal.aborted).then(aborted => recorder.stop());
+
+        // Return the object
+        let self = Promise.anySettled([halted, stopped, aborted]);
+
+        Object.defineProperties(recorder, {
+            recording: { value: self },
+        });
+
+        Object.defineProperties(blobs, {
+            recording: { value: self },
+        });
+
+        Object.defineProperties(self, {
+            controller: { value: controller, configurable, writable, enumerable },
+
+            name: { value: name, configurable, writable },
+            as: { value: as, configurable, writable },
+
+            guid: { value: guid, configurable, writable },
+            uuid: { value: uuid, configurable, writable },
+            blobs: { value: blobs },
+            hidden: { value: hidden, configurable, writable },
+            source: { value: streamable, configurable, writable },
+            recorder: { value: recorder, configurable, writable },
+            creationTime: { value: +new Date, configurable, writable },
+
+            pause: {
+                value(resumeAfter = Infinity) {
+                    this.recorder.pause();
+
+                    if(Number.isFinite(resumeAfter))
+                        wait(resumeAfter, this.recorder).then(recorder => recorder.resume());
+
+                    return this;
+                },
+
+                configurable, writable
+            },
+
+            resume: {
+                value() {
+                    this.recorder.resume();
+
+                    return this;
+                },
+
+                configurable, writable
+            },
+
+            stop: {
+                value() {
+                    let recorder = this.recorder,
+                        source = this.source ?? recorder?.source,
+                        stream = this.stream ?? recorder?.stream,
+                        signal = this.controller?.signal;
+
+                    if(nullish(stream))
+                        throw `The stream is unavailable`;
+
+                    try {
+                        recorder.stop();
+
+                        for(let track of stream.getTracks())
+                            track.stop();
+                    } catch(error) {
+                        // MediaRecorder probably inactive
+                    }
+
+                    let active = false;
+                    for(let [guid, recorder] of Recording.__RECORDERS__)
+                        if(active ||= recorder.state.equals("recording"))
+                            break;
+
+                    source.closest('[data-a-player-state]')?.setAttribute('data-recording-status', active);
+
+                    if(signal.aborted)
+                        throw signal.reason;
+                    return this;
+                },
+
+                configurable, writable
+            },
+
+            save: {
+                value(as = new ClipName) {
+                    let recorder = this.recorder,
+                        source = recorder.source,
+                        blobs = this.blobs ?? recorder?.blobs;
+
+                    as = this.as ?? as;
+
+                    if(Recording.__LINKS__.has(this.guid))
+                        return Recording.__LINKS__.get(this.guid);
+
+                    let chunks = blobs ?? [];
+
+                    source.recorders.delete(this.name);
+                    source.recorders.set(`[[${ this.name }]]`, this);
+
+                    if(chunks.length < 1)
+                        throw `Unable to save clip. No recording data available.`;
+
+                    let blob = new Blob(chunks, { type: chunks[0].type });
+                    let link = furnish('a', { href: URL.createObjectURL(blob), download: [as, MIME_Types.find(source.mimeType)].join('.') }, as);
+
+                    link.click();
+
+                    Recording.__LINKS__.set(this.guid, link);
+
+                    return link;
+                },
+
+                configurable, writable
+            },
+        });
+
+        return self;
+    }
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
 // Records a video element
-    // HTMLVideoElement..startRecording(maxTime:number<integer>?, options:object<{ mimeType:string, audioBitsPerSecond:number<integer>, videoBitsPerSecond:number<integer>, bitsPerSecond:number<integer> }>) → Promise
-HTMLVideoElement.prototype.startRecording ??= function startRecording(maxTime = Infinity, options = { mimeType: 'video/webm;codecs=vp9' }) {
-    const configurable = false, writable = false, enumerable = false;
-    let name = (options?.key ?? 'DEFAULT_RECORDING'),
-        uuid = UUID.from(name).value,
-        { private = false } = options;
-
-    this.recorders ??= new Map;
-    this.blobs ??= new Map;
-    this.links ??= new Map;
-
-    if(this.recorders.has(uuid))
-        throw `There is already an active recording for "${ name }." You must delete the previous recording: <HTMLVideoElement>.removeRecording("${ name }")`;
-
-    for(let key of ['key', 'private'])
-        delete options[key];
-
-    let RECORDER = this.recorders.get(uuid) ?? new MediaRecorder(this.captureStream(), options),
-        BLOBS = new Array;
-
-    this.recorders.set(uuid, RECORDER);
-    this.blobs.set(uuid, BLOBS);
-
-    Object.defineProperties(RECORDER, {
-        name: { value: name, configurable, writable },
-        data: {
-            get() {
-                return this.blobs.slice(this.slice);
-            },
-
-            set(value) {
-                return this.blobs.slice(this.slice = value);
-            },
-        },
-
-        uuid: { value: uuid, configurable, writable },
-        blobs: { value: BLOBS },
-        slice: { value: BLOBS.length },
-        private: { value: private, configurable, writable },
-        creationTime: { value: +new Date, configurable, writable },
-    });
-
-    Object.defineProperties(BLOBS, {
-        source: { value: this, configurable, writable },
-        recordingLength: {
-            get() {
-                return (new Date) - this.creationTime;
-            },
-
-            set(value) {
-                return new Date(value) - this.creationTime;
-            },
-        },
-        creationTime: { value: +new Date, configurable, writable },
-    });
-
-    // Actually record the data...
-    RECORDER.ondataavailable = event => {
-        this.mimeType ??= RECORDER.mimeType;
-
-        this.blobs.get(event.target.uuid).push(event.data);
-    };
-    when(_ => _.videoTracks?.length, 100, this).then(() => RECORDER.start(1000));
-    // Chunks per second
-        // 1k → 1cps
-        // 42 → 24cps
-        // 33 → 30cps
-        // 17 → 60cps
-
-    this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', !private);
-
-    let halt = new Promise((resolve, reject) => {
-        RECORDER.onstop = resolve;
-        RECORDER.onerror = event => reject(event);
-    });
-
-    let stop;
-
-    if(Number.isFinite(maxTime))
-        stop = wait(maxTime).then(() => this.stopRecording());
-
-    return Promise.all([halt, stop]).then(() => BLOBS);
+    // HTMLVideoElement..startRecording(options:object?<{ name:string, maxTime:number<integer>, mimeType:string, audioBitsPerSecond:number<integer>, bitsPerSecond:number<integer>, chunksPerSecond:number<integer>, videoBitsPerSecond:number<integer> }>) → Promise
+HTMLVideoElement.prototype.startRecording ??= function startRecording(options = { name: 'DEFAULT_RECORDING', maxTime: Infinity, mimeType: 'video/webm;codecs=vp9', hidden: false, chunksPerSecond: 1 }) {
+    return new Recording(this, options);
 };
-
 
 // Gets a recording of a video element
     // HTMLVideoElement..getRecording(key:string?) → MediaRecorder
 HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDING') {
-    return this.recorders?.get(UUID.from(key).value);
+    this.recorders ??= new Map;
+
+    return this.recorders?.get(key);
 };
 
 // Determines if there is a recording of a video element
     // HTMLVideoElement..hasRecording(key:string?) → boolean
 HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDING') {
-    return this.recorders?.has(UUID.from(key).value);
+    this.recorders ??= new Map;
+
+    return this.recorders?.has(key);
 };
 
 // Removes a recording of a video element
     // HTMLVideoElement..removeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
-    this.recorders?.delete(UUID.from(key).value);
+    this.recorders ??= new Map;
+
+    this.recorders?.delete(key);
 
     return this;
 };
@@ -1873,11 +2175,8 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
 
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING') {
-    let recorder = this.getRecording(key);
-
-    if(defined(recorder))
-        recorder.slice = Infinity;
+HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING', reason = 'Canceled') {
+    this.getRecording(key)?.controller?.abort(reason);
 
     return this;
 };
@@ -1886,47 +2185,17 @@ HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'D
 // Stops recording a video element
     // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDING') {
-    let recorder = this.getRecording(key),
-        stream = recorder?.stream;
-
-    if(nullish(stream))
-        throw `There are no active recordings with the key "${ key }". You must create a recording: <HTMLVideoElement>.startRecording(maxTime:number?, options:object?)`;
-
-    try {
-        recorder.stop();
-        stream.getTracks().map(track => track.stop());
-    } catch(error) {
-        // MediaRecorder probably inactive
-    }
-
-    let isActive = false;
-    for(let [guid, recorder] of this.recorders)
-        if(isActive ||= (recorder.state == "recording"))
-            break;
-
-    this.closest('[data-a-player-state]')?.setAttribute('data-recording-status', isActive);
+    this.getRecording(key)?.stop();
 
     return this;
 };
 
 // Saves a video element recording
-    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLVideoElement
+    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement
 HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = new ClipName) {
     key ??= 'DEFAULT_RECORDING';
 
-    let chunks = this.getRecording(key)?.data ?? [];
-
-    if(chunks.length < 1)
-        throw `Unable to save clip. No recording data available.`;
-
-    let blob = new Blob(chunks, { type: chunks[0].type });
-    let link = furnish('a', { href: URL.createObjectURL(blob), download: `${ name }.${ top.MIME_Types.find(this.mimeType) }` }, name);
-
-    link.click();
-
-    this.links.set(key, link);
-
-    return this;
+    return this.getRecording(key)?.recording?.save(name);
 };
 
 // Returns the confidence level of the machine's ability to play the specified media type
@@ -1955,6 +2224,41 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
                 .finally(() => canvas?.remove())
         )
     );
+
+    return promise;
+};
+
+// Copies the current image to the clipboard
+    // HTMLImageElement..copy() → Promise<boolean>
+    // HTMLPictureElement..copy() → Promise<boolean>
+HTMLImageElement.prototype.copy =
+HTMLPictureElement.prototype.copy ??= function copy() {
+    let { naturalHeight, naturalWidth } = this;
+    let canvas = furnish('canvas', { height: naturalHeight, width: naturalWidth }),
+        context = canvas.getContext('2d');
+
+    let copy = new Image;
+
+    copy.crossOrigin = "anonymous";
+    copy.alt = this.alt;
+    copy.src = this.src;
+
+    let promise = new Promise((resolve, reject) => {
+        copy.addEventListener('load', event => {
+            context.drawImage(copy, 0, 0);
+
+            canvas.toBlob(blob =>
+                navigator.clipboard
+                    .write([ new ClipboardItem({ [blob?.type]: blob }) ])
+                    .then(resolve)
+                    .catch(reject)
+                    .finally(() => {
+                        copy?.remove();
+                        canvas?.remove();
+                    })
+            );
+        });
+    });
 
     return promise;
 };
@@ -2171,17 +2475,17 @@ Number.prototype.clamp ??= function clamp(min, max) {
 
 // Adds all Math prototypes to Numbers
     // Math... → Number...
-Number.prototype.Math = (parent => {
+Number['#Math'] = (parent => {
     let methods = Object.getOwnPropertyNames(parent);
 
     for(let method of methods) {
-        let func = parent[method];
+        let $ = parent[method];
 
-        if(typeof func != 'function')
+        if(typeof $ != 'function')
             continue;
 
-        Number.prototype[method] = function(...args) {
-            return func(this, ...args);
+        Number.prototype[method] = function(...parameters) {
+            return $(this, ...parameters);
         };
     }
 
@@ -2261,382 +2565,236 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
             );
 
             switch(string.toLowerCase().trim()) {
-                // alumnus / alumni
+                // alumnus → alumni
+                case 'alumni': /* "alumni" is the plural of "alumnus" */
                 case 'alumnus': {
                     string = toFormat('alumni', pattern);
                 } break;
 
-                case 'alumni': {
-                    // "alumni" is plural of "alumnus"
-                } break;
-
-                // appendix / appendicies
+                // appendix → appendicies
+                case 'appendicies': /* "appendicies" is the plural of "appendix" */
                 case 'appendix': {
                     string = toFormat('appendicies', pattern);
                 } break;
 
-                case 'appendicies': {
-                    // "appendicies" is plural of "appendix"
-                } break;
-
-                // ax | axe | axis / axes
+                // ax | axe | axis → axes
                 case 'ax':
                 case 'axe':
+                case 'axes': /* "axes" is the plural of "ax" , "axe", and "axis" */
                 case 'axis': {
                     string = toFormat('axes', pattern);
                 } break;
 
-                case 'axes': {
-                    // "axes" is plural of "ax", "axe", and "axis"
-                } break;
-
-                // bacterium / bacteria
+                // bacterium → bacteria
+                case 'bacteria': /* "bacteria" is the plural of "bacterium" */
                 case 'bacterium': {
                     string = toFormat('bacteria', pattern);
                 } break;
 
-                case 'bacteria': {
-                    // "bacteria" is plural of "bacterium"
-                } break;
-
-                // cactus / cacti
+                // cactus → cacti
+                case 'cacti': /* "cacti" is the plural of "cactus" */
                 case 'cactus': {
                     string = toFormat('cacti', pattern);
                 } break;
 
-                case 'cacti': {
-                    // "cacti" is plural of "cactus"
-                } break;
-
-                // calf / calves
+                // calf → calves
+                case 'calves': /* "calves" is the plural of "calf" */
                 case 'calf': {
                     string = toFormat('calves', pattern);
                 } break;
 
-                case 'calves': {
-                    // "calves" is plural of "calf"
-                } break;
-
-                // cello / celli
+                // cello → celli
+                case 'celli': /* "celli" is the plural of "cello" */
                 case 'cello': {
                     string = toFormat('celli', pattern);
                 } break;
 
-                case 'celli': {
-                    // "celli" is plural of "cello"
-                } break;
-
-                // child / children
+                // child → children
+                case 'children': /* "children" is the plural of "child" */
                 case 'child': {
                     string = toFormat('children', pattern);
                 } break;
 
-                case 'children': {
-                    // "children" is plural of "child"
-                } break;
-
-                // curriculum / curricula
+                // curriculum → curricula
+                case 'curricula': /* "curricula" is the plural of "curriculum" */
                 case 'curriculum': {
                     string = toFormat('curricula', pattern);
                 } break;
 
-                case 'curricula': {
-                    // "curricula" is plural of "curriculum"
-                } break;
-
-                // datum / data
+                // datum → data
+                case 'data': /* "data" is the plural of "datum" */
                 case 'datum': {
                     string = toFormat('data', pattern);
                 } break;
 
-                case 'data': {
-                    // "data" is plural of "datum"
-                } break;
-
-                // die / dice
+                // die → dice
+                case 'dice': /* "dice" is the plural of "die" */
                 case 'die': {
                     string = toFormat('dice', pattern);
                 } break;
 
-                case 'dice': {
-                    // "dice" is plural of "die"
-                } break;
-
-                // focus / foci
+                // focus → foci
+                case 'foci': /* "foci" is the plural of "focus" */
                 case 'focus': {
                     string = toFormat('foci', pattern);
                 } break;
 
-                case 'foci': {
-                    // "foci" is plural of "focus"
-                } break;
-
-                // foot / feet
+                // foot → feet
+                case 'feet': /* "feet" is the plural of "foot" */
                 case 'foot': {
                     string = toFormat('feet', pattern);
                 } break;
 
-                case 'feet': {
-                    // "feet" is plural of "foot"
-                } break;
-
-                // fez / fezzes
-                case 'fez': {
-                    string = toFormat('fezzes', pattern);
-                } break;
-
-                case 'fezzes': {
-                    // "fezzes" is plural of "fez"
-                } break;
-
-                // fungus / fungi
+                // fungus → fungi
+                case 'fungi': /* "fungi" is the plural of "fungus" */
                 case 'fungus': {
                     string = toFormat('fungi', pattern);
                 } break;
 
-                case 'fungi': {
-                    // "fungi" is plural of "fungus"
-                } break;
-
-                // gas / gasses
-                case 'gas': {
-                    string = toFormat('gasses', pattern);
-                } break;
-
-                case 'gasses': {
-                    // "gasses" is plural of "gas"
-                } break;
-
-                // goose / geese
+                // goose → geese
+                case 'geese': /* "geese" is the plural of "goose" */
                 case 'goose': {
                     string = toFormat('geese', pattern);
                 } break;
 
-                case 'geese': {
-                    // "geese" is plural of "goose"
+                // halo → halos
+                case 'halos': /* "halos" is the plural of "halo" */
+                case 'halo': {
+                    string = toFormat('halos', pattern);
                 } break;
 
-                // hero / heroes
-                case 'hero': {
-                    string = toFormat('heroes', pattern);
-                } break;
-
-                case 'heroes': {
-                    // "heroes" is plural of "hero"
-                } break;
-
-                // hippopotamus / hippopotami
+                // hippopotamus → hippopotami
+                case 'hippopotami': /* "hippopotami" is the plural of "hippopotamus" */
                 case 'hippopotamus': {
                     string = toFormat('hippopotami', pattern);
                 } break;
 
-                case 'hippopotami': {
-                    // "hippopotami" is plural of "hippopotamus"
-                } break;
-
-                // index / indices
+                // index → indices
+                case 'indices': /* "indices" is the plural of "index" */
                 case 'index': {
                     string = toFormat('indices', pattern);
                 } break;
 
-                case 'indices': {
-                    // "indices" is plural of "index"
-                } break;
-
-                // knife / knives
+                // knife → knives
+                case 'knives': /* "knives" is the plural of "knife" */
                 case 'knife': {
                     string = toFormat('knives', pattern);
                 } break;
 
-                case 'knives': {
-                    // "knives" is plural of "knife"
-                } break;
-
-                // leaf / leaves
+                // leaf → leaves
+                case 'leaves': /* "leaves" is the plural of "leaf" */
                 case 'leaf': {
                     string = toFormat('leaves', pattern);
                 } break;
 
-                case 'leaves': {
-                    // "leaves" is plural of "leaf"
-                } break;
-
-                // life / lives
+                // life → lives
+                case 'lives': /* "lives" is the plural of "life" */
                 case 'life': {
                     string = toFormat('lives', pattern);
                 } break;
 
-                case 'lives': {
-                    // "lives" is plural of "life"
-                } break;
-
-                // man / men
+                // man → men
+                case 'men': /* "men" is the plural of "man" */
                 case 'man': {
                     string = toFormat('men', pattern);
                 } break;
 
-                case 'men': {
-                    // "men" is plural of "man"
-                } break;
-
-                // memorandum / memoranda
+                // memorandum → memoranda
+                case 'memoranda': /* "memoranda" is the plural of "memorandum" */
                 case 'memorandum': {
                     string = toFormat('memoranda', pattern);
                 } break;
 
-                case 'memoranda': {
-                    // "memoranda" is plural of "memorandum"
-                } break;
-
-                // mouse / mice
+                // mouse → mice
+                case 'mice': /* "mice" is the plural of "mouse" */
                 case 'mouse': {
                     string = toFormat('mice', pattern);
                 } break;
 
-                case 'mice': {
-                    // "mice" is plural of "mouse"
-                } break;
-
-                // nucleus / nuclei
+                // nucleus → nuclei
+                case 'nuclei': /* "nuclei" is the plural of "nucleus" */
                 case 'nucleus': {
                     string = toFormat('nuclei', pattern);
                 } break;
 
-                case 'nuclei': {
-                    // "nuclei" is plural of "nucleus"
-                } break;
-
-                // octopus / octopi
+                // octopus → octopi (informal)
+                case 'octopi': /* "octopi" is the plural of "octopus" */
                 case 'octopus': {
                     string = toFormat('octopi', pattern);
                 } break;
 
-                case 'octopi': {
-                    // "octopi" is plural of "octopus"
-                } break;
-
-                // ox / oxen
+                // ox → oxen
+                case 'oxen': /* "oxen" is the plural of "ox" */
                 case 'ox': {
                     string = toFormat('oxen', pattern);
                 } break;
 
-                case 'oxen': {
-                    // "oxen" is plural of "ox"
-                } break;
-
-                // person / people
+                // person → people
+                case 'people': /* "people" is the plural of "person" */
                 case 'person': {
                     string = toFormat('people', pattern);
                 } break;
 
-                case 'people': {
-                    // "people" is plural of "person"
+                // photo → photos
+                case 'photos': /* "photos" is the plural of "photo" */
+                case 'photo': {
+                    string = toFormat('photos', pattern);
                 } break;
 
-                // potato / potatoes
-                case 'potato': {
-                    string = toFormat('potatoes', pattern);
+                // piano → pianos
+                case 'pianos': /* "pianos" is the plural of "piano" */
+                case 'piano': {
+                    string = toFormat('pianos', pattern);
                 } break;
 
-                case 'potatoes': {
-                    // "potatoes" is plural of "potato"
-                } break;
-
-                // radius / radii
+                // radius → radii
+                case 'radii': /* "radii" is the plural of "radius" */
                 case 'radius': {
                     string = toFormat('radii', pattern);
                 } break;
 
-                case 'radii': {
-                    // "radii" is plural of "radius"
-                } break;
-
-                // stratum / strata
+                // stratum → strata
+                case 'strata': /* "strata" is the plural of "stratum" */
                 case 'stratum': {
                     string = toFormat('strata', pattern);
                 } break;
 
-                case 'strata': {
-                    // "strata" is plural of "stratum"
-                } break;
-
-                // tomato / tomatoes
-                case 'tomato': {
-                    string = toFormat('tomatoes', pattern);
-                } break;
-
-                case 'tomatoes': {
-                    // "tomatoes" is plural of "tomato"
-                } break;
-
-                // tooth / teeth
+                // tooth → teeth
+                case 'teeth': /* "teeth" is the plural of "tooth" */
                 case 'tooth': {
                     string = toFormat('teeth', pattern);
                 } break;
 
-                case 'teeth': {
-                    // "teeth" is plural of "tooth"
-                } break;
-
-                // torpedo / torpedoes
-                case 'torpedo': {
-                    string = toFormat('torpedoes', pattern);
-                } break;
-
-                case 'torpedoes': {
-                    // "torpedoes" is plural of "torpedo"
-                } break;
-
-                // veto / vetoes
-                case 'veto': {
-                    string = toFormat('vetoes', pattern);
-                } break;
-
-                case 'vetoes': {
-                    // "vetoes" is plural of "veto"
-                } break;
-
-                // vortex / vortices
+                // vortex → vortices
+                case 'vortices': /* "vortices" is the plural of "vortex" */
                 case 'vortex': {
                     string = toFormat('vortices', pattern);
                 } break;
 
-                case 'vortices': {
-                    // "vortices" is plural of "vortex"
-                } break;
-
-                // wife / wives
+                // wife → wives
+                case 'wives': /* "wives" is the plural of "wife" */
                 case 'wife': {
                     string = toFormat('wives', pattern);
                 } break;
 
-                case 'wives': {
-                    // "wives" is plural of "wife"
-                } break;
-
-                // wolf / wolves
+                // wolf → wolves
+                case 'wolves': /* "wolves" is the plural of "wolf" */
                 case 'wolf': {
                     string = toFormat('wolves', pattern);
                 } break;
 
-                case 'wolves': {
-                    // "wolves" is plural of "wolf"
-                } break;
-
-                // woman / women
+                // woman → women
+                case 'women': /* "women" is the plural of "woman" */
                 case 'woman': {
                     string = toFormat('women', pattern);
-                } break;
-
-                case 'women': {
-                    // "women" is plural of "woman"
                 } break;
 
                 // No change
                 case 'aircraft':
                 case 'buffalo':
                 case 'deer':
-                case 'fish':
+                case 'fish':    // fish → fish (multiple fish, single type: mono-plural)
+                case 'fishes':  // fish → fishes (multiple fish, multiple types: multi-plural)
                 case 'hovercraft':
                 case 'moose':
                 case 'series':
@@ -2653,8 +2811,11 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
                 // "Normal" operations
                 default: {
                     // "lunch" → "lunches"
-                    if(/([cs]h|[sxz])$/i.test(string))
+                    if(/([cs]h|[osxz])$/i.test(string))
                         string += toFormat('es', pattern);
+                    // "bus" → "busses"
+                    else if(/([^aeiou][aeiou])([sz])$/i.test(string))
+                        string += RegExp.$2 + toFormat('es', pattern);
                     // "ellipsis" → "ellipses"
                     else if(/(is)$/i.test(string))
                         string = string.replace(RegExp.$1, toFormat('es', pattern));
@@ -2682,7 +2843,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
  *
  */
 // Returns if an item is of an object class
-    // isObj(object:any, ...or<Function>?) → boolean
+    // isObj(object:any, ...or?<Function>) → boolean
 function isObj(object, ...or) {
     return defined(
         [Object, Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array, ...or]
@@ -2733,7 +2894,11 @@ function toFormat(string, patterns) {
                 } break;
 
                 case 'padded': {
-                    string = string.replace(/([\s\.\-\+])+/g, ' $1 ').replace(/^\s+|\s+$/g, '');
+                    string = string.replace(/([\s\.\-\+])+/g, ' $1 ').trim();
+                } break;
+
+                default: {
+                    string = string.join('');
                 } break;
             }
     else
@@ -2768,7 +2933,7 @@ function toFormat(string, patterns) {
                 } break;
 
                 case 'padded': {
-                    string = string.replace(/([^\w\s])+/g, ' $1 ').replace(/^\s+|\s+$/g, '');
+                    string = string.replace(/([^\w\s])+/g, ' $1 ').trim();
                 } break;
             }
 
@@ -2789,7 +2954,7 @@ function GetOS(is = null) {
         'NT 6.0': 'Win Vista',
         'NT 5.1': 'Win XP',
         'NT 5.0': 'Win 2000',
-        'Mac': 'Mac',
+        'Mac': 'Macintosh',
         'X11': 'UNIX',
         'Linux': 'Linux',
     };
@@ -2801,6 +2966,22 @@ function GetOS(is = null) {
 
     return (defined(is)? os.toLowerCase().startsWith(is.toLowerCase()): os);
 }
+
+Object.defineProperties(GetOS, {
+    MAC: { value: 'Macintosh' },
+
+    X11: { value: 'Unix' },
+    UNIX: { value: 'Unix' },
+
+    WIN_11: { value: 'Windows 11' },
+    WIN_10: { value: 'Windows 10' },
+    WIN_8_1: { value: 'Windows 8.1' },
+    WIN_8: { value: 'Windows 8' },
+    WIN_7: { value: 'Windows 7' },
+    WIN_VISTA: { value: 'Windows Vista' },
+    WIN_XP: { value: 'Windows XP' },
+    WIN_2000: { value: 'Windows 2000' },
+});
 
 // Returns the assumed key combination
     // GetMacro(keys:string, OS:string?) → string
@@ -2847,7 +3028,7 @@ function GetMacro(keys = '', OS = null) {
         .sort((keyA, keyB) => {
             let map;
             switch(OS) {
-                case 'Mac': {
+                case GetOS.MAC: {
                     map = 'ctrl opt shift cmd'.split(' ');
                 } break;
 
@@ -2882,8 +3063,10 @@ function GetMacro(keys = '', OS = null) {
                  * Num Lock             ⇭
                  * Scroll Lock          ⤓
                  */
-                case 'Mac': {
+                case GetOS.MAC: {
                     return (
+                        // /^(Ctrl|Control)$/i.test(key)?
+                        //     '^':
                         /^(Esc)$/i.test(key)?
                             '\u238B':
                         /^(Tab)$/i.test(key)?
@@ -2902,7 +3085,7 @@ function GetMacro(keys = '', OS = null) {
                             '\u2913':
                         /^(Win|Meta)$/i.test(key)?
                             '\u2318':
-                        /^(Alt)$/i.test(key)?
+                        /^(Alt|Opt(?:ion)?)$/i.test(key)?
                             '\u2325':
                         /^(Shift)$/i.test(key)?
                             '\u21e7':
@@ -2929,6 +3112,8 @@ function GetMacro(keys = '', OS = null) {
                  */
                 default: {
                     return (
+                        /^(Ctrl|Control)$/i.test(key)?
+                            'Ctrl':
                         /^(Esc|\u238B)$/i.test(key)?
                             'Esc':
                         /^(Tab|\u21B9)$/i.test(key)?
@@ -2945,9 +3130,9 @@ function GetMacro(keys = '', OS = null) {
                             'Backspace':
                         /^(ScrollLock|\u2913)$/i.test(key)?
                             'ScrLk':
-                        /^(Cmd|\u2318)$/i.test(key)?
+                        /^(Cmd|Win|Meta|\u2318)$/i.test(key)?
                             'Win':
-                        /^(Alt|\u2325)$/i.test(key)?
+                        /^(Alt|Opt(?:ion)?|\u2325)$/i.test(key)?
                             'Alt':
                         /^(Shift|\u21e7)$/i.test(key)?
                             'Shift':
@@ -2960,6 +3145,43 @@ function GetMacro(keys = '', OS = null) {
         });
 
     return toFormat(keys, pattern);
+}
+
+// Returns particulars about an OS' filesystem
+    // GetFileSystem(OS:string?) → object
+function GetFileSystem(OS = null) {
+    OS ??= GetOS();
+
+    let acceptableFilenames, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter;
+
+    switch(OS) {
+        case GetOS.MAC: {
+            acceptableFilenames = /[^\x00-\x1f:]/;
+            illegalFilenameCharacters = /[\x00-\x1f:]/;
+            allIllegalFilenameCharacters = /[\x00-\x1f:]+/g;
+            directorySeperator = '/';
+            lineDelimeter = '\r';
+        } break;
+
+        case GetOS.LINUX:
+        case GetOS.UNIX: {
+            acceptableFilenames = /[^\0\/]/;
+            illegalFilenameCharacters = /[\0\/]/;
+            allIllegalFilenameCharacters = /[\0\/]+/g;
+            directorySeperator = '/';
+            lineDelimeter = '\n';
+        } break;
+
+        default: {
+            acceptableFilenames = /^(?!(^|PRN|AUX|CLOCK\$|NUL|CON|(COM|LPT)[1-9])(\..*)?$)[^\x00-\x1f\\?*:";\|\/]+$/;
+            illegalFilenameCharacters = /[\x00-\x1f\\?*:";\|\/]/;
+            allIllegalFilenameCharacters = /[\x00-\x1f\\?*:";\|\/]+/g;
+            directorySeperator = '\\';
+            lineDelimeter = '\r\n';
+        } break;
+    }
+
+    return { acceptableFilenames, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter };
 }
 
 // Logs messages (green)

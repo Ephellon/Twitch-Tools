@@ -5,7 +5,7 @@
     "description": "__MSG_description__",
     "default_locale": "en",
 
-    "version": "5.32.6",
+    "version": "5.32.7",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -120,7 +120,7 @@
     ],
 
     "web_accessible_resources": [{
-        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "_locales/*/*.json"],
+        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "font/*.*", "_locales/*/*.json"],
         "matches": [
             "*://player.twitch.tv/*",
             "*://www.twitch.tv/*",

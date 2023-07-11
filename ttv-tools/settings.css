@@ -40,6 +40,12 @@
 }
 
 @font-face {
+    font-family: "04b03";
+    font-weight: normal;
+    src: url("/font/04b03.woff2") format("woff2");
+}
+
+@font-face {
     font-family: Inter;
     font-style: normal;
     font-weight: normal;
@@ -94,6 +100,7 @@
     --baby-gold: #f59b00;
     --baby-grey: #9b9b9b;
     --baby-gray: var(--baby-grey);
+    --help-blue: #00a6ed;
     --igor-pink: #ff9ab4;
 
     --purple: #9147ff;
@@ -641,6 +648,18 @@ summary::after, [subtitle]::after {
 
 summary + *:last-child {
     padding: 1rem 1rem 0;
+}
+
+summary ~ [sect] {
+    padding-left: .5rem;
+}
+
+summary ~ [sect]:not(:first-child) {
+    margin-top: .5rem;
+}
+
+[sect]:not(:last-child) {
+    border-bottom: 1px solid var(--color-twitch-purple);
 }
 
 summary + * > [opt]:not(:first-child) {
@@ -1375,6 +1394,11 @@ input[disabled][type="range"i] {
     fill: var(--baby-blue)!important;
 }
 
+[help], [help] svg {
+    color: var(--help-blue)!important;
+    fill: var(--help-blue)!important;
+}
+
 [gold], [gold] svg {
     color: var(--gold)!important;
     fill: var(--gold)!important;
@@ -1748,7 +1772,7 @@ body.popup {
     display: none;
 }
 
-.popup #save {
+.popup #save, #help {
     border-radius: 100%;
 
     padding: 1.5rem;
@@ -1779,6 +1803,26 @@ body.popup {
 
     height: .4rem;
     width: 1rem;
+}
+
+#help {
+    background-color: var(--help-blue);
+
+    left: 0;
+}
+
+#help::before {
+    content: attr(glyph);
+    display: block;
+    font-size: 2rem;
+
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(0%, 0%);
+
+    height: -webkit-fill-available;
+    width: -webkit-fill-available;
 }
 
 /* From Twitch */

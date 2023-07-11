@@ -707,7 +707,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         class: 'tt-scrollbar-area',
                         style: 'max-height: 15rem; overflow: hidden scroll; display: flex; flex-wrap: wrap;',
                     },
-                    ...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE)
+                    ...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE)
                 )
             )
         );
@@ -751,7 +751,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 for(let [name, src] of BTTV_EMOTES)
                     BTTVEmotes.push({ name, src });
 
-                container.append(...BTTVEmotes.map(CONVERT_TO_BTTV_EMOTE));
+                container.append(...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE));
             })
             .then(() => {
                 REMARK("Adding BTTV emote event listener...");
@@ -2249,29 +2249,73 @@ let Chat__Initialize = async(START_OVER = false) => {
     let SimplifyChatIndexToggle = 0;
 
     Handlers.simplify_chat = () => {
-        AddCustomCSSBlock_Chat('SimplifyChat', `.tt-visible-message-even { background-color: #8882 }`);
-
         if(parseBool(Settings.simplify_chat_monotone_usernames))
             AddCustomCSSBlock_Chat('SimplifyChatMonotoneUsernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
 
-        if(parseBool(Settings.simplify_chat_font))
+        if(parseBool(Settings.simplify_chat_font)) {
+            let src = Runtime.getURL('/font');
+
             AddCustomCSSBlock_Chat('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
+
+            AddCustomCSSBlock_Chat('SimplifyChatFont_Head', `
+            @font-face {
+                font-family: Roobert;
+                font-weight: normal;
+                src: url("${ src }/Roobert.woff2") format("woff2");
+            }
+
+            @font-face {
+                font-family: Roobert;
+                font-weight: bold;
+                src: url("${ src }/Roobert-Bold.woff2") format("woff2");
+            }
+
+            @font-face {
+                font-family: Dyslexie;
+                font-weight: 100 400;
+                src: url("${ src }/Dyslexie-Regular.woff") format("woff");
+            }
+
+            @font-face {
+                font-family: Dyslexie;
+                font-weight: 500 900;
+                src: url("${ src }/Dyslexie-Bold.woff") format("woff");
+            }
+
+            @font-face {
+                font-family: "04b03";
+                font-weight: normal;
+                src: url("${ src }/04b03.woff2") format("woff2");
+            }
+
+            @font-face {
+                font-family: Inter;
+                font-style: normal;
+                font-weight: normal;
+                src: url("${ src }/Inter.woff") format("woff");
+                unicode-range:
+                    U+00??, U+0131, U+0152-0153, U+02bb-02bc, U+02c6, U+02da, U+02dc, U+2000-206f,
+                    U+2074, U+20ac, U+2122, U+2191, U+2193, U+2212, U+2215, U+feff, U+fffd;
+            }
+            `);
+        }
+
+        if(parseBool(Settings.simplify_chat))
+            AddCustomCSSBlock_Chat('SimplifyChat', `.tt-visible-message-even { background-color: #8882 }`);
 
         Chat.get().map(Chat.defer.onmessage = async line => {
             let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
 
-            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
-                let element = line.element;
-                let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
+            let element = await line.element;
+            let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
 
-                if(keep) {
-                    element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
+            if(keep) {
+                element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
 
-                    allNodes(element)
-                        .filter(node => /\btext\b/i.test(node.nodeName))
-                        .map(text => text.nodeValue = text.nodeValue.normalize('NFKD'));
-                }
-            });
+                allNodes(element)
+                    .filter(node => node.nodeName.equals('text'))
+                    .map(text => text.nodeValue = text.nodeValue.normalize('NFKD'));
+            }
         });
     };
     Timers.simplify_chat = -250;
@@ -2281,7 +2325,8 @@ let Chat__Initialize = async(START_OVER = false) => {
     };
 
     __SimplifyChat__:
-    if(parseBool(Settings.simplify_chat)) {
+    // Always enabled
+    if(true) {
         REMARK("Applying readability settings...");
 
         RegisterJob('simplify_chat');
@@ -3126,13 +3171,12 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Adjust the tiemr dynamically...
         setInterval(() => {
-            let desired = (0
-                    || (500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0))
-                    || Timers.recover_messages
-                ).floorToNearest(100),
-                actual = Timers.recover_messages,
-                min = Math.min(desired, actual),
-                max = Math.max(desired, actual);
+            let actual = Timers.recover_messages,
+                desired = Math.max(0
+                    , actual
+                    , (500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0))
+                ).floorToNearest(100).clamp(1e3, 10e3),
+                [min, max] = [desired, actual].sort();
 
             // The timer has deviated by more than 15%
             if((min / max) < .85) {
@@ -3692,10 +3736,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 for(let [name, callback] of Chat.__onbullet__)
                                     callback(results);
 
-                                wait(100, results).then(async results => {
-                                    for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
-                                        callback(results);
-                                });
+                                for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
+                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // The channel is hosting...
@@ -3722,10 +3764,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     for(let [name, callback] of Chat.__oncommand__)
                                         callback(results);
 
-                                    wait(100, results).then(async results => {
-                                        for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
-                                            callback(results);
-                                    });
+                                    for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
+                                        when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
 
                                     continue;
                                 }
@@ -3817,14 +3857,11 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 Chat.__allmessages__.set(uuid, results);
 
-
                                 for(let [name, callback] of Chat.__onmessage__)
                                     callback(results);
 
-                                wait(100, results).then(async results => {
-                                    for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                        callback(results);
-                                });
+                                for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // Got a whisper
@@ -3834,10 +3871,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 for(let [name, callback] of Chat.__onwhisper__)
                                     callback(results);
 
-                                wait(100, results).then(async results => {
-                                    for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                        callback(results);
-                                });
+                                for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
+                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             default: continue;
@@ -3945,10 +3980,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             for(let [name, callback] of Chat.__onmessage__)
                                 when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-                            wait(100, results).then(async results => {
-                                for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                    when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-                            });
+                            for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
+                                when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
                         }
                     });
         }
@@ -4117,16 +4150,14 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             for(let [name, callback] of Chat.__onpinned__)
                 when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
-            wait(100, results).then(async results => {
-                for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
-                    when(() => PAGE_IS_READY, 1000).then(() => callback(results));
-            });
+            for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
+                when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
 
             when(() => $.nullish('[class*="pinned"i][class*="by"i]'))
                 .then(() => when.defined(() => $('[class*="pinned"i][class*="by"i]')).then(PinnedMessageHandler));
         };
 
-        // #TODO: fix this; it's the time the page waits (5s) + time the function starts (2.5s)
+        // FIX-ME: it's the time the page waits (5s) + time the function starts (2.5s)
         when.defined(() => $('[class*="pinned"i][class*="by"i]'), 8_000).then(PinnedMessageHandler);
     }
 }, 500);

@@ -539,19 +539,31 @@
         <header tr-id='header:chat-and-messaging' subtitle='These settings do not apply to banned channels unless otherwise noted.'>Chat &amp; Messaging</header>
         <article>
             <!-- Accessible Chat → accent,act,array,chatter,colors,conversation,demonstration,display,emphasis,example,exhibit,font,fount,gossip,homogeneous,inflection,inflexible,monotone,orderly,parade,presentation,reliable,resonance,rigid,strength,systematic,timbre,tones,uniform -->
-            <section new='3.1'>
-                <div class=title tr-id=simplify-chat><span large gold glyph=accessible></span> Accessible Chat</div>
+            <section new='5.32.7' id=accessibility>
+                <div class=title tr-id=simplify-chat><span large help glyph=accessible></span> Accessibility</div>
                 <div class=summary>
-                    <div class=toggle>
-                        <input id=simplify_chat type=checkbox>
-                        <label for=simplify_chat></label>
-                    </div>
                     <p tr-id>
-                        Display the chat dual-toned to make it easier to read.
+                        Make Twitch&trade; easier to navigate and use.
                     </p>
                     <details>
-                        <summary tr-id=options subtitle='Adjust options for &quot;Accessible Chat&quot;'>Options</summary>
-                        <div>
+                        <summary tr-id=options subtitle='Adjust accessibility options'>Options</summary>
+
+                        <div sect>
+                            <h2><span small gold glyph=chat></span> Chat</h2>
+
+                            <div opt>
+                                <div class=title tr-id='simplify-chat:options'>Dual-tone Chat</div>
+                                <div class=summary>
+                                    <div class=toggle>
+                                        <input id=simplify_chat type=checkbox>
+                                        <label for=simplify_chat></label>
+                                    </div>
+                                    <p tr-id>
+                                        Display the chat dual-toned to make it easier to read.
+                                    </p>
+                                </div>
+                            </div>
+
                             <div opt>
                                 <div class=title tr-id='simplify-chat:options'>Monotone Usernames</div>
                                 <div class=summary>
@@ -582,6 +594,8 @@
                                         <option value=System-UI style='font-family:System-UI!important'>System-UI → TWITCH.tv™</option>
                                         <option value=Tahoma style='font-family:Tahoma!important'>Tahoma → TWITCH.tv™</option>
                                         <option value=Verdana style='font-family:Verdana!important'>Verdana → TWITCH.tv™</option>
+                                        <option value=Inter style='font-family:Inter!important'>Inter → TWITCH.tv™</option>
+                                        <option value=04b03 style='font-family:"04b03"!important'>04b03 → TWITCH.tv™</option>
                                     </select>
                                 </div>
                             </div>
@@ -595,6 +609,24 @@
                                     </div>
                                     <p tr-id>
                                         Convert emotes back into their text, and display the emote (as a <code>tooltip</code>) only when <code>hovering</code> the text.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div sect>
+                            <h2><span small gold glyph=video></span> Display</h2>
+
+                            <div opt>
+                                <div class=title tr-id='simplify-look:options'>Marquee Long Text</div>
+
+                                <div class=summary>
+                                    <div class=toggle>
+                                        <input id=simplify_look_auto_marquee type=checkbox>
+                                        <label for=simplify_look_auto_marquee></label>
+                                    </div>
+                                    <p tr-id>
+                                        Text that extends beyond a container's display will be turned into a marquee.
                                     </p>
                                 </div>
                             </div>
@@ -686,7 +718,7 @@
             </section>
 
             <!-- Command Handling → -->
-            <!-- TODO →
+            <!-- TODO: Add a chat command handler →
             <section new='5.32'>
                 <div class=title><span small gold glyph=thread></span> Chat Commands</div>
                 <div class=summary>
@@ -918,7 +950,7 @@
                 <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurking Message</div>
                 <div class=summary>
                     <p tr-id>
-                        For channels where you own a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide'>special badge</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                        For channels where you own a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>special badge</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
                     </p>
                     <p>
                         The badge level that should send the message:
@@ -2153,6 +2185,7 @@
         <div id=context-id set='content=context.id;style→text-decoration:2px dotted underline #\context.id::int@16?8'></div>
 
         <button id=save class=ripple></button>
+        <button id=help class=ripple set='glyph=Glyphs.utf8.accessible'></button>
 
         <script src='ext/localforage.js'></script>
         <script src='ext/polyfill.js'></script>

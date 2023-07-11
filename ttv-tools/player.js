@@ -103,7 +103,7 @@ let Player__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_accept_mature = () => {
-        $.all('[data-a-target="player-overlay-mature-accept"i], [data-a-target*="watchparty"i] button, .home [data-a-target^="home"i], [data-test-selector*="mute"i][data-test-selector*="dismiss"i]')
+        $.all(':is([data-a-target*="overlay"i], [data-a-target*="watchparty"i]) button, .home [data-a-target^="home"i], [data-test-selector*="mute"i][data-test-selector*="dismiss"i]')
             .map(button => button.click());
     };
     Timers.auto_accept_mature = -1_000;

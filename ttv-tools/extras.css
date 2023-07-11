@@ -67,7 +67,7 @@ caption {
 
 .tt-live, .tt-offline {
     background-color: #e91916;
-    /* border: 2px solid #0e0e0f; */
+    --border: 2px solid #0e0e0f;
     border-radius: 4px;
     color: #fff;
     display: inline-block;
@@ -320,7 +320,7 @@ caption {
 }
 
 .tt-tooltip::after {
-    /* background-color: var(--color-background-tooltip); */
+    --background-color: var(--color-background-tooltip);
 
     transform: rotate(45deg);
     z-index: -1;
@@ -686,7 +686,7 @@ caption {
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-confirm-container,
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-prompt-container,
 .tt-silent:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) .tt-select-container {
-    /* border: 1px solid var(--user-contrast-color); */
+    --border: 1px solid var(--user-contrast-color);
 
     --current-border-color: var(--user-contrast-color);
 
@@ -817,7 +817,7 @@ caption {
 
 .tt-timed.tt-veiled:is(.tt-alert, .tt-confirm, .tt-prompt, .tt-select) :is(.tt-alert-container, .tt-confirm-container, .tt-prompt-container, .tt-select-container)::before {
     content: attr(tt-time-left);
-    /* content: "\23F1"; */
+    --content: "\23F1";
 
     animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) infinite 37s;
 }
@@ -1174,7 +1174,7 @@ caption {
 }
 
 [data-resurrected="true"i]:not(:hover) {
-    /* text-decoration: line-through; */
+    --text-decoration: line-through;
 }
 
 /* "Buy on {store}" */

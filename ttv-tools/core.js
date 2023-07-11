@@ -18,34 +18,35 @@
     // UUID.cyrb53(string:string, seed:number?) → string
     // UUID.ergo(key:string?) → <async>string
     // UUID.from(string:string, traceable:boolean?) → object
-    // UUID.prototype.toString() → string
+    // UUID..toString() → string
 class UUID {
     static #BWT_SEED = new UUID()
 
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
-        this.native = this.value = native;
+        return Object.assign(this, {
+            native,
+            value: native,
 
-        this[Symbol.toPrimitive] = type => {
-            switch(type) {
-                case 'boolean':
-                    return true;
+            [Symbol.toPrimitive](type) {
+                switch(type) {
+                    case 'boolean':
+                        return true;
 
-                case 'bigint':
-                case 'number':
-                    return NaN;
+                    case 'bigint':
+                    case 'number':
+                        return NaN;
 
-                case 'default':
-                case 'object':
-                case 'string':
-                case 'symbol':
-                default:
-                    return native;
-            }
-        };
-
-        return this;
+                    case 'default':
+                    case 'object':
+                    case 'string':
+                    case 'symbol':
+                    default:
+                        return this.native;
+                }
+            },
+        });
 	}
 
     toString() {
@@ -124,30 +125,10 @@ class UUID {
 
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
 
-        this.native = this.value = native;
-
-        this[Symbol.toPrimitive] = type => {
-            switch(type) {
-                case 'boolean':
-                    return true;
-
-                case 'bigint':
-                case 'number':
-                    return NaN;
-
-                case 'default':
-                case 'object':
-                case 'string':
-                case 'symbol':
-                default:
-                    return this.native;
-            }
-        };
-
-        this.toString = () => this.native;
-        this.toStamp = () => UUID.prototype.toStamp.apply(this);
-
-        return this;
+        return Object.assign(new UUID, {
+            native,
+            value: native,
+        });
     }
 
     static async ergo(key = '') {
@@ -378,7 +359,7 @@ class LZW {
 };
 
 // Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element, text:string?, fineTuning:object<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>?) → Element<Tooltip>
+    // new Tooltip(parent:Element, text:string?, fineTuning:object?<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>) → Element<Tooltip>
     // Tooltip.get(parent:Element) → Element<Tooltip>
 class Tooltip {
     static #TOOLTIPS = new Map()
@@ -401,7 +382,7 @@ class Tooltip {
         let uuid;
         let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
-        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(true)).value];
+        let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(-1)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
             value = values[index];
             uuid = value + (['', ':tooltip'][index] || '');
@@ -567,7 +548,7 @@ Object.defineProperties($, {
 // Returns whether a value is nullish or not
     // nullish(value:any?) → boolean
 function nullish(value) {
-    return value === undefined || value === null || value instanceof Promise;
+    return value === undefined || value === null || value instanceof Promise || Number.isNaN(value);
 }
 
 // Returns whether a value is nullish or not
@@ -577,7 +558,7 @@ function defined(value) {
 }
 
 // Makes a Promised setInterval
-    // when(callback:function<boolean>, ms:number<integer>?, ...args<any>) → Promise<any>
+    // when(callback:function<boolean>, ms:number?<integer>, ...args<any>) → Promise<any>
 async function when(callback, ms = 100, ...args) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async args => {
@@ -593,7 +574,7 @@ async function when(callback, ms = 100, ...args) {
                     value
                 );
             }
-        }, ms, Array.from(args));
+        }, ms, [].concat(args));
     });
 }
 
@@ -606,11 +587,37 @@ try {
         "void": { value: Symbol(void undefined) },
         "undefined": { value: Symbol(undefined) },
 
+        "pipe": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
+                // when.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    return when(callback, ms, ...args).then(resolve.call(null, args));
+                });
+            },
+        },
+
+        "thru": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, calling them to only the resolver
+                // when.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    return when(callback, ms).then(resolve.call(null, args));
+                });
+            },
+        },
+
         "defined": {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.defined(callback:function<any>, ms:number<integer>?) → Promise<any>
+                // when.defined(callback:function<any>, ms:number?<integer>) → Promise<any>
             async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -628,7 +635,7 @@ try {
                                 value
                             );
                         }
-                    }, ms, Array.from(args));
+                    }, ms, [].concat(args));
                 });
             },
         },
@@ -637,7 +644,7 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.nullish(callback:function<any>, ms:number<integer>?) → Promise<any>
+                // when.nullish(callback:function<any>, ms:number?<integer>) → Promise<any>
             async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -647,7 +654,7 @@ try {
                             clearInterval(interval);
                             resolve(value);
                         }
-                    }, ms, Array.from(args));
+                    }, ms, [].concat(args));
                 });
             },
         },
@@ -656,7 +663,7 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.empty(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
+                // when.empty(callback:function<@@iterable>, ms:number?<integer>) → Promise<any>
             async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -666,7 +673,7 @@ try {
                             clearInterval(interval);
                             resolve(array);
                         }
-                    }, ms, Array.from(args));
+                    }, ms, [].concat(args));
                 });
             },
         },
@@ -675,7 +682,7 @@ try {
             value:
             // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.sated(callback:function<@@iterable>, ms:number<integer>?) → Promise<any>
+                // when.sated(callback:function<@@iterable>, ms:number?<integer>) → Promise<any>
             async function(callback, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
@@ -685,7 +692,119 @@ try {
                             clearInterval(interval);
                             resolve(array);
                         }
-                    }, ms, Array.from(args));
+                    }, ms, [].concat(args));
+                });
+            },
+        },
+    });
+
+    Object.defineProperties(when.defined, {
+        "pipe": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
+                // when.defined.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.defined(callback, ms, ...args).then(resolve.call(null, args));
+                });
+            },
+        },
+
+        "thru": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+                // when.defined.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.defined(callback, ms).then(resolve.call(null, args));
+                });
+            },
+        },
+    });
+
+    Object.defineProperties(when.nullish, {
+        "pipe": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
+                // when.nullish.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.nullish(callback, ms, ...args).then(resolve.call(null, args));
+                });
+            },
+        },
+
+        "thru": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+                // when.nullish.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.nullish(callback, ms).then(resolve.call(null, args));
+                });
+            },
+        },
+    });
+
+    Object.defineProperties(when.empty, {
+        "pipe": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
+                // when.empty.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.empty(callback, ms, ...args).then(resolve.call(null, args));
+                });
+            },
+        },
+
+        "thru": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+                // when.empty.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.empty(callback, ms).then(resolve.call(null, args));
+                });
+            },
+        },
+    });
+
+    Object.defineProperties(when.sated, {
+        "pipe": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
+                // when.sated.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.sated(callback, ms, ...args).then(resolve.call(null, args));
+                });
+            },
+        },
+
+        "thru": {
+            value:
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+                // when.sated.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
+            async function(callback, ms = 100, ...args) {
+                args = [].concat(args);
+
+                return new Promise((resolve, reject) => {
+                    when.sated(callback, ms).then(resolve.call(null, args));
                 });
             },
         },
@@ -703,7 +822,7 @@ function wait(delay = 100, value) {
 
 // https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
 // Delay callbacks until the user is done...
-    // delay(fn:function, ms:number<integer>?, ...args:<any>) → Function
+    // delay(fn:function, ms:number?<integer>, ...args:<any>) → Function
 function delay(fn, ms = 0, ...args) {
     let timer = -1;
     return function(...args) {
@@ -716,16 +835,14 @@ function delay(fn, ms = 0, ...args) {
 // Fetches resources with automatic CORS-sense
     // fetchURL(url:string<URL>, options:object?) → Promise<fetch>
 function fetchURL(url, options = {}) {
-    let empty = {};
+    let empty = Promise.resolve({});
     let { timeout = 0, native = false } = options;
-
-    empty.then = empty.catch = empty.finally = (function() { return this }).bind(empty);
 
     if(!url?.length)
         return empty;
 
     let unknown = Symbol('UNKNOWN');
-    let { href, domainPath = [], host, protocol } = parseURL(url);
+    let { href, domainPath = [], host, protocol, pathname } = parseURL(url);
     let [domain = unknown, site = unknown, ...subDomain] = domainPath;
 
     if([domain, site].contains(unknown))
@@ -737,8 +854,8 @@ function fetchURL(url, options = {}) {
     // No CORS required
     if(false
         || native
-        || protocol.equals('chrome:')
-        || protocol.equals('chrome-extension:')
+        || protocol.startsWith('chrome')
+        || protocol.startsWith('get')
         || host.startsWith('.')
         || allowedDomains.contains(domain.toLowerCase())
         || allowedSites.contains(site.toLowerCase())
@@ -748,9 +865,15 @@ function fetchURL(url, options = {}) {
     // CORS required
     else {
         options.mode = 'cors';
-        // www.whateverorigin.org/get?url=
+        // https://www.whateverorigin.org/get?url={ URL }
+        // https://cors-anywhere.herokuapp.com/{ URL }
+        // https://api.codetabs.com/v1/proxy/?quest={ URL }
+        // https://api.allorigins.win/raw?url={ URL }
         href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
     }
+
+    if(protocol.startsWith('get'))
+        href = Runtime.getURL(pathname);
 
     if(timeout > 0) {
         let controller = new AbortController();
@@ -812,6 +935,19 @@ let Settings = window.Settings = {
             Settings[key] = properties[key];
 
         return Storage.set(properties);
+    },
+
+    // Settings.remove(properties:string|array?) → Promise<undefined>
+    remove(properties = []) {
+        let removed = {};
+
+        if(properties instanceof String)
+            properties = [properties];
+
+        for(let key of properties)
+            removed[key] = Settings[key];
+
+        return Storage.remove(properties);
     },
 };
 

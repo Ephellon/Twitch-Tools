@@ -39,10 +39,37 @@
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
 - [ ] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
 - [ ] Pause Up Next during trophy recording
+- [ ] Clips may not be saved when leaving/destroying page
+    - Fails to initiate Alt+Z
+- [ ] Clips double-save upon completion
+    - One clip is always just a preview image
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.7)
+- Modified `fetchURL` acceptable domains
+- Modified `String..errs` logic
+- Added logic to fetch game descriptions from an appropriate store
+- Modified recording logic: `new Recording(streamable, options) → Promise`
+- Added logic to display stream previews on Guest Star tooltips
+- Added logic to display video preview for clips
+- Fixed game-matching logic
+- Increased game cover image size
+- Added logic to cache jumped data
+- Minor changes to `class UUID`
+- Modified logic to correct unused usernames
+- Modified `class CSSObject` logic to better handle CSS
+- Added `GetFileSystem`
+- Added more context-menu options
+- Modified BTTV emote listing logic to not hang main thread
+- Added logic to ignore words that could be misinterpreted as time zones
+- Added `.pipe` and `.thru` methods to `when...`
+- Modified accessibility logic to always be active
+- Modified `getPath` logic to take integer levels
+- Modified `fetchURL` logic to handle `get:./...` local resource requests
+- Added `Storage.remove` method
+
 > [`5.32.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.6)
 - Added new SI units to suffix-handler
 - Fixed search issue when converting responses to text
