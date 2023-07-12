@@ -2049,6 +2049,18 @@ body.popup [pad-bottom] {
     padding-bottom: 1rem;
 }
 
+/* Data Usage */
+#data-usage--browser-storage-range[data-zoomed="true"i]::before {
+    content: 'ZOOM ENABLED';
+
+    font-size: 8pt;
+
+    border: 0;
+    padding: 0;
+    margin: 0;
+    outline: none;
+}
+
 /* Printing Only!*/
 @media print {
     html, body {

@@ -47,6 +47,13 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.9)
+- Added ability to zoom-in on the data-usage statistics
+- Added logic to prevent the context menu from overflowing the page
+- Moved `class CSSObject` `class Color` and `class ClipName` to `ext/polyfill.js`
+- Added ability to add channels to Live Reminders from stream previews (shortcut: `r`)
+- Fixed issue with fetching Xbox prices
+
 > [`5.32.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.8)
 - Fixed issue with recording on non-up-next tabs
 - Added `class Async`

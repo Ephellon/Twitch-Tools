@@ -514,7 +514,7 @@ function getOffset(element) {
         { offsetHeight, scrollHeight, offsetWidth, scrollWidth } = element,
         { height, width } = bounds;
 
-    return {
+    let offset = {
         height, width,
 
         center: [bounds.left + (width / 2), bounds.top + (height / 2)],
@@ -530,6 +530,18 @@ function getOffset(element) {
         textOverflowX: (offsetWidth < scrollWidth),
         textOverflowY: (offsetHeight < scrollHeight),
     };
+
+    Object.defineProperties(offset, {
+        screenOverflowX: { value: (offset.left < 0 || offset.right > innerWidth) },
+        screenCorrectX: { value: (offset.left < 0? offset.left: offset.right > innerWidth? innerWidth - offset.right: 0) },
+        screenOverflowY: { value: (offset.top < 0 || offset.bottom > innerHeight) },
+        screenCorrectY: { value: (offset.top < 0? offset.top: offset.bottom > innerHeight? innerHeight - offset.bottom: 0) },
+    });
+
+    return Object.defineProperties(offset, {
+        screenOverflow: { value: offset.screenOverflowX || offset.screenOverflowY },
+        screenCorrect: { value: [offset.screenCorrectX, offset.screenCorrectY] },
+    });
 }
 
 // Convert milliseconds into a human-readable string
@@ -2318,6 +2330,1009 @@ Object.defineProperties(Promise, {
     FULFILLED: { value: 'fulfilled' },
     REJECTED: { value: 'rejected' },
 });
+
+// https://stackoverflow.com/a/45205645/4211612
+// Creates a CSS object that can be used to easily transform an object to a CSS string, JSON, or object
+    // new CSSObject({ ...css-properties }, important:boolean?) → Object<CSSObject>
+class CSSObject {
+    constructor(properties = {}, important = false) {
+        switch (typeof properties) {
+            case 'string': {
+                let destructed = CSSObject.destruct(properties);
+
+                properties = {};
+                for(let [key, { value, important, deleted }] of destructed)
+                    properties[key] = (deleted? 'initial': value) + (important || deleted? '!important': '');
+            } break;
+        }
+
+        return Object.assign(this, { ...properties, '!important': important });
+    }
+
+    static destruct(string) {
+        let css = new Map;
+
+        (string || '')
+            .split(';')
+            .map(declaration => declaration.trim())
+            .filter(declaration => declaration.length > 4)
+                // Shortest possible declaration → `--n:0`
+            .map(declaration => {
+                let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
+                    important = value.toLowerCase().endsWith('!important'),
+                    deleted = value.toLowerCase().endsWith('!delete');
+
+                value = value.replace(/!(important|delete)\b/i, '');
+
+                css.set(property, { value, important, deleted });
+            });
+
+        return css;
+    }
+
+    toRule(selector = '*', vendors, stylized = false) {
+        return `${ selector } {${ this.toString(vendors, stylized).replace(/^|$/g, $0 => stylized? '\n': '') }}`;
+    }
+
+    toJSON(vendors, replacer = null, spaces = '') {
+        return JSON.stringify(this.toObject(vendors), replacer, spaces);
+    }
+
+    toString(vendors, stylized = false) {
+        let $important = this['!important'] ?? false,
+            $delete = this['!delete'] ?? false;
+
+        for(let key of ['!important', '!delete'])
+            delete this[key];
+
+        if(stylized) {
+            let partitions = [
+                ['Meta', 'container-* counter-* user-* view-* will-change writing-*'],
+                ['Animation', 'animation-* transition-*'],
+                ['Content', 'accent-* all break-* caret-* content-*'],
+                ['Appearance', 'appearance backdrop-* backface-* background-* break-* border-* box-* clear color-* contain-* cursor direction display filter font forced-* hanging-* hyphenate-* hyphens image-* initial-* justify-* letter-* line-* mask-* math-* mix-blend-mode opacity outline-* overflow-* overscroll-* page-* paint-* pointer-* print-* quotes text-* touch-* visibility white-space word-*'],
+                ['Position', 'align-* bottom break-* clear flex-* float grid-* inset-* isolation left margin-* masonry-* object-* offset-* order orphans padding-* perspective-* place-* position right rotate ruby-* scroll-* scrollbar-* top transform-* translate vertical-* widows z-index'],
+                ['Size', 'aspect-ratio block-size height inline-* max-* min-* resize scale shape-* width zoom'],
+                ['List', 'list-*'],
+                ['Table', 'caption-* column-* columns empty-cells gap row-gap tab-size table-*'],
+            ].map(([partition, subjects]) => [partition, subjects.split(/\s+/).map(subject => RegExp('^(-\\w+-|-{2,})?' + subject.replace('-*', '(-[\\w-]+)?')))]);
+
+            return Object.entries(this.toObject(vendors)).map(([property, value]) => {
+                property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+                let position = partitions.length;
+
+                search: for(let index = 0; index < partitions.length; ++index) {
+                    let [partition, subjects] = partitions[index];
+
+                    for(let subject of subjects)
+                        if(subject.test(property)) {
+                            position = index;
+                            break search;
+                        }
+                }
+
+                return [position, `\t${ property }: ${ ($delete? 'initial': value) }${ ($important || $delete)? ' !important': '' };`];
+            })
+            // Alphabetical sort
+            .sort(([,A], [,B]) => {
+                let C = [A, B].sort();
+
+                return C.indexOf(A) - C.indexOf(B);
+            })
+            // Property-class sort
+            .sort(([A], [B]) => A - B)
+            // Property-class separation
+            .map(([position, declaration], index, array) => (position != array[index + 1]?.[0])? declaration + '\n': declaration)
+            .join('\n');
+        } else {
+            return Object.entries(this.toObject(vendors)).map(([property, value]) => {
+                property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+                return [property, `${ ($delete? 'initial': value) }${ ($important || $delete? '!important': '') }`].join(':');
+            })
+            .join(';');
+        }
+    }
+
+    toObject(vendors = []) {
+        let object = {};
+
+        if(vendors.equals?.('all'))
+            vendors = 'ms moz o webkit khtml';
+        if(typeof vendors == 'string')
+            vendors = vendors.split(/[^\w-]+/).filter(string => string.length);
+
+        let $delete = this['!delete'] ?? false,
+            $important = this['!important'] || $delete;
+
+        for(let key of ['!important', '!delete'])
+            delete this[key];
+
+        $important = ($important? '!important': '');
+        $delete = ($delete? 'initial': '');
+
+        for(let key in this) {
+            let properKey = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+
+            this[key] = $delete || this[key];
+
+            for(let vendor of vendors)
+                switch(vendor.toLowerCase().replace(/^-+|-+$/g, '')) {
+                    case 'ms':
+                    case 'microsoft':
+                    case 'internet-explorer':
+                    case 'edge': {
+                        let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "backface-visibility", "background", "background-image", "border-bottom-left-radius", "border-bottom-right-radius", "border-image", "border-radius", "border-top-left-radius", "border-top-right-radius", "content", "list-style", "list-style-image", "mask", "mask-image", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function"];
+
+                        if(keys.contains(properKey))
+                            object[`-ms-${ properKey }`] = this[key] + $important;
+                    } break;
+
+                    case 'moz':
+                    case 'gecko':
+                    case 'mozilla':
+                    case 'firefox': {
+                        let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "appearance", "backface-visibility", "background-clip", "background-inline-policy", "background-origin", "background-size", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-image", "border-start", "border-start-color", "border-start-style", "border-start-width", "box-align", "box-direction", "box-flex", "box-ordinal-group", "box-orient", "box-pack", "box-sizing", "column-count", "column-fill", "column-gap", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-width", "float-edge", "font-feature-settings", "font-language-override", "force-broken-image-icon", "hyphens", "image-region", "margin-end", "margin-start", "opacity", "orient", "osx-font-smoothing", "outline", "outline-color", "outline-offset", "outline-style", "outline-width", "padding-end", "padding-start", "perspective", "perspective-origin", "tab-size", "text-align-last", "text-decoration-color", "text-decoration-line", "text-decoration-style", "text-size-adjust", "transform", "transform-origin", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-focus", "user-input", "user-modify", "user-select"];
+                        let supers = {
+                            "box-decoration-break": "background-inline-policy",
+                            "border-inline-end": "border-end",
+                            "border-inline-end-color": "border-end-color",
+                            "border-inline-end-style": "border-end-style",
+                            "border-inline-end-width": "border-end-width",
+                            "border-inline-start": "border-start",
+                            "border-inline-start-color": "border-start-color",
+                            "border-inline-start-style": "border-start-style",
+                            "border-inline-start-width": "border-start-width",
+                            "margin-inline-end": "margin-end",
+                            "margin-inline-start": "margin-start",
+                            "padding-inline-end": "padding-end",
+                            "padding-inline-start": "padding-start",
+                        };
+
+                        if(keys.contains(properKey))
+                            object[`-moz-${ properKey }`] = this[key] + $important;
+                        else if(properKey in supers)
+                            object[`-moz-${ supers[properKey] }`] = this[key] + $important;
+                    } break;
+
+                    case 'o':
+                    case 'opera': {
+                        let keys = ["backface-visibility", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "replace", "set-link-source", "transform-style", "use-link-source"];
+
+                        if(keys.contains(properKey))
+                            object[`-o-${ properKey }`] = this[key] + $important;
+                    } break;
+
+                    case 'webkit':
+                    case 'apple':
+                    case 'safari':
+                    case 'google':
+                    case 'chrome':
+                    case 'chromium': {
+                        let keys = ["align-content", "align-items", "align-self", "alt", "animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "animation-trigger", "app-region", "appearance", "aspect-ratio", "backdrop-filter", "backface-visibility", "background-clip", "background-composite", "background-origin", "background-size", "border-after", "border-after-color", "border-after-style", "border-after-width", "border-before", "border-before-color", "border-before-style", "border-before-width", "border-bottom-left-radius", "border-bottom-right-radius", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-fit", "border-horizontal-spacing", "border-image", "border-radius", "border-start", "border-start-color", "border-start-style", "border-start-width", "border-top-left-radius", "border-top-right-radius", "border-vertical-spacing", "box-align", "box-decoration-break", "box-direction", "box-flex", "box-flex-group", "box-lines", "box-ordinal-group", "box-orient", "box-pack", "box-reflect", "box-shadow", "box-sizing", "clip-path", "color-correction", "column-axis", "column-break-after", "column-break-before", "column-break-inside", "column-count", "column-fill", "column-gap", "column-progression", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-span", "column-width", "columns", "cursor-visibility", "dashboard-region", "device-pixel-ratio", "filter", "flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink", "flex-wrap", "flow-from", "flow-into", "font-feature-settings", "font-kerning", "font-size-delta", "font-smoothing", "font-variant-ligatures", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow", "grid-auto-rows", "grid-column", "grid-column-end", "grid-column-gap", "grid-column-start", "grid-gap", "grid-row", "grid-row-end", "grid-row-gap", "grid-row-start", "grid-template", "grid-template-areas", "grid-template-columns", "grid-template-rows", "highlight", "hyphenate-character", "hyphenate-charset", "hyphenate-limit-after", "hyphenate-limit-before", "hyphenate-limit-lines", "hyphens", "image-set", "initial-letter", "justify-content", "justify-items", "justify-self", "line-align", "line-box-contain", "line-break", "line-clamp", "line-grid", "line-snap", "locale", "logical-height", "logical-width", "margin-after", "margin-after-collapse", "margin-before", "margin-before-collapse", "margin-bottom-collapse", "margin-collapse", "margin-end", "margin-start", "margin-top-collapse", "marquee", "marquee-direction", "marquee-increment", "marquee-repetition", "marquee-speed", "marquee-style", "mask", "mask-attachment", "mask-box-image", "mask-box-image-outset", "mask-box-image-repeat", "mask-box-image-slice", "mask-box-image-source", "mask-box-image-width", "mask-clip", "mask-composite", "mask-image", "mask-origin", "mask-position", "mask-position-x", "mask-position-y", "mask-repeat", "mask-repeat-x", "mask-repeat-y", "mask-size", "mask-source-type", "match-nearest-mail-blockquote-color", "max-logical-height", "max-logical-width", "min-logical-height", "min-logical-width", "nbsp-mode", "opacity", "order", "overflow-scrolling", "padding-after", "padding-before", "padding-end", "padding-start", "perspective", "perspective-origin", "perspective-origin-x", "perspective-origin-y", "print-color-adjust", "region-break-after", "region-break-before", "region-break-inside", "region-fragment", "rtl-ordering", "ruby-position", "scroll-snap-type", "shape-image-threshold", "shape-inside", "shape-margin", "shape-outside", "svg-shadow", "tap-highlight-color", "text-color-decoration", "text-combine", "text-decoration", "text-decoration-line", "text-decoration-skip", "text-decoration-style", "text-decorations-in-effect", "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style", "text-fill-color", "text-justify", "text-orientation", "text-security", "text-size-adjust", "text-stroke", "text-stroke-color", "text-stroke-width", "text-underline-position", "text-zoom", "touch-action", "transform", "transform-2d", "transform-3d", "transform-origin", "transform-origin-x", "transform-origin-y", "transform-origin-z", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-drag", "user-modify", "user-select", "word-break", "writing-mode"];
+
+                        if(keys.contains(properKey))
+                            object[`-webkit-${ properKey }`] = this[key] + $important;
+                    } break;
+
+                    case 'khtml':
+                    case 'konqueror': {
+                        let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "box-shadow", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-select"];
+
+                        if(keys.contains(properKey))
+                            object[`-khtml-${ properKey }`] = this[key] + $important;
+                    } break;
+                }
+
+            object[properKey] = this[key] + $important;
+        }
+
+        return object;
+    }
+}
+
+// CSS-Tricks - Jon Kantner 26 JAN 2021
+    // https://css-tricks.com/converting-color-spaces-in-javascript/
+// Creates a Color object
+class Color {
+    static LOW_CONTRAST     = "LOW";
+    static NORMAL_CONTRAST  = "NORMAL";
+    static HIGH_CONTRAST    = "HIGH";
+    static PERFECT_CONTRAST = "PERFECT";
+
+    static CONTRASTS = [Color.LOW_CONTRAST, Color.NORMAL_CONTRAST, Color.HIGH_CONTRAST, Color.PERFECT_CONTRAST];
+
+    // https://www.w3schools.com/lib/w3color.js
+    static aliceblue            = [0xF0,0xF8,0xFF];
+    static antiquewhite         = [0xFA,0xEB,0xD7];
+    static aqua                 = [0x00,0xFF,0xFF];
+    static aquamarine           = [0x7F,0xFF,0xD4];
+    static azure                = [0xF0,0xFF,0xFF];
+    static beige                = [0xF5,0xF5,0xDC];
+    static bisque               = [0xFF,0xE4,0xC4];
+    static black                = [0x00,0x00,0x00];
+    static blanchedalmond       = [0xFF,0xEB,0xCD];
+    static blue                 = [0x00,0x00,0xFF];
+    static blueviolet           = [0x8A,0x2B,0xE2];
+    static brown                = [0xA5,0x2A,0x2A];
+    static burlywood            = [0xDE,0xB8,0x87];
+    static cadetblue            = [0x5F,0x9E,0xA0];
+    static chartreuse           = [0x7F,0xFF,0x00];
+    static chocolate            = [0xD2,0x69,0x1E];
+    static coral                = [0xFF,0x7F,0x50];
+    static cornflowerblue       = [0x64,0x95,0xED];
+    static cornsilk             = [0xFF,0xF8,0xDC];
+    static crimson              = [0xDC,0x14,0x3C];
+    static cyan                 = [0x00,0xFF,0xFF];
+    static darkblue             = [0x00,0x00,0x8B];
+    static darkcyan             = [0x00,0x8B,0x8B];
+    static darkgoldenrod        = [0xB8,0x86,0x0B];
+    static darkgray             = [0xA9,0xA9,0xA9];
+    static darkgreen            = [0xA9,0xA9,0xA9];
+    static darkgrey             = [0x00,0x64,0x00];
+    static darkkhaki            = [0xBD,0xB7,0x6B];
+    static darkmagenta          = [0x8B,0x00,0x8B];
+    static darkolivegreen       = [0x55,0x6B,0x2F];
+    static darkorange           = [0xFF,0x8C,0x00];
+    static darkorchid           = [0x99,0x32,0xCC];
+    static darkred              = [0x8B,0x00,0x00];
+    static darksalmon           = [0xE9,0x96,0x7A];
+    static darkseagreen         = [0x8F,0xBC,0x8F];
+    static darkslateblue        = [0x48,0x3D,0x8B];
+    static darkslategray        = [0x2F,0x4F,0x4F];
+    static darkslategrey        = [0x2F,0x4F,0x4F];
+    static darkturquoise        = [0x00,0xCE,0xD1];
+    static darkviolet           = [0x94,0x00,0xD3];
+    static deeppink             = [0xFF,0x14,0x93];
+    static deepskyblue          = [0x00,0xBF,0xFF];
+    static dimgray              = [0x69,0x69,0x69];
+    static dimgrey              = [0x69,0x69,0x69];
+    static dodgerblue           = [0x1E,0x90,0xFF];
+    static firebrick            = [0xB2,0x22,0x22];
+    static floralwhite          = [0xFF,0xFA,0xF0];
+    static forestgreen          = [0x22,0x8B,0x22];
+    static fuchsia              = [0xFF,0x00,0xFF];
+    static gainsboro            = [0xDC,0xDC,0xDC];
+    static ghostwhite           = [0xF8,0xF8,0xFF];
+    static gold                 = [0xFF,0xD7,0x00];
+    static goldenrod            = [0xDA,0xA5,0x20];
+    static gray                 = [0x80,0x80,0x80];
+    static green                = [0x80,0x80,0x80];
+    static greenyellow          = [0x00,0x80,0x00];
+    static grey                 = [0xAD,0xFF,0x2F];
+    static honeydew             = [0xF0,0xFF,0xF0];
+    static hotpink              = [0xFF,0x69,0xB4];
+    static indianred            = [0xCD,0x5C,0x5C];
+    static indigo               = [0x4B,0x00,0x82];
+    static ivory                = [0xFF,0xFF,0xF0];
+    static khaki                = [0xF0,0xE6,0x8C];
+    static lavender             = [0xE6,0xE6,0xFA];
+    static lavenderblush        = [0xFF,0xF0,0xF5];
+    static lawngreen            = [0x7C,0xFC,0x00];
+    static lemonchiffon         = [0xFF,0xFA,0xCD];
+    static lightblue            = [0xAD,0xD8,0xE6];
+    static lightcoral           = [0xF0,0x80,0x80];
+    static lightcyan            = [0xE0,0xFF,0xFF];
+    static lightgoldenrodyellow = [0xFA,0xFA,0xD2];
+    static lightgray            = [0xD3,0xD3,0xD3];
+    static lightgreen           = [0xD3,0xD3,0xD3];
+    static lightgrey            = [0x90,0xEE,0x90];
+    static lightpink            = [0xFF,0xB6,0xC1];
+    static lightsalmon          = [0xFF,0xA0,0x7A];
+    static lightseagreen        = [0x20,0xB2,0xAA];
+    static lightskyblue         = [0x87,0xCE,0xFA];
+    static lightslategray       = [0x77,0x88,0x99];
+    static lightslategrey       = [0x77,0x88,0x99];
+    static lightsteelblue       = [0xB0,0xC4,0xDE];
+    static lightyellow          = [0xFF,0xFF,0xE0];
+    static lime                 = [0x00,0xFF,0x00];
+    static limegreen            = [0x32,0xCD,0x32];
+    static linen                = [0xFA,0xF0,0xE6];
+    static magenta              = [0xFF,0x00,0xFF];
+    static maroon               = [0x80,0x00,0x00];
+    static mediumaquamarine     = [0x66,0xCD,0xAA];
+    static mediumblue           = [0x00,0x00,0xCD];
+    static mediumorchid         = [0xBA,0x55,0xD3];
+    static mediumpurple         = [0x93,0x70,0xDB];
+    static mediumseagreen       = [0x3C,0xB3,0x71];
+    static mediumslateblue      = [0x7B,0x68,0xEE];
+    static mediumspringgreen    = [0x00,0xFA,0x9A];
+    static mediumturquoise      = [0x48,0xD1,0xCC];
+    static mediumvioletred      = [0xC7,0x15,0x85];
+    static midnightblue         = [0x19,0x19,0x70];
+    static mintcream            = [0xF5,0xFF,0xFA];
+    static mistyrose            = [0xFF,0xE4,0xE1];
+    static moccasin             = [0xFF,0xE4,0xB5];
+    static navajowhite          = [0xFF,0xDE,0xAD];
+    static navy                 = [0x00,0x00,0x80];
+    static oldlace              = [0xFD,0xF5,0xE6];
+    static olive                = [0x80,0x80,0x00];
+    static olivedrab            = [0x6B,0x8E,0x23];
+    static orange               = [0xFF,0xA5,0x00];
+    static orangered            = [0xFF,0x45,0x00];
+    static orchid               = [0xDA,0x70,0xD6];
+    static palegoldenrod        = [0xEE,0xE8,0xAA];
+    static palegreen            = [0x98,0xFB,0x98];
+    static paleturquoise        = [0xAF,0xEE,0xEE];
+    static palevioletred        = [0xDB,0x70,0x93];
+    static papayawhip           = [0xFF,0xEF,0xD5];
+    static peachpuff            = [0xFF,0xDA,0xB9];
+    static peru                 = [0xCD,0x85,0x3F];
+    static pink                 = [0xFF,0xC0,0xCB];
+    static plum                 = [0xDD,0xA0,0xDD];
+    static powderblue           = [0xB0,0xE0,0xE6];
+    static purple               = [0x80,0x00,0x80];
+    static rebeccapurple        = [0x66,0x33,0x99];
+    static red                  = [0xFF,0x00,0x00];
+    static rosybrown            = [0xBC,0x8F,0x8F];
+    static royalblue            = [0x41,0x69,0xE1];
+    static saddlebrown          = [0x8B,0x45,0x13];
+    static salmon               = [0xFA,0x80,0x72];
+    static sandybrown           = [0xF4,0xA4,0x60];
+    static seagreen             = [0x2E,0x8B,0x57];
+    static seashell             = [0xFF,0xF5,0xEE];
+    static sienna               = [0xA0,0x52,0x2D];
+    static silver               = [0xC0,0xC0,0xC0];
+    static skyblue              = [0x87,0xCE,0xEB];
+    static slateblue            = [0x6A,0x5A,0xCD];
+    static slategray            = [0x70,0x80,0x90];
+    static slategrey            = [0x70,0x80,0x90];
+    static snow                 = [0xFF,0xFA,0xFA];
+    static springgreen          = [0x00,0xFF,0x7F];
+    static steelblue            = [0x46,0x82,0xB4];
+    static tan                  = [0xD2,0xB4,0x8C];
+    static teal                 = [0x00,0x80,0x80];
+    static thistle              = [0xD8,0xBF,0xD8];
+    static tomato               = [0xFF,0x63,0x47];
+    static turquoise            = [0x40,0xE0,0xD0];
+    static violet               = [0xEE,0x82,0xEE];
+    static wheat                = [0xF5,0xDE,0xB3];
+    static white                = [0xFF,0xFF,0xFF];
+    static whitesmoke           = [0xF5,0xF5,0xF5];
+    static yellow               = [0xFF,0xFF,0x00];
+    static yellowgreen          = [0x9A,0xCD,0x32];
+
+    constructor(...args) {
+        return Object.assign(this, Color.destruct.apply(null, args));
+    }
+
+    // Converts Hex color values to a color-object
+        // Color.HEXtoColor(hex:string<String#CSS-Color>) → Object<Color>
+    static HEXtoColor(hex = '#000') {
+        hex = hex.replace('#', '');
+
+        let [R, G, B, A = 255] = (
+            (hex.length == 3 || hex.length == 4)?
+                hex.split(/([\da-f])/i):
+            (hex.length == 6 || hex.length == 8)?
+                hex.split(/([\da-f]{2})/i):
+            hex.split(/([\da-f]{1,2}?)/i)
+        ).filter(char => char.length).map(char => parseInt(char.repeat(3 - char.length), 16));
+
+        return Color.RGBtoHSL(R, G, B, A / 255);
+    }
+
+    // https://stackoverflow.com/a/9493060/4211612 →
+        // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
+    // Converts RGB to HSL
+        // Color.RGBtoHSL(red:number<uint8>?, green:number?<uint8>, blue:number?<uint8>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+    static RGBtoHSL(R = 0, G = 0, B = 0, A = 1) {
+        // Convert RGB to fractions of 1
+        let r = R / 255,
+            g = G / 255,
+            b = B / 255;
+
+        // Find channel values
+        let Cmin = Math.min(r, g, b),
+            Cmax = Math.max(r, g, b),
+            delta = Cmax - Cmin;
+
+        let H = 0, S = 0, L = 0;
+
+        // Calculate the hue
+        if(delta == 0)
+            H = 0;
+        else if(r == Cmax)
+            H = ((g - b) / delta) % 6;
+        else if (g == Cmax)
+            H = ((b - r) / delta) + 2;
+        else
+            H = ((r - g) / delta) + 4;
+
+        H = Math.round(H * 60);
+
+        if(H < 0)
+            H += 360;
+
+        // Calculate lightness
+        L = (Cmax + Cmin) / 2;
+
+        // Calculate saturation
+        S = (delta == 0? 0: delta / (1 - Math.abs(2 * L - 1)));
+
+        H = +(H * 1/1).round();
+        S = +(S * 100).round();
+        L = +(L * 100).round();
+        A = A.clamp(0, 1);
+
+        return {
+            H, S, L, A,
+            hue: H, saturation: S, lightness: L, alpha: A,
+            HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
+            HSLA: `hsla(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
+
+            R, G, B,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://stackoverflow.com/a/9493060/4211612 →
+        // https://www.rapidtables.com/convert/color/hsl-to-rgb.html
+    // Converts HSL to RGB
+        // Color.HSLtoRGB(hue:number<Degrees>?, saturation:number?<Percentage>, lightness:number?<Percentage>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+    static HSLtoRGB(hue = 0, saturation = 0, lightness = 0, alpha = 1) {
+        let H = (hue % 360),
+            S = (saturation / 100),
+            L = (lightness / 100),
+            A = alpha.clamp(0, 1);
+
+        let { abs } = Math;
+        let C = (1 - abs(2*L - 1)) * S,
+            X = C * (1 - abs(((H / 60) % 2) - 1)),
+            m = L - C/2;
+
+        let [r, g, b] =
+        (H >= 0 && H < 60)?
+            [C, X, 0]:
+        (H >= 60 && H < 120)?
+            [X, C, 0]:
+        (H >= 120 && H < 180)?
+            [0, C, X]:
+        (H >= 180 && H < 240)?
+            [0, X, C]:
+        (H >= 240 && H < 300)?
+            [X, 0, C]:
+        (H >= 300 && H < 360)?
+            [C, 0, X]:
+        [0, 0, 0];
+
+        let [R, G, B] = [(r+m)*255, (g+m)*255, (b+m)*255].map(v => v.abs().round().clamp(0, 255));
+
+        H = +(H * 1/1).round();
+        S = +(S * 100).round();
+        L = +(L * 100).round();
+
+        return {
+            H, S, L, A,
+            hue, saturation, lightness, alpha: A,
+            HSL: `hsl(${ H }deg,${ S }%,${ L }%)`,
+            HSLA: `hsla(${ H }deg,${ S }%,${ L }%,${ A.toFixed(1) })`,
+
+            R, G, B,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://www.w3schools.com/lib/w3color.js
+    static RGBtoHWB(R = 0, G = 0, B = 0, A = 1) {
+        // Similar to .RGBtoHSL
+        // Convert RGB to fractions of 1
+        let r = R / 255,
+            g = G / 255,
+            b = B / 255;
+
+        // Find channel values
+        let Cmin = Math.min(r, g, b),
+            Cmax = Math.max(r, g, b),
+            delta = Cmax - Cmin;
+
+        let H = 0, W = 0, K = 0;
+
+        // Calculate the hue
+        if(delta == 0)
+            H = 0;
+        else if(r == Cmax)
+            H = (((g - b) / delta) % 6) * 360;
+        else if (g == Cmax)
+            H = (((b - r) / delta) + 2) * 360;
+        else
+            H = (((r - g) / delta) + 4) * 360;
+
+        W = Cmin;
+        K = 1 - Cmax;
+
+        return {
+            H, W, K,
+            hue: H, white: W, black: K, alpha: A,
+            HWK: `hwb(${ H }deg,${ W }%,${ K }%)`,
+
+            R, G, B, A,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // Converts HWB to RGB → https://www.w3schools.com/lib/w3color.js
+        // Color.HWBtoRGB(hue:number<Degrees>?, white:number?<Percentage>, black:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
+    static HWBtoRGB(hue = 0, white = 0, black = 0, alpha = 1) {
+        let { R, G, B } = Color.HSLtoRGB(hue, 1, .5);
+        let E = white + black;
+
+        if(E > 1) {
+            white = Number((white / E).toFixed(2));
+            black = Number((black / E).toFixed(2));
+        }
+
+        let f = c => (
+            c *= (1 - white - black),
+            c += white,
+            c *= 255
+        );
+
+        R = f(R);
+        G = f(G);
+        B = f(B);
+
+        return {
+            H: hue, W: white, K: black,
+            hue, white, black, alpha,
+            HWK: `hwb(${ H }deg,${ W }%,${ K }%)`,
+
+            R, G, B, A: alpha,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, alpha.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, alpha * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://www.w3schools.com/lib/w3color.js
+    static RGBtoCMYK(R = 0, G = 0, B = 0, A = 1) {
+        // Similar to .RGBtoHSL
+        // Convert RGB to fractions of 1
+        let r = R / 255,
+            g = G / 255,
+            b = B / 255;
+
+        // Find channel values
+        let Cmax = Math.max(r, g, b),
+            K = 1 - Cmax,
+            k = 1 - K;
+
+        let C = 0, M = 0, Y = 0;
+
+        // Calculate the hue
+        if(K > 0) {
+            C = (1 - R - K) / k;
+            M = (1 - G - K) / k;
+            Y = (1 - B - K) / k;
+        }
+
+        return {
+            C, M, Y, K,
+            cyan: C, magenta: M, yellow: Y, black: K, alpha: A,
+            CMYK: `cmyk(${ C }%,${ M }%,${ Y }%,${ K }%)`,
+
+            R, G, B, A,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    // https://www.w3schools.com/lib/w3color.js
+    static CMYKtoRGB(C = 0, M = 0, Y = 0, K = 0) {
+        let R = 255 - ((Math.min(1, C * (1 - K) + K)) * 255),
+            G = 255 - ((Math.min(1, M * (1 - K) + K)) * 255),
+            B = 255 - ((Math.min(1, Y * (1 - K) + K)) * 255),
+            A = 1;
+
+        return {
+            C, M, Y, K,
+            cyan: C, magenta: M, yellow: Y, black: K, alpha: A,
+            CMYK: `cmyk(${ C }%,${ M }%,${ Y }%,${ K }%)`,
+
+            R, G, B, A,
+            red: R, green: G, blue: B,
+            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+
+            HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+        };
+    }
+
+    toRGB() {
+        return `rgb(${ this.R },${ this.G },${ this.B })`;
+    }
+
+    toHEX() {
+        return this.HEX;
+    }
+
+    toHSL() {
+        return this.HSL;
+    }
+
+    toHWB() {
+        return Color.RGBtoHWB(this.R, this.G, this.B, this.A).HSL;
+    }
+
+    toCMYK() {
+        return Color.RGBtoCMYK(this.R, this.G, this.B, this.A).CMYK;
+    }
+
+    // https://stackoverflow.com/a/9733420/4211612
+    // Gets the luminance of a color
+        // Color.luminance(red:number<uint8>, green:number<uint8>, blue:number<uint8>) → number<[0, 1]>
+    static luminance(R = 0, G = 0, B = 0) {
+        let l = [R, G, B].map(c => {
+            c /= 255;
+
+            return (
+                c <= 0.03928?
+                    c / 12.92:
+                ((c + 0.055) / 1.055)**2.4
+            );
+        });
+
+        return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
+    }
+
+    isDarkerThan(color) {
+        if(!color instanceof Color)
+            throw TypeError(`The opposing color argument must be a Color object. Use "new Color(color:string)"`);
+
+        let { K = .5 } = Color.RGBtoCMYK(color.R, color.G, color.B);
+
+        return ((this.R * 299 + this.G * 587 + this.B * 114) / 1e3) < (K * 255);
+    }
+
+    isLighterThan(color) {
+        if(!color instanceof Color)
+            throw TypeError(`The opposing color argument must be a Color object. Use "new Color(color:string)"`);
+
+        let { W = .5 } = Color.RGBtoCMYK(color.R, color.G, color.B);
+
+        return ((this.R * 299 + this.G * 587 + this.B * 114) / 1e3) > (W * 255);
+    }
+
+    // https://stackoverflow.com/a/9733420/4211612
+    // Gets the contrast of two colors
+        // Color.contrast(C1:array<[number<uint8>, number<uint8>, number<uint8>]>, C2:array<[number<uint8>, number<uint8>, number<uint8>]>) → number<[0, 21]>
+    static contrast(C1, C2) {
+        let L1 = Color.luminance(...C1),
+            L2 = Color.luminance(...C2),
+            L = Math.max(L1, L2),
+            D = Math.min(L1, L2);
+
+        let value = new Number((L + 0.05) / (D + 0.05));
+
+        Object.defineProperties(value, {
+            toString: {
+                value() {
+                    return Color.CONTRASTS[(3 * (this / 21)) | 0];
+                },
+            },
+        });
+
+        return value;
+    }
+
+    // Gets the distance between two RGB colors
+    // https://tomekdev.com/posts/sorting-colors-in-js
+        // Color.distance(C1:array<[R, G, B]>, C2:array<[R, G, B]>) → number
+    static distance(C1, C2) {
+        let [R, G, B] = C1,
+            [r, g, b] = C2;
+
+        return Math.sqrt( (R - r)**2 + (G - g)**2 + (B - b)**2 );
+    }
+
+    // Returns a Color object
+        // Color.destruct(color:string<Color>) → Color
+    static destruct(color) {
+        color = (color || '#000').toString().trim();
+
+        if(/^(\w+)$/.test(color) && color in Color && Color[color].length == 3)
+            return Color.HEXtoColor(Color[color].map(c => c.toString(16).padStart(2, '00')).join(''));
+
+        let colorRegExps = [
+            // #RGB #RRGGBB
+            /^([#]?)(?<red>[\da-f]{1,2}?)(?<green>[\da-f]{1,2}?)(?<blue>[\da-f]{1,2}?)(?<alpha>[\da-f]{1,2}?)?$/i,
+
+            // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/rgb
+            // rgb(red, green, blue) rgb(red green blue) rgba(red, green, blue, alpha) rgba(red green blue / alpha)
+            /^(rgba?)\((?<red>\d+)[\s,]+(?<green>\d+)[\s,]+(?<blue>\d+)(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
+
+            // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hsl
+            // hsl(hue, saturation, lightness) hsl(hue saturation lightness) hsla(hue, saturation, lightness, alpha) hsla(hue saturation lightness / alpha)
+            /^(hsla?)\((?<hue>[\d\.]+)(?:deg(?:rees?)?)?[\s,]+(?<saturation>[\d\.]+)(?:[%])?[\s,]+(?<lightness>[\d\.]+)(?:[%])?(?:[\s,\/]+(?<alpha>[\d\.]+))?\)$/i,
+
+            // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hwb
+            // hwb(hue, white, black) hwb(hue white black)
+            /^(hwb)\((?<hue>[\d\.]+)(?:deg(?:rees?)?)?[\s,]+(?<white>[\d\.]+)(?:[%])?[\s,]+(?<black>[\d\.]+)(?:[%])?\)$/i,
+
+            // cmyk(cyan, magenta, yellow, black) cmyk(cyan magenta yellow black)
+            /^(cmyk)\((?<cyan>[\d\.]+)(?:[%])?[\s,]+(?<magenta>[\d\.]+)(?:[%])?[\s,]+(?<yellow>[\d\.]+)(?:[%])?[\s,]+(?<black>[\d\.]+)(?:[%])?\)$/i,
+        ];
+
+        for(let regexp of colorRegExps)
+            if(regexp.test(color)) {
+                let computed;
+                color.replace(regexp, ($0, $1, $2, $3, $4, $5 = null) => {
+                    if(/\b[\da-f]{3,8}$/i.test($0))
+                        $1 ||= '#';
+
+                    switch($1.toLowerCase()) {
+                        case '#': {
+                            computed = Color.HEXtoColor([$1, $2, $3, $4, $5 ?? 'ff'].join(''));
+                        } break;
+
+                        case 'rgb':
+                        case 'rgba': {
+                            computed = Color.RGBtoHSL(...[$2, $3, $4, $5 ?? 1].map(parseFloat));
+                        } break;
+
+                        case 'hsl':
+                        case 'hsla': {
+                            computed = Color.HSLtoRGB(...[$2, $3, $4, $5 ?? 1].map(parseFloat));
+                        } break;
+
+                        case 'hwb': {
+                            computed = Color.HWBtoRGB(...[$2, $3, $4].map(parseFloat));
+                        } break;
+
+                        case 'cmyk': {
+                            computed = Color.CMYKtoRGB(...[$2, $3, $4, $5].map(parseFloat));
+                        } break;
+
+                        default: return;
+                    }
+
+                    return computed;
+                });
+
+                return computed;
+            }
+    }
+
+    // Retrns a color's name
+        // Color.getName(color:string<Color>) → string
+    static getName(color = '#000') {
+        color = Color.destruct(color);
+
+        if(nullish(color))
+            return '';
+
+        // TODO: Add more colors &/ better detection...
+        let { H, S, L, R, G, B } = color;
+        let maxDist = Color.distance([0,0,0],[255,255,255]),
+            colorDifference = (C1, C2) => Color.distance(C1, C2) / maxDist;
+
+        let colors = {
+            // Extremes
+            white: ({ R, G, B, L }) => (false
+                || (colorDifference([255, 255, 255], [R, G, B]) < 0.05)
+                || (true
+                    && colors.grey({ R, G, B, S, L })
+                    && (L > 90)
+                )
+            ),
+            light: ({ S, L }) => (false
+                || (L > 80)
+                || (S < 15)
+            ),
+
+            black: ({ R, G, B, S, L }) => (false
+                || (colorDifference([0, 0, 0], [R, G, B]) < 0.05)
+                || (true
+                    && colors.grey({ R, G, B, S })
+                    && (L < 5)
+                )
+                || (true
+                    && colors.green({ R, G, B, S })
+                    && (L < 5)
+                )
+                || (true
+                    && colors.brown({ S, L })
+                    && (L <= 1)
+                )
+            ),
+            dark: ({ S, L }) => (L < 15),
+
+            grey: ({ R, G, B, S }) => (false
+                || (colorDifference([B, R, G].map(C => C.floorToNearest(8)), [R, G, B]) < 0.05)
+                || (S < 5)
+            ),
+
+            // Reds {130°} → (0° < Hue ≤ 60°) U (290° < Hue ≤ 360°)
+            red: ({ H, S }) => (true
+                && (S >= 5)
+                && (false
+                    || (H > 345)
+                    || (H <= 10)
+                )
+            ),
+            pink: ({ H, S, L }) => (false
+                || (true
+                    && (S >= 5)
+                    && (H > 290 && H <= 345)
+                )
+                || (true
+                    && colors.light({ S, L })
+                    && colors.red({ H, S })
+                )
+            ),
+            orange: ({ H, S }) => (false
+                || (true
+                    && (S >= 5)
+                    && (H > 10 && H <= 45)
+                )
+                || (true
+                    && colors.red({ H, S })
+                    && colors.yellow({ H, S })
+                )
+            ),
+            yellow: ({ H, S }) => (true
+                && (S >= 5)
+                && (H > 45 && H <= 60)
+            ),
+            brown: ({ H, S, L }) => (true
+                && (false
+                    || colors.yellow({ H, S })
+                    || colors.orange({ H, S })
+                    || colors.red({ H, S })
+                )
+                && (false
+                    || (S > 10 && S <= 30)
+                    || (L > 10 && L <= 30)
+                )
+            ),
+
+            // Greens {110°} → (60° < Hue ≤ 170°)
+            green: ({ H, S }) => (true
+                && (S >= 5)
+                && (H > 60 && H <= 170)
+            ),
+
+            // Blues {120°} → (170° < Hue ≤ 290°)
+            blue: ({ H, S }) => (true
+                && (S >= 5)
+                && (H > 170 && H <= 260)
+            ),
+            purple: ({ H, S, L }) => (false
+                || (true
+                    && (S >= 5)
+                    && (H > 260 && H <= 290)
+                )
+                || (false
+                    || (true
+                        && (H >= 245 && H < 290)
+                        && (L <= 50)
+                    )
+                )
+                || (true
+                    && colors.pink({ H, S, L })
+                    && (L < 30)
+                )
+            ),
+        };
+
+        let name = [];
+
+        naming:
+        for(let key in colors) {
+            let condition = colors[key];
+
+            if(condition({ H, S, L, R, G, B })) {
+                name.push(key);
+
+                if(/^(black|white)$/i.test(key)) {
+                    name = [key];
+
+                    break naming;
+                }
+            }
+        }
+
+        return name
+            .sort()
+            .sort((primary, secondary) => {
+                return (
+                    /^(light|dark)$/i.test(primary)?
+                        -1:
+                    /^(grey|brown)$/i.test(primary)?
+                        +1:
+                    /^(light|dark)$/i.test(secondary)?
+                        +1:
+                    /^(grey|brown)$/i.test(secondary)?
+                        -1:
+                    0
+                )
+            })
+            .join(' ')
+
+            .replace(/light( pink)? red/, 'pink')
+            .replace(/red orange/, 'orange')
+            .replace(/light yellow/, 'yellow')
+            .replace(/orange brown/, 'light brown')
+            .replace(/dark orange/, 'brown')
+            .replace(/blue purple/, 'purple')
+
+            .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
+            .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
+            .replace(/(\w+) (\1)/g, '$1')
+            .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
+                if([$1, $2].contains('light', 'dark'))
+                    return $_;
+
+                let suffix = $1.slice(-1);
+
+                return $1.slice(0, -1) + ({
+                    d: 'dd',
+                    e: '',
+                }[suffix] ?? suffix) + 'ish-' + $2;
+            })
+
+            .replace(/light$/i, 'white')
+            .replace(/dark$/i, 'black');
+    }
+}
+
+// https://www.reddit.com/r/Twitch/comments/dxgkhr/comment/f7q4bud/?utm_source=share&utm_medium=web2x&context=3
+// Returns a random string
+    // new ClipName(version:number?) → string
+    // 2 Adj + 1 Noun + 1 Global Emote
+class ClipName extends String {
+    static ADJECTIVES = 'adorable adventurous aggressive agreeable alert alive amused angry calm careful cautious charming cheerful clean clear clever cloudy clumsy eager easy elated elegant embarrassed enchanting encouraging bad beautiful better bewildered black bloody blue blue-eyed dangerous dark dead defeated defiant delightful depressed determined different fair faithful famous fancy fantastic fierce filthy fine annoyed annoying anxious arrogant ashamed attractive average awful colorful combative comfortable concerned condemned confused cooperative courageous curious cute energetic enthusiastic envious evil excited expensive exuberant blushing bored brainy brave breakable bright busy buttery difficult disgusted distinct disturbed dizzy doubtful drab dull dusty foolish fragile frail frantic friendly frightened funny furry gentle gifted glamorous gleaming glorious good ill important impossible inexpensive innocent inquisitive nasty naughty nervous nice nutty obedient obnoxious odd old-fashioned handsome happy healthy helpful helpless hilarious lazy light lively lonely long lovely lucky panicky perfect plain pleasant poised poor powerful gorgeous graceful grieving grotesque grumpy grungy itchy jealous jittery jolly joyous kind open outrageous outstanding homeless homely horrible hungry hurt hushed magnificent misty modern motionless muddy mushy mysterious precious prickly proud putrid puzzled quaint queasy real relieved repulsive rich scary selfish shiny shy silly sleepy smiling vast victorious vivacious wandering weary wicked wide-eyed talented tame tasty tender tense terrible thankful thoughtful thoughtless tired smoggy sore sparkling splendid spotless stormy strange stupid successful super svelte wild witty worried worrisome wrong zany zealous'
+        .split(' ');
+    static NOUNS = 'account achiever acoustics act action activity actor addition adjustment advertisement advice aftermath afternoon afterthought agreement air airplane airport alarm amount amusement anger angle animal answer ant ants apparatus apparel apple apples appliance approval arch argument arithmetic arm army art attack attempt attention attraction aunt authority babies baby back badge bag bait balance ball balloon balls banana band base baseball basin basket basketball bat bath battle bead beam bean bear bears beast bed bedroom beds bee beef beetle beggar beginner behavior belief believe bell bells berry bike bikes bird birds birth birthday bit bite blade blood blow board boat boats body bomb bone book books boot border bottle boundary box boy boys brain brake branch brass bread breakfast breath brick bridge brother brothers brush bubble bucket building bulb bun burn burst bushes business butter button cabbage cable cactus cake cakes calculator calendar camera camp can cannon canvas cap caption car card care carpenter carriage cars cart cast cat cats cattle cause cave celery cellar cemetery cent chain chair chairs chalk chance change channel cheese cherries cherry chess chicken chickens children chin church circle clam class clock clocks cloth cloud clouds clover club coach coal coast coat cobweb coil collar color comb comfort committee company comparison competition condition connection control cook copper copy cord cork corn cough country cover cow cows crack cracker crate crayon cream creator creature credit crib crime crook crow crowd crown crush cry cub cup current curtain curve cushion dad daughter day death debt decision deer degree design desire desk destruction detail development digestion dime dinner dinosaurs direction dirt discovery discussion disease disgust distance distribution division dock doctor dog dogs doll dolls donkey door downtown drain drawer dress drink driving drop drug drum duck ducks dust ear earth earthquake edge education effect egg eggnog eggs elbow end engine error event example exchange existence expansion experience expert eye eyes face fact fairies fall family fan fang farm farmer father father faucet fear feast feather feeling feet fiction field fifth fight finger finger fire fireman fish flag flame flavor flesh flight flock floor flower flowers fly fog fold food foot force fork form fowl frame friction friend friends frog frogs front fruit fuel furniture galley game garden gate geese ghost giants giraffe girl girls glass glove glue goat gold goldfish good-bye goose government governor grade grain grandfather grandmother grape grass grip ground group growth guide guitar gun hair haircut hall hammer hand hands harbor harmony hat hate head health hearing heart heat help hen hill history hobbies hole holiday home honey hook hope horn horse horses hose hospital hot hour house houses humor hydrant ice icicle idea impulse income increase industry ink insect instrument insurance interest invention iron island jail jam jar jeans jelly jellyfish jewel join joke journey judge juice jump kettle key kick kiss kite kitten kittens kitty knee knife knot knowledge laborer lace ladybug lake lamp land language laugh lawyer lead leaf learning leather leg legs letter letters lettuce level library lift light limit line linen lip liquid list lizards loaf lock locket look loss love low lumber lunch lunchroom machine magic maid mailbox man manager map marble mark market mask mass match meal measure meat meeting memory men metal mice middle milk mind mine minister mint minute mist mitten mom money monkey month moon morning mother motion mountain mouth move muscle music nail name nation neck need needle nerve nest net news night noise north nose note notebook number nut oatmeal observation ocean offer office oil operation opinion orange oranges order organization ornament oven owl owner'
+        .split(' ');
+    static EMOTES = 'ANELE ArgieB8 ArsonNoSexy AsexualPride AsianGlow BCWarrior BOP BabyRage BatChest BegWan BibleThump BigBrother BigPhish BisexualPride BlackLivesMatter BlargNaut BloodTrail BrainSlug BrokeBack BuddhaBar CaitlynS CarlSmile ChefFrank CoolCat CoolStoryBob CorgiDerp CrreamAwk CurseLit DAESuppy DBstyle DansGame DarkKnight DarkMode DatSheffy DendiFace DogFace DoritosChip DxCat EarthDay EleGiggle EntropyWins ExtraLife FBBlock FBCatch FBChallenge FBPass FBPenalty FBRun FBSpiral FBtouchdown FUNgineer FailFish FamilyMan FootBall FootGoal FootYellow FrankerZ FreakinStinkin FutureMan GayPride GenderFluidPride GingerPower GivePLZ GlitchCat GlitchLit GlitchNRG GrammarKing GunRun HSCheers HSWP HarleyWink HassaanChop HeyGuys HolidayCookie HolidayLog HolidayPresent HolidaySanta HolidayTree HotPokket HungryPaimon ImTyping IntersexPride InuyoFace ItsBoshyTime JKanStyle Jebaited Jebasted JonCarnage KAPOW KEKHeim Kappa Kappa KappaClaus KappaPride KappaRoss KappaWealth Kappu Keepo KevinTurtle Kippa KomodoHype KonCha Kreygasm LUL LaundryBasket LesbianPride MVGame Mau5 MaxLOL MechaRobot MercyWing1 MercyWing2 MikeHogu MingLee ModLove MorphinTime MrDestructoid MyAvatar NewRecord NinjaGrumpy NomNom NonbinaryPride NotATK NotLikeThis OSFrog OhMyDog OneHand OpieOP OptimizePrime PJSalt PJSugar PMSTwin PRChase PanicVis PansexualPride PartyHat PartyTime PeoplesChamp PermaSmug PicoMause PinkMercy PipeHype PixelBob PizzaTime PogBones PogChamp Poooound PopCorn PoroSad PotFriend PowerUpL PowerUpR PraiseIt PrimeMe PunOko PunchTrees RaccAttack RalpherZ RedCoat ResidentSleeper RitzMitz RlyTho RuleFive RyuChamp SMOrc SSSsss SabaPing SeemsGood SeriousSloth ShadyLulu ShazBotstix Shush SingsMic SingsNote SmoocherZ SoBayed SoonerLater Squid1 Squid2 Squid3 Squid4 StinkyCheese StinkyGlitch StoneLightning StrawBeary SuperVinlin SwiftRage TBAngel TF2John TPFufun TPcrunchyroll TTours TakeNRG TearGlove TehePelo ThankEgg TheIlluminati TheRinger TheTarFu TheThing ThunBeast TinyFace TombRaid TooSpicy TransgenderPride TriHard TwitchLit TwitchRPG TwitchSings TwitchUnity TwitchVotes UWot UnSane UncleNox VirtualHug VoHiYo VoteNay VoteYea WTRuck WholeWheat WhySoSerious WutFace YouDontSay YouWHY bleedPurple cmonBruh copyThis duDudu imGlitch mcaT panicBasket pastaThat riPepperonis twitchRaid'
+        .split(' ');
+
+    constructor(version = 1) {
+        let r = /(?:^|-)(\w)/g,
+            R = ($0, $1, $$, $_) => $1.toUpperCase();
+
+        let _ = {
+            get a() {
+                return ClipName.ADJECTIVES.shuffle().random().replace(r, R);
+            },
+            get n() {
+                return ClipName.NOUNS.shuffle().random().replace(r, R);
+            },
+            get e() {
+                return ClipName.EMOTES.shuffle().random().replace(r, R);
+            },
+        };
+
+        let data = [[_.a, _.a, _.n, _.e].join(''), (new UUID).toStamp(), (new UUID).toStamp()];
+
+        return super(data.slice(0, version.clamp(1, data.length)).join('-'));
+    }
+}
 
 // Returns an iterable range (inclusive)
     // Number..to(end:number?, by:number?) → @@Iterator

@@ -165,6 +165,7 @@ let // These are option names. Anything else will be removed
                 // 'simplify_chat_reverse_emotes',
             // Display
             'simplify_look_auto_marquee',
+            'simplify_look_normalize_text',
         // Recover chat
         'recover_chat',
         // Recover messages
@@ -2196,7 +2197,7 @@ when.defined(() => SETTINGS)
                         })
                         .join(', ');
 
-                $.all('[id*="data-usage"i][id*="browser-storage"i][id*="range"i]').map(element =>
+                $.all('[id*="data-usage"i][id*="browser-storage"i][id*="range"i]').map(element => {
                     element.modStyle(`
                         background: linear-gradient(90deg, ${ colors }, #fff4 0);
                         border: 0;
@@ -2204,8 +2205,30 @@ when.defined(() => SETTINGS)
                         border-bottom-left-radius: 3px;
                         border-top-right-radius: 3px;
                         border-bottom-right-radius: 3px;
-                    `)
-                );
+                    `);
+
+                    element.addEventListener('mouseup', event => {
+                        let { currentTarget } = event;
+
+                        currentTarget.dataset.zoomed = currentTarget.dataset.zoomed.equals('false');
+
+                        let current = [settBytes, liveBytes, dvrBytes, miscBytes].map(B => (parseBool(currentTarget.dataset.zoomed)? 100: PERC_IN_USE) * (B / total));
+                        let colors = 'baby-blue live-red baby-gold purple igor-pink'
+                            .split(' ')
+                            .slice(0, current.length)
+                            .map((color, index) => `var(--${ color }) 0 ${ current.slice(0, ++index).reduce(add, 0).toFixed(3) }%`)
+                            .join(', ');
+
+                        currentTarget.modStyle(`
+                            background: linear-gradient(90deg, ${ colors }, #fff4 0);
+                            border: 0;
+                            border-top-left-radius: 3px;
+                            border-bottom-left-radius: 3px;
+                            border-top-right-radius: 3px;
+                            border-bottom-right-radius: 3px;
+                        `);
+                    });
+                });
             });
         });
     });
