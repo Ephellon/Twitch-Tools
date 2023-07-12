@@ -37,16 +37,20 @@
 - [ ] Add cache logic to detect raids
     - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
-- [ ] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
+- [-] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
 - [ ] Pause Up Next during trophy recording
-- [ ] Clips may not be saved when leaving/destroying page
+- [-] Clips may not be saved when leaving/destroying page
     - Fails to initiate Alt+Z
-- [ ] Clips double-save upon completion
+- [-] Clips double-save upon completion
     - One clip is always just a preview image
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.8)
+- Fixed issue with recording on non-up-next tabs
+- Added `class Async`
+
 > [`5.32.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.7)
 - Modified `fetchURL` acceptable domains
 - Modified `String..errs` logic

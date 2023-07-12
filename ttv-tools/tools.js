@@ -13558,7 +13558,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.startRecording({ name: 'AUTO_DVR:MOUSEUP_EVENT', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                            MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.startRecording({ name: 'AUTO_DVR:ENABLE', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                             MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                         });
@@ -13570,7 +13570,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 delete DVRChannels[DVR_ID];
 
-                                MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save();
+                                MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                             }
 
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
@@ -13595,8 +13595,9 @@ let Initialize = async(START_OVER = false) => {
                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(() => {
                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                            MASTER_VIDEO.startRecording({ name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
-                                .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
+                            MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.startRecording({ name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+
+                            MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                         });
                     });
 
@@ -13606,7 +13607,10 @@ let Initialize = async(START_OVER = false) => {
                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                     for(let [guid, { recording }] of Recording.__RECORDERS__)
-                        recording.stop().save();
+                        if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
+                            recording.stop().save(DVR_CLIP_PRECOMP_NAME);
+                        else
+                            recording.stop().save();
                 };
 
                 $.on('focusin', event => {
@@ -13618,14 +13622,6 @@ let Initialize = async(START_OVER = false) => {
                     top.addEventListener('beforeunload', leaveHandler);
 
                     // top.addEventListener('visibilitychange', leaveHandler);
-                    if(nullish(top.titleInterval))
-                        top.titleInterval = setInterval(DVR_ID => {
-                            document.title = (
-                                MASTER_VIDEO.hasRecording('AUTO_DVR')?
-                                    `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording('AUTO_DVR')?.creationTime, 'clock') }`:
-                                `${ STREAMER.name } - Twitch`
-                            );
-                        }, 250, DVR_ID);
                 });
             }
         });
@@ -13634,10 +13630,31 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.video_clips__dvr = -2_500;
 
-    let DVR_CLIP_PRECOMP_NAME = '';
+    Object.defineProperties(top, {
+        DVR_CLIP_PRECOMP_NAME: {
+            get() {
+                let chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
+
+                if(!chunks?.length)
+                    return '';
+
+                let now = new Date;
+
+                // File Name
+                return [
+                    STREAMER.name,
+                    now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
+                    `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
+                ]
+                    .filter(s => s?.length)
+                    .map(s => s.trim())
+                    .join(' ');
+            },
+        },
+    });
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
-        MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save();
+        MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
     };
 
     Unhandlers.video_clips__dvr = () => {
@@ -13647,26 +13664,14 @@ let Initialize = async(START_OVER = false) => {
     };
 
     setInterval(() => {
-        let chunks = MASTER_VIDEO.DEFAULT_RECORDING?.blobs;
-
-        if(!chunks?.length)
-            return;
-
-        let now = new Date;
-
-        DVR_CLIP_PRECOMP_NAME = [
-            // File Name
-            [
-                STREAMER.name,
-                now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
-                `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
-            ]
-                .filter(s => s?.length)
-                .map(s => s.trim())
-                .join(' ')
-            // File Extension
-            , MIME_Types.find(MASTER_VIDEO.mimeType)
-        ].join('.');
+        if(nullish(top.titleInterval))
+            top.titleInterval = setInterval(() => {
+                document.title = (
+                    MASTER_VIDEO.hasRecording(Recording.ANY)?
+                        `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording(Recording.ANY)?.creationTime, 'clock') }`:
+                    `${ STREAMER.name } - Twitch`
+                );
+            }, 250);
     }, 1000);
 
     let InsertChunksAt;
@@ -13689,7 +13694,7 @@ let Initialize = async(START_OVER = false) => {
 
             InsertChunksAt = blobs.length;
 
-            let AdBreak = new Recording(mini, { mimeType: main.mimeType });
+            let AdBreak = new Recording(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
 
             AdBreak.then(({ target }) => {
                 let chunks = AdBreak.blobs;
@@ -13805,7 +13810,7 @@ let Initialize = async(START_OVER = false) => {
                 for(let DVR_ID in DVRChannels) {
                     let streamer = (DVR_ID + '').toLowerCase();
 
-                    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(DVRChannels[DVR_ID]) && [STREAMER.name, STREAMER.sole].map(s => (s + '').toLowerCase()).contains(streamer))
+                    if(parseBool(DVRChannels[DVR_ID]) && [STREAMER.name, STREAMER.sole].map(s => (s + '').toLowerCase()).contains(streamer))
                         when.defined(() => $('#up-next-control'))
                             .then(button => {
                                 let paused = parseBool(button.getAttribute('paused'));
@@ -13830,12 +13835,23 @@ let Initialize = async(START_OVER = false) => {
 
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
+                                        let recordingKey = 'AUTO_DVR:AD_COUNTDOWN';
+
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.startRecording({ name: 'AUTO_DVR:AD_COUNTDOWN', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
+                                            MASTER_VIDEO.startRecording({ name: recordingKey, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
 
                                             when(() => MASTER_VIDEO.hasRecording('AUTO_DVR')).then(() => {
-                                                MASTER_VIDEO.cancelRecording('AUTO_DVR:AD_COUNTDOWN', `Master recording ("AUTO_DVR") already exists. Removing "AUTO_DVR:AD_COUNTDOWN"`).removeRecording('AUTO_DVR:AD_COUNTDOWN');
+                                                MASTER_VIDEO.cancelRecording(recordingKey, `Master recording ("AUTO_DVR") already exists. Removing "AUTO_DVR:AD_COUNTDOWN"`).removeRecording(recordingKey);
+                                            });
+
+                                            wait(5000).then(() => {
+                                                if(!MASTER_VIDEO.hasRecording(recordingKey))
+                                                    return;
+
+                                                MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.getRecording(recordingKey);
+
+                                                MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                             });
                                         });
                                     });
@@ -13847,7 +13863,10 @@ let Initialize = async(START_OVER = false) => {
                                     LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                                     for(let [guid, { recording }] of Recording.__RECORDERS__)
-                                        recording.stop().save();
+                                        if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
+                                            recording.stop().save(DVR_CLIP_PRECOMP_NAME);
+                                        else
+                                            recording.stop().save();
                                 };
 
                                 $.on('focusin', event => {
@@ -13859,14 +13878,6 @@ let Initialize = async(START_OVER = false) => {
                                     top.addEventListener('beforeunload', leaveHandler);
 
                                     // top.addEventListener('visibilitychange', leaveHandler);
-                                    if(nullish(top.titleInterval))
-                                        top.titleInterval = setInterval(DVR_ID => {
-                                            document.title = (
-                                                MASTER_VIDEO.hasRecording('AUTO_DVR:AD_COUNTDOWN') || MASTER_VIDEO.hasRecording('AUTO_DVR')?
-                                                    `\u{1f534} ${ STREAMER.name } - ${ toTimeString((new Date) - MASTER_VIDEO.getRecording('AUTO_DVR:AD_COUNTDOWN')?.creationTime, 'clock') }`:
-                                                `${ STREAMER.name } - Twitch`
-                                            );
-                                        }, 250, DVR_ID);
                                 });
                             });
                 }

@@ -453,6 +453,169 @@ class Tooltip {
     }
 };
 
+// Creates an asynchronous construct similar to Promise. The only difference is that it accepts a spread of arguments for its resolvers and chains
+    // new Async(ƒ (onResolve, onReject))...
+class Async {
+    static PENDING = 'pending';
+    static FULFILLED = 'fulfilled';
+    static REJECTED = 'rejected';
+
+    #resolve;
+    #values;
+
+    #reject;
+    #errors;
+
+    #status = 'pending';
+    #called = false;
+    #settled = false;
+    #fulfilled = false;
+    #rejected = false;
+
+    constructor(executor) {
+        return executor(this.#resolver.bind(this), this.#rejector.bind(this));
+    }
+
+    then(callback) {
+        if(this.#fulfilled)
+            this.#values = callback.apply(this, this.#values);
+
+        return this;
+    }
+
+    catch(callback) {
+        if(this.#rejected)
+            this.#errors = callback.apply(this, this.#errors);
+
+        return this;
+    }
+
+    resolve(...values) {
+        return new Async(function(resolve, reject) {
+            resolve.apply(this, values);
+        });
+    }
+
+    reject(...errors) {
+        return new Async(function(resolve, reject) {
+            reject.apply(this, errors);
+        });
+    }
+
+    all(asyncs) {
+        return new Async(function(resolve, reject) {
+            let finished = 0;
+            let responses = [];
+
+            if(asyncs.length == 0)
+                return resolve(asyncs);
+
+            for(let index = 0; index < asyncs.length; ++index)
+                asyncs[index]
+                    .then((...values) => done(values, index))
+                    .catch((...errors) => reject.apply(this, errors));
+
+            function done(values, index) {
+                ++finished;
+                responses[index] = values;
+
+                if(finished == asyncs.length)
+                    resolve.apply(this, values);
+            }
+        });
+    }
+
+    allSettled(asyncs) {
+        return new Async(function(resolve, reject) {
+            let settled = 0;
+            let statuses = [];
+
+            for(let index = 0; index < asyncs.length; ++index)
+                asyncs[index]
+                    .then((...values) => done(values, index))
+                    .catch((...errors) => fail(errors, index));
+
+            function done(values, index) {
+                ++settled;
+                statuses[index] = { status: 'fulfilled', values };
+
+                if(settled == asyncs.length)
+                    resolve.apply(this, statuses);
+            }
+
+            function fail(reasons, index) {
+                ++settled;
+                statuses[index] = { status: 'rejected', reasons };
+
+                if(settled == asyncs.length)
+                    resolve.apply(this, statuses);
+            }
+        });
+    }
+
+    any(asyncs) {
+        return new Async(function(resolve, reject) {
+            let failed = 0;
+            let reasons = [];
+
+            if(asyncs.length == 0)
+                return resolve(asyncs);
+
+            for(let index = 0; index < asyncs.length; ++index)
+                asyncs[index]
+                    .then((...values) => resolve.apply(this, values))
+                    .catch((...errors) => fail(errors, index));
+
+            function fail(errors, index) {
+                ++failed;
+                reasons[index] = errors;
+
+                if(failed == asyncs.length)
+                    reject.apply(this, new AggregateError(errors));
+            }
+        });
+    }
+
+    race(asyncs) {
+        return new Async(function(resolve, reject) {
+            for(let async of asyncs)
+                async
+                    .then((...values) => resolve.apply(this, values))
+                    .catch((...errors) => reject.apply(this, errors));
+        });
+    }
+
+    status() {
+        let pending = Symbol(Async.PENDING);
+
+        return Async.race([this, pending]).then(response => response === pending? Async.PENDING: Async.FULFILLED, () => Async.REJECTED);
+    }
+
+    #resolver(...values) {
+        this.#status = 'fulfilled';
+        this.#fulfilled = true;
+        this.#settled = true;
+        this.#values = values;
+
+        if(typeof this.#resolve == 'function' && !this.#called) {
+            this.#resolve.apply(this, this.#values);
+            this.#called = true;
+        }
+    }
+
+    #rejector(...errors) {
+        this.#status = 'rejected';
+        this.#rejected = true;
+        this.#settled = true;
+        this.#errors = errors;
+
+        if(typeof this.#reject == 'function' && !this.#called) {
+            this.#reject.apply(this, this.#errors);
+            this.#called = true;
+        }
+    }
+}
+
 // The following is just shared logic
     // $(selector:string, container:Node?, multiple:boolean?) → Array|Element
 function $(selector, container = document, multiple = false) {

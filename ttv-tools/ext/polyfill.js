@@ -1891,6 +1891,9 @@ class Recording {
     static __LINKS__ = new Map;
     static __RECORDERS__ = new Map;
 
+    static ANY = Symbol('Any');
+    static ALL = Symbol('All');
+
     constructor(streamable, options = { name: 'DEFAULT_RECORDING', as: new ClipName, maxTime: Infinity, mimeType: 'video/webm;codecs=vp9', hidden: false, chunksPerSecond: 1 }) {
         if(['HTMLVideoElement', 'HTMLAudioElement', 'HTMLCanvasElement'].missing(streamable?.constructor?.name))
             throw `new Recording(...) must be called on a streamable element: <video>, <audio>, or <canvas>`;
@@ -2079,8 +2082,9 @@ class Recording {
 
                     source.closest('[data-a-player-state]')?.setAttribute('data-recording-status', active);
 
-                    if(signal.aborted)
-                        throw signal.reason;
+                    source.recorders.delete(this.name);
+                    source.recorders.set(`[[${ this.name }]]`, this);
+
                     return this;
                 },
 
@@ -2088,20 +2092,21 @@ class Recording {
             },
 
             save: {
-                value(as = new ClipName) {
+                value(as = null) {
                     let recorder = this.recorder,
                         source = recorder.source,
-                        blobs = this.blobs ?? recorder?.blobs;
+                        blobs = this.blobs ?? recorder?.blobs,
+                        signal = recorder.controller?.signal;
 
-                    as = this.as ?? as;
+                    if(signal?.aborted)
+                        return signal;
+
+                    as ??= this.as ?? new ClipName;
 
                     if(Recording.__LINKS__.has(this.guid))
                         return Recording.__LINKS__.get(this.guid);
 
                     let chunks = blobs ?? [];
-
-                    source.recorders.delete(this.name);
-                    source.recorders.set(`[[${ this.name }]]`, this);
 
                     if(chunks.length < 1)
                         throw `Unable to save clip. No recording data available.`;
@@ -2136,7 +2141,14 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(options = 
 HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDING') {
     this.recorders ??= new Map;
 
-    return this.recorders?.get(key);
+    if(key == Recording.ANY)
+        for(let [key, recorder] of this.recorders)
+            return recorder;
+
+    if(key == Recording.ALL)
+        return this.recorders;
+
+    return this.recorders.get(key);
 };
 
 // Determines if there is a recording of a video element
@@ -2144,7 +2156,10 @@ HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT
 HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDING') {
     this.recorders ??= new Map;
 
-    return this.recorders?.has(key);
+    if(key == Recording.ANY)
+        return this.recorders.size > 0;
+
+    return this.recorders.has(key);
 };
 
 // Removes a recording of a video element
@@ -2152,7 +2167,11 @@ HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT
 HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
     this.recorders ??= new Map;
 
-    this.recorders?.delete(key);
+    if(key == Recording.ALL)
+        for(let [key, recorder] of this.recorders)
+            this.recorders.delete(key);
+    else
+        this.recorders.delete(key);
 
     return this;
 };
@@ -2160,7 +2179,11 @@ HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'D
 // Pauses a recording of a video element
     // HTMLVideoElement..pauseRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDING') {
-    this.getRecording(key)?.pause();
+    if(key == Recording.ALL)
+        for(let [key, recorder] of this.recorders)
+            this.getRecording(key)?.pause();
+    else
+        this.getRecording(key)?.pause();
 
     return this;
 };
@@ -2168,7 +2191,11 @@ HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEF
 // Resumes a recording of a video element
     // HTMLVideoElement..resumeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDING') {
-    this.getRecording(key)?.resume();
+    if(key == Recording.ALL)
+        for(let [key, recorder] of this.recorders)
+            this.getRecording(key)?.resume();
+    else
+        this.getRecording(key)?.resume();
 
     return this;
 };
@@ -2176,7 +2203,11 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING', reason = 'Canceled') {
-    this.getRecording(key)?.controller?.abort(reason);
+    if(key == Recording.ALL)
+        for(let [key, recorder] of this.recorders)
+            this.getRecording(key)?.controller?.abort(reason);
+    else
+        this.getRecording(key)?.controller?.abort(reason);
 
     return this;
 };
@@ -2185,17 +2216,28 @@ HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'D
 // Stops recording a video element
     // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDING') {
-    this.getRecording(key)?.stop();
+    if(key == Recording.ALL)
+        for(let [key, recorder] of this.recorders)
+            this.getRecording(key)?.stop();
+    else
+        this.getRecording(key)?.stop();
 
     return this;
 };
 
 // Saves a video element recording
     // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement
-HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = new ClipName) {
+HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = null) {
     key ??= 'DEFAULT_RECORDING';
 
-    return this.getRecording(key)?.recording?.save(name);
+    let saves = [], count = 0;
+    if(key == Recording.ALL)
+        for(let [key, recorder] of this.recorders)
+            saves.push(this.getRecording(key)?.recording?.save(count++? `${ name } (${ count })`: name ??= new ClipName));
+    else
+        return this.getRecording(key)?.recording?.save(name);
+
+    return saves;
 };
 
 // Returns the confidence level of the machine's ability to play the specified media type
@@ -2262,6 +2304,20 @@ HTMLPictureElement.prototype.copy ??= function copy() {
 
     return promise;
 };
+
+// Returns a promises status
+    // https://stackoverflow.com/a/35820220/4211612
+Promise.prototype.status ??= function status() {
+    let pending = Symbol(Promise.PENDING);
+
+    return Promise.race([this, pending]).then(response => response === pending? Promise.PENDING: Promise.FULFILLED, () => Promise.REJECTED);
+};
+
+Object.defineProperties(Promise, {
+    PENDING: { value: 'pending' },
+    FULFILLED: { value: 'fulfilled' },
+    REJECTED: { value: 'rejected' },
+});
 
 // Returns an iterable range (inclusive)
     // Number..to(end:number?, by:number?) → @@Iterator
