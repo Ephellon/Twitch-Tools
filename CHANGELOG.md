@@ -48,6 +48,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.10.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.10.1)
+- Fixed issue where some items would not be recognized by the Auto-claim wallet
+
 > [`5.32.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.10)
 - Fixed First in Line pausing logic
 - Modified StopWatch logic

@@ -6397,11 +6397,11 @@ let Initialize = async(START_OVER = false) => {
                     rewards.map(async reward => {
                         let $image = $('img', reward)?.src,
                             $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent),
-                            $title = ($('button ~ * [title]', reward)?.textContent || '').mutilate();
+                            $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
 
                         let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                             (false
-                                || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
+                                || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
                                 || (title.equals($title) && (cost == $cost || image.url.equals($image.url)))
                             )
                         );
@@ -6429,14 +6429,14 @@ let Initialize = async(START_OVER = false) => {
                 AutoClaimRewards ??= {};
 
                 let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
-                    $title = ($('#channel-points-reward-center-header', head)?.textContent || '').mutilate(),
+                    $title = ($('#channel-points-reward-center-header', head)?.textContent || '').trim(),
                     $prompt = ($('.reward-center-body p', body)?.textContent || '').trim(),
                     $image = $('.reward-icon img', body)?.src,
                     [$cost = 0] = (($('[disabled]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
                 let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                     (false
-                        || (type.equals("unknown") && id.equals(UUID.from([$image, $title, $cost].join('|$|'), true).value))
+                        || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
                         || (type.unlike("custom") && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
                         || (title.equals($title) && (cost == $cost || image?.url?.equals($image?.url)))
                     )
