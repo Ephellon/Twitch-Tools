@@ -784,6 +784,31 @@
                                 <h2 tr-id>
                                     Get started by <a href='#filter_rules-input' target=_self>adding</a> some rules.
                                 </h2>
+
+                                <details>
+                                    <summary subtitle>Examples</summary>
+                                    <ul>
+                                        <li>
+                                            Remove messages that contain certain words: <pre type=code>merch,promo,sponsor</pre>
+                                        </li>
+                                        <li>
+                                            Remove messages that contain certain emotes: <pre type=code>:LUL:,:KEKW:</pre>
+                                        </li>
+                                        <li>
+                                            Remove messages from certain users: <pre type=code>@username,@otherUsername</pre>
+                                        </li>
+                                        <li>
+                                            Remove messages from certain badge users: <pre type=code>&lt;badge&gt;,&lt;another badge&gt;</pre>
+                                            Only part of the badge names are required: <pre type=code>&lt;mod&gt; &rarr; &lt;moderator&gt;; &lt;cheer&gt; = &lt;cheer100&gt; &lt;cheer500&gt; ...</pre>
+                                        </li>
+                                        <li>
+                                            Remove messages that contain certain patterns (<a href='https://javascript.info/regular-expressions'>RegExp</a>): <pre type=code>swears?|bad w[o0]rd</pre>
+                                        </li>
+                                        <li>
+                                            Remove messages on certain channels: <pre type=code>/DashDucks <em>filter-rule</em></pre>
+                                        </li>
+                                    </ul>
+                                </details>
                             </div>
                         </div>
                     </details>
@@ -925,6 +950,31 @@
                                 <h3 tr-id>
                                     Get started by <a href='#phrase_rules-input' target=_self>adding</a> some rules.
                                 </h3>
+
+                                <details>
+                                    <summary subtitle>Examples</summary>
+                                    <ul>
+                                        <li>
+                                            Highlight messages that contain certain words: <pre type=code>merch,promo,sponsor</pre>
+                                        </li>
+                                        <li>
+                                            Highlight messages that contain certain emotes: <pre type=code>:LUL:,:KEKW:</pre>
+                                        </li>
+                                        <li>
+                                            Highlight messages from certain users: <pre type=code>@username,@otherUsername</pre>
+                                        </li>
+                                        <li>
+                                            Highlight messages from certain badge users: <pre type=code>&lt;badge&gt;,&lt;another badge&gt;</pre>
+                                            Only part of the badge names are required: <pre type=code>&lt;mod&gt; &rarr; &lt;moderator&gt;; &lt;cheer&gt; = &lt;cheer100&gt; &lt;cheer500&gt; ...</pre>
+                                        </li>
+                                        <li>
+                                            Highlight messages that contain certain patterns (<a href='https://javascript.info/regular-expressions'>RegExp</a>): <pre type=code>praises?|g[o0]+d w[o0]rd</pre>
+                                        </li>
+                                        <li>
+                                            Highlight messages on certain channels: <pre type=code>/DashDucks <em>highlight-rule</em></pre>
+                                        </li>
+                                    </ul>
+                                </details>
                             </div>
                         </div>
                     </details>
@@ -950,18 +1000,21 @@
                 <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurking Message</div>
                 <div class=summary>
                     <p tr-id>
-                        For channels where you own a <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>special badge</a>, send a message to notify you are <b attention-text top-tooltip='Watching (one or more) streams with little to no engagement'>lurking</b>.
+                        Send message(s) to specific channels based on rules you set. If multiple messages are defined for the same rule, a random one will be chosen.
                     </p>
-                    <p>
-                        The badge level that should send the message:
+                    <p tr-id>
+                        What <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>special badge</a> should send <em>general messages</em>?
+
+                        <div>
+                            <select id=auto_chat__vip>
+                                <option value=null set='textContent→\Glyphs.utf8.error \this.textContent'>Disabled (never send)</option>
+                                <option value=moderator set='textContent→\Glyphs.utf8.sword \this.textContent'>Moderator</option>
+                                <option value=vip set='textContent→\Glyphs.utf8.vip \this.textContent'>VIP</option>
+                                <option value=subscriber set='textContent→\Glyphs.utf8.fav \this.textContent'>Subscriber</option>
+                                <option value=everyone set='textContent→\Glyphs.utf8.intro \this.textContent'>Everyone (always send)</option>
+                            </select>
+                        </div>
                     </p>
-                    <select id=auto_chat__vip>
-                        <option value=null set='textContent→\Glyphs.utf8.error \this.textContent'>Disabled (never send message)</option>
-                        <option value=moderator set='textContent→\Glyphs.utf8.sword \this.textContent'>Moderator</option>
-                        <option value=vip set='textContent→\Glyphs.utf8.vip \this.textContent'>VIP</option>
-                        <option value=subscriber set='textContent→\Glyphs.utf8.fav \this.textContent'>Subscriber</option>
-                        <option value=everyone set='textContent→\Glyphs.utf8.intro \this.textContent'>Everyone (always send message)</option>
-                    </select>
 
                     <details>
                         <summary tr-id=options subtitle='Adjust options for &quot;Lurking Message&quot;'>Options</summary>
@@ -980,11 +1033,42 @@
                             </div>
 
                             <div opt>
-                                <div class=title tr-id='auto-chat:lurking-message'>Message</div>
+                                <div class=title tr-id='auto-chat:lurking-message'>Message(s)</div>
                                 <div class=summary>
                                     <p tr-id>
-                                        Send this message on your behalf: <input id=auto_chat__lurking_message type=text placeholder='Just going to !lurk'>
+                                        <input id=lurking_rules-input type=text value left-tooltip='Case insensitive • Semicolon separated' placeholder='/channel <badge> message'>
                                     </p>
+                                    <details>
+                                        <summary tr-id='lurking-message:options' subtitle='View, or remove messages'>Messages</summary>
+                                        <div id=lurking_rules type=list>
+                                            <div lurking-type=channel tr-id><h2>Channel Specific Messages</h2></div>
+
+                                            <div lurking-type=badge tr-id><h2>Badge Specific Messages</h2></div>
+
+                                            <div lurking-type=text tr-id><h2>General Messages</h2></div>
+
+                                            <div>
+                                                <h2 tr-id>
+                                                    Get started by <a href='#lurking_rules-input' target=_self>adding</a> some rules and messages.
+                                                </h2>
+
+                                                <details>
+                                                    <summary subtitle>Examples</summary>
+                                                    <ul>
+                                                        <li>
+                                                            Send a message on a specific channel (<em>DashDucks</em>): <pre type=code>/dashducks another day, another duck :D</pre>
+                                                        </li>
+                                                        <li>
+                                                            Send a message where you have certain permissions (<em>moderator</em>): <pre type=code>/&lt;mod&gt; modCheck I have risen modCheck</pre>
+                                                        </li>
+                                                        <li>
+                                                            Send a message on a specific channel, where you have certain permissions (<em>DashDuck:moderator</em>): <pre type=code>/dashducks &lt;mod&gt; modCheck I have risen modCheck</pre>
+                                                        </li>
+                                                    </ul>
+                                                </details>
+                                            </div>
+                                        </div>
+                                    </details>
                                 </div>
                             </div>
 
@@ -1468,7 +1552,7 @@
                 </div>
             </section>
 
-            <!-- Store Integration → acquisition,asset,assimilation,association,buy,channel,contact,current,element,examination,exploration,flood,flow,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,purchase,pursuit,quest,relationship,research,rush,search,spate,stock,store,stream,surge,tide,tie,torrent,tributary -->
+            <!-- Store Integration → acquisition,advance,asset,assimilation,association,boy,buy,channel,contact,cube,current,dsi,element,examination,exploration,flood,flow,game,hookup,hunt,inquiry,inspection,integration,investigation,investment,link,network,nintendo,play,playstation,purchase,pursuit,quest,relationship,research,rush,search,spate,station,stock,store,steam,stream,surge,switch,tide,tie,torrent,tributary,wii,xbox -->
             <section new='5.29'>
                 <div class=title tr-id=store-integration><span small gold glyph=gift></span> Store Integration</div>
                 <div class=summary>
@@ -1479,17 +1563,62 @@
                     <p tr-id>
                         When a stream is loaded and a game is detected, search for the game and create a purchase link.
                     </p>
-                    <br>
-                    <p tr-id>
-                        Currently supports:
+                    <details>
+                        <summary tr-id=options subtitle='Adjust options for &quot;Store Integration&quot;'>Options</summary>
+                        <div>
+                            <div opt>
+                                <div class=title tr-id='store-integration:steam'>Steam&reg;</div>
+                                <div class=summary>
+                                    <p tr-id>
+                                        Enable Steam&reg; store integration.
+                                    </p>
+                                    <div class=toggle>
+                                        <input id=store_integration__steam type=checkbox checked>
+                                        <label for=store_integration__steam></label>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <ul>
-                            <li>Nintendo&reg;</li>
-                            <li>PlayStation&reg;</li>
-                            <li>Steam&reg;</li>
-                            <li>Xbox&reg;</li>
-                        </ul>
-                    </p>
+                            <div opt>
+                                <div class=title tr-id='store-integration:playstation'>PlayStation&reg;</div>
+                                <div class=summary>
+                                    <p tr-id>
+                                        Enable PlayStation&reg; store integration.
+                                    </p>
+                                    <div class=toggle>
+                                        <input id=store_integration__playstation type=checkbox checked>
+                                        <label for=store_integration__playstation></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class=title tr-id='store-integration:xbox'>Xbox&reg;</div>
+                                <div class=summary>
+                                    <p tr-id>
+                                        Enable Xbox&reg; store integration.
+                                    </p>
+                                    <div class=toggle>
+                                        <input id=store_integration__xbox type=checkbox checked>
+                                        <label for=store_integration__xbox></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class=title tr-id='store-integration:nintendo'>Nintendo&reg;</div>
+                                <div class=summary>
+                                    <p tr-id>
+                                        Enable Nintendo&reg; store integration.
+                                    </p>
+                                    <div class=toggle>
+                                        <input id=store_integration__nintendo type=checkbox checked>
+                                        <label for=store_integration__nintendo></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
 

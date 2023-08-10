@@ -90,19 +90,38 @@ let Chat__Initialize = async(START_OVER = false) => {
     GLOBAL_EVENT_LISTENERS ??= {};
 
     // Time how long jobs take to complete properly
-    let STOP_WATCHES = new Map,
-        JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
-            let { abs } = Math;
-            let start = STOP_WATCHES.get(JobName),
-                stop = +new Date,
-                span = abs(start - stop),
-                max = abs(JobTime) * 1.1;
+    class StopWatch {
+        static #WATCHES = new Map;
+
+        constructor(name, interval) {
+            interval ??= Timers[name];
+
+            StopWatch.#WATCHES.set(name, this);
+
+            return Object.assign(this, {
+                name, interval,
+
+                start: new Date,
+                stop: null,
+                span: null,
+                max: Math.abs(interval + new Date) * 1.1,
+            });
+        }
+
+        static stop(name) {
+            StopWatch.#WATCHES.get(name)?.time();
+        }
+
+        time() {
+            let stop = this.stop = new Date;
+            let span = this.span = Math.abs(this.start - stop);
+            let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ top.location.pathname }`)
+                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
-        },
-        START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
+        }
+    }
 
     /*** Automation
      *                    _                        _   _
@@ -125,7 +144,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.auto_claim_bonuses = () => {
-        START__STOP_WATCH('auto_claim_bonuses');
+        new StopWatch('auto_claim_bonuses');
 
         let ChannelPoints = (null
                 ?? $('[data-test-selector="community-points-summary"i] button[class*="--success"i]')
@@ -159,7 +178,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             if(nullish(parent) || nullish(heading)) {
                 // wait(5000).then(Chat__Initialize);
-                return JUDGE__STOP_WATCH('auto_claim_bonuses');
+                return StopWatch.stop('auto_claim_bonuses');
             }
 
             container.innerHTML = parent.outerHTML;
@@ -250,7 +269,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             ?.closest('div:not([class*="channel"i])')
             ?.setAttribute('style', 'margin-top:0.1em');
 
-        JUDGE__STOP_WATCH('auto_claim_bonuses');
+        StopWatch.stop('auto_claim_bonuses');
     };
     Timers.auto_claim_bonuses = 2_500;
 
@@ -660,17 +679,17 @@ let Chat__Initialize = async(START_OVER = false) => {
         };
 
     Handlers.bttv_emotes = () => {
-        START__STOP_WATCH('bttv_emotes');
+        new StopWatch('bttv_emotes');
 
         let BTTVEmoteSection = $('#tt-bttv-emotes');
 
         if(defined(BTTVEmoteSection))
-            return JUDGE__STOP_WATCH('bttv_emotes');
+            return StopWatch.stop('bttv_emotes');
 
         let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
         if(nullish(parent))
-            return JUDGE__STOP_WATCH('bttv_emotes');
+            return StopWatch.stop('bttv_emotes');
 
         // Put all BTTV emotes into the emote-picker list
         let BTTVEmotes = [];
@@ -714,7 +733,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         parent.insertBefore(BTTVEmoteSection, parent.firstChild);
 
-        JUDGE__STOP_WATCH('bttv_emotes');
+        StopWatch.stop('bttv_emotes');
     };
     Timers.bttv_emotes = 5_000;
 
@@ -1150,35 +1169,55 @@ let Chat__Initialize = async(START_OVER = false) => {
     }
 
     // Update rules
-        // UPDATE_RULES(ruleType:string={ "filter" "phrase" })
-    let UPDATE_RULES = (ruleType) => {
+        // UPDATE_RULES(ruleType:string<"filter" | "phrase" | "lurking">) → object<{ text:RegExp, user:RegExp, emote:RegExp, badge:RegExp, channel:array<object>, rules:array<string>{ specific:array<string{ channel:array<string>, user:array<string>, badge:array<string>, emote:array<string> }>, general:array<string> } }>
+    let UPDATE_RULES = (ruleType, delimeter = ',') => {
         let rules = Settings[`${ ruleType }_rules`];
         let channel = [], user = [], badge = [], emote = [], text = [];
 
         if(defined(rules?.length)) {
-            rules = rules.split(/\s*,\s*/).map(rule => rule.trim()).filter(rule => rule.length);
+            rules = rules.split(RegExp(`\\s*${ delimeter }\\s*`)).map(rule => rule.trim()).filter(rule => rule.length);
+
+            Object.defineProperties(rules, {
+                specific: { value: [] },
+                general: { value: [] },
+            });
 
             let R = RegExp;
             for(let rule of rules)
                 // /channel text
                 if(/^\/[\w\-]+/.test(rule)) {
-                    channel.push({ ...(/^\/(?<name>[\w\-]+) +(?:<(?<badge>[^>]+)>|:(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))$/i.exec(rule).groups) });
+                    let caught = /^\/(?<name>[\w\-]+) +(?:(?:<(?<badge>[^>]+)>)?(?::(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))?)$/i.exec(rule).groups;
+
+                    channel.push(caught);
+                    rules.specific.push(rule);
+                    (rules.specific.channel ??= []).push(caught);
                 }
                 // @username
-                else if(/^@([\w\-]+)$/.test(rule) && ['@everyone', '@chat', '@all'].missing(rule.toLowerCase())) {
+                else if(/^@([\w\-]+)/.test(rule) && ['@everyone', '@chat', '@all'].missing(rule.toLowerCase())) {
+                    let caught = /^@(?<user>[\w\-]+)(?<text>.*)/.exec(rule).groups;
+
                     user.push(R.$1);
+                    rules.specific.push(rule);
+                    (rules.specific.user ??= []).push(caught);
                 }
                 // <badge>
-                else if(/^<([\w\- ]+)>$/.test(rule)) {
+                else if(/^<([\w\- ]+)>/.test(rule)) {
+                    let caught = /^<(?<badge>[\w\- ]+)>(?<text>.*)/.exec(rule).groups;
+
                     badge.push(R.$1);
+                    rules.specific.push(rule);
+                    (rules.specific.badge ??= []).push(caught);
                 }
                 // :emote:
                 else if(/^:([\w\- ]+):$/.test(rule)) {
                     emote.push(R.$1);
+                    rules.specific.push(rule);
+                    (rules.specific.emote ??= []).push(R.$1);
                 }
                 // text
                 else if(rule) {
-                    text.push(/^[\w\s]+$/.test(rule)? `\\b${ rule.trim() }\\b`: rule);
+                    text.push(/^[\w\s]+$/.test(rule)? `\\b${ rule }\\b`: rule);
+                    rules.general.push(rule);
                 }
         }
 
@@ -1187,7 +1226,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             user: (user.length? RegExp(`^(${ user.join('|') })$`, 'i'): /^[\b]$/),
             emote: (emote.length? RegExp(`(${ emote.join('|') })`, 'i'): /^[\b]$/),
             badge: (badge.length? RegExp(`(${ badge.join('|') })`, 'i'): /^[\b]$/),
-            channel
+            channel, rules
         }
     };
 
@@ -1204,7 +1243,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let MESSAGE_FILTER;
 
     Handlers.filter_messages = () => {
-        START__STOP_WATCH('filter_messages');
+        new StopWatch('filter_messages');
 
         MESSAGE_FILTER ??= Chat.onmessage = Chat.onpinned = async line => {
             when(line => (defined(line.element)? line: false), 250, line).then(async line => {
@@ -1260,7 +1299,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(MESSAGE_FILTER))
             Chat.get().map(MESSAGE_FILTER);
 
-        JUDGE__STOP_WATCH('filter_messages');
+        StopWatch.stop('filter_messages');
     };
     Timers.filter_messages = -2_500;
 
@@ -1401,7 +1440,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         PINNED_FILTER = -1;
 
     Handlers.filter_bulletins = () => {
-        START__STOP_WATCH('filter_bulletins');
+        new StopWatch('filter_bulletins');
 
         for(let [key, subjects] of BULLETIN_FILTERS)
             if(key.endsWith('bullets_paid') && parseBool(Settings[key]))
@@ -1409,7 +1448,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             else if(parseBool(Settings[key]))
                 AddCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
 
-        JUDGE__STOP_WATCH('filter_bulletins');
+        StopWatch.stop('filter_bulletins');
     };
     Timers.filter_bulletins = -2_500;
 
@@ -1445,7 +1484,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let PHRASE_HIGHLIGHTER;
 
     Handlers.highlight_phrases = () => {
-        START__STOP_WATCH('highlight_phrases');
+        new StopWatch('highlight_phrases');
 
         PHRASE_HIGHLIGHTER ??= Chat.onmessage = async line => {
             when(line => (defined(line.element)? line: false), 250, line).then(async line => {
@@ -1501,7 +1540,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(defined(PHRASE_HIGHLIGHTER))
             Chat.get().map(PHRASE_HIGHLIGHTER);
 
-        JUDGE__STOP_WATCH('highlight_phrases');
+        StopWatch.stop('highlight_phrases');
     };
     Timers.highlight_phrases = -2_500;
 
@@ -1762,7 +1801,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let NATIVE_REPLY_POLYFILL;
 
     Handlers.native_twitch_reply = () => {
-        START__STOP_WATCH('native_twitch_reply');
+        new StopWatch('native_twitch_reply');
 
         // Enter
         if(nullish(GLOBAL_EVENT_LISTENERS.ENTER))
@@ -1772,7 +1811,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             });
 
         if(defined(NATIVE_REPLY_POLYFILL) || $.defined('.chat-line__reply-icon'))
-            return JUDGE__STOP_WATCH('native_twitch_reply');
+            return StopWatch.stop('native_twitch_reply');
 
         NATIVE_REPLY_POLYFILL ??= {
             // Button above chat elements
@@ -1905,7 +1944,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         Chat.onmessage = NATIVE_REPLY_POLYFILL.AddNativeReplyButton;
 
-        JUDGE__STOP_WATCH('native_twitch_reply');
+        StopWatch.stop('native_twitch_reply');
     };
     Timers.native_twitch_reply = 1000;
 
@@ -2055,7 +2094,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     CHAT_CARDIFIED.set(href, null);
                     CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
-                    /*await*/ fetchURL.idempotent(href, { mode: 'cors' })
+                    /*await*/ fetchURL.idempotent(href)
                         .then(response => response.text())
                         .then(DOMParser.stripBody)
                         .then(html => HTMLParser.parseFromString(html, 'text/html'))
@@ -2160,6 +2199,118 @@ let Chat__Initialize = async(START_OVER = false) => {
         RegisterJob('link_maker__chat');
     }
 
+    /*** Auto-chat (VIP) · @dskw1
+     *                    _                  _           _      ____      _______ _______
+     *         /\        | |                | |         | |    / /\ \    / /_   _|  __ \ \
+     *        /  \  _   _| |_ ___ ______ ___| |__   __ _| |_  | |  \ \  / /  | | | |__) | |
+     *       / /\ \| | | | __/ _ \______/ __| '_ \ / _` | __| | |   \ \/ /   | | |  ___/| |
+     *      / ____ \ |_| | || (_) |    | (__| | | | (_| | |_  | |    \  /   _| |_| |    | |
+     *     /_/    \_\__,_|\__\___/      \___|_| |_|\__,_|\__| | |     \/   |_____|_|    | |
+     *                                                         \_\                     /_/
+     *
+     */
+    let AUTO_CHAT_NAME = `auto-chat/${ STREAMER.sole }`;
+
+    Handlers.auto_chat__vip = () => {
+        if(Settings.auto_chat__vip === true)
+            Settings.set({ auto_chat__vip: 'vip' });
+        else if(Settings.auto_chat__vip === false)
+            Settings.set({ auto_chat__vip: null });
+
+        wait(parseInt(Settings.auto_chat__wait_time) * 60_000).then(() => {
+            Cache.load(AUTO_CHAT_NAME, results => {
+                let old = results[AUTO_CHAT_NAME],
+                    now = new Date;
+
+                if(nullish(old))
+                    old = now;
+                else
+                    old = new Date(old);
+
+                // It's been less than 8h since the last auto-message was sent
+                if((now - old) && (now - old < parseTime('8:00:00')))
+                    return;
+
+                let Rules = UPDATE_RULES('lurking', ';');
+
+                let channel = STREAMER.name?.toLowerCase();
+                let badges = STREAMER.perm.all ?? ['everyone'];
+                let message, reason;
+
+                if(STREAMER.perm.has(Settings.auto_chat__vip)) {
+                    message = Rules.rules.general.random();
+                    reason = 'permission';
+                } else {
+                    if(Rules.badge.test(badges.join(','))) {
+                        message = Rules.rules.specific.badge.filter(({ badge, text }) => {
+                            return parseBool(false
+                                || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
+                            );
+                        }).random()?.text;
+                        reason = 'badge';
+                    } else {
+                        message = Rules.rules.specific.channel.filter(({ name, badge, text }) => {
+                            if(nullish(STREAMER))
+                                return;
+
+                            return parseBool(true
+                                && name.equals(channel)
+                                && (false
+                                    || nullish(badge)
+                                    || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
+                                )
+                            );
+                        }).random()?.text;
+                        reason = 'channel';
+                    }
+                }
+
+                if(nullish(message))
+                    return;
+
+                LOG(`Sending lurking message because the ${ reason } matches`, message);
+
+                Chat.send(message);
+
+                Cache.save({ [AUTO_CHAT_NAME]: now.toJSON() });
+            });
+        });
+
+        // Handle mentions while AFK
+        Chat.onmessage = async({ uuid, author, usable, message, mentions, deleted }) => {
+            // Don't reply to messages not meant for us...
+            if(true
+                && mentions.map(username => username.toLowerCase()).missing(USERNAME.toLowerCase())
+                // Only accept exact matches, instead of partials; e.g. "Hey @SomeUserName, wyd?" vs. "Hey User, wyd?"
+                && message.toLowerCase().missing(USERNAME)
+            ) return;
+
+            // Wouldn't make sense to reply to a deleted message...
+            if(await deleted)
+                return;
+
+            // The UUID does not belong to a valid Twitch message...
+            if(!usable)
+                return;
+
+            // What do?
+            switch(Settings.auto_chat__mentions) {
+                case 'reply': {
+                    Chat.reply(uuid, 'AFK. BRB');
+                } break;
+
+                default: return;
+            }
+        };
+    };
+
+    Timers.auto_chat__vip = -5_000;
+
+    __AutoChat_VIP__:
+    if(parseBool(Settings.auto_chat__vip)) {
+        RegisterJob('auto_chat__vip');
+    }
+
     /*** Prevent spam
      *      _____                          _      _____
      *     |  __ \                        | |    / ____|
@@ -2173,7 +2324,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let SPAM = [];
 
     Handlers.prevent_spam = () => {
-        START__STOP_WATCH('prevent_spam');
+        new StopWatch('prevent_spam');
 
         function markAsSpam(element, type = 'spam', message, phrase = '') {
             let spam_placeholder = "chat-deleted-message-placeholder";
@@ -2224,7 +2375,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             ].isolate();
         });
 
-        JUDGE__STOP_WATCH('prevent_spam');
+        StopWatch.stop('prevent_spam');
     };
     Timers.prevent_spam = -1000;
 
@@ -2353,7 +2504,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.convert_bits = () => {
-        START__STOP_WATCH('convert_bits');
+        new StopWatch('convert_bits');
 
         let dropdown = $('[class*="bits-buy"i]'),
             bits_counter = $.all('[class*="bits-count"i]:not([tt-tusda])'),
@@ -2425,7 +2576,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 });
         }
 
-        JUDGE__STOP_WATCH('convert_bits');
+        StopWatch.stop('convert_bits');
     };
     Timers.convert_bits = 1000;
 
@@ -2450,7 +2601,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         REWARDS_CALCULATOR_TEXT;
 
     Handlers.rewards_calculator = () => {
-        START__STOP_WATCH('rewards_calculator');
+        new StopWatch('rewards_calculator');
 
         __GetMultiplierAmount__:
         if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
@@ -2475,7 +2626,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.closest?.('button');
 
         if(nullish(container)) {
-            JUDGE__STOP_WATCH('rewards_calculator');
+            StopWatch.stop('rewards_calculator');
 
             RemoveCustomCSSBlock_Chat('tt-rewards-calc');
         }
@@ -2919,7 +3070,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         }
         `);
 
-        JUDGE__STOP_WATCH('rewards_calculator');
+        StopWatch.stop('rewards_calculator');
     };
     Timers.rewards_calculator = 250;
 
@@ -2993,7 +3144,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.recover_chat = () => {
-        START__STOP_WATCH('recover_chat');
+        new StopWatch('recover_chat');
 
         let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [role="tt-log"i], [data-test-selector="banned-user-message"i], [data-test-selector^="video-chat"i]'),
             error = $('[class*="chat"i][class*="content"] .core-error');
@@ -3017,7 +3168,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         container?.parentElement?.replaceChild(iframe, container);
 
-        JUDGE__STOP_WATCH('recover_chat');
+        StopWatch.stop('recover_chat');
     };
     Timers.recover_chat = 500;
 
@@ -3039,7 +3190,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     let RESTORED_MESSAGES = new Set;
 
     Handlers.recover_messages = async() => {
-        START__STOP_WATCH('recover_messages');
+        new StopWatch('recover_messages');
 
         restoring: for(let [uuid, line] of Chat.messages) {
             if(RESTORED_MESSAGES.has(uuid))
@@ -3160,7 +3311,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             NOTICE(`Restored message "${ author }: ${ message }"`, { line, container });
         }
 
-        JUDGE__STOP_WATCH('recover_messages');
+        StopWatch.stop('recover_messages');
     };
     // Variable timer...
     Timers.recover_messages = 5000;

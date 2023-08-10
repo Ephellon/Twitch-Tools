@@ -243,7 +243,7 @@ class LZW {
     }
 
     // Decodes an LZW string
-        // decode(string:string<LZW>?) → string
+        // decode(string:string?<LZW>) → string
     static decode(string = '') {
         let dictionary = new Map,
             [word] = string,
@@ -319,7 +319,7 @@ class LZW {
     }
 
     // Decodes an LZW-64 string
-        // decode64(string:string<LZW-64>?) → string
+        // decode64(string:string?<LZW-64>) → string
     static decode64(string = '') {
         let { B64 } = LZW,
             D64 = {};
@@ -453,20 +453,23 @@ class Tooltip {
     }
 };
 
-// Creates an asynchronous construct similar to Promise. The only difference is that it accepts a spread of arguments for its resolvers and chains
-    // new Async(ƒ (onResolve, onReject))...
+// Creates an asynchronous construct similar to a Promise. The only difference is that it accepts a spread (array) of arguments for its resolver and/or rejector
+    // new Async(ƒ (onResolve, onReject)) → Async<#Promise>
 class Async {
     static PENDING = 'pending';
     static FULFILLED = 'fulfilled';
     static REJECTED = 'rejected';
 
-    #resolve;
+    #resolvers = [];
     #values;
 
-    #reject;
+    #rejectors = [];
     #errors;
 
-    #status = 'pending';
+    #chain = [];
+
+    #status = Async.PENDING;
+    #volley = Async.PENDING;
     #called = false;
     #settled = false;
     #fulfilled = false;
@@ -477,32 +480,48 @@ class Async {
     }
 
     then(callback) {
-        if(this.#fulfilled)
-            this.#values = callback.apply(this, this.#values);
+        this.#resolvers.push(callback);
+        this.#chain.push(callback);
+
+        Object.defineProperties(callback, { signal: { value: Async.FULFILLED } });
 
         return this;
     }
 
     catch(callback) {
-        if(this.#rejected)
-            this.#errors = callback.apply(this, this.#errors);
+        this.#rejectors.push(callback);
+        this.#chain.push(callback);
+
+        Object.defineProperties(callback, { signal: { value: Async.REJECTED } });
 
         return this;
     }
 
-    resolve(...values) {
+    finally(callback) {
+        this.#chain.push(callback);
+
+        return this;
+    }
+
+    status() {
+        let pending = Symbol(Async.PENDING);
+
+        return Async.race([this, pending]).then(response => response === pending? Async.PENDING: Async.FULFILLED, () => Async.REJECTED);
+    }
+
+    static resolve(...values) {
         return new Async(function(resolve, reject) {
             resolve.apply(this, values);
         });
     }
 
-    reject(...errors) {
+    static reject(...errors) {
         return new Async(function(resolve, reject) {
             reject.apply(this, errors);
         });
     }
 
-    all(asyncs) {
+    static all(asyncs) {
         return new Async(function(resolve, reject) {
             let finished = 0;
             let responses = [];
@@ -525,7 +544,7 @@ class Async {
         });
     }
 
-    allSettled(asyncs) {
+    static allSettled(asyncs) {
         return new Async(function(resolve, reject) {
             let settled = 0;
             let statuses = [];
@@ -553,7 +572,7 @@ class Async {
         });
     }
 
-    any(asyncs) {
+    static any(asyncs) {
         return new Async(function(resolve, reject) {
             let failed = 0;
             let reasons = [];
@@ -576,7 +595,32 @@ class Async {
         });
     }
 
-    race(asyncs) {
+    static anySettled(asyncs) {
+        let errors = new Array(asyncs.length);
+        let errd = 0;
+
+        return new Async((resolve, reject) => {
+            asyncs.map((promise, index) => {
+                Async.resolve(promise)
+                    // Resolve the async to a non-empty value
+                    .then(result => {
+                        if(nullish(result))
+                            throw result;
+                        resolve(result);
+                    })
+                    // Reject the value, immediately
+                    .catch(error => {
+                        errors[index] = error;
+
+                        // All asyncs rejected; reject parent
+                        if(++errd == promises.length)
+                            reject(errors);
+                    });
+            });
+        });
+    }
+
+    static race(asyncs) {
         return new Async(function(resolve, reject) {
             for(let async of asyncs)
                 async
@@ -585,33 +629,63 @@ class Async {
         });
     }
 
-    status() {
-        let pending = Symbol(Async.PENDING);
-
-        return Async.race([this, pending]).then(response => response === pending? Async.PENDING: Async.FULFILLED, () => Async.REJECTED);
-    }
-
     #resolver(...values) {
-        this.#status = 'fulfilled';
+        this.#status = Async.FULFILLED;
+        this.#volley = Async.FULFILLED;
         this.#fulfilled = true;
         this.#settled = true;
         this.#values = values;
 
-        if(typeof this.#resolve == 'function' && !this.#called) {
-            this.#resolve.apply(this, this.#values);
+        if(!this.#called) {
             this.#called = true;
+
+            chaining: for(let callback of this.#chain)
+                if(!callback.consumed) {
+                    if(callback.signal && (this.#status != callback.signal) && (this.#volley != callback.signal))
+                        continue chaining;
+
+                    Object.defineProperties(callback, { consumed: { value: true } });
+
+                    let values = this.#values;
+
+                    if(!(values instanceof Array))
+                        values = Array.of(values);
+
+                    // If an error is raised within a `then` callback, raise the error and deviate to the `catch` chain
+                    try {
+                        this.#values = callback.apply(this, values);
+                    } catch(error) {
+                        this.#volley = Async.REJECTED;
+                    }
+                }
         }
     }
 
     #rejector(...errors) {
-        this.#status = 'rejected';
+        this.#status = Async.REJECTED;
+        this.#volley = Async.REJECTED;
         this.#rejected = true;
         this.#settled = true;
         this.#errors = errors;
 
-        if(typeof this.#reject == 'function' && !this.#called) {
-            this.#reject.apply(this, this.#errors);
+        if(!this.#called) {
             this.#called = true;
+
+            chaining: for(let callback of this.#chain)
+                if(!callback.consumed) {
+                    if(callback.signal && (this.#status != callback.signal) && (this.#volley != callback.signal))
+                        continue chaining;
+
+                    Object.defineProperties(callback, { consumed: { value: true } });
+
+                    let errors = this.#errors;
+
+                    if(!(errors instanceof Array))
+                        errors = Array.of(errors);
+
+                    // Errors cannot be volleyed back :P
+                    this.#errors = callback.apply(this, errors);
+                }
         }
     }
 }
@@ -750,6 +824,38 @@ try {
         "void": { value: Symbol(void undefined) },
         "undefined": { value: Symbol(undefined) },
 
+        "all": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.all(...callbacks:function) → array<Promise<any[]>>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when(callback).then(resolve)));
+
+                return Promise.all(promises);
+            },
+        },
+
+        "any": {
+            value:
+            // Makes a Promised setInterval. Only executes if ANY conditions pass
+                // when.any(...callbacks:function) → Promise<any[]>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when(callback).then(resolve)));
+
+                return Promise.any(promises);
+            },
+        },
+
         "pipe": {
             value:
             // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
@@ -765,7 +871,7 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, calling them to only the resolver
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
                 // when.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
             async function(callback, ms = 100, ...args) {
                 args = [].concat(args);
@@ -861,6 +967,132 @@ try {
         },
     });
 
+    Object.defineProperties(when.all, {
+        "defined": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.all.defined(...callbacks:function) → array<Promise<any[]>>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.defined(callback).then(resolve)));
+
+                return Promise.all(promises);
+            },
+        },
+        "nullish": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.all.nullish(...callbacks:function) → array<Promise<any[]>>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.nullish(callback).then(resolve)));
+
+                return Promise.all(promises);
+            },
+        },
+        "empty": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.all.empty(...callbacks:function) → array<Promise<any[]>>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.empty(callback).then(resolve)));
+
+                return Promise.all(promises);
+            },
+        },
+        "sated": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.all.sated(...callbacks:function) → array<Promise<any[]>>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.sated(callback).then(resolve)));
+
+                return Promise.all(promises);
+            },
+        },
+    });
+
+    Object.defineProperties(when.any, {
+        "defined": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.any.defined(...callbacks:function) → Promise<any[]>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.defined(callback).then(resolve)));
+
+                return Promise.any(promises);
+            },
+        },
+        "nullish": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.any.nullish(...callbacks:function) → Promise<any[]>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.nullish(callback).then(resolve)));
+
+                return Promise.any(promises);
+            },
+        },
+        "empty": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.any.empty(...callbacks:function) → Promise<any[]>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.empty(callback).then(resolve)));
+
+                return Promise.any(promises);
+            },
+        },
+        "sated": {
+            value:
+            // Makes a Promised setInterval. Only executes if ALL conditions pass
+                // when.any.sated(...callbacks:function) → Promise<any[]>
+            async function(...callbacks) {
+                callbacks = [].concat(callbacks);
+
+                let promises = [];
+
+                for(let callback of callbacks)
+                    promises.push(new Promise((resolve, reject) => when.sated(callback).then(resolve)));
+
+                return Promise.any(promises);
+            },
+        },
+    });
+
     Object.defineProperties(when.defined, {
         "pipe": {
             value:
@@ -877,7 +1109,7 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
                 // when.defined.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
             async function(callback, ms = 100, ...args) {
                 args = [].concat(args);
@@ -905,7 +1137,7 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
                 // when.nullish.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
             async function(callback, ms = 100, ...args) {
                 args = [].concat(args);
@@ -933,7 +1165,7 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
                 // when.empty.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
             async function(callback, ms = 100, ...args) {
                 args = [].concat(args);
@@ -961,7 +1193,7 @@ try {
 
         "thru": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to only the resolver
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
                 // when.sated.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
             async function(callback, ms = 100, ...args) {
                 args = [].concat(args);
@@ -978,7 +1210,7 @@ try {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
 // Waits to execute a function
-    // wait(delay:number<integer>?, value:<any>?) → Promise<number>
+    // wait(delay:number?<integer>, value:any?) → Promise<number>
 function wait(delay = 100, value) {
     return new Promise(resolve => setTimeout(resolve, delay, value));
 }

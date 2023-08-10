@@ -98,7 +98,15 @@ function parseURL(url) {
             if(typeof url == 'string')
                 url = parseURL(url);
 
-            let { href, searchParameters } = url;
+            let { href, searchParameters } = url,
+                params = {};
+
+            if(parameters instanceof Array) {
+                for(let key of parameters)
+                    params[key] = key;
+
+                parameters = params;
+            }
 
             if(overwrite)
                 searchParameters = Object.entries({ ...searchParameters, ...parameters });
@@ -339,7 +347,24 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             configurable: false,
         },
 
+        // Alters the element's styling
+        // Returns `this` | string<CSS>
+        css: {
+            value: function(...parameters) {
+                if(nullish(parameters))
+                    return this.getAttribute('style') ?? '';
+                this.modStyle.apply(this, parameters);
+
+                return this;
+            },
+
+            writable: false,
+            enumerable: true,
+            configurable: false,
+        },
+
         // Shorthand to set the element's innerHTML
+        // Returns `this` | string<HTML>
         html: {
             value: function(innerHTML) {
                 if(nullish(innerHTML))
@@ -355,6 +380,7 @@ function furnish(tagname = 'div', attributes = null, ...children) {
         },
 
         // Shorthand to set the element's innerText
+        // Returns `this` | string
         text: {
             value: function(innerText) {
                 if(nullish(innerText))
@@ -616,47 +642,63 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 
             result = format
                 // Replace the text
-                .split(/([&!?~](?:year|day|hour|minute|(?:milli)?second))s?(?:\b|_)/g)
+                .split(/(<?[&!?~](?:year|day|hour|minute|(?:milli)?second)s?(?:_|=[^>]+?>|\b))/g)
+                .filter(str => str.length)
                 .map($1 => {
-                    let [command, ...argument] = $1;
+                    let [command, ...argument] = $1.split(/\b/);
 
                     argument = argument.join('');
 
-                    // Syntax `!hour:!minutes:!seconds → ~hour → ~minutes → ~seconds` → `01:00:00 → 1 → 60 → 3600`
+                    if(command[0] == '<') {
+                        let [arg, ...ret] = argument.split('=');
+                        let clk = toTimeString(originalTime, command[1] + arg);
+
+                        ret = ret.join('');
+                        ret = ret.substr(0, ret.length - 1);
+
+                        if(parseFloat(clk) > 0)
+                            return [clk, ret].join('');
+                        return '';
+                    }
+
+                    // Example: 61 minutes, 20 seconds
+                        // SYNTAX:  TOTAL, ROUNDED                  | TOTAL, NOT ROUNDED                            | REMAINDER, LEADING ZERO   | REMAINDER, NO LEADING ZERO    | IF TOTAL (ROUNDED) > 0; append the value then the text following the `=`
+                        // INPUT:   ~hour_h ~minutes_m ~seconds_s   | ?hour_h ?minutes_m ?seconds_s                 | !hour:!minutes:!seconds   | &hour:&minutes:&seconds       | <~days=d, ><~hours=h, ><~minutes=m, ><~seconds=s >
+                        // OUTPUT:  1h 61m 3680s                    | 1.0222222222222221h 61.333333333333336m 3680s | 01:01:20                  | 1:1:20                        | 1h, 61m, 3680s
                     switch(command) {
                         // Total amount (rounded)
                         case '~': {
                             for(let [name, value] of times)
-                                if(argument == 'millisecond')
+                                if(argument.contains('millisecond'))
                                     return milliseconds;
-                                else if(argument == name)
+                                else if(argument.contains(name))
                                     return Math.round(originalTime / times.get(name));
                         } break;
 
                         // Total amount (not rounded)
                         case '?': {
                             for(let [name, value] of times)
-                                if(argument == 'millisecond')
+                                if(argument.contains('millisecond'))
                                     return milliseconds;
-                                else if(argument == name)
+                                else if(argument.contains(name))
                                     return originalTime / times.get(name);
                         } break;
 
                         // Remaining amount (left over) with leading zero
                         case '!': {
                             for(let [name, value] of times)
-                                if(argument == 'millisecond')
+                                if(argument.contains('millisecond'))
                                     return milliseconds;
-                                else if(argument == name)
+                                else if(argument.contains(name))
                                     return time[name]?.padStart(2, '00') ?? '00';
                         } break;
 
                         // Remaining amount (left over) without leading zero
                         case '&': {
                             for(let [name, value] of times)
-                                if(argument == 'millisecond')
+                                if(argument.contains('millisecond'))
                                     return milliseconds;
-                                else if(argument == name)
+                                else if(argument.contains(name))
                                     return time[name] ?? '0';
                         } break;
                     }
@@ -1484,51 +1526,105 @@ Element.prototype.modAttribute ??= function modAttribute(attribute, value = '') 
 }
 
 // Modifies an element's style attribute
-    // Element..modStyle(value:string?) → undefined
-Element.prototype.modStyle ??= function modStyle(value = '', important = false, deleted = false) {
-    function destruct(string) {
-        let css = new Map;
+    // Element..modStyle(value:string?, important:boolean?, deleted:boolean?, innate:boolean?) → undefined
+Element.prototype.modStyle ??= function modStyle(value = '', important = false, deleted = false, innate = false) {
+    let _old = this.modStyle.destruct(this.getAttribute('style')),
+        _new = this.modStyle.destruct(value);
 
-        (string || '')
-            .split(';')
-            .map(declaration => declaration.trim())
-            .filter(declaration => declaration.length > 4)
-                // Shortest possible declaration → `--n:0`
-            .map(declaration => {
-                let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
-                    important = value.toLowerCase().endsWith('!important'),
-                    deleted = value.toLowerCase().endsWith('!delete');
-
-                value = value.replace(/!(important|delete)\b/i, '');
-
-                css.set(property, { value, important, deleted });
-            });
-
-        return css;
-    }
-
-    let _old = destruct(this.getAttribute('style')),
-        _new = destruct(value);
-
-    let final = [];
+    let final = [], innated = [];
     for(let [property, _o] of _old) {
         let _n = _new.get(property);
 
-        if((_n?.value === 0) || (defined(_n) && (_n.deleted || deleted)))
+        if((_n?.value === 0) || (defined(_n) && (_n.deleted || deleted))) {
             continue;
-        else if(defined(_n) && (!_o.important || _n.important || important))
-            final.push([property,_n.value].join(':') + (_n.important? '!important': ''));
-        else
-            final.push([property,_o.value].join(':') + (_o.important? '!important': ''));
+        } else if(defined(_n) && +_o.important <= +(_n.important || important)) {
+            let declaration = [property,_n.value].join(':') + (_n.important || important? '!important': '');
+
+            final.push(declaration);
+
+            if(_n.innate || innate)
+                innated.push(declaration);
+        } else {
+            let declaration = [property,_o.value].join(':') + (_o.important? '!important': '');
+
+            final.push(declaration);
+        }
 
         _new.delete(property);
     }
 
-    for(let [property, _n] of _new)
-        final.push([property,_n.value].join(':') + (_n.important? '!important': ''));
+    for(let [property, _n] of _new) {
+        let declaration = [property,_n.value].join(':') + (_n.important || important? '!important': '');
+
+        final.push(declaration);
+
+        if(_n.innate || innate)
+            innated.push(declaration);
+    }
 
     this.setAttribute('style', final.join(';'));
+
+    innation: if(innated.length) {
+        let parent = this.parentElement;
+        let uuid = new UUID().value;
+
+        function inn(innated) {
+            let parent = this.parentElement;
+
+            this.setAttribute('innated-style', innated.join(';'));
+
+            let interval = setInterval(parent => {
+                $.all('[innated-style]', parent).map(child => parent.modStyle(child.getAttribute('innated-style')));
+            }, 100, parent);
+
+            when(([parent, interval]) => (defined(parent?.attributes?.style?.value)? [parent, interval]: false), 50, [parent, interval]).then(([parent, interval]) => {
+                clearInterval(interval);
+
+                $.all('[innated-style]', parent).map(child => {
+                    child.removeAttribute('innated-style');
+                    child.removeAttribute('innated-uuid');
+                });
+            });
+        }
+
+        this.setAttribute('innated-uuid', uuid);
+
+        if(nullish(parent))
+            when(([uuid, innated]) => {
+                let self = $(`[innated-uuid="${ uuid }"i]`);
+
+                return defined(self.parentElement)? [self, innated]: false
+            }, 50, [uuid, innated]).then(([self, innated]) => inn.call(self, innated));
+        else
+            inn.call(this, innated);
+    }
 }
+
+Object.defineProperties(Element.prototype.modStyle, {
+    destruct: {
+        value(string) {
+            let css = new Map;
+
+            (string || '')
+                .split(';')
+                .map(declaration => declaration.trim())
+                .filter(declaration => declaration.length > 4)
+                    // Shortest possible declaration → `--n:0`
+                .map(declaration => {
+                    let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
+                        important = value.toLowerCase().contains('!important'),
+                        deleted = value.toLowerCase().contains('!delete'),
+                        innate = value.toLowerCase().contains('!innate');
+
+                    value = value.replace(/!(important|delete|innate)\b/gi, '');
+
+                    css.set(property, { value, important, deleted, innate });
+                });
+
+            return css;
+        }
+    },
+});
 
 // Simply gives back the attributes of the elemenet
     // Element..attr
@@ -2044,6 +2140,7 @@ class Recording {
             source: { value: streamable, configurable, writable },
             recorder: { value: recorder, configurable, writable },
             creationTime: { value: +new Date, configurable, writable },
+            completionTime: { value: null, configurable, writable: true },
 
             pause: {
                 value(resumeAfter = Infinity) {
@@ -2096,6 +2193,10 @@ class Recording {
 
                     source.recorders.delete(this.name);
                     source.recorders.set(`[[${ this.name }]]`, this);
+
+                    this.completionTime ??= +new Date;
+
+                    Object.freeze(this);
 
                     return this;
                 },
@@ -2155,7 +2256,8 @@ HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT
 
     if(key == Recording.ANY)
         for(let [key, recorder] of this.recorders)
-            return recorder;
+            if(defined(recorder.recording) && nullish(recorder.recording.completionTime))
+                return recorder;
 
     if(key == Recording.ALL)
         return this.recorders;
@@ -2168,8 +2270,12 @@ HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT
 HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDING') {
     this.recorders ??= new Map;
 
-    if(key == Recording.ANY)
-        return this.recorders.size > 0;
+    if(key == Recording.ANY) {
+        for(let [key, recorder] of this.recorders)
+            if(defined(recorder.recording) && nullish(recorder.recording.completionTime))
+                return true;
+        return false;
+    }
 
     return this.recorders.has(key);
 };
@@ -2191,11 +2297,13 @@ HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'D
 // Pauses a recording of a video element
     // HTMLVideoElement..pauseRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDING') {
-    if(key == Recording.ALL)
+    if(key == Recording.ALL) {
         for(let [key, recorder] of this.recorders)
-            this.getRecording(key)?.pause();
-    else
+            if(nullish(recorder.recording.completionTime))
+                recorder.recording.pause();
+    } else {
         this.getRecording(key)?.pause();
+    }
 
     return this;
 };
@@ -2203,11 +2311,13 @@ HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEF
 // Resumes a recording of a video element
     // HTMLVideoElement..resumeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDING') {
-    if(key == Recording.ALL)
+    if(key == Recording.ALL) {
         for(let [key, recorder] of this.recorders)
-            this.getRecording(key)?.resume();
-    else
+            if(nullish(recorder.recording.completionTime))
+                recorder.recording.resume();
+    } else {
         this.getRecording(key)?.resume();
+    }
 
     return this;
 };
@@ -2215,11 +2325,13 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING', reason = 'Canceled') {
-    if(key == Recording.ALL)
+    if(key == Recording.ALL) {
         for(let [key, recorder] of this.recorders)
-            this.getRecording(key)?.controller?.abort(reason);
-    else
+            if(nullish(recorder.recording.completionTime))
+                recorder.recording.controller.abort(reason);
+    } else {
         this.getRecording(key)?.controller?.abort(reason);
+    }
 
     return this;
 };
@@ -2228,24 +2340,27 @@ HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'D
 // Stops recording a video element
     // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDING') {
-    if(key == Recording.ALL)
+    if(key == Recording.ALL) {
         for(let [key, recorder] of this.recorders)
-            this.getRecording(key)?.stop();
-    else
+            if(nullish(recorder.recording.completionTime))
+                recorder.recording.stop();
+    } else {
         this.getRecording(key)?.stop();
+    }
 
     return this;
 };
 
 // Saves a video element recording
-    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement
+    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement | array<HTMLAnchorElement>
 HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = null) {
     key ??= 'DEFAULT_RECORDING';
 
     let saves = [], count = 0;
+
     if(key == Recording.ALL)
         for(let [key, recorder] of this.recorders)
-            saves.push(this.getRecording(key)?.recording?.save(count++? `${ name } (${ count })`: name ??= new ClipName));
+            saves.push(recorder.recording.save(count++? `${ name } (${ count })`: name ??= new ClipName));
     else
         return this.getRecording(key)?.recording?.save(name);
 
@@ -2716,7 +2831,7 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/rgb-to-hsl.html
     // Converts RGB to HSL
-        // Color.RGBtoHSL(red:number<uint8>?, green:number?<uint8>, blue:number?<uint8>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+        // Color.RGBtoHSL(red:number?<uint8>, green:number?<uint8>, blue:number?<uint8>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
     static RGBtoHSL(R = 0, G = 0, B = 0, A = 1) {
         // Convert RGB to fractions of 1
         let r = R / 255,
@@ -2775,7 +2890,7 @@ class Color {
     // https://stackoverflow.com/a/9493060/4211612 →
         // https://www.rapidtables.com/convert/color/hsl-to-rgb.html
     // Converts HSL to RGB
-        // Color.HSLtoRGB(hue:number<Degrees>?, saturation:number?<Percentage>, lightness:number?<Percentage>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
+        // Color.HSLtoRGB(hue:number?<Degrees>, saturation:number?<Percentage>, lightness:number?<Percentage>, alpha:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HSL, H, S, L, hue, saturation, lightness }>
     static HSLtoRGB(hue = 0, saturation = 0, lightness = 0, alpha = 1) {
         let H = (hue % 360),
             S = (saturation / 100),
@@ -2868,7 +2983,7 @@ class Color {
     }
 
     // Converts HWB to RGB → https://www.w3schools.com/lib/w3color.js
-        // Color.HWBtoRGB(hue:number<Degrees>?, white:number?<Percentage>, black:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
+        // Color.HWBtoRGB(hue:number?<Degrees>, white:number?<Percentage>, black:number?<Percentage>) → Object<{ RGB, R, G, B, red, green, blue, HWB, H, W, K, hue, white, black }>
     static HWBtoRGB(hue = 0, white = 0, black = 0, alpha = 1) {
         let { R, G, B } = Color.HSLtoRGB(hue, 1, .5);
         let E = white + black;
@@ -3443,7 +3558,7 @@ function toImage(imageType = "image/png", returnType = "dataURL") {
             // true → 123.456.suffix('m', true) => "123.456m"
             // false → 123.456.suffix('m', false) => "123m"
             // 1 → 123.456.suffix('m', 1) => "123.4m"
-        // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data"
+        // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
 Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, format = "metric") {
     let number = parseFloat(this),
         sign = (number < 0? '-': ''),
@@ -3471,6 +3586,7 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
             system.small = '';
         } break;
 
+        // S.I. based units, data-oriented (symbol)
         case 'data': {
             system.large = 'kMGTPEZYRQ';
             system.small = 'mμnpfazyrq';
@@ -3478,9 +3594,21 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
             capacity = 1_024;
         } break;
 
+        // S.I. based units (full-name)
         case 'full': {
             system.large = 'kilo mega giga tera peta exa zetta yotta ronna quetta'.split(' ');
             system.small = 'milli micro nano pico femto atto zepto yocto ronto quecto'.split(' ');
+        } break;
+
+        // Time-based units
+        case 'time':
+        case 'time:natural':
+        case 'time:clock':
+        case 'time:readable':
+        case 'time:short': {
+            let [,subtype = 'natural'] = format.toLowerCase().split(':');
+
+            return toTimeString((decimalPlaces === true? this: decimalPlaces === false? Math.round(this): this.toFixed(decimalPlaces)), subtype);
         } break;
 
         case 'metric':

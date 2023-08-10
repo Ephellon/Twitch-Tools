@@ -217,7 +217,7 @@
     scroll-behavior: smooth;
 }
 
-html, body {
+:root, html, body {
     background: var(--background-dark);
     color: var(--text-light);
     font-family: var(--live-font);
@@ -339,7 +339,7 @@ footer {
     flex-grow: 0;
 
     height: 3rem;
-    width: 13rem;
+    width: 12rem;
 }
 
 .subtitle {
@@ -1280,6 +1280,9 @@ input[disabled][type="range"i] {
     display: inline-block;
 
     position: absolute !important;
+    /* left: 20%;
+    top: calc(0.125rem + 50%);
+    transform: translate(-30%,-50%); */
 
     padding: .5rem 1rem;
 
@@ -1436,23 +1439,25 @@ input[disabled][type="range"i] {
 
 /* Et Al */
 #filter_rules,
-#phrase_rules {
+#phrase_rules,
+#lurking_rules {
     /* height: 3rem; */
     overflow: auto;
 }
 
 /* :is(#filter_rules, #phrase_rules, #away_mode_schedule) :is(h1, h2, h3, h4, h5, h6):only-child, */
-:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [phrase-type], [day-of-week]):not([not-empty]),
-:is(#filter_rules, #phrase_rules, #away_mode_schedule) [not-empty]:is([filter-type], [phrase-type], [day-of-week]) ~ *:last-child {
+:is(#filter_rules, #phrase_rules, #lurking_rules, #away_mode_schedule) :is([filter-type], [phrase-type], [lurking-type], [day-of-week]):not([not-empty]),
+:is(#filter_rules, #phrase_rules, #lurking_rules, #away_mode_schedule) [not-empty]:is([filter-type], [phrase-type], [lurking-type], [day-of-week]) ~ *:last-child {
     display: none;
 }
 
-:is(#filter_rules, #phrase_rules, #away_mode_schedule) :is([filter-type], [phrase-type], [day-of-week])[not-empty] ~ [hr] {
+:is(#filter_rules, #phrase_rules, #lurking_rules, #away_mode_schedule) :is([filter-type], [phrase-type], [lurking-type], [day-of-week])[not-empty] ~ [hr] {
     border-top: 1px solid var(--white-faded);
 }
 
 [filter-type]:not(:last-child),
-[phrase-type]:not(:last-child) {
+[phrase-type]:not(:last-child),
+[lurking-type]:not(:last-child) {
     padding-bottom: .5rem;
 }
 
@@ -1764,7 +1769,7 @@ body.popup {
     top: 0;
 }
 
-.popup #filter_rules, .popup #phrase_rules {
+.popup :is(#filter_rules, #phrase_rules, #lurking_rules) {
     /* height: 9rem; */
 }
 
@@ -1843,7 +1848,7 @@ body.popup {
     display: inline-flex !important;
 }
 
-.tooltip-layer code {
+.tooltip-layer :is(code, pre) {
     background-color: var(--white)!important;
     font-size: 100%!important;
 }
@@ -2168,4 +2173,25 @@ body.popup [pad-bottom] {
 @keyframes spinning-background {
     0% { background-position-x: 0% }
     100% { background-position-x: 200% }
+}
+
+/* Store peculiars */
+:is(#store_integration__steam, #store_integration__playstation, #store_integration__xbox, #store_integration__nintendo):not(:checked) + label {
+    box-shadow: 0 0 2rem 0 #0008 inset;
+}
+
+#store_integration__steam + label {
+    background: linear-gradient(to right, #0cf 5%, #36f 95%) !important;
+}
+
+#store_integration__playstation + label {
+    background: linear-gradient(to right, #00ffff 5%, #0072ce 95%) !important;
+}
+
+#store_integration__xbox + label {
+    background: linear-gradient(to right, #44ff44 5%, #107c10 95%) !important;
+}
+
+#store_integration__nintendo + label {
+    background: linear-gradient(to right, #e60012 5%, #ac000d 95%) !important;
 }

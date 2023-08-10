@@ -43,10 +43,32 @@
     - Fails to initiate Alt+Z
 - [-] Clips double-save upon completion
     - One clip is always just a preview image
+- [ ] The background script may stall infinitely when a tab disappears
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.10`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.10)
+- Fixed First in Line pausing logic
+- Modified StopWatch logic
+- Modified `toTimeString` logic to include templating
+- Modified `SENSITIVE_FEATURES` to ignore Up Next changes: no longer reloads page on change
+- Modified `Async` logic to actually work as intended
+- Modified "Lurking Message" setting to incorporate rules and multiple messages
+- Modified filter logic to be more robust and clear
+- Added *favicons* to contextmenu items
+- Add Store Integration sub-options
+- Adjusted Settings upload logic to handle duplicate entries
+- Modified `modStyle` logic to include **innated** styling (child → parent)
+- Added `when.all` `when.all.defined` `when.all.nullish` `when.all.sated` `when.all.empty` `when.any` `when.any.defined` `when.any.nullish` `when.any.sated` `when.any.empty`
+- Modified Game searching logic to handle special quotations and apostrophes
+- Fixed Video Recovery logic
+- Stylized Store Integration options
+- Modified background logic to catch unclaimed tabs
+- Modified Auto-Claim logic to mutilate titles; some claims will need to be reaccomplished
+- Modified `parseURL..addSearch` logic to accept an array as the `parameters` argument
+- Modified all `background.js` messages to be more meaningful
+
 > [`5.32.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.9)
 - Added ability to zoom-in on the data-usage statistics
 - Added logic to prevent the context menu from overflowing the page

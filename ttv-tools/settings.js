@@ -17,8 +17,8 @@ function getURL(path = '') {
 
 // Handle updates here
 (async function(version) {
+    // Handle storage change
     if(compareVersions(`${ version } ≥ 5.32.4`)) {
-        // Handle storage change
         let v5_32_4 = await Storage.get('v5_32_4');
         Storage_change: if(parseBool(v5_32_4) == false)
             await alert.silent(`There is a new storage system in place, please press OK to proceed. All settings will be transferred.`).then(async() => {
@@ -30,12 +30,21 @@ function getURL(path = '') {
             });
     }
 
+    // Convert settings
     if(compareVersions(`${ version } = 5.32.5`)) {
-        // Convert settings
         let opt = 'auto_chat__vip';
         let val = (await Storage.get(opt))?.[opt];
 
         Storage.set({ [opt]: val === true? 'vip': val === false? null: val });
+    }
+
+    // Convert "Lurking Message" to "Lurking Rules"
+    if(compareVersions(`${ version } ≥ 5.32.10`)) {
+        let opt = 'auto_chat__lurking_message';
+        let nxt = 'lurking_rules';
+        let val = (await Storage.get(nxt))?.[nxt] ?? (await Storage.get(opt))?.[opt];
+
+        Storage.set({ [nxt]: val });
     }
 })(Manifest.version);
 
@@ -143,7 +152,8 @@ let // These are option names. Anything else will be removed
         // Auto-Chat (VIP)
         'auto_chat__vip',
             'auto_chat__mentions',
-            'auto_chat__lurking_message',
+            'auto_chat__lurking_message',   // ↓ Replaced: v5.32.10
+            'lurking_rules',                // ↑
             'auto_chat__wait_time',
         // Native Twitch Replies
         'native_twitch_reply',
@@ -209,6 +219,10 @@ let // These are option names. Anything else will be removed
 
         // Store integration
         'store_integration',
+            'store_integration__steam',
+            'store_integration__playstation',
+            'store_integration__xbox',
+            'store_integration__nintendo',
 
         // DVR Settings
         'video_clips__file_type',
@@ -526,9 +540,9 @@ class CommandMaker {
                 f('option[value=announcement]').with('General reply (announcement)'), // A general response
                 f('option[value=recurring]').with('A recurring announcement'), // A recurring-notice
             ),
-            each = f('span[unit=sec]').with(f(`input#cooldown.edit`, { type: 'number', min: 0, max: 86_400, value: 10 }));
+            each = f('span[fix-unit=sec]').with(f(`input#cooldown.edit`, { type: 'number', min: 0, max: 2_592_000, value: 10 }));
 
-        let conversionTable = [3600, 7200, 14400, 28800, 86400].map(s => `${ toTimeString(s * 1000) } = ${ comify(s) }`).join(' • ');
+        let conversionTable = [3600, 28800, 86400, 6048001, 2592000].map(s => `${ toTimeString(s * 1000) } = ${ comify(s) }`).join(' • ');
 
         let container =
             f(`.tt-modal-wrapper.context-root`).with(
@@ -547,10 +561,10 @@ class CommandMaker {
                                     f('.title').with('Metadata'),
                                     f('.summary').with(
                                         f.h4('Name'),
-                                        f('span[pre-unit=!]').with(f(`input#command`, { placeholder: 'Command name', pattern: '.{1,100}' })),
+                                        f('span[pre-unit=!]').with(f(`input#command`, { placeholder: 'Command name(s)', pattern: '.{1,100}' })),
                                         f('.subtitle', {
                                             style: 'margin-bottom: .5rem',
-                                            innerHTML: `This is what users type into chat to activate the command.`
+                                            innerHTML: `This is what users type into chat to activate the command. Use a comma (<code>,</code>) to separate names.`
                                         }),
 
                                         f.h4('Type'),
@@ -596,8 +610,8 @@ class CommandMaker {
                                     // Add more
                                     f('div', { style: 'width:fit-content' },
                                         f('.checkbox.left', { onmouseup: event => $('input', event.currentTarget).click() },
-                                            f('input.add-more', { type: 'checkbox', name: 'add-similar-commands' }),
-                                            f('label', { for: 'add-similar-commands' }, 'Add an alias')
+                                            f('input.add-more', { type: 'checkbox', name: 'add-more-commands' }),
+                                            f('label', { for: 'add-more-commands' }, 'Add another command')
                                         )
                                     ),
 
@@ -621,6 +635,7 @@ class CommandMaker {
                                             let { currentTarget } = event,
                                                 addNew = $('.add-more', currentTarget.closest(':not(button)')).checked;
 
+                                            // TODO - handle multiple names (,) delimeted
                                             if(addNew)
                                                 new CommandMaker();
                                             else
@@ -684,11 +699,18 @@ let SETTINGS,
     INITIAL_LOAD = true;
 let SUPPORTED_LANGUAGES = ["bg","cs","da","de","el","es","fi","fr","hu","it","ja","ko","nl","no","pl","ro","ru","sk","sv","th","tr","vi"];
 
-function RedoRuleElements(rules, ruleType) {
+function RedoRuleElements(rules, ruleType, delimeter, scopes) {
     if(nullish(rules))
         return;
 
-    rules = rules.split(',').sort();
+    delimeter ??= ',';
+    scopes ??= 'all';
+
+    rules = rules.split(delimeter).sort();
+
+    if(scopes.equals('all'))
+        scopes = 'channel user badge emote text regexp';
+    scopes = scopes.split(' ');
 
     for(let rule of rules) {
         if(!rule?.length)
@@ -700,31 +722,22 @@ function RedoRuleElements(rules, ruleType) {
         let ruleID = UUID.from(rule).value;
 
         let itemType;
-        switch(true) {
-            case /^\/[\w+\-]+/.test(rule): {
-                itemType = 'channel';
-            } break;
 
-            case /^@[\w+\-]+$/.test(rule): {
-                itemType = 'user';
-            } break;
-
-            case /^<[^>]+>$/.test(rule): {
-                itemType = 'badge';
-            } break;
-
-            case /^:[\w\-]+:$/.test(rule):{
-                itemType = 'emote';
-            } break;
-
-            case /^[\w]+$/.test(rule): {
-                itemType = 'text';
-            } break;
-
-            default: {
-                itemType = 'regexp';
-            } break;
+        if(scopes.contains('channel') && /^\/[\w+\-]+/.test(rule)) {
+            itemType = 'channel';
+        } else if(scopes.contains('user') && /^@[\w+\-]+/.test(rule)) {
+            itemType = 'user';
+        } else if(scopes.contains('badge') && /^<[^>]+>/.test(rule)) {
+            itemType = 'badge';
+        } else if(scopes.contains('emote') && /^:[\w\-]+:$/.test(rule)) {
+            itemType = 'emote';
+        } else if(scopes.contains('text') && /^[\w]+$/.test(rule)) {
+            itemType = 'text';
+        } else if(scopes.contains('regexp')) {
+            itemType ??= 'regexp';
         }
+
+        itemType ??= 'text';
 
         if($.defined(`#${ ruleType }_rules [${ ruleType }-type="${ itemType }"i] [${ ruleType }-id="${ ruleID }"i]`))
             continue;
@@ -739,7 +752,7 @@ function RedoRuleElements(rules, ruleType) {
                 { textContent } = currentTarget,
                 input = $(`#${ ruleType }_rules-input`);
 
-            input.value = [...input.value.split(','), textContent].filter(v => v?.trim()?.length).join(',');
+            input.value = [...input.value.split(delimeter), textContent].filter(v => v?.trim()?.length).join(delimeter);
 
             currentTarget.remove();
         };
@@ -890,6 +903,22 @@ async function SaveSettings() {
                 RedoRuleElements(SETTINGS.phrase_rules, 'phrase');
             } break;
 
+            case 'lurking_rules': {
+                let rules = [],
+                    input = extractValue($('#lurking_rules-input'));
+
+                if(parseBool(input))
+                    rules = input.split(';');
+
+                for(let rule of $.all('#lurking_rules code'))
+                    rules.push(rule.textContent);
+                rules = rules.isolate().filter(rule => rule.length);
+
+                SETTINGS.lurking_rules = rules.sort().join(';');
+
+                RedoRuleElements(SETTINGS.lurking_rules, 'lurking', ';', 'channel badge text');
+            } break;
+
             case 'away_mode_schedule': {
                 let times = [];
                 for(let button of $.all('#away_mode_schedule button[duration]')) {
@@ -982,6 +1011,12 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
                     let rules = SETTINGS[id];
 
                     RedoRuleElements(rules, 'phrase');
+                } break;
+
+                case 'lurking_rules': {
+                    let rules = SETTINGS[id];
+
+                    RedoRuleElements(rules, 'lurking', ';', 'channel badge text');
                 } break;
 
                 case 'away_mode_schedule': {
@@ -1246,11 +1281,12 @@ $('#sync-settings--upload').onmouseup = async event => {
                     .catch(PostSyncStatus.warning)
                     .finally(() => currentTarget.classList.remove('spin'));
             } else {
-                let settings = [];
+                let settings = new Map;
                 for(let index = 0, value, place; index < usable_settings.length; ++index) {
                     let ID = usable_settings[index], element = $(`#${ ID }`);
 
-                    ID = Sym(ID);
+                    if(nullish(element))
+                        continue;
 
                     switch(ID) {
                         case 'filter_rules': {
@@ -1279,6 +1315,20 @@ $('#sync-settings--upload').onmouseup = async event => {
                             rules = rules.isolate().filter(rule => rule.length);
 
                             value = rules.sort().join(',');
+                        } break;
+
+                        case 'lurking_rules': {
+                            let rules = [],
+                                input = extractValue($('#lurking_rules-input'));
+
+                            if(parseBool(input))
+                                rules = input.split(';');
+
+                            for(let rule of $.all('#lurking_rules code'))
+                                rules.push(rule.textContent);
+                            rules = rules.isolate().filter(rule => rule.length);
+
+                            value = rules.sort().join(';');
                         } break;
 
                         case 'away_mode_schedule': {
@@ -1323,7 +1373,7 @@ $('#sync-settings--upload').onmouseup = async event => {
 
                         default: {
                             if(nullish(element)) {
-                                settings.push([ID, 'X']);
+                                settings.set(ID, 'X');
                                 continue;
                             }
 
@@ -1332,10 +1382,16 @@ $('#sync-settings--upload').onmouseup = async event => {
                         } break;
                     }
 
+                    let [...id] = ID;
+                    ID = Sym(ID);
+
+                    while(settings.has(ID))
+                        ID += id.shift();
+
                     if(defined(place))
-                        settings.push([ID, `!${ place }`]);
+                        settings.set(ID, `!${ place }`);
                     else
-                        settings.push([ID,
+                        settings.set(ID,
                             (nullish(value))?
                                 '_':
                             (value === false)?
@@ -1347,10 +1403,10 @@ $('#sync-settings--upload').onmouseup = async event => {
                             (value.length)?
                                 `**${ value }**`:
                             'X'
-                        ]);
+                        );
                 }
 
-                let json = encodeURIComponent(settings.map(([key, value]) => `${ key }(${ value }`).join(')') + ')');
+                let json = encodeURIComponent([...settings].map(([key, value]) => `${ key }(${ value }`).join(')') + ')');
 
                 let url = parseURL(`https://is.gd/create.php`)
                     .addSearch({
@@ -1436,6 +1492,10 @@ $('#sync-settings--download').onmouseup = async event => {
                                 if(char == ')') {
                                     mode = 'get-key';
 
+                                    let [...k] = key;
+                                    while(data.has(key))
+                                        key += k.shift();
+
                                     data.set(key, val);
 
                                     key = '';
@@ -1453,6 +1513,10 @@ $('#sync-settings--download').onmouseup = async event => {
 
                                 if(thread == '**)') {
                                     mode = 'get-key';
+
+                                    let [...k] = key;
+                                    while(data.has(key))
+                                        key += k.shift();
 
                                     data.set(key, val.slice(1, -3));
 
@@ -1492,6 +1556,10 @@ $('#sync-settings--download').onmouseup = async event => {
 
                             case 'phrase_rules': {
                                 RedoRuleElements(value, 'phrase');
+                            } break;
+
+                            case 'lurking_rules': {
+                                RedoRuleElements(value, 'lurking', ';', 'channel badge text');
                             } break;
 
                             case 'away_mode_schedule': {
@@ -1901,43 +1969,54 @@ $.all('[id^="key:"i]').map(element => element.textContent = GetMacro(element.tex
 $.all('#video_clips__file_type option').filter(o => !MediaRecorder.isTypeSupported(`video/${ o.value }`)).map(o => o.remove());
 
 // Handle any fixable units
-$.all('[fix-unit]').map(element => {
-    let type = element.attr.fixUnit;
-    let onchange;
+setInterval(() => {
+    $.all('[fix-unit]').map(element => {
+        let type = element.attr.fixUnit;
+        let onchange;
 
-    switch(type[0].toLowerCase()) {
-        case 'd':
-        case 'h':
-        case 'm':
-        case 's': {
-            onchange = function(event) {
-                let self = event.currentTarget;
+        switch(type[0].toLowerCase()) {
+            case 'd':
+            case 'h':
+            case 'm':
+            case 's': {
+                onchange = function(event) {
+                    let self = event.currentTarget;
+                    let [days, hours, minutes, seconds] = toTimeString(parseTime(self.value, type), '~days|~hour|~minute|~second').split('|').map(parseFloat);
 
-                self.closest('[fix-unit]').attr.fixedValue = toTimeString(parseTime(self.value, type), '&minutes_m &seconds_s');
-            };
-        } break;
+                    if(days > 0) {
+                        self.closest('[fix-unit]').attr.fixedValue = `${ days }d`;
+                    } else if(hours > 0) {
+                        self.closest('[fix-unit]').attr.fixedValue = `${ hours }hr`;
+                    } else if(minutes > 0) {
+                        self.closest('[fix-unit]').attr.fixedValue = `${ minutes }min`;
+                    } else if(seconds > 0) {
+                        self.closest('[fix-unit]').attr.fixedValue = `${ seconds }sec`;
+                    }
+                };
+            } break;
 
-        default: {
-            onchange = function(event) {
-                let self = event.currentTarget;
-                let value = self.value;
+            default: {
+                onchange = function(event) {
+                    let self = event.currentTarget;
+                    let value = self.value;
 
-                if(!isNaN(parseInt(value)))
-                    value = parseInt(value).suffix('', 1);
-                else if(!isNaN(parseValue(value)))
-                    value = parseValue(value).suffix('', 1);
+                    if(!isNaN(parseInt(value)))
+                        value = parseInt(value).suffix('', 1);
+                    else if(!isNaN(parseValue(value)))
+                        value = parseValue(value).suffix('', 1);
 
-                self.closest('[fix-unit]').attr.fixedValue = value;
-            };
-        } break;
-    }
+                    self.closest('[fix-unit]').attr.fixedValue = value;
+                };
+            } break;
+        }
 
-    $.all('input', element).map(input => {
-        input.addEventListener('keyup', onchange);
-        input.addEventListener('change', onchange);
-        wait(1000, input).then(input => onchange({ currentTarget: input }));
+        $.all('input', element).map(input => {
+            input.addEventListener('keyup', onchange);
+            input.addEventListener('change', onchange);
+            wait(1000, input).then(input => onchange({ currentTarget: input }));
+        });
     });
-});
+}, 10);
 
 // Search for a setting...
 $.body.onkeydown = event => {

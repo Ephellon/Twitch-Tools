@@ -895,7 +895,7 @@ class Card {
 
 // Creates a Twitch-style context menu
     // new ContextMenu({ options:array, fineTuning:object? }) → Element<ContextMenu>
-    // options = { text:string, icon:string, shortcut:string }
+    // options = { text:string, icon:string, shortcut:string, favicon:string<HTML|SVG> }
 class ContextMenu {
     static #RootCloseOnComplete = $('#root').addEventListener('mouseup', event => {
         let { path, button = -1 } = event,
@@ -944,16 +944,18 @@ class ContextMenu {
                 // The options...
                 f('div', { style: 'display:inline-block; min-width:16rem; max-width:48rem; width:max-content', role: 'dialog' },
                     f('div', { style: 'padding:0.25rem;' },
-                        ...options.map(({ text = "", icon = "", shortcut = "", action = () => {} }) => {
+                        ...options.map(({ text = "", icon = "", shortcut = "", favicon = "", action = () => {} }) => {
                             if(icon?.length)
                                 icon = f('div', { style: 'display:inline-block; float:left; margin-left:calc(-1rem - 16px); margin-right:1rem', innerHTML: Glyphs.modify(icon, { height: '16px', width: '16px', style: 'vertical-align:-3px' }) });
                             if(text?.length)
                                 text = f('.tt-hide-text-overflow').html(text);
                             if(shortcut?.length)
                                 shortcut = f.pre(f.code(GetMacro(shortcut)));
+                            if(favicon?.length)
+                                favicon = f.pre(f.code().html(favicon)).css(`margin-top:-2.5rem; transform:translate(0,25%)`);
 
-                            if(icon || text || shortcut)
-                                return f('button.tt-context-menu-option', { onmouseup: event => action({ ...event, inheritance: inherit }), style: 'border-radius:0.6rem; display:inline-block; padding:0.5rem 0 0.5rem 3rem; width:-webkit-fill-available;width:-moz-available' }, icon, shortcut, text);
+                            if(icon || text || shortcut || favicon)
+                                return f('button.tt-context-menu-option', { onmouseup: event => action({ ...event, inheritance: inherit }), style: 'border-radius:0.6rem; display:inline-block; padding:0.5rem 0 0.5rem 3rem; width:-webkit-fill-available;width:-moz-available' }, icon, shortcut, text, favicon);
                             return f('hr', { style: 'border-top:1px solid var(--channel-color); margin:0.25rem 0;' });
                         })
                     )
@@ -1576,7 +1578,7 @@ Object.defineProperties(Chat, {
 
     get: {
         // Create an array of the current chat
-            // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style, author, emotes, message, mentions, element<Element>?, uuid, reply<Element>?, highlighted<boolean>? }>]
+            // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style, author, emotes, message, mentions, element?<Element>, uuid, reply?<Element>, highlighted?<boolean> }>]
         value:
         function get(mostRecent = 250, keepEmotes = true) {
             let results = [];
@@ -2701,7 +2703,6 @@ try {
                 .trim();
 
             if(newValue === false) {
-
                 if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     WARN(`Disabling experimental feature: ${ name }`, new Date);
                 else
@@ -2709,7 +2710,6 @@ try {
 
                 UnregisterJob(key, 'disable');
             } else if(newValue === true) {
-
                 if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     WARN(`Enabling experimental feature: ${ name }`, new Date);
                 else
@@ -2717,7 +2717,6 @@ try {
 
                 RegisterJob(key, 'enable');
             } else {
-
                 if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
                     WARN(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
                 else
@@ -3098,6 +3097,7 @@ try {
                     extras.push({
                         text: `Open link in new tab`,
                         icon: 'ne_arrow',
+                        favicon: parseURL(href).origin.replace(/^(https?):\/\/.+$/i, ($0, $1, $$, $_) => furnish.span().text($1.toUpperCase()).css(`background:${ ($1.equals('https')? '#22FA7C': '#FCC21B') } !important!innate;`).html()),
                         action: event => top.open(href, '_blank'),
                     },{
                         text: `Copy link address`,
@@ -3542,7 +3542,7 @@ let // Features that require the experimental flag
     EXPERIMENTAL_FEATURES = ['auto_focus', 'convert_emotes', 'greedy_raiding', 'soft_unban'].map(AsteriskFn),
 
     // Features that need the page reloaded when changed
-    SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', 'up_next+', 'view_mode'].map(AsteriskFn),
+    SENSITIVE_FEATURES = ['away_mode*~schedule', 'auto_accept_mature', 'fine_details', 'first_in_line*', 'prevent_#', 'soft_unban*', '!up_next+', 'view_mode'].map(AsteriskFn),
 
     // Features that need to be run on a "normal" page
     NORMALIZED_FEATURES = ['away_mode*~schedule', 'auto_follow+', 'first_in_line*', 'prevent_#', 'kill+'].map(AsteriskFn),
@@ -3649,20 +3649,38 @@ let Initialize = async(START_OVER = false) => {
         REMARK = ($=>$);
 
     // Time how long jobs take to complete properly
-    let STOP_WATCHES = new Map,
-        JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
-            let { abs } = Math;
+    class StopWatch {
+        static #WATCHES = new Map;
 
-            let start = STOP_WATCHES.get(JobName),
-                stop = +new Date,
-                span = abs(start - stop),
-                max = abs(JobTime) * 1.1;
+        constructor(name, interval) {
+            interval ??= Timers[name];
+
+            StopWatch.#WATCHES.set(name, this);
+
+            return Object.assign(this, {
+                name, interval,
+
+                start: new Date,
+                stop: null,
+                span: null,
+                max: Math.abs(interval + new Date) * 1.1,
+            });
+        }
+
+        static stop(name) {
+            StopWatch.#WATCHES.get(name)?.time();
+        }
+
+        time() {
+            let stop = this.stop = new Date;
+            let span = this.span = Math.abs(this.start - stop);
+            let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
-        },
-        START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
+        }
+    }
 
     // Initialize all settings/features //
 
@@ -4254,21 +4272,41 @@ let Initialize = async(START_OVER = false) => {
              * Everyone         →   100  | everyone
              */
             let level = 0;
-            let string = new String(
-                (STREAMER.name == USERNAME)?
-                    (level = 1500, 'owner'):
-                (parseBool(Search.cookies?.twilight_user?.roles?.isStaff))?
-                    (level = 1000, 'admin'):
-                ((STREAMER.mods = Chat.mods).contains(mod => mod.equals(USERNAME)))?
-                    (level = 500, 'moderator'):
-                ((STREAMER.vips = Chat.vips).contains(vip => vip.equals(USERNAME)))?
-                    (level = 400, 'vip'):
-                (STREAMER.ping)?
-                    (level = 300, 'regular'):
-                (STREAMER.paid)?
-                    (level = 250, 'subscriber'):
-                (level = 100, 'everyone')
-            );
+            let levels = [
+                (
+                    STREAMER.name == USERNAME?
+                        (level ||= 1500, 'owner'):
+                    ''
+                ),
+                (
+                    parseBool(Search.cookies?.twilight_user?.roles?.isStaff)?
+                        (level ||= 1000, 'admin'):
+                    ''
+                ),
+                (
+                    (STREAMER.mods = Chat.mods).contains(mod => mod.equals(USERNAME))?
+                        (level ||= 500, 'moderator'):
+                    ''
+                ),
+                (
+                    (STREAMER.vips = Chat.vips).contains(vip => vip.equals(USERNAME))?
+                        (level ||= 400, 'vip'):
+                    ''
+                ),
+                (
+                    STREAMER.ping?
+                        (level ||= 300, 'regular'):
+                    ''
+                ),
+                (
+                    STREAMER.paid?
+                        (level ||= 250, 'subscriber'):
+                    ''
+                ),
+                (level ||= 100, 'everyone')
+            ].filter(level => level.length);
+
+            let string = new String(levels[0]);
 
             Object.defineProperties(string, {
                 find: {
@@ -4298,6 +4336,7 @@ let Initialize = async(START_OVER = false) => {
                 not: { value(permission) { return this.level != this.find(permission) } },
                 is: { value(permission) { return this.level == this.find(permission) } },
                 has: { value(permission) { return this.level >= this.find(permission) } },
+                all: { value: levels },
             });
 
             return string;
@@ -5190,8 +5229,8 @@ let Initialize = async(START_OVER = false) => {
                             //     description:string,
                             //     profile_image_url:string<URL>,
                             //     offline_image_url:string<URL>,
-                            //     view_count:number<integer>?!Deprecated,
-                            //     email:string<e-mail>?,
+                            //     view_count:number?<integer>!Deprecated,
+                            //     email:string?<e-mail>,
                             //     created_at:string<Date.UTC>,
                             // }>
                         if(!FETCHED_OK)
@@ -5617,7 +5656,7 @@ let Initialize = async(START_OVER = false) => {
         NUMBER_OF_FAILED_QUALITY_FETCHES = 0;
 
     Handlers.away_mode = async() => {
-        START__STOP_WATCH('away_mode');
+        new StopWatch('away_mode');
 
         let button = $('#away-mode'),
             currentQuality = (Handlers.away_mode.quality ??= await GetQuality());
@@ -5646,7 +5685,7 @@ let Initialize = async(START_OVER = false) => {
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
             }
 
-            return JUDGE__STOP_WATCH('away_mode');
+            return StopWatch.stop('away_mode');
         }
 
         await Cache.load({ AwayModeEnabled }, cache => AwayModeEnabled = cache.AwayModeEnabled ?? false);
@@ -5681,18 +5720,18 @@ let Initialize = async(START_OVER = false) => {
 
                         [...classes].map(value => {
                             if(/[-_]/.test(value))
-                                return JUDGE__STOP_WATCH('away_mode');
+                                return StopWatch.stop('away_mode');
 
                             classes.remove(value);
                         });
                     };
                 } break;
 
-                default: return JUDGE__STOP_WATCH('away_mode');
+                default: return StopWatch.stop('away_mode');
             }
 
             if(nullish(parent) || nullish(sibling))
-                return JUDGE__STOP_WATCH('away_mode') /* || WARN('Unable to create the Lurking button') */;
+                return StopWatch.stop('away_mode') /* || WARN('Unable to create the Lurking button') */;
 
             let container = furnish('#away-mode', {
                 innerHTML: sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1'),
@@ -5846,7 +5885,7 @@ let Initialize = async(START_OVER = false) => {
 
         AwayModeButton = button;
 
-        JUDGE__STOP_WATCH('away_mode');
+        StopWatch.stop('away_mode');
     };
     Timers.away_mode = 1000;
 
@@ -6358,7 +6397,7 @@ let Initialize = async(START_OVER = false) => {
                     rewards.map(async reward => {
                         let $image = $('img', reward)?.src,
                             $cost = parseCoin($('[data-test-selector="cost"i]', reward)?.textContent),
-                            $title = ($('button ~ * [title]', reward)?.textContent || '').trim();
+                            $title = ($('button ~ * [title]', reward)?.textContent || '').mutilate();
 
                         let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
                             (false
@@ -6390,7 +6429,7 @@ let Initialize = async(START_OVER = false) => {
                 AutoClaimRewards ??= {};
 
                 let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
-                    $title = ($('#channel-points-reward-center-header', head)?.textContent || '').trim(),
+                    $title = ($('#channel-points-reward-center-header', head)?.textContent || '').mutilate(),
                     $prompt = ($('.reward-center-body p', body)?.textContent || '').trim(),
                     $image = $('.reward-icon img', body)?.src,
                     [$cost = 0] = (($('[disabled]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
@@ -6501,7 +6540,7 @@ let Initialize = async(START_OVER = false) => {
     ) | 0;
 
     // Restart the First in line que's timers
-        // REDO_FIRST_IN_LINE_QUEUE(url:string<URL>?, search:object?) → <Promise>?undefined
+        // REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
     top.REDO_FIRST_IN_LINE_QUEUE =
     async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
         if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
@@ -6615,7 +6654,7 @@ let Initialize = async(START_OVER = false) => {
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return;
             if(FIRST_IN_LINE_PAUSED)
-                return /* Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) }) */;
+                return Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
 
             if(nullish(channel)) {
                 LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
@@ -7648,7 +7687,7 @@ let Initialize = async(START_OVER = false) => {
                                 let subheader = $('.tt-balloon-subheader', container);
 
                                 return setInterval(async() => {
-                                    START__STOP_WATCH('up_next_balloon__subheader_timer_animation');
+                                    new StopWatch('up_next_balloon__subheader_timer_animation');
 
                                     let timeRemaining = GET_TIME_REMAINING();
 
@@ -7656,8 +7695,8 @@ let Initialize = async(START_OVER = false) => {
 
                                     /* First in Line is paused */
                                     if(FIRST_IN_LINE_PAUSED) {
-                                        // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
-                                        JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000);
+                                        Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                        StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
 
                                         return;
                                     }
@@ -7691,7 +7730,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         WARN('Creating job to avoid [Job Listing] mitigation event', channel);
 
-                                        return JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                                        return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                                     }
 
                                     if(time < 1000)
@@ -7728,7 +7767,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     subheader.innerHTML = index > 0? nth(index + 1, 'ordinal-position'): toTimeString(time, 'clock');
 
-                                    JUDGE__STOP_WATCH('up_next_balloon__subheader_timer_animation', 1000);
+                                    StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
                                 }, 1000);
                             },
                         })
@@ -7754,7 +7793,7 @@ let Initialize = async(START_OVER = false) => {
         STARTED_TIMERS = {};
 
     Handlers.first_in_line = async(ActionableNotification) => {
-        START__STOP_WATCH('first_in_line');
+        new StopWatch('first_in_line');
 
         let notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
 
@@ -7893,7 +7932,7 @@ let Initialize = async(START_OVER = false) => {
                             return -1;
 
                         return setInterval(async() => {
-                            START__STOP_WATCH('first_in_line__job_watcher');
+                            new StopWatch('first_in_line__job_watcher');
 
                             let timeRemaining = GET_TIME_REMAINING();
 
@@ -7902,7 +7941,7 @@ let Initialize = async(START_OVER = false) => {
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
                                 // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
-                                JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000);
+                                StopWatch.stop('first_in_line__job_watcher', 1000);
 
                                 return;
                             }
@@ -7938,7 +7977,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 WARN('Creating job to avoid [First in Line] mitigation event', channel);
 
-                                return JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
+                                return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                             }
 
                             if(time < 1000)
@@ -7976,7 +8015,7 @@ let Initialize = async(START_OVER = false) => {
 
                             subheader.innerHTML = index > 0? nth(index + 1, 'ordinal-position'): toTimeString(time, 'clock');
 
-                            JUDGE__STOP_WATCH('first_in_line__job_watcher', 1000);
+                            StopWatch.stop('first_in_line__job_watcher', 1000);
                         }, 1000);
                     },
                 })
@@ -8002,7 +8041,7 @@ let Initialize = async(START_OVER = false) => {
         if(parseBool(filb?.getAttribute('speeding')) != parseBool(FIRST_IN_LINE_BOOST))
             filb?.click?.();
 
-        JUDGE__STOP_WATCH('first_in_line');
+        StopWatch.stop('first_in_line');
     };
     Timers.first_in_line = 1000;
 
@@ -8178,7 +8217,7 @@ let Initialize = async(START_OVER = false) => {
     });
 
     Handlers.first_in_line_plus = () => {
-        START__STOP_WATCH('first_in_line_plus');
+        new StopWatch('first_in_line_plus');
 
         let streamers = [...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name).isolate().sort();
 
@@ -8220,14 +8259,14 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(OLD_STREAMERS == NEW_STREAMERS)
-            return JUDGE__STOP_WATCH('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
+            return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
 
         new_names = new_names
             .filter(name => old_names.missing(name))
             .filter(name => bad_names.missing(name));
 
         if(new_names.length < 1)
-            return JUDGE__STOP_WATCH('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
+            return StopWatch.stop('first_in_line_plus'), Cache.save({ OLD_STREAMERS });
 
         // Try to detect if the extension was just re-installed?
         installation_viewer:
@@ -8271,7 +8310,7 @@ let Initialize = async(START_OVER = false) => {
 
         Cache.save({ OLD_STREAMERS });
 
-        JUDGE__STOP_WATCH('first_in_line_plus');
+        StopWatch.stop('first_in_line_plus');
     };
     Timers.first_in_line_plus = 1000;
 
@@ -8293,18 +8332,18 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.live_reminders = () => {
-        START__STOP_WATCH('live_reminders');
+        new StopWatch('live_reminders');
 
         // Add the button to all channels
         let actionPanel = $('.about-section__actions');
 
         if(nullish(actionPanel))
-            return JUDGE__STOP_WATCH('live_reminders');
+            return StopWatch.stop('live_reminders');
 
         let action = $('[tt-svg-label="live-reminders"i], [tt-action="live-reminders"i]', actionPanel);
 
         if(defined(action))
-            return JUDGE__STOP_WATCH('live_reminders');
+            return StopWatch.stop('live_reminders');
 
         Cache.load('LiveReminders', async({ LiveReminders }) => {
             try {
@@ -8391,7 +8430,7 @@ let Initialize = async(START_OVER = false) => {
             actionPanel.append(action);
         });
 
-        JUDGE__STOP_WATCH('live_reminders');
+        StopWatch.stop('live_reminders');
     };
     Timers.live_reminders = -2_500;
 
@@ -8685,6 +8724,10 @@ let Initialize = async(START_OVER = false) => {
 
                 let timeout = 15_000;
 
+                // Removes quotations and apostrophes
+                let LE_QUOTES = /[\u2033\u2036\u275d\u275e]/gu,
+                    LE_APOSTE = /[\u0312-\u0315\u031b\u2032\u2035\u275b\u275c\u2019\u201a]/gu;
+
                 // Removes symbols like ™ ® © etc.
                 let NON_ASCII = /[^\p{L}\d `\-=~!@#\$%^&\*\(\)\+\{\}\|\[\]\\:;"'<>\?,\.\/]/gu;
 
@@ -8694,99 +8737,7 @@ let Initialize = async(START_OVER = false) => {
                 // The imperfect match threshold percentage: 1.5%
                 const PARTIAL_MATCH_THRESHOLD = .015;
 
-                /*** Get the Steam link (if applicable)
-                 *       _____ _
-                 *      / ____| |
-                 *     | (___ | |_ ___  __ _ _ __ ___
-                 *      \___ \| __/ _ \/ _` | '_ ` _ \
-                 *      ____) | ||  __/ (_| | | | | | |
-                 *     |_____/ \__\___|\__,_|_| |_| |_|
-                 *
-                 *
-                 */
-                async function fetchSteamGame(index = 1) {
-                    return /*await*/ fetchURL.idempotent(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
-                        .then(r => r.text())
-                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                        .then(DOM => {
-                            for(let item of $.all('[data-ds-appid]', DOM)) {
-                                let href = item.href,
-                                    name = $('[class*="name"i]', item)?.textContent?.replace(NON_ASCII, ''),
-                                    img = $('[class*="img"i] img', item)?.src,
-                                    price = $('[class*="price"i]', item)?.textContent || 'More...',
-                                    good = game.errs(name, true) < .05;
-
-                                if(good)
-                                    return { game, name, href, img, price, good };
-                            }
-
-                            return {};
-                        });
-                }
-
-                fetchSteamGame()
-                    .then((info = {}) => {
-                        let { game, name, href, img, price, good = false } = info;
-
-                        if(!href?.length)
-                            return;
-
-                        let f = furnish;
-
-                        let purchase =
-                            f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
-                                // Price
-                                f('.tt-store-purchase--price').with(price),
-
-                                // Link to Steam
-                                f('.tt-store-purchase--handler').with(
-                                    f(`a#steam-link[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
-                                )
-                            );
-
-                        // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
-
-                        when.defined(() => $('#tt-steam-purchase'))
-                            .then(container => {
-                                // Load the maturity warning (if applicable)...
-                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
-                                    .then(r => r.text())
-                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                    .then(DOM => {
-                                        $('.tt-store-purchase--container.is-steam').dataset.matureContent = (null
-                                            // Steam will error-out if you try to load an adult-only game...
-                                            // Or... There will be a mature label
-                                            // Or... There will be an "Age Gate"
-                                            // Or... The content descriptor will be defined
-
-                                            // Too much text...
-                                            // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
-                                            || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
-                                        )
-                                    })
-                                    .catch(error => {
-                                        WARN(`Unable to fetch Steam pricing information for "${ game }"`, error);
-                                    });
-
-                                container.replaceWith(purchase);
-                            });
-
-                        LOG(`Got "${ game }" data from Steam:`, info);
-                    })
-                    .catch(error => {
-                        WARN(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
-                    });
-
-                /*** Get the PlayStation link (if applicable) · 1,662 Games 2022-11-22 16:37 CST
-                 *      _____  _              _____ _        _   _
-                 *     |  __ \| |            / ____| |      | | (_)
-                 *     | |__) | | __ _ _   _| (___ | |_ __ _| |_ _  ___  _ __
-                 *     |  ___/| |/ _` | | | |\___ \| __/ _` | __| |/ _ \| '_ \
-                 *     | |    | | (_| | |_| |____) | || (_| | |_| | (_) | | | |
-                 *     |_|    |_|\__,_|\__, |_____/ \__\__,_|\__|_|\___/|_| |_|
-                 *                      __/ |
-                 *                     |___/
-                 */
+                // Remove trademarks to better match games
                 let PlayStationRegExp = /\bPS\s*(\d|one|p(ortable)?|v(ita)?|(plus|\+)|move|vr(\s*\d)?).*$/i,
                     // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
 
@@ -8799,167 +8750,51 @@ let Initialize = async(START_OVER = false) => {
                     EditionsRegExp = /\s*(([-~:]\s*)?(\p{L}|[-']){3,}\s*)Editions?/iu;
                     // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,etc.
 
-                async function fetchPlayStationGame(game, index = 1, pages = 1) {
-                    return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
-                        .then(r => r.json())
-                        .then(data => {
-                            let [best, ...othr] = data.sort((prev, next) =>
-                                prev.name
-                                    .replace(NON_ASCII, '')
-                                    .replace(PlayStationRegExp, '')
-                                    .replace(EditionsRegExp, '')
-                                    .errs(game)
-                                - next.name
-                                    .replace(NON_ASCII, '')
-                                    .replace(PlayStationRegExp, '')
-                                    .replace(EditionsRegExp, '')
-                                    .errs(game)
-                            )
-                                .slice(0, 60)
-                                .sort((prev, next) =>
-                                    prev.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(PlayStationRegExp, '')
-                                        .replace(EditionsRegExp, '')
-                                        .toLowerCase()
-                                        .distanceFrom(game.toLowerCase())
-                                    - next.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(PlayStationRegExp, '')
-                                        .replace(EditionsRegExp, '')
-                                        .toLowerCase()
-                                        .distanceFrom(game.toLowerCase())
-                                );
+                function normalize(string, ...conditions) {
+                    conditions = [
+                        [LE_QUOTES, '"'],
+                        [LE_APOSTE, "'"],
+                        [NON_ASCII, ''],
+                    ].concat(conditions);
 
-                            if(false
-                                || best.name.equals(game)
-                                || best.name
-                                    .replace(NON_ASCII, '')
-                                    .replace(PlayStationRegExp, '')
-                                    .replace(EditionsRegExp, '')
-                                    .trim()
-                                    .equals(game)
-                                || best.name
-                                    .replace(NON_ASCII, '')
-                                    .replace(PlayStationRegExp, '')
-                                    .replace(EditionsRegExp, '')
-                                    .errs(game) < PARTIAL_MATCH_THRESHOLD
-                            ) return ({
-                                game,
-                                good: (
-                                    best.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(PlayStationRegExp, '')
-                                        .replace(EditionsRegExp, '')
-                                        .errs(game, true) < PARTIAL_MATCH_THRESHOLD
-                                ),
-                                name: best.name,
-                                href: best.href,
-                                img: best.image,
-                                price: best.price,
-                            });
+                    for(let [expression, replacement] of conditions)
+                        string = string?.replace(expression, replacement);
 
-                            throw ITEM_NOT_FOUND;
-                        })
-                        .catch(error => {
-                            // Fallback: Search the store normally
-                            if(error == ITEM_NOT_FOUND)
-                                return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ lang }/search/${ gameURI }`)
-                                    .then(r => r.text())
-                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                    .then(async DOM => {
-                                        let items = [];
-
-                                        for(let element of $.all('#main li > [data-qa^="search"i]', DOM))
-                                            items.push({
-                                                id: $('[href]', element)?.href?.slice(1).split('/').pop(),
-                                                name: $('[data-qa*="product-name"i]', element)?.textContent,
-                                                href: $('[href]', element)?.href?.replace(/^\/([^\/].+)$/, 'https://store.playstation.com/$1'),
-                                                img: $('img[loading]', element)?.src,
-                                                price: $('[data-qa*="display-price"i]', element)?.textContent,
-                                                platforms: $.all('[data-qa*="game"i][data-qa*="tag"i]', element).map(tag => tag.textContent.trim()),
-                                            });
-
-                                        items = items.sort((prev, next) =>
-                                            prev.name
-                                                .replace(NON_ASCII, '')
-                                                .replace(PlayStationRegExp, '')
-                                                .replace(EditionsRegExp, '')
-                                                .errs(game)
-                                            - next.name
-                                                .replace(NON_ASCII, '')
-                                                .replace(PlayStationRegExp, '')
-                                                .replace(EditionsRegExp, '')
-                                                .errs(game)
-                                        )
-                                            .slice(0, 60)
-                                            .sort((prev, next) =>
-                                                prev.name
-                                                    .replace(NON_ASCII, '')
-                                                    .replace(PlayStationRegExp, '')
-                                                    .replace(EditionsRegExp, '')
-                                                    .toLowerCase()
-                                                    .distanceFrom(game.toLowerCase())
-                                                - next.name
-                                                    .replace(NON_ASCII, '')
-                                                    .replace(PlayStationRegExp, '')
-                                                    .replace(EditionsRegExp, '')
-                                                    .toLowerCase()
-                                                    .distanceFrom(game.toLowerCase())
-                                            );
-
-                                        for(let item of items)
-                                            if(true
-                                                && item.platforms?.length
-                                                && (false
-                                                    || item.name?.equals(
-                                                        game
-                                                            ?.replace(NON_ASCII, '')
-                                                            // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                                            ?.replace(PlayStationRegExp, '')
-                                                            ?.replace(EditionsRegExp, '')
-                                                    )
-                                                    || item.name
-                                                        ?.replace(NON_ASCII, '')
-                                                        // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                                        ?.replace(PlayStationRegExp, '')
-                                                        ?.replace(EditionsRegExp, '')
-                                                        ?.errs(game) < PARTIAL_MATCH_THRESHOLD
-                                                )
-                                            )
-                                                return ({
-                                                    game,
-                                                    good: (
-                                                        item.name
-                                                            ?.replace(NON_ASCII, '')
-                                                            // Removes common trademarks → PS one,PS1,PS2,PS3,PS4,PS5,PSP,PS Portable,PSV,PSVita,PS Plus,PS+,PS Move,PS VR,PS VR2
-                                                            ?.replace(PlayStationRegExp, '')
-                                                            ?.replace(EditionsRegExp, '')
-                                                            ?.errs(game, true) < PARTIAL_MATCH_THRESHOLD
-                                                    ) || 0,
-                                                    name: item.name,
-                                                    href: `https://store.playstation.com/${ lang }/product/${ item.id }`,
-                                                    img: item.img,
-                                                    price: (item.price || 'More...'),
-                                                });
-
-                                        return {};
-                                    });
-
-                            WARN(error);
-                        });
+                    return string?.replace(EditionsRegExp, '');
                 }
 
-                if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
-                    // Multiple versions are available
-                    let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
+                /*** Get the Steam link (if applicable)
+                 *       _____ _
+                 *      / ____| |
+                 *     | (___ | |_ ___  __ _ _ __ ___
+                 *      \___ \| __/ _ \/ _` | '_ ` _ \
+                 *      ____) | ||  __/ (_| | | | | | |
+                 *     |_____/ \__\___|\__,_|_| |_| |_|
+                 *
+                 *
+                 */
+                Steam: if(parseBool(Settings.store_integration__steam)) {
+                    async function fetchSteamGame(index = 1) {
+                        return /*await*/ fetchURL.idempotent(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
+                            .then(r => r.text())
+                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                            .then(DOM => {
+                                for(let item of $.all('[data-ds-appid]', DOM)) {
+                                    let href = item.href,
+                                        name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
+                                        img = $('[class*="img"i] img', item)?.src,
+                                        price = $('[class*="price"i]', item)?.textContent || 'More...',
+                                        good = game.errs(name, true) < .05;
 
-                    suff = suff.replace(/s$/, '');
+                                    if(good)
+                                        return { game, name, href, img, price, good };
+                                }
 
-                    let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+                                return {};
+                            });
+                    }
 
-                    // Make multipls links
-                    fetchPlayStationGame(jbpp)
+                    fetchSteamGame()
                         .then((info = {}) => {
                             let { game, name, href, img, price, good = false } = info;
 
@@ -8969,202 +8804,363 @@ let Initialize = async(START_OVER = false) => {
                             let f = furnish;
 
                             let purchase =
-                                f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
+                                f(`.tt-store-purchase--container.is-steam[name="${ name }"][@goodMatch=${ good }]`).with(
                                     // Price
                                     f('.tt-store-purchase--price').with(price),
 
-                                    // Link to PlayStation
+                                    // Link to Steam
                                     f('.tt-store-purchase--handler').with(
-                                        f(`a#playstation-link[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                        f(`a#steam-link[href="${ href }"][target=_blank]`).html(`Steam&reg;`)
                                     )
                                 );
 
-                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
 
-                            when.defined(() => $('#tt-playstation-purchase'))
+                            when.defined(() => $('#tt-steam-purchase'))
                                 .then(container => {
                                     // Load the maturity warning (if applicable)...
                                     fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
-                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
-                                                description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
+                                            $('.tt-store-purchase--container.is-steam').dataset.matureContent = (null
+                                                // Steam will error-out if you try to load an adult-only game...
+                                                // Or... There will be a mature label
+                                                // Or... There will be an "Age Gate"
+                                                // Or... The content descriptor will be defined
 
-                                            // Load an actual game description
-                                            let gameDesc = $('[data-twitch-provided-description]');
-
-                                            if(defined(gameDesc) && good) {
-                                                $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
-
-                                                gameDesc.innerHTML = description?.replace(/([\.!\?])\s*([^\.!\?]+(?:\.{3}|…))\s*$/, '$1') || gameDesc.innerHTML;
-                                                gameDesc.removeAttribute('data-twitch-provided-description');
-                                            }
-
-                                            if(!data?.length)
-                                                return;
-
-                                            data = JSON.parse(data);
-
-                                            finder: for(let key in data.cache)
-                                                if(/^product/i.test(key)) {
-                                                    let { authority, description, name, url } = data.cache[key].contentRating;
-
-                                                    $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
-                                                    $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
-
-                                                    break finder;
-                                                }
+                                                // Too much text...
+                                                // || $('[id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)?.textContent
+                                                || $.defined('[id*="error"i], [id*="mature"i], [id*="age"i][id*="gate"i], [id*="content"i][id*="desc"i]', DOM)
+                                            )
                                         })
                                         .catch(error => {
-                                            WARN(`Unable to fetch PlayStation pricing information for "${ jbpp }"`, error);
+                                            WARN(`Unable to fetch Steam pricing information for "${ game }"`, error);
                                         });
 
                                     container.replaceWith(purchase);
                                 });
 
-                            LOG(`Got "${ jbpp }" data from PlayStation:`, info);
+                            LOG(`Got "${ game }" data from Steam:`, info);
                         })
                         .catch(error => {
-                            WARN(`Unable to connect to PlayStation. Tried to look for "${ jbpp }"`, error);
+                            WARN(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
                         });
-                } else {
-                    fetchPlayStationGame(game)
-                        .then((info = {}) => {
-                            let { game, name, href, img, price, good = false } = info;
+                }
 
-                            if(!href?.length)
-                                return;
-
-                            let f = furnish;
-
-                            let purchase =
-                                f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
-                                    // Price
-                                    f('.tt-store-purchase--price').with(price),
-
-                                    // Link to PlayStation
-                                    f('.tt-store-purchase--handler').with(
-                                        f(`a#playstation-link[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
-                                    )
-                                );
-
-                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
-
-                            when.defined(() => $('#tt-playstation-purchase'))
-                                .then(container => {
-                                    href = href.replace(/^\/\//, 'https:$&');
-
-                                    // Load the maturity warning (if applicable)...
-                                    fetchURL.idempotent(href)
-                                        .then(r => r.text())
-                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                        .then(DOM => {
-                                            let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
-                                                description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
-
-                                            // Load an actual game description
-                                            let gameDesc = $('[data-twitch-provided-description]');
-
-                                            if(defined(gameDesc) && good) {
-                                                $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
-
-                                                gameDesc.innerHTML = description || gameDesc.innerHTML;
-                                                gameDesc.removeAttribute('data-twitch-provided-description');
-                                            }
-
-                                            // Load the game's data
-                                            if(!data?.length)
-                                                return;
-
-                                            data = JSON.parse(data);
-
-                                            finder: for(let key in data.cache)
-                                                if(/^product/i.test(key)) {
-                                                    let { authority, description, name, url } = data.cache[key].contentRating;
-
-                                                    $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
-                                                    $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
-
-                                                    break finder;
-                                                }
-                                        })
-                                        .catch(error => {
-                                            WARN(`Unable to fetch PlayStation pricing information for "${ game }"`, error);
-                                        });
-
-                                    container.replaceWith(purchase);
-                                });
-
-                            LOG(`Got "${ game }" data from PlayStation:`, info);
-                        })
-                        .catch(error => {
-                            WARN(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
-                        });
-                    }
-
-                    /*** Get the Xbox link (if applicable) · 2,964 Games 2022-11-22 16:37 CST
-                     *     __   ___
-                     *     \ \ / / |
-                     *      \ V /| |__   _____  __
-                     *       > < | '_ \ / _ \ \/ /
-                     *      / . \| |_) | (_) >  <
-                     *     /_/ \_\_.__/ \___/_/\_\
-                     *
-                     *
-                     */
-                    async function fetchXboxGame(game) {
-                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                /*** Get the PlayStation link (if applicable) · 1,662 Games 2022-11-22 16:37 CST
+                 *      _____  _              _____ _        _   _
+                 *     |  __ \| |            / ____| |      | | (_)
+                 *     | |__) | | __ _ _   _| (___ | |_ __ _| |_ _  ___  _ __
+                 *     |  ___/| |/ _` | | | |\___ \| __/ _` | __| |/ _ \| '_ \
+                 *     | |    | | (_| | |_| |____) | || (_| | |_| | (_) | | | |
+                 *     |_|    |_|\__,_|\__, |_____/ \__\__,_|\__|_|\___/|_| |_|
+                 *                      __/ |
+                 *                     |___/
+                 */
+                PlayStation: if(parseBool(Settings.store_integration__playstation)) {
+                    async function fetchPlayStationGame(game, index = 1, pages = 1) {
+                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
-                                    prev.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(XboxRegExp, '')
-                                        .replace(EditionsRegExp, '')
+                                    normalize(prev.name, [PlayStationRegExp, ''])
                                         .errs(game)
-                                    - next.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(XboxRegExp, '')
-                                        .replace(EditionsRegExp, '')
+                                    - normalize(next.name, [PlayStationRegExp, ''])
                                         .errs(game)
                                 )
                                     .slice(0, 60)
                                     .sort((prev, next) =>
-                                        prev.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(XboxRegExp, '')
-                                            .replace(EditionsRegExp, '')
+                                        normalize(prev.name, [PlayStationRegExp, ''])
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
-                                        - next.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(XboxRegExp, '')
-                                            .replace(EditionsRegExp, '')
+                                        - normalize(next.name, [PlayStationRegExp, ''])
                                             .toLowerCase()
                                             .distanceFrom(game.toLowerCase())
                                     );
 
                                 if(false
                                     || best.name.equals(game)
-                                    || best.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(XboxRegExp, '')
-                                        .replace(EditionsRegExp, '')
+                                    || normalize(best.name, [PlayStationRegExp, ''])
                                         .trim()
                                         .equals(game)
-                                    || best.name
-                                        .replace(NON_ASCII, '')
-                                        .replace(XboxRegExp, '')
-                                        .replace(EditionsRegExp, '')
+                                    || normalize(best.name, [PlayStationRegExp, ''])
                                         .errs(game) < PARTIAL_MATCH_THRESHOLD
                                 ) return ({
                                     game,
                                     good: (
-                                        best.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(XboxRegExp, '')
-                                            .replace(EditionsRegExp, '')
+                                        normalize(best.name, [PlayStationRegExp, ''])
+                                            .errs(game, true) < PARTIAL_MATCH_THRESHOLD
+                                    ),
+                                    name: best.name,
+                                    href: best.href,
+                                    img: best.image,
+                                    price: best.price,
+                                });
+
+                                throw ITEM_NOT_FOUND;
+                            })
+                            .catch(error => {
+                                // Fallback: Search the store normally
+                                if(error == ITEM_NOT_FOUND)
+                                    return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ lang }/search/${ gameURI }`)
+                                        .then(r => r.text())
+                                        .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                        .then(async DOM => {
+                                            let items = [];
+
+                                            for(let element of $.all('#main li > [data-qa^="search"i]', DOM))
+                                                items.push({
+                                                    id: $('[href]', element)?.href?.slice(1).split('/').pop(),
+                                                    name: $('[data-qa*="product-name"i]', element)?.textContent,
+                                                    href: $('[href]', element)?.href?.replace(/^\/([^\/].+)$/, 'https://store.playstation.com/$1'),
+                                                    img: $('img[loading]', element)?.src,
+                                                    price: $('[data-qa*="display-price"i]', element)?.textContent,
+                                                    platforms: $.all('[data-qa*="game"i][data-qa*="tag"i]', element).map(tag => tag.textContent.trim()),
+                                                });
+
+                                            items = items.sort((prev, next) =>
+                                                normalize(prev.name, [PlayStationRegExp, ''])
+                                                    .errs(game)
+                                                - normalize(next.name, [PlayStationRegExp, ''])
+                                                    .errs(game)
+                                            )
+                                                .slice(0, 60)
+                                                .sort((prev, next) =>
+                                                    normalize(prev.name, [PlayStationRegExp, ''])
+                                                        .toLowerCase()
+                                                        .distanceFrom(game.toLowerCase())
+                                                    - normalize(next.name, [PlayStationRegExp, ''])
+                                                        .toLowerCase()
+                                                        .distanceFrom(game.toLowerCase())
+                                                );
+
+                                            for(let item of items)
+                                                if(true
+                                                    && item.platforms?.length
+                                                    && (false
+                                                        || item.name?.equals(
+                                                            normalize(game, [PlayStationRegExp, ''])
+                                                        )
+                                                        || normalize(item.name, [PlayStationRegExp, ''])
+                                                            ?.errs(game) < PARTIAL_MATCH_THRESHOLD
+                                                    )
+                                                )
+                                                    return ({
+                                                        game,
+                                                        good: (
+                                                            normalize(item.name , [PlayStationRegExp, ''])
+                                                                ?.errs(game, true) < PARTIAL_MATCH_THRESHOLD
+                                                        ) || 0,
+                                                        name: item.name,
+                                                        href: `https://store.playstation.com/${ lang }/product/${ item.id }`,
+                                                        img: item.img,
+                                                        price: (item.price || 'More...'),
+                                                    });
+
+                                            return {};
+                                        });
+
+                                WARN(error);
+                            });
+                    }
+
+                    if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
+                        // Multiple versions are available
+                        let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
+
+                        suff = suff.replace(/s$/, '');
+
+                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+
+                        // Make multiples' links
+                        fetchPlayStationGame(jbpp)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price, good = false } = info;
+
+                                if(!href?.length)
+                                    return;
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to PlayStation
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a#playstation-link[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+
+                                when.defined(() => $('#tt-playstation-purchase'))
+                                    .then(container => {
+                                        // Load the maturity warning (if applicable)...
+                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                            .then(r => r.text())
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
+                                                    description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
+
+                                                // Load an actual game description
+                                                let gameDesc = $('[data-twitch-provided-description]');
+
+                                                if(defined(gameDesc) && good) {
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
+
+                                                    gameDesc.innerHTML = description?.replace(/([\.!\?])\s*([^\.!\?]+(?:\.{3}|…))\s*$/, '$1') || gameDesc.innerHTML;
+                                                    gameDesc.removeAttribute('data-twitch-provided-description');
+                                                }
+
+                                                if(!data?.length)
+                                                    return;
+
+                                                data = JSON.parse(data);
+
+                                                finder: for(let key in data.cache)
+                                                    if(/^product/i.test(key)) {
+                                                        let { authority, description, name, url } = data.cache[key].contentRating;
+
+                                                        $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
+                                                        $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
+
+                                                        break finder;
+                                                    }
+                                            })
+                                            .catch(error => {
+                                                WARN(`Unable to fetch PlayStation pricing information for "${ jbpp }"`, error);
+                                            });
+
+                                        container.replaceWith(purchase);
+                                    });
+
+                                LOG(`Got "${ jbpp }" data from PlayStation:`, info);
+                            })
+                            .catch(error => {
+                                WARN(`Unable to connect to PlayStation. Tried to look for "${ jbpp }"`, error);
+                            });
+                    } else {
+                        fetchPlayStationGame(game)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price, good = false } = info;
+
+                                if(!href?.length)
+                                    return;
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f(`.tt-store-purchase--container.is-playstation[name="${ name }"][@goodMatch=${ good }]`).with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to PlayStation
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a#playstation-link[href="${ href }"][target=_blank]`).html(`PlayStation&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+
+                                when.defined(() => $('#tt-playstation-purchase'))
+                                    .then(container => {
+                                        href = href.replace(/^\/\//, 'https:$&');
+
+                                        // Load the maturity warning (if applicable)...
+                                        fetchURL.idempotent(href)
+                                            .then(r => r.text())
+                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                            .then(DOM => {
+                                                let data = $('[class*="content"i][class*="rating"i] script[type*="json"i]', DOM)?.textContent,
+                                                    description = $('[data-qa*="overview"i][data-qa*="description"i]', DOM)?.innerHTML;
+
+                                                // Load an actual game description
+                                                let gameDesc = $('[data-twitch-provided-description]');
+
+                                                if(defined(gameDesc) && good) {
+                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; PlayStation&reg;';
+
+                                                    gameDesc.innerHTML = description || gameDesc.innerHTML;
+                                                    gameDesc.removeAttribute('data-twitch-provided-description');
+                                                }
+
+                                                // Load the game's data
+                                                if(!data?.length)
+                                                    return;
+
+                                                data = JSON.parse(data);
+
+                                                finder: for(let key in data.cache)
+                                                    if(/^product/i.test(key)) {
+                                                        let { authority, description, name, url } = data.cache[key].contentRating;
+
+                                                        $('.tt-store-purchase--container.is-playstation').dataset.matureContent = description?.replace(authority, '')?.trim() || parseBool(name?.contains(...MATURE_HINTS));
+                                                        $('#tt-content-rating-placeholder')?.replaceWith(f.img({ alt: description, src: url, style: RATING_STYLING }));
+
+                                                        break finder;
+                                                    }
+                                            })
+                                            .catch(error => {
+                                                WARN(`Unable to fetch PlayStation pricing information for "${ game }"`, error);
+                                            });
+
+                                        container.replaceWith(purchase);
+                                    });
+
+                                LOG(`Got "${ game }" data from PlayStation:`, info);
+                            })
+                            .catch(error => {
+                                WARN(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
+                            });
+                        }
+                }
+
+                /*** Get the Xbox link (if applicable) · 2,964 Games 2022-11-22 16:37 CST
+                 *     __   ___
+                 *     \ \ / / |
+                 *      \ V /| |__   _____  __
+                 *       > < | '_ \ / _ \ \/ /
+                 *      / . \| |_) | (_) >  <
+                 *     /_/ \_\_.__/ \___/_/\_\
+                 *
+                 *
+                 */
+                Xbox: if(parseBool(Settings.store_integration__xbox)) {
+                    async function fetchXboxGame(game) {
+                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                            .then(r => r.json())
+                            .then(data => {
+                                let [best, ...othr] = data.sort((prev, next) =>
+                                    normalize(prev.name, [XboxRegExp, ''])
+                                        .errs(game)
+                                    - normalize(next.name, [XboxRegExp, ''])
+                                        .errs(game)
+                                )
+                                    .slice(0, 60)
+                                    .sort((prev, next) =>
+                                        normalize(prev.name, [XboxRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                        - normalize(next.name, [XboxRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                    );
+
+                                if(false
+                                    || best.name.equals(game)
+                                    || normalize(best.name, [XboxRegExp, ''])
+                                        .trim()
+                                        .equals(game)
+                                    || normalize(best.name, [XboxRegExp, ''])
+                                        .errs(game) < PARTIAL_MATCH_THRESHOLD
+                                ) return ({
+                                    game,
+                                    good: (
+                                        normalize(best.name, [XboxRegExp, ''])
                                             .errs(game, true) < PARTIAL_MATCH_THRESHOLD
                                     ),
                                     name: best.name,
@@ -9190,7 +9186,7 @@ let Initialize = async(START_OVER = false) => {
                                             if(nullish(info))
                                                 return {};
 
-                                            let name = info.Title.replace(NON_ASCII, ''),
+                                            let name = normalize(info.Title).normalize('NFKD'),
                                                 href = info.Url,
                                                 img = info.ImageUrl,
                                                 price = 'More...',
@@ -9211,7 +9207,7 @@ let Initialize = async(START_OVER = false) => {
 
                         let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
 
-                        // Make multipls links
+                        // Make multiples' links
                         fetchXboxGame(jbpp)
                             .then((info = {}) => {
                                 let { game, name, href, img, price, good = false } = info;
@@ -9351,10 +9347,10 @@ let Initialize = async(START_OVER = false) => {
                                                 let rating = $('[class*="age"i][class*="rating"i] img', DOM),
                                                     mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
 
-                                                rating.modStyle(RATING_STYLING);
+                                                rating?.modStyle(RATING_STYLING);
 
                                                 $('.is-xbox .tt-store-purchase--price').textContent = /^\$?([\d\.]+|\w+)$/.test(price ?? '')? price: info.price;
-                                                $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating.alt || mature);
+                                                $('.tt-store-purchase--container.is-xbox').dataset.matureContent = (rating?.alt || mature);
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
                                             .catch(error => {
@@ -9453,304 +9449,183 @@ let Initialize = async(START_OVER = false) => {
                                 WARN(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
                             });
                         }
+                }
 
-                        /*** Get the Nintendo link (if applicable) · 10,507 Games 2022-11-22 16:37 CST
-                         *      _   _ _       _                 _
-                         *     | \ | (_)     | |               | |
-                         *     |  \| |_ _ __ | |_ ___ _ __   __| | ___
-                         *     | . ` | | '_ \| __/ _ \ '_ \ / _` |/ _ \
-                         *     | |\  | | | | | ||  __/ | | | (_| | (_) |
-                         *     |_| \_|_|_| |_|\__\___|_| |_|\__,_|\___/
-                         *
-                         *
-                         */
-                        async function fetchNintendoGame(game) {
-                            return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
-                                .then(r => r.json())
-                                .then(data => {
-                                    let [best, ...othr] = data.sort((prev, next) =>
-                                        prev.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(NintendoRegExp, '')
-                                            .replace(EditionsRegExp, '')
-                                            .errs(game)
-                                        - next.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(NintendoRegExp, '')
-                                            .replace(EditionsRegExp, '')
-                                            .errs(game)
-                                    )
-                                        .slice(0, 60)
-                                        .sort((prev, next) =>
-                                            prev.name
-                                                .replace(NON_ASCII, '')
-                                                .replace(NintendoRegExp, '')
-                                                .replace(EditionsRegExp, '')
-                                                .toLowerCase()
-                                                .distanceFrom(game.toLowerCase())
-                                            - next.name
-                                                .replace(NON_ASCII, '')
-                                                .replace(NintendoRegExp, '')
-                                                .replace(EditionsRegExp, '')
-                                                .toLowerCase()
-                                                .distanceFrom(game.toLowerCase())
-                                        );
+                /*** Get the Nintendo link (if applicable) · 10,507 Games 2022-11-22 16:37 CST
+                 *      _   _ _       _                 _
+                 *     | \ | (_)     | |               | |
+                 *     |  \| |_ _ __ | |_ ___ _ __   __| | ___
+                 *     | . ` | | '_ \| __/ _ \ '_ \ / _` |/ _ \
+                 *     | |\  | | | | | ||  __/ | | | (_| | (_) |
+                 *     |_| \_|_|_| |_|\__\___|_| |_|\__,_|\___/
+                 *
+                 *
+                 */
+                Nintendo: if(parseBool(Settings.store_integration__nintendo)) {
+                    async function fetchNintendoGame(game) {
+                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                            .then(r => r.json())
+                            .then(data => {
+                                let [best, ...othr] = data.sort((prev, next) =>
+                                    normalize(prev.name, [NintendoRegExp, ''])
+                                        .errs(game)
+                                    - normalize(next.name, [NintendoRegExp, ''])
+                                        .errs(game)
+                                )
+                                    .slice(0, 60)
+                                    .sort((prev, next) =>
+                                        normalize(prev.name, [NintendoRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                        - normalize(next.name, [NintendoRegExp, ''])
+                                            .toLowerCase()
+                                            .distanceFrom(game.toLowerCase())
+                                    );
 
-                                    if(false
-                                        || best.name.equals(game)
-                                        || best.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(NintendoRegExp, '')
-                                            .replace(EditionsRegExp, '')
-                                            .trim()
-                                            .equals(game)
-                                        || best.name
-                                            .replace(NON_ASCII, '')
-                                            .replace(NintendoRegExp, '')
-                                            .replace(EditionsRegExp, '')
-                                            .errs(game) < .07
-                                    ) return ({
-                                        game,
-                                        good: (
-                                            best.name
-                                                .replace(NON_ASCII, '')
-                                                .replace(NintendoRegExp, '')
-                                                .replace(EditionsRegExp, '')
-                                                .errs(game, true) < PARTIAL_MATCH_THRESHOLD
-                                        ),
-                                        name: best.name,
-                                        href: best.href,
-                                        img: best.image,
-                                        price: best.price,
-                                        rating: best.rating,
-                                    });
-
-                                    throw ITEM_NOT_FOUND;
-                                })
-                                .catch(error => {
-                                    // Fallback: Search the store normally
-                                    if(error == ITEM_NOT_FOUND)
-                                        return /*await*/ fetchURL.idempotent(`https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.14.2)%3B%20Browser%3B%20JS%20Helper%20(3.11.1)%3B%20react%20(17.0.2)%3B%20react-instantsearch%20(6.38.0)`, {
-                                            headers: {
-                                                'accept': '*/*',
-                                                'accept-language': 'en-US,en;q=0.9',
-                                                'content-type': 'application/x-www-form-urlencoded',
-                                                'sec-ch-ua': '"Google Chrome";v="107", "Chromium";v="107", "Not=A?Brand";v="24"',
-                                                'sec-ch-ua-mobile': '?0',
-                                                'sec-ch-ua-platform': '"Windows"',
-                                                'sec-fetch-dest': 'empty',
-                                                'sec-fetch-mode': 'cors',
-                                                'sec-fetch-site': 'cross-site',
-                                                'x-algolia-api-key': 'a29c6927638bfd8cee23993e51e721c9',
-                                                'x-algolia-application-id': 'U3B6GR4UA3'
-                                            },
-                                            referrer: 'https://www.nintendo.com/',
-                                            referrerPolicy: 'strict-origin-when-cross-origin',
-                                            body: JSON.stringify({
-                                                    requests: [{
-                                                    indexName: 'store_all_products_en_us',
-                                                    query: game,
-                                                    params: encodeURI`filters=&hitsPerPage=120&analytics=false&facetingAfterDistinct=true&clickAnalytics=false&highlightPreTag=^*^^&highlightPostTag=^*&attributesToHighlight=["description"]`,
-                                                }]
-                                            }),
-                                            method: 'POST',
-                                            mode: 'cors',
-                                            credentials: 'omit'
-                                        })
-                                            .then(r => r.json())
-                                            /** Nintendo | Agolia Results (Object)
-                                             * results:array<object<{
-                                                exhaustive:object<{ nbHits:boolean, type:boolean }>
-                                                exhaustiveNbHits:boolean
-                                                exhaustiveTypo:boolean
-                                                hits:array<object<{
-                                                    availability:array<string>
-                                                    categoryIds:array<string>
-                                                    collectionPriceRange:string
-                                                    contentRatingCode:string
-                                                    corePlatforms:array<string>
-                                                    createdAt:string<ISO-Date>
-                                                    demoNsuid:string?
-                                                    description:string
-                                                    dlcType:string?
-                                                    editions:array<string>
-                                                    eshopDetails:object<{ discountedPriceEnd:string<ISO-Date>?, goldPoints:number<int>, baseGoldPoints:number<int> }>
-                                                    esrbDescriptors:array<string>
-                                                    esrbRating:string
-                                                    exclusive:boolean
-                                                    featuredProduct:boolean
-                                                    franchises:array<?>
-                                                    genres:array<string>
-                                                    hasDlc:boolean
-                                                    nsoFeatures:array<?>?
-                                                    nsuid:string
-                                                    objectId:string
-                                                    platform:string
-                                                    platformCode:string
-                                                    platinumPoints:number<int>?
-                                                    playModes:array<string>
-                                                    playerCount:string
-                                                    price:object<{ finalPrice:number<float>, regPrice:number?<float>, salePrice:number<float> }>
-                                                    priceRange:string
-                                                    productImage:string<URL-pathname>
-                                                    relaseDateDisplay:string<ISO-Date>?
-                                                    sku:string
-                                                    softwareDeveloper:string
-                                                    softwarePublisher:string
-                                                    stockStatus:string
-                                                    storeId:string
-                                                    title:string
-                                                    topLevelCategory:string
-                                                    topLevelCategoryCode:string
-                                                    topLevelFilters:array<string>
-                                                    updatedAt:string<ISO-Date>
-                                                    url:string<URL-pathname>
-                                                    urlKey:string
-                                                    visibleInSearch:boolean
-                                                    _distinctSeqId:number<?>
-                                                    _highlightResult:object<{ description:object<{ fullyHighlighted:boolean, matchLevel:string, matchedWords:array<string>, value:string }> }>
-                                                }>>
-                                                hitsPerPage:number<int>
-                                                index:string
-                                                nbHits:number<int>
-                                                nbPages:number<int>
-                                                page:number<int>
-                                                aprams:string<URL-search>
-                                                processingTimeMS:number<int>
-                                                processingTimingMS:object<{ total:number<int> }>
-                                                query:string
-                                                renderingContent:object<?>
-                                             }>>
-                                             */
-                                            .then(j =>
-                                                j.results.shift().hits
-                                                    .filter(item => item.topLevelCategoryCode.equals('GAMES') && item.topLevelFilters.missing('DLC', 'DLC bundle'))
-                                                    .map(item => ({
-                                                        name: item.title,
-                                                        price: (item.price?.regPrice || 'Free').toString().replace(/^\d/, '$$$&'),
-                                                        image: item.productImage,
-                                                        href: `https://www.nintendo.com${ item.url }`,
-                                                        uuid: item.nsuid,
-                                                        platforms: [item.platform],
-                                                        rating: ({ 'E': 'everyone', 'E10': 'everyone 10+', 'RP': 'rating pending', 'T': 'teen', 'M': 'mature 17+' }[item.esrbRating]) || item.esrbRating || 'none',
-                                                    }))
-                                            );
-
-                                    WARN(error);
+                                if(false
+                                    || best.name.equals(game)
+                                    || normalize(best.name, [NintendoRegExp, ''])
+                                        .trim()
+                                        .equals(game)
+                                    || normalize(best.name, [NintendoRegExp, ''])
+                                        .errs(game) < .07
+                                ) return ({
+                                    game,
+                                    good: (
+                                        normalize(pbest.name, [NintendoRegExp, ''])
+                                            .errs(game, true) < PARTIAL_MATCH_THRESHOLD
+                                    ),
+                                    name: best.name,
+                                    href: best.href,
+                                    img: best.image,
+                                    price: best.price,
+                                    rating: best.rating,
                                 });
-                        }
 
-                        if(/(?:^Pok[ée]mon)/i.test(game)) {
-                            // Multiple versions are available
-                            let [, main, vers] = /(^Pok[ée]mon)\s+(.+)$/i.exec(game);
-
-                            vers = vers.split('/').map(v => v.trim());
-
-                            // Make multiple links...
-                            for(let ver of vers)
-                                fetchNintendoGame(main + ver)
-                                    .then((info = {}) => {
-                                        let { game, name, href, img, price, rating = 'none', good = false } = info;
-
-                                        img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
-
-                                        if(!href?.length)
-                                            return;
-
-                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
-                                            .then(r => r.text())
-                                            .then(DOMParser.stripBody)
-                                            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                            .then(DOM => {
-                                                let description = (null
-                                                    ?? JSON.parse($('script[id*="data"i][type$="json"i]')?.textContent ?? "{}").props?.pageProps?.meta?.description
-                                                    ?? $('meta[name="description"i]', DOM)?.content
-                                                );
-
-                                                // Load an actual game description
-                                                let gameDesc = $('[data-twitch-provided-description]');
-
-                                                if(defined(gameDesc) && good) {
-                                                    $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
-
-                                                    gameDesc.innerText = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
-                                                    gameDesc.removeAttribute('data-twitch-provided-description');
-                                                }
-                                            });
-
-                                        let f = furnish;
-
-                                        let purchase =
-                                            f(`.tt-store-purchase--container.is-nintendo[name="${ name }"][@versionName="${ main } ${ ver }"][@goodMatch=${ good }]`).with(
-                                                // Price
-                                                f('.tt-store-purchase--price').with(price),
-
-                                                // Link to Nintendo
-                                                f('.tt-store-purchase--handler').with(
-                                                    f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
-                                                )
-                                            );
-
-                                        // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
-
-                                        when.defined(() => $('#tt-nintendo-purchase'))
-                                            .then(container => {
-                                                container.replaceWith(purchase);
-
-                                                new Tooltip(purchase, `ESRB (USA): ${ rating.toUpperCase() }`, { from: 'top' });
-
-                                                if($.all('.is-nintendo').length < vers.length)
-                                                    $('#tt-purchase-container').append(
-                                                        f('#tt-nintendo-purchase')
-                                                    );
-                                            });
-
-                                        LOG(`Got "${ game }" data from Nintendo:`, info);
+                                throw ITEM_NOT_FOUND;
+                            })
+                            .catch(error => {
+                                // Fallback: Search the store normally
+                                if(error == ITEM_NOT_FOUND)
+                                    return /*await*/ fetchURL.idempotent(`https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.14.2)%3B%20Browser%3B%20JS%20Helper%20(3.11.1)%3B%20react%20(17.0.2)%3B%20react-instantsearch%20(6.38.0)`, {
+                                        headers: {
+                                            'accept': '*/*',
+                                            'accept-language': 'en-US,en;q=0.9',
+                                            'content-type': 'application/x-www-form-urlencoded',
+                                            'sec-ch-ua': '"Google Chrome";v="107", "Chromium";v="107", "Not=A?Brand";v="24"',
+                                            'sec-ch-ua-mobile': '?0',
+                                            'sec-ch-ua-platform': '"Windows"',
+                                            'sec-fetch-dest': 'empty',
+                                            'sec-fetch-mode': 'cors',
+                                            'sec-fetch-site': 'cross-site',
+                                            'x-algolia-api-key': 'a29c6927638bfd8cee23993e51e721c9',
+                                            'x-algolia-application-id': 'U3B6GR4UA3'
+                                        },
+                                        referrer: 'https://www.nintendo.com/',
+                                        referrerPolicy: 'strict-origin-when-cross-origin',
+                                        body: JSON.stringify({
+                                                requests: [{
+                                                indexName: 'store_all_products_en_us',
+                                                query: game,
+                                                params: encodeURI`filters=&hitsPerPage=120&analytics=false&facetingAfterDistinct=true&clickAnalytics=false&highlightPreTag=^*^^&highlightPostTag=^*&attributesToHighlight=["description"]`,
+                                            }]
+                                        }),
+                                        method: 'POST',
+                                        mode: 'cors',
+                                        credentials: 'omit'
                                     })
-                                    .catch(error => {
-                                        WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
-                                    });
-                        } else if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
-                            // Multiple versions are available
-                            let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
-
-                            suff = suff.replace(/s$/, '');
-
-                            let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
-
-                            // Make multipls links
-                            fetchNintendoGame(jbpp)
-                                .then((info = {}) => {
-                                    let { game, name, href, img, price, rating = 'none', good = false } = info;
-
-                                    img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
-
-                                    if(!href?.length)
-                                        return;
-
-                                    let f = furnish;
-
-                                    let purchase =
-                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
-                                            // Price
-                                            f('.tt-store-purchase--price').with(price),
-
-                                            // Link to Nintendo
-                                            f('.tt-store-purchase--handler').with(
-                                                f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
-                                            )
+                                        .then(r => r.json())
+                                        /** Nintendo | Agolia Results (Object)
+                                         * results:array<object<{
+                                            exhaustive:object<{ nbHits:boolean, type:boolean }>
+                                            exhaustiveNbHits:boolean
+                                            exhaustiveTypo:boolean
+                                            hits:array<object<{
+                                                availability:array<string>
+                                                categoryIds:array<string>
+                                                collectionPriceRange:string
+                                                contentRatingCode:string
+                                                corePlatforms:array<string>
+                                                createdAt:string<ISO-Date>
+                                                demoNsuid:string?
+                                                description:string
+                                                dlcType:string?
+                                                editions:array<string>
+                                                eshopDetails:object<{ discountedPriceEnd:string?<ISO-Date>, goldPoints:number<int>, baseGoldPoints:number<int> }>
+                                                esrbDescriptors:array<string>
+                                                esrbRating:string
+                                                exclusive:boolean
+                                                featuredProduct:boolean
+                                                franchises:array<?>
+                                                genres:array<string>
+                                                hasDlc:boolean
+                                                nsoFeatures:array<?>?
+                                                nsuid:string
+                                                objectId:string
+                                                platform:string
+                                                platformCode:string
+                                                platinumPoints:number?<int>
+                                                playModes:array<string>
+                                                playerCount:string
+                                                price:object<{ finalPrice:number<float>, regPrice:number?<float>, salePrice:number<float> }>
+                                                priceRange:string
+                                                productImage:string<URL-pathname>
+                                                relaseDateDisplay:string?<ISO-Date>
+                                                sku:string
+                                                softwareDeveloper:string
+                                                softwarePublisher:string
+                                                stockStatus:string
+                                                storeId:string
+                                                title:string
+                                                topLevelCategory:string
+                                                topLevelCategoryCode:string
+                                                topLevelFilters:array<string>
+                                                updatedAt:string<ISO-Date>
+                                                url:string<URL-pathname>
+                                                urlKey:string
+                                                visibleInSearch:boolean
+                                                _distinctSeqId:number<?>
+                                                _highlightResult:object<{ description:object<{ fullyHighlighted:boolean, matchLevel:string, matchedWords:array<string>, value:string }> }>
+                                            }>>
+                                            hitsPerPage:number<int>
+                                            index:string
+                                            nbHits:number<int>
+                                            nbPages:number<int>
+                                            page:number<int>
+                                            aprams:string<URL-search>
+                                            processingTimeMS:number<int>
+                                            processingTimingMS:object<{ total:number<int> }>
+                                            query:string
+                                            renderingContent:object<?>
+                                         }>>
+                                         */
+                                        .then(j =>
+                                            j.results.shift().hits
+                                                .filter(item => item.topLevelCategoryCode.equals('GAMES') && item.topLevelFilters.missing('DLC', 'DLC bundle'))
+                                                .map(item => ({
+                                                    name: item.title,
+                                                    price: (item.price?.regPrice || 'Free').toString().replace(/^\d/, '$$$&'),
+                                                    image: item.productImage,
+                                                    href: `https://www.nintendo.com${ item.url }`,
+                                                    uuid: item.nsuid,
+                                                    platforms: [item.platform],
+                                                    rating: ({ 'E': 'everyone', 'E10': 'everyone 10+', 'RP': 'rating pending', 'T': 'teen', 'M': 'mature 17+' }[item.esrbRating]) || item.esrbRating || 'none',
+                                                }))
                                         );
 
-                                    // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+                                WARN(error);
+                            });
+                    }
 
-                                    LOG(`Got "${ jbpp }" data from Nintendo:`, info);
-                                })
-                                .catch(error => {
-                                    WARN(`Unable to connect to Nintendo. Tried to look for "${ jbpp }"`, error);
-                                });
-                        } else {
-                            // Just one version is available
-                            fetchNintendoGame(game)
+                    if(/(?:^Pok[ée]mon)/i.test(game)) {
+                        // Multiple versions are available
+                        let [, main, vers] = /(^Pok[ée]mon)\s+(.+)$/i.exec(game);
+
+                        vers = vers.split('/').map(v => v.trim());
+
+                        // Make multiple links...
+                        for(let ver of vers)
+                            fetchNintendoGame(main + ver)
                                 .then((info = {}) => {
                                     let { game, name, href, img, price, rating = 'none', good = false } = info;
 
@@ -9761,6 +9636,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
                                         .then(r => r.text())
+                                        .then(DOMParser.stripBody)
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
                                             let description = (null
@@ -9774,7 +9650,7 @@ let Initialize = async(START_OVER = false) => {
                                             if(defined(gameDesc) && good) {
                                                 $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
 
-                                                gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
+                                                gameDesc.innerText = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
                                                 gameDesc.removeAttribute('data-twitch-provided-description');
                                             }
                                         });
@@ -9782,7 +9658,7 @@ let Initialize = async(START_OVER = false) => {
                                     let f = furnish;
 
                                     let purchase =
-                                        f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
+                                        f(`.tt-store-purchase--container.is-nintendo[name="${ name }"][@versionName="${ main } ${ ver }"][@goodMatch=${ good }]`).with(
                                             // Price
                                             f('.tt-store-purchase--price').with(price),
 
@@ -9797,6 +9673,13 @@ let Initialize = async(START_OVER = false) => {
                                     when.defined(() => $('#tt-nintendo-purchase'))
                                         .then(container => {
                                             container.replaceWith(purchase);
+
+                                            new Tooltip(purchase, `ESRB (USA): ${ rating.toUpperCase() }`, { from: 'top' });
+
+                                            if($.all('.is-nintendo').length < vers.length)
+                                                $('#tt-purchase-container').append(
+                                                    f('#tt-nintendo-purchase')
+                                                );
                                         });
 
                                     LOG(`Got "${ game }" data from Nintendo:`, info);
@@ -9804,7 +9687,102 @@ let Initialize = async(START_OVER = false) => {
                                 .catch(error => {
                                     WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
                                 });
-                        }
+                    } else if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
+                        // Multiple versions are available
+                        let [, main, suff, vers = ''] = /^(?:The\s+)?(Jackbox Party)\s+(Pack)s?\s*(\d+)?/i.exec(game);
+
+                        suff = suff.replace(/s$/, '');
+
+                        let jbpp = `The ${ main } ${ suff } ${ vers }`.trim();
+
+                        // Make multiples' links
+                        fetchNintendoGame(jbpp)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price, rating = 'none', good = false } = info;
+
+                                img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+
+                                if(!href?.length)
+                                    return;
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to Nintendo
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+
+                                LOG(`Got "${ jbpp }" data from Nintendo:`, info);
+                            })
+                            .catch(error => {
+                                WARN(`Unable to connect to Nintendo. Tried to look for "${ jbpp }"`, error);
+                            });
+                    } else {
+                        // Just one version is available
+                        fetchNintendoGame(game)
+                            .then((info = {}) => {
+                                let { game, name, href, img, price, rating = 'none', good = false } = info;
+
+                                img = `https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.0/c_scale,w_700/${ img }`;
+
+                                if(!href?.length)
+                                    return;
+
+                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    .then(r => r.text())
+                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                    .then(DOM => {
+                                        let description = (null
+                                            ?? JSON.parse($('script[id*="data"i][type$="json"i]')?.textContent ?? "{}").props?.pageProps?.meta?.description
+                                            ?? $('meta[name="description"i]', DOM)?.content
+                                        );
+
+                                        // Load an actual game description
+                                        let gameDesc = $('[data-twitch-provided-description]');
+
+                                        if(defined(gameDesc) && good) {
+                                            $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
+
+                                            gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
+                                            gameDesc.removeAttribute('data-twitch-provided-description');
+                                        }
+                                    });
+
+                                let f = furnish;
+
+                                let purchase =
+                                    f(`.tt-store-purchase--container.is-nintendo[@matureContent="${ rating.toUpperCase() }"][name="${ name }"][@goodMatch=${ good }]`).with(
+                                        // Price
+                                        f('.tt-store-purchase--price').with(price),
+
+                                        // Link to Nintendo
+                                        f('.tt-store-purchase--handler').with(
+                                            f(`a#nintendo-link[href="${ href }"][target=_blank]`).html(`Nintendo&reg;`)
+                                        )
+                                    );
+
+                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+
+                                when.defined(() => $('#tt-nintendo-purchase'))
+                                    .then(container => {
+                                        container.replaceWith(purchase);
+                                    });
+
+                                LOG(`Got "${ game }" data from Nintendo:`, info);
+                            })
+                            .catch(error => {
+                                WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
+                            });
+                    }
+                }
             }
     };
 
@@ -9843,10 +9821,10 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.auto_follow_raids = () => {
-        START__STOP_WATCH('auto_follow_raids');
+        new StopWatch('auto_follow_raids');
 
         if(nullish(STREAMER))
-            return JUDGE__STOP_WATCH('auto_follow_raids');
+            return StopWatch.stop('auto_follow_raids');
 
         let url = parseURL(location),
             data = url.searchParameters;
@@ -9864,7 +9842,7 @@ let Initialize = async(START_OVER = false) => {
                 follow();
         });
 
-        JUDGE__STOP_WATCH('auto_follow_raids');
+        StopWatch.stop('auto_follow_raids');
     };
     Timers.auto_follow_raids = 1000;
 
@@ -9875,7 +9853,7 @@ let Initialize = async(START_OVER = false) => {
 
     let AUTO_FOLLOW_EVENT;
     Handlers.auto_follow_time = async() => {
-        START__STOP_WATCH('auto_follow_time');
+        new StopWatch('auto_follow_time');
 
         let { like, follow } = STREAMER,
             mins = parseInt(Settings.auto_follow_time_minutes) | 0;
@@ -9889,7 +9867,7 @@ let Initialize = async(START_OVER = false) => {
             AUTO_FOLLOW_EVENT ??= setTimeout(follow, mins * 60_000);
         }
 
-        JUDGE__STOP_WATCH('auto_follow_time');
+        StopWatch.stop('auto_follow_time');
     };
     Timers.auto_follow_time = 1000;
 
@@ -9909,14 +9887,14 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.kill_extensions = () => {
-        START__STOP_WATCH('kill_extensions');
+        new StopWatch('kill_extensions');
 
         let extension_views = $.all('[class^="extension-view"i]');
 
         for(let view of extension_views)
             view.setAttribute('style', 'display:none!important');
 
-        JUDGE__STOP_WATCH('kill_extensions');
+        StopWatch.stop('kill_extensions');
     };
     Timers.kill_extensions = -2_500;
 
@@ -10448,7 +10426,7 @@ let Initialize = async(START_OVER = false) => {
      *                     |_|                                   |___/
      */
     Handlers.prevent_hosting = async() => {
-        START__STOP_WATCH('prevent_hosting');
+        new StopWatch('prevent_hosting');
 
         let hosting = $.defined('[data-a-target="hosting-indicator"i], [class*="status"i][class*="hosting"i]'),
             next = await GetNextStreamer(),
@@ -10489,7 +10467,7 @@ let Initialize = async(START_OVER = false) => {
             }
         }
 
-        JUDGE__STOP_WATCH('prevent_hosting');
+        StopWatch.stop('prevent_hosting');
     };
     Timers.prevent_hosting = 5000;
 
@@ -10512,14 +10490,14 @@ let Initialize = async(START_OVER = false) => {
         SHADOW_RAID = false;
 
     Handlers.prevent_raiding = async() => {
-        START__STOP_WATCH('prevent_raiding');
+        new StopWatch('prevent_raiding');
 
         if(false
             || CONTINUE_RAIDING
             // || !UP_NEXT_ALLOW_THIS_TAB
             // ↑ Stops unfollowed channels from sticking around...
         )
-            return JUDGE__STOP_WATCH('prevent_raiding');
+            return StopWatch.stop('prevent_raiding');
 
         let url = parseURL(location),
             data = url.searchParameters,
@@ -10608,7 +10586,7 @@ let Initialize = async(START_OVER = false) => {
                 callback({ raiding, raided });
         }
 
-        JUDGE__STOP_WATCH('prevent_raiding');
+        StopWatch.stop('prevent_raiding');
     };
     Timers.prevent_raiding = 10_000;
 
@@ -10709,7 +10687,7 @@ let Initialize = async(START_OVER = false) => {
     RESERVED_TWITCH_PATHNAMES = RegExp(`/(${ TWITCH_PATHNAMES.join('|') })`, 'i');
 
     Handlers.stay_live = async() => {
-        START__STOP_WATCH('stay_live');
+        new StopWatch('stay_live');
 
         let next = await GetNextStreamer(),
             { pathname } = location;
@@ -10722,7 +10700,7 @@ let Initialize = async(START_OVER = false) => {
                 Cache.remove('UserIntent');
             });
         } catch(error) {
-            return JUDGE__STOP_WATCH('stay_live'), Cache.remove('UserIntent');
+            return StopWatch.stop('stay_live'), Cache.remove('UserIntent');
         }
 
         NotLive:
@@ -10767,7 +10745,7 @@ let Initialize = async(START_OVER = false) => {
             Cache.save({ UserIntent: term });
         }
 
-        JUDGE__STOP_WATCH('stay_live');
+        StopWatch.stop('stay_live');
     };
     Timers.stay_live = 3000;
 
@@ -11385,70 +11363,7 @@ let Initialize = async(START_OVER = false) => {
      *                                                         \_\                     /_/
      *
      */
-    let lastAutoChatName = `auto-chat/${ STREAMER.sole }`;
-
-    Handlers.auto_chat__vip = () => {
-        if(Settings.auto_chat__vip === true)
-            Settings.set({ auto_chat__vip: 'vip' });
-        else if(Settings.auto_chat__vip === false)
-            Settings.set({ auto_chat__vip: null });
-
-        if(STREAMER.perm.not(Settings.auto_chat__vip))
-            return;
-
-        wait(parseInt(Settings.auto_chat__wait_time) * 60_000).then(() => {
-            Cache.load(lastAutoChatName, results => {
-                let old = results[lastAutoChatName],
-                    now = new Date;
-
-                if(nullish(old))
-                    old = now;
-                else
-                    old = new Date(old);
-
-                // It's been less than 8h since the last auto-message was sent
-                if((now - old) && (now - old < parseTime('8:00:00')))
-                    return;
-
-                Chat.send(Settings.auto_chat__lurking_message || 'Just going to !lurk');
-
-                Cache.save({ [lastAutoChatName]: now.toJSON() });
-            });
-        });
-
-        // Handle mentions while AFK
-        Chat.onmessage = async({ uuid, author, usable, message, mentions, deleted }) => {
-            // Don't reply to messages not meant for us...
-            if(true
-                && mentions.map(username => username.toLowerCase()).missing(USERNAME.toLowerCase())
-                // Only accept exact matches, instead of partials; e.g. "Hey @SomeUserName, wyd?" vs. "Hey User, wyd?"
-                && message.toLowerCase().missing(USERNAME)
-            ) return;
-
-            // Wouldn't make sense to reply to a deleted message...
-            if(await deleted)
-                return;
-
-            // The UUID does not belong to a valid Twitch message...
-            if(!usable)
-                return;
-
-            // What do?
-            switch(Settings.auto_chat__mentions) {
-                case 'reply': {
-                    Chat.reply(uuid, 'AFK. BRB');
-                } break;
-
-                default: return;
-            }
-        };
-    };
-
-    Timers.auto_chat__vip = -5_000;
-
-    if(parseBool(Settings.auto_chat__vip)) {
-        RegisterJob('auto_chat__vip');
-    }
+    // /chat.js
 
     /*** Prevent spam
      *      _____                          _      _____
@@ -11504,7 +11419,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.mention_audio = () => {
-        START__STOP_WATCH('mention_audio');
+        new StopWatch('mention_audio');
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onmention ??= Chat.onmessage = ({ mentions }) => {
@@ -11512,7 +11427,7 @@ let Initialize = async(START_OVER = false) => {
                 NOTIFICATION_SOUND?.play();
         };
 
-        JUDGE__STOP_WATCH('mention_audio');
+        StopWatch.stop('mention_audio');
     };
     Timers.mention_audio = -1000;
 
@@ -11536,7 +11451,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.phrase_audio = () => {
-        START__STOP_WATCH('phrase_audio');
+        new StopWatch('phrase_audio');
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = line => {
@@ -11546,7 +11461,7 @@ let Initialize = async(START_OVER = false) => {
             });
         };
 
-        JUDGE__STOP_WATCH('phrase_audio');
+        StopWatch.stop('phrase_audio');
     };
     Timers.phrase_audio = 1000;
 
@@ -11570,7 +11485,7 @@ let Initialize = async(START_OVER = false) => {
      *                              |_|
      */
     Handlers.whisper_audio = () => {
-        START__STOP_WATCH('whisper_audio');
+        new StopWatch('whisper_audio');
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onwhisper ??= Chat.onwhisper = ({ unread, from, message }) => {
@@ -11585,14 +11500,14 @@ let Initialize = async(START_OVER = false) => {
             unread = parseInt(pill?.textContent) | 0;
 
         if(nullish(pill))
-            return JUDGE__STOP_WATCH('whisper_audio'), NOTIFIED.whisper = 0;
+            return StopWatch.stop('whisper_audio'), NOTIFIED.whisper = 0;
         if(NOTIFIED.whisper >= unread)
-            return JUDGE__STOP_WATCH('whisper_audio');
+            return StopWatch.stop('whisper_audio');
         NOTIFIED.whisper = unread;
 
         NOTIFICATION_SOUND?.play();
 
-        JUDGE__STOP_WATCH('whisper_audio');
+        StopWatch.stop('whisper_audio');
     };
     Timers.whisper_audio = 1000;
 
@@ -11683,13 +11598,13 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.points_receipt_placement = () => {
         // Display the ranking
-        START__STOP_WATCH('points_receipt_placement__ranking');
+        new StopWatch('points_receipt_placement__ranking');
 
         DisplayRanking: {
             let placement;
 
             if((placement = Settings.points_receipt_placement ??= "null").equals("null")) {
-                JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+                StopWatch.stop('points_receipt_placement__ranking');
                 break DisplayRanking;
             }
 
@@ -11698,7 +11613,7 @@ let Initialize = async(START_OVER = false) => {
                     ranking = $('#tt-channel-point-ranking');
 
                 if(nullish(container))
-                    return JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+                    return StopWatch.stop('points_receipt_placement__ranking');
 
                 let { cult, rank } = STREAMER,
                     place = (100 * (rank / cult)).clamp(1, 100) | 0,
@@ -11739,16 +11654,16 @@ let Initialize = async(START_OVER = false) => {
             }, 5000);
         }
 
-        JUDGE__STOP_WATCH('points_receipt_placement__ranking');
+        StopWatch.stop('points_receipt_placement__ranking');
 
         // Display the receipt
-        START__STOP_WATCH('points_receipt_placement');
+        new StopWatch('points_receipt_placement');
 
         DisplayReceipt: {
             let placement;
 
             if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
-                return JUDGE__STOP_WATCH('points_receipt_placement');
+                return StopWatch.stop('points_receipt_placement');
 
             let live_time = $('.live-time');
 
@@ -11830,7 +11745,7 @@ let Initialize = async(START_OVER = false) => {
             }, 2_5_0);
         }
 
-        JUDGE__STOP_WATCH('points_receipt_placement');
+        StopWatch.stop('points_receipt_placement');
     };
     Timers.points_receipt_placement = -2_500;
 
@@ -11951,7 +11866,7 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.point_watcher_placement = async() => {
         // Display the points
-        START__STOP_WATCH('point_watcher_placement');
+        new StopWatch('point_watcher_placement');
 
         if(top.WINDOW_STATE == "unloading")
             return;
@@ -12005,7 +11920,7 @@ let Initialize = async(START_OVER = false) => {
         let richTooltip = $('[class*="channel-tooltip"i]');
 
         if(nullish(richTooltip))
-            return JUDGE__STOP_WATCH('point_watcher_placement', 30_000);
+            return StopWatch.stop('point_watcher_placement', 30_000);
 
         let [title, subtitle, ...footers] = richTooltip.children,
             footer = footers[footers.length - 1],
@@ -12021,7 +11936,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(nullish(title) || nullish(target))
-            return JUDGE__STOP_WATCH('point_watcher_placement', 2_600);
+            return StopWatch.stop('point_watcher_placement', 2_600);
 
         let [name, game] = title.textContent.split(/[^\w\s]/);
 
@@ -12073,7 +11988,7 @@ let Initialize = async(START_OVER = false) => {
             }
         });
 
-        JUDGE__STOP_WATCH('point_watcher_placement', 2_700);
+        StopWatch.stop('point_watcher_placement', 2_700);
     };
     Timers.point_watcher_placement = 250;
 
@@ -12179,7 +12094,7 @@ let Initialize = async(START_OVER = false) => {
     let STREAM_PREVIEW;
 
     Handlers.stream_preview = async() => {
-        START__STOP_WATCH('stream_preview');
+        new StopWatch('stream_preview');
 
         let richTooltips = $.all(`:is([class*="channel"i], [class*="guest-star"i])[class*="tooltip"i][class*="body"i]`),
             [richTooltip] = richTooltips;
@@ -12190,7 +12105,7 @@ let Initialize = async(START_OVER = false) => {
             else if(parseBool(Settings.stream_preview_sound) && defined(STREAM_PREVIEW?.element))
                 SetVolume(InitialVolume);
 
-            return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
+            return StopWatch.stop('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
         }
 
         let [title, subtitle] = $.all('[class*="channel-tooltip"i] > *', richTooltip),
@@ -12204,7 +12119,7 @@ let Initialize = async(START_OVER = false) => {
         }
 
         if(nullish(title))
-            return JUDGE__STOP_WATCH('stream_preview'), STREAM_PREVIEW?.element?.remove();
+            return StopWatch.stop('stream_preview'), STREAM_PREVIEW?.element?.remove();
 
         let [alias] = title.textContent.split(/[^\p{L}*\w\s]/u);
 
@@ -12221,7 +12136,7 @@ let Initialize = async(START_OVER = false) => {
 
         // There is already a preview of the hovered tooltip
         if([STREAMER?.name, STREAM_PREVIEW?.name].contains(name))
-            return JUDGE__STOP_WATCH('stream_preview');
+            return StopWatch.stop('stream_preview');
 
         let { top, left, bottom, right, height, width } = getOffset(richTooltip),
             [body, video] = $.all('body, video').map(getOffset);
@@ -12233,6 +12148,13 @@ let Initialize = async(START_OVER = false) => {
             quality = (scale > 1? 'auto': '720p'),
             watchParty = $.defined('[data-a-target^="watchparty"i][data-a-target*="overlay"i]'),
             controls = false;
+
+        // Watch-party information...
+        // TODO: Use this...
+        // let partyInfo = $('[class*="watch"i][class*="party"i][class*="info"i]'),
+        //     partyThumbnail = $('[data-test-selector*="thumbnail"i]', partyInfo),
+        //     partyTitle = $('[data-test-selector*="title"i]', partyInfo),
+        //     [partyRating, partyReviews, partyYear, partyContentRating] = $.all('[data-test-selector*="title"i] + * > *', partyInfo) ?? [];
 
         STREAM_PREVIEW = {
             name,
@@ -12300,7 +12222,7 @@ let Initialize = async(START_OVER = false) => {
 
         wait(2_5_0).then(() => $('.tt-stream-preview.invisible')?.classList?.remove('invisible'));
 
-        JUDGE__STOP_WATCH('stream_preview');
+        StopWatch.stop('stream_preview');
     };
     Timers.stream_preview = 500;
 
@@ -12511,13 +12433,13 @@ let Initialize = async(START_OVER = false) => {
         MASTER_VIDEO = $.all('video').pop();
 
     Handlers.video_clips__dvr = () => {
-        START__STOP_WATCH('video_clips__dvr');
+        new StopWatch('video_clips__dvr');
 
         // Add the button to all channels
         let actionPanel = $('.about-section__actions');
 
         if(nullish(actionPanel))
-            return JUDGE__STOP_WATCH('video_clips__dvr');
+            return StopWatch.stop('video_clips__dvr');
 
         Cache.load('DVRChannels', async({ DVRChannels }) => {
             DVRChannels = JSON.parse(DVRChannels || '{}');
@@ -12638,7 +12560,7 @@ let Initialize = async(START_OVER = false) => {
             }
         });
 
-        JUDGE__STOP_WATCH('video_clips__dvr');
+        StopWatch.stop('video_clips__dvr');
     };
     Timers.video_clips__dvr = -2_500;
 
@@ -12741,7 +12663,7 @@ let Initialize = async(START_OVER = false) => {
             // Begin looking for DVR channels...
         AUTO_DVR__CHECKING_INTERVAL =
         setInterval(AUTO_DVR__CHECKING ??= () => {
-            START__STOP_WATCH('video_clips__dvr__checking_interval');
+            new StopWatch('video_clips__dvr__checking_interval');
 
             if(UP_NEXT_ALLOW_THIS_TAB)
                 Cache.load('DVRChannels', async({ DVRChannels }) => {
@@ -12795,7 +12717,7 @@ let Initialize = async(START_OVER = false) => {
                     // Send the length to the settings page
                     Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
 
-                    JUDGE__STOP_WATCH('video_clips__dvr__checking_interval', 30_000);
+                    StopWatch.stop('video_clips__dvr__checking_interval', 30_000);
                 });
         }, 30_000);
 
@@ -12926,12 +12848,12 @@ let Initialize = async(START_OVER = false) => {
         VIDEO_OVERRIDE = false;
 
     Handlers.recover_frames = () => {
-        START__STOP_WATCH('recover_frames');
+        new StopWatch('recover_frames');
 
         let video = $('video') ?? $('video', $('#tt-embedded-video')?.contentDocument);
 
         if(nullish(video))
-            return JUDGE__STOP_WATCH('recover_frames');
+            return StopWatch.stop('recover_frames');
 
         let { paused } = video,
             isTrusted = $.defined('button[data-a-player-state="paused"i]'),
@@ -12947,7 +12869,7 @@ let Initialize = async(START_OVER = false) => {
         // if the page isn't in focus, ignore this setting
         // if the video is paused by the user (trusted) move on
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
-            return JUDGE__STOP_WATCH('recover_frames');
+            return StopWatch.stop('recover_frames');
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
         if(creationTime !== CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
@@ -13043,7 +12965,7 @@ let Initialize = async(START_OVER = false) => {
         if(SECONDS_PAUSED_UNSAFELY > 15)
             ReloadPage();
 
-        JUDGE__STOP_WATCH('recover_frames');
+        StopWatch.stop('recover_frames');
     };
     Timers.recover_frames = 1000;
 
@@ -13069,10 +12991,10 @@ let Initialize = async(START_OVER = false) => {
     let VIDEO_PLAYER_TIMEOUT = -1;
 
     Handlers.recover_stream = (video = $('video')) => {
-        START__STOP_WATCH('recover_stream');
+        new StopWatch('recover_stream');
 
         if(nullish(video))
-            return JUDGE__STOP_WATCH('recover_stream');
+            return StopWatch.stop('recover_stream');
 
         let { paused } = video,
             isTrusted = $.defined('button[data-a-player-state="paused"i]'),
@@ -13084,7 +13006,7 @@ let Initialize = async(START_OVER = false) => {
             // if the video is an ad AND auto-play ads is disabled
             // if the player event-timeout has been set
         if(!paused || isTrusted || (isAdvert && !parseBool(Settings.recover_ads)) || VIDEO_PLAYER_TIMEOUT > -1)
-            return JUDGE__STOP_WATCH('recover_stream');
+            return StopWatch.stop('recover_stream');
 
         // Wait before trying to press play again
         VIDEO_PLAYER_TIMEOUT = setTimeout(() => VIDEO_PLAYER_TIMEOUT = -1, 1000);
@@ -13131,7 +13053,7 @@ let Initialize = async(START_OVER = false) => {
             });
         }
 
-        JUDGE__STOP_WATCH('recover_stream');
+        StopWatch.stop('recover_stream');
     };
     Timers.recover_stream = 2_500;
 
@@ -13160,33 +13082,33 @@ let Initialize = async(START_OVER = false) => {
     let RECOVERING_VIDEO = false;
 
     Handlers.recover_video = async() => {
-        START__STOP_WATCH('recover_video');
+        new StopWatch('recover_video');
 
-        let errorMessage = $('[data-a-target^="player"i][data-a-target$="content-gate"i] [data-test-selector*="text"i]');
+        let errorMessage = $('[data-a-target^="player"i][data-a-target$="content-gate"i] [data-test-selector*="text"i], [data-a-target*="player"i][data-a-target*="gate"i] [data-a-target*="text"i]');
 
         if(nullish(errorMessage))
-            return JUDGE__STOP_WATCH('recover_video');
+            return StopWatch.stop('recover_video');
 
         if(RECOVERING_VIDEO)
-            return JUDGE__STOP_WATCH('recover_video');
+            return StopWatch.stop('recover_video');
         RECOVERING_VIDEO = true;
 
-        errorMessage = errorMessage.textContent;
-
-        if(/\b(subscribe|mature)\b/i.test(errorMessage)) {
+        if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
             let next = await GetNextStreamer();
 
             // Subscriber only, etc.
             if(defined(next))
                 goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
         } else {
-            ERROR('The stream ran into an error:', errorMessage, new Date);
+            ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
 
             // Failed to play video at...
             PushToTopSearch({ 'tt-err-vid': 'video-recovery--non-subscriber' });
+
+            errorMessage.closest('button')?.click();
         }
 
-        JUDGE__STOP_WATCH('recover_video');
+        StopWatch.stop('recover_video');
     };
     Timers.recover_video = 5000;
 
@@ -13293,12 +13215,12 @@ let Initialize = async(START_OVER = false) => {
         RECOVER_PAGE_FROM_LAG__WARNINGS = 0;
 
     Handlers.recover_pages = async() => {
-        START__STOP_WATCH('recover_pages');
+        new StopWatch('recover_pages');
 
         let error = $('main :is([data-a-target*="error"i][data-a-target*="message"i], [data-test-selector*="content"i][data-test-selector*="overlay"i])');
 
         if(nullish(error))
-            return JUDGE__STOP_WATCH('recover_pages');
+            return StopWatch.stop('recover_pages');
 
         let message = error.textContent,
             next = await GetNextStreamer();
@@ -13310,7 +13232,7 @@ let Initialize = async(START_OVER = false) => {
         else
             ReloadPage();
 
-        JUDGE__STOP_WATCH('recover_pages');
+        StopWatch.stop('recover_pages');
     };
     Timers.recover_pages = 5000;
 
@@ -13330,7 +13252,7 @@ let Initialize = async(START_OVER = false) => {
 
             // The time has drifted by more than 25%
             if(span > (Timers.recover_pages * 1.25))
-                WARN(`The page seems to be lagging... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
+                WARN(`The page seems to be lagging (${ span.suffix('s', false, 'time') })... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
             else if(span < (Timers.recover_pages * 1.05) && RECOVER_PAGE_FROM_LAG__WARNINGS > 0)
                 --RECOVER_PAGE_FROM_LAG__WARNINGS;
 
@@ -14014,7 +13936,7 @@ if(top == window) {
 
                             if(parseBool(Settings.recover_pages)) {
                                 if(++RECOVERY_TRIALS > 10)
-                                    return ReloadPage();
+                                    return PushToTopSearch(NOT_LOADED_CORRECTLY.map(fail => 'fail_to_load--' + fail), true);
                                 return false;
                             }
 

@@ -67,20 +67,38 @@ function RemoveCustomCSSBlock_Player(name, flags = '') {
 
 let Player__Initialize = async(START_OVER = false) => {
     // Time how long jobs take to complete properly
-    let STOP_WATCHES = new Map,
-        JUDGE__STOP_WATCH = (JobName, JobTime = Timers[JobName]) => {
-            let { abs } = Math;
+    class StopWatch {
+        static #WATCHES = new Map;
 
-            let start = STOP_WATCHES.get(JobName),
-                stop = +new Date,
-                span = abs(start - stop),
-                max = abs(JobTime) * 1.1;
+        constructor(name, interval) {
+            interval ??= Timers[name];
+
+            StopWatch.#WATCHES.set(name, this);
+
+            return Object.assign(this, {
+                name, interval,
+
+                start: new Date,
+                stop: null,
+                span: null,
+                max: Math.abs(interval + new Date) * 1.1,
+            });
+        }
+
+        static stop(name) {
+            StopWatch.#WATCHES.get(name)?.time();
+        }
+
+        time() {
+            let stop = this.stop = new Date;
+            let span = this.span = Math.abs(this.start - stop);
+            let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ JobName.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
-        },
-        START__STOP_WATCH = (JobName, JobCreationDate = +new Date) => (STOP_WATCHES.set(JobName, JobCreationDate), JobCreationDate);
+        }
+    }
 
     /*** Automation
      *                    _                        _   _

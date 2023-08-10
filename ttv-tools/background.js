@@ -26,10 +26,19 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
         return;
 
     console.warn(`Reloading tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
-    Container.tabs.sendMessage(tab.id, { action: 'reload', forced }, response => {
-        if(forced || response.ok)
+
+    try {
+        Container.tabs.sendMessage(tab.id, { action: 'reload', forced }, response => {
+            // Only reload if not forced to already...
+            if(response?.ok && !forced)
+                Container.tabs.reload(tab.id);
+        });
+
+        if(forced)
             Container.tabs.reload(tab.id);
-    });
+    } catch(error) {
+        console.warn(`Failed to reload tab: ${ error }`);
+    }
 }
 
 // Removes the tab
@@ -44,17 +53,25 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
         if(defined(created) && +(new Date) - created < 5_000)
             break duplication;
 
-        console.warn(`Duplicating tab #${ tab.id }... ${ tab.url }`);
+        console.warn(`Duplicating tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
         Container.tabs.create({ url: tab.url, windowId: tab.windowId });
 
         RemoveTab.duplicatedTabs.set(tab.url, +new Date);
     }
 
-    console.warn(`Removing tab #${ tab.id }...`);
-    Container.tabs.sendMessage(tab.id, { action: 'close', forced }, response => {
-        if(forced || response.ok)
+    console.warn(`Removing tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
+    try {
+        Container.tabs.sendMessage(tab.id, { action: 'close', forced }, response => {
+            // Only remove if not forced to already...
+            if(response?.ok && !forced)
+                Container.tabs.remove(tab.id);
+        });
+
+        if(forced)
             Container.tabs.remove(tab.id);
-    });
+    } catch(error) {
+        console.warn(`Failed to close tab: ${ error }`);
+    }
 }
 
 Object.defineProperties(RemoveTab, {
@@ -180,7 +197,7 @@ let TabWatcherInterval = setInterval(() => {
         });
     } catch(error) {
         // Suppress query errors...
-        // console.warn(error);
+        console.warn(`Failed to complete "Tab Watcher Interval": ${ error }`);
     }
 }, 2500);
 
@@ -237,7 +254,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             Container.tabs.query({
                 url: ["*://*.twitch.tv/*"],
             }, (tabs = []) => {
-                console.warn(`Consuming Up Next...`);
+                console.warn(`Consuming Up Next...`, request);
                 for(let tab of tabs)
                     Container.tabs.sendMessage(tab.id, { action: 'consume-up-next', ...request });
 
@@ -254,61 +271,70 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 }, (tabs = []) => {
                     console.warn(`Claiming Up Next...`);
 
-                    let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
-                    let hostHas = (url, ...doms) => {
-                        for(let dom of doms)
-                            if(!!~new URL(url).host.indexOf(dom))
-                                return true;
-                        return false;
-                    };
-                    let name = null,
-                        owner = null,
-                        ownerAlive = false;
+                    try {
+                        let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();
+                        let hostHas = (url, ...doms) => {
+                            for(let dom of doms)
+                                if(!!~new URL(url).host.indexOf(dom))
+                                    return true;
+                            return false;
+                        };
+                        let name = null,
+                            owner = null,
+                            ownerAlive = false;
 
-                    // Does the Tab ID match?
-                    for(let tab of tabs)
-                        if(hostHas(tab.url, 'player.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.') || RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
-                            continue;
-                        } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
-                            owner = tab.id;
-                            name = getName(tab.url);
-
-                            break;
-                        }
-
-                    // An owner already exists and is active...
-                    if(ownerAlive) {
-                        UP_NEXT_OWNER = owner;
-                        UP_NEXT_OWNER_NAME = name;
-
-                        respond({ owner: owner == sender.tab.id });
-                    } else {
-                        // Does the streamer name match?
-                        for(let tab of tabs)
-                            if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
-                                continue;
-                            } else if(ownerAlive ||= (getName(tab.url) == UP_NEXT_OWNER_NAME)) {
+                        // Does the Tab ID match?
+                        checking_tab_id: for(let tab of tabs)
+                            if(hostHas(tab.url, 'player.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.') || RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
+                                continue checking_tab_id;
+                            } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
                                 owner = tab.id;
                                 name = getName(tab.url);
 
-                                break;
+                                break checking_tab_id;
                             }
 
+                        // An owner already exists and is active...
                         if(ownerAlive) {
                             UP_NEXT_OWNER = owner;
                             UP_NEXT_OWNER_NAME = name;
 
                             respond({ owner: owner == sender.tab.id });
                         } else {
-                            // This Tab is the new owner
-                            UP_NEXT_OWNER = sender.tab.id;
-                            UP_NEXT_OWNER_NAME = getName(sender.tab.url);
+                            // Does the streamer name match?
+                            checking_streamer_name: for(let tab of tabs)
+                                if(RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
+                                    continue checking_streamer_name;
+                                } else if(ownerAlive ||= (getName(tab.url) == UP_NEXT_OWNER_NAME)) {
+                                    owner = tab.id;
+                                    name = getName(tab.url);
 
-                            respond({ owner: true });
+                                    break checking_streamer_name;
+                                }
+
+                            if(ownerAlive) {
+                                UP_NEXT_OWNER = owner;
+                                UP_NEXT_OWNER_NAME = name;
+
+                                respond({ owner: owner == sender.tab.id });
+                            } else {
+                                // This Tab is the new owner
+                                UP_NEXT_OWNER = sender.tab.id;
+                                UP_NEXT_OWNER_NAME = getName(sender.tab.url);
+
+                                respond({ owner: true });
+                            }
                         }
-                    }
 
-                    Storage.set({ UP_NEXT_OWNER, UP_NEXT_OWNER_NAME });
+                        Storage.set({ UP_NEXT_OWNER, UP_NEXT_OWNER_NAME });
+                    } catch(error) {
+                        console.warn(`Failed to Claim Up Next: ${ error }`);
+
+                        let json = JSON.stringify(tabs);
+
+                        REPORTS.delete(json);
+                        GALLOWS.delete(json);
+                    }
                 });
             });
         } break;
@@ -353,6 +379,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
         case 'BEGIN_REPORT': {
             let { tab } = sender;
 
+            console.warn(`Beginning report for tab #${ tab.id }`);
             REPORTS.set(tab.id, +new Date);
         } break;
     }
@@ -379,6 +406,11 @@ let LAG_REPORTER = setInterval(() => {
                         GALLOWS.set(tab.id, +new Date);
                         REPORTS.delete(tab.id);
                         RemoveTab(tab, true);
+                    }).catch(error => {
+                        console.warn(`Tab #${ id } no longer exists... Removing...`);
+
+                        GALLOWS.set(id, +new Date);
+                        REPORTS.delete(id);
                     });
             }, MAX_TIME_ALLOWED - 100)
         );
@@ -432,7 +464,8 @@ let LAG_REPORTER = setInterval(() => {
                 })
                 .catch(error => REPORTS.delete(ID));
         } catch(error) {
-            // console.warn(error);
+            console.warn(`The lag reporter has failed: ${ error }`);
+
             REPORTS.delete(ID);
             GALLOWS.delete(ID);
         }
