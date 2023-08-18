@@ -44,10 +44,18 @@
 - [-] Clips double-save upon completion
     - One clip is always just a preview image
 - [ ] The background script may stall infinitely when a tab disappears
+- [ ] If a pre-roll ad plays, the recording feature stops working
+- [ ] Use Live Reminders as alternative stream sources for Up Next
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.11)
+- Fixed issue with Live Reminders not labeling channels as live correctly
+- Fixed issue with `fetchURL` not recognizing leading slashes properly
+- Fixed an issue where the First in line balloon would not display
+- Fixed issue with `parseURL` not recognizing single letter domains
+
 > [`5.32.10.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.10.1)
 - Fixed issue where some items would not be recognized by the Auto-claim wallet
 

@@ -23,9 +23,8 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
     THEME__BASE_CONTRAST,
     THEME__PREFERRED_CONTRAST,
     LITERATURE,
-    SPECIAL_MODE,
-    NORMAL_MODE,
-    NORMALIZED_PATHNAME,
+    SPECIAL_MODE = $.defined('[data-test-selector="exit-button"i]'),
+    NORMAL_MODE = !SPECIAL_MODE,
     // Hmm...
     JUMPED_FRAMES = false,
     JUMP_DATA = {};
@@ -74,8 +73,8 @@ class Balloon {
     constructor({ title, icon = 'play', iconAttr = {} }, ...jobs) {
         let f = furnish;
 
-        let [P] = $.all('.top-nav__menu > div').slice(-1),
-            X = $('#tt-balloon', P),
+        let [L_pane, C_pane, R_pane] = $.all('.top-nav__menu > div'),
+            X = $('#tt-balloon', R_pane),
             I = Runtime.getURL('profile.png'),
             F, C, H, U, N;
 
@@ -379,13 +378,13 @@ class Balloon {
             )
         );
 
-        P.insertBefore(p, P.children[1]);
+        R_pane.insertBefore(p, R_pane.children[1]);
 
         this.body = C;
         this.icon = N;
         this.uuid = U;
         this.header = H;
-        this.parent = P;
+        this.parent = R_pane;
         this.counter = F;
         this.container = p;
 
@@ -1176,14 +1175,15 @@ class Search {
             } break;
 
             case 'status.live': {
-                return fetchURL.idempotent(`//api.twitch.tv/helix/streams?user_id=${ ID }&type=live`, {
-                    headers: {
-                        Authorization: Search.authorization,
-                        'Client-Id': Search.clientID,
-                    },
-                })
-                    .then(response => response.json())
-                    .then(json => parseBool(json?.data?.shift()?.type));
+                return fetchURL.idempotent(`/${ ID }`)
+                    .then(response => response.text())
+                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                    .then(DOM => parseBool(
+                        /(["']?)isLiveBroadcast\1\s*:\s*(?<status>true|false)\b/
+                            .exec(DOM.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent)
+                            ?.groups
+                            ?.status
+                    ));
             } break;
 
             default: {
@@ -1195,14 +1195,10 @@ class Search {
 
                 searchResults = fetchURL.idempotent(`./${ name }`)
                     .then(response => response.text())
-                    .then(html => {
-                        let parser = new DOMParser;
-
-                        return parser.parseFromString(html, 'text/html');
-                    })
+                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                     .then(async doc => {
                         let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang),
-                            [data] = JSON.parse($('script[type^="application"i][type$="json"i]', doc)?.textContent || "[{}]");
+                            [data] = JSON.parse($('head>script[type^="application"i][type$="json"i]', doc)?.textContent || "[{}]");
 
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                             [language] = languages.filter(lang => alt_languages.missing(lang)),
@@ -2512,6 +2508,10 @@ let isLive = channel => parseBool(channel?.live);
 
 // Update common variables
 let PATHNAME = location.pathname,
+    NORMALIZED_PATHNAME = PATHNAME
+        // Remove common "modes"
+        .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
+        .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1'),
     // The current streamer
     STREAMER,
     // The followed streamers (excluding STREAMER)
@@ -3689,14 +3689,6 @@ let Initialize = async(START_OVER = false) => {
             KEYDOWN_ALT_X: function Clip() {/* Managed by Twitch */},
             KEYDOWN_ALT_T: function Toggle_Theatre_Mode() {/* Managed by Twitch */},
         });
-
-    SPECIAL_MODE = $.defined('[data-test-selector="exit-button"i]');
-    NORMAL_MODE = !SPECIAL_MODE;
-
-    NORMALIZED_PATHNAME = PATHNAME
-        // Remove common "modes"
-        .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
-        .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
 
     if(SPECIAL_MODE) {
         let { $1, $2 } = RegExp,
@@ -6741,9 +6733,6 @@ let Initialize = async(START_OVER = false) => {
                     if(clientID?.equals('.DENIED') || oauthToken?.equals('.DENIED'))
                         return;
 
-                    // Client-ID = wyf7fkavkuhwmmdq5xyfq2zyarejxs
-                    // OAuth = 1dv9ja8g1alr9en1fqjimicwl4r5ou
-
                     if(nullish(clientID) || nullish(oauthToken)) {
                         fetchURL(`https://id.twitch.tv/oauth2/token`, {
                             method: 'POST',
@@ -7106,7 +7095,7 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                live = (channel.live || await new Search(sole, 'channel', 'status.live') || (abs(+now - +time) / 3_600_000 < 1/3)),
+                                live = (channel.live || await new Search(name, 'channel', 'status.live') || abs(+now - +time) / 3_600_000 < 1/3),
                                 [since] = toTimeString(abs(+now - +time), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
@@ -9947,7 +9936,7 @@ let Initialize = async(START_OVER = false) => {
                         lastactive: toTimeString(0, '!minute_m !second_s'),
 
                         time_online: toTimeString((parseCoin($('#tt-points-receipt')?.textContent) / 320) * 4000),
-                        time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data.lastSeen || $('#root').dataset.aPageLoaded)),
+                        time_offline: toTimeString(+(new Date) - +new Date(STREAMER.data?.lastSeen || $('#root').dataset.aPageLoaded)),
                     },
                     user1: USERNAME,
                     '2': USERNAME,

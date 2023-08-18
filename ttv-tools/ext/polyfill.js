@@ -132,7 +132,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\w{2,}(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\w+(?:\.[^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -2387,7 +2387,7 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     let promise = new Promise((resolve, reject) =>
         canvas.toBlob(blob =>
             navigator.clipboard
-                .write([ new ClipboardItem({ [blob?.type]: blob }) ])
+                .write([ new ClipboardItem({ [blob?.type ?? 'image/png']: blob }) ])
                 .then(resolve)
                 .catch(reject)
                 .finally(() => canvas?.remove())

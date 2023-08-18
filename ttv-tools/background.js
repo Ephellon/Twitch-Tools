@@ -269,7 +269,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
                 Container.tabs.query({
                     url: ["*://*.twitch.tv/*"],
                 }, (tabs = []) => {
-                    console.warn(`Claiming Up Next...`);
+                    console.warn(`Claiming Up Next...`, tabs);
 
                     try {
                         let getName = url => new URL(url).pathname.slice(1).split('/').shift().toLowerCase().trim();

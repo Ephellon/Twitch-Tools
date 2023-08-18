@@ -1236,6 +1236,12 @@ function fetchURL(url, options = {}) {
     if(!url?.length)
         return empty;
 
+    // <https://www.site.com/path> | /path → https://www.site.com/path | ./path → https://www.site.com/path
+    url = url.replace(/^(\.)?\/([^\/])/, location.origin + '/$2');
+
+    // <https://www.site.com/path/to/file> | ../file → https://www.site.com/path/to
+    url = url.replace(/^(\.\.)\//, location.origin + location.pathname.split('/').slice(0, -1).join('/'));
+
     let unknown = Symbol('UNKNOWN');
     let { href, domainPath = [], host, protocol, pathname } = parseURL(url);
     let [domain = unknown, site = unknown, ...subDomain] = domainPath;

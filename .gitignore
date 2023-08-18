@@ -5,3 +5,4 @@
 # Ignore these files
 *.pem
 *.crx
+chrome*.zip

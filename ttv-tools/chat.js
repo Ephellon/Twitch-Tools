@@ -2239,7 +2239,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 if(STREAMER.perm.has(Settings.auto_chat__vip)) {
                     message = Rules.rules.general.random();
-                    reason = 'permission';
+                    reason = `permission (${ Settings.auto_chat__vip })`;
                 } else {
                     if(Rules.badge.test(badges.join(','))) {
                         message = Rules.rules.specific.badge.filter(({ badge, text }) => {
