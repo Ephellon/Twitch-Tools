@@ -8,6 +8,16 @@
  *                    __/ |          _/ |
  *                   |___/          |__/
  */
+
+/**
+ * @file Defines all polyfill logic for the extension. Used on most pages.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * @module
+ */
+
+;
+
 /***
  *      ______                _   _
  *     |  ____|              | | (_)
@@ -18,23 +28,29 @@
  *
  *
  */
-// Parse a URL
-    // parseURL(url:string) → object
-    /** Breaking down a URL → https://user:pass@example.com:56/action?login=true#news
-     * href → https://user:pass@example.com:56/action.html?login=true#news
-     * origin → https://
-     * protocol → https:
-     * scheme → https
-     * username → user
-     * password → pass
-     * host → example.com:56
-     * hostname → example.com
-     * port → 56
-     * pathname → /action.html
-     * filename → action.html
-     * search → ?login=true
-     * hash → #news
-     */
+/** Parses a URL and returns its constituent components
+ * @simply parseURL(url:string) → object
+ *
+ * @param {string<URL>} url The URL to parse
+ *
+ * @returns {{ href:string }}
+ *
+ * @example // Parsing a URL
+ * let url = parseURL("https://user:pass@example.com:56/action?login=true#news");
+ * // url.href → "https://user:pass@example.com:56/action.html?login=true#news"
+ * // url.origin → "https://"
+ * // url.protocol → "https:"
+ * // url.scheme → "https"
+ * // url.username → "user"
+ * // url.password → "pass"
+ * // url.host → "example.com:56"
+ * // url.hostname → "example.com"
+ * // url.port → "56"
+ * // url.pathname → "/action.html"
+ * // url.filename → "action.html"
+ * // url.search → "?login=true"
+ * // url.hash → "#news"
+ */
 function parseURL(url) {
     if(nullish(url))
         return {};
@@ -852,7 +868,19 @@ function getDOMPath(element, length = 0) {
  *                                   |___/|_|
  */
 
- // Binds the function the same way as `Function..bind` but uses an `argument array` instead of an `argument spread`
+// Filters an object by its keys using any number of iterable sources
+    // Object.filter(target, ...sources) → Object<target - #>
+Object.filter ??= function filter(target, ...sources) {
+    for(let source of sources)
+        if(source?.constructor?.prototype?.[Symbol.iterator]) // iterables only
+            for(let rule of source)
+                if(!(rule in target))
+                    delete target[rule];
+
+    return target;
+};
+
+// Binds the function the same way as `Function..bind` but uses an `argument array` instead of an `argument spread`
     // Function..wrap(thisArg:object|null, argArray:array?<any>) → Function
 Function.prototype.wrap ??= function wrap(thisArg, argArray = []) {
     return this.bind.apply(this, [thisArg].concat(argArray));
@@ -889,7 +917,7 @@ Array.prototype.missing ??= function missing(...values) {
 };
 
 // Returns an array of purely unique elements
-    // Array..isolate(against:array?) → array<Set>
+    // Array..isolate(against:array?) → Set[]
 Array.prototype.isolate ??= function isolate(against = []) {
     return [...new Set(this)].filter(value => against.missing(value));
 };
@@ -1035,8 +1063,14 @@ Document.prototype.get ??= function get(property) {
     return this.querySelector(`[name$="${ property }"i], [property$="${ property }"i], [name$="og:${ property }"i], [property$="og:${ property }"i]`)?.getAttribute('content');
 };
 
-// Returns an element based upon its text
-    // Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
+/** Finds and returns an element based on its textual content. A shortcut for <b><code>document.getElementByText</code></b>.
+ * @simply Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
+ *
+ * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
+ * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>u</strong> → Unicode
+ *
+ * @return {Element}
+ */
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         UNICODE_FLAG = false;
@@ -1166,8 +1200,14 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
     return owner;
 };
 
-// Returns an array of elements that contain the text
-    // Element..getElementsByInnerText(searchText:string|regexp|array, flags:string?) → [Element...]
+/** Finds and returns multiple elements based on their textual content. A shortcut for <b><code>document.getElementsByText</code></b>.
+ * @simply Element..getElementsByInnerText(searchText:string|regexp|array, flags:string?) → [Element...]
+ *
+ * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
+ * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>u</strong> → Unicode
+ *
+ * @returns {Element[]}
+ */
 Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         UNICODE_FLAG = false;
@@ -1319,8 +1359,19 @@ Element.prototype.isVisible ??= function isVisible() {
     return document.elementsFromPoint(x, y).contains(this);
 };
 
-// Returns an array of elements in the order they're queried
-    // Element..queryBy(selectors:string|array|Element, container:Node?) → Element
+/** Finds and returns an array of elements in the order they were queried.
+ * @simply Element..queryBy(selectors:string|array|Element, container:Node?) → Element
+ *
+ * @param {(string|array|Element)} selectors    The selection criteria for the query
+ * @param {Element} [container = document]      The contaier (parent) to perform the query in
+ *
+ * @example
+ * // Example HTML
+ * // html > head + body > div + div + div
+ * let [div, head, html, body] = $.queryBy('div, head, html, body'); // → [HTMLDivElement, HTMLHeadElement, HTMLDocumentElement, HTMLBodyElement]
+ * let [last, first] = $.queryBy('div:last-child, div'); // → [:last-child, :first-child]
+ * // This guarantees that all found elements stay in their preferred query order
+ */
 Element.prototype.queryBy ??= function queryBy(selectors, container = document) {
 	let properties = { writable: false, enumerable: false, configurable: false },
 		media;
@@ -1923,7 +1974,7 @@ HTMLCollection.prototype.values         ??= Array.prototype.values;
 
 // https://learnersbucket.com/examples/interview/promise-any-polyfill/
 // Resovles to a non-empty Promise
-    // Promise.anySettled(promises:array<Promise>) → Promise
+    // Promise.anySettled(promises:Promise[]) → Promise
 Promise.anySettled = function anySettled(promises) {
     let errors = new Array(promises.length);
     let errd = 0;
@@ -2352,7 +2403,7 @@ HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAU
 };
 
 // Saves a video element recording
-    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement | array<HTMLAnchorElement>
+    // HTMLVideoElement..saveRecording(key:string?, name:string?) → HTMLAnchorElement | HTMLAnchorElement[]
 HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, name = null) {
     key ??= 'DEFAULT_RECORDING';
 
@@ -4758,14 +4809,14 @@ function alert(message = '') {
         ?? $CNT?.getAttribute('title')
         ?? `TTV Tools &mdash; Please see...`
     ),
-    icon = (null
-        ?? $CNT?.getAttribute('icon')
-        ?? ''
-    ),
-    okay = decodeHTML(null
-        ?? $CNT?.getAttribute('okay')
-        ?? 'OK'
-    );
+        icon = (null
+            ?? $CNT?.getAttribute('icon')
+            ?? ''
+        ),
+        okay = decodeHTML(null
+            ?? $CNT?.getAttribute('okay')
+            ?? 'OK'
+        );
 
     let container =
     f('.tt-post.tt-alert', { uuid: UUID.from(message).value },
@@ -4983,18 +5034,18 @@ function confirm(message = '') {
         ?? $CNT?.getAttribute('title')
         ?? `TTV Tools &mdash; Please confirm...`
     ),
-    icon = (null
-        ?? $CNT?.getAttribute('icon')
-        ?? ''
-    ),
-    okay = decodeHTML(null
-        ?? $CNT?.getAttribute('okay')
-        ?? 'OK'
-    ),
-    deny = decodeHTML(null
-        ?? $CNT?.getAttribute('deny')
-        ?? 'Cancel'
-    );
+        icon = (null
+            ?? $CNT?.getAttribute('icon')
+            ?? ''
+        ),
+        okay = decodeHTML(null
+            ?? $CNT?.getAttribute('okay')
+            ?? 'OK'
+        ),
+        deny = decodeHTML(null
+            ?? $CNT?.getAttribute('deny')
+            ?? 'Cancel'
+        );
 
     let container =
     f('.tt-post.tt-confirm', { uuid: UUID.from(message).value },
@@ -5259,42 +5310,42 @@ function prompt(message = '', defaultValue = '') {
         ?? $CNT?.getAttribute('title')
         ?? `TTV Tools &mdash; Please provide input...`
     ),
-    icon = (null
-        ?? $CNT?.getAttribute('icon')
-        ?? ''
-    ),
-    okay = decodeHTML(null
-        ?? $CNT?.getAttribute('okay')
-        ?? 'OK'
-    ),
-    deny = decodeHTML(null
-        ?? $CNT?.getAttribute('deny')
-        ?? 'Cancel'
-    ),
-    type = (null
-        ?? $CNT?.getAttribute('type')
-        ?? (
-            /\p{N}/u.test(defaultValue)?
-                'number':
-            (/^[\*\u00b7\u2219\u2022]{4,}$/.test(defaultValue) && !(defaultValue = ''))?
-                'password':
-            'text'
-        )
-    ),
-    placeholder = (null
-        ?? $CNT?.getAttribute('placeholder')
-        ?? $CNT?.getAttribute('format')
-        ?? (
-            parseBool(defaultValue)?
-                `Default: ${ defaultValue }`:
-            ''
-        )
-    ),
-    pattern = (null
-        ?? $CNT?.getAttribute('pattern')
-        ?? $CNT?.getAttribute('regexp')
-        ?? '[^$]*'
-    );
+        icon = (null
+            ?? $CNT?.getAttribute('icon')
+            ?? ''
+        ),
+        okay = decodeHTML(null
+            ?? $CNT?.getAttribute('okay')
+            ?? 'OK'
+        ),
+        deny = decodeHTML(null
+            ?? $CNT?.getAttribute('deny')
+            ?? 'Cancel'
+        ),
+        type = (null
+            ?? $CNT?.getAttribute('type')
+            ?? (
+                /\p{N}/u.test(defaultValue)?
+                    'number':
+                (/^[\*\u00b7\u2219\u2022]{4,}$/.test(defaultValue) && !(defaultValue = ''))?
+                    'password':
+                'text'
+            )
+        ),
+        placeholder = (null
+            ?? $CNT?.getAttribute('placeholder')
+            ?? $CNT?.getAttribute('format')
+            ?? (
+                parseBool(defaultValue)?
+                    `Default: ${ defaultValue }`:
+                ''
+            )
+        ),
+        pattern = (null
+            ?? $CNT?.getAttribute('pattern')
+            ?? $CNT?.getAttribute('regexp')
+            ?? '[^$]*'
+        );
 
     let container =
     f('.tt-post.tt-prompt', { uuid: UUID.from(message).value },
@@ -5552,18 +5603,18 @@ function select(message = '', options = [], multiple = false) {
         ?? $CNT?.getAttribute('title')
         ?? `TTV Tools &mdash; Please select ${ (multiple? 'any options': 'an option') }...`
     ),
-    icon = (null
-        ?? $CNT?.getAttribute('icon')
-        ?? ''
-    ),
-    okay = decodeHTML(null
-        ?? $CNT?.getAttribute('okay')
-        ?? 'OK'
-    ),
-    deny = decodeHTML(null
-        ?? $CNT?.getAttribute('deny')
-        ?? 'Cancel'
-    );
+        icon = (null
+            ?? $CNT?.getAttribute('icon')
+            ?? ''
+        ),
+        okay = decodeHTML(null
+            ?? $CNT?.getAttribute('okay')
+            ?? 'OK'
+        ),
+        deny = decodeHTML(null
+            ?? $CNT?.getAttribute('deny')
+            ?? 'Cancel'
+        );
 
     let __values__ = [],
         __names__ = {};

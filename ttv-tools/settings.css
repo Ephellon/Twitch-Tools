@@ -627,6 +627,9 @@ summary {
     cursor: pointer;
 
     padding: 1rem .5rem 1rem 1rem;
+
+    width: -webkit-fill-available;
+    width: -moz-fit-content;
 }
 
 html:not([lang="en"i]) summary {

@@ -46,10 +46,26 @@
 - [ ] The background script may stall infinitely when a tab disappears
 - [ ] If a pre-roll ad plays, the recording feature stops working
 - [ ] Use Live Reminders as alternative stream sources for Up Next
+- [ ] Display alerts for Prime Gaming loot for specific games
+- [ ] Finish JSDoc commenting
+    - [x] background.js
+    - [x] core.js
+    - [ ] polyfills.js
+    - [ ] tools.js
+    - [ ] chat.js
+    - [ ] player.js
+    - [ ] glyphs.js
+    - [ ] settings.js
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.12)
+- Normalizing and improving documentation (JSDoc)
+- Fixed issue with game fetching logic
+- Fixed Steam pricing logic
+- Modified time zone logic to include 2 character zones (e.g. ET, CT, etc.)
+
 > [`5.32.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.11)
 - Fixed issue with Live Reminders not labeling channels as live correctly
 - Fixed issue with `fetchURL` not recognizing leading slashes properly

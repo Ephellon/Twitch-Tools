@@ -1,122 +1,184 @@
-/*** Available SVG glyphs
- * exit_picture_in_picture
- * secondary_mouse_button
- * primary_mouse_button
- * bonuschannelpoints
- * picture_in_picture
- * add_to_calendar
- * more_horizontal
- * more_vertical
- * channelpoints
- * extensions
- * navigation
- * checkmark
- * translate
- * incognito
- * highlight
- * calendar
- * collapse
- * download
- * favorite
- * ne_arrow
- * streamer
- * verified
- * battery
- * compass
- * dislike
- * dropper
- * predict
- * refresh
- * station
- * emotes
- * expand
- * export
- * ignore
- * inform
- * latest
- * notify
- * people
- * pinned
- * popout
- * rewind
- * search
- * stream
- * thread
- * trophy
- * twitch
- * unmute
- * unread
- * upload
- * wallet
- * mouse
- * audio
- * alert
- * close
- * crown
- * globe
- * ghost
- * intro
- * leave
- * music
- * party
- * pause
- * reply
- * rerun
- * stats
- * sword
- * trash
- * unfav
- * video
- * bits
- * bolt
- * cake
- * clip
- * chat
- * flag
- * game
- * gift
- * help
- * hide
- * home
- * host
- * info
- * lock
- * loot
- * moon
- * play
- * plus
- * poll
- * raid
- * show
- * star
- * warn
- * fav
- * map
- * mod
- * cog
- * vip
- * at
- * x
+/*** /glyphs.js - All SVGs that need to be stored locally
+ *       _____ _             _           _
+ *      / ____| |           | |         (_)
+ *     | |  __| |_   _ _ __ | |__  ___   _ ___
+ *     | | |_ | | | | | '_ \| '_ \/ __| | / __|
+ *     | |__| | | |_| | |_) | | | \__ \_| \__ \
+ *      \_____|_|\__, | .__/|_| |_|___(_) |___/
+ *                __/ | |              _/ |
+ *               |___/|_|             |__/
  */
 
+/**
+ * @file Defines all of the Glyphs (SVGs) used within the extension.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * @module
+ */
+
+;
+
+/** All glyphs used within the extension.
+ * @prop {string<SVG>} exit_picture_in_picture - The "exit picture in picture" glyph
+ * @prop {string<SVG>} secondary_mouse_button - The "secondary mouse button" glyph
+ * @prop {string<SVG>} primary_mouse_button - The "primary mouse button" glyph
+ * @prop {string<SVG>} bonuschannelpoints - The "bonuschannelpoints" glyph
+ * @prop {string<SVG>} picture_in_picture - The "picture in picture" glyph
+ * @prop {string<SVG>} add_to_calendar - The "add to calendar" glyph
+ * @prop {string<SVG>} more_horizontal - The "more horizontal" glyph
+ * @prop {string<SVG>} more_vertical - The "more vertical" glyph
+ * @prop {string<SVG>} channelpoints - The "channelpoints" glyph
+ * @prop {string<SVG>} extensions - The "extensions" glyph
+ * @prop {string<SVG>} navigation - The "navigation" glyph
+ * @prop {string<SVG>} checkmark - The "checkmark" glyph
+ * @prop {string<SVG>} translate - The "translate" glyph
+ * @prop {string<SVG>} incognito - The "incognito" glyph
+ * @prop {string<SVG>} highlight - The "highlight" glyph
+ * @prop {string<SVG>} calendar - The "calendar" glyph
+ * @prop {string<SVG>} collapse - The "collapse" glyph
+ * @prop {string<SVG>} download - The "download" glyph
+ * @prop {string<SVG>} favorite - The "favorite" glyph
+ * @prop {string<SVG>} ne_arrow - The "ne arrow" glyph
+ * @prop {string<SVG>} streamer - The "streamer" glyph
+ * @prop {string<SVG>} verified - The "verified" glyph
+ * @prop {string<SVG>} battery - The "battery" glyph
+ * @prop {string<SVG>} compass - The "compass" glyph
+ * @prop {string<SVG>} dislike - The "dislike" glyph
+ * @prop {string<SVG>} dropper - The "dropper" glyph
+ * @prop {string<SVG>} predict - The "predict" glyph
+ * @prop {string<SVG>} refresh - The "refresh" glyph
+ * @prop {string<SVG>} station - The "station" glyph
+ * @prop {string<SVG>} emotes - The "emotes" glyph
+ * @prop {string<SVG>} expand - The "expand" glyph
+ * @prop {string<SVG>} export - The "export" glyph
+ * @prop {string<SVG>} ignore - The "ignore" glyph
+ * @prop {string<SVG>} inform - The "inform" glyph
+ * @prop {string<SVG>} latest - The "latest" glyph
+ * @prop {string<SVG>} notify - The "notify" glyph
+ * @prop {string<SVG>} people - The "people" glyph
+ * @prop {string<SVG>} pinned - The "pinned" glyph
+ * @prop {string<SVG>} popout - The "popout" glyph
+ * @prop {string<SVG>} rewind - The "rewind" glyph
+ * @prop {string<SVG>} search - The "search" glyph
+ * @prop {string<SVG>} stream - The "stream" glyph
+ * @prop {string<SVG>} thread - The "thread" glyph
+ * @prop {string<SVG>} trophy - The "trophy" glyph
+ * @prop {string<SVG>} twitch - The "twitch" glyph
+ * @prop {string<SVG>} unmute - The "unmute" glyph
+ * @prop {string<SVG>} unread - The "unread" glyph
+ * @prop {string<SVG>} upload - The "upload" glyph
+ * @prop {string<SVG>} wallet - The "wallet" glyph
+ * @prop {string<SVG>} mouse - The "mouse" glyph
+ * @prop {string<SVG>} audio - The "audio" glyph
+ * @prop {string<SVG>} alert - The "alert" glyph
+ * @prop {string<SVG>} close - The "close" glyph
+ * @prop {string<SVG>} crown - The "crown" glyph
+ * @prop {string<SVG>} globe - The "globe" glyph
+ * @prop {string<SVG>} ghost - The "ghost" glyph
+ * @prop {string<SVG>} intro - The "intro" glyph
+ * @prop {string<SVG>} leave - The "leave" glyph
+ * @prop {string<SVG>} music - The "music" glyph
+ * @prop {string<SVG>} party - The "party" glyph
+ * @prop {string<SVG>} pause - The "pause" glyph
+ * @prop {string<SVG>} reply - The "reply" glyph
+ * @prop {string<SVG>} rerun - The "rerun" glyph
+ * @prop {string<SVG>} stats - The "stats" glyph
+ * @prop {string<SVG>} sword - The "sword" glyph
+ * @prop {string<SVG>} trash - The "trash" glyph
+ * @prop {string<SVG>} unfav - The "unfav" glyph
+ * @prop {string<SVG>} video - The "video" glyph
+ * @prop {string<SVG>} bits - The "bits" glyph
+ * @prop {string<SVG>} bolt - The "bolt" glyph
+ * @prop {string<SVG>} cake - The "cake" glyph
+ * @prop {string<SVG>} clip - The "clip" glyph
+ * @prop {string<SVG>} chat - The "chat" glyph
+ * @prop {string<SVG>} flag - The "flag" glyph
+ * @prop {string<SVG>} game - The "game" glyph
+ * @prop {string<SVG>} gift - The "gift" glyph
+ * @prop {string<SVG>} help - The "help" glyph
+ * @prop {string<SVG>} hide - The "hide" glyph
+ * @prop {string<SVG>} home - The "home" glyph
+ * @prop {string<SVG>} host - The "host" glyph
+ * @prop {string<SVG>} info - The "info" glyph
+ * @prop {string<SVG>} lock - The "lock" glyph
+ * @prop {string<SVG>} loot - The "loot" glyph
+ * @prop {string<SVG>} moon - The "moon" glyph
+ * @prop {string<SVG>} play - The "play" glyph
+ * @prop {string<SVG>} plus - The "plus" glyph
+ * @prop {string<SVG>} poll - The "poll" glyph
+ * @prop {string<SVG>} raid - The "raid" glyph
+ * @prop {string<SVG>} show - The "show" glyph
+ * @prop {string<SVG>} star - The "star" glyph
+ * @prop {string<SVG>} warn - The "warn" glyph
+ * @prop {string<SVG>} fav - The "fav" glyph
+ * @prop {string<SVG>} map - The "map" glyph
+ * @prop {string<SVG>} mod - The "mod" glyph
+ * @prop {string<SVG>} cog - The "cog" glyph
+ * @prop {string<SVG>} vip - The "vip" glyph
+ * @prop {string<SVG>} at - The "at" glyph
+ * @prop {string<SVG>} x - The "x" glyph
+ *
+ * @prop {function} modify          <div class="signature">(glyph:string, attributes:object<span class="signature-attributes">opt, nullable</span>, element:string<span class="signature-attributes">opt, nullable</span>) → {string}</div>
+ *                                  <br>Modifies the specified Glyph
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>glyph</code> &mdash; The Glyph to modify</li>
+ *                                  <li><code class=prettyprint>attributes</code> &mdash; Attributes to overwrite on the glyph</li>
+ *                                  <li><code class=prettyprint>element <i>&rArr; "svg"</i></code> &mdash; The element tag-name that should be returned</li>
+ *                                  <li><code class=prettyprint>return <i>{string}</i></code> &mdash; The modified HTML or SVG (XML)</li>
+ *                                  </ul>
+ * @prop {function} utf8            <div class="signature"><span class="signature-attributes">getter</span>() → {object}</div>
+ *                                  <br>Returns the UTF-8 encoding (emoji) of the glyphs
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>return <i>{object}</i></code> &mdash; An object (<code class=prettyprint>{ name: string&lt;utf8&gt; }</code>) of all glyphs encoded as UTF-8 strings</li>
+ *                                  </ul>
+ * @prop {function} base64          <div class="signature"><span class="signature-attributes">getter</span>() → {object}</div>
+ *                                  <br>Returns the Base64 encoding of the glyphs
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>return <i>{object}</i></code> &mdash; An object (<code class=prettyprint>{ name: string&lt;base64&gt; }</code>) of all glyphs encoded as Base64 strings</li>
+ *                                  </ul>
+ * @prop {function} dataURI         <div class="signature"><span class="signature-attributes">getter</span>() → {object}</div>
+ *                                  <br>Returns the {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs data URI} string of the glyphs
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>return <i>{object}</i></code> &mdash; An object (<code class=prettyprint>{ name: string&lt;dataURI&gt; }</code>) encoded as data URI strings</li>
+ *                                  </ul>
+ * @prop {function} dataURI         <div class="signature"><span class="signature-attributes">getter</span>() → {object}</div>
+ *                                  <br>Returns the {@link https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths path data} of the glyphs
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>return <i>{object}</i></code> &mdash; An object (<code class=prettyprint>{ name: string&lt;pathData&gt; }</code>) encoded as path data</li>
+ *                                  </ul>
+ */
 window.Glyphs ??= {
-    /* Valve Corp. (c) 2022. All rights reserved. */
-    /** 2022-09-16 11:18 CST - <https://store.steampowered.com/legal>
+    /** @license
+     * Valve Corp. (c) 2022. All rights reserved.
+     *
+     * @see https://store.steampowered.com/legal
+     *
+     * 2022-09-16 11:18 CST
      * Nothing that notes use of the Steam logo is restricted. The logo is ONLY used as a placeholder to redirect to Steam's site.
+     *
+     * @prop {string<SVG>} store_steam
      */
-    // Steam store logo
     store_steam: `<svg fill="#000000" width="34px" height="34px" version="1.1" viewBox="0 25 90 40" x="0px" y="0px"><g><path d="M41.8,0C19.7,0,1.7,17,0,38.5l22.5,9.3c1.9-1.3,4.2-2.1,6.7-2.1c0.2,0,0.4,0,0.7,0l10-14.5c0-0.1,0-0.1,0-0.2    c0-8.7,7.1-15.8,15.8-15.8c8.7,0,15.8,7.1,15.8,15.8c0,8.7-7.1,15.8-15.8,15.8c-0.1,0-0.2,0-0.4,0L41,57.1c0,0.2,0,0.4,0,0.6    c0,6.5-5.3,11.9-11.9,11.9c-5.7,0-10.5-4.1-11.6-9.5L1.4,53.3c5,17.6,21.1,30.5,40.3,30.5c23.1,0,41.9-18.8,41.9-41.9    C83.7,18.8,64.9,0,41.8,0z"/><path d="M26.3,63.6l-5.1-2.1c0.9,1.9,2.5,3.5,4.6,4.4c4.5,1.9,9.8-0.3,11.6-4.8c0.9-2.2,0.9-4.6,0-6.8    c-0.9-2.2-2.6-3.9-4.8-4.8c-2.2-0.9-4.5-0.9-6.6-0.1l5.3,2.2c3.3,1.4,4.9,5.2,3.5,8.6C33.4,63.4,29.6,65,26.3,63.6z"/><path d="M66.1,31.1c0-5.8-4.7-10.5-10.5-10.5s-10.5,4.7-10.5,10.5s4.7,10.5,10.5,10.5S66.1,36.9,66.1,31.1z     M47.7,31.1c0-4.4,3.5-7.9,7.9-7.9c4.4,0,7.9,3.5,7.9,7.9c0,4.4-3.5,7.9-7.9,7.9C51.2,39,47.7,35.5,47.7,31.1z"/></g></svg>`,
 
-    /* Sony Interactive Entertainment LLC (c) 2022. All rights reserved. */
-    /** 2022-09-16 11:12 CST - <https://www.playstation.com/en-us/legal/copyright-and-trademark-notice/>
+    /** @license
+     * Sony Interactive Entertainment LLC (c) 2022. All rights reserved.
+     *
+     * @see https://www.playstation.com/en-us/legal/copyright-and-trademark-notice/
+     *
+     * 2022-09-16 11:12 CST
      * Nothing that notes use of the PlayStation logo is restricted. The logo is ONLY used as a placeholder to redirect to PlayStation's site.
+     *
+     * @prop {string<SVG>} store_playstation
      */
-    // PlayStation store logo
     store_playstation: `<svg fill="#0072ce" width="15px" height="15px" viewBox="0 0 50 39" x="0px" y="0px"><path d="M49.555339,29.8491161 C48.578647,31.094408 46.1857531,31.9827541 46.1857531,31.9827541 C46.1857531,31.9827541 28.3849726,38.4444956 28.3849726,38.4444956 C28.3849726,38.4444956 28.3849726,33.6791056 28.3849726,33.6791056 C28.3849726,33.6791056 41.4851369,28.9619184 41.4851369,28.9619184 C42.971753,28.4236327 43.2000258,27.6626842 41.9916545,27.2632726 C40.7855535,26.8627126 38.6016267,26.9774879 37.1138742,27.5180705 C37.1138742,27.5180705 28.3849726,30.6249863 28.3849726,30.6249863 C28.3849726,30.6249863 28.3849726,25.6793995 28.3849726,25.6793995 C28.3849726,25.6793995 28.8880837,25.5072391 28.8880837,25.5072391 C28.8880837,25.5072391 31.4104473,24.6051207 34.9572024,24.2080049 C38.5039575,23.8131842 42.8468263,24.2619483 46.2561647,25.5680695 C50.0981976,26.7949969 50.5308945,28.6038269 49.555339,29.8491161 Z M30.0794221,21.7346381 C30.0794221,21.7346381 30.0794221,9.54799915 30.0794221,9.54799915 C30.0794221,8.11677538 29.8182125,6.79917671 28.4894574,6.42616286 C27.4718816,6.09676281 26.8404372,7.05167726 26.8404372,8.48175338 C26.8404372,8.48175338 26.8404372,39 26.8404372,39 C26.8404372,39 18.6964184,36.3877582 18.6964184,36.3877582 C18.6964184,36.3877582 18.6964184,0 18.6964184,0 C22.1591313,0.649618385 27.2038564,2.18528604 29.9158817,3.10921264 C36.8129171,5.50223626 39.1512984,8.48060726 39.1512984,15.1914074 C39.1512984,21.7323428 35.1559474,24.2114479 30.0794221,21.7346381 L30.0794221,21.7346381 Z M3.75303136,33.1809889 C-0.191213964,32.0585062 -0.847641772,29.7194242 0.950152718,28.3719845 C2.61166493,27.1278411 5.43725714,26.1912896 5.43725714,26.1912896 C5.43725714,26.1912896 17.1144032,21.9951737 17.1144032,21.9951737 C17.1144032,21.9951737 17.1144032,26.7789292 17.1144032,26.7789292 C17.1144032,26.7789292 8.71144632,29.8181293 8.71144632,29.8181293 C7.22710186,30.3564151 6.99882837,31.1185119 8.20492939,31.5179235 C9.41216602,31.9173326 11.5972304,31.8037083 13.0838464,31.2642741 C13.0838464,31.2642741 17.1144032,29.7859915 17.1144032,29.7859915 C17.1144032,29.7859915 17.1144032,34.0658923 17.1144032,34.0658923 C16.8588747,34.1118009 16.5738164,34.1577095 16.3103366,34.2024722 C12.2786433,34.8681582 7.98460591,34.5904073 3.75303136,33.1809889 L3.75303136,33.1809889 Z"></path></svg>`,
 
-    /* Microsoft (c) 2022. All rights reserved. */
-    /** 2022-09-16 11:07 CST - <https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks>
-     * QUOTE:
+    /** @license
+     * Microsoft (c) 2022. All rights reserved.
+     *
+     * @see https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks
+     *
+     * 2022-09-16 11:07 CST
+     * <blockquote>
      * Without a license arrangement with Microsoft, everything about your app (including developer name, app name, logo, description,
      * screenshots, and other app collateral) must be unique to you and free of Microsoft’s Brand Assets. The only exception is that
      * you may truthfully state whether your app is compatible or interoperable with a Microsoft product or service within the text
@@ -126,14 +188,19 @@ window.Glyphs ??= {
      * You may not use Microsoft’s Brand Assets in a manner that implies Microsoft published, developed, endorsed, is affiliated with,
      * or is otherwise connected with your app. Furthermore, Microsoft’s logos, designs, and icons can never be used as your app icon
      * and can only be used in your app advertisements with a license agreement in place.
-     * END QUOTE
+     * </blockquote>
+     *
+     * @prop {string<SVG>} store_xbox
      */
-    // XBox store logo
     store_xbox: `<svg fill="#107c10" width="15px" height="15px" viewBox="0 0 20 20" x="0px" y="0px"><path d="M9.0027791,19.9588749 C7.4621998,19.8114068 5.90246041,19.2584485 4.56258274,18.3847375 C3.43980533,17.6525944 3.18625685,17.3516223 3.18625685,16.7509849 C3.18625685,15.5444964 4.51354057,13.4313578 6.7844422,11.0223951 C8.074158,9.65427004 9.87064637,8.05062645 10.0649315,8.09405204 C10.442563,8.17845865 13.4621321,11.1222134 14.5925223,12.5079651 C16.3800416,14.6992941 17.2018184,16.4935136 16.7843311,17.2934361 C16.4669732,17.9015068 14.4977644,19.0899655 13.0510508,19.5465485 C11.8586913,19.9228567 10.2927393,20.0823525 9.0027791,19.9588749 L9.0027791,19.9588749 Z M1.66981709,15.4965825 C0.736813763,14.0660144 0.265429819,12.6576379 0.0378427367,10.6206529 C-0.0373070687,9.94803274 -0.0103772732,9.56330204 0.208488334,8.18273216 C0.481273171,6.46204625 1.46171072,4.47143718 2.63979832,3.24637542 C3.14155487,2.7246126 3.18636696,2.7119004 3.79797498,2.91782316 C4.54069984,3.16789165 5.33387053,3.71538307 6.56396633,4.82706661 L7.28167204,5.47568469 L6.88975351,5.95689584 C5.07045494,8.19069412 3.14992454,11.3570266 2.42613509,13.315957 C2.03265416,14.3809096 1.87394836,15.4499189 2.04325173,15.8949766 C2.15755687,16.1954559 2.05256456,16.0834461 1.66981709,15.4965825 Z M18.0469082,15.7398933 C18.1390778,15.2901993 18.0225023,14.4643 17.7492835,13.6313112 C17.1575751,11.8273159 15.1798033,8.47128837 13.3636881,6.18951535 L12.7919788,5.47121735 L13.4104988,4.90359188 C14.2181031,4.16244082 14.7788228,3.71865116 15.3838277,3.34177567 C15.8612481,3.04437576 16.5434911,2.78110363 16.8367513,2.78110363 C17.017554,2.78110363 17.6540729,3.44130886 18.167918,4.16180616 C18.9637566,5.27770674 19.5492292,6.63042298 19.8458511,8.03861539 C20.0375071,8.94849392 20.0534789,10.8961111 19.876727,11.8037505 C19.7316728,12.5486154 19.4253921,13.5148169 19.126604,14.1701041 C18.9027272,14.6610991 18.3459139,15.6146776 18.1019033,15.9249686 C17.9764527,16.0844945 17.9763496,16.0841466 18.0469077,15.7398933 L18.0469082,15.7398933 Z M9.16772657,2.4404507 C8.32976735,2.01515552 7.03706147,1.55862769 6.32296567,1.43580364 C6.07262367,1.392745 5.64557543,1.3687309 5.37396955,1.38243882 C4.78478865,1.41217476 4.81110404,1.38138131 5.75627016,0.935081155 C6.54206384,0.564035241 7.19752416,0.345843529 8.08731971,0.159113747 C9.0882751,-0.0509437592 10.9697133,-0.053408942 11.9547318,0.154046281 C13.0186345,0.378115503 14.2714154,0.84406362 14.9773435,1.27824996 L15.1871536,1.40729464 L14.7057768,1.38299957 C13.7491958,1.3347209 12.3551064,1.72096728 10.8583654,2.4489635 C10.4069102,2.66854598 10.0141538,2.84392045 9.98557347,2.83868437 C9.95699367,2.83344835 9.58896282,2.65424311 9.16772657,2.44045053 L9.16772657,2.4404507 Z"></path></svg>`,
 
-    /* Nintendo (r) 2022. All rights reserved. */
-    /** 2022-11-22 11:26 CST - <https://www.nintendo.com/terms-of-use/>
-     * QUOTE:
+    /** @license
+     * Nintendo (r) 2022. All rights reserved.
+     *
+     * @see https://www.nintendo.com/terms-of-use/
+     *
+     * 2022-11-22 11:26 CST
+     *<blockquote>
      * 6. Acceptable Use of the Services
      * You agree that your use of the Services, including the posting of User Content, will not violate any law, contract,
      * intellectual property or other third-party right or constitute a criminal action or tort, and that you are solely responsible
@@ -142,24 +209,35 @@ window.Glyphs ??= {
      * Use any robot, iframe, spider, crawler, scraper or other automated means or interface not provided by us to access the Services,
      * including, without limitation, for the purpose of copying, extracting, aggregating, displaying, publishing or distributing any
      * content or data made available via Services.
-     * END QUOTE
+     * </blockquote>
+     *
+     * @prop {string<SVG>} store_nintendo
      */
-    // Nintendo store logo
     store_nintendo: `<svg fill="#ffffff" viewBox="0 0 20 20" width="15px" height="15px" x="0px" y="0px"><g transform="matrix(1 0 0 -1 0 20)"><path d="M4.28175649,19.9337446 C2.28954389,19.5776216 0.686661816,18.1034382 0.181360487,16.1654667 C-0.000879336242,15.4656437 -0.0133047787,15.0556882 0.0074042921,9.62688343 C0.0198297346,4.64116196 0.0239715487,4.52521494 0.106807832,4.14010522 C0.566549204,2.06548191 2.04103504,0.58715751 4.13679302,0.0985236743 C4.41015273,0.0364092037 4.75806514,0.0239863096 6.99878661,0.0115634156 C9.31820253,-0.00500044322 9.55842776,-0.000859478543 9.62055498,0.0612549918 C9.68268216,0.123369462 9.686824,0.922575649 9.686824,9.98300641 C9.686824,16.6996511 9.67439853,19.8633482 9.64540584,19.9213217 C9.60398771,19.995859 9.53357686,20 7.10647376,19.995859 C5.13497024,19.9917181 4.54269082,19.9792952 4.28175649,19.9337446 Z M8.03009833,9.99542931 L8.03009833,1.60583482 L6.34437996,1.62653964 C4.79119963,1.64310351 4.6255271,1.65138544 4.31489102,1.73006376 C2.98122686,2.07376383 1.99133328,3.10072308 1.71383173,4.43825469 C1.62271182,4.85649212 1.62271182,15.1592123 1.70968991,15.5691678 C1.95819876,16.7327789 2.76585252,17.6976236 3.85514965,18.1324249 C4.4018691,18.351896 4.6545198,18.3767418 6.42721624,18.3808828 L8.03009833,18.3850238 L8.03009833,9.99542931 Z"></path><path d="M4.63795253 15.8548943C4.37701824 15.8052028 3.97940407 15.6064364 3.76817155 15.4200931 3.33328107 15.0432653 3.11790673 14.5090808 3.15104124 13.8796542 3.1676085 13.552518 3.18831757 13.4655577 3.32085562 13.200536 3.51552089 12.7988624 3.80958969 12.5048539 4.21134567 12.3060876 4.48884722 12.1694358 4.55925804 12.1528719 4.91959588 12.140449 5.24679922 12.1280261 5.36277 12.140449 5.58228616 12.2149864 6.48105984 12.5172768 7.02363747 13.3910203 6.87039037 14.2854687 6.69229237 15.3496967 5.68168971 16.0619426 4.63795253 15.8548943zM11.7038875 19.9710133C11.6873202 19.9585904 11.6748948 15.4697846 11.6748948 9.99542931 11.6748948.963985294 11.6790366.048832098 11.7411638.0239863096 11.8529928-.0174233373 15.0670406-.000859478533 15.4646547.0405501684 17.1462313.231034544 18.6290008 1.25385282 19.4366545 2.77358687 19.5401999 2.96821221 19.6768798 3.29534842 19.7472906 3.49825569 20.0082249 4.27675706 20 4.06970882 20 10.0202751 20 14.7699616 19.9916576 15.4780666 19.9336722 15.780357 19.5236326 17.9377996 17.8793324 19.5651987 15.7173054 19.9378855 15.4273784 19.9875771 14.9800625 20 13.5387111 20 12.5446758 20 11.7163129 19.9875771 11.7038875 19.9710133zM16.127345 10.9519921C16.773468 10.7822126 17.3036202 10.2894378 17.5189946 9.66001114 17.6556744 9.27076049 17.6515326 8.69930735 17.5148527 8.34318437 17.2622021 7.68891196 16.7651844 7.2292649 16.127345 7.05948535 15.0918915 6.79032261 13.9901689 7.41560829 13.6878164 8.44256755 13.5966966 8.75728086 13.6008384 9.28732433 13.7043837 9.61031959 14.0150198 10.6248559 15.0918915 11.2211549 16.127345 10.9519921z"></path></g></svg>`,
 
-    bonuschannelpoints: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>`,
-    /** The Chromium Authors (c) 2015. All rights reserved.
+    /** @license
+     * The Chromium Authors (c) 2015. All rights reserved.
      * "Exit Picture in Picture," and "Picture in Picture" by The Chromium Authors
+     *
+     * @prop {string<SVG>} exit_picture_in_picture
+     * @prop {string<SVG>} picture_in_picture
      */
     exit_picture_in_picture: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 22 18" x="0px" y="0px"><g fill="none" fill-rule="evenodd" opacity=".87"><path d="M18 4H4v10h14V4zm4 12V1.98C22 .88 21.1 0 20 0H2C.9 0 0 .88 0 1.98V16c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H2V1.97h18v14.05z" fill="currentcolor" fill-rule="nonzero"/><path d="M-1-3h24v24H-1z"/></g></svg>`,
     picture_in_picture:      `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 24 24" x="0px" y="0px"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>`,
 
-    /** Licensed under the Creative Commons license
+    /** @license
+     * Licensed under the Creative Commons license
      * "Mouse Left Click," "Mouse Right Click," and "Mouse" by Icon Solid from the Noun Project
+     *
+     * @prop {string<SVG>} primary_mouse_button
+     * @prop {string<SVG>} secondary_mouse_button
+     * @prop {string<SVG>} mouse
      */
     primary_mouse_button:   `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c-2.209,0-4-1.791-4-4V4c0-1.381,1.119-2.5,2.5-2.5h3c1.381,0,2.5,1.119,2.5,2.5v6.5C11.5,12.709,9.709,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="7.5" y1="5.5" x2="3.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
     secondary_mouse_button: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c2.209,0,4-1.791,4-4V4c0-1.381-1.119-2.5-2.5-2.5H6C4.619,1.5,3.5,2.619,3.5,4v6.5C3.5,12.709,5.291,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="11.5" y1="5.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
     mouse:                  `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 16 16" x="0px" y="0px"><g><path d="M7.5,14.5L7.5,14.5   c-2.209,0-4-1.791-4-4V4c0-1.381,1.119-2.5,2.5-2.5h3c1.381,0,2.5,1.119,2.5,2.5v6.5C11.5,12.709,9.709,14.5,7.5,14.5z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></path><line x1="3.5" y1="5.5" x2="11.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line><line x1="7.5" y1="1.5" x2="7.5" y2="5.5" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10"></line></g></svg>`,
+
+    bonuschannelpoints: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M16.503 3.257L18 7v11H2V7l1.497-3.743A2 2 0 015.354 2h9.292a2 2 0 011.857 1.257zM5.354 4h9.292l1.2 3H4.154l1.2-3zM4 9v7h12V9h-3v4H7V9H4zm7 0v2H9V9h2z" clip-rule="evenodd"></path></g></svg>`,
 
     add_to_calendar: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M11 8H9v2H7v2h2v2h2v-2h2v-2h-2V8z"></path><path fill-rule="evenodd" d="M5 2h2v1h6V2h2v1h1a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h1V2zM4 6v10h12V6H4z" clip-rule="evenodd"></path></g></svg>`,
     more_horizontal: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 10a2 2 0 114 0 2 2 0 01-4 0zM8 10a2 2 0 114 0 2 2 0 01-4 0zM16 8a2 2 0 100 4 2 2 0 000-4z"></path></g></svg>`,

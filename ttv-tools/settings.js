@@ -9,6 +9,21 @@
  *                                  |___/    |__/
  */
 
+/**
+ * @file Defines the settings for the extension.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * @module
+ */
+
+;
+
+/**
+ * Returns an extension URL for a resource
+ *
+ * @param  {string} [path = ""] The (absolute) path to the resource
+ * @return {string<URL>}        The modified URL to the resource
+ */
 function getURL(path = '') {
     let url = parseURL(top.location);
 

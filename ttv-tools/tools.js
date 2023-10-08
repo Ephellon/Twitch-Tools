@@ -8,6 +8,16 @@
  *                             _/ |
  *                            |__/
  */
+
+/**
+ * @file Defines the page-specific logic for the extension. Used for all {@link # twitch.tv/*} sites.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * @module
+ */
+
+;
+
 let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Messages = top.Messages = new Map(),
     PostOffice = top.PostOffice = new Map(),
@@ -61,6 +71,8 @@ top.onpagehide = ({ persisted }) => {
  *                           | |      \_\ |                                /_/
  *                           |_|        |_|
  */
+
+;
 
 // Displays a balloon (popup)
     // new Balloon({ title:string, icon:string? }, ...jobs:object<{ href:string<URL>, message:string?, src:string?, time:string<Date>, onremove:function? }>) → object
@@ -1935,6 +1947,7 @@ async function GetQuality() {
         Object.defineProperties(quality, {
             auto:   { value: true },
             high:   { value: (value > 720) },
+            mid:    { value: (value < 721 && value > 360) },
             low:    { value: (value < 361) },
             source: { value: quality.toLowerCase().contains('source') },
         });
@@ -1966,8 +1979,8 @@ async function GetQuality() {
                 throw error;
             };
     })()
-    .then(() => { buttons?.quality?.click() })
-    .catch(error => { throw error });
+        .then(() => { buttons?.quality?.click() })
+        .catch(error => { throw error });
 
     let qualities = $.all('[data-a-target$="-quality-option"i] input[type="radio"i]')
         .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
@@ -2446,8 +2459,8 @@ let nth = (n, s = '') => {
     return n;
 }
 
-/** Adds a CSS block to the CUSTOM_CSS string
- * AddCustomCSSBlock(name:string, block:string) → undefined
+/** Adds a CSS block to the <code class=prettyprint>CUSTOM_CSS</code> string
+ * @simply AddCustomCSSBlock(name:string, block:string) → undefined
  */
 function AddCustomCSSBlock(name, block) {
     name = name.trim();
@@ -2466,8 +2479,8 @@ function AddCustomCSSBlock(name, block) {
     $('body').append(CUSTOM_CSS);
 }
 
-/** Removes a CSS block from the CUSTOM_CSS string
- * RemoveCustomCSSBlock(name:string, flags:string?) → undefined
+/** Removes a CSS block from the <code class=prettyprint>CUSTOM_CSS</code> string
+ * @simply RemoveCustomCSSBlock(name:string, flags:string?) → undefined
  */
 function RemoveCustomCSSBlock(name, flags = '') {
     name = name.trim();
@@ -2505,6 +2518,8 @@ let isLive = channel => parseBool(channel?.live);
  *                           | |      \_\ |                                /_/
  *                           |_|        |_|
  */
+
+;
 
 // Update common variables
 let PATHNAME = location.pathname,
@@ -3029,12 +3044,11 @@ try {
     // Add custom context menus
     REMARK(`Adding context menus...`);
 
-    /* Normal - Page body
-     * Reload (Ctrl+R)
-     * ----
-     * Save as... (Ctrl+S)
-     * Print... (Ctrl+P)
-     */
+    // Normal - Page body
+    // Reload (Ctrl+R)
+    // ----
+    // Save as... (Ctrl+S)
+    // Print... (Ctrl+P)
     $('main')?.addEventListener?.('contextmenu', event => {
         if(!event.isTrusted)
             return;
@@ -3559,21 +3573,22 @@ let // Features that require the experimental flag
 *     |_____|_| |_|_|\__|_|\__,_|_|_/___\__,_|\__|_|\___/|_| |_|
 *
 *
-*/
+*/;
+
 // A non-repeating token representing the current window
 const PRIVATE_SYMBOL = Symbol(new UUID);
 
 /** Streamer Array (Backup) - the current streamer/channel
- * call:string       - the streamer's login ID
- * date:string       - a date string representing the current stream's start time
- * game:number       - the current game/category
- * head:string       - the title of the stream
- * icon:string       - link to the channel's icon/image
- * lang:string       - the language of the broadcast
- * live:boolean      - is the channel currently live
- * name:string       - the channel's username
- * sole:number       - the channel's ID
- * tags:array        - tags of the current stream
+ * @prop {string} call       - The streamer's login ID
+ * @prop {string} date       - A date string representing the current stream's start time
+ * @prop {number} game       - The current game/category
+ * @prop {string} head       - The title of the stream
+ * @prop {string} icon       - Link to the channel's icon/image
+ * @prop {string} lang       - The language of the broadcast
+ * @prop {boolean} live      - Is the channel currently live
+ * @prop {string} name       - The channel's username
+ * @prop {number} sole       - The channel's ID
+ * @prop {array} tags        - Tags of the current stream
  */
 let LIVE_CACHE = new Map();
 
@@ -3608,7 +3623,7 @@ let TWITCH_PATHNAMES = [
  *     |_|    |_|_|  |___/\__| |_|_| |_| |______|_|_| |_|\___| |_|  |_|\___|_| .__/ \___|_|  |___/
  *                                                                           | |
  *                                                                           |_|
- */
+ */;
 let FIRST_IN_LINE_JOB = null,           // The current job (interval)
     FIRST_IN_LINE_HREF = '#',            // The upcoming HREF
     FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
@@ -3872,10 +3887,10 @@ let Initialize = async(START_OVER = false) => {
     }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
-     * href:string   - link to the channel
-     * icon:string   - link to the channel's image
-     * live:boolean* - GETTER: is the channel live
-     * name:string   - the channel's name
+     * @prop {string} href   - Link to the channel
+     * @prop {string} icon   - Link to the channel's image
+     * @prop {boolean} live  - Is the channel live (<b>getter</b>)
+     * @prop {string} name   - The channel's name
      */
     SEARCH = [
         // Current (followed) streamers
@@ -3917,48 +3932,48 @@ let Initialize = async(START_OVER = false) => {
     ].filter(uniqueChannels);
 
     /** Streamer Array - the current streamer/channel
-     * aego:string*      - GETTER: the channel's complementary accent color (if applicable)
-     * chat:array*       - GETTER: an array of the current chat, sorted the same way messages appear. The last message is the last array entry
-     * coin:number*      - GETTER: how many channel points (floored to the nearest 100) does the user have
-     * coms:array*       - GETTER: returns the channel commands (if available)
-     * cult:number*      - GETTER: the estimated number of followers
-     * data:object       - extra data about the channel
-     * desc:string*      - GETTER: the status (description/title) of the stream
-     * done:boolean*     - GETTER: are all of the channel point rewards purchasable
-     * face:string       - GETTER: a URL to the channel points image (if applicable)
-     * fiat:string*      - GETTER: returns the name of the channel points (if applicable)
-     * follow:function   - follows the current channel
-     * from:string*      - GETTER: returns where the data was collected for the object
-     * game:string*      - GETTER: the name of the current game/category
-     * href:string       - link to the channel (usually the current href)
-     * icon:string       - link to the channel's icon/image
-     * jump:array*       - GETTER: extra data from the Apollo data-stream
-     * like:boolean*     - GETTER: is the user following the current channel
-     * live:boolean*     - GETTER: is the channel currently live
-     * main:boolean*     - GETTER: returns whether the stream is the user's Prime Subscription
-     * mark:number*      - GETTER: returns an activity score based on the channel's tags
-     * name:string       - the channel's username
-     * paid:boolean*     - GETTER: is the user  subscribed
-     * ping:boolean*     - GETTER: does the user have notifications on
-     * plug:boolean*     - GETTER: is there an advertisement running
-     * poll:number*      - GETTER: how many viewers are watching the channel
-     * rank:number*      - GETTER: what is the user's assumed rank--based on the amount of channel points they possess
-     * redo:boolean*     - GETTER: is the channel streaming a rerun (VOD)
-     * shop:array*       - GETTER: returns a list (sorted, ascending price) of the channel's rewards
-     * sole:number       - GETTER: the channel's ID
-     * tags:array*       - GETTER: tags of the current stream
-     * team:string*      - GETTER: the team the channel is affiliated with (if applicable)
-     * time:number*      - GETTER: how long has the channel been live
-     * tint:string*      - GETTER: the channel's accent color (if applicable)
-     * tone:string*      - GETTER: the channel's opposing lightness color (if applicable)
-     * unfollow:function - unfollows the current channel
-     * veto:boolean      - GETTER: determines if the user is banned from the chat or not
-     * vods:array*       - GETTER: returns a list (up to 25) of the channel's VODs
+     * @prop {string} aego       - The channel's complementary accent color (if applicable)
+     * @prop {array} chat        - An array of the current chat, sorted the same way messages appear. The last message is the last array entry
+     * @prop {number} coin       - How many channel points (floored to the nearest 100) does the user have
+     * @prop {array} coms        - Returns the channel commands (if available)
+     * @prop {number} cult       - The estimated number of followers
+     * @prop {object} data       - extra data about the channel
+     * @prop {string} desc       - The status (description/title) of the stream
+     * @prop {boolean} done      - Are all of the channel point rewards purchasable
+     * @prop {string} face       - A URL to the channel points image (if applicable)
+     * @prop {string} fiat       - Returns the name of the channel points (if applicable)
+     * @prop {function} follow   - follows the current channel
+     * @prop {string} from       - Returns where the data was collected for the object
+     * @prop {string} game       - The name of the current game/category
+     * @prop {string} href       - link to the channel (usually the current href)
+     * @prop {string} icon       - link to the channel's icon/image
+     * @prop {array} jump        - Extra data from the Apollo data-stream
+     * @prop {boolean} like      - Is the user following the current channel
+     * @prop {boolean} live      - Is the channel currently live
+     * @prop {boolean} main      - Returns whether the stream is the user's Prime Subscription
+     * @prop {number} mark       - Returns an activity score based on the channel's tags
+     * @prop {string} name       - the channel's username
+     * @prop {boolean} paid      - Is the user  subscribed
+     * @prop {boolean} ping      - Does the user have notifications on
+     * @prop {boolean} plug      - Is there an advertisement running
+     * @prop {number} poll       - How many viewers are watching the channel
+     * @prop {number} rank       - What is the user's assumed rank--based on the amount of channel points they possess
+     * @prop {boolean} redo      - Is the channel streaming a rerun (VOD)
+     * @prop {array} shop        - Returns a list (sorted, ascending price) of the channel's rewards
+     * @prop {number} sole       - The channel's ID
+     * @prop {array} tags        - Tags of the current stream
+     * @prop {string} team       - The team the channel is affiliated with (if applicable)
+     * @prop {number} time       - How long has the channel been live
+     * @prop {string} tint       - The channel's accent color (if applicable)
+     * @prop {string} tone       - The channel's opposing lightness color (if applicable)
+     * @prop {function} unfollow - unfollows the current channel
+     * @prop {boolean} veto      - Determines if the user is banned from the chat or not
+     * @prop {array} vods        - Returns a list (up to 25) of the channel's VODs
 
      * Only available with Fine Details enabled
-     * ally:boolean      - is the channel partnered?
-     * fast:boolean      - is the channel using turbo?
-     * nsfw:boolean      - is the channel deemed NSFW (mature)?
+     * @prop {boolean} ally      - is the channel partnered?
+     * @prop {boolean} fast      - is the channel using turbo?
+     * @prop {boolean} nsfw      - is the channel deemed NSFW (mature)?
      */
     STREAMER = window.STREAMER = {
         get chat() {
@@ -3968,7 +3983,8 @@ let Initialize = async(START_OVER = false) => {
         get coin() {
             let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
                 current = parseCoin($('[data-test-selector="balance-string"i]')?.textContent),
-                _e = exact?.suffix('', 1, 'natural'), _c = current?.suffix('', 1, 'natural');
+                _e = exact?.suffix('', 1, 'natural'),
+                _c = current?.suffix('', 1, 'natural');
 
             if(nullish(exact))
                 return current;
@@ -4253,16 +4269,16 @@ let Initialize = async(START_OVER = false) => {
         mods: [],
         vips: [],
 
+        /** User Levels → StreamElements | NightBot
+         * Broadcaster      →   1500 | owner
+         * Super Moderator  →   1000 | admin
+         * Moderator        →   500  | moderator
+         * VIP              →   400  | twitch_vip
+         * Follower         →   300  | regular
+         * Subscriber       →   250  | subscriber
+         * Everyone         →   100  | everyone
+         */
         get perm() {
-            /** User Levels → StreamElements | NightBot
-             * Broadcaster      →   1500 | owner
-             * Super Moderator  →   1000 | admin
-             * Moderator        →   500  | moderator
-             * VIP              →   400  | twitch_vip
-             * Follower         →   300  | regular
-             * Subscriber       →   250  | subscriber
-             * Everyone         →   100  | everyone
-             */
             let level = 0;
             let levels = [
                 (
@@ -4579,10 +4595,9 @@ let Initialize = async(START_OVER = false) => {
     /** Notification Array - the visible, actionable notifications
      * href:string   - link to the channel
      * icon:string   - link to the channel's image
-     * live:boolean* - GETTER: is the channel live
+     * live:boolean  - Is the channel live
      * name:string   - the channel's name
      */
-    // Notifications
     NOTIFICATIONS = [
         ...$.all('[data-test-selector^="onsite-notifications"i] [data-test-selector^="onsite-notification"i]')
             .map(element =>{
@@ -4617,11 +4632,10 @@ let Initialize = async(START_OVER = false) => {
 
         let ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a').filter(e => $.nullish('[class*="--offline"i]', e));
 
-        // Collect all channels
         /** Hidden Channels Array - all channels/friends that appear on the side panel
          * href:string   - link to the channel
          * icon:string   - link to the channel's image
-         * live:boolean* - GETTER: is the channel live
+         * live:boolean  - Is the channel live
          * name:string   - the channel's name
          */
         ALL_CHANNELS = [
@@ -4672,10 +4686,10 @@ let Initialize = async(START_OVER = false) => {
         ].filter(uniqueChannels);
 
         /** Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
-         * href:string   - link to the channel
-         * icon:string   - link to the channel's image
-         * live:boolean* - GETTER: is the channel live
-         * name:string   - the channel's name
+         * @prop {string} href   - Link to the channel
+         * @prop {string} icon   - Link to the channel's image
+         * @prop {boolean} live  - Is the channel live
+         * @prop {string} name   - The channel's name
          */
         CHANNELS = [
             // Current (followed) streamers
@@ -4713,10 +4727,10 @@ let Initialize = async(START_OVER = false) => {
         ].filter(uniqueChannels);
 
         /** Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
-         * href:string   - link to the channel
-         * icon:string   - link to the channel's image
-         * live:boolean* - GETTER: is the channel live
-         * name:string   - the channel's name
+         * @prop {string} href   - Link to the channel
+         * @prop {string} icon   - Link to the channel's image
+         * @prop {boolean} live  - Is the channel live
+         * @prop {string} name   - The channel's name
          */
         STREAMERS = [
             // Current streamers
@@ -5979,23 +5993,21 @@ let Initialize = async(START_OVER = false) => {
 
         if(parseInt($('[class*="pill"i]', container)?.textContent || 0) <= 0)
             return;
-        let button = $('button', container);
+        let prime_btn = $('button', container);
 
-        button.click();
+        prime_btn.click();
 
         // Give the loots time to load
-        let waiter = setInterval(() => {
-            let stop = $.all('[href*="gaming.amazon.com"i]').length;
-
-            if(!stop) return;
-
-            clearInterval(waiter);
-
-            $.all('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button').map(button => button.click());
-
-            // Give the loots time to be clicked
-            wait(100 * stop, button).then(button => button.click());
-        }, 2_5_0);
+        when.sated(() => $.all('[href*="gaming.amazon.com"i]')).then(hrefs => {
+            wait(30 *
+                $.all('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button')
+                    .map((offer, index, list) => {
+                        // Give the loots time to be clicked
+                        wait(30 * index, offer).then(offer => offer.click());
+                    })
+                .length
+            ).then(() => prime_btn.click());
+        });
     };
     Timers.claim_loot = -5000;
 
@@ -6085,8 +6097,9 @@ let Initialize = async(START_OVER = false) => {
         REWARDS_ON_COOLDOWN = new Map;
 
     Handlers.claim_reward = () => {
-        Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
+        Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], async({ AutoClaimRewards, AutoClaimAnswers }) => {
             AutoClaimRewards ??= {};
+            AutoClaimAnswers ??= {};
 
             for(let sole in AutoClaimRewards)
                 if(sole == STREAMER.sole)
@@ -6094,14 +6107,15 @@ let Initialize = async(START_OVER = false) => {
                         await STREAMER.shop
                             .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
-                            .map(async({ id, cost, title, needsInput = false }) => {
+                            .map(async({ id, cost, title, needsInput = false, answer = null }) => {
                                 if(REWARDS_ON_COOLDOWN.has(id))
                                     if(REWARDS_ON_COOLDOWN.get(id) < +new Date)
                                         REWARDS_ON_COOLDOWN.delete(id);
                                     else
                                         return;
                                 else if(needsInput)
-                                    return;
+                                    // TODO - Find a way to send the message and redeem the item
+                                    return; // answer = AutoClaimAnswers[sole][id];
 
                                 cost = parseInt(cost);
                                 title = title.trim();
@@ -6463,22 +6477,40 @@ let Initialize = async(START_OVER = false) => {
                                         if(nullish(item))
                                             return;
 
-                                        Cache.load('AutoClaimRewards', ({ AutoClaimRewards }) => {
+                                        Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], async({ AutoClaimRewards, AutoClaimAnswers }) => {
                                             AutoClaimRewards ??= {};
+                                            AutoClaimAnswers ??= {};
 
                                             let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []);
+                                            let answers = (AutoClaimAnswers[STREAMER.sole] ??= {});
                                             let index = itemIDs.indexOf(rewardID);
+                                            let ID = itemIDs[index];
 
-                                            if(!!~index)
+                                            if(!!~index) {
+                                                delete answers[ID];
                                                 itemIDs.splice(index, 1);
-                                            else
-                                                itemIDs.push(rewardID);
-                                            itemIDs = itemIDs.filter(defined);
+                                            } else {
+                                                if(item.needsInput) {
+                                                    answers[ID] = await prompt.silent(`<div hidden controller title='Input required to redeem "${ item.title }"'></div>${ item.prompt || `Please provide input...` }`);
 
-                                            if(!itemIDs.length)
+                                                    if(answers[ID] === null)
+                                                        return /* The user pressed "Cancel" */;
+                                                }
+
+                                                itemIDs.push(rewardID);
+                                            }
+                                            itemIDs = itemIDs.filter(defined);
+                                            answers = Object.filter(answers, itemIDs);
+
+                                            if(!itemIDs.length) {
+                                                // No more redemptions in this queue :D
                                                 delete AutoClaimRewards[STREAMER.sole];
-                                            else
+                                                delete AutoClaimAnswers[STREAMER.sole];
+                                            } else {
+                                                // There are some redemptions to watch for...
                                                 AutoClaimRewards[STREAMER.sole] = itemIDs;
+                                                AutoClaimAnswers[STREAMER.sole] = answers;
+                                            }
 
                                             let [node] = [...currentTarget.childNodes].filter(node => node.nodeName.equals('#text'));
 
@@ -6490,7 +6522,7 @@ let Initialize = async(START_OVER = false) => {
 
                                             currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);
 
-                                            Cache.save({ AutoClaimRewards });
+                                            Cache.save({ AutoClaimRewards, AutoClaimAnswers });
                                         });
                                     },
                                 },
@@ -6572,7 +6604,7 @@ let Initialize = async(START_OVER = false) => {
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return;
             if(FIRST_IN_LINE_PAUSED)
-                return Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                return; // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
             if(timeRemaining > 60_000)
                 return /* There's more than 1 minute left */;
 
@@ -6646,7 +6678,7 @@ let Initialize = async(START_OVER = false) => {
             if(!UP_NEXT_ALLOW_THIS_TAB)
                 return;
             if(FIRST_IN_LINE_PAUSED)
-                return Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                return; // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
 
             if(nullish(channel)) {
                 LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
@@ -7486,7 +7518,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // No idea what the user just dropped
                 if(!hostname?.length || !pathname?.length)
-                    return ERROR(error);
+                    return ERROR(`Unknown [ondrop] text: "${ text }"`);
 
                 if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
                     return WARN(`Unable to add link to Up Next "${ href }"`);
@@ -7929,7 +7961,7 @@ let Initialize = async(START_OVER = false) => {
 
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
-                                // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
+                                Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                 StopWatch.stop('first_in_line__job_watcher', 1000);
 
                                 return;
@@ -8772,7 +8804,7 @@ let Initialize = async(START_OVER = false) => {
                                     let href = item.href,
                                         name = normalize($('[class*="name"i]', item)?.textContent)?.normalize('NFKD'),
                                         img = $('[class*="img"i] img', item)?.src,
-                                        price = $('[class*="price"i]', item)?.textContent || 'More...',
+                                        price = $('[class*="price"i], [class*="subtitle"i]', item)?.textContent || 'More...',
                                         good = game.errs(name, true) < .05;
 
                                     if(good)
@@ -9383,39 +9415,38 @@ let Initialize = async(START_OVER = false) => {
                                                 let data = DOM.head.getElementByText('core2')?.textContent?.replace(/.*preload.*(\{[^$]+?\});/, '$1');
 
                                                 if(data?.length) {
-                                                    /** Xbox | Product Summaries
-                                                        accessibilityCapabilities: object<{ audio:array, gameplay:array, input:array, publisherInformationUri:string?, visual:array }>
-                                                        availableOn:array<["Xbox", "XboxOne", "XboxSeriesS", "XboxSeriesX"...]>
-                                                        averageRating:number<float>
-                                                        bundledProductIds:array<[...string]>
-                                                        bundlesBySeed:array<[...string]>
-                                                        capabilities:object<{ `CapabilityKey`:`CapabilityDescription` }>
-                                                        categories:array<[...string]>
-                                                        contentRating:object<{ boardName:string, description:string, disclaimers:array<[...string]>, descriptors:array<[...string]>, imageUri:string<URL>, imageLinkUri:string<URL>, interactiveDescriptions:array<[...string]>, rating:string, ratingAge:number<integer>, ratingDescription:string }>
-                                                        description:string
-                                                        developerName:string
-                                                        editions:array<[...string]>
-                                                        hasAddOns:boolean
-                                                        images:object<{ `ImageType`:object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels> }> }>
-                                                        includedWithPassesProductIds:array<[...string]>
-                                                        languagesSupported:object<{ `Language`:object<{ areSubtitlesSupported:boolean, isAudioSupported:boolean, isInterfaceSupported:boolean, languageDisplayName:string }> }>
-                                                        legalNotices:array<[...string]> of @@capabilities@key
-                                                        maxInstallSize:number<integer:Bytes>
-                                                        optimalSatisfyingPassId:string
-                                                        optimalSkuId:string
-                                                        preferredSkuId:string
-                                                        productFamily:string
-                                                        productId:string
-                                                        publisherName:string
-                                                        ratingCount:number<integer>
-                                                        releaseDate:string<Date:ISO>
-                                                        shortDescription:string
-                                                        showSupportedLanguageDisclaimer:boolean
-                                                        specificPrices:object<{ `PriceType`:array<[ ...object<{ skuId:string, availabilityId:string, listPrice:number<float>, msrp:number<float>, discountPercentage:number<float>, currencyCode:string, remediations:array<[]>, affirmationId:string?, priceEligibilityInfo:object?, availabilityActions:array<[...string]>, endDate:string<Date:ISO>, hasXPriceOffer:boolean }> ]> }>
-                                                        systemRequirements:array<[ object<{ minimum:string, recommended:string, title:string<RequirementType> }> ]>
-                                                        title:string
-                                                        videos:array<[ object<{ title:string, url:string<URL>, width:number<integer:pixels>, height:number<integer:pixels>, previewImage: object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels>, caption:string }>, purpose:string }> ]>
-                                                    */
+                                                    // Xbox | Product Summaries
+                                                        // accessibilityCapabilities: object<{ audio:array, gameplay:array, input:array, publisherInformationUri:string?, visual:array }>
+                                                        // availableOn:array<["Xbox", "XboxOne", "XboxSeriesS", "XboxSeriesX"...]>
+                                                        // averageRating:number<float>
+                                                        // bundledProductIds:array<[...string]>
+                                                        // bundlesBySeed:array<[...string]>
+                                                        // capabilities:object<{ `CapabilityKey`:`CapabilityDescription` }>
+                                                        // categories:array<[...string]>
+                                                        // contentRating:object<{ boardName:string, description:string, disclaimers:array<[...string]>, descriptors:array<[...string]>, imageUri:string<URL>, imageLinkUri:string<URL>, interactiveDescriptions:array<[...string]>, rating:string, ratingAge:number<integer>, ratingDescription:string }>
+                                                        // description:string
+                                                        // developerName:string
+                                                        // editions:array<[...string]>
+                                                        // hasAddOns:boolean
+                                                        // images:object<{ `ImageType`:object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels> }> }>
+                                                        // includedWithPassesProductIds:array<[...string]>
+                                                        // languagesSupported:object<{ `Language`:object<{ areSubtitlesSupported:boolean, isAudioSupported:boolean, isInterfaceSupported:boolean, languageDisplayName:string }> }>
+                                                        // legalNotices:array<[...string]> of @@capabilities@key
+                                                        // maxInstallSize:number<integer:Bytes>
+                                                        // optimalSatisfyingPassId:string
+                                                        // optimalSkuId:string
+                                                        // preferredSkuId:string
+                                                        // productFamily:string
+                                                        // productId:string
+                                                        // publisherName:string
+                                                        // ratingCount:number<integer>
+                                                        // releaseDate:string<Date:ISO>
+                                                        // shortDescription:string
+                                                        // showSupportedLanguageDisclaimer:boolean
+                                                        // specificPrices:object<{ `PriceType`:array<[ ...object<{ skuId:string, availabilityId:string, listPrice:number<float>, msrp:number<float>, discountPercentage:number<float>, currencyCode:string, remediations:array<[]>, affirmationId:string?, priceEligibilityInfo:object?, availabilityActions:array<[...string]>, endDate:string<Date:ISO>, hasXPriceOffer:boolean }> ]> }>
+                                                        // systemRequirements:array<[ object<{ minimum:string, recommended:string, title:string<RequirementType> }> ]>
+                                                        // title:string
+                                                        // videos:array<[ object<{ title:string, url:string<URL>, width:number<integer:pixels>, height:number<integer:pixels>, previewImage: object<{ url:string, width:number<integer:pixels>, height:number<integer:pixels>, caption:string }>, purpose:string }> ]>
                                                     data = JSON.parse(data).core2?.products?.productSummaries?.[gameID];
 
                                                     if(nullish(data?.specificPrices))
@@ -9481,7 +9512,7 @@ let Initialize = async(START_OVER = false) => {
                                 ) return ({
                                     game,
                                     good: (
-                                        normalize(pbest.name, [NintendoRegExp, ''])
+                                        normalize(best.name, [NintendoRegExp, ''])
                                             .errs(game, true) < PARTIAL_MATCH_THRESHOLD
                                     ),
                                     name: best.name,
@@ -9524,70 +9555,69 @@ let Initialize = async(START_OVER = false) => {
                                         credentials: 'omit'
                                     })
                                         .then(r => r.json())
-                                        /** Nintendo | Agolia Results (Object)
-                                         * results:array<object<{
-                                            exhaustive:object<{ nbHits:boolean, type:boolean }>
-                                            exhaustiveNbHits:boolean
-                                            exhaustiveTypo:boolean
-                                            hits:array<object<{
-                                                availability:array<string>
-                                                categoryIds:array<string>
-                                                collectionPriceRange:string
-                                                contentRatingCode:string
-                                                corePlatforms:array<string>
-                                                createdAt:string<ISO-Date>
-                                                demoNsuid:string?
-                                                description:string
-                                                dlcType:string?
-                                                editions:array<string>
-                                                eshopDetails:object<{ discountedPriceEnd:string?<ISO-Date>, goldPoints:number<int>, baseGoldPoints:number<int> }>
-                                                esrbDescriptors:array<string>
-                                                esrbRating:string
-                                                exclusive:boolean
-                                                featuredProduct:boolean
-                                                franchises:array<?>
-                                                genres:array<string>
-                                                hasDlc:boolean
-                                                nsoFeatures:array<?>?
-                                                nsuid:string
-                                                objectId:string
-                                                platform:string
-                                                platformCode:string
-                                                platinumPoints:number?<int>
-                                                playModes:array<string>
-                                                playerCount:string
-                                                price:object<{ finalPrice:number<float>, regPrice:number?<float>, salePrice:number<float> }>
-                                                priceRange:string
-                                                productImage:string<URL-pathname>
-                                                relaseDateDisplay:string?<ISO-Date>
-                                                sku:string
-                                                softwareDeveloper:string
-                                                softwarePublisher:string
-                                                stockStatus:string
-                                                storeId:string
-                                                title:string
-                                                topLevelCategory:string
-                                                topLevelCategoryCode:string
-                                                topLevelFilters:array<string>
-                                                updatedAt:string<ISO-Date>
-                                                url:string<URL-pathname>
-                                                urlKey:string
-                                                visibleInSearch:boolean
-                                                _distinctSeqId:number<?>
-                                                _highlightResult:object<{ description:object<{ fullyHighlighted:boolean, matchLevel:string, matchedWords:array<string>, value:string }> }>
-                                            }>>
-                                            hitsPerPage:number<int>
-                                            index:string
-                                            nbHits:number<int>
-                                            nbPages:number<int>
-                                            page:number<int>
-                                            aprams:string<URL-search>
-                                            processingTimeMS:number<int>
-                                            processingTimingMS:object<{ total:number<int> }>
-                                            query:string
-                                            renderingContent:object<?>
-                                         }>>
-                                         */
+                                        // Nintendo | Agolia Results (Object)
+                                          // results:array<object<{
+                                          //    exhaustive:object<{ nbHits:boolean, type:boolean }>
+                                          //    exhaustiveNbHits:boolean
+                                          //    exhaustiveTypo:boolean
+                                          //    hits:array<object<{
+                                          //        availability:array<string>
+                                          //        categoryIds:array<string>
+                                          //        collectionPriceRange:string
+                                          //        contentRatingCode:string
+                                          //        corePlatforms:array<string>
+                                          //        createdAt:string<ISO-Date>
+                                          //        demoNsuid:string?
+                                          //        description:string
+                                          //        dlcType:string?
+                                          //        editions:array<string>
+                                          //        eshopDetails:object<{ discountedPriceEnd:string?<ISO-Date>, goldPoints:number<int>, baseGoldPoints:number<int> }>
+                                          //        esrbDescriptors:array<string>
+                                          //        esrbRating:string
+                                          //        exclusive:boolean
+                                          //        featuredProduct:boolean
+                                          //        franchises:array<?>
+                                          //        genres:array<string>
+                                          //        hasDlc:boolean
+                                          //        nsoFeatures:array<?>?
+                                          //        nsuid:string
+                                          //        objectId:string
+                                          //        platform:string
+                                          //        platformCode:string
+                                          //        platinumPoints:number?<int>
+                                          //        playModes:array<string>
+                                          //        playerCount:string
+                                          //        price:object<{ finalPrice:number<float>, regPrice:number?<float>, salePrice:number<float> }>
+                                          //        priceRange:string
+                                          //        productImage:string<URL-pathname>
+                                          //        relaseDateDisplay:string?<ISO-Date>
+                                          //        sku:string
+                                          //        softwareDeveloper:string
+                                          //        softwarePublisher:string
+                                          //        stockStatus:string
+                                          //        storeId:string
+                                          //        title:string
+                                          //        topLevelCategory:string
+                                          //        topLevelCategoryCode:string
+                                          //        topLevelFilters:array<string>
+                                          //        updatedAt:string<ISO-Date>
+                                          //        url:string<URL-pathname>
+                                          //        urlKey:string
+                                          //        visibleInSearch:boolean
+                                          //        _distinctSeqId:number<?>
+                                          //        _highlightResult:object<{ description:object<{ fullyHighlighted:boolean, matchLevel:string, matchedWords:array<string>, value:string }> }>
+                                          //    }>>
+                                          //    hitsPerPage:number<int>
+                                          //    index:string
+                                          //    nbHits:number<int>
+                                          //    nbPages:number<int>
+                                          //    page:number<int>
+                                          //    aprams:string<URL-search>
+                                          //    processingTimeMS:number<int>
+                                          //    processingTimingMS:object<{ total:number<int> }>
+                                          //    query:string
+                                          //    renderingContent:object<?>
+                                          // }>>
                                         .then(j =>
                                             j.results.shift().hits
                                                 .filter(item => item.topLevelCategoryCode.equals('GAMES') && item.topLevelFilters.missing('DLC', 'DLC bundle'))
@@ -9740,7 +9770,7 @@ let Initialize = async(START_OVER = false) => {
                                         if(defined(gameDesc) && good) {
                                             $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
 
-                                            gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
+                                            gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop()?.replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1') || gameDesc.innerHTML;
                                             gameDesc.removeAttribute('data-twitch-provided-description');
                                         }
                                     });
@@ -10761,13 +10791,13 @@ let Initialize = async(START_OVER = false) => {
         TIME_ZONE__REGEXPS = [
             // Natural
             // 3:00PM EST | 3PM EST | 3:00P EST | 3P EST | 3:00 EST | 3 EST | 3:00PM (EST) | 3PM (EST) | 3:00P (EST) | 3P (EST) | 3:00 (EST) | 3 (EST)
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)[ \t]*\))/iu,
             // 15:00 EST | 1500 EST
-            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))/iu,
+            /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)[ \t]*(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)[ \t]*\))/iu,
             // EST 3:00PM | EST 3PM | EST 3:00P | EST 3P | EST 3:00 | EST 3
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰])|[b-oq-z])[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))?/iu,
             // EST 15:00 | EST 1500
-            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{2,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))/iu,
+            /(?<timezone>(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)\b|\([ \t]*(?:(?:AOE|GMT|UTC)(?:(?:[+-])(?:2[0-3]|[01]?\d)(?::?[0-5]\d)?)?|[A-Y]{1,4}T)[ \t]*\))[ \t]*(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))/iu,
             // 3:00PM | 3PM
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]\.?m?\.?(?!\p{L}|\p{N}))/iu,
             // 15:00
@@ -11018,7 +11048,20 @@ let Initialize = async(START_OVER = false) => {
             .replace(/\b(?:to|2)(?:day|night|morrow)\b/ig, ($0, $$, $_) => $0.split('').join('\u200d'))
 
             // Replaces ranges
-            .replace(/\b(\d+)(\s*\-\s*)(\d+)(\s*[ap]\.?m?\.?|AOE|GMT|UTC|[A-Y]{2,4}T)\b/ig, '$1$4$2$3$4');
+            // 6 - 11P ET | 6:00 AM - 11:00 PM EST
+            .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\-\s]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/ig, ($0, start, premeridiem, delimeter, stop, postmeridiem, timezone) => {
+                let automeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 12)] + 'M';
+
+                postmeridiem ||= automeridiem;
+                premeridiem ||= postmeridiem;
+
+                let _mm = /(?<!:\d\d)$/, _00 = ':00';
+
+                start = start.replace(_mm, _00);
+                stop = stop.replace(_mm, _00);
+
+                return [start, premeridiem, delimeter, stop, postmeridiem, ' ', timezone].join('');
+            })
     }
 
     convertWordsToTimes.inReverse ??= (string = '') => {
@@ -11040,10 +11083,11 @@ let Initialize = async(START_OVER = false) => {
             let [timezone, zone, type, trigger] = (null
                 ?? (container?.innerText || '')
                     .normalize('NFKD')
-                    .match(/(?:(?<zone>\w{3,})[\s\-]+)?(?:(?<type>\w+)[\s\-]+)(?<trigger>time)\b/i)
+                    .match(/(?:(?<zone>[a-z]{3,})[\s\-]+)(?:(?<type>[a-z]+)[\s\-]+)?(?<trigger>time)\b/i)
                 ?? []
             );
-            let MASTER_TIME_ZONE = (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type, trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
+
+            let MASTER_TIME_ZONE = (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type ?? 'Standard', trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
 
             searching:
             for(let regexp of TIME_ZONE__REGEXPS) {
@@ -11063,11 +11107,22 @@ let Initialize = async(START_OVER = false) => {
 
                     let { groups, index, length } = regexp.exec(convertedText),
                         { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
-                        misint = timezone.mutilate(),
-                        MISINT = timezone.toUpperCase();
+                        timesone = timezone.replace(/^([^s])t$/, '$1st').replace(/^([^S])T$/, '$1ST');
+
+                    let misint = timezone.mutilate(),
+                        MISINT = timezone.toUpperCase(),
+                        missnt = timesone.mutilate(),
+                        MISSNT = timesone.toUpperCase();
 
                     // This isn't a timezone... it's a word...
-                    if(!(MISINT in TIME_ZONE__CONVERSIONS) && NON_TIME_ZONE_WORDS[misint[0]]?.[misint.length]?.contains(misint))
+                    if(true
+                        && !(false
+                            || MISINT in TIME_ZONE__CONVERSIONS
+                            || MISSNT in TIME_ZONE__CONVERSIONS
+                        )
+                        && NON_TIME_ZONE_WORDS[misint[0]]?.[misint.length]?.contains(misint)
+                        && NON_TIME_ZONE_WORDS[missnt[0]]?.[missnt.length]?.contains(missnt)
+                    )
                         continue searching;
 
                     let now = new Date,
@@ -11082,9 +11137,9 @@ let Initialize = async(START_OVER = false) => {
                     let houl = hour = parseInt(hour);
                     hour += (
                         Date.isDST()?
-                            // Daylight Savings is active and Standard Time was detected
-                            -/\Bst$/i.test(timezone):
-                        // Daylight Savings is inactive and Daylight Time was detected
+                            // Daylight Savings is inactive and Standard Time was detected
+                            -/\Bs?t$/i.test(timezone):
+                        // Daylight Savings is active and Daylight Time was detected
                         +/\Bdt$/i.test(timezone)
                     );
 
@@ -11095,9 +11150,9 @@ let Initialize = async(START_OVER = false) => {
                     timezone ||= (offset.length? 'GMT': '');
 
                     // Change the meridiem
-                    if(hour < houl && !(houl % 12))
+                    if(hour < houl && (!(houl % 12) || autoMeridiem == 'P'))
                         hour += 12;
-                    else if(hour > houl && !(houl % 12))
+                    else if(hour > houl && (!(houl % 12) || autoMeridiem == 'A'))
                         hour -= 12;
 
                     if(timezone.length) {
@@ -11107,6 +11162,8 @@ let Initialize = async(START_OVER = false) => {
                             timezone = TIME_ZONE__CONVERSIONS[timezone].replace(/^[+-]/, 'GMT$&');
                         else if(/[\+\-]/.test(timezone))
                             timezone = timezone.replace(/^[+-]/, 'GMT$&');
+                        else if(timesone in TIME_ZONE__CONVERSIONS)
+                            timezone = TIME_ZONE__CONVERSIONS[timesone].replace(/^[+-]/, 'GMT$&');
                         else
                             continue searching;
 
@@ -13817,7 +13874,7 @@ if(top == window) {
             if(!ready)
                 return when.defined(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(countdown => {
-                        if(defined(VIDEO_AD_COUNTDOWN))
+                        if(ready || defined(VIDEO_AD_COUNTDOWN))
                             return;
 
                         let { count = 1, time = 15 } = (/(?:(?<count>\d+)\D+)?(?<time>(?<minute>\d{1,2})(?<seconds>:[0-5]\d))/.exec(countdown.textContent)?.groups ?? {});
@@ -13830,7 +13887,7 @@ if(top == window) {
 
                         NORMALIZED_AD_COUNTER_CURRENT = count;
 
-                        alert.timed(`${ Manifest.name } will resume execution after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
+                        alert.timed(`${ Manifest.name } will resume after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
                     });
 
             LOG("Main container ready");

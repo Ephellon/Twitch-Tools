@@ -1,8 +1,12 @@
 # Ignore these folders
+/.bin
+/.docs
 /.profiles
 /ttv-tools.moz
 
 # Ignore these files
 *.pem
 *.crx
+*.bat
 chrome*.zip
+.jsdocconfig

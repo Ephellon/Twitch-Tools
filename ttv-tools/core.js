@@ -8,20 +8,38 @@
  *                           _/ |
  *                          |__/
  */
-// The following is required on all pages
-// "Security & Sensitives"
-// https://stackoverflow.com/a/2117523/4211612
-// https://gist.github.com/jed/982883
-// Creates a random UUID
-    // new UUID() → object
-    // UUID.BWT(string:string) → string
-    // UUID.cyrb53(string:string, seed:number?) → string
-    // UUID.ergo(key:string?) → <async>string
-    // UUID.from(string:string, traceable:boolean?) → object
-    // UUID..toString() → string
+
+/**
+ * @file Defines all required logic for the extension. Used on all pages.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ */
+
+;
+
+/** Creates a random {@link https://developer.mozilla.org/en-US/docs/Glossary/UUID UUID}.
+ * @author StackOverflow {@link https://stackoverflow.com/users/1480391/yves-m @Yves M.}
+ * @author StackOverflow {@link https://stackoverflow.com/users/109538/broofa @broofa}
+ * @author GitHub Gist {@link https://gist.github.com/jed @jed}
+ * @author GitHub {@link https://github.com/ephellon @ephellon}
+ *
+ * @see https://stackoverflow.com/a/52171480/4211612
+ * @see https://stackoverflow.com/a/2117523/4211612
+ * @see https://gist.github.com/jed/982883
+ *
+ * @simply new UUID() → object
+ * @example
+ * let id = new UUID() // → UUID { native: "eabd8ed0-8aa6-43cd-88ec-dfd663b5f308", value: "eabd8ed0-8aa6-43cd-88ec-dfd663b5f308", Symbol(@@toPrimitive): ƒ [@@toPrimitive](type) }
+ * id + ''      // "eabd8ed0-8aa6-43cd-88ec-dfd663b5f308"
+ * id - 1       // NaN
+ * Symbol(id)   // Symbol(eabd8ed0-8aa6-43cd-88ec-dfd663b5f308)
+ */
 class UUID {
     static #BWT_SEED = new UUID()
 
+    /** @constructor
+     * @return {object<string>} A UUID object
+     */
     constructor() {
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> x / 4).toString(16));
 
@@ -49,10 +67,20 @@ class UUID {
         });
 	}
 
+    /**
+     * Returns a "normalized" (32 character string) version of the UUID.
+     *
+     * @return {string} 32-character string
+     */
     toString() {
         return this.native;
     }
 
+    /**
+     * Returns a shortened (8 character string) version of the UUID.
+     *
+     * @return {string} 8-character string
+     */
     toStamp() {
         let value = 0;
 
@@ -61,7 +89,12 @@ class UUID {
         return Math.abs(value).toString(16).padStart(8, '0');
     }
 
-    /* BWT Sorting Algorithm */
+    /**
+     * Returns the {@link https://medium.com/@mr-easy/burrows-wheeler-transform-d475e0aacad6 Burrows-Wheeler Transform} version of the input.
+     *
+     * @param  {string} [string = ""]   The input to transform
+     * @return {string}
+     */
     static BWT(string = '') {
         if(/^[\x32]*$/.test(string))
             return '';
@@ -78,7 +111,14 @@ class UUID {
         return p_.map(P => P.slice(-1)[0]).join('');
     }
 
-    // https://stackoverflow.com/a/52171480/4211612
+    /**
+     * Returns a cyrb53 hash from the input.
+     * @author {@link https://stackoverflow.com/users/1480391/yves-m @Yves M.}
+     *
+     * @param  {string} string              The input to hash
+     * @param  {number<integer>} [seed = 0] The hasing seed
+     * @return {string}                     53-bit hash
+     */
     static cyrb53(string, seed = 0) {
         let H1 = 0xDEADBEEF ^ seed,
             H2 = 0x41C6CE57 ^ seed;
@@ -96,6 +136,13 @@ class UUID {
         return (4294967296 * (2097151 & H2) + (H1 >>> 0)).toString(16);
     }
 
+    /**
+     * Returns a UUID-like hash from the input.
+     *
+     * @param  {string} [key = ""]              The input to generate the hash from
+     * @param  {boolean} [traceable = false]    Whether or not the UUID should be traceable (repeatable)
+     * @return {UUID}
+     */
     static from(key = '', traceable = false) {
         key = JSON.stringify(
             (null
@@ -131,6 +178,14 @@ class UUID {
         });
     }
 
+    /**
+     * Returns a signed UUID-like hash from the input.
+     * @requires crypto.subtle.digest
+     *
+     * @param  {string} [key = ""]              The input to generate the hash from
+     * @param  {boolean} [traceable = false]    Whether or not the UUID should be traceable (repeatable)
+     * @return {UUID}
+     */
     static async ergo(key = '') {
         key = (key ?? '').toString();
 
@@ -154,15 +209,24 @@ class UUID {
     }
 }
 
-// The LZW Library
+/** Adds LZW (base64) codec functionality.
+ * @author      GitHub {@link https://github.com/antonylesuisse @antonylesuisse}
+ * @author      GitHub {@link https://github.com/ephellon @ephellon}
+ *
+ * @since       05 APR 2021 21:15 MDT
+ *
+ * @see         https://gist.github.com/revolunet/843889#gistcomment-3694417
+ *
+ * @simply new LZW(string:string) → string
+ * @example
+ * let codec = new LZW("hello" × 30) // → LZW { get decoded: "hellohello…", get encoded: "oBAlBAsBAs…", value: "hellohello…" }
+ */
 class LZW {
-    /** LZW (base64) codec functionality
-     * @author      GitHub@antonylesuisse
-     * @timestamp   05 APR 2021 21:15 MDT
-     * @url         https://gist.github.com/revolunet/843889#gistcomment-3694417
-     */
     static B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+    /** @constructor
+     * @return {object<string>} An LZW object
+     */
     constructor(string) {
         Object.defineProperties(this, {
             value: { value: string },
@@ -190,8 +254,13 @@ class LZW {
         return this;
     }
 
-    // A simple hashing algorithm
-        // hash(input:string, salt:string?) → string
+    /**
+     * Returns a hased (and salted) form of the input.
+     *
+     * @param  {string} [input = ""]    The input to be hashed
+     * @param  {string} [salt = ""]     The salt to be added to the input
+     * @return {string}
+     */
     static hash(input = '', salt = '') {
         let output = '';
 
@@ -205,8 +274,13 @@ class LZW {
         return output;
     }
 
-    // Encodes a string to LZW format
-        // encode(string:string?) → String<LZW>
+    /**
+     * Encodes a string to LZW format.
+     * @author {@link https://github.com/antonylesuisse @antonylesuisse}
+     *
+     * @param  {string} [string = ""]   The input to be encoded
+     * @return {string}
+     */
     static encode(string = '') {
         if(!string.length)
             return '';
@@ -242,8 +316,13 @@ class LZW {
         return output.map(charCode => String.fromCharCode(charCode)).join('');
     }
 
-    // Decodes an LZW string
-        // decode(string:string?<LZW>) → string
+    /**
+     * Decodes an LZW formatted string.
+     * @author {@link https://github.com/antonylesuisse @antonylesuisse}
+     *
+     * @param  {string} [string = ""]   The string to decode
+     * @return {string}
+     */
     static decode(string = '') {
         let dictionary = new Map,
             [word] = string,
@@ -269,8 +348,12 @@ class LZW {
         return output.join('');
     }
 
-    // Encodes a string to LZW-64 format
-        // encode64(string:string?) → String<LZW-64>
+    /**
+     * Encodes a string to LZW-64 format.
+     *
+     * @param  {string} [string = ""]   The input to be encoded
+     * @return {string}
+     */
     static encode64(string = '') {
         if(!string.length)
             return '';
@@ -318,8 +401,12 @@ class LZW {
         return output.join('');
     }
 
-    // Decodes an LZW-64 string
-        // decode64(string:string?<LZW-64>) → string
+    /**
+     * Decodes an LZW-64 formatted string.
+     *
+     * @param  {string} [string = ""]   The string to decode
+     * @return {string}
+     */
     static decode64(string = '') {
         let { B64 } = LZW,
             D64 = {};
@@ -358,13 +445,36 @@ class LZW {
     }
 };
 
-// Creates a Twitch-style tooltip
-    // new Tooltip(parent:Element, text:string?, fineTuning:object?<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left"> }>) → Element<Tooltip>
-    // Tooltip.get(parent:Element) → Element<Tooltip>
+/** An over-arching adjustment schema.
+ * @typedef {object} TooltipAdjustment
+ *
+ * @property {number<integer>} [left] - Left (X-axis) adjustment
+ * @property {number<integer>} [top] - Top (Y-axis) adjustment
+ * @property {string} [from] - Determines where on the parent the tooltip protrudes from. Can be one of: <strong>up</strong>, <strong>down</strong>, <strong>left</strong>, or <strong>right</strong>
+ * @property {string} [lean] - The tooltip's text justification. Can be one of: <strong>left</strong>, <strong>center</strong>, or <strong>right</strong>
+ * @property {boolean} [fit = false] - Determines whether the tooltip overflows its parent
+ * @property {string} [style] - Extra styling (CSS) for the tooltip
+ */
+
+/** Creates a Twitch-like tooltip.
+ * @author GitHub {@link https://github.com/ephellon @ephellon}
+ *
+ * @simply Tooltip.get(parent:Element) → Element<Tooltip>
+ * @simply new Tooltip(parent:Element, text:string?, fineTuning:object?<{ left:number<integer>, top:number<integer>, from:string<"up" | "right" | "down" | "left">, lean:string<"center" | "right" | "left">, fit:boolean?, style:string? }>) → Element<Tooltip>
+ */
 class Tooltip {
     static #TOOLTIPS = new Map()
     static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
 
+
+    /** @constructor
+     *
+     * @param  {Element} parent                         The element that the tooltip should be attached to
+     * @param  {string} [text = ""]                     The text of the tooltip
+     * @param  {TooltipAdjustment} [fineTuning = {}]    Coordinate, text justification, fitting, and styling adjustments for the tooltip
+     *
+     * @return {Element}                                Returns the new tooltip element (attached to the parent)
+     */
     constructor(parent, text = '', fineTuning = {}) {
         let existing = Tooltip.#TOOLTIPS.get(parent);
 
@@ -448,14 +558,31 @@ class Tooltip {
         return tooltip;
     }
 
+    /**
+     * Returns the tooltip of the specified container (parent), or <i>null</i> if no tooltip is found
+     *
+     * @param  {Element} container      The element to get the associated tooltip from
+     * @return {(HTMLElement<Tooltip>|null)}
+     */
     static get(container) {
-        return Tooltip.#TOOLTIPS.get(container);
+        return Tooltip.#TOOLTIPS.get(container) ?? null;
     }
 };
 
-// Creates an asynchronous construct similar to a Promise. The only difference is that it accepts a spread (array) of arguments for its resolver and/or rejector
-    // new Async(ƒ (onResolve, onReject)) → Async<#Promise>
+/** Creates an asynchronous construct similar to a Promise. The only difference is that it accepts a spread (array) of arguments for its resolver and/or rejector.
+ * @simply new Async(ƒ (onResolve, onReject)) → Async<#Promise>
+ *
+ * @author Medium {@link https://medium.com/@manojsingh047/polyfill-for-javascript-promise-81053b284e37 @manojsingh047}
+ * @see https://medium.com/@manojsingh047/polyfill-for-javascript-promise-81053b284e37
+ */
 class Async {
+    /** @typedef {string} AsyncStatus
+     * The status of an Async (Promise-like) object
+     *
+     * @property {string} PENDING - Denotes a pending (not resolved or rejected) Async
+     * @property {string} FULFILLED - Denotes a fulfilled (resolved) Async
+     * @property {string} REJECTED - Denotes a rejected (rejected) Async
+     */
     static PENDING = 'pending';
     static FULFILLED = 'fulfilled';
     static REJECTED = 'rejected';
@@ -475,10 +602,23 @@ class Async {
     #fulfilled = false;
     #rejected = false;
 
+    /** @constructor
+     *
+     * @param  {function} executor The same arguments for Promises: a resolver, and (optional) rejector.
+     * @return {Async}             Returns a Promise-like object
+     */
     constructor(executor) {
         return executor(this.#resolver.bind(this), this.#rejector.bind(this));
     }
 
+    /**
+     * A method to chain Promise-like resolutions.
+     * Returns an {Async} object, allowing you to chain calls to other async methods.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then Promise.prototype.then}.
+     *
+     * @param  {function} callback  The function to call when the previous {Async} or <b>then</b> fulfills
+     * @return {Async}              The values that the {Async} or previous <b>then</b> was fulfilled with
+     */
     then(callback) {
         this.#resolvers.push(callback);
         this.#chain.push(callback);
@@ -488,6 +628,14 @@ class Async {
         return this;
     }
 
+    /**
+     * A method to chain Promise-like rejections.
+     * Returns an {Async} object, allowing you to chain calls to other async methods.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch Promise.prototype.catch}.
+     *
+     * @param  {function} callback  The function to call when the previous {Async} or <b>catch</b> rejects
+     * @return {Async}              The errors that the {Async} or previous <b>catch</b> was rejected with
+     */
     catch(callback) {
         this.#rejectors.push(callback);
         this.#chain.push(callback);
@@ -497,30 +645,64 @@ class Async {
         return this;
     }
 
+    /**
+     * A method to terminate Promise-like streams.
+     * Returns an {Async} object, allowing you to chain calls to other async methods.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/finally Promise.prototype.finally}.
+     *
+     * @param  {function} callback  The function to call when the previous {Async} or <b>then</b> fulfills
+     * @return {Async}              The values that the {Async} or previous <b>then</b> was fulfilled with
+     */
     finally(callback) {
         this.#chain.push(callback);
 
         return this;
     }
 
+    /**
+     * Returns the status of the Async
+     *
+     * @return {AsyncStatus}  Returns the pending status of the Async
+     */
     status() {
         let pending = Symbol(Async.PENDING);
 
         return Async.race([this, pending]).then(response => response === pending? Async.PENDING: Async.FULFILLED, () => Async.REJECTED);
     }
 
+    /**
+     * Returns a resolved {Async} object.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve Promise.resolve}.
+     *
+     * @param  {any} [...values] The values to pass to the following <b>then</b>
+     * @return {any[]}      All of the values that were given
+     */
     static resolve(...values) {
         return new Async(function(resolve, reject) {
             resolve.apply(this, values);
         });
     }
 
+    /**
+     * Returns a rejected {Async} object.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/reject Promise.reject}.
+     *
+     * @param  {any} [...errors] The errors to pass to the following <b>catch</b>
+     * @return {Error[]}    All of the errors that were caught
+     */
     static reject(...errors) {
         return new Async(function(resolve, reject) {
             reject.apply(this, errors);
         });
     }
 
+    /**
+     * Returns an array once <strong>all</strong> Asyncs have fulfilled.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all Promise.all}.
+     *
+     * @param  {Async} [...asyncs]  The Asyncs to iterate and wait for fulfillment
+     * @return {(Async|Error)}      This will fulfill to a promise or the first rejection
+     */
     static all(asyncs) {
         return new Async(function(resolve, reject) {
             let finished = 0;
@@ -544,6 +726,13 @@ class Async {
         });
     }
 
+    /**
+     * Returns an array of Async statuses.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled Promise.allSettled}.
+     *
+     * @param  {Async} [...asyncs]  The Asyncs to iterate and retrieve statuses from
+     * @return {object[]}      This will be an array of objects that describe each Async's status
+     */
     static allSettled(asyncs) {
         return new Async(function(resolve, reject) {
             let settled = 0;
@@ -572,6 +761,13 @@ class Async {
         });
     }
 
+    /**
+     * Returns the first fulfilled Async, or an array of rejections.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/any Promise.any}.
+     *
+     * @param  {Async} [...asyncs]      The Asyncs to iterate
+     * @return {(any|AggregateError)}   This will be a fulfillment or AggregateError (array)
+     */
     static any(asyncs) {
         return new Async(function(resolve, reject) {
             let failed = 0;
@@ -595,6 +791,12 @@ class Async {
         });
     }
 
+    /**
+     * Returns the first fulfilled Async, or an array of rejections.
+     *
+     * @param  {Async} [...asyncs]  The Asyncs to iterate
+     * @return {(any|Error[])} This will be a fulfillment or array of rejections
+     */
     static anySettled(asyncs) {
         let errors = new Array(asyncs.length);
         let errd = 0;
@@ -620,6 +822,13 @@ class Async {
         });
     }
 
+    /**
+     * Returns the first fulfilled Async.
+     * Similar to {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race Promise.race}.
+     *
+     * @param  {Async} [...asyncs]  The Asyncs to iterate
+     * @return {Async}              This will be a fulfillment or AggregateError (array)
+     */
     static race(asyncs) {
         return new Async(function(resolve, reject) {
             for(let async of asyncs)
@@ -691,11 +900,44 @@ class Async {
 }
 
 // The following is just shared logic
-    // $(selector:string, container:Node?, multiple:boolean?) → Array|Element
+
+/** @typedef {string} CSSSelector
+ * See {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors CSS selectors}
+ */
+
+;
+
+/** Returns an element, array of elements, or null if nothing is found.
+ * @simply $(selector:string, container:Node?, multiple:boolean?) → Array|Element
+ *
+ * @param  {CSSSelector} selector           The selector(s) for the element(s)
+ * @param  {Element} [container = document] The container (parent) to search for the element(s)
+ * @param  {boolean} [multiple = false]     Determines if a single element or multiple elements are returned
+ *
+ * @property {HTMLDocumentElement} html     A shortcut for the document
+ * @property {HTMLHeadElement} head         A shortcut for the head element
+ * @property {HTMLBodyElement} body         A shortcut for the body element
+ * @property {function} on                  <div class="signature">(type:string, listener:(function|object), options:(object|boolean)<span class="signature-attributes">opt</span>) → void</div>
+ *                                          <br>A shortcut for {@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener addEventListener}
+ * @property {function} all                 <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element[]</div>
+ *                                          <br>Returns all queried elements, a shortcut for: <code class=prettyprint>$(selector, container, true)</code>
+ * @property {function} getElementByText    <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → Element|null</div>
+ *                                          <br>Finds and returns an element based on its textual content
+ * @property {function} getElementsByText   <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
+ *                                          <br>Finds and returns multiple elements based on their textual content
+ * @property {function} queryBy             <div class="signature">(selectors:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element|null</div>
+ *                                          <br>Finds and returns an array of elements in their selector order
+ * @property {function} defined             <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
+ *                                          <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if any of the elements queried for exist.
+ * @property {function} nullish             <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
+ *                                          <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if none of the elements queried for exist.
+ *
+ * @return {(Element|Array|null)}
+ */
 function $(selector, container = document, multiple = false) {
     return multiple?
-        [...container?.querySelectorAll(selector)]:
-    container?.querySelector(selector);
+        [...(container?.querySelectorAll(selector) ?? [])]:
+    (container?.querySelector(selector) ?? null);
 }
 
 Object.defineProperties($, {
@@ -782,24 +1024,105 @@ Object.defineProperties($, {
     },
 });
 
-// Returns whether a value is nullish or not
-    // nullish(value:any?) → boolean
+/** Returns a boolean describing if the value is nullish or not.
+ * <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
+ * @simply nullish(value:any?) → boolean
+ *
+ * @param  {any} value  The value to test
+ * @return {boolean}    Returns <i>true</i> if the value is <i>null</i>
+ */
 function nullish(value) {
     return value === undefined || value === null || value instanceof Promise || Number.isNaN(value);
 }
 
-// Returns whether a value is nullish or not
-    // defined(value:any?) → boolean
+/** Returns a boolean describing if the value is nullish or not.
+ * <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
+ * @simply defined(value:any?) → boolean
+ *
+ * @param  {any} value  The value to test
+ * @return {boolean}    Returns <i>true</i> if the value is <b>not</b> <i>null</i>
+ */
 function defined(value) {
     return !nullish(value);
 }
 
-// Makes a Promised setInterval
-    // when(callback:function<boolean>, ms:number?<integer>, ...args<any>) → Promise<any>
-async function when(callback, ms = 100, ...args) {
+/** Returns a Promised <b><code>setInterval</code></b>.
+ * @simply when(condition:function<boolean>, ms:number?<integer>, ...args<any>) → Promise~any
+ *
+ * @param  {function} condition             This should return a <i>boolean-like</i>: {@link https://developer.mozilla.org/en-US/docs/Glossary/Truthy <i>truthy</i>} if the condition(s) have been met, or {@link https://developer.mozilla.org/en-US/docs/Glossary/Falsy <i>falsy</i>} if not.
+ *                                          If you would like to pass the literal values <i>true</i> or <i>false</i>, use <b><code>when.true</code></b> or <b><code>when.false</code></b>.
+ * @param  {number<integer>} [ms = 100]     This changes how often the conditon is checked for compliance
+ * @param  {...any} args                    These are the arguments that will be passed to the condition function
+ *
+ * @property {Symbol} true                  Represents the <i>true</i> value
+ * @property {Symbol} false                 Represents the <i>false</i> value
+ *
+ * @property {Symbol} null                  Represents the <i>null</i> value
+ * @property {Symbol} void                  Represents the <i>undefined</i> value
+ * @property {Symbol} undefined             Represents the <i>undefined</i> value
+ *
+ * @property {function} all                 <div class="signature">(...conditions<span class="signature-attributes">repeatable</span>) → {array&lt;Promise~any[]&gt;}</div>
+ *                                          <br>Takes an any number of conditions and fulfills when <b>all</b> conditions pass.
+ *                                          <br>Also contains: <b><code>when.all.defined</code></b>, <b><code>when.all.nullish</code></b>, <b><code>when.all.empty</code></b>, and <b><code>when.all.sated</code></b>; each has the same argument signature as <code>when.all</code>
+ * @property {function} any                 <div class="signature">(...conditions<span class="signature-attributes">repeatable</span>) → {array&lt;Promise~any[]&gt;}</div>
+ *                                          <br>Takes an any number of conditions and fulfills when <b>any</b> condition passes.
+ *                                          <br>Also contains: <b><code>when.any.defined</code></b>, <b><code>when.any.nullish</code></b>, <b><code>when.any.empty</code></b>, and <b><code>when.any.sated</code></b>; each has the same argument signature as <code>when.any</code>
+ *
+ * @property {function} pipe                <div class="signature">(condition:function, ms:number<span class="signature-attributes">opt</span>, ...args<span class="signature-attributes">repeatable</span>) → {Promise~any[]}</div>
+ *                                          <br>Passes arguments (pipes) to a conditon function and the resolver (Promise)
+ * @property {function} thru                <div class="signature">(condition:function, ms:number<span class="signature-attributes">opt</span>, ...args<span class="signature-attributes">repeatable</span>) → {Promise~any[]}</div>
+ *                                          <br>Passes arguments (pipes) to the resolver (Promise)
+ *
+ * @property {function} defined             <div class="signature">(conditon:function, ms:number<span class="signature-attributes">opt</span>, ...conditions<span class="signature-attributes">repeatable</span>) → {Promise~any}</div>
+ *                                          <br>Fulfills when the condition returns a <i>defined</i> value (<b>not</b> <i>null</i>).
+ *                                          <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
+ *                                          <br>Also contains: <b><code>when.defined.pipe</code></b> and <b><code>when.defined.thru</code></b>; each has the same argument signature as <code>when</code>
+ * @property {function} nullish             <div class="signature">(conditon:function, ms:number<span class="signature-attributes">opt</span>, ...conditions<span class="signature-attributes">repeatable</span>) → {Promise~any}</div>
+ *                                          <br>Fulfills when the condition returns a <i>nullish</i> value.
+ *                                          <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
+ *                                          <br>Also contains: <b><code>when.nullish.pipe</code></b> and <b><code>when.nullish.thru</code></b>; each has the same argument signature as <code>when</code>
+ *
+ * @property {function} empty               <div class="signature">(conditon:function~@@iterable, ms:number<span class="signature-attributes">opt</span>, ...conditions<span class="signature-attributes">repeatable</span>) → {Promise~any}</div>
+ *                                          <br>Fulfills when the condition returns an empty array.
+ *                                          <br>Also contains: <b><code>when.empty.pipe</code></b> and <b><code>when.empty.thru</code></b>; each has the same argument signature as <code>when</code>
+ * @property {function} sated               <div class="signature">(conditon:function~@@iterable, ms:number<span class="signature-attributes">opt</span>, ...conditions<span class="signature-attributes">repeatable</span>) → {Promise~any}</div>
+ *                                          <br>Fulfills when the condition returns a non-empty array.
+ *                                          <br>Also contains: <b><code>when.sated.pipe</code></b> and <b><code>when.sated.thru</code></b>; each has the same argument signature as <code>when</code>
+ *
+ * @return {Promise~any}                    The Promise will fulfill to the value that caused the condition to pass
+ *
+ * @see https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
+ * @example // When `seconds` is greater than 5, write a `message` to the page
+ * let message = "It's been more than 5 seconds since the page was loaded!";
+ * let seconds = 0;
+ *
+ * when(
+ *      ([seven, eight, nine]) => // `condition`
+ *          {
+ *              return ++seconds > 5?
+ *                  "pass" + eight:
+ *              false;
+ *          }
+ *      , 1000      // `ms`
+ *      , 7, 8, 9   // `...args`
+ * )
+ *      .then(status => // "pass8"
+ *          document.write(message) // After 5s, writes the message to the document
+ *      );
+ *
+ * // Using `when.true` and `when.false`
+ * // When `seconds` is 10, fulfill the Promise with the `when.false` symbol
+ * // We use this since we can't satisfy the condition with a falsy value
+ * when(() => seconds > 10? when.false: false)
+ *      .then(status => // false
+ *          console.log('The user is still active:', status) // After 10s, logs "The user is still active: false"
+ *      );
+ *
+ */
+async function when(condition, ms = 100, ...args) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async args => {
-            let value = await callback.apply(null, args);
+            let value = await condition.apply(null, args);
 
             if(parseBool(value) !== false) {
                 clearInterval(interval);
@@ -827,14 +1150,14 @@ try {
         "all": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all(...callbacks:function) → array<Promise<any[]>>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.all(...conditions:function) → array<Promise~any[]>
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when(condition).then(resolve)));
 
                 return Promise.all(promises);
             },
@@ -843,14 +1166,14 @@ try {
         "any": {
             value:
             // Makes a Promised setInterval. Only executes if ANY conditions pass
-                // when.any(...callbacks:function) → Promise<any[]>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.any(...conditions:function) → Promise~any[]
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when(condition).then(resolve)));
 
                 return Promise.any(promises);
             },
@@ -858,13 +1181,13 @@ try {
 
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
-                // when.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+                // when.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    return when(callback, ms, ...args).then(resolve.call(null, args));
+                    return when(condition, ms, ...args).then(resolve.call(null, args));
                 });
             },
         },
@@ -872,25 +1195,24 @@ try {
         "thru": {
             value:
             // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+                // when.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    return when(callback, ms).then(resolve.call(null, args));
+                    return when(condition, ms).then(resolve.call(null, args));
                 });
             },
         },
 
         "defined": {
             value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.defined(callback:function<any>, ms:number?<integer>) → Promise<any>
-            async function(callback, ms = 100, ...args) {
+                // when.defined(condition:function<any>, ms:number?<integer>) → Promise~any
+            async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
-                        let value = await callback.apply(null, args);
+                        let value = await condition.apply(null, args);
 
                         if(defined(value)) {
                             clearInterval(interval);
@@ -911,13 +1233,12 @@ try {
 
         "nullish": {
             value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.nullish(callback:function<any>, ms:number?<integer>) → Promise<any>
-            async function(callback, ms = 100, ...args) {
+                // when.nullish(condition:function<any>, ms:number?<integer>) → Promise~any
+            async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
-                        let value = await callback.apply(null, args);
+                        let value = await condition.apply(null, args);
 
                         if(nullish(value)) {
                             clearInterval(interval);
@@ -930,13 +1251,12 @@ try {
 
         "empty": {
             value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.empty(callback:function<@@iterable>, ms:number?<integer>) → Promise<any>
-            async function(callback, ms = 100, ...args) {
+                // when.empty(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
+            async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
-                        let array = await callback.apply(null, args);
+                        let array = await condition.apply(null, args);
 
                         if(array?.length < 1) {
                             clearInterval(interval);
@@ -949,13 +1269,12 @@ try {
 
         "sated": {
             value:
-            // https://levelup.gitconnected.com/how-to-turn-settimeout-and-setinterval-into-promises-6a4977f0ace3
             // Makes a Promised setInterval
-                // when.sated(callback:function<@@iterable>, ms:number?<integer>) → Promise<any>
-            async function(callback, ms = 100, ...args) {
+                // when.sated(condition:function<@@iterable>, ms:number?<integer>) → Promise~any
+            async function(condition, ms = 100, ...args) {
                 return new Promise((resolve, reject) => {
                     let interval = setInterval(async args => {
-                        let array = await callback.apply(null, args);
+                        let array = await condition.apply(null, args);
 
                         if(array?.length > 0) {
                             clearInterval(interval);
@@ -971,14 +1290,14 @@ try {
         "defined": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.defined(...callbacks:function) → array<Promise<any[]>>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.all.defined(...conditions:function) → array<Promise~any[]>
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.defined(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.defined(condition).then(resolve)));
 
                 return Promise.all(promises);
             },
@@ -986,14 +1305,14 @@ try {
         "nullish": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.nullish(...callbacks:function) → array<Promise<any[]>>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.all.nullish(...conditions:function) → array<Promise~any[]>
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.nullish(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.nullish(condition).then(resolve)));
 
                 return Promise.all(promises);
             },
@@ -1001,14 +1320,14 @@ try {
         "empty": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.empty(...callbacks:function) → array<Promise<any[]>>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.all.empty(...conditions:function) → array<Promise~any[]>
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.empty(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.empty(condition).then(resolve)));
 
                 return Promise.all(promises);
             },
@@ -1016,14 +1335,14 @@ try {
         "sated": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.all.sated(...callbacks:function) → array<Promise<any[]>>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.all.sated(...conditions:function) → array<Promise~any[]>
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.sated(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.sated(condition).then(resolve)));
 
                 return Promise.all(promises);
             },
@@ -1034,14 +1353,14 @@ try {
         "defined": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.defined(...callbacks:function) → Promise<any[]>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.any.defined(...conditions:function) → Promise~any[]
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.defined(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.defined(condition).then(resolve)));
 
                 return Promise.any(promises);
             },
@@ -1049,14 +1368,14 @@ try {
         "nullish": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.nullish(...callbacks:function) → Promise<any[]>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.any.nullish(...conditions:function) → Promise~any[]
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.nullish(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.nullish(condition).then(resolve)));
 
                 return Promise.any(promises);
             },
@@ -1064,14 +1383,14 @@ try {
         "empty": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.empty(...callbacks:function) → Promise<any[]>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.any.empty(...conditions:function) → Promise~any[]
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.empty(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.empty(condition).then(resolve)));
 
                 return Promise.any(promises);
             },
@@ -1079,14 +1398,14 @@ try {
         "sated": {
             value:
             // Makes a Promised setInterval. Only executes if ALL conditions pass
-                // when.any.sated(...callbacks:function) → Promise<any[]>
-            async function(...callbacks) {
-                callbacks = [].concat(callbacks);
+                // when.any.sated(...conditions:function) → Promise~any[]
+            async function(...conditions) {
+                conditions = [].concat(conditions);
 
                 let promises = [];
 
-                for(let callback of callbacks)
-                    promises.push(new Promise((resolve, reject) => when.sated(callback).then(resolve)));
+                for(let condition of conditions)
+                    promises.push(new Promise((resolve, reject) => when.sated(condition).then(resolve)));
 
                 return Promise.any(promises);
             },
@@ -1096,13 +1415,13 @@ try {
     Object.defineProperties(when.defined, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
-                // when.defined.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+                // when.defined.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.defined(callback, ms, ...args).then(resolve.call(null, args));
+                    when.defined(condition, ms, ...args).then(resolve.call(null, args));
                 });
             },
         },
@@ -1110,12 +1429,12 @@ try {
         "thru": {
             value:
             // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.defined.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+                // when.defined.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.defined(callback, ms).then(resolve.call(null, args));
+                    when.defined(condition, ms).then(resolve.call(null, args));
                 });
             },
         },
@@ -1124,13 +1443,13 @@ try {
     Object.defineProperties(when.nullish, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
-                // when.nullish.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+                // when.nullish.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.nullish(callback, ms, ...args).then(resolve.call(null, args));
+                    when.nullish(condition, ms, ...args).then(resolve.call(null, args));
                 });
             },
         },
@@ -1138,12 +1457,12 @@ try {
         "thru": {
             value:
             // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.nullish.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+                // when.nullish.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.nullish(callback, ms).then(resolve.call(null, args));
+                    when.nullish(condition, ms).then(resolve.call(null, args));
                 });
             },
         },
@@ -1152,13 +1471,13 @@ try {
     Object.defineProperties(when.empty, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
-                // when.empty.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+                // when.empty.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.empty(callback, ms, ...args).then(resolve.call(null, args));
+                    when.empty(condition, ms, ...args).then(resolve.call(null, args));
                 });
             },
         },
@@ -1166,12 +1485,12 @@ try {
         "thru": {
             value:
             // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.empty.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+                // when.empty.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.empty(callback, ms).then(resolve.call(null, args));
+                    when.empty(condition, ms).then(resolve.call(null, args));
                 });
             },
         },
@@ -1180,13 +1499,13 @@ try {
     Object.defineProperties(when.sated, {
         "pipe": {
             value:
-            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the callback and resolver
-                // when.sated.pipe(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+            // Makes a Promised setInterval. Pipes the arguments provided, applying them to both the condition and resolver
+                // when.sated.pipe(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.sated(callback, ms, ...args).then(resolve.call(null, args));
+                    when.sated(condition, ms, ...args).then(resolve.call(null, args));
                 });
             },
         },
@@ -1194,12 +1513,12 @@ try {
         "thru": {
             value:
             // Makes a Promised setInterval. Pipes the arguments provided, applying them only on the resolver
-                // when.sated.thru(callback:function<any>, ms:number?<integer>, ...args<any>) → Promise<any[]>
-            async function(callback, ms = 100, ...args) {
+                // when.sated.thru(condition:function<any>, ms:number?<integer>, ...args<any>) → Promise~any[]
+            async function(condition, ms = 100, ...args) {
                 args = [].concat(args);
 
                 return new Promise((resolve, reject) => {
-                    when.sated(callback, ms).then(resolve.call(null, args));
+                    when.sated(condition, ms).then(resolve.call(null, args));
                 });
             },
         },
@@ -1208,27 +1527,71 @@ try {
     /* Ignore the error... */
 }
 
-// https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
-// Waits to execute a function
-    // wait(delay:number?<integer>, value:any?) → Promise<number>
+
+/**
+ * Waits a set amount of time, then fulfills to a Promise with an optional argument.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
+ *
+ * @simply wait(delay:number?<integer>, value:any?) → Promise~number
+ *
+ * @param  {number<integer>} [delay = 100]  The delay to wait for (in milliseconds)
+ * @param  {any} value                      The argument to pass to the Promise
+ * @return {Promise~any}
+ */
 function wait(delay = 100, value) {
     return new Promise(resolve => setTimeout(resolve, delay, value));
 }
 
-// https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
-// Delay callbacks until the user is done...
-    // delay(fn:function, ms:number?<integer>, ...args:<any>) → Function
-function delay(fn, ms = 0, ...args) {
+/**
+ * Executes a function after a set delay. Optionally, takes a spread of arguments to pass along to the function.
+ * Used to delay callbacks to form input until the user is done.
+ *
+ * @see https://stackoverflow.com/questions/1909441/how-to-delay-the-keyup-handler-until-the-user-stops-typing
+ *
+ * @simply delay(fn:function, ms:number?<integer>, ...args:<any>) → Function
+ *
+ * @param  {function} executor          The function to execute after the delayed time
+ * @param  {number<integer>} [ms = 0]   The amount of time to delay for (in milliseconds)
+ * @param  {any} ...args                The arguments to pass onto the executor
+ * @return {function}                   A bound function of the executor
+ */
+function delay(executor, ms = 0, ...args) {
     let timer = -1;
     return function(...args) {
         clearTimeout(timer);
-        timer = setTimeout(fn.bind(this, ...args), ms, ...args);
+        timer = setTimeout(executor.bind(this, ...args), ms, ...args);
     }
 }
 
-// https://dmitripavlutin.com/timeout-fetch-request/
-// Fetches resources with automatic CORS-sense
-    // fetchURL(url:string<URL>, options:object?) → Promise<fetch>
+/**
+ * Fetches resources with automatic CORS-sense and pathing.
+ *
+ * @see https://dmitripavlutin.com/timeout-fetch-request/
+ *
+ * @simply fetchURL(url:string<URL>, options:object?) → Promise~ReadableStream
+ *
+ * @param  {string<URL>} url        The resource destination
+ * @param  {object} [options = {}]  Options to pass along to the fetch request, such as mode, type, body, etc.
+ *
+ * @property {Map} requests         A map of all requests made during the current session (page load)
+ * @property {function} idempotent  <div class="signature">(url:string, options:object<span class="signature-attributes">opt</span>) → {Promise~ReadableStream}</div>
+ *                                  <br>Simply returns a fetch but, the request is guaranteed to only execute once per minute.
+ *
+ * @return {Promise~ReadableStream}
+ *
+ * @example // Fetching a local (extension) resource
+ * let mani = fetchURL('get:./manifest.json').then(r => r.json()); // JSON
+ *
+ * // Fetching a global resource
+ * let goog = fetchURL('https://google.com').then(r => r.text()); // text/HTML
+ *
+ * // Fetching a resource but, timing out if not fetched within 5s
+ * let fail = fetchURL('https://example.com/failure', { timeout: 5_000 }).then(r => r.text()); // AbortError | text/HTML
+ *
+ * // Force the fetch to act "natively"
+ * let natv = fetchURL('x-moz://example.com/', { native: true }).then(r => r.text()); // text/HTML
+ */
 function fetchURL(url, options = {}) {
     let empty = Promise.resolve({});
     let { timeout = 0, native = false } = options;
@@ -1309,10 +1672,26 @@ Object.defineProperties(fetchURL, {
     },
 });
 
-// The following facilitates communication between pages
-// Extension (permanent) data
+/** Facilitates communication and storage between extension contexts (background vs. content).
+ * @see https://developer.chrome.com/docs/extensions/reference/storage/
+ *
+ * @prop {function} get     <div class="signature">(properties:(string|array&lt;string&gt;)<span class="signature-attributes">opt, nullable</span>) → {Promise~object}</div>
+ *                          <br>Fetches data from the extension's long-term storage
+ *                          <br><ul>
+ *                          <li><code class=prettyprint>properties <i>&rArr; null</i></code> &mdash; The properties (settings) to fetch. If <i>null</i>, all settings are fetched</li>
+ *                          </ul>
+ * @prop {function} set     <div class="signature">(properties:object<span class="signature-attributes">opt</span>) → {void}</div>
+ *                          <br>Sets (writes) data to the extension's long-term storage
+ *                          <br><ul>
+ *                          <li><code class=prettyprint>properties <i>&rArr; {}</i></code> &mdash; A <i>key</i>:<i>value</i> object describing the data to be saved. The <i>key</i> is the name of the entry, and the <i>value</i> is the value (data)</li>
+ *                          </ul>
+ * @prop {function} set     <div class="signature">(properties:(string|array&lt;string&gt;)<span class="signature-attributes">opt, nullable</span>) → {void}</div>
+ *                          <br>Removes named entries from the extension's long-term storage
+ *                          <br><ul>
+ *                          <li><code class=prettyprint>properties <i>&rArr; []</i></code> &mdash; The properties (settings) to remove from storage</li>
+ *                          </ul>
+ */
 let Settings = window.Settings = {
-    // Settings.get(properties:string|array?) → Promise<object>
     get(properties = null) {
         return new Promise((resolve, reject) => {
             function ParseSettings(settings) {
@@ -1330,7 +1709,6 @@ let Settings = window.Settings = {
         });
     },
 
-    // Settings.set(properties:object?) → Promise<undefined>
     set(properties = {}) {
         for(let key in properties)
             Settings[key] = properties[key];
@@ -1338,7 +1716,6 @@ let Settings = window.Settings = {
         return Storage.set(properties);
     },
 
-    // Settings.remove(properties:string|array?) → Promise<undefined>
     remove(properties = []) {
         let removed = {};
 
@@ -1352,10 +1729,43 @@ let Settings = window.Settings = {
     },
 };
 
-// Page (temporary) data
+
+/** Used to manage page storage using {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage localStorage} and {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API IndexedDB}.
+ *
+ * @prop {function} save            <div class="signature"><span class="signature-attributes">async</span>(properties:object<span class="signature-attributes">opt, non-nullable</span>, callback:function<span class="signature-attributes">opt, nullable</span>) → {void}</div>
+ *                                  <br>Saves data to the page's storage
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>properties <i>&rArr; {}</i></code> &mdash; The properties (settings) to save (<code class=prettyprint>{ key: value }</code>)</li>
+ *                                  <li><code class=prettyprint>callback <i>&rArr; null</i></code> &mdash; The callback to execute after the save has completed</li>
+ *                                  </ul>
+ * @prop {function} load            <div class="signature"><span class="signature-attributes">async</span>(properties:({ ...names } | string[] | string)<span class="signature-attributes">opt, nullable</span>, callback:function<span class="signature-attributes">opt, nullable</span>) → {Promise~object}</div>
+ *                                  <br>Loads data from the page's storage
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>properties <i>&rArr; null</i></code> &mdash; The properties (settings) to load. If <i>null</i>, all entries are returned</li>
+ *                                  <li><code class=prettyprint>callback <i>&rArr; null</i></code> &mdash; A promise of the properties (settings) loaded (<code class=prettyprint>{ key: value }</code>)</li>
+ *                                  </ul>
+ * @prop {function} remove          <div class="signature"><span class="signature-attributes">async</span>(properties:({ ...names } | string[] | string)<span class="signature-attributes">opt, nullable</span>, callback:function<span class="signature-attributes">opt, nullable</span>) → {Promise~object}</div>
+ *                                  <br>Removes data from the page's storage
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>properties <i>&rArr; null</i></code> &mdash; The properties (settings) to remove. If <i>null</i>, all entries are removed</li>
+ *                                  <li><code class=prettyprint>callback <i>&rArr; null</i></code> &mdash; A promise of the properties (settings) removed (<code class=prettyprint>{ key: value }</code>)</li>
+ *                                  </ul>
+ * @prop {function} getBytesInUse   <div class="signature"><span class="signature-attributes">async</span>(properties:({ ...names } | string[] | string)<span class="signature-attributes">opt, nullable</span>) → {Promise~number}</div>
+ *                                  <br>Returns the number of bytes in use
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>properties <i>&rArr; null</i></code> &mdash; The properties (settings) to query. If <i>null</i>, all entries are queried</li>
+ *                                  <li><code class=prettyprint>return <i>{Promise~number}</i></code> &mdash; The number of bytes in use</li>
+ *                                  </ul>
+ * @prop {function} keys            <div class="signature"><span class="signature-attributes">async</span>() → {Promise~array&lt;string&gt;}</div>
+ *                                  <br>Returns the keys of the <b>Cache</b> storage
+ *                                  <br><ul>
+ *                                  <li><code class=prettyprint>return <i>{Promise~array&lt;string&gt;}</i></code> &mdash; The keys of <b>Cache</b></li>
+ *                                  </ul>
+ * @prop {object} large             Used to manage <b>large</b> (&gt; 5MiB) page storage using {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage localStorage} and {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API IndexedDB}.
+ *                                  <br>
+ *                                  <br>Also contains: <b><code>Cache.large.save</code></b>, <b><code>Cache.large.load</code></b>, <b><code>Cache.large.remove</code></b>, <b><code>Cache.large.getBytesInUse</code></b>, <b><code>Cache.large.keys</code></b>; each has the same argument signature as <code>Cache</code>
+ */
 let Cache = window.Cache = {
-    // Saves data to the page's storage
-        // Cache.save(properties:object?, callback:function?) → undefined
     async save(properties = {}, callback = null) {
         let set = (key, value) => CacheStorageArea.setItem(`ext.twitch-tools/${ encodeURI(key) }`, value);
 
@@ -1366,8 +1776,6 @@ let Cache = window.Cache = {
             callback();
     },
 
-    // Loads data from the page's storage
-        // Cache.load(properties:string|array|object?, callback:function?) → Promise<object>
     async load(properties = null, callback = null) {
         let results = {};
         let get = key => {
@@ -1417,8 +1825,6 @@ let Cache = window.Cache = {
         });
     },
 
-    // Removes data from the page's storage
-        // Cache.remove(properties:string|array, callback:function?) → Promise<object>
     async remove(properties, callback = null) {
         let results = {};
         let remove = key => CacheStorageArea.removeItem(`ext.twitch-tools/${ encodeURI(key) }`),
@@ -1470,8 +1876,6 @@ let Cache = window.Cache = {
         });
     },
 
-    // Returns the number of Bytes in use
-        // Cache.getBytesInUse(properties:string|array?) → Promise<number>
     async getBytesInUse(properties) {
         let bytesUsed = 0;
         let size = key => {
@@ -1526,8 +1930,6 @@ let Cache = window.Cache = {
     },
 
     large: {
-        // Saves data to the page's storage
-            // Cache.save(keys:object?, callback:function?) → undefined
         async save(keys = {}, callback = null) {
             let set = (key, value) => LargeCacheStorageArea.setItem(key, value);
 
@@ -1538,8 +1940,6 @@ let Cache = window.Cache = {
                 callback();
         },
 
-        // Loads data from the page's storage
-            // Cache.load(keys:string|array|object?, callback:function?) → Promise<object>
         async load(keys = null, callback = null) {
             let results = {};
             let get = key => LargeCacheStorageArea.getItem(key);
@@ -1574,8 +1974,6 @@ let Cache = window.Cache = {
             });
         },
 
-        // Removes data from the page's storage
-            // Cache.remove(keys:string|array, callback:function?) → Promise<object>
         async remove(keys, callback = null) {
             let results = {};
             let remove = key => LargeCacheStorageArea.removeItem(key),
@@ -1617,8 +2015,6 @@ let Cache = window.Cache = {
             });
         },
 
-        // Returns the number of Bytes in use
-            // Cache.getBytesInUse(keys:string|array?) → Promise<number>
         async getBytesInUse(keys) {
             let bytesUsed = 0;
             let size = async key => (key?.length | 0) + (JSON.stringify(await LargeCacheStorageArea.getItem(key))?.length | 0);
@@ -1659,19 +2055,34 @@ let Cache = window.Cache = {
     },
 };
 
-// Convert strings to RegExps
-    // RegExp lookers
-        // `X(?=Y)`     - match X if before Y       → \d+(?=\$)     → 1 turkey costs 20$    → 20
-        // `X(?!Y)`     - match X if not before Y   → \d+(?!\$)     → 3 turkeys costs 40$   → 3
-        // `(?<=Y)X`    - match X if after Y        → (?<=\$)\d+    → 5 turkeys costs $60   → 60
-        // `(?<!Y)X`    - match X if not after Y    → (?<!\$)\d+    → 7 turkeys costs $80   → 7
-    // AsteriskFn symbols
-        // `.`         - 1 character
-        // `?`         - 0 or 1 character
-        // `+`         - 1 or more characters
-        // `*`         - 0 or more characters
-        // `X#`        - X followed by any charactrer that is NOT: _
-        // `X~Y`       - X NOT followed by Y
+/**
+ * Converts strings into RegExps. Used for grouping similar function names.
+ *
+ * @param  {string} feature The expression to convert to RegExp
+ * @return {RegExp}         The RegExp (pattern) that describes the function name(s)
+ *
+ *
+ * @example // Simple expressions
+ * // RegExp lookers
+ *      // `X(?=Y)`     - match X if before Y       → \d+(?=\$)     → 1 turkey costs 20$    → 20
+ *      // `X(?!Y)`     - match X if not before Y   → \d+(?!\$)     → 3 turkeys costs 40$   → 3
+ *      // `(?<=Y)X`    - match X if after Y        → (?<=\$)\d+    → 5 turkeys costs $60   → 60
+ *      // `(?<!Y)X`    - match X if not after Y    → (?<!\$)\d+    → 7 turkeys costs $80   → 7
+ * // AsteriskFn symbols
+ *      // `.`         - 1 character
+ *      // `?`         - 0 or 1 character
+ *      // `+`         - 1 or more (word) characters
+ *      // `*`         - 0 or more (word) characters
+ *      // `X#`        - 0 or more charactrers that are NOT "_"
+ *      // `X~Y`       - X NOT followed by Y
+ *
+ * let SENSITIVE_FEATURES = ['away_mode*~schedule'                , 'fine_details'   , 'first_in_line*'          , 'prevent_#'         , '!up_next+'          ].map(AsteriskFn);
+ * //                     → [/^(away_mode([\w-]*))(?<!schedule)$/i, /^fine_details$/i, /^first_in_line([\w-]*)$/i, /^prevent_([^_]+)$/i, /^!up_next([\w-]+)$/i]
+ * //                                                                                                                                    ↑ Entry ignored (intentional)
+ *
+ * let NORMALIZED_FEATURES = ['away_mode*~schedule'                , 'auto_follow+'          , 'first_in_line*'          , 'prevent_#'         , 'kill+'          ].map(AsteriskFn);
+ * //                      → [/^(away_mode([\w-]*))(?<!schedule)$/i, /^auto_follow([\w-]+)$/i, /^first_in_line([\w-]*)$/i, /^prevent_([^_]+)$/i, /^kill([\w-]+)$/i]
+ */
 function AsteriskFn(feature) {
     return RegExp(`^${
         feature
@@ -1685,6 +2096,11 @@ function AsteriskFn(feature) {
 }
 
 // The following needs to be run once per page
+
+/**
+ * @namespace window
+ * @desc These belong to the current window (occasionally a sub-frame).
+ */
 __STATIC__: {
     let browser, Storage, Runtime, Manifest, Extension, Container, BrowserNamespace;
 
@@ -1716,12 +2132,31 @@ __STATIC__: {
         } break;
     }
 
+    /** @memberof window
+     * @prop {object<Runtime>} Runtime - The extension runtime
+     * @see https://developer.chrome.com/docs/extensions/reference/runtime/
+     */
     window.Runtime = Runtime;
+    /** @memberof window
+    * @prop {object<Storage>} Storage - The extension storage
+    * @see https://developer.chrome.com/docs/extensions/reference/storage/
+    */
     window.Storage = Storage;
+    /** @memberof window
+    * @prop {object<Extension>} Extension - The extension context
+    * @see https://developer.chrome.com/docs/extensions/reference/extension/
+    */
     window.Extension = Extension;
+    /** @memberof window
+    * @prop {object<ExtensionContainer>} Container - The extension container (<code>chrome</code> or <code>browser</code>)
+    * @see https://developer.chrome.com/docs/extensions/reference/
+    */
     window.Container = Container;
+    /** @memberof window
+    * @prop {object<Manifest>} Manifest - The extension's manifest
+    * @see https://developer.chrome.com/docs/extensions/mv3/intro/mv3-overview/
+    */
     window.Manifest = Manifest;
-    window.Storage = Storage;
 
     let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
 
@@ -1730,10 +2165,18 @@ __STATIC__: {
     window.SHARED_MODULE_UPDATE = SHARED_MODULE_UPDATE;
     window.UPDATE = UPDATE;
 
+    /** @memberof window
+    * @prop {object<StorageArea>} CacheStorageArea - The extension's "small" (&le; 5MiB) storage area
+    * @see https://developer.chrome.com/docs/extensions/reference/storage/
+    */
     let CacheStorageArea = localStorage ?? sessionStorage;
 
     window.CacheStorageArea = CacheStorageArea;
 
+    /** @memberof window
+    * @prop {object<(IndexedDB|StorageArea)>} LargeCacheStorageArea - The extension's "large" (&gt; 5MiB) storage area
+    * @see https://github.com/localForage/localForage#readme
+    */
     let LargeCacheStorageArea = localforage;
 
     LargeCacheStorageArea.config({
@@ -1748,22 +2191,38 @@ __STATIC__: {
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-    let Jobs = {},
-        Timers = {},
-        Handlers = {
-            __reasons__: new Map(),
-        },
-        Unhandlers = {
-            __reasons__: new Map(),
-        };
+    /** @memberof window
+    * @prop {object} Jobs - All running or ran jobs
+    */
+    let Jobs = {};
+
+    /** @memberof window
+    * @prop {object} Jobs - All running or ran timers (with a corresponding job). A <b>positive</b> (&gt; 0) value creates an interval. A <b>negative</b> (&lt; 0) value creates a time-out
+    */
+    let Timers = {};
+
+    /** @memberof window
+    * @prop {object} Jobs - All handlers (functions) that may be run
+    */
+    let Handlers = { __reasons__: new Map() };
+
+    /** @memberof window
+    * @prop {object} Jobs - All unhandlers (destructing functions) that may be run
+    */
+    let Unhandlers = { __reasons__: new Map() };
 
     window.Jobs = Jobs;
     window.Timers = Timers;
     window.Handlers = Handlers;
     window.Unhandlers = Unhandlers;
 
-    // Registers a job
-        // RegisterJob(JobName:string) → Number<IntervalID>
+    /** Registers a job to be run
+     * @simply RegisterJob(JobName:string, JobReason:string?) → Number<IntervalID>
+     *
+     * @param  {function} JobName               The job (function) to register and run
+     * @param  {string} [JobReason = "default"] The reason for the job's creation; used for debugging
+     * @return {number}
+     */
     function RegisterJob(JobName, JobReason = 'default') {
         RegisterJob.__reason__ = JobReason;
 
@@ -1773,8 +2232,13 @@ __STATIC__: {
     }
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
-    // Unregisters a job
-        // UnregisterJob(JobName:string) → undefined
+    /** Unregisters (stops) a job
+     * @simply UnregisterJob(JobName:string, JobReason:string?) → undefined
+     *
+     * @param  {string} JobName                 The job's name to unregister
+     * @param  {string} [JobReason = "default"] The reason for the job's destruction; used for debugging
+     * @return {void}
+     */
     function UnregisterJob(JobName, JobReason = 'default') {
         UnregisterJob.__reason__ = JobReason;
 
@@ -1792,8 +2256,13 @@ __STATIC__: {
     }
     Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).value);
 
-    // Restarts (unregisters, then registers) a job
-        // RestartJob(JobName:string) → undefined
+    /** Restarts (unregisters, then registers) a job
+     * @simply RestartJob(JobName:string, JobReason:string?) → undefined
+     *
+     * @param  {string} JobName                 The job's name to restart
+     * @param  {string} [JobReason = "default"] The reason for the job's restart; used for debugging
+     * @return {void}
+     */
     function RestartJob(JobName, JobReason = 'default') {
         RestartJob.__reason__ = JobReason;
 
