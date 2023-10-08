@@ -8,8 +8,18 @@
  *                             _/ |
  *                            |__/
  */
-/** Adds a CSS block to the CUSTOM_CSS string
- * AddCustomCSSBlock_Chat(name:string, block:string) → undefined
+
+/**
+ * @file Defines the chat-specific logic for the extension. Used for all {@link # twitch.tv/chat/*} sites.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * @module
+ */
+
+;
+
+/** Adds a CSS block to the <code class=prettyprint>Chat__CUSTOM_CSS</code> string
+ * @simply AddCustomCSSBlock_Chat(name:string, block:string) → undefined
  */
 function AddCustomCSSBlock_Chat(name, block) {
     name = name.trim();
@@ -28,8 +38,8 @@ function AddCustomCSSBlock_Chat(name, block) {
     $('body').append(Chat__CUSTOM_CSS);
 }
 
-/** Removes a CSS block from the Chat__CUSTOM_CSS string
- * RemoveCustomCSSBlock_Chat(name:string, flags:string?) → undefined
+/** Removes a CSS block from the <code class=prettyprint>Chat__CUSTOM_CSS</code> string
+ * @simply RemoveCustomCSSBlock_Chat(name:string, flags:string?) → undefined
  */
 function RemoveCustomCSSBlock_Chat(name, flags = '') {
     name = name.trim();
@@ -4250,7 +4260,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     Pinned: {
         let PinnedMessageHandler = header => {
             let toggle = $('button', header.closest('[class*="pinned"i][class*="chat"i][class*="area"i]')),
-                collapsed = defined(toggle.closest('[class*="highlight"i][class*="collapsed"i]'));
+                collapsed = defined(toggle?.closest('[class*="highlight"i][class*="collapsed"i]'));
 
             if(collapsed)
                 toggle.click();

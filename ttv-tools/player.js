@@ -8,6 +8,16 @@
  *                      __/ |        _/ |
  *                     |___/        |__/
  */
+
+/**
+ * @file Defines the player-specific logic for the extension. Used for all {@link # player.twitch.tv/*} sites.
+ * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * @module
+ */
+
+;
+
 let here = parseURL(location);
 
 let {
@@ -25,8 +35,8 @@ let {
     GLOBAL_EVENT_LISTENERS,
 } = window;
 
-/** Adds a CSS block to the CUSTOM_CSS string
- * AddCustomCSSBlock_Player(name:string, block:string) → undefined
+/** Adds a CSS block to the <code class=prettyprint>Player__CUSTOM_CSS</code> string
+ * @simply AddCustomCSSBlock_Player(name:string, block:string) → undefined
  */
 function AddCustomCSSBlock_Player(name, block) {
     name = name.trim();
@@ -45,8 +55,8 @@ function AddCustomCSSBlock_Player(name, block) {
     $('body').append(Player__CUSTOM_CSS);
 }
 
-/** Removes a CSS block from the Player__CUSTOM_CSS string
- * RemoveCustomCSSBlock_Player(name:string, flags:string?) → undefined
+/** Removes a CSS block from the <code class=prettyprint>Player__CUSTOM_CSS</code> string
+ * @simply RemoveCustomCSSBlock_Player(name:string, flags:string?) → undefined
  */
 function RemoveCustomCSSBlock_Player(name, flags = '') {
     name = name.trim();

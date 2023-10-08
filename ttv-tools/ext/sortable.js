@@ -302,10 +302,10 @@
   /**
    * Returns the "bounding client rect" of given element
    * @param  {HTMLElement} el                       The element whose boundingClientRect is wanted
-   * @param  {[Boolean]} relativeToContainingBlock  Whether the rect should be relative to the containing block of (including) the container
-   * @param  {[Boolean]} relativeToNonStaticParent  Whether the rect should be relative to the relative parent of (including) the contaienr
-   * @param  {[Boolean]} undoScale                  Whether the container's scale() should be undone
-   * @param  {[HTMLElement]} container              The parent the element will be placed in
+   * @param  {(Boolean)} relativeToContainingBlock  Whether the rect should be relative to the containing block of (including) the container
+   * @param  {(Boolean)} relativeToNonStaticParent  Whether the rect should be relative to the relative parent of (including) the contaienr
+   * @param  {(Boolean)} undoScale                  Whether the container's scale() should be undone
+   * @param  {(HTMLElement)} container              The parent the element will be placed in
    * @return {Object}                               The boundingClientRect of el, with specified adjustments
    */
 
@@ -3674,7 +3674,7 @@
   }
   /**
    * Insert multi-drag clones
-   * @param  {[Boolean]} elementsInserted  Whether the multi-drag elements are inserted
+   * @param  {(Boolean)} elementsInserted  Whether the multi-drag elements are inserted
    * @param  {HTMLElement} rootEl
    */
 

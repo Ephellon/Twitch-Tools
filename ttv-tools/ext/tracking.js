@@ -3006,7 +3006,7 @@
    * Calculates the rotation and scale necessary to transform shape1 into shape2.
    * @param {matrix} shape1 The shape to be transformed.
    * @param {matrix} shape2 The shape to be transformed in.
-   * @return {[matrix, scalar]} The rotation matrix and scale that applied to shape1
+   * @return [matrix, scalar] The rotation matrix and scale that applied to shape1
    *     results in shape2.
    * @static
    * @protected
