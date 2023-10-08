@@ -60,11 +60,17 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.13)
+- Fixed issue with Live Reminders not labeling channels as live correctly
+- Fixed issue with `fetchURL` not recognizing leading slashes properly
+- Fixed an issue where the First in line balloon would not display
+- Fixed issue with `parseURL` not recognizing single letter domains
+
 > [`5.32.12`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.12)
-- Normalizing and improving documentation (JSDoc)
-- Fixed issue with game fetching logic
-- Fixed Steam pricing logic
-- Modified time zone logic to include 2 character zones (e.g. ET, CT, etc.)
+- Fixed issue with Live Reminders not labeling channels as live correctly
+- Fixed issue with `fetchURL` not recognizing leading slashes properly
+- Fixed an issue where the First in line balloon would not display
+- Fixed issue with `parseURL` not recognizing single letter domains
 
 > [`5.32.11`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.11)
 - Fixed issue with Live Reminders not labeling channels as live correctly
