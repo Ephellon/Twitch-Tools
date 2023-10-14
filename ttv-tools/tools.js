@@ -12610,28 +12610,32 @@ let Initialize = async(START_OVER = false) => {
     };
     Timers.video_clips__dvr = -2_500;
 
-    Object.defineProperties(top, {
-        DVR_CLIP_PRECOMP_NAME: {
-            get() {
-                let chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
+    try {
+        Object.defineProperties(top, {
+            DVR_CLIP_PRECOMP_NAME: {
+                get() {
+                    let chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
 
-                if(!chunks?.length)
-                    return '';
+                    if(!chunks?.length)
+                        return '';
 
-                let now = new Date;
+                    let now = new Date;
 
-                // File Name
-                return [
-                    STREAMER.name,
-                    now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
-                    `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
-                ]
-                    .filter(s => s?.length)
-                    .map(s => s.trim())
-                    .join(' ');
+                    // File Name
+                    return [
+                        STREAMER.name,
+                        now.toLocaleDateString().replace(/[\/\\:\*\?"<>\|]+/g, '-'),
+                        `(${ (parseBool(Settings.show_stats)? toTimeString(chunks.recordingLength, 'short'): ((now.getHours() % 12) || 12) + now.getMeridiem()).replace(/\b(0+[ydhms])+/ig, '') })`,
+                    ]
+                        .filter(s => s?.length)
+                        .map(s => s.trim())
+                        .join(' ');
+                },
             },
-        },
-    });
+        });
+    } catch(error) {
+        /* Ignore this error :P */
+    }
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
         MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save(DVR_CLIP_PRECOMP_NAME);

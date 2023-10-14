@@ -60,6 +60,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.13.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.13.1)
+- Fixed issue with DVR name
+
 > [`5.32.13`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.13)
 - Fixed issue with Live Reminders not labeling channels as live correctly
 - Fixed issue with `fetchURL` not recognizing leading slashes properly
