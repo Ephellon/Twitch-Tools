@@ -1454,7 +1454,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         for(let [key, subjects] of BULLETIN_FILTERS)
             if(key.endsWith('bullets_paid') && parseBool(Settings[key]))
-                PINNED_FILTER = setInterval(() => $('[class*="pinned"i][class*="by"i]').closest('[class*="chat"][class*="content"i] > div:not([class])').remove(), 100);
+                PINNED_FILTER = setInterval(() => $('[class*="pinned"i][class*="by"i]')?.closest('[class*="chat"][class*="content"i] > div:not([class])')?.remove(), 100);
             else if(parseBool(Settings[key]))
                 AddCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
 

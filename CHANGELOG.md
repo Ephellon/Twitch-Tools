@@ -60,6 +60,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.13.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.13.2)
+- Fixed issue with the Pinned Banner being removed
+- Fixed issue with game filtering
+
 > [`5.32.13.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.13.1)
 - Fixed issue with DVR name
 

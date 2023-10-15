@@ -8781,7 +8781,7 @@ let Initialize = async(START_OVER = false) => {
                     for(let [expression, replacement] of conditions)
                         string = string?.replace(expression, replacement);
 
-                    return string?.replace(EditionsRegExp, '');
+                    return string?.replace(EditionsRegExp, '') ?? '';
                 }
 
                 /*** Get the Steam link (if applicable)
