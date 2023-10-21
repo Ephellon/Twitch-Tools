@@ -78,7 +78,7 @@
 
             <!-- Claim Drops → avenue,benefit,drop,bounty,button,carrier,channel,dividend,gift,gratuity,knob,loot,means,medium,perk,points,premium,prize,reward,route,tunnel -->
             <section new='5.32.14'>
-                <div class=title tr-id=claim-drops><span small glyph=channelpoints></span> Claim Drops</div>
+                <div class=title tr-id=claim-drops><span small glyph=loot></span> Claim Drops</div>
                 <div class=summary>
                     <div class=toggle>
                         <input id=claim_drops type=checkbox checked>
@@ -1073,7 +1073,7 @@
                                                             Send a message on a specific channel (<em>DashDucks</em>): <pre type=code>/dashducks another day, another duck :D</pre>
                                                         </li>
                                                         <li>
-                                                            Send a message where you have certain permissions (<em>moderator</em>): <pre type=code>/&lt;mod&gt; modCheck I have risen modCheck</pre>
+                                                            Send a message where you have certain permissions (<em>moderator</em>): <pre type=code>&lt;mod&gt; modCheck I have risen modCheck</pre>
                                                         </li>
                                                         <li>
                                                             Send a message on a specific channel, where you have certain permissions (<em>DashDuck:moderator</em>): <pre type=code>/dashducks &lt;mod&gt; modCheck I have risen modCheck</pre>
@@ -1936,6 +1936,19 @@
                                     </div>
                                     <p tr-id>
                                         Display <code style:notice>console.notice</code> messages.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt>
+                                <div class=title tr-id='@console.ignore'>Allow ignores</div>
+                                <div class=summary>
+                                    <div class=toggle>
+                                        <input id=display_in_console__ignore type=checkbox checked>
+                                        <label for=display_in_console__ignore></label>
+                                    </div>
+                                    <p tr-id>
+                                        Display <code style:ignore>console.ignore</code> messages.
                                     </p>
                                 </div>
                             </div>

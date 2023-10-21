@@ -1979,10 +1979,11 @@ let Chat__Initialize = async(START_OVER = false) => {
         CHAT_CARDIFIED = new Map,
         CHAT_CARDIFYING_TIMERS = new Map,
         REWARDS_CARDIFIER,
-        REWARDS_CARDIFIED = new Map;
+        REWARDS_CARDIFIED = new Map,
+        LINK_PARSER = new DOMParser;
 
     Handlers.link_maker__chat = () => {
-        // Channel Point rewards
+        // Channel Point rewards (Blerp)
         REWARDS_CARDIFIER = setInterval(() => {
             let f = furnish;
             let card = $('[class*="reward"i][class*="center"i][class*="body"i]');
@@ -2044,151 +2045,134 @@ let Chat__Initialize = async(START_OVER = false) => {
                     aliasContainer.title = description || title;
                     aliasContainer.append(audioContainer);
                 });
-        });
+        }, 1_000);
 
         // Chat messages
-        let marked = [];
-
-        Chat.get().map(Chat.onmessage = line => {
+        Chat.get().map(Chat.onmessage = async line => {
             if(!LINK_MAKER_ENABLED)
                 return;
 
-            let HTMLParser = new DOMParser;
+            let { message, mentions, author, element } = line;
 
-            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
-                let { message, mentions, author, element } = line;
+            let parsed = parseURL.pattern.exec(message);
 
-                parsing: for(let { pattern } = parseURL, { length } = message, jndex = 0; pattern.test(message) && jndex < length | 0; ++jndex) {
-                    let parsed = parseURL.pattern.exec(message);
+            if(!parsed?.length)
+                return;
+            let { groups } = parsed,
+                { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
-                    if(!parsed?.length)
-                        continue;
+            if(href.length < 2)
+                return;
+            let unknown = Symbol('UNKNOWN');
+            let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
+                [topDom = '', secDom = '', ...subDom] = url.domainPath;
 
-                    let [match] = parsed,
-                        { index, groups } = parsed,
-                        { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
+            // Ignore pre-cardified links
+            if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
+                return;
 
-                    if(href.length < 2)
-                        continue;
+            // Mobilize laggy URLs
+            if('instagram twitter'.split(' ').contains(secDom.toLowerCase()))
+                return; // subDom = ['mobile'];
 
-                    jndex = (index + match.length) - 1;
-                    message = message.slice(jndex + 1);
+            href = url.href.replace(url.hostname, [...subDom, secDom, topDom].filter(dom => dom.length).join('.'));
+            element = await element;
 
-                    let unknown = Symbol('UNKNOWN');
-                    let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
-                        [topDom = '', secDom = '', ...subDom] = url.domainPath;
+            if(CHAT_CARDIFIED.has(href)) {
+                let card = CHAT_CARDIFIED.get(href);
 
-                    // Ignore pre-cardified links
-                    if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
-                        continue;
+                if(nullish($(`#card-${ UUID.from(href).toStamp() }`, element)) && defined(card)) {
+                    element.insertAdjacentElement('beforeend', card);
 
-                    // Mobilize laggy URLs
-                    if('instagram twitter'.split(' ').contains(secDom.toLowerCase()))
-                        continue; // subDom = ['mobile'];
+                    if($.nullish('[class*="chat-paused"i]'))
+                        card.scrollIntoViewIfNeeded(true);
+                }
 
-                    href = url.href.replace(url.hostname, [...subDom, secDom, topDom].filter(dom => dom.length).join('.'));
+                return;
+            }
 
-                    if(CHAT_CARDIFIED.has(href)) {
-                        let card = CHAT_CARDIFIED.get(href);
+            CHAT_CARDIFIED.set(href, null);
+            CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
-                        if(nullish($(`#card-${ UUID.from(href).toStamp() }`, element)) && defined(card)) {
-                            element.insertAdjacentElement('beforeend', card);
+            /*await*/ fetchURL.idempotent(href, { foster: fetchURL.origins.HTML })
+                .then(response => response.text())
+                .then(DOMParser.stripBody)
+                .then(html => LINK_PARSER.parseFromString(html, 'text/html'))
+                .then(DOM => {
+                    let f = furnish;
+                    let get = property => DOM.get(property);
 
-                            if($.nullish('[class*="chat-paused"i]'))
-                                card.scrollIntoViewIfNeeded(true);
-                        }
+                    let [title = '', description = '', image] = ["title", "description", "image"].map(get),
+                        error = DOM.querySelector('parsererror')?.textContent;
 
-                        continue;
+                    LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
+
+                    if(!title?.length || !image?.length) {
+                        CHAT_CARDIFIED.set(href, f.span());
+
+                        if(!error?.length)
+                            return;
+                        else
+                            throw error;
                     }
 
-                    CHAT_CARDIFIED.set(href, null);
-                    CHAT_CARDIFYING_TIMERS.set(href, +new Date);
+                    let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
+                        f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
+                            f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
+                                f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05').with(
+                                    // Preview image
+                                    f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center').with(
+                                        f('.tt-card-image').with(
+                                            f('.tt-aspect').with(
+                                                f('div', {}),
+                                                f('img.tt-image', {
+                                                    alt: title,
+                                                    src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
+                                                    height: 45,
+                                                    style: 'max-height:45px',
 
-                    /*await*/ fetchURL.idempotent(href)
-                        .then(response => response.text())
-                        .then(DOMParser.stripBody)
-                        .then(html => HTMLParser.parseFromString(html, 'text/html'))
-                        .catch(WARN)
-                        .then(DOM => {
-                            if(!(DOM instanceof Document))
-                                throw TypeError(`No DOM available. Page not loaded`);
-
-                            let f = furnish;
-                            let get = property => DOM.get(property);
-
-                            let [title = '', description = '', image] = ["title", "description", "image"].map(get),
-                                error = DOM.querySelector('parsererror')?.textContent;
-
-                            LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
-
-                            if(!title?.length || !image?.length) {
-                                CHAT_CARDIFIED.set(href, f.span());
-
-                                if(!error?.length)
-                                    return;
-                                else
-                                    throw error;
-                            }
-
-                            let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
-                                f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
-                                    f('a.tt-block.tt-border-radius-medium.tt-full-width.tt-interactable', { rel: 'noopener noreferrer', target: '_blank', href },
-                                        f('.chat-card.tt-flex.tt-flex-nowrap.tt-pd-05').with(
-                                            // Preview image
-                                            f('.chat-card__preview-img.tt-align-items-center.tt-c-background-alt-2.tt-flex.tt-flex-shrink-0.tt-justify-content-center').with(
-                                                f('.tt-card-image').with(
-                                                    f('.tt-aspect').with(
-                                                        f('div', {}),
-                                                        f('img.tt-image', {
-                                                            alt: title,
-                                                            src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
-                                                            height: 45,
-                                                            style: 'max-height:45px',
-
-                                                            onerror({ currentTarget }) { currentTarget.src = STREAMER.icon }
-                                                        })
-                                                    )
-                                                )
+                                                    onerror({ currentTarget }) { currentTarget.src = STREAMER.icon }
+                                                })
+                                            )
+                                        )
+                                    ),
+                                    // Title & Subtitle
+                                    f('.tt-align-items-center.tt-flex.tt-overflow-hidden').with(
+                                        f('.tt-full-width.tt-pd-l-1').with(
+                                            // Title
+                                            f('.chat-card__title.tt-ellipsis').with(
+                                                f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
                                             ),
-                                            // Title & Subtitle
-                                            f('.tt-align-items-center.tt-flex.tt-overflow-hidden').with(
-                                                f('.tt-full-width.tt-pd-l-1').with(
-                                                    // Title
-                                                    f('.chat-card__title.tt-ellipsis').with(
-                                                        f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
-                                                    ),
-                                                    // Subtitle
-                                                    f('.tt-ellipsis').with(
-                                                        f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').with(description)
-                                                    ),
-                                                )
-                                            )
+                                            // Subtitle
+                                            f('.tt-ellipsis').with(
+                                                f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').with(description)
+                                            ),
                                         )
                                     )
                                 )
-                            );
+                            )
+                        )
+                    );
 
-                            let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
-                                f('.tt-relative').with(
-                                    f('.tt-relative.chat-line__message-container').with(
-                                        f('div').with(
-                                            f('.chat-line__no-background.tt-inline').with(
-                                                card
-                                            )
-                                        )
+                    let container = f(`#card-${ UUID.from(href).toStamp() }.chat-line__message[@aTarget=chat-line-message][@testSelector=chat-line-message]`).with(
+                        f('.tt-relative').with(
+                            f('.tt-relative.chat-line__message-container').with(
+                                f('div').with(
+                                    f('.chat-line__no-background.tt-inline').with(
+                                        card
                                     )
                                 )
-                            );
+                            )
+                        )
+                    );
 
-                            CHAT_CARDIFIED.set(href, container);
-                            element.insertAdjacentElement('beforeend', container);
+                    CHAT_CARDIFIED.set(href, container);
+                    element.insertAdjacentElement('beforeend', container);
 
-                            if($.nullish('[class*="chat-paused"i]'))
-                                container.scrollIntoViewIfNeeded(true);
-                        })
-                        .catch(ERROR);
-                }
-            });
+                    if($.nullish('[class*="chat-paused"i]'))
+                        container.scrollIntoViewIfNeeded(true);
+                })
+                .catch(ERROR);
         });
     };
     Timers.link_maker__chat = -500;

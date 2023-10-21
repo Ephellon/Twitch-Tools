@@ -1577,6 +1577,7 @@ function delay(executor, ms = 0, ...args) {
  * @property {Map} requests         A map of all requests made during the current session (page load)
  * @property {function} idempotent  <div class="signature">(url:string, options:object<span class="signature-attributes">opt</span>) → {Promise~ReadableStream}</div>
  *                                  <br>Simply returns a fetch but, the request is guaranteed to only execute once per minute.
+ * @property {object} origins       A set of origins that can be chosen to proxy from.
  *
  * @return {Promise~ReadableStream}
  *
@@ -1594,7 +1595,7 @@ function delay(executor, ms = 0, ...args) {
  */
 function fetchURL(url, options = {}) {
     let empty = Promise.resolve({});
-    let { timeout = 0, native = false } = options;
+    let { timeout = 0, native = false, foster = fetchURL.origins.BEST, as = 'text' } = options;
 
     if(!url?.length)
         return empty;
@@ -1629,11 +1630,29 @@ function fetchURL(url, options = {}) {
     // CORS required
     else {
         options.mode = 'cors';
-        // https://www.whateverorigin.org/get?url={ URL }
-        // https://cors-anywhere.herokuapp.com/{ URL }
-        // https://api.codetabs.com/v1/proxy/?quest={ URL }
-        // https://api.allorigins.win/raw?url={ URL }
-        href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
+        switch(foster) {
+            // https://www.whateverorigin.org/get?url={ %URL }
+            case fetchURL.origins.WHATEVER_ORIGIN: {
+                href = `https://www.whateverorigin.org/get?url=${ encodeURIComponent(href) }`;
+            } break;
+
+            // https://api.allorigins.win/raw?url={ %URL }
+            case fetchURL.origins.ALL_ORIGINS: {
+                href = `https://api.allorigins.win/raw?url=${ encodeURIComponent(href) }`;
+            } break;
+
+            // https://cors-anywhere.herokuapp.com/{ URL }
+            case fetchURL.origins.CORS_ANYWHERE: {
+                href = `https://cors-anywhere.herokuapp.com/${ encodeURI(href) }`;
+                Object.assign(options.headers ?? {}, { Origin: location.origin });
+            } break;
+
+            // https://api.codetabs.com/v1/proxy?quest={ URL }
+            case fetchURL.origins.CODE_TABS:
+            default: {
+                href = `https://api.codetabs.com/v1/proxy?quest=${ encodeURI(href) }`;
+            } break;
+        }
     }
 
     if(protocol.startsWith('get'))
@@ -1643,12 +1662,156 @@ function fetchURL(url, options = {}) {
         let controller = new AbortController();
         let timeoutID = setTimeout(() => controller.abort(), timeout);
 
+        // Convert to TEXT/HTML
+        if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3].contains(foster)
+            && as.equals('json')
+        )
+            return fetch(href, { ...options, signal: controller.signal }).then(async response => {
+                clearTimeout(timeoutID);
+
+                return response.text().then(text =>
+                    ({
+                        async arrayBuffer() {
+                            return new Blob([JSON.stringify(text, null, 0)], { type: 'text/plain' }).arrayBuffer();
+                        },
+
+                        async blob() {
+                            return new Blob([JSON.stringify(text, null, 4)], { type: 'text/plain' });
+                        },
+
+                        async json() {
+                            return {
+                                contents: text,
+                                status: {
+                                    content_type: `application/json`,
+                                    http_code: response.status,
+                                    url: response.url,
+                                },
+                            };
+                        },
+
+                        async text() {
+                            return contents;
+                        },
+                    })
+                );
+            });
+
+        // Convert to JSON
+        if([fetchURL.origins.JSON, fetchURL.origins.JSON_2].contains(foster)
+            && (false
+                || as.equals('html')
+                || as.equals('text')
+            )
+        )
+            return fetch(href, { ...options, signal: controller.signal }).then(response => {
+                clearTimeout(timeoutID);
+
+                return response.json().then(json =>
+                    ({
+                        async arrayBuffer() {
+                            return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
+                        },
+
+                        async blob() {
+                            return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
+                        },
+
+                        async json() {
+                            return json;
+                        },
+
+                        async text() {
+                            return (null
+                                ?? json?.response
+                                ?? json?.contents
+                                ?? json?.content
+                                ?? json?.html
+                                ?? json?.text
+                                ?? json
+                            );
+                        },
+                    })
+                );
+            });
+
         return fetch(href, { ...options, signal: controller.signal }).then(response => {
             clearTimeout(timeoutID);
 
             return response;
         });
     }
+
+    // Convert to TEXT/HTML
+    if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3].contains(foster)
+        && as.equals('json')
+    )
+        return fetch(href, options).then(async response => {
+            let contents = await response.text();
+            let paraphrse = ({
+                async arrayBuffer() {
+                    return new Blob([contents], { type: 'text/plain' }).arrayBuffer();
+                },
+
+                async blob() {
+                    return new Blob([contents], { type: 'text/plain' });
+                },
+
+                async json() {
+                    return {
+                        contents,
+                        status: {
+                            content_type: `application/json`,
+                            http_code: response.status,
+                            url: response.url,
+                        },
+                    };
+                },
+
+                async text() {
+                    return contents;
+                },
+            });
+
+            return paraphrse;
+        });
+
+    // Convert to JSON
+    if([fetchURL.origins.JSON, fetchURL.origins.JSON_2].contains(foster)
+        && (false
+            || as.equals('html')
+            || as.equals('text')
+        )
+    )
+        return fetch(href, options).then(async response => {
+            let json = await response.json();
+            let paraphrse = ({
+                async arrayBuffer() {
+                    return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
+                },
+
+                async blob() {
+                    return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
+                },
+
+                async json() {
+                    return json;
+                },
+
+                async text() {
+                    return (null
+                        ?? json?.response
+                        ?? json?.contents
+                        ?? json?.content
+                        ?? json?.html
+                        ?? json?.text
+                        ?? json
+                    );
+                },
+            });
+
+            return paraphrse;
+        });
 
     return fetch(href, options);
 }
@@ -1669,6 +1832,92 @@ Object.defineProperties(fetchURL, {
 
             return request;
         },
+    },
+
+    origins: {
+        value: {
+            ALL_ORIGINS: Symbol('allorigins'),
+            CODE_TABS: Symbol('codetabs'),
+            CORS_ANYWHERE: Symbol('cors-anywhere'),
+            WHATEVER_ORIGIN: Symbol('whateverorigin'),
+        }
+    },
+});
+
+Object.defineProperties(fetchURL.origins, {
+    BEST: {
+        value: Promise.any([
+            fetchURL.origins.CODE_TABS,
+            fetchURL.origins.CORS_ANYWHERE,
+            fetchURL.origins.ALL_ORIGINS,
+            fetchURL.origins.WHATEVER_ORIGIN,
+        ].map(foster =>
+            fetchURL('https://example.org/', { foster, as: 'native', timeout: 3_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                        foster:
+                    Promise.reject(`Bad request @${ foster.toString() }`)
+                )
+            )
+        ).catch(IGNORE)
+    },
+
+    JSON: { value: fetchURL.origins.WHATEVER_ORIGIN },
+
+    HTML: { value: fetchURL.origins.CODE_TABS },
+    HTML_2: { value: fetchURL.origins.ALL_ORIGINS },
+    HTML_3: { value: fetchURL.origins.CORS_ANYWHERE },
+
+    TEXT: { value: fetchURL.origins.CODE_TABS },
+    TEXT_2: { value: fetchURL.origins.ALL_ORIGINS },
+    TEXT_3: { value: fetchURL.origins.CORS_ANYWHERE },
+});
+
+Object.defineProperties(fetchURL.origins, {
+    JSON_BEST: {
+        value: Promise.any([
+            fetchURL.origins.JSON,
+        ].map(foster =>
+            fetchURL('https://example.org/', { foster, as: 'json', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                        foster:
+                    Promise.reject(`Bad JSON request @${ foster.toString() }`)
+                )
+            )
+        ).catch(IGNORE)
+    },
+
+    HTML_BEST: {
+        value: Promise.any([
+            fetchURL.origins.HTML,
+            fetchURL.origins.HTML_2,
+            fetchURL.origins.HTML_3,
+        ].map(foster =>
+            fetchURL('https://example.org/', { foster, as: 'html', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                        foster:
+                    Promise.reject(`Bad HTML request @${ foster.toString() }`)
+                )
+            )
+        ).catch(IGNORE)
+    },
+
+    TEXT_BEST: {
+        value: Promise.any([
+            fetchURL.origins.TEXT,
+            fetchURL.origins.TEXT_2,
+            fetchURL.origins.TEXT_3,
+        ].map(foster =>
+            fetchURL('https://example.org/', { foster, as: 'text', timeout: 1_000 })
+                .then(async r =>
+                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                        foster:
+                    Promise.reject(`Bad text request @${ foster.toString() }`)
+                )
+            )
+        ).catch(IGNORE)
     },
 });
 

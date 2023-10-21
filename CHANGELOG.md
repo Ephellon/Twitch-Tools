@@ -60,6 +60,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.14.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.14.1)
+- Corrected Claim Drops icon on the settings page
+- Added logic to only claim drops on the Up Next tab
+- Fixed a Lurking Message example on the Settings page
+- Fixed Link Maker (Card) logic
+- Modified `fetchURL` logic
+    + Added `fetchURL.origins` and `fetchURL({ foster:string })`
+- Added `IGNORE` (white) logger
+
 > [`5.32.14`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.14)
 - Changed permissions-filter logic to ignore empty rules
 - Added Claim Drops

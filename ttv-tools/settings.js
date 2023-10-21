@@ -272,6 +272,8 @@ let // These are option names. Anything else will be removed
             'display_in_console__warn',
             'display_in_console__error',
             'display_in_console__remark',
+            'display_in_console__notice',
+            'display_in_console__ignore',
         // Display stats
         'show_stats',
         // Enable emperimental features

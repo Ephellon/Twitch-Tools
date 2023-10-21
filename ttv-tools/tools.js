@@ -3649,7 +3649,9 @@ let Initialize = async(START_OVER = false) => {
         LOG =
         WARN =
         ERROR =
-        REMARK = ($=>$);
+        REMARK =
+        NOTICE =
+        IGNORE = ($=>$);
 
     if(!parseBool(Settings.display_in_console__log))
         LOG = ($=>$);
@@ -3662,6 +3664,12 @@ let Initialize = async(START_OVER = false) => {
 
     if(!parseBool(Settings.display_in_console__remark))
         REMARK = ($=>$);
+
+    if(!parseBool(Settings.display_in_console__notice))
+        NOTICE = ($=>$);
+
+    if(!parseBool(Settings.display_in_console__ignore))
+        IGNORE = ($=>$);
 
     // Time how long jobs take to complete properly
     class StopWatch {
@@ -6558,6 +6566,9 @@ let Initialize = async(START_OVER = false) => {
         TTV_DROPS_REFRESHER;
 
     Handlers.claim_drops = () => {
+        if(!UP_NEXT_ALLOW_THIS_TAB)
+            return;
+
         TTV_DROPS_FRAME = furnish('iframe#tt-drops-claimer[src="/drops/inventory"]', { style: 'display:none!important' });
 
         $.body.append(TTV_DROPS_FRAME);

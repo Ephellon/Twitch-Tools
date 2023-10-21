@@ -4764,6 +4764,72 @@ function NOTICE(...messages) {
     });
 };
 
+// Logs nothing (white)
+    // IGNORE(...messages:any) → undefined
+function IGNORE(...messages) {
+    // return console.error(...messages);
+
+    let CSS = `
+        background-color: #777;
+        border-bottom: 1px solid #0000;
+        border-top: 1px solid #eee;
+        box-sizing: border-box;
+        clear: right;
+        color: #f5f5f5;
+        display: block !important;
+        line-height: 2;
+        user-select: text;
+
+        flex-basis: 1;
+        flex-shrink: 1;
+
+        margin: 0;
+        overflow-wrap: break-word;
+        padding: 0 6px;
+        position: fixed;
+        z-index: -1;
+
+        min-height: 0;
+        min-width: 100%;
+        height: 100%;
+        width: 100%;
+    `;
+
+    console.groupCollapsed(`%c\u22b3 [IGNORE] \u2014 Twitch Tools`, CSS);
+
+    for(let message of messages) {
+        let type = 'c';
+
+        if(!isObj(message, Boolean, Number, Promise))
+            try {
+                message = message.toString();
+            } catch(error) {
+                /* Can't convert to string */
+            }
+        else
+            type = 'o';
+
+        (type/*.equals('o')*/)?
+            console.log(message):
+        console.log(
+            `%${ type }\u22b3 ${ message } `,
+            CSS
+        );
+    }
+
+    console.groupEnd();
+
+    return ({
+        toNativeStack(stack = console.log) {
+            stack(...messages);
+        },
+
+        toForeignStack(stack = console.log) {
+            return stack(messages.join(' '));
+        },
+    });
+};
+
 // "Clicks" on elements
 function phantomClick(...elements) {
     for(let element of elements) {
