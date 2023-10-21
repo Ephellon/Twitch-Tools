@@ -6542,6 +6542,50 @@ let Initialize = async(START_OVER = false) => {
         }, 300);
     }
 
+
+    /*** Claim Drops
+     *       _____ _       _             _____
+     *      / ____| |     (_)           |  __ \
+     *     | |    | | __ _ _ _ __ ___   | |  | |_ __ ___  _ __  ___
+     *     | |    | |/ _` | | '_ ` _ \  | |  | | '__/ _ \| '_ \/ __|
+     *     | |____| | (_| | | | | | | | | |__| | | | (_) | |_) \__ \
+     *      \_____|_|\__,_|_|_| |_| |_| |_____/|_|  \___/| .__/|___/
+     *                                                   | |
+     *                                                   |_|
+     */
+    let TTV_DROPS_FRAME,
+        TTV_DROPS_CHECKER,
+        TTV_DROPS_REFRESHER;
+
+    Handlers.claim_drops = () => {
+        TTV_DROPS_FRAME = furnish('iframe#tt-drops-claimer[src="/drops/inventory"]', { style: 'display:none!important' });
+
+        $.body.append(TTV_DROPS_FRAME);
+
+        (TTV_DROPS_CHECKER = btn_str => {
+            when(() => $.defined(btn_str, TTV_DROPS_FRAME.contentDocument)).then(() => {
+                $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => btn.click());
+            }).then(() => TTV_DROPS_CHECKER(btn_str));
+        })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i])');
+
+        TTV_DROPS_REFRESHER = setInterval(() => {
+            TTV_DROPS_FRAME.src = parseURL(TTV_DROPS_FRAME.src).addSearch({ contentReload: Date.now() }).href;
+        }, parseInt(Settings.claim_drops__interval ?? 10) * 60_000);
+    };
+    Timers.claim_drops = -5_000;
+
+    Unhandlers.claim_drops = () => {
+        TTV_DROPS_FRAME?.remove();
+        clearInterval(TTV_DROPS_REFRESHER);
+    };
+
+    __ClaimDrops__:
+    if(parseBool(Settings.claim_drops)) {
+        REMARK('Creating Drop claimer...');
+
+        RegisterJob('claim_drops');
+    }
+
     /*** First in Line Helpers - NOT A SETTING. Create, manage, and display the "Up Next" balloon
      *      ______ _          _     _         _      _              _    _      _
      *     |  ____(_)        | |   (_)       | |    (_)            | |  | |    | |

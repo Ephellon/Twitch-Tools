@@ -80,6 +80,9 @@ let // These are option names. Anything else will be removed
             'away_mode_schedule',
         // Auto-claim Bonuses
         'auto_claim_bonuses',
+        // Claim Drops
+        'claim_drops',
+            'claim_drops__interval',
         // Auto-Follow
         'auto_follow_none',
         'auto_follow_raids',

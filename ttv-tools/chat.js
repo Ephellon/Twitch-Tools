@@ -1454,7 +1454,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         for(let [key, subjects] of BULLETIN_FILTERS)
             if(key.endsWith('bullets_paid') && parseBool(Settings[key]))
-                PINNED_FILTER = setInterval(() => $('[class*="pinned"i][class*="by"i]')?.closest('[class*="chat"][class*="content"i] > div:not([class])')?.remove(), 100);
+                PINNED_FILTER = setInterval(() => $('[class*="pinned"i][class*="by"i], [class*="happening"i][class*="notification"i]')?.closest('[class*="chat"][class*="content"i] > div:not([class])')?.remove(), 100);
             else if(parseBool(Settings[key]))
                 AddCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
 
@@ -2252,14 +2252,14 @@ let Chat__Initialize = async(START_OVER = false) => {
                     reason = `permission (${ Settings.auto_chat__vip })`;
                 } else {
                     if(Rules.badge.test(badges.join(','))) {
-                        message = Rules.rules.specific.badge.filter(({ badge, text }) => {
+                        message = Rules.rules.specific.badge?.filter(({ badge, text }) => {
                             return parseBool(false
                                 || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
                             );
-                        }).random()?.text;
+                        })?.random()?.text;
                         reason = 'badge';
                     } else {
-                        message = Rules.rules.specific.channel.filter(({ name, badge, text }) => {
+                        message = Rules.rules.specific.channel?.filter(({ name, badge, text }) => {
                             if(nullish(STREAMER))
                                 return;
 
@@ -2270,7 +2270,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                     || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
                                 )
                             );
-                        }).random()?.text;
+                        })?.random()?.text;
                         reason = 'channel';
                     }
                 }
@@ -4270,7 +4270,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 handle = $('.chatter-name', element),
                 badges = $.all('.chat-badge', element).map(img => img.alt).isolate(),
                 emotes = $.all('.chat-image', message).map(img => img.alt).isolate(),
-                author = handle.textContent;
+                author = handle?.textContent ?? 'Anonymous';
 
             header = header.textContent;
             message = message.textContent;
