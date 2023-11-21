@@ -16,37 +16,38 @@
 - [ ] Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
+- [-] Add cache logic to detect raids
+    - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
 - [ ] Pause First in Line when observing a raid
+    - Use the `UserIntent` variable to detect if a raid failed: variable not set and channel not followed
 - [ ] Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `v5.8`
+    * Twitch keeps messing with the theatre-mode button's attributes
 - [ ] Live Reminders might re-add all live channels?
     * Usually during raids (semi-intentional)
-- [-] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
+- [ ] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
 - [ ] Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
 - [ ] Garner user feedback → https://form.jotform.com/222442891146153
-- [ ] Offer an option to use Live Reminder channels after live followed channels have been exhausted
 - [ ] Sometimes, chat bullets do not register in the main "catcher;" may be related to the reflector (after the initializer) → `TTV_IRC.socket?.reflect?.(...)`
     * Typically affects only user generated messages
-- [ ] Modify DVR logic to record over ads
+- [-] Modify DVR logic to record over ads
     * Currently, skips entire ad section; does not substitute mini-video's contents in ads' place
-- [-] Add option to handle chat commands and messages
+- [ ] Add option to handle chat commands and messages
     * Might just need to make another extension for that
     * Responds to chat input (aka, a chat bot)
     * Made this at one point... didn't really see the need of it past nuance
-- [ ] Display a "Hey, these are new!" alert on the settings page
-- [ ] Add cache logic to detect raids
-    - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
+- [-] Display a "Hey, these are new!" alert on the settings page
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
 - [-] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
-- [ ] Pause Up Next during trophy recording
-- [-] Clips may not be saved when leaving/destroying page
+- [-] Pause Up Next during trophy recording
+- [x] Clips may not be saved when leaving/destroying page
     - Fails to initiate Alt+Z
-- [-] Clips double-save upon completion
+- [x] Clips double-save upon completion
     - One clip is always just a preview image
-- [ ] The background script may stall infinitely when a tab disappears
+- [ ] The background script may stall indefinitely when a tab disappears
 - [ ] If a pre-roll ad plays, the recording feature stops working
-- [ ] Use Live Reminders as alternative stream sources for Up Next
-- [ ] Display alerts for Prime Gaming loot for specific games
+- [x] Use Live Reminders as alternative stream sources for Up Next
+- [-] Display alerts for Prime Gaming loot for specific games
 - [ ] Finish JSDoc commenting
     - [x] background.js
     - [x] core.js
@@ -56,10 +57,24 @@
     - [ ] player.js
     - [ ] glyphs.js
     - [ ] settings.js
+- [ ] Change "Buy when available" channel point button to a selection dropdown
+- [-] Fix memory leaks!
+    - Most, big-name (+1GB) leaks were handled; others are commented out: `@performance`
+        - Most atrocious offender was unused data in the `LIVE_REMINDERS__CHECKER` function, and other `new Search(...)` calls
+    - The lesser leaks seem to freeze the tab(s) when removing them from memory in quick succession
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.32.14.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.14.2)
+- Modified News styling
+- Modified Pinned filter
+- Fixed issue with deserializing synced settings
+- Fixed right-click recording logic
+- Fixed issue with pre-naming recordings
+- Added logic to use Live Reminders as sources for Up Next
+- Fixed a **CRITICAL** memory leak issue
+
 > [`5.32.14.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.14.1)
 - Corrected Claim Drops icon on the settings page
 - Added logic to only claim drops on the Up Next tab

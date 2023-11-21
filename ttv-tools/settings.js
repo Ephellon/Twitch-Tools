@@ -1492,6 +1492,7 @@ $('#sync-settings--download').onmouseup = async event => {
                                 if(char == '(') {
                                     mode = 'get-val';
 
+                                    thread = '';
                                     continue parsing;
                                 }
 
@@ -1504,6 +1505,7 @@ $('#sync-settings--download').onmouseup = async event => {
                                 if(thread == '**') {
                                     mode = 'get-str';
 
+                                    thread = '';
                                     continue parsing;
                                 } else if(thread.length > 2) {
                                     thread = thread.substr(1, 2);
@@ -1528,6 +1530,7 @@ $('#sync-settings--download').onmouseup = async event => {
                             } break;
 
                             case 'get-str': {
+                                if(thread == '*' && ['*', ')'].missing(char)) thread = '';
                                 if(char == '*') thread += char;
                                 if(char == ')') thread += char;
 
@@ -1538,7 +1541,7 @@ $('#sync-settings--download').onmouseup = async event => {
                                     while(data.has(key))
                                         key += k.shift();
 
-                                    data.set(key, val.slice(1, -3));
+                                    data.set(key, val.slice(1, -2));
 
                                     key = '';
                                     val = '';

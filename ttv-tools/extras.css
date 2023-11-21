@@ -542,6 +542,7 @@ caption {
 }
 
 .tt-alert-header, .tt-confirm-header, .tt-prompt-header, .tt-select-header {
+    background-color: var(--color-background-alt);
     font-family: var(--font-display);
     font-size: 1.25em;
     font-weight: bold;
@@ -550,10 +551,13 @@ caption {
 }
 
 .tt-alert-body, .tt-confirm-body, .tt-prompt-body, .tt-select-body {
-    /* ... */
+    overflow: auto;
+
+    max-height: 50vh;
 }
 
 .tt-alert-footer, .tt-confirm-footer, .tt-prompt-footer, .tt-select-footer {
+    background-color: var(--color-background-alt);
     text-align: right;
 }
 
@@ -1327,4 +1331,119 @@ caption {
 
 [data-mature-content="true"i]::before {
     content: "Mature \1F51E\FE0F";
+}
+
+/* Custom details container */
+.details {
+    background-color: var(--color-background-base);
+    border: 1px solid var(--color-twitch-purple);
+    border-radius: 3px;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+
+    align-items: flex-start;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+
+    margin: .25rem 0 0 .5rem;
+
+    z-index: 99;
+}
+
+.details > summary::after {
+    background: var(--color-twitch-purple);
+    border: 1px solid var(--color-twitch-purple);
+    border-radius: 1rem;
+    content: "";
+    display: inline-block;
+
+    margin: 0 0 calc(100% - .5rem - 2px);
+
+    position: relative;
+    left: 50%;
+
+    height: .25rem;
+    width: 3rem;
+
+    transform: translate(-50%);
+    transition: .25s;
+}
+
+.details[open] > summary::after {
+    width: .25rem;
+}
+
+.details > summary {
+    background-color: var(--color-background-base);
+    box-shadow: 0 1px 2px var(--color-twitch-purple);
+    font-size: 1rem;
+    font-family: Roobert;
+    list-style: none;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    padding: 1rem .5rem 1rem 1rem;
+
+    max-height: 7.5vh;
+
+    width: -webkit-fill-available;
+    width: -moz-fit-content;
+}
+
+html:not([lang="en"i]) .details > summary {
+    font-family: Arial;
+    font-weight: bold;
+}
+
+.details > summary:hover {
+    background-color: var(--color-background-alt);
+}
+
+.details > summary[subtitle]::after {
+    content: attr(subtitle);
+    color: var(--color-text-overlay);
+    display: inline-block;
+    font-weight: normal;
+    font-size: .8rem;
+}
+
+.details > summary + *:last-child {
+    padding: 1rem 1rem 0;
+}
+
+.details > summary ~ [sect] {
+    padding-left: .5rem;
+}
+
+.details > summary ~ [sect]:not(:first-child) {
+    margin-top: .5rem;
+}
+
+[sect]:not(:last-child) {
+    border-bottom: 1px solid var(--color-twitch-purple);
+}
+
+.details > summary + * > [opt]:not(:first-child) {
+    margin-top: .5rem;
+}
+
+[opt]:not(:last-child) {
+    border-bottom: 1px solid var(--color-twitch-purple-10);
+}
+
+.details[open] {
+    padding-bottom: .5rem;
+
+    z-index: 999;
+}
+
+.details[open] summary + * {
+    padding-top: .5rem;
+}
+
+.details *:not(label) > h1, .details *:not(label) > h2, .details *:not(label) > h3, .details *:not(label) > h4, .details *:not(label) > h5, .details *:not(label) > h6 {
+    padding-left: .5rem;
 }

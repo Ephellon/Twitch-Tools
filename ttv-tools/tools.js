@@ -2685,6 +2685,8 @@ try {
                     Cache.remove(key);
                 }
             });
+
+        // delete cache;
     });
 
     // Add storage listener
@@ -3235,39 +3237,9 @@ try {
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z)? 'alt+z': ''),
                 action: event => {
                     SetQuality('auto').then(() => {
-                        let video = $.all('video').pop();
-                        let time = VideoClips.length;
-                        let name = 'Event mousedown<right>';
+                        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', altKey: true }));
 
-                        let recording = new Recording(video, { name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
-
-                        // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
-                        recording
-                            .then(({ target }) => target.recording.save())
-                            .then(link => alert.silent(`
-                                <video controller controls
-                                    title="Clip Saved - ${ link.download }"
-                                    src="${ link.href }" style="max-width:-webkit-fill-available"
-                                ></video>
-                                `)
-                            );
-
-                        confirm.timed(`
-                            <div hidden controller
-                                icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
-                                okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
-                                deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
-                            ></div>`
-                        , time)
-                            .then(answer => {
-                                if(answer === false)
-                                    throw `Clip discarded!`;
-                                recording.stop();
-                            })
-                            .catch(error => {
-                                alert.silent(error);
-                                recording.controller.abort(error);
-                            });
+                        wait(VideoClips.length).then(() => phantomClick($(`.tt-prompt-footer button.okay`, $(`input[controller][anchor="${ $('video[uuid]').uuid }"i]`)?.closest('.tt-prompt-container'))));
                     });
                 },
             });
@@ -3764,7 +3736,7 @@ let Initialize = async(START_OVER = false) => {
 
         Cache.load('ChannelPoints', ({ ChannelPoints = {} }) => {
             let { random, round } = Math;
-            let online = STREAMERS.filter(isLive),
+            let online = [...STREAMERS, ...GetNextStreamer.cachedReminders].filter(isLive),
                 mostWatched = null,
                 mostPoints = 0,
                 mostLeft = 0,
@@ -3891,7 +3863,40 @@ let Initialize = async(START_OVER = false) => {
             }
         });
 
+        // delete ChannelPoints; // @performance
+
         return when.defined(() => GetNextStreamer.cachedStreamer);
+    }
+
+    try {
+        Cache.load('LiveReminders', async({ LiveReminders }) => {
+            try {
+                LiveReminders = JSON.parse(LiveReminders || '{}');
+            } catch(error) {
+                // Probably an object already...
+                LiveReminders ??= {};
+            }
+
+            let cachedReminders = [];
+            for(let name in LiveReminders) {
+                let now = new Date,
+                    time = new Date(LiveReminders[name]);
+
+                cachedReminders.push({
+                    name,
+
+                    from: 'LIVE_REMINDERS',
+                    href: `https://www.twitch.tv/${ name }`,
+                    live: (await new Search(name, 'channel', 'status.live') || Math.abs(+now - +time) / 3_600_000 < 1/3),
+                });
+            }
+
+            // delete LiveReminders; // @performance
+
+            GetNextStreamer.cachedReminders = cachedReminders;
+        });
+    } catch(error) {
+        // Do nothing...
     }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
@@ -4876,6 +4881,8 @@ let Initialize = async(START_OVER = false) => {
                                 STREAMER.data = { ...STREAMER.data, ...data, streamerID: STREAMER.sole };
 
                             REMARK(`Cached details about "${ STREAMER.name }"`, data);
+
+                            // delete cache;
                         });
                     } catch(exception) {
                         let { name, sole } = STREAMER;
@@ -6216,6 +6223,9 @@ let Initialize = async(START_OVER = false) => {
                                             });
                                     });
                             });
+
+            // delete AutoClaimRewards; // @performance
+            // delete AutoClaimAnswers; // @performance
         });
     };
     Timers.claim_reward = 15_000;
@@ -6431,6 +6441,8 @@ let Initialize = async(START_OVER = false) => {
                         if(REWARDS_ON_COOLDOWN.has(item?.id))
                             child.closest('.reward-list-item').setAttribute('timed-out', toTimeString((REWARDS_ON_COOLDOWN.get(item?.id) - +new Date).clamp(0, +Infinity), 'clock'));
                     });
+
+                    // delete AutoClaimRewards; // @performance
                 });
             }
 
@@ -6499,7 +6511,7 @@ let Initialize = async(START_OVER = false) => {
                                                 itemIDs.splice(index, 1);
                                             } else {
                                                 if(item.needsInput) {
-                                                    answers[ID] = await prompt.silent(`<div hidden controller title='Input required to redeem "${ item.title }"'></div>${ item.prompt || `Please provide input...` }`);
+                                                    answers[ID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title }"' />${ item.prompt || `Please provide input...` }`);
 
                                                     if(answers[ID] === null)
                                                         return /* The user pressed "Cancel" */;
@@ -6544,6 +6556,8 @@ let Initialize = async(START_OVER = false) => {
                         )
                     )
                 );
+
+                // delete AutoClaimRewards; // @performance
             });
 
             $('.reward-center-body img')?.closest(':not(img,:only-child)')?.setAttribute('tt-rewards-calc', 'after');
@@ -7447,6 +7461,10 @@ let Initialize = async(START_OVER = false) => {
                             || (Hash.dvr_channels != UUID.from(JSON.stringify(DVRChannels)).value)
                         )
                             Cache.save({ LiveReminders, DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
+
+                        // delete LiveReminders; // @performance
+                        // delete ChannelPoints; // @performance
+                        // delete DVRChannels; // @performance
                     });
                 },
             });
@@ -8504,6 +8522,8 @@ let Initialize = async(START_OVER = false) => {
             );
 
             actionPanel.append(action);
+
+            // delete LiveReminders; // @performance
         });
 
         StopWatch.stop('live_reminders');
@@ -8565,6 +8585,7 @@ let Initialize = async(START_OVER = false) => {
 
                     if(!channel.live) {
                         // Ignore this reminder (channel not live)
+                        delete channel;
                         ++REMINDERS_INDEX;
                         continue checking;
                     }
@@ -8616,10 +8637,15 @@ let Initialize = async(START_OVER = false) => {
                         // The reminder hasn't been changed
                         ++REMINDERS_INDEX;
                     }
+
+                    // Release memory...
+                    delete channel;
                 }
 
                 // Send the length to the settings page
                 Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
+
+                // delete LiveReminders; // @performance
             });
         };
 
@@ -12010,6 +12036,8 @@ let Initialize = async(START_OVER = false) => {
                 ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
 
                 Cache.save({ ChannelPoints });
+
+                // delete ChannelPoints; // @performance
             });
 
         // Color the balance text
@@ -12087,6 +12115,8 @@ let Initialize = async(START_OVER = false) => {
 
                 target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
             }
+
+            // delete ChannelPoints; // @performance
         });
 
         StopWatch.stop('point_watcher_placement', 2_700);
@@ -12531,7 +12561,10 @@ let Initialize = async(START_OVER = false) => {
     };
 
     let AUTO_DVR__CHECKING, AUTO_DVR__CHECKING_INTERVAL,
-        MASTER_VIDEO = $.all('video').pop();
+        MASTER_VIDEO = $('[data-a-player-state] video');
+
+    // Might take a few seconds to fulfill...
+    when.defined(() => $('[data-a-player-state] video')).then(_ => MASTER_VIDEO = _);
 
     Handlers.video_clips__dvr = () => {
         new StopWatch('video_clips__dvr');
@@ -12659,6 +12692,8 @@ let Initialize = async(START_OVER = false) => {
                     // top.addEventListener('visibilitychange', leaveHandler);
                 });
             }
+
+            // delete DVRChannels; // @performance
         });
 
         StopWatch.stop('video_clips__dvr');
@@ -12792,8 +12827,10 @@ let Initialize = async(START_OVER = false) => {
                             // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
                         }
 
-                        if(!parseBool(channel.live))
+                        if(!parseBool(channel.live)) {
+                            delete channel;
                             continue checking;
+                        }
 
                         let { name, live, icon, href, data = { actualStartTime: null } } = channel,
                             slug = DVRChannels[name.toLowerCase()],
@@ -12817,12 +12854,17 @@ let Initialize = async(START_OVER = false) => {
                                 goto(parseURL(job).addSearch({ dvr: true }).href);
                             });
                         }
+
+                        // Release memory...
+                        delete channel;
                     }
 
                     // Send the length to the settings page
                     Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) });
 
                     StopWatch.stop('video_clips__dvr__checking_interval', 30_000);
+
+                    // delete DVRChannels; // @performance
                 });
         }, 30_000);
 
@@ -12920,6 +12962,8 @@ let Initialize = async(START_OVER = false) => {
                                 });
                             });
                 }
+
+                // delete DVRChannels; // @performance
             });
 
         AUTO_DVR__CHECKING?.();
@@ -13198,6 +13242,8 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('recover_video');
         RECOVERING_VIDEO = true;
 
+        ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
+
         if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
             let next = await GetNextStreamer();
 
@@ -13205,12 +13251,12 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next))
                 goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
         } else {
-            ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
+            errorMessage.closest('button')?.click();
 
             // Failed to play video at...
-            PushToTopSearch({ 'tt-err-vid': 'video-recovery--non-subscriber' });
+            PushToTopSearch({ 'tt-err-vid': 'video-recovery--player-error' });
 
-            errorMessage.closest('button')?.click();
+            RECOVERING_VIDEO = false;
         }
 
         StopWatch.stop('recover_video');
@@ -13393,17 +13439,18 @@ let Initialize = async(START_OVER = false) => {
 
         // Begin recording the stream
         // Alt + Z | Opt + Z
-        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z))
+        if(nullish(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z)) {
             $.on('keydown', GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z = function Start_$_Stop_a_Recording({ key = '', altKey, ctrlKey, metaKey, shiftKey }) {
                 if(!(ctrlKey || metaKey || shiftKey) && altKey && key.equals('z')) {
                     let video = MASTER_VIDEO;
+                    let system =  GetFileSystem();
 
                     video.setAttribute('uuid', video.uuid ??= (new UUID).value);
 
-                    let body = `<input hidden controller
+                    let body = `<input hidden controller anchor="${ video.uuid }"
                         icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
                         placeholder="${ DEFAULT_CLIP_NAME }"
-                        pattern="${ GetFileSystem().acceptableFilenames.source }"
+                        pattern="${ system.acceptableFilenames.source }"
 
                         okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
                         deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
@@ -13437,7 +13484,12 @@ let Initialize = async(START_OVER = false) => {
                                     <td tt-clip-typer data-connected-to=${ video.uuid }></td>
                                 </tr>
                             </tbody>
-                        </table>`;
+                        </table>
+
+                        <div>
+                            <h4>You can change the filename of this recording below.</h4>
+                            <p>You <strong>cannot</strong> use the following characters: ${ system.unacceptableFilenameCharacters.filter(c => system.characterNames[c].composable).map(c => `<code title="${ system.characterNames[c] }">${ c }</code>`).join(' ') }</p>
+                        </div>`;
 
                     let EVENT_NAME = GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z.name;
                     let SAVE_NAME = DEFAULT_CLIP_NAME;
@@ -13445,41 +13497,68 @@ let Initialize = async(START_OVER = false) => {
                     if(!video.hasRecording(EVENT_NAME)) {
                         prompt.silent(body).then(value => {
                             let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
+                            let temp = video.stopRecording(EVENT_NAME);
 
                             feed?.setAttribute('halt', nullish(value));
-                            phantomClick($('.okay', feed));
 
-                            video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME = value);
+                            if(nullish(value)) {
+                                phantomClick($('.deny', feed));
+                            } else {
+                                phantomClick($('.okay', feed));
+                                temp.saveRecording(EVENT_NAME, SAVE_NAME = value || SAVE_NAME);
+                            }
+
+                            temp?.removeRecording(EVENT_NAME);
                         });
 
-                        video.startRecording({ name: EVENT_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
-                            .then(({ target }) => {
-                                let chunks = target.blobs;
-                                let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
-                                    halt = parseBool(feed?.getAttribute('halt')),
-                                    name = (feed?.getAttribute('value') || SAVE_NAME);
+                        SetQuality('auto').then(() => {
+                            video.startRecording({ name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
+                                .then(({ target }) => {
+                                    let chunks = target.blobs;
+                                    let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
+                                        halt = parseBool(feed?.getAttribute('halt')),
+                                        name = (feed?.getAttribute('value') || SAVE_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
 
-                                return SAVE_NAME = name;
-                            })
-                            .catch(error => {
-                                WARN(error);
+                                    return SAVE_NAME = name;
+                                })
+                                .catch(error => {
+                                    WARN(error);
 
-                                alert.timed(error, 7000);
-                            })
-                            .finally(() => {
-                                DEFAULT_CLIP_NAME = new ClipName(2);
+                                    alert.timed(error, 7000);
+                                })
+                                .finally(() => {
+                                    DEFAULT_CLIP_NAME = new ClipName(2);
 
-                                video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME);
-                            });
+                                    video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME)?.removeRecording(EVENT_NAME);
+                                });
+                        });
                     } else {
                         let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`);
 
                         phantomClick($('.okay', feed));
-
-                        video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME);
                     }
                 }
             });
+
+            // Save current recording(s) before leaving
+            let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                let next = await GetNextStreamer();
+
+                LOG('Saving current recording(s). Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+
+                for(let [guid, { recording }] of Recording.__RECORDERS__)
+                    recording.stop().save();
+            };
+
+            $.on('focusin', event => {
+                if(top.focusedin)
+                    return;
+                top.focusedin = true;
+                top.addEventListener('beforeunload', leaveHandler);
+
+                // top.addEventListener('visibilitychange', leaveHandler);
+            });
+        }
 
         // Send the previewed channel to the miniplayer
         // <Stream Preview>:hover → Z
@@ -13537,6 +13616,8 @@ let Initialize = async(START_OVER = false) => {
                                 // The user pressed "Cancel"
                                 Cache.save({ LiveReminders: { ...justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                             });
+
+                        // delete LiveReminders; // @performance
                     });
                 }
             });
@@ -14720,11 +14801,17 @@ if(top == window) {
                                 return;
                             TTVToolsNewsArticles.push(articleID);
 
+                            header.textContent = new Date(header.textContent).toLocaleDateString();
+
                             let article = furnish(`#tt-news-${ articleID }`).with(
-                                header, ...content
+                                furnish('details.details').with(
+                                    furnish('summary').with(header),
+                                    ...content
+                                )
                             );
 
-                            $.all('a.anchor', article).map(a => a.remove());
+                            $.all('a.anchor, svg.action-link', article).map(a => a.remove());
+                            $.all('[href]').map(a => a.target = '_blank');
 
                             return article.outerHTML;
                         })
@@ -14732,7 +14819,7 @@ if(top == window) {
 
                     if(articles.length)
                         confirm.silent(`<input hidden controller icon="${ Glyphs.utf8.unread }" title="News" deny="Ignore"/> ${ articles.join('<br>') }`)
-                        .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
+                            .then(ok => ok && Cache.save({ ReadNews: TTVToolsNewsArticles.isolate() }));
                 });
         });
 

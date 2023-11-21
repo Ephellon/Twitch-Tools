@@ -541,7 +541,7 @@ let LAG_REPORTER = setInterval(() => {
                     }).catch(error => {
                         console.warn(`Tab #${ id } no longer exists... Removing...`);
 
-                        GALLOWS.set(id, +new Date);
+                        GALLOWS.delete(id);
                         REPORTS.delete(id);
                     });
             }, MAX_TIME_ALLOWED - 100)

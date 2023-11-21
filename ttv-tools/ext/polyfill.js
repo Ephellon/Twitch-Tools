@@ -2053,6 +2053,15 @@ class Recording {
     static ANY = Symbol('Any');
     static ALL = Symbol('All');
 
+    static #statusUpdater = setInterval(() => {
+        let active = false;
+        for(let [guid, recorder] of Recording.__RECORDERS__)
+            if(active ||= recorder.state.equals("recording"))
+                break;
+
+        $('[data-a-player-state]')?.setAttribute('data-recording-status', active);
+    }, 1_000);
+
     constructor(streamable, options = { name: 'DEFAULT_RECORDING', as: new ClipName, maxTime: Infinity, mimeType: 'video/webm;codecs=vp9', hidden: false, chunksPerSecond: 1 }) {
         if(['HTMLVideoElement', 'HTMLAudioElement', 'HTMLCanvasElement'].missing(streamable?.constructor?.name))
             throw `new Recording(...) must be called on a streamable element: <video>, <audio>, or <canvas>`;
@@ -2235,19 +2244,13 @@ class Recording {
                         // MediaRecorder probably inactive
                     }
 
-                    let active = false;
-                    for(let [guid, recorder] of Recording.__RECORDERS__)
-                        if(active ||= recorder.state.equals("recording"))
-                            break;
-
-                    source.closest('[data-a-player-state]')?.setAttribute('data-recording-status', active);
-
                     source.recorders.delete(this.name);
                     source.recorders.set(`[[${ this.name }]]`, this);
 
                     this.completionTime ??= +new Date;
 
                     Object.freeze(this);
+                    Object.freeze(recorder);
 
                     return this;
                 },
@@ -2266,6 +2269,8 @@ class Recording {
                         return signal;
 
                     as ??= this.as ?? new ClipName;
+
+                    // NOTICE(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blobs, signal, download: [as, MIME_Types.find(source.mimeType)] });
 
                     if(Recording.__LINKS__.has(this.guid))
                         return Recording.__LINKS__.get(this.guid);
@@ -2289,7 +2294,7 @@ class Recording {
             },
         });
 
-        return self;
+        return Object.assign(self, this);
     }
 }
 
@@ -4196,6 +4201,7 @@ function toFormat(string, patterns) {
 function GetOS(is = null) {
     let { userAgent } = window.navigator;
     let OSs = {
+        'NT 12.0': 'Win 12',
         'NT 11.0': 'Win 11',
         'NT 10.0': 'Win 10',
         'NT 6.3': 'Win 8.1',
@@ -4204,7 +4210,9 @@ function GetOS(is = null) {
         'NT 6.0': 'Win Vista',
         'NT 5.1': 'Win XP',
         'NT 5.0': 'Win 2000',
+
         'Mac': 'Macintosh',
+
         'X11': 'UNIX',
         'Linux': 'Linux',
     };
@@ -4223,6 +4231,7 @@ Object.defineProperties(GetOS, {
     X11: { value: 'Unix' },
     UNIX: { value: 'Unix' },
 
+    WIN_12: { value: 'Windows 12' },
     WIN_11: { value: 'Windows 11' },
     WIN_10: { value: 'Windows 10' },
     WIN_8_1: { value: 'Windows 8.1' },
@@ -4402,11 +4411,61 @@ function GetMacro(keys = '', OS = null) {
 function GetFileSystem(OS = null) {
     OS ??= GetOS();
 
-    let acceptableFilenames, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter;
+    let { assign } = Object,
+        composable = { composable: true, writable: true, printable: true },
+        writable = { composable: false, writable: true, printable: true };
+
+    let acceptableFilenames, unacceptableFilenameCharacters, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter;
+    // Composable → Can the character be created and displayed within a native <input> easily (2 or less keypresses)?
+    // Writable → Can the character be created within a native <input> easily (a single keypress)?
+    // Printable → Can the character be displayed natively on the screen or printer?
+    let characterNames = {
+        '\\0': assign('null', { composable: false, writable: false, printable: false }),
+        '\\b': assign('backspace', { composable: false, writable: true, printable: false }),
+        '\\t': assign('tab', writable),
+        '\\n': assign('newline', writable),
+        '\\v': assign('vertical-tab', writable),
+        '\\f': assign('form-feed', writable),
+        '\\r': assign('carriage-return', writable),
+        ' ': assign('space', composable),
+        '!': assign('exclamation mark', composable),
+        '"': assign('quotation mark', composable),
+        '#': assign('pound sign', composable),
+        '$': assign('dollar sign', composable),
+        '%': assign('percent sign', composable),
+        '&': assign('ampersand', composable),
+        "'": assign('apostrophe', composable),
+        '(': assign('opening perenthesis', composable),
+        ')': assign('closing parenthesis', composable),
+        '*': assign('asterisk', composable),
+        '+': assign('plus sign', composable),
+        ',': assign('comma', composable),
+        '-': assign('minus sign', composable),
+        '.': assign('period', composable),
+        '/': assign('forward slash', composable),
+        ':': assign('colon', composable),
+        ';': assign('semicolon', composable),
+        '<': assign('less-than sign', composable),
+        '=': assign('equal sign', composable),
+        '>': assign('greater-than sign', composable),
+        '?': assign('question mark', composable),
+        '@': assign('at sign', composable),
+        '[': assign('opening bracket', composable),
+        '\\': assign('backward slash', composable),
+        ']': assign('closing bracket', composable),
+        '^': assign('caret', composable),
+        '_': assign('underscore', composable),
+        '`': assign('grave mark', composable),
+        '{': assign('opening brace', composable),
+        '|': assign('pipe', composable),
+        '}': assign('closing brace', composable),
+        '~': assign('tilde', composable),
+    };
 
     switch(OS) {
         case GetOS.MAC: {
             acceptableFilenames = /[^\x00-\x1f:]/;
+            unacceptableFilenameCharacters = ['\\b', '\\t', '\\n', '\\v', '\\f', '\\r', ':'];
             illegalFilenameCharacters = /[\x00-\x1f:]/;
             allIllegalFilenameCharacters = /[\x00-\x1f:]+/g;
             directorySeperator = '/';
@@ -4416,6 +4475,7 @@ function GetFileSystem(OS = null) {
         case GetOS.LINUX:
         case GetOS.UNIX: {
             acceptableFilenames = /[^\0\/]/;
+            unacceptableFilenameCharacters = ['\\0', '/'];
             illegalFilenameCharacters = /[\0\/]/;
             allIllegalFilenameCharacters = /[\0\/]+/g;
             directorySeperator = '/';
@@ -4423,15 +4483,16 @@ function GetFileSystem(OS = null) {
         } break;
 
         default: {
-            acceptableFilenames = /^(?!(^|PRN|AUX|CLOCK\$|NUL|CON|(COM|LPT)[1-9])(\..*)?$)[^\x00-\x1f\\?*:";\|\/]+$/;
-            illegalFilenameCharacters = /[\x00-\x1f\\?*:";\|\/]/;
-            allIllegalFilenameCharacters = /[\x00-\x1f\\?*:";\|\/]+/g;
+            acceptableFilenames = /^(?!(^|PRN|AUX|CLOCK\$|NUL|CON|(COM|LPT)[1-9])(\..*)?$)[^\x00-\x1f\\?*:\u0022;\|\/]+$/;
+            unacceptableFilenameCharacters = ['\\b', '\\t', '\\n', '\\v', '\\f', '\\r', '\\', '?', '*', ':', '"', ';', '|', '/'];
+            illegalFilenameCharacters = /[\x00-\x1f\\?*:\u0022;\|\/]/;
+            allIllegalFilenameCharacters = /[\x00-\x1f\\?*:\u0022;\|\/]+/g;
             directorySeperator = '\\';
             lineDelimeter = '\r\n';
         } break;
     }
 
-    return { acceptableFilenames, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter };
+    return { acceptableFilenames, unacceptableFilenameCharacters, illegalFilenameCharacters, allIllegalFilenameCharacters, directorySeperator, lineDelimeter, characterNames };
 }
 
 // Logs messages (green)
