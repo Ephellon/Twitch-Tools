@@ -2100,6 +2100,9 @@ let Chat__Initialize = async(START_OVER = false) => {
                 .then(DOMParser.stripBody)
                 .then(html => LINK_PARSER.parseFromString(html, 'text/html'))
                 .then(DOM => {
+                    if(!(DOM instanceof Document))
+                        throw TypeError(`No DOM available. Page not loaded`);
+
                     let f = furnish;
                     let get = property => DOM.get(property);
 
@@ -4253,7 +4256,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
                 style = $('[style]', handle)?.getAttribute('style') ?? '',
-                { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle.parentElement.textContent).groups,
+                { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '').groups,
                 sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * (meridiem == 'PM'), minute, ':00'].join('')).toJSON();
 
             handle = author.replace(/([^]*)\((.+)\)[^]*/, ($0, $1, $2 = '', $$, $_) => {

@@ -68,6 +68,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.1)
+- Fixed issue with `parseURL`
+
 > [`5.33`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33)
 - Fixed issue with caching live reminders
 - Added accessibility option to change the font of the webpage (separate of chat)
