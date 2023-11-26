@@ -16,8 +16,6 @@
  * @module
  */
 
-;
-
 /** @typedef {object} enum
  * <dt class=details><blockquote class=tag-source>
  * An "enum" (short for "enumerated type") is a data type that consists of a set of named values.
@@ -267,7 +265,6 @@ switch(BrowserNamespace) {
     } break;
 }
 
-
 /**
  * @enum Runtime.OnInstalledReason
  * @option INSTALL
@@ -336,10 +333,10 @@ let TabWatcherInterval = setInterval(() => {
 // Update the badge text when there's an update available
 Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
 
+// Use this to set the badge text when there's an update available
+    // if installed from Chrome, update the badge text, and wait for an auto-update
+    // if installed from GitHub, update the badge text
 Storage.onChanged.addListener(changes => {
-    // Use this to set the badge text when there's an update available
-        // if installed from Chrome, update the badge text, and wait for an auto-update
-        // if installed from GitHub, update the badge text
     let installedFromWebstore = (Runtime.id === "fcfodihfdbiiogppbnhabkigcdhkhdjd");
 
     updater:
@@ -359,6 +356,7 @@ Storage.onChanged.addListener(changes => {
     }
 });
 
+// Listen for messages from the content page(s)
 Runtime.onMessage.addListener((request, sender, respond) => {
     let reloadAll = false,
         returningData;
@@ -521,6 +519,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
     return true;
 });
 
+// Handle and manage dead or dying tabs
 let REPORTS = new Map,
     GALLOWS = new Map,
     HANG_UP_CHECKER = new Map,
@@ -605,20 +604,25 @@ let LAG_REPORTER = setInterval(() => {
 }, MAX_TIME_ALLOWED);
 
 let GALLOWS_CHECKER = setInterval(() => {
-    for(let [ID, updated] of GALLOWS) {
-        Container.tabs.sendMessage(ID, { action: 'close' }, response => {
-            if(!response?.ok)
-                Container.tabs.remove(ID);
+    for(let [ID, updated] of GALLOWS)
+        try {
+            Container.tabs.sendMessage(ID, { action: 'close' }, response => {
+                if(!response?.ok)
+                    Container.tabs.remove(ID);
 
-            GALLOWS.set(ID, +new Date);
-        });
+                GALLOWS.set(ID, +new Date);
+            });
 
-        // More than 1.5s have passed since the last successful update...
-        if((+new Date - updated) > 1_500) {
-            REPORTS.delete(ID);
+            // More than 1.5s have passed since the last successful update...
+            if((+new Date - updated) > 1_500) {
+                REPORTS.delete(ID);
+                GALLOWS.delete(ID);
+            }
+        } catch(error) {
+            console.warn(`Failed to gallow-check tab #${ id } → "${ error }"`);
+
             GALLOWS.delete(ID);
         }
-    }
 }, 500);
 
 /**

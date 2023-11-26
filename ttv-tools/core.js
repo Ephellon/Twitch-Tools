@@ -1610,22 +1610,25 @@ function fetchURL(url, options = {}) {
     let { href, domainPath = [], host, protocol, pathname } = parseURL(url);
     let [domain = unknown, site = unknown, ...subDomain] = domainPath;
 
-    if([domain, site].contains(unknown))
-        return empty;
-
-    let allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
+    let allowedHosts = 'static-cdn.jtvnw.net'.split(' '),
+        allowedSites = 'betterttv blerp githubusercontent nightbot streamelements streamloots twitch twitchinsights twitchtokengenerator'.split(' '),
         allowedDomains = 'gd'.split(' ');
 
     // No CORS required
     if(false
         || native
-        || protocol.startsWith('chrome')
-        || protocol.startsWith('get')
-        || host.startsWith('.')
-        || allowedDomains.contains(domain.toLowerCase())
-        || allowedSites.contains(site.toLowerCase())
+        || protocol?.startsWith?.('chrome')
+        || protocol?.startsWith?.('get')
+        || host?.startsWith?.('.')
+        || allowedDomains.contains(domain?.toLowerCase?.())
+        || allowedSites.contains(site?.toLowerCase?.())
+        || allowedHosts.contains(host?.toLowerCase?.())
     )
         /* Do nothing... */;
+
+    // The URL is malformed
+    else if([domain, site].contains(unknown))
+        return empty;
 
     // CORS required
     else {
@@ -1656,7 +1659,7 @@ function fetchURL(url, options = {}) {
     }
 
     if(protocol.startsWith('get'))
-        href = Runtime.getURL(pathname);
+        href = Runtime.getURL(href.replace(protocol, ''));
 
     if(timeout > 0) {
         let controller = new AbortController();
@@ -1934,7 +1937,7 @@ Object.defineProperties(fetchURL.origins, {
  *                          <br><ul>
  *                          <li><code class=prettyprint>properties <i>&rArr; {}</i></code> &mdash; A <i>key</i>:<i>value</i> object describing the data to be saved. The <i>key</i> is the name of the entry, and the <i>value</i> is the value (data)</li>
  *                          </ul>
- * @prop {function} set     <div class="signature">(properties:(string|array&lt;string&gt;)<span class="signature-attributes">opt, nullable</span>) → {void}</div>
+ * @prop {function} remove  <div class="signature">(properties:(string|array&lt;string&gt;)<span class="signature-attributes">opt, nullable</span>) → {void}</div>
  *                          <br>Removes named entries from the extension's long-term storage
  *                          <br><ul>
  *                          <li><code class=prettyprint>properties <i>&rArr; []</i></code> &mdash; The properties (settings) to remove from storage</li>
@@ -2386,21 +2389,25 @@ __STATIC__: {
      * @see https://developer.chrome.com/docs/extensions/reference/runtime/
      */
     window.Runtime = Runtime;
+
     /** @memberof window
     * @prop {object<Storage>} Storage - The extension storage
     * @see https://developer.chrome.com/docs/extensions/reference/storage/
     */
     window.Storage = Storage;
+
     /** @memberof window
     * @prop {object<Extension>} Extension - The extension context
     * @see https://developer.chrome.com/docs/extensions/reference/extension/
     */
     window.Extension = Extension;
+
     /** @memberof window
     * @prop {object<ExtensionContainer>} Container - The extension container (<code>chrome</code> or <code>browser</code>)
     * @see https://developer.chrome.com/docs/extensions/reference/
     */
     window.Container = Container;
+
     /** @memberof window
     * @prop {object<Manifest>} Manifest - The extension's manifest
     * @see https://developer.chrome.com/docs/extensions/mv3/intro/mv3-overview/
@@ -2446,7 +2453,7 @@ __STATIC__: {
     let Jobs = {};
 
     /** @memberof window
-    * @prop {object} Jobs - All running or ran timers (with a corresponding job). A <b>positive</b> (&gt; 0) value creates an interval. A <b>negative</b> (&lt; 0) value creates a time-out
+    * @prop {object} Jobs - All running or ran timers (with a corresponding job). A <b>positive</b> (&ge; 0) value creates an interval. A <b>negative</b> (&lt; 0) value creates a time-out
     */
     let Timers = {};
 

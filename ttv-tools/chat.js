@@ -2328,7 +2328,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             $.all(':is([data-test-selector="chat-message-separator"i], [class*="username-container"i] + *) ~ * > *', element).forEach(sibling => sibling.remove());
             $('[data-test-selector="chat-message-separator"i], [class*="username-container"i] + *', element).parentElement.append(span);
 
-            element.setAttribute(type, message);
+            element.dataset[type] = message;
 
             if(phrase.length > 1) {
                 element.setAttribute(`${ type }-phrase`, phrase);
@@ -2398,12 +2398,13 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(parseBool(Settings.simplify_chat_monotone_usernames))
             AddCustomCSSBlock_Chat('SimplifyChatMonotoneUsernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
 
-        if(parseBool(Settings.simplify_chat_font)) {
+        if(parseBool(Settings.simplify_chat_font) || parseBool(Settings.simplify_page_font)) {
             let src = Runtime.getURL('/font');
 
+            AddCustomCSSBlock_Chat('SimplifyPageFont', `body { font-family: ${ Settings.simplify_page_font }, Sans-Serif !important }`);
             AddCustomCSSBlock_Chat('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
 
-            AddCustomCSSBlock_Chat('SimplifyChatFont_Head', `
+            AddCustomCSSBlock_Chat('SimplifyFont_Head', `
             @font-face {
                 font-family: Roobert;
                 font-weight: normal;
@@ -2453,7 +2454,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
 
             let element = await line.element;
-            let keep = !(element.hasAttribute('plagiarism') || element.hasAttribute('repetitive') || element.hasAttribute('tt-hidden-message'));
+            let keep = !(element.hasAttribute('data-plagiarism') || element.hasAttribute('data-repetitive') || element.hasAttribute('tt-hidden-message'));
 
             if(keep) {
                 element.classList.add(`tt-visible-message-${ ['even', 'odd'][SimplifyChatIndexToggle ^= 1] }`);
@@ -2680,22 +2681,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         timeEstimated = ceil(timeEstimated);
 
         function estimates(language) {
-            return fetchURL(Runtime.getURL(`_locales/${ language }/translations.json`))
+            return fetchURL(`get:ext/times.json`)
                 .then(response => response.json())
-                .then(json => {
-                    let _ = json['?'],
-                        { minute, hour, day, week, month, year, century } = _;
-
-                    minute ??= _['@@minute'];
-                    hour ??= _['@@hour'];
-                    day ??= _['@@day'];
-                    week ??= _['@@week'];
-                    month ??= _['@@month'];
-                    year ??= _['@@year'];
-                    century ??= _['@@century'];
-
-                    return { minute, hour, day, week, month, year, century };
-                });
+                .then(json => json[language]);
         }
 
         function correct(string, number) {
@@ -2709,7 +2697,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let T_L = top.LANGUAGE;
         switch(T_L) {
             case 'bg': {
-                // Adopted from /_locales/bg/translations.json
+                // Adopted from /ext/times.json/#bg
                 // Достъпно по време на този поток (33 минути)
                 // Предлага се в още 33 потока (3 седмици)
 
@@ -2723,7 +2711,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'cs': {
-                // Adopted from /_locales/cs/translations.json
+                // Adopted from /ext/times.json/#cs
                 // Dostupné během tohoto streamu (33 minut)
                 // K dispozici v dalších 33 streamech (3 týdny)
 
@@ -2737,7 +2725,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'da': {
-                // Adopted from /_locales
+                // Adopted from /ext/times.json/#da
                 // Tilgængelig under denne stream (33 minutter)
                 // Tilgængelig i 33 flere streams (3 uger)
 
@@ -2751,7 +2739,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'de': {
-                // Adopted from /_locales/de/translations.json
+                // Adopted from /ext/times.json/#de
                 // In diesem Strom verfügbar (30 Minuten)
                 // Erhältlich in 33 mehr Streams (3 Wochen)
 
@@ -2765,7 +2753,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'fi': {
-                // Adopted from /_locales/fi/translations.json
+                // Adopted from /ext/times.json/#fi
                 // Saatavilla tämän streamin aikana (33 minuuttia)
                 // Saatavilla vielä 33 suorana (3 viikkoa)
 
@@ -2779,7 +2767,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'hu': {
-                // Adopted from /_locales/hu/translations.json
+                // Adopted from /ext/times.json/#hu
                 // Elérhető a stream alatt (33 perc)
                 // 33 további adatfolyamban elérhető (3 hét)
 
@@ -2793,7 +2781,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'no': {
-                // Adopted from /_locales/no/translations.json
+                // Adopted from /ext/times.json/#no
                 // Tilgjengelig under denne strømmen (33 minutter)
                 // Tilgjengelig i 33 strømmer til (3 uker)
 
@@ -2807,7 +2795,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'pl': {
-                // Adopted from /_locales/pl/translations.json
+                // Adopted from /ext/times.json/#pl
                 // Dostępne podczas tej transmisji (33 minuty)
                 // Dostępne w 33 kolejnych strumieniach (3 tygodnie)
 
@@ -2821,7 +2809,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'sk': {
-                // Adopted from /_locales/sk/translations.json
+                // Adopted from /ext/times.json/#sk
                 // Dostupné počas tohto streamu (33 minút)
                 // Dostupné v 33 ďalších streamoch (3 týždne)
 
@@ -2835,7 +2823,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'tr': {
-                // Adopted from /_locales/tr/translations.json
+                // Adopted from /ext/times.json/#tr
                 // Bu yayın sırasında kullanılabilir (33 dakika)
                 // 33 akışta daha mevcuttur (3 hafta)
 
@@ -2849,7 +2837,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'el': {
-                // Adopted from /_locales/el/translations.json
+                // Adopted from /ext/times.json/#el
                 // Διαθέσιμο κατά τη διάρκεια αυτής της ροής (33 λεπτά)
                 // Διαθέσιμο σε 33 ακόμη ροές (3 εβδομάδες)
 
@@ -2863,7 +2851,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'fr': {
-                // Adopted from /_locales/fr/translations.json
+                // Adopted from /ext/times.json/#fr
                 // Disponible pendant ce stream (33 minutes)
                 // Disponible dans 33 flux supplémentaires (3 semaines)
 
@@ -2877,7 +2865,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'nl': {
-                // Adopted from /_locales/nl/translations.json
+                // Adopted from /ext/times.json/#nl
                 // Beschikbaar tijdens deze stream (33 minuten)
                 // Beschikbaar in nog 33 streams (3 weken)
 
@@ -2891,7 +2879,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'it': {
-                // Adopted from /_locales/it/translations.json
+                // Adopted from /ext/times.json/#it
                 // Disponibile durante questo streaming (33 minuti)
                 // Disponibile in altri 33 stream (3 settimane)
 
@@ -2905,7 +2893,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ro': {
-                // Adopted from /_locales/ro/translations.json
+                // Adopted from /ext/times.json/#ro
                 // Disponibil în timpul acestui flux (33 de minute)
                 // Disponibil în încă 33 de fluxuri (3 săptămâni)
 
@@ -2919,7 +2907,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ja': {
-                // Adopted from /_locales/ja/translations.json
+                // Adopted from /ext/times.json/#ja
                 // このストリーム中に利用可能（33分）
                 // さらに33のストリームで利用可能（3週間）
 
@@ -2933,7 +2921,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'zh-ch': {
-                // Adopted from /_locales/zh/translations.json
+                // Adopted from /ext/times.json/#zh
                 // 在此直播期间可用（33 分钟）
                 // 在另外 33 个流中可用（3 周）
 
@@ -2947,7 +2935,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'zh-tw': {
-                // Adopted from /_locales/zh/translations.json
+                // Adopted from /ext/times.json/#zh
                 // 在此直播期間可用（33 分鐘）
                 // 在另外 33 個流中可用（3 週）
 
@@ -2961,7 +2949,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ko': {
-                // Adopted from /_locales/ko/translations.json
+                // Adopted from /ext/times.json/#ko
                 // 이 스트림 동안 사용 가능(33분)
                 // 33개 이상의 스트림에서 사용 가능(3주)
 
@@ -2975,7 +2963,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'sv': {
-                // Adopted from /_locales/sv/translations.json
+                // Adopted from /ext/times.json/#sv
                 // Tillgänglig under denna stream (33 minuter)
                 // Tillgänglig i ytterligare 33 streams (3 veckor)
 
@@ -2989,7 +2977,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'th': {
-                // Adopted from /_locales/th/translations.json
+                // Adopted from /ext/times.json/#th
                 // ได้ในสตรีมนี้ (33 นาที)
                 // พร้อมให้บริการในอีก 33 สตรีม (3 สัปดาห์)
 
@@ -3003,7 +2991,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'vi': {
-                // Adopted from /_locales/vi/translations.json
+                // Adopted from /ext/times.json/#vi
                 // Có sẵn trong luồng này (33 phút)
                 // Có sẵn trong 33 luồng khác (3 tuần)
 
@@ -3017,7 +3005,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'es': {
-                // Adopted from /_locales/es/translations.json
+                // Adopted from /ext/times.json/#es
                 // Disponible durante este arroyo (30 minutos)
                 // Disponible en 33 arroyos más (3 semanas)
 
@@ -3031,7 +3019,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
 
             case 'ru': {
-                // Adopted from /_locales/ru/translations.json
+                // Adopted from /ext/times.json/#ru
                 // Доступно во время этого потока (30 минут)
                 // Доступно в 33 ручьях (3 недели)
 
@@ -3196,6 +3184,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             let { author, handle, message, emotes, badges, style } = line;
             let element = await line.element,
                 deleted = await line.deleted;
+
+            if(defined(element.dataset.plagiarism) || defined(element.dataset.repetitive))
+                continue restoring;
 
             element.dataset.uuid ||= uuid;
 
@@ -3996,7 +3987,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', (await this));
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', (await this));
                                         }).bind(element)
                                     },
                                 });
@@ -4116,7 +4107,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             Object.defineProperties(results, {
                                 deleted: {
                                     get:(function() {
-                                        return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', this);
+                                        return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', this);
                                     }).bind(element)
                                 },
                             });
@@ -4186,7 +4177,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
             #tt-auto-claim-bonuses .tt-z-above { display: none }
-            [plagiarism], [repetitive] { display: none }
+            [data-plagiarism], [data-repetitive] { display: none }
             #tt-hidden-emote-container::after {
                 content: 'Collecting emotes...\\A Do not close this window';
                 text-align: center;

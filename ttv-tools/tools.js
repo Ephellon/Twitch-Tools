@@ -1187,15 +1187,12 @@ class Search {
             } break;
 
             case 'status.live': {
-                return fetchURL.idempotent(`/${ ID }`)
-                    .then(response => response.text())
-                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                    .then(DOM => parseBool(
-                        /(["']?)isLiveBroadcast\1\s*:\s*(?<status>true|false)\b/
-                            .exec(DOM.querySelector('head>script[type^="application"i][type$="json"i]')?.textContent)
-                            ?.groups
-                            ?.status
-                    ));
+                return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ ID.toLowerCase() }-80x45.jpg`, { as: 'native' })
+                    .then(response => {
+                        let { pathname, filename } = parseURL(response.url);
+
+                        return !(/\/404_/.test(pathname) || !/\/previews-ttv\//i.test(pathname));
+                    });
             } break;
 
             default: {
@@ -3736,7 +3733,7 @@ let Initialize = async(START_OVER = false) => {
 
         Cache.load('ChannelPoints', ({ ChannelPoints = {} }) => {
             let { random, round } = Math;
-            let online = [...STREAMERS, ...GetNextStreamer.cachedReminders].filter(isLive),
+            let online = [...STREAMERS, ...(GetNextStreamer.cachedReminders ?? [])].filter(isLive),
                 mostWatched = null,
                 mostPoints = 0,
                 mostLeft = 0,
@@ -3863,7 +3860,7 @@ let Initialize = async(START_OVER = false) => {
             }
         });
 
-        // delete ChannelPoints; // @performance
+        delete ChannelPoints; // @performance
 
         return when.defined(() => GetNextStreamer.cachedStreamer);
     }
@@ -3887,11 +3884,11 @@ let Initialize = async(START_OVER = false) => {
 
                     from: 'LIVE_REMINDERS',
                     href: `https://www.twitch.tv/${ name }`,
-                    live: (await new Search(name, 'channel', 'status.live') || Math.abs(+now - +time) / 3_600_000 < 1/3),
+                    live: await new Search(name, 'channel', 'status.live'),
                 });
             }
 
-            // delete LiveReminders; // @performance
+            delete LiveReminders; // @performance
 
             GetNextStreamer.cachedReminders = cachedReminders;
         });
@@ -6168,64 +6165,86 @@ let Initialize = async(START_OVER = false) => {
                                                             && parseBool(Settings.video_clips__trophy)
                                                             && ['SINGLE_MESSAGE_BYPASS_SUB_MODE', 'SEND_HIGHLIGHTED_MESSAGE', 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK', 'RANDOM_SUB_EMOTE_UNLOCK', 'CHOSEN_SUB_EMOTE_UNLOCK']
                                                                 .missing(ID => ID.contains(id))
-                                                        )   // Start recording, then click the button
+                                                        )   // Purchase the item, then begin recording
                                                             SetQuality('auto').then(() => {
-                                                                let video = $.all('video').pop();
-                                                                let time = parseInt(Settings.video_clips__trophy_length) * 1000;
-                                                                let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
+                                                                Chat.onbullet = async({ element, message, subject, mentions }) => {
+                                                                    element = await element;
 
-                                                                video.dataset.trophyId = title;
+                                                                    if(!(true
+                                                                        // The subject matches
+                                                                        && subject.equals('coin')
 
-                                                                let recording = new Recording(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                                                        // And...
+                                                                        && (false
+                                                                            // The message is from the user
+                                                                            || message.contains(USERNAME)
 
-                                                                // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
-                                                                recording
-                                                                    .then(({ target }) => target.recording.save())
-                                                                    .then(link => alert.silent(`
-                                                                        <video controller controls
-                                                                            title="Trophy Clip Saved - ${ link.download }"
-                                                                            src="${ link.href }" style="max-width:-webkit-fill-available"
-                                                                        ></video>
-                                                                        `)
-                                                                    );
+                                                                            // The message is from the user (for embedded messages)
+                                                                            || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
+                                                                        )
+                                                                    )) return;
 
-                                                                confirm.timed(`
-                                                                    <div hidden controller
-                                                                        icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
-                                                                        okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
-                                                                        deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
-                                                                    ></div>`
-                                                                , time)
-                                                                    .then(answer => {
-                                                                        if(answer === false)
-                                                                            throw `Trophy clip discarded!`;
-                                                                        recording.stop();
-                                                                    })
-                                                                    .catch(error => {
-                                                                        alert.silent(error);
-                                                                        recording.controller.abort(error);
-                                                                    });
+                                                                    let [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.mutilate().contains(reward.title.mutilate()));
+
+                                                                    if(nullish(item))
+                                                                        return;
+
+                                                                    // The user successfully purchased the item...
+                                                                    AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
+                                                                    Cache.save({ AutoClaimRewards });
+
+                                                                    // Begin recording...
+                                                                    let video = $.all('video').pop();
+                                                                    let time = parseInt(Settings.video_clips__trophy_length) * 1000;
+                                                                    let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
+
+                                                                    video.dataset.trophyId = title;
+
+                                                                    let recording = new Recording(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+
+                                                                    // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
+                                                                    recording
+                                                                        .then(({ target }) => target.recording.save())
+                                                                        .then(link => alert.silent(`
+                                                                            <video controller controls
+                                                                                title="Trophy Clip Saved - ${ link.download }"
+                                                                                src="${ link.href }" style="max-width:-webkit-fill-available"
+                                                                            ></video>
+                                                                            `)
+                                                                        );
+
+                                                                    confirm.timed(`
+                                                                        <input hidden controller
+                                                                            icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
+                                                                            okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
+                                                                            deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
+                                                                        />
+                                                                        ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ cost }`
+                                                                    , time)
+                                                                        .then(answer => {
+                                                                            if(answer === false)
+                                                                                throw `Trophy clip discarded!`;
+                                                                            recording.stop();
+                                                                        })
+                                                                        .catch(error => {
+                                                                            alert.silent(error);
+                                                                            recording.controller.abort(error);
+                                                                        });
+                                                                };
                                                             }).finally(() => {
-                                                                // Click the button
+                                                                // Purchase the item
                                                                 purchaseButton.click();
                                                             });
                                                         else
-                                                            // Click the button
+                                                            // Purchase the item
                                                             purchaseButton.click();
-
-                                                        return true;
-                                                    })
-                                                    .then(ok => {
-                                                        if(ok)
-                                                            AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
-                                                    })
-                                                    .finally(() => Cache.save({ AutoClaimRewards }));
+                                                    });
                                             });
                                     });
                             });
 
-            // delete AutoClaimRewards; // @performance
-            // delete AutoClaimAnswers; // @performance
+            delete AutoClaimRewards; // @performance
+            delete AutoClaimAnswers; // @performance
         });
     };
     Timers.claim_reward = 15_000;
@@ -6442,7 +6461,7 @@ let Initialize = async(START_OVER = false) => {
                             child.closest('.reward-list-item').setAttribute('timed-out', toTimeString((REWARDS_ON_COOLDOWN.get(item?.id) - +new Date).clamp(0, +Infinity), 'clock'));
                     });
 
-                    // delete AutoClaimRewards; // @performance
+                    delete AutoClaimRewards; // @performance
                 });
             }
 
@@ -6557,7 +6576,7 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                // delete AutoClaimRewards; // @performance
+                delete AutoClaimRewards; // @performance
             });
 
             $('.reward-center-body img')?.closest(':not(img,:only-child)')?.setAttribute('tt-rewards-calc', 'after');
@@ -7142,6 +7161,8 @@ let Initialize = async(START_OVER = false) => {
                             // Search did not complete...
                             let num = 3;
                             while(!ok && num-- > 0 && $.defined(`#tt-reminder-listing`)) {
+                                delete channel;
+
                                 Search.void(name);
 
                                 channel = await when.defined(() => new Search(name).then(Search.convertResults), 500);
@@ -7196,7 +7217,7 @@ let Initialize = async(START_OVER = false) => {
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                live = (channel.live || await new Search(name, 'channel', 'status.live') || abs(+now - +time) / 3_600_000 < 1/3),
+                                live = await new Search(name, 'channel', 'status.live'),
                                 [since] = toTimeString(abs(+now - +time), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
@@ -7462,9 +7483,9 @@ let Initialize = async(START_OVER = false) => {
                         )
                             Cache.save({ LiveReminders, DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
 
-                        // delete LiveReminders; // @performance
-                        // delete ChannelPoints; // @performance
-                        // delete DVRChannels; // @performance
+                        delete LiveReminders; // @performance
+                        delete ChannelPoints; // @performance
+                        delete DVRChannels; // @performance
                     });
                 },
             });
@@ -8523,7 +8544,7 @@ let Initialize = async(START_OVER = false) => {
 
             actionPanel.append(action);
 
-            // delete LiveReminders; // @performance
+            delete LiveReminders; // @performance
         });
 
         StopWatch.stop('live_reminders');
@@ -8566,8 +8587,10 @@ let Initialize = async(START_OVER = false) => {
                 checking:
                 // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
-                    if(PARSED_REMINDERS.contains(reminderName))
+                    if(PARSED_REMINDERS.contains(reminderName)) {
+                        delete LiveReminders;
                         continue;
+                    }
 
                     let channel = await new Search(reminderName).then(Search.convertResults),
                         ok = parseBool(channel?.ok);
@@ -8575,6 +8598,9 @@ let Initialize = async(START_OVER = false) => {
                     // Search did not complete...
                     let num = 3;
                     while(!ok && num-- > 0) {
+                        delete channel;
+                        // delete LiveReminders; // @performance
+
                         Search.void(reminderName);
 
                         channel = await when.defined(() => new Search(reminderName).then(Search.convertResults), 500);
@@ -8586,6 +8612,8 @@ let Initialize = async(START_OVER = false) => {
                     if(!channel.live) {
                         // Ignore this reminder (channel not live)
                         delete channel;
+                        // delete LiveReminders; // @performance
+
                         ++REMINDERS_INDEX;
                         continue checking;
                     }
@@ -10157,11 +10185,60 @@ let Initialize = async(START_OVER = false) => {
                     element.innerHTML = element.innerHTML.replace(regexp, ($0, $1, $$, $_) => {
                         reply = parseCommands(reply, variables);
 
-                        let { href } = parseURL(reply),
+                        let url = parseURL(reply),
                             string;
 
-                        if(parseBool(Settings.parse_commands__create_links) && defined(href))
-                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
+                        // Find the "best" URL
+                        let _href, _protocol, _host, _origin, _port, _pathname, _search, _hash;
+
+                        if(defined(url))
+                            for(let s = reply, i = 0, maxURLs = 5; i < s.length && --maxURLs;)
+                                try {
+                                    let { index, groups } = parseURL.pattern.exec(s.slice(i));
+                                    let { href, protocol, host, origin, port, pathname, search, hash } = groups;
+
+                                    if(false
+                                        // Empty URL...
+                                        || (false
+                                            || (href && !_href)
+                                            || (pathname && !_pathname)
+                                            || (search && !_search)
+                                            || (hash && !_hash)
+                                        )
+
+                                        // Longest URL...
+                                        // || (href.length < _href.length)
+
+                                        // Most complete URL...
+                                        || (false
+                                            || (protocol && !_protocol)
+                                            || (host && !_host)
+                                            || (origin && !_origin)
+                                            || (port && !_port)
+                                        )
+                                    ) {
+                                        // Set the new "best" URL
+                                        _href = href;
+                                        _protocol = protocol;
+                                        _host = host;
+                                        _origin = origin;
+                                        _port = port;
+                                        _search = search;
+                                        _hash = hash;
+                                    }
+
+                                    if(index + href.length >= s.slice(i).length)
+                                        break;
+
+                                    i = index + href.length;
+                                } catch(error) {
+                                    WARN(error);
+
+                                    break;
+                                }
+
+                        if(parseBool(Settings.parse_commands__create_links) && defined(_href))
+                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
                         else
                             string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
 
@@ -11130,18 +11207,18 @@ let Initialize = async(START_OVER = false) => {
 
             // Replaces ranges
             // 6 - 11P ET | 6:00 AM - 11:00 PM EST
-            .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\-\s]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/ig, ($0, start, premeridiem, delimeter, stop, postmeridiem, timezone) => {
-                let automeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 12)] + 'M';
+            .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\-\s]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/ig, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
+                let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 12)] + 'M';
 
-                postmeridiem ||= automeridiem;
-                premeridiem ||= postmeridiem;
+                postMeridiem ||= autoMeridiem;
+                preMeridiem ||= postMeridiem;
 
                 let _mm = /(?<!:\d\d)$/, _00 = ':00';
 
                 start = start.replace(_mm, _00);
                 stop = stop.replace(_mm, _00);
 
-                return [start, premeridiem, delimeter, stop, postmeridiem, ' ', timezone].join('');
+                return [start, preMeridiem, delimeter, stop, postMeridiem, ' ', timezone].join('');
             })
     }
 
@@ -11231,9 +11308,9 @@ let Initialize = async(START_OVER = false) => {
                     timezone ||= (offset.length? 'GMT': '');
 
                     // Change the meridiem
-                    if(hour < houl && (!(houl % 12) || autoMeridiem == 'P'))
+                    if(hour < houl && !meridiem && (!(houl % 12) || autoMeridiem == 'P'))
                         hour += 12;
-                    else if(hour > houl && (!(houl % 12) || autoMeridiem == 'A'))
+                    else if(hour > houl && !meridiem && (!(houl % 12) || autoMeridiem == 'A'))
                         hour -= 12;
 
                     if(timezone.length) {
@@ -12037,7 +12114,7 @@ let Initialize = async(START_OVER = false) => {
 
                 Cache.save({ ChannelPoints });
 
-                // delete ChannelPoints; // @performance
+                delete ChannelPoints; // @performance
             });
 
         // Color the balance text
@@ -12116,7 +12193,7 @@ let Initialize = async(START_OVER = false) => {
                 target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
             }
 
-            // delete ChannelPoints; // @performance
+            delete ChannelPoints; // @performance
         });
 
         StopWatch.stop('point_watcher_placement', 2_700);
@@ -12693,7 +12770,7 @@ let Initialize = async(START_OVER = false) => {
                 });
             }
 
-            // delete DVRChannels; // @performance
+            delete DVRChannels; // @performance
         });
 
         StopWatch.stop('video_clips__dvr');
@@ -12819,6 +12896,8 @@ let Initialize = async(START_OVER = false) => {
                         // Search did not complete...
                         let num = 3;
                         while(!ok && num-- > 0) {
+                            delete channel;
+
                             Search.void(streamer);
 
                             channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
@@ -12864,7 +12943,7 @@ let Initialize = async(START_OVER = false) => {
 
                     StopWatch.stop('video_clips__dvr__checking_interval', 30_000);
 
-                    // delete DVRChannels; // @performance
+                    delete DVRChannels; // @performance
                 });
         }, 30_000);
 
@@ -12963,7 +13042,7 @@ let Initialize = async(START_OVER = false) => {
                             });
                 }
 
-                // delete DVRChannels; // @performance
+                delete DVRChannels; // @performance
             });
 
         AUTO_DVR__CHECKING?.();
@@ -13050,7 +13129,7 @@ let Initialize = async(START_OVER = false) => {
                                 controls, muted,
                             }).href,
 
-                            style: `border: 1px solid var(--color-warn)`,
+                            style: `border: 1px solid var(--color-warn); position:absolute; top:0; z-index:99999;`,
 
                             height: '100%',
                             width: '100%',
@@ -13617,7 +13696,7 @@ let Initialize = async(START_OVER = false) => {
                                 Cache.save({ LiveReminders: { ...justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                             });
 
-                        // delete LiveReminders; // @performance
+                        delete LiveReminders; // @performance
                     });
                 }
             });
@@ -15115,7 +15194,7 @@ if(top == window) {
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', (await this));
+                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', (await this));
                                         }).bind(element)
                                     },
                                 });
@@ -15235,7 +15314,7 @@ if(top == window) {
                         Object.defineProperties(results, {
                             deleted: {
                                 get:(function() {
-                                    return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [repetitive], [plagiarism])', this);
+                                    return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', this);
                                 }).bind(element)
                             },
                         });

@@ -62,10 +62,22 @@
     - Most, big-name (+1GB) leaks were handled; others are commented out: `@performance`
         - Most atrocious offender was unused data in the `LIVE_REMINDERS__CHECKER` function, and other `new Search(...)` calls
     - The lesser leaks seem to freeze the tab(s) when removing them from memory in quick succession
+    - [x] Caused in part by Hardware Acceleration
+- [ ] Add option for DVR to record certain games
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33)
+- Fixed issue with caching live reminders
+- Added accessibility option to change the font of the webpage (separate of chat)
+- Fixed issue with 'get:' protocol in `fetchURL`
+- Removed all languages except English
+- Fixed issue with time-zone conversions
+- Fixed issue fetching a channel's live status
+- Adjusted logic for adding links to commands outside chat
+- Adjusted logic for displaying a temporary iframe when the stream fails
+
 > [`5.32.14.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.32.14.2)
 - Modified News styling
 - Modified Pinned filter

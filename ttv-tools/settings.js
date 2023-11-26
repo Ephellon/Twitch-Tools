@@ -190,6 +190,7 @@ let // These are option names. Anything else will be removed
             'simplify_chat',
                 'simplify_chat_monotone_usernames',
                 'simplify_chat_font',
+                'simplify_page_font',
                 // 'simplify_chat_reverse_emotes',
             // Display
             'simplify_look_auto_marquee',
@@ -462,7 +463,7 @@ class DatePicker {
                 )
             );
 
-        Translate(locale, container);
+        // Translate(locale, container);
 
         document.body.append(container);
 
@@ -689,7 +690,7 @@ class CommandMaker {
                 )
             );
 
-        Translate(locale, container);
+        // Translate(locale, container);
 
         document.body.append(container);
 
@@ -1061,7 +1062,7 @@ async function LoadSettings(OVER_RIDE_SETTINGS = null) {
 
                     if(TRANSLATED) continue loading;
 
-                    Translate(document.documentElement.lang = preferred.toLowerCase());
+                    // Translate(document.documentElement.lang = preferred.toLowerCase());
                 } break;
 
                 case 'simplify_chat_font': {
@@ -1176,7 +1177,7 @@ $.all('#user_language_preference').map(select => select.onchange = async event =
     let { currentTarget } = event,
         preferred = currentTarget.value;
 
-    Translate(document.documentElement.lang = preferred.toLowerCase());
+    // Translate(document.documentElement.lang = preferred.toLowerCase());
 
     await Storage.set({ ...SETTINGS, user_language_preference: preferred });
 });
@@ -1600,7 +1601,7 @@ $('#sync-settings--download').onmouseup = async event => {
 
                                 if(TRANSLATED) continue loading;
 
-                                Translate(document.documentElement.lang = value.toLowerCase());
+                                // Translate(document.documentElement.lang = value.toLowerCase());
                             } break;
 
                             case 'simplify_chat_font': {
@@ -2335,6 +2336,7 @@ when.defined(() => SETTINGS)
         });
     });
 
+// Deprecated: v5.32.14.3
 async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
@@ -2512,8 +2514,8 @@ document.body.onload = async() => {
             await Storage.get(['user_language_preference'], ({ user_language_preference = 'en' }) => {
                 let lang = document.documentElement.lang = user_language_preference.toLowerCase();
 
-                if(lang.unlike('en'))
-                    Translate(lang);
+                // if(lang.unlike('en'))
+                //     Translate(lang);
             });
 
             TRANSLATED = true;
