@@ -2365,7 +2365,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let src = Runtime.getURL('/font');
 
             AddCustomCSSBlock('Simplify Page Font', `body { font-family: ${ Settings.simplify_page_font }, Sans-Serif !important }`);
-            AddCustomCSSBlock('Simplify Chat Font', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
+            AddCustomCSSBlock('Simplify Chat Font', `[data-a-target*="chat"i][data-a-target*="message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
 
             AddCustomCSSBlock('Simplify Font (Head)', `
             @font-face {

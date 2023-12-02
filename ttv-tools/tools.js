@@ -6241,6 +6241,8 @@ let Initialize = async(START_OVER = false) => {
                     }
                 }
             }
+
+            Cache.save({ AutoClaimRewards, AutoClaimAnswers });
         });
 
         DISPLAY_BUY_LATER_BUTTON = setInterval(() => {
