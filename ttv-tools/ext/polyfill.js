@@ -931,17 +931,34 @@ function autocomplete(element, options) {
                 let [N] = [key, val].filter(str => str.mutilate().contains(value.mutilate()) || str.toLowerCase().contains(...value.toLowerCase().split(/\s+/)));
 
                 if(defined(N)) {
+                    N = N.trim();
                     let n = N.toLowerCase();
-                    let V = value;
+                    let $n = N.mutilate();
+                    let V = value.trim();
                     let v = V.toLowerCase();
+                    let $v = V.mutilate();
                     let _v = v.split(/\s+/);
-                    let _ = [], i = 0, j;
+                    let _ = [], i = 0, j, z;
 
                     if(n.contains(v)) {
                         // Contains the word(s); whole, in-order, case-insensitive
                         i = n.indexOf(v);
 
-                        _ = `${ N.slice(0, i) }<strong>${ N.slice(i, i + v.length) }</strong>${ N.slice(i + v.length, N.length) }`;
+                        z = v.length - i;
+                        _ = `${ N.slice(0, i) }<strong t1>${ N.slice(i, i + v.length) }</strong>${ N.slice(i + v.length, N.length) }`;
+                    } else if($n.contains($v)) {
+                        // Contains one-or-more characters; partial, in-order, case-insensitive
+                        for(let c of N)
+                            if(!c.trim().length)
+                                _.push(' ');
+                            else if(c.equals(V[i]))
+                                ++i && _.push(`\x00${ c }\x01`) && (j ??= i - 1);
+                            else
+                                _.push(c);
+
+                        _ = _.join('');
+                        z = _.count('\x00') - j;
+                        _ = _.replace(/\x01\x00/g, '').replace(/\x00/g, `<strong t2>`).replace(/\x01/g, `</strong>`);
                     } else if(n.contains(..._v)) {
                         // Contains one-or-more word(s); partial, no order, case-insensitive
                         for(let w of _v) {
@@ -952,28 +969,21 @@ function autocomplete(element, options) {
                             _.push({ index: i, word: w });
                         }
 
-                        i = 0; j = [...N];
+                        j = N.split('');
 
-                        _.sort((a, b) => b.index - a.index).map(s => {
-                            j.splice(s.index, s.word.length, `<strong>${ N.substr(s.index, s.word.length) }</strong>`);
+                        if(_.length > 1)
+                            _ = _.sort((a, b) => b.index - a.index);
+
+                        _.map(s => {
+                            j.splice(s.index, s.word.length, `<strong t3>${ N.substr(s.index, s.word.length) }</strong>`);
                         });
 
+                        z = _v.filter(c => n.contains(c)).join('').length - _.at(-1).index;
                         _ = j.join('');
-                    } else {
-                        // Contains one-or-more characters; partial, in-order, case-insensitive
-                        for(let c of N)
-                            if(!c.trim().length)
-                                _.push(' ');
-                            else if(c.equals(V[i]))
-                                ++i && _.push(`\x00${ c }\x01`);
-                            else
-                                _.push(c);
-
-                        _ = _.join('').replace(/\x01\x00/g, '').replace(/\x00/g, `<strong>`).replace(/\x01/g, `</strong>`);
                     }
 
                     return f(`#${ id }-item:${ key.replace(/\W+/g, '-') }.item`, {
-                        '@distance': N.mutilate().distanceFrom(V.mutilate()),
+                        '@sortScore': z,
 
                         onmouseup(event) {
                             let self = event.target;
@@ -986,7 +996,7 @@ function autocomplete(element, options) {
                         .html(_)
                         .with(f(`input[type=hidden][value="${ encodeHTML(N) }"]`));
                 }
-            }).filter(defined).sort((a, b) => parseInt(a.dataset.distance) - parseInt(b.dataset.distance))
+            }).filter(defined).sort((a, b) => parseInt(b.dataset.sortScore) - parseInt(a.dataset.sortScore))
         );
 
         self.closest('[action]').append(list);

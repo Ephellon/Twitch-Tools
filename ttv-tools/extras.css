@@ -1513,7 +1513,7 @@ html:not([lang="en"i]) .details > summary {
 }
 
 .autocomplete-list .active {
-    background-color: var(--color-twitch-purple);
+    background-color: var(--color-twitch-purple) !important;
 }
 
 .autocomplete-list .item {
