@@ -68,6 +68,16 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.2)
+- Adjusted game description fetching logic for Nintendo games
+- Adjusted time zone logic
+- Added some country adjectives to time zone conversion logic
+- Stored `DVRChannels` as an object
+- Fixed issue with `compareVersions`
+- Added `class MersenneTwister` to better "randomize" some portions of code
+- Added search-ability to Live Reminders
+- Consolidated and modified `AddCustomCSSBlock` and `RemoveCustomCSSBlock` logic
+
 > [`5.33.0.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.1)
 - Fixed issue with `parseURL`
 

@@ -18,46 +18,6 @@
 
 ;
 
-/** Adds a CSS block to the <code class=prettyprint>Chat__CUSTOM_CSS</code> string
- * @simply AddCustomCSSBlock_Chat(name:string, block:string) → undefined
- */
-function AddCustomCSSBlock_Chat(name, block) {
-    name = name.trim();
-
-    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
-
-    let newHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
-
-    if(nullish(Chat__CUSTOM_CSS?.innerHTML) || Chat__CUSTOM_CSS?.innerHTML?.equals(newHTML))
-        return;
-
-    Chat__CUSTOM_CSS.innerHTML = newHTML;
-    Chat__CUSTOM_CSS.remove();
-
-    // Force styling update
-    $('body').append(Chat__CUSTOM_CSS);
-}
-
-/** Removes a CSS block from the <code class=prettyprint>Chat__CUSTOM_CSS</code> string
- * @simply RemoveCustomCSSBlock_Chat(name:string, flags:string?) → undefined
- */
-function RemoveCustomCSSBlock_Chat(name, flags = '') {
-    name = name.trim();
-
-    let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
-
-    let newHTML = ((Chat__CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
-
-    if(Chat__CUSTOM_CSS?.innerHTML?.equals(newHTML))
-        return;
-
-    Chat__CUSTOM_CSS.innerHTML = newHTML;
-    Chat__CUSTOM_CSS.remove();
-
-    // Force styling update
-    $('body').append(Chat__CUSTOM_CSS);
-}
-
 top.Queue ??= { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] };
 
 let Chat__Initialize = async(START_OVER = false) => {
@@ -1457,7 +1417,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(key.endsWith('bullets_paid') && parseBool(Settings[key]))
                 PINNED_FILTER = setInterval(() => $('[class*="pinned"i]:is([class*="by"i], [class*="card"i]), [class*="happening"i][class*="notification"i]')?.closest('[class*="chat"] > div:not([class])')?.remove(), 100);
             else if(parseBool(Settings[key]))
-                AddCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
+                AddCustomCSSBlock(`FilterBulletType${ key.slice(-5) }`, `${ subjects.map(subject => `[data-uuid][data-type="${ subject }"i]`).join(',') } { display:none!important }`);
 
         StopWatch.stop('filter_bulletins');
     };
@@ -1465,7 +1425,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     Unhandlers.filter_bulletins = () => {
         for(let [key, subjects] of BULLETIN_FILTERS)
-            RemoveCustomCSSBlock_Chat(`FilterBulletType${ key.slice(-5) }`);
+            RemoveCustomCSSBlock(`FilterBulletType${ key.slice(-5) }`);
         clearInterval(PINNED_FILTER);
     };
 
@@ -2232,7 +2192,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 let Rules = UPDATE_RULES('lurking', ';');
 
                 let channel = STREAMER.name?.toLowerCase();
-                let badges = STREAMER.perm.all ?? ['everyone'];
+                let badges = STREAMER.perm?.all ?? ['everyone'];
                 let message, reason;
 
                 if(STREAMER.perm.has(Settings.auto_chat__vip)) {
@@ -2399,15 +2359,15 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     Handlers.simplify_chat = () => {
         if(parseBool(Settings.simplify_chat_monotone_usernames))
-            AddCustomCSSBlock_Chat('SimplifyChatMonotoneUsernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
+            AddCustomCSSBlock('Simplify Chat Monotone Usernames', `[data-a-target="chat-message-username"i] { color: var(--color-text-base) !important }`);
 
         if(parseBool(Settings.simplify_chat_font) || parseBool(Settings.simplify_page_font)) {
             let src = Runtime.getURL('/font');
 
-            AddCustomCSSBlock_Chat('SimplifyPageFont', `body { font-family: ${ Settings.simplify_page_font }, Sans-Serif !important }`);
-            AddCustomCSSBlock_Chat('SimplifyChatFont', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
+            AddCustomCSSBlock('Simplify Page Font', `body { font-family: ${ Settings.simplify_page_font }, Sans-Serif !important }`);
+            AddCustomCSSBlock('Simplify Chat Font', `[class*="tt-visible-message"i] { font-family: ${ Settings.simplify_chat_font }, Sans-Serif !important }`);
 
-            AddCustomCSSBlock_Chat('SimplifyFont_Head', `
+            AddCustomCSSBlock('Simplify Font (Head)', `
             @font-face {
                 font-family: Roobert;
                 font-weight: normal;
@@ -2451,7 +2411,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         }
 
         if(parseBool(Settings.simplify_chat))
-            AddCustomCSSBlock_Chat('SimplifyChat', `.tt-visible-message-even { background-color: #8882 }`);
+            AddCustomCSSBlock('Simplify Chat', `.tt-visible-message-even { background-color: #8882 }`);
 
         Chat.get().map(Chat.defer.onmessage = async line => {
             let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
@@ -2471,7 +2431,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     Timers.simplify_chat = -250;
 
     Unhandlers.simplify_chat = () => {
-        ['SimplifyChat', 'SimplifyChatMonotoneUsernames', 'SimplifyChatFont'].map(block => RemoveCustomCSSBlock_Chat(block));
+        ['SimplifyChat', 'SimplifyChatMonotoneUsernames', 'SimplifyChatFont'].map(block => RemoveCustomCSSBlock(block));
     };
 
     __SimplifyChat__:
@@ -2627,7 +2587,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         if(nullish(container)) {
             StopWatch.stop('rewards_calculator');
 
-            RemoveCustomCSSBlock_Chat('tt-rewards-calc');
+            RemoveCustomCSSBlock('tt-rewards-calc');
         }
 
         // https://theemergence.co.uk/when-is-the-best-time-to-stream-on-twitch/#faq-question-1565821275069
@@ -3045,15 +3005,14 @@ let Chat__Initialize = async(START_OVER = false) => {
             } break;
         }
 
-        AddCustomCSSBlock_Chat('tt-rewards-calc',
-        `
-        [tt-rewards-calc="before"i]::before {
-            content: "${ REWARDS_CALCULATOR_TEXT }";
-        }
+        AddCustomCSSBlock('tt-rewards-calc', `
+            [tt-rewards-calc="before"i]::before {
+                content: "${ REWARDS_CALCULATOR_TEXT }";
+            }
 
-        [tt-rewards-calc="after"i]::after {
-            content: "${ REWARDS_CALCULATOR_TEXT }";
-        }
+            [tt-rewards-calc="after"i]::after {
+                content: "${ REWARDS_CALCULATOR_TEXT }";
+            }
         `);
 
         StopWatch.stop('rewards_calculator');
@@ -3246,7 +3205,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             RESTORED_MESSAGES.add(uuid);
 
-            // NOTICE(`Restoring message:`, line);
+            NOTICE(`Restoring message (${ uuid }):`, line);
 
             // Fragmented...
             if(emotes.length > 0) {
@@ -3603,8 +3562,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 };
 // End of Chat__Initialize_Safe_Mode
 
-let Chat__CUSTOM_CSS,
-    Chat__PAGE_CHECKER,
+let Chat__PAGE_CHECKER,
     Chat__WAIT_FOR_PAGE,
     Chat__SETTING_RELOADER;
 
@@ -4175,8 +4133,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
     // Add custom styling
     CustomCSSInitializer: {
-        Chat__CUSTOM_CSS = $('#tt-custom-chat-css') ?? furnish('style#tt-custom-chat-css', {
-            innerHTML: `
+        AddCustomCSSBlock('chat.js', `
             /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
             #tt-auto-claim-bonuses .tt-z-above { display: none }
@@ -4215,11 +4172,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 left: 0;
                 top: 0;
             }
-            `
-        });
-
-        Chat__CUSTOM_CSS?.remove();
-        $('body').append(Chat__CUSTOM_CSS);
+        `);
     }
 
     // Update the settings

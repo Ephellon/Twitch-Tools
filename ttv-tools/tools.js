@@ -2456,46 +2456,6 @@ let nth = (n, s = '') => {
     return n;
 }
 
-/** Adds a CSS block to the <code class=prettyprint>CUSTOM_CSS</code> string
- * @simply AddCustomCSSBlock(name:string, block:string) → undefined
- */
-function AddCustomCSSBlock(name, block) {
-    name = name.trim();
-
-    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
-
-    let newHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
-
-    if(nullish(CUSTOM_CSS?.innerHTML) || CUSTOM_CSS?.innerHTML?.equals(newHTML))
-        return;
-
-    CUSTOM_CSS.innerHTML = newHTML;
-    CUSTOM_CSS.remove();
-
-    // Force styling update
-    $('body').append(CUSTOM_CSS);
-}
-
-/** Removes a CSS block from the <code class=prettyprint>CUSTOM_CSS</code> string
- * @simply RemoveCustomCSSBlock(name:string, flags:string?) → undefined
- */
-function RemoveCustomCSSBlock(name, flags = '') {
-    name = name.trim();
-
-    let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
-
-    let newHTML = ((CUSTOM_CSS?.innerHTML || '').replace(regexp, ''));
-
-    if(CUSTOM_CSS?.innerHTML?.equals(newHTML))
-        return;
-
-    CUSTOM_CSS.innerHTML = newHTML;
-    CUSTOM_CSS.remove();
-
-    // Force styling update
-    $('body').append(CUSTOM_CSS);
-}
-
 // Returns a unique list of channels (used with `Array..filter`)
     // uniqueChannels(channel:object<Channel>, index:number, channels:array) → boolean
 let uniqueChannels = (channel, index, channels) =>
@@ -3594,7 +3554,7 @@ let TWITCH_PATHNAMES = [
  *                                                                           |_|
  */;
 let FIRST_IN_LINE_JOB = null,           // The current job (interval)
-    FIRST_IN_LINE_HREF = '#',            // The upcoming HREF
+    FIRST_IN_LINE_HREF = '#',           // The upcoming HREF
     FIRST_IN_LINE_BOOST,                // The "Up Next Boost" toggle
     FIRST_IN_LINE_TIMER,                // The current time left before the job is accomplished
     FIRST_IN_LINE_PAUSED = false,       // The pause-state
@@ -3670,7 +3630,7 @@ let Initialize = async(START_OVER = false) => {
 
             if(span > max)
                 WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
-                    ?.toNativeStack?.();
+                    .toNativeStack();
         }
     }
 
@@ -5221,7 +5181,7 @@ let Initialize = async(START_OVER = false) => {
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get CHANNEL details (3): ${ error }`)
-                                        ?.toNativeStack?.();
+                                        // .toNativeStack();
 
                                     if(!ErrGet.length)
                                         PushToTopSearch({ 'tt-err-get': 'ch-tw-tracker' });
@@ -5285,7 +5245,7 @@ let Initialize = async(START_OVER = false) => {
                                 })
                                 .catch(error => {
                                     WARN(`Failed to get CHANNEL details (4): ${ error }`)
-                                        .toNativeStack();
+                                        // .toNativeStack();
 
                                     if(!ErrGet.length)
                                         PushToTopSearch({ 'tt-err-get': 'ch-tw' });
@@ -5698,7 +5658,7 @@ let Initialize = async(START_OVER = false) => {
                 let scapeGoat = await GetNextStreamer();
 
                 WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
-                    ?.toNativeStack?.();
+                    // .toNativeStack();
 
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
             }
@@ -6080,7 +6040,8 @@ let Initialize = async(START_OVER = false) => {
                             .then(() => {
                                 Cache.save({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
 
-                                WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)?.toNativeStack?.();
+                                WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)
+                                    .toNativeStack();
                             });
                     });
             }
@@ -6259,6 +6220,28 @@ let Initialize = async(START_OVER = false) => {
         REMARK('Adding reward claimer...');
 
         RegisterJob('claim_reward');
+
+        // Correct "undefined" key for auto-answers...
+        Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], ({ AutoClaimRewards, AutoClaimAnswers }) => {
+            let streamers = STREAMER.jump;
+
+            for(let streamer in streamers) {
+                let { id } = streamers[streamer];
+
+                if((id in AutoClaimRewards) && (id in AutoClaimAnswers)) {
+                    let rewards = AutoClaimRewards[id];
+                    let answers = AutoClaimAnswers[id];
+
+                    if(undefined in answers) {
+                        answers[rewards[0]] = answers[undefined]; // Assume the first entry is the correct one :P
+
+                        NOTICE(`Correcting auto-answer entry ${ streamer }@${ rewards[0] } → "${ answers[undefined] }"`);
+
+                        delete answers[undefined];
+                    }
+                }
+            }
+        });
 
         DISPLAY_BUY_LATER_BUTTON = setInterval(() => {
             let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), button[disabled] [data-test-selector="RequiredPoints"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
@@ -6474,9 +6457,10 @@ let Initialize = async(START_OVER = false) => {
                 AutoClaimRewards ??= {};
 
                 let [head, body] = container.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
-                    $title = ($('#channel-points-reward-center-header', head)?.textContent || '').trim(),
-                    $prompt = ($('.reward-center-body p', body)?.textContent || '').trim(),
-                    $image = $('.reward-icon img', body)?.src,
+                    $body = $('[class*="tray"i][class*="body"i]', head),
+                    $title = (($('#channel-points-reward-center-header', head)?.textContent ?? $body?.previousElementSibling?.textContent) || '').trim(),
+                    $prompt = (($('.reward-center-body p', body)?.textContent ?? $body?.textContent) || '').trim(),
+                    $image = ($('[class*="reward-icon"i] img', body) ?? $('[class*="reward-icon"i] img', head))?.src,
                     [$cost = 0] = (($('[disabled]', body) ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
 
                 let [item] = await STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
@@ -6523,16 +6507,15 @@ let Initialize = async(START_OVER = false) => {
                                             let itemIDs = (AutoClaimRewards[STREAMER.sole] ??= []);
                                             let answers = (AutoClaimAnswers[STREAMER.sole] ??= {});
                                             let index = itemIDs.indexOf(rewardID);
-                                            let ID = itemIDs[index];
 
                                             if(!!~index) {
-                                                delete answers[ID];
+                                                delete answers[rewardID];
                                                 itemIDs.splice(index, 1);
                                             } else {
                                                 if(item.needsInput) {
-                                                    answers[ID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title }"' />${ item.prompt || `Please provide input...` }`);
+                                                    answers[rewardID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title }"' />${ item.prompt || `Please provide input...` }`);
 
-                                                    if(answers[ID] === null)
+                                                    if(answers[rewardID] === null)
                                                         return /* The user pressed "Cancel" */;
                                                 }
 
@@ -6956,7 +6939,7 @@ let Initialize = async(START_OVER = false) => {
         if(timeRemaining <= 60_000 && nullish('.tt-confirm'))
             wait(60_000).then(() => {
                 WARN(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`)
-                    ?.toNativeStack?.();
+                    // .toNativeStack();
 
                 let { name } = GetNextStreamer.cachedStreamer;
 
@@ -7112,7 +7095,8 @@ let Initialize = async(START_OVER = false) => {
 
                         let f = furnish;
                         let body = $('#tt-reminder-listing'),
-                            head = $('[up-next--header]');
+                            head = $('[up-next--header]'),
+                            search = $('#tt-reminder-search');
 
                         if(defined(body)) {
                             live_reminders_catalog_button.innerHTML = Glyphs.modify('notify', { height: '20px', width: '20px' });
@@ -7127,6 +7111,32 @@ let Initialize = async(START_OVER = false) => {
                         }
 
                         body = f(`#tt-reminder-listing`);
+
+                        if(Object.keys(LiveReminders).length > 6) {
+                            search = f(`input#tt-reminder-search.input.autocomplete[autocomplete=false][spellcheck=false][placeholder="Search for a streamer, game or description here... Esc to exit"]`, {
+                                onkeyup: delay(async event => {
+                                    let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
+                                        value = (target?.value ?? target?.textContent ?? target?.innerText ?? "").trim();
+
+                                    let terms = value.split(/\s+/).map(term => ['name', 'game', 'desc'].map(type => `[${ type }*="${ term }"i]`).join(','));
+
+                                    if(value.length)
+                                        AddCustomCSSBlock(target.id, `#${ target.id }-form ~ :not(${ terms.join(',') }) { display: none }`);
+                                    else
+                                        RemoveCustomCSSBlock(target.id);
+                                    target.setAttribute('value', value);
+                                }, 250),
+                            });
+
+                            // https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_autocomplete
+
+                            autocomplete(search, LiveReminders);
+
+                            body.with(
+                                f(`form#${ search.id }-form[action=#]`, { style: 'position:sticky; top:4rem; z-index:99999' })
+                                    .with(search)
+                            );
+                        }
 
                         parent.insertBefore(body, $('[up-next--body] > :nth-child(2)'));
 
@@ -7251,7 +7261,10 @@ let Initialize = async(START_OVER = false) => {
 
                             let DVR_ON = parseBool(DVRChannels[_name]);
 
-                            let container = f(`.tt-reminder`, { name, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
+                            if((game || desc)?.length)
+                                autocomplete(search, { [name]: [name, game, desc].filter(s => s.length).join(' - ') });
+
+                            let container = f(`.tt-reminder`, { name, game, desc, live, style: `animation:fade-in 1s 1; background:var(--color-background-base)` },
                                 f('.simplebar-scroll-content',
                                     {
                                         style: 'overflow: hidden;',
@@ -7393,11 +7406,16 @@ let Initialize = async(START_OVER = false) => {
                                                                                     name = currentTarget.getAttribute('name');
 
                                                                                 Cache.load('DVRChannels', async({ DVRChannels }) => {
-                                                                                    DVRChannels = JSON.parse(DVRChannels || '{}');
+                                                                                    try {
+                                                                                        DVRChannels = JSON.parse(DVRChannels || '{}');
+                                                                                    } catch(error) {
+                                                                                        // Probably an object already...
+                                                                                        DVRChannels ??= {};
+                                                                                    }
 
                                                                                     let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                                                                         DVR_ID = name.toLowerCase(),
-                                                                                        enabled = nullish(DVRChannels[DVR_ID]),
+                                                                                        enabled = !parseBool(DVRChannels[DVR_ID]?.length),
                                                                                         [title, subtitle, icon] = [
                                                                                             ['Turn DVR on', `${ s(name) } live streams will be recorded`, 'host'],
                                                                                             ['Turn DVR off', `${ s(name) } live streams will no longer be recorded`, 'clip']
@@ -7422,7 +7440,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                     }
 
                                                                                     // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                                                                                    Cache.save({ DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                                                                                    Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                                                                                 });
                                                                             },
                                                                         },
@@ -7481,7 +7499,7 @@ let Initialize = async(START_OVER = false) => {
                             || (Hash.live_reminders != UUID.from(JSON.stringify(LiveReminders)).value)
                             || (Hash.dvr_channels != UUID.from(JSON.stringify(DVRChannels)).value)
                         )
-                            Cache.save({ LiveReminders, DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
+                            Cache.save({ LiveReminders, DVRChannels }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
 
                         delete LiveReminders; // @performance
                         delete ChannelPoints; // @performance
@@ -7855,7 +7873,7 @@ let Initialize = async(START_OVER = false) => {
 
                                             Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                                 WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
-                                                    ?.toNativeStack?.();
+                                                    // .toNativeStack();
 
                                                 goto(FIRST_IN_LINE_HREF);
                                             });
@@ -8103,7 +8121,7 @@ let Initialize = async(START_OVER = false) => {
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
                                         WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
-                                            ?.toNativeStack?.();
+                                            // .toNativeStack();
 
                                         goto(FIRST_IN_LINE_HREF);
                                     });
@@ -8348,7 +8366,7 @@ let Initialize = async(START_OVER = false) => {
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
             WARN('Twitch failed to add these channels correctly:', bad_names)
-                ?.toNativeStack?.();
+                // .toNativeStack();
 
             BAD_STREAMERS = "";
 
@@ -9778,7 +9796,7 @@ let Initialize = async(START_OVER = false) => {
                                             if(defined(gameDesc) && good) {
                                                 $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
 
-                                                gameDesc.innerText = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
+                                                gameDesc.innerText = [description, gameDesc.innerText].sort((a, b) => b?.length - a?.length).shift().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
                                                 gameDesc.removeAttribute('data-twitch-provided-description');
                                             }
                                         });
@@ -9879,7 +9897,11 @@ let Initialize = async(START_OVER = false) => {
                                         if(defined(gameDesc) && good) {
                                             $('[data-test-selector="chat-card-title"]').innerHTML += ' &mdash; Nintendo&reg;';
 
-                                            gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b.length - a.length).pop()?.replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1') || gameDesc.innerHTML;
+                                            console.log('Nintendo:', description, description?.length);
+                                            console.log('Twitch:', gameDesc.innerText, gameDesc.innerText?.length);
+                                            console.log([description, gameDesc.innerText].sort((a, b) => b?.length - a?.length));
+
+                                            gameDesc.innerHTML = [description, gameDesc.innerText].sort((a, b) => b?.length - a?.length).shift().replace(/([\.!\?])\s*(?:\.{3}|…)\s*$/, '$1');
                                             gameDesc.removeAttribute('data-twitch-provided-description');
                                         }
                                     });
@@ -10478,8 +10500,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // Change the input's styling...
-            AddCustomCSSBlock(CSSBlockName,
-                `
+            AddCustomCSSBlock(CSSBlockName, `
                 .tt-chat-input-tray__open {
                     bottom: 100%;
                     margin: 0 -.5rem -.5rem;
@@ -10587,8 +10608,7 @@ let Initialize = async(START_OVER = false) => {
                     /* .keyboard-prompt--text */
                     font-size: 1.1rem;
                 }
-                `
-            );
+            `);
         }, 250));
     }
 
@@ -11191,6 +11211,289 @@ let Initialize = async(START_OVER = false) => {
             YEKT: "+5:00",
         },
 
+        COUNTRY_NAME__CONVERSIONS = {
+            "Acre": "-05:00",
+            "Akrotiri": "+02:00",
+            "Aktobe": "+05:00",
+            "Alberta": "-07:00",
+            "Aleutian Islands": "-10:00",
+            "Altai Krai": "+07:00",
+            "Altai Republic": "+07:00",
+            "Amapá": "-03:00",
+            "Amazonas": "-04:00",
+            "Amazonas State": "-04:00",
+            "American Samoa": "-11:00",
+            "Amsterdam Islands": "+05:00",
+            "Amundsen–Scott": "+12:00",
+            "Amundsen–Scott South Pole Station": "+12:00",
+            "Amur Oblast": "+09:00",
+            "Anguilla": "-04:00",
+            "Ascension": "+00:00",
+            "Astrakhan Oblast": "+04:00",
+            "Atyrau": "+05:00",
+            "Austral Islands": "-10:00",
+            "Australian Capital Territory": "+10:00",
+            "Autonomous Region of Bougainville": "+11:00",
+            "Azores": "-01:00",
+            "Baja California": "-08:00",
+            "Baja California Sur": "-07:00",
+            "Baker Island": "-12:00",
+            "Bali": "+08:00",
+            "Bangka Belitung Islands": "+07:00",
+            "Bas-Uele": "+02:00",
+            "Bashkortostan": "+05:00",
+            "Bayan-Ölgii": "+07:00",
+            "Bermuda": "-04:00",
+            "Bougainville": "+11:00",
+            "British Columbia": "-08:00",
+            "British Indian Ocean Territory": "+06:00",
+            "British Virgin Islands": "-04:00",
+            "Buryatia": "+08:00",
+            "Caicos Islands": "-05:00",
+            "Canary Islands": "+00:00",
+            "Cantung Mine": "-08:00",
+            "Caribbean Islands": "-04:00",
+            "Caribbean Municipalities": "-04:00",
+            "Casey Station": "+11:00",
+            "Cayman Islands": "-05:00",
+            "Central Nunavut": "-06:00",
+            "Central Sakha Republic": "+10:00",
+            "Chatham Islands": "+12:45",
+            "Chelyabinsk Oblast": "+05:00",
+            "Chihuahua": "-07:00",
+            "Chile": "-04:00",
+            "Chilean Antarctica": "-03:00",
+            "Christmas Island": "+07:00",
+            "Chukotka": "+12:00",
+            "Chuuk and Yap": "+10:00",
+            "Clipperton Island": "-08:00",
+            "Cocos (Keeling) Islands": "+06:30",
+            "Cocos Islands": "+06:30",
+            "Cook Islands": "-10:00",
+            "Crozet Islands": "+04:00",
+            "Danmarkshavn": "+00:00",
+            "Danmarkshavn Weather Station": "+00:00",
+            "Davis Station": "+07:00",
+            "Denmark": "+01:00",
+            "Dhekelia": "+02:00",
+            "Distrito Federal": "-03:00",
+            "Dumont-d'Urville Station": "+10:00",
+            "East Brazilian Islands": "-02:00",
+            "East Kalimantan": "+08:00",
+            "East Kazakhstan": "+06:00",
+            "East Nunavut": "-05:00",
+            "East Nusa Tenggara": "+08:00",
+            "East Ontario": "-05:00",
+            "East Quebec": "-04:00",
+            "East Sakha": "+11:00",
+            "Easter Island": "-06:00",
+            "Ecuador": "-05:00",
+            "European Russia": "+03:00",
+            "Falkland Islands": "-03:00",
+            "Faroe Islands": "+00:00",
+            "Fernando de Noronha": "-02:00",
+            "France": "+01:00",
+            "French Guiana": "-03:00",
+            "Futuna": "+12:00",
+            "Galápagos Province": "-06:00",
+            "Gambier Islands": "-09:00",
+            "Gibraltar": "+01:00",
+            "Gilbert Islands": "+12:00",
+            "Goiás": "-03:00",
+            "Great Lakes": "-06:00",
+            "Greenland": "-03:00",
+            "Guadeloupe": "-04:00",
+            "Guam": "+10:00",
+            "Guernsey": "+00:00",
+            "Gulf Coast": "-06:00",
+            "Haut-Katanga": "+02:00",
+            "Haut-Lomami": "+02:00",
+            "Haut-Uele": "+02:00",
+            "Hawaii": "-10:00",
+            "Heard Islands": "+05:00",
+            "Howland Island": "-12:00",
+            "Indian Pacific (Port Augusta)": "+08:00",
+            "Irkutsk Oblast": "+08:00",
+            "Islands of Maluku Islands": "+09:00",
+            "Islands of Sulawesi": "+08:00",
+            "Islands of Sumatra": "+07:00",
+            "Isle of Man": "+00:00",
+            "Ittoqqortoormiit": "-01:00",
+            "Ituri Interim Administration": "+02:00",
+            "Jarvis Island": "-11:00",
+            "Java": "+07:00",
+            "Jersey": "+00:00",
+            "Jewish Autonomous Oblast": "+10:00",
+            "Jewish Oblast": "+10:00",
+            "Johnston Atoll": "-10:00",
+            "Kalgoorlie": "+08:00",
+            "Kalimantan": "+07:00",
+            "Kaliningrad": "+02:00",
+            "Kaliningrad Oblast": "+02:00",
+            "Kamchatka Krai": "+12:00",
+            "Kasaï": "+02:00",
+            "Kasaï Oriental": "+02:00",
+            "Kasaï-Central": "+02:00",
+            "Kemerovo": "+07:00",
+            "Kemerovo Oblast": "+07:00",
+            "Kerguelen Islands": "+05:00",
+            "Khabarovsk Krai": "+10:00",
+            "Khakassia": "+07:00",
+            "Khanty–Mansia": "+05:00",
+            "Khovd": "+07:00",
+            "Kingman Reef": "-11:00",
+            "Kinshasa": "+01:00",
+            "Kongo Central": "+01:00",
+            "Kosrae and Pohnpei": "+11:00",
+            "Krasnoyarsk Krai": "+07:00",
+            "Kurgan Oblast": "+05:00",
+            "Kwango": "+01:00",
+            "Kwilu": "+01:00",
+            "Kyzylorda": "+05:00",
+            "Labrador": "-04:00",
+            "Line Islands": "+14:00",
+            "Lloydminster": "-07:00",
+            "Lomami": "+02:00",
+            "Lord Howe Island": "+10:30",
+            "Lualaba": "+02:00",
+            "Madeira": "+00:00",
+            "Madura": "+07:00",
+            "Magadan Oblast": "+11:00",
+            "Magallanes": "-03:00",
+            "Mai-Ndombe": "+01:00",
+            "Mangystau": "+05:00",
+            "Maniema": "+02:00",
+            "Manitoba": "-06:00",
+            "Marquesas Islands": "-09:30",
+            "Martim Vaz": "-02:00",
+            "Martinique": "-04:00",
+            "Mato Grosso": "-04:00",
+            "Mato Grosso do Sul": "-04:00",
+            "Mawson Station": "+05:00",
+            "Mayotte": "+03:00",
+            "McDonald Islands": "+05:00",
+            "McMurdo Station": "+12:00",
+            "Mexico": "-06:00",
+            "Midway Atoll": "-11:00",
+            "Mongala": "+01:00",
+            "Montserrat": "-04:00",
+            "Nayarit": "-07:00",
+            "Netherlands": "+01:00",
+            "New Brunswick": "-04:00",
+            "New Caledonia": "+11:00",
+            "New South Wales": "+10:00",
+            "New South Wales (Yancowinna County)": "+09:30",
+            "New Zealand": "+12:00",
+            "Newfoundland": "-03:30",
+            "Niue": "-11:00",
+            "Nord-Kivu": "+02:00",
+            "Nord-Ubangi": "+01:00",
+            "Norfolk Island": "+11:00",
+            "North Kalimantan": "+08:00",
+            "North Mariana Islands": "+10:00",
+            "North Territory": "+09:30",
+            "North West Ontario": "-06:00",
+            "Northeast Region": "-03:00",
+            "Northwest Territories": "-07:00",
+            "Nova Scotia": "-04:00",
+            "Novosibirsk Oblast": "+07:00",
+            "Nunavut (Kitikmeot Region)": "-07:00",
+            "Nunavut (Southampton Island)": "-05:00",
+            "Omsk Oblast": "+06:00",
+            "Orenburg Oblast": "+05:00",
+            "Palmer Station": "-03:00",
+            "Palmyra Atoll": "-11:00",
+            "Pará": "-03:00",
+            "Perm Krai": "+05:00",
+            "Phoenix Islands": "+13:00",
+            "Pitcairn Islands": "-08:00",
+            "Pituffik": "-04:00",
+            "Pituffik Space Base": "-04:00",
+            "Port Augusta": "+08:00",
+            "Portugal": "+00:00",
+            "Primorsky Krai": "+10:00",
+            "Prince Edward Island": "-04:00",
+            "Prince Edward Islands": "+03:00",
+            "Puerto Rico": "-04:00",
+            "Quebec": "-05:00",
+            "Queensland": "+10:00",
+            "Quintana Roo": "-05:00",
+            "Riau Islands": "+07:00",
+            "Rocas Atoll": "-02:00",
+            "Rondônia": "-04:00",
+            "Roraima": "-04:00",
+            "Rothera Station": "-03:00",
+            "Réunion": "+04:00",
+            "Saint Barthélemy": "-04:00",
+            "Saint Helena": "+00:00",
+            "Saint Martin": "-04:00",
+            "Saint Miquelon": "-03:00",
+            "Saint Paul": "+05:00",
+            "Saint Paul Archipelago": "-02:00",
+            "Saint Peter": "-02:00",
+            "Saint Pierre": "-03:00",
+            "Sakhalin Oblast": "+11:00",
+            "Samara Oblast": "+04:00",
+            "Sankuru": "+02:00",
+            "Saratov Oblast": "+04:00",
+            "Saskatchewan": "-06:00",
+            "Scattered Islands": "+03:00",
+            "Sinaloa": "-07:00",
+            "Society Islands": "-10:00",
+            "Sonora": "-07:00",
+            "South Africa": "+02:00",
+            "South Australia": "+09:30",
+            "South East Labrador": "-03:30",
+            "South Georgia": "-02:00",
+            "South Kalimantan": "+08:00",
+            "South Region": "-03:00",
+            "South Sandwich Islands": "-02:00",
+            "South West Amazonas": "-05:00",
+            "Southeast Region": "-03:00",
+            "Spain": "+01:00",
+            "Sud-Kivu": "+02:00",
+            "Sud-Ubangia": "+01:00",
+            "Sverdlovsk Oblast": "+05:00",
+            "Syowa Station": "+03:00",
+            "Tanganyika": "+02:00",
+            "Tasmania": "+10:00",
+            "Tocantins": "-03:00",
+            "Tokelau": "+13:00",
+            "Tomsk Oblast": "+07:00",
+            "Trindade": "-02:00",
+            "Tristan da Cunha": "+00:00",
+            "Troll Station": "+00:00",
+            "Tshopo Interim Administration": "+02:00",
+            "Tshuapa": "+01:00",
+            "Tuamotus": "-10:00",
+            "Tungsten": "-08:00",
+            "Tunu": "+00:00",
+            "Turks Islands": "-05:00",
+            "Tuva": "+07:00",
+            "Tyumen Oblast": "+05:00",
+            "U.S. Virgin Islands": "-04:00",
+            "Udmurtia": "+04:00",
+            "Ulyanovsk Oblast": "+04:00",
+            "United Kingdom": "+00:00",
+            "Uvs": "+07:00",
+            "Victoria": "+10:00",
+            "Vostok Station": "+06:00",
+            "Wake Island": "+12:00",
+            "Wallis": "+12:00",
+            "West Australia": "+08:00",
+            "West Kazakhstan": "+05:00",
+            "West Kazakhstan (Aktobe)": "+05:00",
+            "West New Guinea": "+09:00",
+            "West Nunavut": "-07:00",
+            "West Nusa Tenggara": "+08:00",
+            "West Russia": "+03:00",
+            "West Sakha Republic": "+09:00",
+            "Yamalia": "+05:00",
+            "Yukon": "-08:00",
+            "Zabaykalsky Krai": "+09:00",
+            "Équateur": "+01:00"
+        },
+
         NON_TIME_ZONE_WORDS = await fetchURL(`get:./ext/[A-Y]{2,4}T.json`).then(response => response.json());
 
     // Convert text to times
@@ -11301,8 +11604,8 @@ let Initialize = async(START_OVER = false) => {
                         +/\Bdt$/i.test(timezone)
                     );
 
-                    hour -= (/^a/i.test(meridiem) && (hour > 12)? 12: 0);
-                    hour += (/^p/i.test(meridiem) && (hour < 13)? 12: 0);
+                    hour -= (/^a/i.test(meridiem) && (hour >= 12)? 12: 0);
+                    hour += (/^p/i.test(meridiem) && (hour < 12)? 12: 0);
                     hour %= 24;
 
                     timezone ||= (offset.length? 'GMT': '');
@@ -12653,12 +12956,17 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('video_clips__dvr');
 
         Cache.load('DVRChannels', async({ DVRChannels }) => {
-            DVRChannels = JSON.parse(DVRChannels || '{}');
+            try {
+                DVRChannels = JSON.parse(DVRChannels || '{}');
+            } catch(error) {
+                // Probably an object already...
+                DVRChannels ??= {};
+            }
 
             let f = furnish,
                 s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                 DVR_ID = STREAMER.name.toLowerCase(),
-                enabled = defined(DVRChannels[DVR_ID]),
+                enabled = parseBool(DVRChannels[DVR_ID]?.length),
                 [title, subtitle, icon] = [
                     ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
                     ['Turn DVR off', `${ s(STREAMER.name) } live streams will no longer be recorded`, 'clip']
@@ -12677,11 +12985,16 @@ let Initialize = async(START_OVER = false) => {
                             return /* Not the primary button */;
 
                         Cache.load('DVRChannels', async({ DVRChannels }) => {
-                            DVRChannels = JSON.parse(DVRChannels || '{}');
+                            try {
+                                DVRChannels = JSON.parse(DVRChannels || '{}');
+                            } catch(error) {
+                                // Probably an object already...
+                                DVRChannels ??= {};
+                            }
 
                             let s = string => string.replace(/$/, "'").replace(/(?<!s)'$/, "'s"),
                                 DVR_ID = STREAMER.name.toLowerCase(),
-                                enabled = nullish(DVRChannels[DVR_ID]),
+                                enabled = !parseBool(DVRChannels[DVR_ID]?.length),
                                 [title, subtitle, icon] = [
                                     ['Turn DVR on', `${ s(STREAMER.name) } live streams will be recorded`, 'host'],
                                     ['Turn DVR off', `${ s(STREAMER.name) } live streams will no longer be recorded`, 'clip']
@@ -12721,7 +13034,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            Cache.save({ DVRChannels: JSON.stringify(DVRChannels) }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                            Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
                         });
                     },
                 }, f.div(
@@ -12884,7 +13197,12 @@ let Initialize = async(START_OVER = false) => {
 
             if(UP_NEXT_ALLOW_THIS_TAB)
                 Cache.load('DVRChannels', async({ DVRChannels }) => {
-                    DVRChannels = JSON.parse(DVRChannels || '{}');
+                    try {
+                        DVRChannels = JSON.parse(DVRChannels || '{}');
+                    } catch(error) {
+                        // Probably an object already...
+                        DVRChannels ??= {};
+                    }
 
                     checking:
                     // Only check for the stream when it's live; if the dates don't match, it just went live again
@@ -12965,7 +13283,12 @@ let Initialize = async(START_OVER = false) => {
             || STREAMER?.redo === false
         )
             Cache.load('DVRChannels', async({ DVRChannels }) => {
-                DVRChannels = JSON.parse(DVRChannels || '{}');
+                try {
+                    DVRChannels = JSON.parse(DVRChannels || '{}');
+                } catch(error) {
+                    // Probably an object already...
+                    DVRChannels ??= {};
+                }
 
                 for(let DVR_ID in DVRChannels) {
                     let streamer = (DVR_ID + '').toLowerCase();
@@ -13838,8 +14161,7 @@ let Initialize = async(START_OVER = false) => {
         THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(PRIMARY, antitheme)? THEME: ANTITHEME) }`;
 
         // Better styling. Will match the user's theme choice as best as possible
-        AddCustomCSSBlock('better-themed-styling',
-            `
+        AddCustomCSSBlock('Better-Themed Styling', `
             /* The user is using the light theme (like a crazy person) */
             :root {
                 --channel-color: ${ STREAMER.tint };
@@ -13891,7 +14213,7 @@ let Initialize = async(START_OVER = false) => {
                  * text-shadow: 0 0 5px #fff;
                  */
             }
-            `);
+        `);
     }
 
     __GET_UPDATE_INFO__: {
@@ -13990,8 +14312,7 @@ let Initialize = async(START_OVER = false) => {
 };
 // End of Initialize
 
-let CUSTOM_CSS,
-    PAGE_CHECKER,
+let PAGE_CHECKER,
     WAIT_FOR_PAGE,
     PAGE_IS_READY = false,
     RECOVERY_TRIALS = 0,
@@ -14016,7 +14337,7 @@ if(top == window) {
 
         PAGE_CHECKER = !isProperRuntime?
             ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
-                ?.toNativeStack?.():
+                .toNativeStack():
         setInterval(WAIT_FOR_PAGE = async() => {
             let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
             let adCountdown = $('[data-a-target*="ad-countdown"i]');
@@ -14425,306 +14746,300 @@ if(top == window) {
 
             // Add custom styling
             CustomCSSInitializer: {
-                CUSTOM_CSS = $('#tt-custom-css') ?? furnish('style#tt-custom-css');
-
                 let [accent, contrast] = (Settings.accent_color || 'blue/12').split('/');
 
-                CUSTOM_CSS.innerHTML =
-                `
-                :root {
-                    --user-accent-color: var(--color-${ accent });
-                    --user-contrast-color: var(--color-${ accent }-${ contrast });
-                    --user-complement-color: var(--channel-color-opposite);
-
-                    /* z-index meanings */
-                    --always-on-top:    9999;
-                    --normal:           999;
-                    --always-on-bottom: 99;
-                    --baseline:         9;
-                }
-
-                /* Little fixes */
-                .social-media-link {
-                    min-width: 20rem;
-                }
-
-                /* First Run */
-                .tt-first-run {
-                    background-color: var(--color-blue);
-                    border-radius: 3px;
-
-                    transition: background-color 1s;
-                }
-
-                [animationID] a { cursor: grab }
-                [animationID] a:active { cursor: grabbing }
-
-                [class*="theme"i][class*="dark"i] [tt-light], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
-                [class*="theme"i][class*="light"i] [tt-light], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
-
-                /* Keyborad Shortcuts */
-                .tt-extra-keyboard-shortcuts td {
-                    padding: 0.5rem;
-                }
-
-                .tt-extra-keyboard-shortcuts td:first-child {
-                    text-align: left;
-                }
-
-                .tt-extra-keyboard-shortcuts td:last-child {
-                    text-align: right;
-                }
-
-                /* Up Next */
-                [up-next--body] {
-                    background-color: var(--user-accent-color);
-                    border-radius: 0.5rem;
-                    color: var(--color-hinted-grey-${ contrast });
-                }
-
-                [up-next--body][empty="true"i] {
-                    background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
-                    background-repeat: no-repeat;
-                    background-size: 35rem;
-                    background-position: bottom center;
-                }
-
-                [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="contrast"i]) {
-                    /* background-blend-mode: color-burn; */
-                }
-
-                [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="contrast"i]) {
-                    /* background-blend-mode: darken; */
-                }
-
-                [up-next--body][allowed="false"i] {
-                    background-image: url("${ Runtime.getURL('256.png') }") !important;
-                    background-repeat: repeat !important;
-                    background-size: 5rem !important;
-                    background-position: center center !important;
-                    background-blend-mode: difference !important;
-                }
-
-                #up-next-boost[speeding="true"i] {
-                    animation: fade-in 1s alternate infinite;
-                }
-
-                /* Live Reminders */
-                #tt-reminder-listing:not(:empty) ~ [live] { display:none }
-
-                .tt-time-elapsed {
-                    color: var(--color-text-live);
-                    text-shadow: 0 0 3px var(--color-background-base);
-
-                    float: right;
-                }
-
-                /** Old CSS...
-                #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
-                    animation: fade-in 1s 1;
-
-                    display: block;
-                    text-align: center;
-
-                    margin: 0.5em 0px;
-
-                    width: 100%;
-                }
-
-                #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
-                #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
-                */
-
-                /* Auto-Focus */
-                [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
-
-                [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
-                [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
-                [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
-
-                [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
-                [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
-
-                #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
-                    opacity: 0.7;
-                    margin-top: -100%;
-                }
-
-                .tt-emote-captured [data-test-selector="badge-button-icon"i],
-                .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
-                    left: 0;
-                    top: 0;
-                }
-
-                [tt-live-status-indicator] {
-                    background-color: var(--color-hinted-grey-6);
-                    border-radius: var(--border-radius-rounded);
-                    width: 0.8rem;
-                    height: 0.8rem;
-                    display: inline-block;
-                    position: relative;
-                }
-
-                [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
-
-                /* Change Up Next font color */
-                [class*="theme"i][class*="dark"i] [tt-mix-blend$="contrast"i] { /* mix-blend-mode:lighten */ }
-                [class*="theme"i][class*="light"i] [tt-mix-blend$="contrast"i] { /* mix-blend-mode:darken */ }
-
-                /* Lurking */
-                #away-mode svg[id^="tt-away-mode"i] {
-                    display: inline-block;
-
-                    transform: translateX(0px) scale(1);
-                    transition: all 100ms ease-in;
-                }
-
-                #tt-away-mode--hide {
-                    position: absolute;
-                }
-
-                #tt-away-mode--hide, #tt-away-mode--show {
-                    fill: var(--color-text-base);
-                }
-
-                [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
-                    opacity: 0;
-                }
-
-                svg[id^="tt-away-mode"i][preview="true"i] {
-                    opacity: 1 !important;
-                    transform: translateX(0px) scale(1.2) !important;
-                }
-
-                /* Rich tooltips */
-                [role] [data-popper-placement="right-start"i] [role] {
-                    width: max-content;
-                }
-
-                [role="tooltip"i][class*="tt-tooltip"i] {
-                    white-space: normal;
-
-                    max-width: 50em;
-                    width: max-content;
-                }
-
-                /* Bits */
-                [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
-                    max-width: 45rem;
-                }
-
-                /* Stream Preview */
-                .tt-stream-preview {
-                    border-radius: 0.6rem;
-                    box-shadow: #000 0 4px 8px, #000 0 0 4px;
-                    display: block;
-                    visibility: visible;
-
-                    transition: all 0.5s ease-in;
-
-                    position: fixed;
-                    margin-left: 7rem;
-                    z-index: 999;
-
-                    height: 9rem;
-                    width: 16rem;
-                }
-
-                .tt-stream-preview--poster {
-                    background-color: #0008;
-                    background-size: cover;
-                    border-radius: inherit;
-                    display: block;
-
-                    transition: all 1.5s ease-in;
-
-                    position: absolute;
-                    margin: 0;
-                    padding: 0;
-                    left: 0;
-                    top: 0;
-                    z-index: 999;
-
-                    height: 100% !important;
-                    width: 100% !important;
-                }
-
-                #tt-stream-preview--iframe {
-                    display: block;
-                    border-radius: inherit;
-                    opacity: 1;
-                    visibility: inherit;
-                }
-
-                .invisible {
-                    opacity: 0;
-                }
-
-                .tt-stream-preview[data-vods][data-position="above"i]::after, .tt-stream-preview[data-vods][data-position="below"i]::before {
-                    content: "Choose VOD (↑ / ↓)";
-
-                    background-color: var(--color-background-tooltip);
-                    border-radius: .4rem;
-                    color: var(--color-text-tooltip);
-                    display: inline-block;
-                    font-family: inherit;
-                    font-size: 100%;
-                    font-weight: 600;
-                    line-height: 1.2;
-                    padding: .5rem;
-                    pointer-events: none;
-                    text-align: left;
-                    user-select: none;
-                    white-space: nowrap;
-
-                    position: absolute;
-                    left: 50%;
-                    transform: translate(-50%,0);
-                    z-index: 9999;
-
-                    animation: 1s fade-out 1 forwards 7s;
-                }
-
-                .tt-stream-preview[data-vods="false"i][data-position="above"i]::after, .tt-stream-preview[data-vods="false"i][data-position="below"i]::before {
-                    content: "Send to miniplayer (z) \\b7  Add to Live Reminders (r)";
-                }
-
-                video ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
-                    transition: all 1s;
-                }
-
-                video ~ * .player-controls[data-automatic="true"i] [data-a-target*="mute"i] svg {
-                    fill: var(--color-warn);
-                }
-
-                video ~ * .player-controls[data-automatic="true"i] [data-test-selector*="fill-value"i] {
-                    background-color: var(--color-warn);
-                }
-
-                video ~ * .player-controls[data-automatic="true"i] :is([data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
-                    border: var(--border-width-default) solid var(--color-warn);
-                    background-color: var(--color-warn);
-                }
-
-                [data-test-selector="picture-by-picture-player-background"i] ~ [data-test-selector="picture-by-picture-player-background"i] {
-                    display: none !important;
-                }
-
-                /* Chat */
-                [class*="chat-list"i] [class*="simple"i] {
-                    overflow-x: hidden !important;
-
-                    margin-bottom: -14px !important;
-                }
-
-                /* Ads */
-                [class*="stream"][class*="-ad"i] {
-                    display: none !important;
-                }
-                `;
-
-                CUSTOM_CSS?.remove();
-                $('body').append(CUSTOM_CSS);
+                AddCustomCSSBlock('tools.js', `
+                    :root {
+                        --user-accent-color: var(--color-${ accent });
+                        --user-contrast-color: var(--color-${ accent }-${ contrast });
+                        --user-complement-color: var(--channel-color-opposite);
+
+                        /* z-index meanings */
+                        --always-on-top:    9999;
+                        --normal:           999;
+                        --always-on-bottom: 99;
+                        --baseline:         9;
+                    }
+
+                    /* Little fixes */
+                    .social-media-link {
+                        min-width: 20rem;
+                    }
+
+                    /* First Run */
+                    .tt-first-run {
+                        background-color: var(--color-blue);
+                        border-radius: 3px;
+
+                        transition: background-color 1s;
+                    }
+
+                    [animationID] a { cursor: grab }
+                    [animationID] a:active { cursor: grabbing }
+
+                    [class*="theme"i][class*="dark"i] [tt-light], [class*="theme"i][class*="dark"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-w-4) !important }
+                    [class*="theme"i][class*="light"i] [tt-light], [class*="theme"i][class*="light"i] [class*="chat"i][class*="status"i] { background-color: var(--color-opac-b-4) !important }
+
+                    /* Keyborad Shortcuts */
+                    .tt-extra-keyboard-shortcuts td {
+                        padding: 0.5rem;
+                    }
+
+                    .tt-extra-keyboard-shortcuts td:first-child {
+                        text-align: left;
+                    }
+
+                    .tt-extra-keyboard-shortcuts td:last-child {
+                        text-align: right;
+                    }
+
+                    /* Up Next */
+                    [up-next--body] {
+                        background-color: var(--user-accent-color);
+                        border-radius: 0.5rem;
+                        color: var(--color-hinted-grey-${ contrast });
+                    }
+
+                    [up-next--body][empty="true"i] {
+                        background-image: url("${ Runtime.getURL('up-next-tutorial.png') }");
+                        background-repeat: no-repeat;
+                        background-size: 35rem;
+                        background-position: bottom center;
+                    }
+
+                    [class*="theme"i][class*="dark"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="contrast"i]) {
+                        /* background-blend-mode: color-burn; */
+                    }
+
+                    [class*="theme"i][class*="light"i] [up-next--body][empty="true"i]:is([tt-mix-blend$="contrast"i]) {
+                        /* background-blend-mode: darken; */
+                    }
+
+                    [up-next--body][allowed="false"i] {
+                        background-image: url("${ Runtime.getURL('256.png') }") !important;
+                        background-repeat: repeat !important;
+                        background-size: 5rem !important;
+                        background-position: center center !important;
+                        background-blend-mode: difference !important;
+                    }
+
+                    #up-next-boost[speeding="true"i] {
+                        animation: fade-in 1s alternate infinite;
+                    }
+
+                    /* Live Reminders */
+                    #tt-reminder-listing:not(:empty) ~ [live] { display:none }
+
+                    .tt-time-elapsed {
+                        color: var(--color-text-live);
+                        text-shadow: 0 0 3px var(--color-background-base);
+
+                        float: right;
+                    }
+
+                    /** Old CSS...
+                    #tt-reminder-listing:not(:empty)::before, #tt-reminder-listing:not(:empty)::after {
+                        animation: fade-in 1s 1;
+
+                        display: block;
+                        text-align: center;
+
+                        margin: 0.5em 0px;
+
+                        width: 100%;
+                    }
+
+                    #tt-reminder-listing:not(:empty)::before { content: "Live Reminders" }
+                    #tt-reminder-listing:not(:empty)::after { content: "Up Next" }
+                    */
+
+                    /* Auto-Focus */
+                    [tt-auto-claim-enabled="false"i] { --filter: grayscale(1) }
+
+                    [tt-auto-claim-enabled] .text, [tt-auto-claim-enabled] #tt-auto-claim-indicator { font-size: 2rem; transition: all .3s }
+                    [tt-auto-claim-enabled="false"i] .text { margin-right: -4rem }
+                    [tt-auto-claim-enabled="false"i] #tt-auto-claim-indicator { margin-left: 2rem !important }
+
+                    [tt-auto-claim-enabled] svg, [tt-auto-claim-enabled] img { transition: transform .3s ease 0s }
+                    [tt-auto-claim-enabled] svg[hover="true"i], [tt-auto-claim-enabled] img[hover="true"i] { transform: translateX(0px) scale(1.2) }
+
+                    #tt-auto-focus-stats:not(:hover) ~ #tt-auto-focus-differences {
+                        opacity: 0.7;
+                        margin-top: -100%;
+                    }
+
+                    .tt-emote-captured [data-test-selector="badge-button-icon"i],
+                    .tt-emote-bttv [data-test-selector="badge-button-icon"i] {
+                        left: 0;
+                        top: 0;
+                    }
+
+                    [tt-live-status-indicator] {
+                        background-color: var(--color-hinted-grey-6);
+                        border-radius: var(--border-radius-rounded);
+                        width: 0.8rem;
+                        height: 0.8rem;
+                        display: inline-block;
+                        position: relative;
+                    }
+
+                    [tt-live-status-indicator="true"i] { background-color: var(--color-fill-live) }
+
+                    /* Change Up Next font color */
+                    [class*="theme"i][class*="dark"i] [tt-mix-blend$="contrast"i] { /* mix-blend-mode:lighten */ }
+                    [class*="theme"i][class*="light"i] [tt-mix-blend$="contrast"i] { /* mix-blend-mode:darken */ }
+
+                    /* Lurking */
+                    #away-mode svg[id^="tt-away-mode"i] {
+                        display: inline-block;
+
+                        transform: translateX(0px) scale(1);
+                        transition: all 100ms ease-in;
+                    }
+
+                    #tt-away-mode--hide {
+                        position: absolute;
+                    }
+
+                    #tt-away-mode--hide, #tt-away-mode--show {
+                        fill: var(--color-text-base);
+                    }
+
+                    [tt-away-mode-enabled="true"i] #tt-away-mode--hide, [tt-away-mode-enabled="false"i] #tt-away-mode--show, svg[id^="tt-away-mode"i][preview="false"i] {
+                        opacity: 0;
+                    }
+
+                    svg[id^="tt-away-mode"i][preview="true"i] {
+                        opacity: 1 !important;
+                        transform: translateX(0px) scale(1.2) !important;
+                    }
+
+                    /* Rich tooltips */
+                    [role] [data-popper-placement="right-start"i] [role] {
+                        width: max-content;
+                    }
+
+                    [role="tooltip"i][class*="tt-tooltip"i] {
+                        white-space: normal;
+
+                        max-width: 50em;
+                        width: max-content;
+                    }
+
+                    /* Bits */
+                    [aria-describedby*="bits"i] [data-test-selector*="wrapper"i], [aria-labelledby*="bits"i] [data-test-selector*="wrapper"i] {
+                        max-width: 45rem;
+                    }
+
+                    /* Stream Preview */
+                    .tt-stream-preview {
+                        border-radius: 0.6rem;
+                        box-shadow: #000 0 4px 8px, #000 0 0 4px;
+                        display: block;
+                        visibility: visible;
+
+                        transition: all 0.5s ease-in;
+
+                        position: fixed;
+                        margin-left: 7rem;
+                        z-index: 999;
+
+                        height: 9rem;
+                        width: 16rem;
+                    }
+
+                    .tt-stream-preview--poster {
+                        background-color: #0008;
+                        background-size: cover;
+                        border-radius: inherit;
+                        display: block;
+
+                        transition: all 1.5s ease-in;
+
+                        position: absolute;
+                        margin: 0;
+                        padding: 0;
+                        left: 0;
+                        top: 0;
+                        z-index: 999;
+
+                        height: 100% !important;
+                        width: 100% !important;
+                    }
+
+                    #tt-stream-preview--iframe {
+                        display: block;
+                        border-radius: inherit;
+                        opacity: 1;
+                        visibility: inherit;
+                    }
+
+                    .invisible {
+                        opacity: 0;
+                    }
+
+                    .tt-stream-preview[data-vods][data-position="above"i]::after, .tt-stream-preview[data-vods][data-position="below"i]::before {
+                        content: "Choose VOD (↑ / ↓)";
+
+                        background-color: var(--color-background-tooltip);
+                        border-radius: .4rem;
+                        color: var(--color-text-tooltip);
+                        display: inline-block;
+                        font-family: inherit;
+                        font-size: 100%;
+                        font-weight: 600;
+                        line-height: 1.2;
+                        padding: .5rem;
+                        pointer-events: none;
+                        text-align: left;
+                        user-select: none;
+                        white-space: nowrap;
+
+                        position: absolute;
+                        left: 50%;
+                        transform: translate(-50%,0);
+                        z-index: 9999;
+
+                        animation: 1s fade-out 1 forwards 7s;
+                    }
+
+                    .tt-stream-preview[data-vods="false"i][data-position="above"i]::after, .tt-stream-preview[data-vods="false"i][data-position="below"i]::before {
+                        content: "Send to miniplayer (z) \\b7  Add to Live Reminders (r)";
+                    }
+
+                    video ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
+                        transition: all 1s;
+                    }
+
+                    video ~ * .player-controls[data-automatic="true"i] [data-a-target*="mute"i] svg {
+                        fill: var(--color-warn);
+                    }
+
+                    video ~ * .player-controls[data-automatic="true"i] [data-test-selector*="fill-value"i] {
+                        background-color: var(--color-warn);
+                    }
+
+                    video ~ * .player-controls[data-automatic="true"i] :is([data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
+                        border: var(--border-width-default) solid var(--color-warn);
+                        background-color: var(--color-warn);
+                    }
+
+                    [data-test-selector="picture-by-picture-player-background"i] ~ [data-test-selector="picture-by-picture-player-background"i] {
+                        display: none !important;
+                    }
+
+                    /* Chat */
+                    [class*="chat-list"i] [class*="simple"i] {
+                        overflow-x: hidden !important;
+
+                        margin-bottom: -14px !important;
+                    }
+
+                    /* Ads */
+                    [class*="stream"][class*="-ad"i] {
+                        display: none !important;
+                    }
+                `);
             }
 
             // Update the settings
@@ -14843,7 +15158,7 @@ if(top == window) {
 
             color = Color.destruct(color || '#9147FF');
 
-            $.body.append(furnish('style#tt-custom-css').with(`:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`));
+            AddCustomCSSBlock('Color Components', `:root { --user-accent-color:${ color.HSL }; --user-complement-color:hsl(${ [color.H + 180, color.S, color.L].map((v, i) => v+'%deg'.slice(+!i,1+3*!i)) }) }`);
         }
 
         // Alerts for users

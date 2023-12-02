@@ -155,7 +155,6 @@ Object.defineProperties(parseURL, {
 // Go to a page
     // goto(url:string<URL>, target:string?, pass:object?) → undefined
 function goto(url, target = '_self', pass = {}) {
-    // DVR save
     top.beforeleaving?.(pass);
 
     open(url, target);
@@ -549,6 +548,30 @@ Object.defineProperties(furnish, {
     wbr: { value: function WBR(attributes) { return furnish('wbr', attributes) } },
 });
 
+/** Adds a CSS block to the DOM
+ * @simply AddCustomCSSBlock(name:string, block:string) → undefined
+ */
+function AddCustomCSSBlock(name, block) {
+    RemoveCustomCSSBlock(name);
+
+    let element = furnish(`style[type="text/css"][css-block="${ name }"]`).html(block);
+
+    // Force styling update
+    $('body')?.append(element);
+}
+
+/** Removes a CSS block from the DOM
+ * @simply RemoveCustomCSSBlock(name:string) → undefined
+ */
+function RemoveCustomCSSBlock(name) {
+    name = name.trim();
+
+    let element = $(`[css-block="${ name }"i]`);
+
+    // Force styling update
+    element?.remove();
+}
+
 // Gets the X and Y offset (in pixels)
     // getOffset(element:Element) → Object<{ height:number, width:number, left:number, top:number, right:number, bottom:number }>
 function getOffset(element) {
@@ -857,6 +880,177 @@ function getDOMPath(element, length = 0) {
     return path;
 }
 
+// Adds an autocomplete listener to the chosen element
+    // autocomplete(element:Element, options:array|object) → Function<EventListener>
+    // requires outline: [action] @
+function autocomplete(element, options) {
+    if(nullish(element))
+        throw `Cannot add an event-lsitener to a null item`;
+    if(!options?.length && !Object.keys(options).length)
+        throw `The provided options must have at least one element`;
+
+    // Get a common "GUID"
+    element.id ||= 'ac_' + UUID.from(element.getPath(-1));
+
+    // Convert the options to a common item...
+    if(options instanceof Array) {
+        let opt = {};
+
+        for(let _ of options)
+            opt[_] = _;
+
+        options = opt;
+    }
+
+    if(!autocomplete.stamp.has(element))
+        autocomplete.stamp.set(element, 0);
+    if(!autocomplete.lists.has(element))
+        autocomplete.lists.set(element, new Map);
+    if(!autocomplete.focus.has(element))
+        autocomplete.focus.set(element, -1);
+
+    for(let key in options)
+        autocomplete.lists.get(element).set(key, options[key]);
+
+    element.addEventListener('input', delay(event => {
+        const self = event.target;
+        let { value, id } = self;
+        let options = autocomplete.lists.get(self);
+
+        autocomplete.closeList();
+
+        value = value.trim();
+        if(!value?.length)
+            return;
+        autocomplete.focus.set(self, -1);
+
+        let f = furnish;
+
+        let list = f(`#${ id }-list.autocomplete-list`).with(
+            ...[...options].map(([key, val]) => {
+                let [N] = [key, val].filter(str => str.mutilate().contains(value.mutilate()) || str.toLowerCase().contains(...value.toLowerCase().split(/\s+/)));
+
+                if(defined(N)) {
+                    let n = N.toLowerCase();
+                    let V = value;
+                    let v = V.toLowerCase();
+                    let _v = v.split(/\s+/);
+                    let _ = [], i = 0, j;
+
+                    if(n.contains(v)) {
+                        // Contains the word(s); whole, in-order, case-insensitive
+                        i = n.indexOf(v);
+
+                        _ = `${ N.slice(0, i) }<strong>${ N.slice(i, i + v.length) }</strong>${ N.slice(i + v.length, N.length) }`;
+                    } else if(n.contains(..._v)) {
+                        // Contains one-or-more word(s); partial, no order, case-insensitive
+                        for(let w of _v) {
+                            i = n.indexOf(w);
+
+                            if(!~i)
+                                continue;
+                            _.push({ index: i, word: w });
+                        }
+
+                        i = 0; j = [...N];
+
+                        _.sort((a, b) => b.index - a.index).map(s => {
+                            j.splice(s.index, s.word.length, `<strong>${ N.substr(s.index, s.word.length) }</strong>`);
+                        });
+
+                        _ = j.join('');
+                    } else {
+                        // Contains one-or-more characters; partial, in-order, case-insensitive
+                        for(let c of N)
+                            if(!c.trim().length)
+                                _.push(' ');
+                            else if(c.equals(V[i]))
+                                ++i && _.push(`\x00${ c }\x01`);
+                            else
+                                _.push(c);
+
+                        _ = _.join('').replace(/\x01\x00/g, '').replace(/\x00/g, `<strong>`).replace(/\x01/g, `</strong>`);
+                    }
+
+                    return f(`#${ id }-item:${ key.replace(/\W+/g, '-') }.item`, {
+                        '@distance': N.mutilate().distanceFrom(V.mutilate()),
+
+                        onmouseup(event) {
+                            let self = event.target;
+
+                            self.closest('[action]').querySelector('.autocomplete').value = decodeHTML($('input', self).value);
+
+                            autocomplete.closeList();
+                        },
+                    })
+                        .html(_)
+                        .with(f(`input[type=hidden][value="${ encodeHTML(N) }"]`));
+                }
+            }).filter(defined).sort((a, b) => parseInt(a.dataset.distance) - parseInt(b.dataset.distance))
+        );
+
+        self.closest('[action]').append(list);
+        list.setAttribute('matches', list.children.length);
+        self.closest('[action]').setAttribute('value', self.value);
+    }, 250));
+
+    element.addEventListener('keydown', delay(event => {
+        const self = event.target;
+        let stamp = autocomplete.stamp.get(self);
+
+        if(stamp == event.timeStamp)
+            return; // (un)comment to toggle one state at-a-time
+        autocomplete.stamp.set(self, event.timeStamp);
+
+        let { key } = event;
+        let targets = $.all('.autocomplete-list .item', self.closest('[action]'));
+        let focus = autocomplete.focus.get(self);
+
+        if(key == 'ArrowDown') {
+            event.preventDefault();
+
+            activate(targets, ++focus);
+        } else if(key == 'ArrowUp') {
+            event.preventDefault();
+
+            activate(targets, --focus);
+        } else if(key == 'Enter') {
+            event.preventDefault();
+
+            if(!!~focus)
+                phantomClick(targets[focus]);
+        } else if(key == 'Escape') {
+            event.preventDefault();
+
+            autocomplete.closeList();
+        }
+
+        autocomplete.focus.set(self, focus);
+    }, 250));
+
+    element.addEventListener('blur', event => {
+        // autocomplete.closeList();
+    });
+
+    function activate(targets, index) {
+        if(!targets?.length)
+            return;
+        deactivate(targets);
+
+        if(index >= targets.length)
+            index = 0;
+        if(index < 0)
+            index = targets.length - 1;
+
+        targets[index].classList.add('active');
+    }
+
+    function deactivate(targets) {
+        for(let target of targets)
+            target.classList.remove('active');
+    }
+}
+
 /***
  *      _____           _        _
  *     |  __ \         | |      | |
@@ -925,17 +1119,17 @@ Array.prototype.isolate ??= function isolate(against = []) {
 // (Randomly) Shuffles the array
     // Array..shuffle() → array
 Array.prototype.shuffle ??= function shuffle() {
-    let { random } = Math;
+    let A = (new MersenneTwister(0x89C6D5F7 * Math.random() | 0));
+    let B = (new MersenneTwister(0x76CDBEF3 * A.random()    | 0));
+    let C = (new MersenneTwister(0xF2347CDE * B.random()    | 0));
 
-    return [...this].sort(() => random() < 0.5? -(random() * this.length): +(random() * this.length));
+    return [...this].sort(() => (A.random() < 0.5? -B.random(): +C.random()) * this.length | 0);
 };
 
 // Returns a random item from the array
     // Array..random() → any
 Array.prototype.random ??= function random() {
-    let [item] = this.shuffle();
-
-    return item;
+    return this.shuffle()[Math.random() * this.length | 0];
 };
 
 // https://stackoverflow.com/a/6117889/4211612
@@ -1806,6 +2000,27 @@ try {
             }
         },
     });
+
+    // Set properties for auto-complete
+    Object.defineProperties(autocomplete, {
+        closeList: {
+            value(element = $.body) {
+                $.all('.autocomplete-list', element).map(item => item.remove());
+            }
+        },
+
+        stamp: {
+            value: new Map,
+        },
+
+        lists: {
+            value: new Map,
+        },
+
+        focus: {
+            value: new Map,
+        },
+    });
 } catch(error) {/* Do nothing */}
 
 // Returns a function's name as a formatted title
@@ -2056,7 +2271,7 @@ class Recording {
     static #statusUpdater = setInterval(() => {
         let active = false;
         for(let [guid, recorder] of Recording.__RECORDERS__)
-            if(active ||= recorder.state.equals("recording"))
+            if(active ||= recorder.state?.equals("recording"))
                 break;
 
         $('[data-a-player-state]')?.setAttribute('data-recording-status', active);
@@ -2244,6 +2459,9 @@ class Recording {
                         // MediaRecorder probably inactive
                     }
 
+                    Recording.__RECORDERS__.delete(this.name);
+                    Recording.__RECORDERS__.set(`[[${ this.name }]]`, this);
+
                     source.recorders.delete(this.name);
                     source.recorders.set(`[[${ this.name }]]`, this);
 
@@ -2342,10 +2560,14 @@ HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'D
     this.recorders ??= new Map;
 
     if(key == Recording.ALL)
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of this.recorders) {
+            Recording.__RECORDERS__.delete(key);
             this.recorders.delete(key);
-    else
+        }
+    else {
+        Recording.__RECORDERS__.delete(key);
         this.recorders.delete(key);
+    }
 
     return this;
 };
@@ -5483,8 +5705,8 @@ function prompt(message = '', defaultValue = '') {
                 f('input.tt-prompt-input', {
                     type, pattern, placeholder,
 
-                    onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
-                        if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
+                    onkeydown({ currentTarget, isTrusted = false, key = '', altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
+                        if(isTrusted && key == 'Enter' && !(altKey || ctrlKey || metaKey || shiftKey))
                             currentTarget.closest('.tt-prompt-footer').querySelector('button.okay').disregard();
                     }
                 }),
@@ -5800,8 +6022,8 @@ function select(message = '', options = [], multiple = false) {
             f('.tt-select-body').html(message),
             f('.tt-select-footer').with(
                 f(`.tt-select-input[@multiple=${ multiple }]`, {
-                    onkeydown({ currentTarget, isTrusted = false, keyCode = -1, altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
-                        if(isTrusted && keyCode == 13 && !(altKey || ctrlKey || metaKey || shiftKey))
+                    onkeydown({ currentTarget, isTrusted = false, key = '', altKey = false, ctrlKey = false, metaKey = false, shiftKey = false }) {
+                        if(isTrusted && key == 'Enter' && !(altKey || ctrlKey || metaKey || shiftKey))
                             currentTarget.closest('.tt-select-footer').querySelector('button.okay').disregard();
                     }
                 }, ...__values__
@@ -6084,8 +6306,8 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     let diff = 0;
 
     for(let index = 0, length = Math.max(oldVersion.length, newVersion.length); index < length; ++index) {
-        let L = parseInt((oldVersion[index] ?? '').replace(/[^a-z0-9]+/gi), 36),
-            R = parseInt((newVersion[index] ?? '').replace(/[^a-z0-9]+/gi), 36);
+        let L = parseInt((oldVersion[index] ?? '0').replace(/[^a-z0-9]+/gi), 36),
+            R = parseInt((newVersion[index] ?? '0').replace(/[^a-z0-9]+/gi), 36);
 
         if(L == R)
             continue;
@@ -6132,6 +6354,215 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     }
 
     return diff;
+}
+
+/***
+    I've modified Sean's code to be ES6 compliant... Uses classes, private fields
+    and scoped variables. With some method and variable name changes, it still
+    has simular usage:
+
+    let twister = new MersenneTwister();
+    let randomNumber = twister.random();
+
+    Ephellon Grey (minkcbos@gmail.com)
+
+    ****************************************************************
+
+    I've wrapped Makoto Matsumoto and Takuji Nishimura's code in a namespace
+    so it's better encapsulated. Now you can have multiple random number generators
+    and they won't stomp all over eachother's state.
+
+    If you want to use this as a substitute for Math.random(), use the random()
+    method like so:
+
+    var m = new MersenneTwister();
+    var randomNumber = m.random();
+
+    You can also call the other genrand_{foo}() methods on the instance.
+    If you want to use a specific seed in order to get a repeatable random
+    sequence, pass an integer into the constructor:
+    var m = new MersenneTwister(123);
+    and that will always produce the same random sequence.
+
+    Sean McCullough (banksean@gmail.com)
+
+    ****************************************************************
+
+    A C-program for MT19937, with initialization improved 2002/1/26.
+    Coded by Takuji Nishimura and Makoto Matsumoto.
+
+    Before using, initialize the state by using init_genrand(seed)
+    or init_by_array(init_key, key_length).
+
+    Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+    3. The names of its contributors may not be used to endorse or promote
+        products derived from this software without specific prior written
+        permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+    CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+    Any feedback is very welcome.
+
+    http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
+    m-mat@math.sci.hiroshima-u.ac.jp
+***/
+class MersenneTwister {
+    #N = 624; #M = 397;         // Period parameters
+    #MATRIX_A = 0x9908b0df;     // Constant vector A
+    #UPPER_MASK = 0x80000000;   // MSB (w-r)
+    #LOWER_MASK = 0x7fffffff;   // LSB (r)
+
+    #mt = new Array(this.#N);   // State-vector array
+    #mti = this.#N + 1;         // mt-index; `mti == N+1` means mt[N] is not initialized
+
+    constructor(seed) {
+        if(seed == null)
+            seed = +(new Date);
+        this.initSeed(seed);
+    }
+
+    // Initializes mt[N] with a seed
+    initSeed(seed) {
+        this.#mt[0] = seed >>> 0;
+
+        // See Knuth TAOCP Vol 2. 3rd Ed. P.106 for multiplier
+        // Previous versions only allowed MSBs of the seed to affect mt[]
+        // Modified by Makoto Matsumoto 2002/01/09
+        for(this.#mti = 1; this.#mti < this.#N; ++this.#mti) {
+            let s = this.#mt[this.#mti - 1] ^ (this.#mt[this.#mti - 1] >>> 30);
+
+            this.#mt[this.#mti] = (((((s & 0xFFFF0000) >>> 16) * 0x6C078965) << 16) + (s & 0x0000FFFF) * 0x6C078965) + this.#mti;
+
+            this.#mt[this.#mti] >>>= 0;
+        }
+    }
+
+    // Initializes by an array with a corresponding length
+    // Slight change for C++ 2004/02/26
+    initArray(array) {
+        let { length } = array;
+        let i = 1, j = 0, k = Math.max(this.#N, length);
+
+        this.initSeed(0x12BD6AA);
+
+        for(; k > 0; --k) {
+            let s = this.#mt[i - 1] ^ (this.#mt[i - 1] >>> 30);
+
+            this.#mt[i] = (((((s & 0xFFFF0000) >>> 16) * 0x19660D) << 16) + (s & 0x0000FFFF) * 0x19660D) + array[j] + i;
+
+            this.#mt[i] >>>= 0;
+
+            ++i; ++j;
+
+            if(i >= this.#N)
+                this.#mt[0] = this.#mt[this.#N - (i = 1)];
+            if(j >= length)
+                j = 0;
+        }
+
+        for(k = this.#N -1; k > 0; --k) {
+            let s = this.#mt[i - 1] ^ (this.#mt[i - 1] >>> 30);
+
+            this.#mt[i] = (((((s & 0xFFFF0000) >>> 16) * 0x5D588B65) << 16) + (s & 0x0000FFFF) * 0x5D588B65) + array[j] - i;
+
+            this.#mt[i] >>>= 0;
+
+            ++i;
+
+            if(i >= this.#N)
+                this.#mt[0] = this.#mt[this.#N - (i = 1)];
+        }
+
+        // MSB is 1; assures non-zero array is initialized
+        this.#mt[0] = 0x80000000;
+    }
+
+    // Generates a random number: [0,0xFFFFFFFF]
+    randomInt32() {
+        let m = new Array(0x0, this.#MATRIX_A);
+
+        let y;
+        if(this.#mti >= this.#N - 1) {
+            if(this.#mti == this.#N + 1)
+                this.initSeed(5489);
+
+            let k = 0;
+            for(; k < this.#N - this.#M; ++k) {
+                y = (this.#mt[k] & this.#UPPER_MASK) | (this.#mt[k + 1] & this.#LOWER_MASK);
+                this.#mt[k] = this.#mt[k + this.#M] ^ (y >>> 1) ^ m[y & 0x1];
+            }
+            for(; k < this.#N - 1; ++k) {
+                y = (this.#mt[k] & this.#UPPER_MASK) | (this.#mt[k + 1] & this.#LOWER_MASK);
+                this.#mt[k] = this.#mt[k + (this.#M - this.#N)] ^ (y >>> 1) ^ m[y & 0x1];
+            }
+            y = (this.#mt[this.#N - 1] & this.#UPPER_MASK) | (this.#mt[0] & this.#LOWER_MASK);
+            this.#mt[this.#N - 1] = this.#mt[this.#M - 1] ^ (y >>> 1) ^ m[y & 0x1];
+
+            this.#mti = 0;
+        }
+
+        y = this.#mt[this.#mti++];
+
+        y ^= (y >>> 11);
+        y ^= (y << 7) & 0x9D2C5680;
+        y ^= (y << 15) & 0xEFC60000;
+        y ^= (y >>> 18);
+
+        return y >>> 0;
+    }
+
+    // Generates a random number: [0,0x7FFFFFFF]
+    randomInt31() {
+        return (this.randomInt32() >>> 1);
+    }
+
+    // Generates a random number (inclusive): [0,1]
+    randomRealIn() {
+        return (this.randomInt32() * (1 / (2**32 - 1)));
+    }
+
+    // Generates a random number (exclusive): (0,1)
+    randomRealEx() {
+        return (this.randomInt32() + .5) * (1 / 2**32);
+    }
+
+    // Generates a random number: [0,1)
+    random() {
+        return (this.randomInt32() * (1 / 2**32));
+    }
+
+    // Generates a random number: [0,1) @ 53bit
+    random53b() {
+        let a = this.randomInt32() >>> 5;
+        let b = this.randomInt32() >>> 6;
+
+        return (a * 0x4000000 + b) * (1 / 0x20000000000000);
+    }
 }
 
 /* Common MIME Types */

@@ -140,7 +140,7 @@ caption {
 :is(.tooltip-layer, .tt-context-menu, .tt-alert, .tt-confirm, .tt-prompt, .tt-select) code, code[tt-code] {
     background-color: var(--color-background-tooltip)!important;
     border-radius: 4px;
-    color: var(--color-background-base)!important;
+    color: var(--color-text-tooltip)!important;
     font-family: 'Liberation Mono', 'Courier', 'Consolas', 'Monospace', 'System-UI', 'Arial'!important;
     font-size: 100%!important;
     font-weight: normal;
@@ -1446,4 +1446,88 @@ html:not([lang="en"i]) .details > summary {
 
 .details *:not(label) > h1, .details *:not(label) > h2, .details *:not(label) > h3, .details *:not(label) > h4, .details *:not(label) > h5, .details *:not(label) > h6 {
     padding-left: .5rem;
+}
+
+.input {
+    background-color: var(--color-background-base);
+    border-radius: 3px;
+    color: var(--color-text-base);
+    display: inline-block;
+    font-size: 100%;
+    line-height: 1;
+    text-overflow: ellipsis;
+    transition: all .1s ease-in;
+    overflow-x: hidden;
+    resize: none;
+    padding: 1rem;
+    height: 1rem;
+    width: 100%;
+}
+
+/* https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_autocomplete */
+.autocomplete {
+    border: 2px solid var(--color-twitch-purple);
+}
+
+.autocomplete-list {
+    border: 0;
+    border-bottom: 1px solid var(--color-twitch-purple);
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    overflow: auto;
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 2em;
+    z-index: 99999;
+
+    max-height: 50vh;
+    width: 100%;
+}
+
+.autocomplete-list::after {
+    content: attr(matches) " matches";
+
+    background: radial-gradient(circle 15rem at 50% 100%, var(--color-twitch-purple), var(--color-background-base)) 100% center no-repeat;
+    display: inline-block;
+    text-align: center;
+
+    position: sticky;
+    left: 0;
+    bottom: -2px;
+    top: 0;
+
+    padding: 1rem 0;
+
+    height: auto;
+    width: 100%;
+}
+
+.autocomplete-list[matches="1"]::after {
+    content: "1 match" !important;
+}
+
+.autocomplete-list:empty::after {
+    content: "No matches" !important;
+}
+
+.autocomplete-list .active {
+    background-color: var(--color-twitch-purple);
+}
+
+.autocomplete-list .item {
+    background: var(--color-background-base);
+    color: var(--color-text-base);
+    cursor: pointer;
+
+    padding: 1rem;
+}
+
+.autocomplete-list .item:not(:last-child) {
+    border-bottom: 1px solid var(--color-twitch-purple);
+}
+
+.autocomplete-list .item strong {
+    text-decoration: underline;
 }

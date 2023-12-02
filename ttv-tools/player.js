@@ -35,46 +35,6 @@ let {
     GLOBAL_EVENT_LISTENERS,
 } = window;
 
-/** Adds a CSS block to the <code class=prettyprint>Player__CUSTOM_CSS</code> string
- * @simply AddCustomCSSBlock_Player(name:string, block:string) → undefined
- */
-function AddCustomCSSBlock_Player(name, block) {
-    name = name.trim();
-
-    let regexp = RegExp(`(\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\2\\*\\/|$)`);
-
-    let newHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, `/*${ name }*/${ block }/*#${ name }*/`));
-
-    if(Player__CUSTOM_CSS.innerHTML.equals(newHTML))
-        return;
-
-    Player__CUSTOM_CSS.innerHTML = newHTML;
-    Player__CUSTOM_CSS.remove();
-
-    // Force styling update
-    $('body').append(Player__CUSTOM_CSS);
-}
-
-/** Removes a CSS block from the <code class=prettyprint>Player__CUSTOM_CSS</code> string
- * @simply RemoveCustomCSSBlock_Player(name:string, flags:string?) → undefined
- */
-function RemoveCustomCSSBlock_Player(name, flags = '') {
-    name = name.trim();
-
-    let regexp = RegExp(`\\/\\*(${ name })\\*\\/(?:[^]+?)\\/\\*#\\1\\*\\/`, flags);
-
-    let newHTML = ((Player__CUSTOM_CSS.innerHTML || '').replace(regexp, ''));
-
-    if(Player__CUSTOM_CSS.innerHTML.equals(newHTML))
-        return;
-
-    Player__CUSTOM_CSS.innerHTML = newHTML;
-    Player__CUSTOM_CSS.remove();
-
-    // Force styling update
-    $('body').append(Player__CUSTOM_CSS);
-}
-
 let Player__Initialize = async(START_OVER = false) => {
     // Time how long jobs take to complete properly
     class StopWatch {
@@ -303,7 +263,7 @@ let Player__Initialize = async(START_OVER = false) => {
                     })
                 );
 
-                AddCustomCSSBlock_Player('player-to-top', `[data-test-selector*="video-player"i][data-test-selector*="container"]:hover #player-to-top{bottom:0!important} #player-to-top:hover{background-color:var(--color-background-button-primary-hover)!important}`);
+                AddCustomCSSBlock('player-to-top', `[data-test-selector*="video-player"i][data-test-selector*="container"]:hover #player-to-top{bottom:0!important} #player-to-top:hover{background-color:var(--color-background-button-primary-hover)!important}`);
             }
         }
     }
@@ -331,8 +291,7 @@ let Player__Initialize_Safe_Mode = async(START_OVER = false) => {
 };
 // End of Player__Initialize_Safe_Mode
 
-let Player__CUSTOM_CSS,
-    Player__PAGE_CHECKER,
+let Player__PAGE_CHECKER,
     Player__WAIT_FOR_PAGE,
     Player__SETTING_RELOADER;
 
@@ -434,14 +393,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
 
         // Add custom styling
         CustomCSSInitializer: {
-            Player__CUSTOM_CSS = $('#tt-custom-player-css') ?? furnish('style#tt-custom-player-css', {});
-
-            Player__CUSTOM_CSS.innerHTML =
-            `
-            `;
-
-            Player__CUSTOM_CSS?.remove();
-            $('body').append(Player__CUSTOM_CSS);
+            AddCustomCSSBlock('player.js', ``);
         }
 
         // Update the settings
