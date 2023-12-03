@@ -8818,7 +8818,7 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                let container = f(`#game-overview-card.chat-line__message[@game="${ STREAMER.game }"][@aTarget=chat-line-message][@testSelector=chat-line-message]`, {
+                let container = f(`#game-overview-card[@game="${ STREAMER.game }"]`, {
                     style: `animation:1s fade-in 1; max-width:fit-content; overflow:visible; overflow-wrap:normal; margin-bottom:3rem`
                 },
                     f('.tt-relative').with(
