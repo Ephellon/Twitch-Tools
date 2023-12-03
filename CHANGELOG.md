@@ -68,6 +68,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.3)
+- Fixed issue with Tooltips not disappearing when their container was removed
+- Modified `AddCustomCSSBlock` and `RemoveCustomCSSBlock` to accept containers
+- Fixed issue with `parseURL`
+
 > [`5.33.0.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.2)
 - Adjusted game description fetching logic for Nintendo games
 - Adjusted time zone logic

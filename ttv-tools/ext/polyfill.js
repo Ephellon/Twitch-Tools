@@ -148,7 +148,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>[^\s\.]+(?:\.[^\.:\/?#\s][^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>[^\s\.\/]+(?:\.[^\.:\/?#\s][^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -551,22 +551,22 @@ Object.defineProperties(furnish, {
 /** Adds a CSS block to the DOM
  * @simply AddCustomCSSBlock(name:string, block:string) → undefined
  */
-function AddCustomCSSBlock(name, block) {
+function AddCustomCSSBlock(name, block, container = document.body) {
     RemoveCustomCSSBlock(name);
 
     let element = furnish(`style[type="text/css"][css-block="${ name }"]`).html(block);
 
     // Force styling update
-    $('body')?.append(element);
+    container?.append(element);
 }
 
 /** Removes a CSS block from the DOM
  * @simply RemoveCustomCSSBlock(name:string) → undefined
  */
-function RemoveCustomCSSBlock(name) {
+function RemoveCustomCSSBlock(name, container = document.body) {
     name = name.trim();
 
-    let element = $(`[css-block="${ name }"i]`);
+    let element = $(`[css-block="${ name }"i]`, container);
 
     // Force styling update
     element?.remove();

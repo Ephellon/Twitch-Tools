@@ -492,10 +492,11 @@ class Tooltip {
         let uuid;
         let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });
 
+        let upper = parent.closest('[tt-tooltip-id]')?.getAttribute('tt-tooltip-id') ?? '';
         let values = [parent.getAttribute('tt-tooltip-id'), parent.getAttribute('id'), UUID.from(parent.getPath(-1)).value];
         for(let value, index = 0; nullish(value) && index < values.length; ++index) {
             value = values[index];
-            uuid = value + (['', ':tooltip'][index] || '');
+            uuid = [upper, value, (['', 'tooltip'][index] ?? '')].filter(_ => _?.length).join(':');
         }
 
         parent.setAttribute('tt-tooltip-id', tooltip.id = uuid);
@@ -504,12 +505,14 @@ class Tooltip {
             let { currentTarget } = event,
                 offset = getOffset(currentTarget),
                 screen = getOffset(document.body),
-                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning'));
+                fineTuning = JSON.parse(currentTarget.getAttribute('fine-tuning')),
+                [groupID] = currentTarget.getAttribute('tt-tooltip-id').split(':');
 
             let from = fineTuning.from.replace(/^[^]+--(up|down|left|right)$/i, '$1').toLowerCase();
 
+            let container;
             $.queryBy('#root > *, body').first.append(
-                furnish('.tt-tooltip-layer.tooltip-layer',
+                container = furnish(`.tt-tooltip-layer.tooltip-layer[for="${ groupID }"]`,
                     {
                         style: (() => {
                             let style = 'animation:.3s fade-in 1;';
@@ -534,7 +537,7 @@ class Tooltip {
                             return style;
                         })()
                     },
-                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': this.id, 'show': true },
+                    furnish('.tt-inline-flex.tt-relative.tt-tooltip-wrapper', { 'aria-describedby': groupID, 'show': true },
                         furnish('div', { style: `width: ${ offset.width }px; height: ${ offset.height }px;` }),
                         this
                     )
@@ -544,14 +547,25 @@ class Tooltip {
             if(parseBool(fineTuning.fit))
                 this.setAttribute('style', `max-width:${ offset.width }px`);
             this.modStyle(fineTuning.style);
+
+            // https://stackoverflow.com/a/75200868/4211612
+            AddCustomCSSBlock(`tooltip#${ groupID }`, `.tooltip-layer[for^="${ groupID }"i]:has(~ .tooltip-layer[for^="${ groupID }"i]) { display: none }`, container);
         }).bind(tooltip));
 
         parent.addEventListener('mouseleave', ({ currentTarget }) => {
-            let tooltip = $(`[id="${ currentTarget.getAttribute('tt-tooltip-id') }"i]`)?.closest('[show]');
+            let tipID = currentTarget.getAttribute('tt-tooltip-id');
+            let tooltip = $(`[id="${ tipID }"i]`)?.closest('[show]');
 
             tooltip?.setAttribute('show', false);
             tooltip?.setAttribute('tt-remove-me', true);
+
+            RemoveCustomCSSBlock(`tooltip#${ tipID }`);
         });
+
+        when(id => ($.nullish(`[tt-tooltip-id="${ id }"i]`)? id: false), 30, uuid)
+            .then(id => {
+                $.all(`.tooltip-layer[for^="${ id }"i]`).map(e => e.remove());
+            });
 
         Tooltip.#TOOLTIPS.set(parent, tooltip);
 
