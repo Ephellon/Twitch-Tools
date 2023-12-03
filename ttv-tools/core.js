@@ -1062,10 +1062,10 @@ function defined(value) {
  * @property {Symbol} undefined             Represents the <i>undefined</i> value
  *
  * @property {function} all                 <div class="signature">(...conditions<span class="signature-attributes">repeatable</span>) → {array&lt;Promise~any[]&gt;}</div>
- *                                          <br>Takes an any number of conditions and fulfills when <b>all</b> conditions pass.
+ *                                          <br>Takes any number of conditions and fulfills when <b>all</b> conditions pass.
  *                                          <br>Also contains: <b><code>when.all.defined</code></b>, <b><code>when.all.nullish</code></b>, <b><code>when.all.empty</code></b>, and <b><code>when.all.sated</code></b>; each has the same argument signature as <code>when.all</code>
  * @property {function} any                 <div class="signature">(...conditions<span class="signature-attributes">repeatable</span>) → {array&lt;Promise~any[]&gt;}</div>
- *                                          <br>Takes an any number of conditions and fulfills when <b>any</b> condition passes.
+ *                                          <br>Takes any number of conditions and fulfills when <b>any</b> condition passes.
  *                                          <br>Also contains: <b><code>when.any.defined</code></b>, <b><code>when.any.nullish</code></b>, <b><code>when.any.empty</code></b>, and <b><code>when.any.sated</code></b>; each has the same argument signature as <code>when.any</code>
  *
  * @property {function} pipe                <div class="signature">(condition:function, ms:number<span class="signature-attributes">opt</span>, ...args<span class="signature-attributes">repeatable</span>) → {Promise~any[]}</div>
