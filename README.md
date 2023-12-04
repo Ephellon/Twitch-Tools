@@ -18,7 +18,7 @@ See the [Wiki](https://github.com/Ephellon/Twitch-Tools/wiki) for more informati
 ![image](https://user-images.githubusercontent.com/8632548/182984280-1632674e-e876-45ff-841b-e089bbce8ffc.png)
 
 </details>
-<details><summary>3. Go the <code>chrome://extensions</code></summary>
+<details><summary>3. Go to <code>chrome://extensions</code></summary>
   
   > 1. Ensure **Developer mode** is enabled (*top right*)
   > 2. Select **Load unpacked** (*top left*)
