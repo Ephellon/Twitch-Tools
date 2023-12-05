@@ -68,6 +68,10 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.4)
+- Fixed issue with SVG labeling
+- Fixed issue with Theatre view mode
+
 > [`5.33.0.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.3)
 - Fixed issue with Tooltips not disappearing when their container was removed
 - Modified `AddCustomCSSBlock` and `RemoveCustomCSSBlock` to accept containers

@@ -1235,7 +1235,7 @@ caption {
 
     background: linear-gradient(to right, var(--channel-color) 5%, var(--channel-color-contrast) 95%);
     border-radius: 3px;
-    color: #d2efa9;
+    color: #ddd;
     display: inline-block;
     font-size: 14px;
     text-align: center;

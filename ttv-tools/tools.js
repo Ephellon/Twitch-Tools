@@ -2195,8 +2195,8 @@ function SetViewMode(mode = 'default') {
                 on: `[class*="root"i][class*="chat"i] [href]`,
             },
             theatre: {
-                off: `[data-test-selector*="video-container"i]:not([class*="theatre"i]) button[data-a-target*="theatre-mode"i]`,
-                on: `[data-test-selector*="video-container"i][class*="theatre"i] button[data-a-target*="theatre-mode"i]`,
+                off: `[data-test-selector*="video-container"i]:not([class*="theatre"i]) button[data-a-target*="theatre-mode"i], [tt-svg-label="theatre-mode-off"i]`,
+                on: `[data-test-selector*="video-container"i][class*="theatre"i] button[data-a-target*="theatre-mode"i], [tt-svg-label="theatre-mode-on"i]`,
             },
             chat: {
                 off: `[data-a-target*="right-column"i][data-a-target*="chat-bar"i]:not([data-a-target*="collapsed"i]) button[data-a-target*="collapse"i]`,
@@ -2226,8 +2226,13 @@ function SetViewMode(mode = 'default') {
         } break;
     }
 
-    for(let button of buttons)
-        $(button)?.click?.();
+    for(let button of buttons) {
+        button = $(button);
+
+        if(nullish(button))
+            continue;
+        button.closest('button')?.click();
+    }
 }
 
 // Get the current user activity
@@ -14644,36 +14649,44 @@ if(top == window) {
                 let conversions = {
                     favorite: [
                         "followed",
-                    ].reverse(),
+                    ],
 
                     video: [
-                        "suggested",
                         "related",
-                    ].reverse(),
+                        "suggested",
+                    ],
 
                     people: [
-                        "friends",
                         "watch-channel-trailer",
-                    ].reverse(),
+                        "friends",
+                    ],
 
                     inform: [
                         "live-reminders",
-                    ].reverse(),
+                    ],
 
                     checkmark: [
                         "live-reminders",
-                    ].reverse(),
+                    ],
 
                     rewind: [
                         "rewind-stream",
-                    ].reverse(),
+                    ],
 
                     crown: [
                         "prime-subscription",
                     ],
+
+                    button_2to1_transparent: [
+                        "theatre-mode-off"
+                    ],
+
+                    button_2to1_opaque: [
+                        "theatre-mode-on"
+                    ],
                 };
 
-                for(let container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button')) {
+                for(let container of $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label], .about-section__actions > * > *, [data-target^="channel-header"i] button, :is([data-test-selector*="video-player"i], [data-test-selector*="video-container"i]) button')) {
                     let svg = $('svg', container);
 
                     if(nullish(svg))
@@ -14683,7 +14696,7 @@ if(top == window) {
                     for(let glyph in Glyphs)
                         if(Glyphs.__exclusionList__.contains(glyph))
                             continue comparing;
-                        else
+                        else if(conversions[glyph]?.length)
                             resemble(svg.toImage())
                                 .compareTo(Glyphs.modify(glyph, { height: '20px', width: '20px' }).asNode.toImage())
                                 .ignoreColors()
@@ -14699,12 +14712,32 @@ if(top == window) {
                                     if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
                                         return;
 
-                                    // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+                                    let family = conversions[glyph].pop();
 
-                                    let family = conversions[glyph];
+                                    if(!family)
+                                        return;
 
-                                    if(family?.length)
-                                        container.setAttribute('tt-svg-label', family.pop());
+                                    // NOTICE(`Labeling section "${ family[family.length - 1] }" (${ matchPercentage }% match | "${ glyph }")...`, container);
+
+                                    container.setAttribute('tt-svg-label', family);
+
+                                    if(family.missing('-mode-'))
+                                        return;
+
+                                    // Auto-toggle
+                                    let observer = new MutationObserver(function(mutations) {
+                                        for(let { target, attributeName, oldValue } of mutations) {
+                                            if(attributeName.unlike('aria-label'))
+                                                continue;
+
+                                            let [state, ...name] = target.getAttribute('tt-svg-label').split('-').reverse();
+                                            name = name.reverse().join('-');
+
+                                            target.setAttribute('tt-svg-label', [name, ['on', 'off'][+state.equals('on')]].join('-'));
+                                        }
+                                    });
+
+                                    observer.observe(container, { attributes: true, subtree: true });
                                 });
                 }
             }
