@@ -117,7 +117,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         new StopWatch('auto_claim_bonuses');
 
         let ChannelPoints = (null
-                ?? $('[data-test-selector="community-points-summary"i] button[class*="--success"i]')
+                ?? $('[data-test-selector="community-points-summary"i] button[class*="success"i]')
                 ?? $('[class*="bonus"i]')?.closest('button')
             ),
             Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
@@ -1093,7 +1093,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         )
                     );
 
-                    when(line => (defined(line.element)? line: false), 250, line).then(async element => {
+                    when(line => (defined(line.element)? line: false), 1000, line).then(async element => {
                         alt = alt.replace(/\s+/g, '_');
 
                         $.all(`.text-fragment:not([tt-converted-emotes~="${ alt }"i])`, element).map(fragment => {
@@ -1217,7 +1217,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         new StopWatch('filter_messages');
 
         MESSAGE_FILTER ??= Chat.onmessage = Chat.onpinned = async line => {
-            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
                 let Filter = UPDATE_RULES('filter');
 
                 let { message, mentions, author, badges, emotes, element } = line,
@@ -1458,7 +1458,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         new StopWatch('highlight_phrases');
 
         PHRASE_HIGHLIGHTER ??= Chat.onmessage = async line => {
-            when(line => (defined(line.element)? line: false), 250, line).then(async line => {
+            when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
                 let Phrases = UPDATE_RULES('phrase');
 
                 let { message, mentions, author, badges, emotes, style, element } = line,
@@ -1684,7 +1684,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.messages.missing(line.uuid)) {
                 Queue.messages.push(line.uuid);
 
-                when(line => (defined(line.element)? line: false), 250, line).then(async line => {
+                when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
                     let { author, message, style } = line;
                     let element = await line.element;
 
@@ -1722,7 +1722,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(Queue.message_popups.missing(line.uuid)) {
                 Queue.message_popups.push(line.uuid);
 
-                when(line => (defined(line.element)? line: false), 250, line).then(async line => {
+                when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
                     let { author, message, element } = line,
                         reply = await line.reply;
 
@@ -1886,7 +1886,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             // Highlighter for chat elements
             AddNativeReplyButton: line => {
-                when(line => (defined(line.element)? line: false), 250, line).then(async line => {
+                when(line => (defined(line.element)? line: false), 1000, line).then(async line => {
                     let { uuid, style, handle, message, mentions, element } = line;
 
                     if($.defined('.chat-line__message-container', element))
@@ -2055,7 +2055,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             CHAT_CARDIFIED.set(href, null);
             CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
-            /*await*/ fetchURL.idempotent(href, { foster: fetchURL.origins.HTML })
+            /*await*/ fetchURL.idempotent(href)
                 .then(response => response.text())
                 .then(DOMParser.stripBody)
                 .then(html => LINK_PARSER.parseFromString(html, 'text/html'))
@@ -3283,7 +3283,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 RestartJob('recover_messages');
             }
-        }, 250);
+        }, 1000);
     }
 
     // End of Chat__Initialize
@@ -3835,7 +3835,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     callback(results);
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // The channel is hosting...
@@ -3863,7 +3863,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                         callback(results);
 
                                     for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
-                                        when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                        when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
                                     continue;
                                 }
@@ -3959,7 +3959,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     callback(results);
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // Got a whisper
@@ -3970,7 +3970,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                     callback(results);
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             default: continue;
@@ -4079,7 +4079,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                             for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                         }
                     });
         }
@@ -4244,7 +4244,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
             for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
-                when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
             when(() => $.nullish('[class*="pinned"i][class*="by"i]'))
                 .then(() => when.defined(() => $('[class*="pinned"i][class*="by"i]')).then(PinnedMessageHandler));

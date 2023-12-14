@@ -38,6 +38,8 @@
     * Made this at one point... didn't really see the need of it past nuance
 - [-] Display a "Hey, these are new!" alert on the settings page
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
+    - Happens if all tabs go to the same streamer and the Up Next tab changes
+    - Add logic to ignore `name` in background.js?
 - [-] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
 - [-] Pause Up Next during trophy recording
 - [x] Clips may not be saved when leaving/destroying page
@@ -68,6 +70,18 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.5)
+- Adjusted logic for finding "best" URL in Command Link Maker
+- Modified Greedy Raiding logic to ignore current streamer (no hidden iframe)
+- Modified `CSSObject` logic to prevent overwriting predefined declarations
+- Fixed issue with `Color.destruct`
+- Fixed issue with `CSSObject`
+- Added `CSSObject.VENDORS`
+- Updated `extras.css` to be sorted and prefixed
+- Changed all `Chat.message` listening evets from 250ms to 1s
+- Fixed issue with forced tab-closing not opening new tabs
+- Fixed issue collecting bonus points
+
 > [`5.33.0.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.4)
 - Fixed issue with SVG labeling
 - Fixed issue with Theatre view mode

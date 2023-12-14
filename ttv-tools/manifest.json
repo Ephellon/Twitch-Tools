@@ -4,7 +4,7 @@
     "name": "TTV Tools",
     "description": "Adds extra features to Twitch",
 
-    "version": "5.33.0.4",
+    "version": "5.33.0.5",
     "minimum_chrome_version": "88",
     "homepage_url": "https://github.com/ephellon/twitch-tools",
 
@@ -119,7 +119,7 @@
     ],
 
     "web_accessible_resources": [{
-        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "font/*.*", "_locales/*/*.json"],
+        "resources": ["*.png", "*.svg", "aud/*.*", "ext/*.*", "font/*.*", "*.css"],
         "matches": [
             "*://player.twitch.tv/*",
             "*://www.twitch.tv/*",

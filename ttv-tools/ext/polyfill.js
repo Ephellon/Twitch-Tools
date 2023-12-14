@@ -873,7 +873,7 @@ function getDOMPath(element, length = 0) {
         element = parent;
     }
 
-    path = path.join('>').replace(/#([^\a-z][^>\s]*)/ig, '[id="$1"]');
+    path = path.join('>').replace(/#([^a-z][^>\s]*)/ig, '[id="$1"]');
     for(let regexp = /[> ](?:(\w+)[> ]\1[^#:\[\]])+/; length < 0 && regexp.test(path);)
         path = path.replace(regexp, ' $1 ');
 
@@ -885,7 +885,7 @@ function getDOMPath(element, length = 0) {
     // requires outline: [action] @
 function autocomplete(element, options) {
     if(nullish(element))
-        throw `Cannot add an event-lsitener to a null item`;
+        throw `Cannot add an event-listener to a null item`;
     if(!options?.length && !Object.keys(options).length)
         throw `The provided options must have at least one element`;
 
@@ -2738,14 +2738,46 @@ Object.defineProperties(Promise, {
 // Creates a CSS object that can be used to easily transform an object to a CSS string, JSON, or object
     // new CSSObject({ ...css-properties }, important:boolean?) → Object<CSSObject>
 class CSSObject {
+    static VENDORS = {
+        ALL: Symbol.for('all'),
+
+        MICROSOFT: Symbol.for('ms'),
+        INTERNET_EXPLORER: Symbol.for('ms'),
+
+        MOZILLA: Symbol.for('moz'),
+        FIREFOX: Symbol.for('moz'),
+        GECKO: Symbol.for('moz'),
+
+        OPERA: Symbol.for('o'),
+
+        WEBKIT: Symbol.for('webkit'),
+        BLINK: Symbol.for('webkit'),
+        SAFARI: Symbol.for('webkit'),
+        CHROME: Symbol.for('webkit'),
+        CHROMIUM: Symbol.for('webkit'),
+        BRAVE: Symbol.for('webkit'),
+        MICROSOFT_EDGE: Symbol.for('webkit'),
+
+        KHTML: Symbol.for('khtml'),
+    };
+
     constructor(properties = {}, important = false) {
         switch (typeof properties) {
             case 'string': {
                 let destructed = CSSObject.destruct(properties);
 
                 properties = {};
-                for(let [key, { value, important, deleted }] of destructed)
-                    properties[key] = (deleted? 'initial': value) + (important || deleted? '!important': '');
+                for(let [key, values] of destructed) {
+                    if(values instanceof Array) {
+                        let out = [];
+                        for(let { value, important, deleted } of values)
+                            out.push((deleted? 'initial': value) + (important || deleted? '!important': ''));
+                        properties[key] = out.join(';');
+                    } else {
+                        let { value, important, deleted } = values;
+                        properties[key] = (deleted? 'initial': value) + (important || deleted? '!important': '');
+                    }
+                }
             } break;
         }
 
@@ -2767,7 +2799,16 @@ class CSSObject {
 
                 value = value.replace(/!(important|delete)\b/i, '');
 
-                css.set(property, { value, important, deleted });
+                if(!value.length)
+                    return;
+
+                if(css.has(property)) {
+                    let old = css.get(property);
+
+                    css.set(property, [old, { value, important, deleted }].flat());
+                } else {
+                    css.set(property, { value, important, deleted });
+                }
             });
 
         return css;
@@ -2784,6 +2825,7 @@ class CSSObject {
     toString(vendors, stylized = false) {
         let $important = this['!important'] ?? false,
             $delete = this['!delete'] ?? false;
+        let css0 = /(^|[^\w\."'])0(?<unit>(?:p[ctx]|r?e[mnx]|ch|v(?:[hw]|min|max)|[cm]m|in)\b|%)/ig;
 
         for(let key of ['!important', '!delete'])
             delete this[key];
@@ -2815,13 +2857,46 @@ class CSSObject {
                         }
                 }
 
-                return [position, `\t${ property }: ${ ($delete? 'initial': value) }${ ($important || $delete)? ' !important': '' };`];
-            })
-            // Alphabetical sort
-            .sort(([,A], [,B]) => {
-                let C = [A, B].sort();
+                if(value.contains(';')) {
+                    value = value.split(';');
 
-                return C.indexOf(A) - C.indexOf(B);
+                    let out = [];
+                    for(let val of value)
+                        out.push(`\t${ property }: ${ ($delete? 'initial': val.replace(css0, '$10')) }${ ($important || $delete? '!important': '') };`);
+                    return [position, out.join('\n'), property];
+                }
+
+                return [position, `\t${ property }: ${ ($delete? 'initial': value.replace(css0, '$10')) }${ ($important || $delete? '!important': '') };`, property];
+            })
+            // Alphabetical + length sort
+            .sort(([iA,A,$A], [iB,B,$B]) => {
+                let C = [$A, $B].sort();
+                let _ = /^-(\w+)-/, __ = /^--/;
+                let a = 0, b = 0,
+                    _a = __.test($A), _b = __.test($B);
+
+                if(_.test($A) || _.test($B)) {
+                    a = $A.length;
+                    b = $B.length;
+
+                    $A = $A.replace(_, '');
+                    $B = $B.replace(_, '');
+
+                    a = -(a - $A.length);
+                    b = -(b - $B.length);
+                } else if(_a || _b) {
+                    if(_a && _b) {
+                        let c = [$A, $B].sort();
+
+                        return c.indexOf($A) - c.indexOf($B);
+                    }
+
+                    if(_b)
+                        return -1;
+                    return +1;
+                }
+
+                return (C.indexOf($A) + a) - (C.indexOf($B) + b);
             })
             // Property-class sort
             .sort(([A], [B]) => A - B)
@@ -2832,6 +2907,15 @@ class CSSObject {
             return Object.entries(this.toObject(vendors)).map(([property, value]) => {
                 property = property.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
 
+                if(value.contains(';')) {
+                    value = value.split(';');
+
+                    let out = [];
+                    for(let val of value)
+                        out.push(`\t${ property }: ${ ($delete? 'initial': val) }${ ($important || $delete? '!important': '') };`);
+                    return [property, out.join('\n')];
+                }
+
                 return [property, `${ ($delete? 'initial': value) }${ ($important || $delete? '!important': '') }`].join(':');
             })
             .join(';');
@@ -2840,11 +2924,15 @@ class CSSObject {
 
     toObject(vendors = []) {
         let object = {};
+        let css0 = /(^|[^\w\."'])0(?<unit>(?:p[ctx]|r?e[mnx]|ch|v(?:[hw]|min|max)|[cm]m|in)\b|%)/ig;
 
+        if(typeof vendors == 'symbol')
+            vendors = Symbol.keyFor(vendors);
         if(vendors.equals?.('all'))
             vendors = 'ms moz o webkit khtml';
         if(typeof vendors == 'string')
             vendors = vendors.split(/[^\w-]+/).filter(string => string.length);
+        vendors ??= [];
 
         let $delete = this['!delete'] ?? false,
             $important = this['!important'] || $delete;
@@ -2857,8 +2945,11 @@ class CSSObject {
 
         for(let key in this) {
             let properKey = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+            let value = this[key];
 
-            this[key] = $delete || this[key];
+            let bind = (key, val, imp) => val.contains(';')? val.split(';').map(v => v.replace(css0, '$10') + imp).join(';'): val.replace(css0, '$10') + imp;
+
+            this[key] = $delete || value;
 
             for(let vendor of vendors)
                 switch(vendor.toLowerCase().replace(/^-+|-+$/g, '')) {
@@ -2869,7 +2960,7 @@ class CSSObject {
                         let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "backface-visibility", "background", "background-image", "border-bottom-left-radius", "border-bottom-right-radius", "border-image", "border-radius", "border-top-left-radius", "border-top-right-radius", "content", "list-style", "list-style-image", "mask", "mask-image", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function"];
 
                         if(keys.contains(properKey))
-                            object[`-ms-${ properKey }`] = this[key] + $important;
+                            object[`-ms-${ properKey }`] ||= bind(`-ms-${ properKey }`, value, $important);
                     } break;
 
                     case 'moz':
@@ -2894,9 +2985,9 @@ class CSSObject {
                         };
 
                         if(keys.contains(properKey))
-                            object[`-moz-${ properKey }`] = this[key] + $important;
+                            object[`-moz-${ properKey }`] ||= bind(`-moz-${ properKey }`, value, $important);
                         else if(properKey in supers)
-                            object[`-moz-${ supers[properKey] }`] = this[key] + $important;
+                            object[`-moz-${ supers[properKey] }`] ||= bind(`-moz-${ supers[properKey] }`, value, $important);
                     } break;
 
                     case 'o':
@@ -2904,7 +2995,7 @@ class CSSObject {
                         let keys = ["backface-visibility", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "replace", "set-link-source", "transform-style", "use-link-source"];
 
                         if(keys.contains(properKey))
-                            object[`-o-${ properKey }`] = this[key] + $important;
+                            object[`-o-${ properKey }`] ||= bind(`-o-${ properKey }`, value, $important);
                     } break;
 
                     case 'webkit':
@@ -2916,7 +3007,7 @@ class CSSObject {
                         let keys = ["align-content", "align-items", "align-self", "alt", "animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "animation-trigger", "app-region", "appearance", "aspect-ratio", "backdrop-filter", "backface-visibility", "background-clip", "background-composite", "background-origin", "background-size", "border-after", "border-after-color", "border-after-style", "border-after-width", "border-before", "border-before-color", "border-before-style", "border-before-width", "border-bottom-left-radius", "border-bottom-right-radius", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-fit", "border-horizontal-spacing", "border-image", "border-radius", "border-start", "border-start-color", "border-start-style", "border-start-width", "border-top-left-radius", "border-top-right-radius", "border-vertical-spacing", "box-align", "box-decoration-break", "box-direction", "box-flex", "box-flex-group", "box-lines", "box-ordinal-group", "box-orient", "box-pack", "box-reflect", "box-shadow", "box-sizing", "clip-path", "color-correction", "column-axis", "column-break-after", "column-break-before", "column-break-inside", "column-count", "column-fill", "column-gap", "column-progression", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-span", "column-width", "columns", "cursor-visibility", "dashboard-region", "device-pixel-ratio", "filter", "flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink", "flex-wrap", "flow-from", "flow-into", "font-feature-settings", "font-kerning", "font-size-delta", "font-smoothing", "font-variant-ligatures", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow", "grid-auto-rows", "grid-column", "grid-column-end", "grid-column-gap", "grid-column-start", "grid-gap", "grid-row", "grid-row-end", "grid-row-gap", "grid-row-start", "grid-template", "grid-template-areas", "grid-template-columns", "grid-template-rows", "highlight", "hyphenate-character", "hyphenate-charset", "hyphenate-limit-after", "hyphenate-limit-before", "hyphenate-limit-lines", "hyphens", "image-set", "initial-letter", "justify-content", "justify-items", "justify-self", "line-align", "line-box-contain", "line-break", "line-clamp", "line-grid", "line-snap", "locale", "logical-height", "logical-width", "margin-after", "margin-after-collapse", "margin-before", "margin-before-collapse", "margin-bottom-collapse", "margin-collapse", "margin-end", "margin-start", "margin-top-collapse", "marquee", "marquee-direction", "marquee-increment", "marquee-repetition", "marquee-speed", "marquee-style", "mask", "mask-attachment", "mask-box-image", "mask-box-image-outset", "mask-box-image-repeat", "mask-box-image-slice", "mask-box-image-source", "mask-box-image-width", "mask-clip", "mask-composite", "mask-image", "mask-origin", "mask-position", "mask-position-x", "mask-position-y", "mask-repeat", "mask-repeat-x", "mask-repeat-y", "mask-size", "mask-source-type", "match-nearest-mail-blockquote-color", "max-logical-height", "max-logical-width", "min-logical-height", "min-logical-width", "nbsp-mode", "opacity", "order", "overflow-scrolling", "padding-after", "padding-before", "padding-end", "padding-start", "perspective", "perspective-origin", "perspective-origin-x", "perspective-origin-y", "print-color-adjust", "region-break-after", "region-break-before", "region-break-inside", "region-fragment", "rtl-ordering", "ruby-position", "scroll-snap-type", "shape-image-threshold", "shape-inside", "shape-margin", "shape-outside", "svg-shadow", "tap-highlight-color", "text-color-decoration", "text-combine", "text-decoration", "text-decoration-line", "text-decoration-skip", "text-decoration-style", "text-decorations-in-effect", "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style", "text-fill-color", "text-justify", "text-orientation", "text-security", "text-size-adjust", "text-stroke", "text-stroke-color", "text-stroke-width", "text-underline-position", "text-zoom", "touch-action", "transform", "transform-2d", "transform-3d", "transform-origin", "transform-origin-x", "transform-origin-y", "transform-origin-z", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-drag", "user-modify", "user-select", "word-break", "writing-mode"];
 
                         if(keys.contains(properKey))
-                            object[`-webkit-${ properKey }`] = this[key] + $important;
+                            object[`-webkit-${ properKey }`] ||= bind(`-webkit-${ properKey }`, value, $important);
                     } break;
 
                     case 'khtml':
@@ -2924,11 +3015,11 @@ class CSSObject {
                         let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "box-shadow", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-select"];
 
                         if(keys.contains(properKey))
-                            object[`-khtml-${ properKey }`] = this[key] + $important;
+                            object[`-khtml-${ properKey }`] ||= bind(`-khtml-${ properKey }`, value, $important);
                     } break;
                 }
 
-            object[properKey] = this[key] + $important;
+            object[properKey] ||= bind(properKey, value, $important);
         }
 
         return object;
@@ -3171,7 +3262,7 @@ class Color {
             RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -3223,7 +3314,7 @@ class Color {
             RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -3254,6 +3345,7 @@ class Color {
 
         W = Cmin;
         K = 1 - Cmax;
+        A = A.clamp(0, 1);
 
         return {
             H, W, K,
@@ -3266,7 +3358,7 @@ class Color {
             RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -3290,6 +3382,7 @@ class Color {
         R = f(R);
         G = f(G);
         B = f(B);
+        alpha = alpha.clamp(0, 1);
 
         return {
             H: hue, W: white, K: black,
@@ -3302,7 +3395,7 @@ class Color {
             RGBA: `rgb(${ [R, G, B, alpha.toFixed(1)].map(v => v.toString(16)) })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            HEXA: `#${ [R, G, B, alpha * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, alpha * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -3328,6 +3421,8 @@ class Color {
             Y = (1 - B - K) / k;
         }
 
+        A = A.clamp(0, 1);
+
         return {
             C, M, Y, K,
             cyan: C, magenta: M, yellow: Y, black: K, alpha: A,
@@ -3339,7 +3434,7 @@ class Color {
             RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
         };
     }
 
@@ -3361,7 +3456,7 @@ class Color {
             RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
-            HEXA: `#${ [R, G, B, A * 255].map(v => v.toString(16).padStart(2, '0')).join('') }`,
+            HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
         };
     }
 

@@ -145,8 +145,12 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
                 Container.tabs.reload(tab.id);
         });
 
-        if(forced)
+        if(forced) {
             Container.tabs.reload(tab.id);
+
+            // REPORTS.set(tab.id, +new Date);
+            // GALLOWS.set(tab.id, +new Date);
+        }
     } catch(error) {
         console.warn(`Failed to reload tab: ${ error }`);
     }

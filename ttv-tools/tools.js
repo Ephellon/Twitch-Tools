@@ -10248,10 +10248,11 @@ let Initialize = async(START_OVER = false) => {
                                     ) {
                                         // Set the new "best" URL
                                         _href = href;
+                                        _origin = origin;
                                         _protocol = protocol;
                                         _host = host;
-                                        _origin = origin;
                                         _port = port;
+                                        _pathname = pathname;
                                         _search = search;
                                         _hash = hash;
                                     }
@@ -10819,7 +10820,7 @@ let Initialize = async(START_OVER = false) => {
      */
     let GREEDY_RAIDING_FRAMES = new Map;
     Handlers.greedy_raiding = () => {
-        let online = [STREAMER, ...STREAMERS].filter(isLive),
+        let online = [STREAMER, ...STREAMERS].filter(isLive).filter(({ name }) => name.unlike(STREAMER.name)),
             container = (null
                 ?? $('#tt-greedy-raiding--container')
                 ?? furnish('#tt-greedy-raiding--container', {
@@ -11969,7 +11970,7 @@ let Initialize = async(START_OVER = false) => {
 
         // Play sound on new message
         NOTIFICATION_EVENTS.onphrase ??= Chat.onmessage = line => {
-            when(line => (defined(line.element)? line: false), 250, line).then(element => {
+            when(line => (defined(line.element)? line: false), 1000, line).then(element => {
                 if(element.hasAttribute('tt-light') && !NOTIFICATION_SOUND?.playing)
                     NOTIFICATION_SOUND?.play();
             });
@@ -15459,7 +15460,7 @@ if(top == window) {
                                         when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                                     for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
-                                        when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                        when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
 
                                     continue;
                                 }
@@ -15555,7 +15556,7 @@ if(top == window) {
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             // Got a whisper
@@ -15566,7 +15567,7 @@ if(top == window) {
                                     when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
-                                    when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                                    when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                             } break;
 
                             default: continue;
@@ -15675,7 +15676,7 @@ if(top == window) {
                             when(() => PAGE_IS_READY, 250).then(() => callback(results));
 
                         for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
-                            when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+                            when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
                     }
                 });
         }
