@@ -154,7 +154,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             container.innerHTML = parent.outerHTML;
             container.id = 'tt-auto-claim-bonuses';
             container.classList.add('community-points-summary', 'tt-align-items-center', 'tt-flex', 'tt-full-height');
-            container.setAttribute('style', `animation:1s fade-in 1;`);
+            container.modStyle(`animation:1s fade-in 1;`);
 
             heading.insertBefore(container, heading.children[1]);
 
@@ -165,6 +165,8 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(defined(textContainer)) {
                 let { parentElement } = textContainer;
                 parentElement.removeAttribute('data-test-selector');
+            } else {
+                return StopWatch.stop('auto_claim_bonuses');
             }
 
             button = {
@@ -186,7 +188,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 button.icon.outerHTML = Glyphs.channelpoints;
 
             button.icon = $('svg, img', container);
-            button.icon.setAttribute('style', `height: 2rem; width: 2rem; margin-top: .25rem; margin-left: .25rem;`);
+            button.icon.modStyle(`height: 2rem; width: 2rem; margin-top: .25rem; margin-left: .25rem;`);
         } else {
             let container = button,
                 textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
@@ -233,11 +235,11 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         // Set the Channel Point icon's color & positioning
         $('svg:not([id])', button.container)
-            ?.setAttribute('style', `fill:var(--channel-color-${ ANTITHEME })`);
+            ?.modStyle(`fill:var(--channel-color-${ ANTITHEME })`);
 
         $('svg:not([id])', button.container)
             ?.closest('div:not([class*="channel"i])')
-            ?.setAttribute('style', 'margin-top:0.1em');
+            ?.modStyle('margin-top:0.1em');
 
         StopWatch.stop('auto_claim_bonuses');
     };
@@ -1155,7 +1157,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let R = RegExp;
             for(let rule of rules)
-                // /channel text
+                // /channel `rule(s)`
                 if(/^\/[\w\-]+/.test(rule)) {
                     let caught = /^\/(?<name>[\w\-]+) +(?:(?:<(?<badge>[^>]+)>)?(?::(?<emote>[^:]+):|@(?<user>[\w\-]+)|(?<text>[^$]*))?)$/i.exec(rule).groups;
 
@@ -1191,6 +1193,12 @@ let Chat__Initialize = async(START_OVER = false) => {
                     rules.general.push(rule);
                 }
         }
+
+        let channels = RegExp(`^(${ (channel.length? channel.map(({ name }) => name).join('|'): '[\\b]') })$`, 'i');
+        Object.defineProperties(channel, {
+            test: { value: channels.test.bind(channels) },
+            exec: { value: channels.exec.bind(channels) },
+        });
 
         return {
             text: (text.length? RegExp(`(${ text.join('|') })`, 'i'): /^[\b]$/),
@@ -1342,7 +1350,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let svg = $('svg', filter);
 
-            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+            svg.modStyle('vertical-align:bottom; height:20px; width:20px');
 
             title.append(filter);
         } else if(type.equals('emote')) {
@@ -1379,7 +1387,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let svg = $('svg', filter);
 
-            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+            svg.modStyle('vertical-align:bottom; height:20px; width:20px');
 
             title.append(filter);
         }
@@ -1583,7 +1591,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let svg = $('svg', phrase);
 
-            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+            svg.modStyle('vertical-align:bottom; height:20px; width:20px');
 
             title.append(phrase);
         } else if(type.equals('emote')) {
@@ -1620,7 +1628,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let svg = $('svg', phrase);
 
-            svg.setAttribute('style', 'vertical-align:bottom; height:20px; width:20px');
+            svg.modStyle('vertical-align:bottom; height:20px; width:20px');
 
             title.append(phrase);
         }
@@ -1652,7 +1660,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             { length } = title.children;
 
         if(length > 2)
-            title.setAttribute('style', `height: ${ 3 * (length - 1) + 1 }rem`);
+            title.modStyle(`height: ${ 3 * (length - 1) + 1 }rem`);
     };
     Timers.easy_helper_card_resizer = 250;
 
@@ -1692,7 +1700,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                     let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
 
-                    element.setAttribute('style', `background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
+                    element.modStyle(`background-color: var(--color-opac-p-8); border:1px solid ${ color }; border-radius:3px;`);
                 });
             }
         });
@@ -1716,7 +1724,7 @@ let Chat__Initialize = async(START_OVER = false) => {
      */
     Handlers.highlight_mentions_popup = () => {
         Chat.get().map(Chat.onmessage = async line => {
-            if(!~line.mentions.findIndex(username => RegExp(`^${ USERNAME }$`, 'i').test(username)))
+            if(line.message.missing(USERNAME))
                 return;
 
             if(Queue.message_popups.missing(line.uuid)) {
@@ -2193,40 +2201,38 @@ let Chat__Initialize = async(START_OVER = false) => {
 
                 let channel = STREAMER.name?.toLowerCase();
                 let badges = STREAMER.perm?.all ?? ['everyone'];
-                let message, reason;
+                let message, messages, reason;
 
-                if(STREAMER.perm.has(Settings.auto_chat__vip)) {
-                    message = Rules.rules.general.random();
-                    reason = `permission (${ Settings.auto_chat__vip })`;
-                } else {
-                    if(Rules.badge.test(badges.join(','))) {
-                        message = Rules.rules.specific.badge?.filter(({ badge, text }) => {
-                            return parseBool(false
+                if(Rules.channel.test(channel)) {
+                    message = (messages = Rules.rules.specific.channel?.filter(({ name, badge, text }) => {
+                        if(nullish(STREAMER))
+                            return;
+
+                        return parseBool(true
+                            && name.equals(channel)
+                            && (false
+                                || nullish(badge)
                                 || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
-                            );
-                        })?.random()?.text;
-                        reason = 'badge';
-                    } else {
-                        message = Rules.rules.specific.channel?.filter(({ name, badge, text }) => {
-                            if(nullish(STREAMER))
-                                return;
-
-                            return parseBool(true
-                                && name.equals(channel)
-                                && (false
-                                    || nullish(badge)
-                                    || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
-                                )
-                            );
-                        })?.random()?.text;
-                        reason = 'channel';
-                    }
+                            )
+                        );
+                    }))?.random()?.text;
+                    reason = 'channel';
+                } else if(Rules.badge.test(badges.join(','))) {
+                    message = (messages = Rules.rules.specific.badge?.filter(({ badge, text }) => {
+                        return parseBool(false
+                            || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
+                        );
+                    }))?.random()?.text;
+                    reason = 'badge';
+                } else if(STREAMER.perm?.has(Settings.auto_chat__vip)) {
+                    message = (messages = Rules.rules.general).random();
+                    reason = `permission (${ Settings.auto_chat__vip })`;
                 }
 
                 if(nullish(message))
                     return;
 
-                LOG(`Sending lurking message because the ${ reason } matches`, message);
+                NOTICE(`Sending lurking message because the ${ reason } matches`, message, messages);
 
                 Chat.send(message);
 
@@ -2604,7 +2610,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
 
-        container?.setAttribute('style', `background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-opac-p-8) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
+        container?.modStyle(`background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-opac-p-8) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
 
         let { ceil, floor, round } = Math;
 
@@ -3156,11 +3162,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                 continue restoring;
 
             let f = furnish;
-            let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-target="chat-line-message"i]`);
+            let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-user]`);
 
             // The message was deleted before the element was placed
             if(nullish(container)) {
-                container = f(`.chat-line__message[@aTarget="chat-line-message" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
+                container = f(`.chat-line__message[@aTarget="chat-line-message" @aUser="${ author }" @testSelector="chat-line-message" align-items="center" @uuid="${ uuid }"]`).with(
                     f('[style="position:relative"]').with(
                         f('.chat-line__message-highlight[@testSelector="chat-message-highlight" style="border-radius:.4rem; position:absolute"]'),
                         f('.chat-line__message-container[style="position:relative"]').with(
@@ -3184,7 +3190,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         )
                                     ),
                                     f('span[@testSelector=chat-message-separator]').text(': '),
-                                    f('span[@testSelector=chat-line-message-placeholder]').text('Restoring...')
+                                    f('span[@testSelector=chat-line-message-placeholder]').text(message)
                                 )
                             )
                         ),
@@ -3948,7 +3954,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', (await this));
+                                            return (this == null) || nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', await this);
                                         }).bind(element)
                                     },
                                 });
@@ -4027,20 +4033,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
                                 handle = $('[data-a-user]', element).textContent,
                                 usable = false,
-                                message = $.all('[class*="message"i][class*="body"i] *', element).map(e => {
-                                    if(e.dataset.testSelector?.contains('emote')) {
-                                        let i = $('img', e);
-
-                                        emotes.add(i.alt);
-                                        Chat.__allemotes__.set(i.alt, i.src);
-
-                                        return i.alt;
-                                    } else if(e.dataset.aTarget?.contains('timestamp')) {
-                                        return '';
-                                    }
-
-                                    return e.textContent?.trim?.() || '';
-                                }).join(' ').trim(),
+                                message = raw.replace(/^[^:]+?:/, '').trim(),
                                 mentions = $.all('[data-a-atrget*="mention"i]', element).map(e => e.textContent),
                                 highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
@@ -4063,15 +4056,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 message,
                                 mentions,
                                 highlighted,
+                                deleted: $.defined('[data-a-target*="delete"i]', element),
                             };
-
-                            Object.defineProperties(results, {
-                                deleted: {
-                                    get:(function() {
-                                        return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', this);
-                                    }).bind(element)
-                                },
-                            });
 
                             Chat.__allmessages__.set(uuid, results);
 

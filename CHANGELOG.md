@@ -65,11 +65,31 @@
         - Most atrocious offender was unused data in the `LIVE_REMINDERS__CHECKER` function, and other `new Search(...)` calls
     - The lesser leaks seem to freeze the tab(s) when removing them from memory in quick succession
     - [x] Caused in part by Hardware Acceleration
+    - [x] Crap ton of iframes on **all** pages... Now only on Up Next tab
 - [ ] Add option for DVR to record certain games
+- [ ] Parse and handle phone numbers - `@notImplemented`
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.6)
+- Fixed edge-case of Auto-Chat not firing
+- Modified Auto-Chat order of precedence: Channel, Badge, Specific rule(s)
+- Modified Game fetching logic to correct more editions: seasons, episodes, etc.
+- Modified time zone logic
+- Fixed issue adding blank streamers to First in Line
+- Fixed issue with `Chat.get` logic
+- Changed `WatchTime` and `Watching` logic
+- Fixed issue with "Prime Loot Claiming"
+- Added `clips.js` to add a download button to clips
+- Modified "Message Recovery" logic
+- Fixed issue with time zones
+- Fixed issue with `getElementByText` and `getElementsByInnerText`
+- Added "Top 100" tooltip to view-counter
+- Added `Search.anonID`
+- Re-enabled video capturing
+- Added `Recording.proxy`
+
 > [`5.33.0.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.5)
 - Adjusted logic for finding "best" URL in Command Link Maker
 - Modified Greedy Raiding logic to ignore current streamer (no hidden iframe)

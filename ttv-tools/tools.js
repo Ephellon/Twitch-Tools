@@ -14170,6 +14170,10 @@ let Initialize = async(START_OVER = false) => {
                                     return VIDEO_OVERRIDE = true;
                                 }, 2_5_0);
                             },
+
+                            onmouseup: event => {
+                                ReloadPage(true);
+                            },
                         })
                     );
 

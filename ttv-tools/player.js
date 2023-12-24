@@ -219,7 +219,7 @@ let Player__Initialize = async(START_OVER = false) => {
     };
     Timers.auto_dvr = 500;
 
-    __Hide_Blank_Ads__:
+    __Auto_DVR__:
     if(true || parseBool(Settings?.auto_dvr)) {
         RegisterJob('auto_dvr');
     }

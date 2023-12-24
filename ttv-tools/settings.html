@@ -90,6 +90,20 @@
                 </div>
             </section>
 
+            <!-- Claim Prime Loot → action,allegation,application,assertion,booty,call,case,claim,demand,endless,gaming,interest,loads,loot,myriad,page,petition,plea,request,requirement,spoils,suit,uncounted,untold -->
+            <section new='3.2'>
+                <div class=title tr-id=claim-loot><span small gold glyph=crown></span> Claim Prime Loot</div>
+                <div class=summary>
+                    <div class=toggle>
+                        <input id=claim_loot type=checkbox>
+                        <label for=claim_loot></label>
+                    </div>
+                    <p tr-id>
+                        Automatically claim and dismiss <b>Prime Gaming Loot</b> offers when the page loads.
+                    </p>
+                </div>
+            </section>
+
             <!-- Easy Lurk → agenda,amount,calendar,chart,chatter,conversation,figure,gossip,itinerary,lineup,list,number,program,quantity,record,roster,schedule,size,timetable,total,volume;sunday,monday,tuesday,wednesday,thursday,friday,saturday -->
             <section new='4.12'>
                 <div class=title tr-id=away-mode><span small glyph=show></span>Easy Lurk</div>
@@ -373,7 +387,7 @@
                                         <label for=parse_commands__create_links></label>
                                     </div>
                                     <p tr-id>
-                                        <b>Parse Commands</b> will turn commands that contain links into their first link.
+                                        <b>Parse Commands</b> will turn commands that contain links into their <b attention-text top-tooltip='Most fulfilled (missing the least number of components)'>best</b> link.
                                     </p>
                                 </div>
                             </div>
@@ -428,20 +442,6 @@
                             </div>
                         </div>
                     </details>
-                </div>
-            </section>
-
-            <!-- Prime Loot → action,allegation,application,assertion,booty,call,case,claim,demand,endless,gaming,interest,loads,loot,myriad,page,petition,plea,request,requirement,spoils,suit,uncounted,untold -->
-            <section new='3.2'>
-                <div class=title tr-id=claim-loot><span small gold glyph=crown></span> Prime Loot</div>
-                <div class=summary>
-                    <div class=toggle>
-                        <input id=claim_loot type=checkbox>
-                        <label for=claim_loot></label>
-                    </div>
-                    <p tr-id>
-                        Automatically claim and dismiss <b>Prime Gaming Loot</b> offers when the page loads.
-                    </p>
                 </div>
             </section>
 
@@ -1037,7 +1037,7 @@
                 <div class=title tr-id=auto-chat><span white glyph=thread></span> Lurking Message</div>
                 <div class=summary>
                     <p tr-id>
-                        Send message(s) to specific channels based on rules you set. If multiple messages are defined for the same rule, a random one will be chosen.
+                        Send message(s) in specific channels based on rules you set. If multiple messages are defined for the same rule, a random one will be chosen.
                     </p>
                     <p tr-id>
                         What <a href='https://help.twitch.tv/s/article/twitch-chat-badges-guide' top-tooltip='Chat Badges'>special badge</a> should send <em>general messages</em>?

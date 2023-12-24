@@ -466,7 +466,6 @@ class Tooltip {
     static #TOOLTIPS = new Map()
     static #CLEANER = setInterval(() => $.all('[tt-remove-me="true"i]').map(tooltip => tooltip.closest('.tooltip-layer').remove()), 100)
 
-
     /** @constructor
      *
      * @param  {Element} parent                         The element that the tooltip should be attached to
@@ -486,8 +485,11 @@ class Tooltip {
 
         parent.setAttribute('fine-tuning', JSON.stringify(fineTuning));
 
-        if(defined(existing))
+        if(defined(existing)) {
+            existing.innerHTML = text;
+
             return existing;
+        }
 
         let uuid;
         let tooltip = furnish(`.tt-tooltip.tt-tooltip--align-${ fineTuning.lean || 'center' }.tt-tooltip--${ fineTuning.from || 'down' }`, { role: 'tooltip', innerHTML: text });

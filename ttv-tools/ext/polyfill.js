@@ -158,6 +158,8 @@ function goto(url, target = '_self', pass = {}) {
     top.beforeleaving?.(pass);
 
     open(url, target);
+
+    top.goto = $ => $; // Prevent runaway calls?
 }
 
 // Create elements
@@ -664,6 +666,15 @@ function toTimeString(milliseconds = 0, format = 'natural') {
                 case 'short': {
                     format = '&hour_h&minute_m&second_s';
                 } break;
+
+                case 'short-epoch': {
+                    format = '<&days=d ><&hours=h ><&minutes=m ><&seconds=s>';
+                } break;
+
+                case 'epoch':
+                case 'long-epoch': {
+                    format = '<&days=days ><&hours=hours ><&minutes=minutes ><&seconds=seconds>';
+                } break;
             }
 
             joining_symbol = '';
@@ -702,8 +713,8 @@ function toTimeString(milliseconds = 0, format = 'natural') {
 
                     // Example: 61 minutes, 20 seconds
                         // SYNTAX:  TOTAL, ROUNDED                  | TOTAL, NOT ROUNDED                            | REMAINDER, LEADING ZERO   | REMAINDER, NO LEADING ZERO    | IF TOTAL (ROUNDED) > 0; append the value then the text following the `=`
-                        // INPUT:   ~hour_h ~minutes_m ~seconds_s   | ?hour_h ?minutes_m ?seconds_s                 | !hour:!minutes:!seconds   | &hour:&minutes:&seconds       | <~days=d, ><~hours=h, ><~minutes=m, ><~seconds=s >
-                        // OUTPUT:  1h 61m 3680s                    | 1.0222222222222221h 61.333333333333336m 3680s | 01:01:20                  | 1:1:20                        | 1h, 61m, 3680s
+                        // INPUT:   ~hour_h ~minutes_m ~seconds_s   | ?hour_h ?minutes_m ?seconds_s                 | !hour:!minutes:!seconds   | &hour:&minutes:&seconds       | <~days=d, ><?hours=h, ><!minutes=m, ><&seconds=s >
+                        // OUTPUT:  1h 61m 3680s                    | 1.0222222222222221h 61.333333333333336m 3680s | 01:01:20                  | 1:1:20                        | 1.0222222222222221h, 01m, 20s
                     switch(command) {
                         // Total amount (rounded)
                         case '~': {
@@ -1277,6 +1288,8 @@ Document.prototype.get ??= function get(property) {
  */
 Element.prototype.getElementByText ??= function getElementByText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
+        IGNORE_CASE = false,
+        GLOBAL_FLAG = false,
         UNICODE_FLAG = false;
 
     if(!(searchText?.length ?? searchText?.source))
@@ -1285,7 +1298,9 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
     let container = this,
         owner = null,
         thisIsOwner = true;
-    let { innerText } = this;
+
+    // innerText → Visible Text; textContent → All Text
+    let { innerText, textContent } = this;
 
     function normalize(string = '', unicode = UNICODE_FLAG) {
         return (unicode? string.normalize('NFKD'): string);
@@ -1300,26 +1315,29 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
         } break;
 
         case 'regexp': {
-            searchText = RegExp(searchText.source, searchText.flags || flags);
-            UNICODE_FLAG = searchText.flags.contains('u');
+            searchText = RegExp(searchText.source, flags = searchText.flags || flags);
+            IGNORE_CASE = flags.contains('i');
+            GLOBAL_FLAG = flags.contains('g');
+            UNICODE_FLAG = flags.contains('u');
 
             // Replace special characters...
-            innerText = normalize(innerText);
+            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
             // See if the element contains the text...
-            if(!searchText.test(innerText))
+            if(!searchText.test(text))
                 return null;
 
             searching:
             while(nullish(owner)) {
                 for(let child of container.children)
-                    if([...child.children].filter(element => searchText.test(normalize(element.innerText))).length) {
+                    if([...child.children].filter(element => searchText.test(normalize(element[_tx_]))).length) {
                         // A sub-child is the text container
                         container = child;
                         thisIsOwner = false;
 
                         continue searching;
-                    } else if(searchText.test(normalize(child.innerText))) {
+                    } else if(searchText.test(normalize(child[_tx_]))) {
                         // This is the text container
                         owner = child;
                         thisIsOwner = false;
@@ -1336,29 +1354,32 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
         default: {
             // Convert to a string...
             searchText += '';
+            IGNORE_CASE = flags.contains('i');
+            GLOBAL_FLAG = flags.contains('g');
             UNICODE_FLAG = flags.contains('u');
 
             // Replace special characters...
-            innerText = normalize(innerText);
+            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
-            if(flags.contains('i')) {
+            if(IGNORE_CASE) {
                 // Ignore-case mode
                 searchText = searchText.toLowerCase();
 
                 // See if the element contains the text...
-                if(innerText.toLowerCase().missing(searchText))
+                if(text.toLowerCase().missing(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
                     for(let child of container.children)
-                        if([...child.children].filter(element => normalize(element.innerText).toLowerCase().contains(searchText)).length) {
+                        if([...child.children].filter(element => normalize(element[_tx_]).toLowerCase().contains(searchText)).length) {
                             // A sub-child is the text container
                             container = child;
                             thisIsOwner = false;
 
                             continue searching;
-                        } else if(normalize(child.innerText).toLowerCase().contains(searchText)) {
+                        } else if(normalize(child[_tx_]).toLowerCase().contains(searchText)) {
                             // This is the text container
                             owner = child;
                             thisIsOwner = false;
@@ -1372,20 +1393,28 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
                 }
             } else {
                 // Normal (perfect-match) mode
+                IGNORE_CASE = flags.contains('i');
+                GLOBAL_FLAG = flags.contains('g');
+                UNICODE_FLAG = flags.contains('u');
+
+                // Replace special characters...
+                let text = normalize(GLOBAL_FLAG? textContent: innerText)
+                let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
+
                 // See if the element contains the text...
-                if(innerText.missing(searchText))
+                if(text.missing(searchText))
                     return null;
 
                 searching:
                 while(nullish(owner)) {
                     for(let child of container.children)
-                        if([...child.children].filter(element => normalize(element.innerText).contains(searchText)).length) {
+                        if([...child.children].filter(element => normalize(element[_tx_]).contains(searchText)).length) {
                             // A sub-child is the text container
                             container = child;
                             thisIsOwner = false;
 
                             continue searching;
-                        } else if(normalize(child.innerText).contains(searchText)) {
+                        } else if(normalize(child[_tx_]).contains(searchText)) {
                             // This is the text container
                             owner = child;
                             thisIsOwner = false;
@@ -1404,7 +1433,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
     return owner;
 };
 
-/** Finds and returns multiple elements based on their textual content. A shortcut for <b><code>document.getElementsByText</code></b>.
+/** Finds and returns multiple elements based on their textual content. A shortcut for <b><code>document.getElementByText</code></b>.
  * @simply Element..getElementsByInnerText(searchText:string|regexp|array, flags:string?) → [Element...]
  *
  * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
@@ -1414,13 +1443,17 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
  */
 Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
+        IGNORE_CASE = false,
+        GLOBAL_FLAG = false,
         UNICODE_FLAG = false;
 
     if(nullish(searchText?.length ?? searchText?.source))
         throw 'Can not search for empty text';
 
     let containers = [];
-    let { innerText } = this;
+
+    // innerText → Visible Text; textContent → All Text
+    let { innerText, textContent } = this;
 
     function normalize(string = '', unicode = UNICODE_FLAG) {
         return (unicode? string.normalize('NFKD'): string);
@@ -1433,14 +1466,17 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
         } break;
 
         case 'regexp': {
-            searchText = RegExp(searchText.source, searchText.flags || flags);
-            UNICODE_FLAG = searchText.flags.contains('u');
+            searchText = RegExp(searchText.source, flags = searchText.flags || flags);
+            IGNORE_CASE = flags.contains('i');
+            GLOBAL_FLAG = flags.contains('g');
+            UNICODE_FLAG = flags.contains('u');
 
             // Replace special characters...
-            innerText = normalize(innerText);
+            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
             // See if the element contains the text...
-            if(!searchText.test(innerText))
+            if(!searchText.test(text))
                 break;
             containers.push(this);
 
@@ -1449,11 +1485,11 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
 
             collecting:
             while(child = children.pop())
-                if([...child.children].filter(element => searchText.test(normalize(element.innerText))).length) {
+                if([...child.children].filter(element => searchText.test(normalize(element[_tx_]))).length) {
                     // A sub-child contains the text
                     containers.push(child);
                     children = [...children, ...child.children].isolate();
-                } else if(searchText.test(normalize(child.innerText))) {
+                } else if(searchText.test(normalize(child[_tx_]))) {
                     // This contains the text
                     containers.push(child);
                 }
@@ -1462,17 +1498,20 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
         default: {
             // Convert to a string...
             searchText += '';
+            IGNORE_CASE = flags.contains('i');
+            GLOBAL_FLAG = flags.contains('g');
             UNICODE_FLAG = flags.contains('u');
 
             // Replace special characters...
-            innerText = normalize(innerText);
+            let text = normalize(GLOBAL_FLAG? textContent: innerText)
+            let _tx_ = (GLOBAL_FLAG? 'textContent': 'innerText');
 
-            if(flags.contains('i')) {
+            if(IGNORE_CASE) {
                 // Ignore-case mode
                 searchText = searchText.toLowerCase();
 
                 // See if the element contains the text...
-                if(innerText.toLowerCase().missing(searchText))
+                if(text.toLowerCase().missing(searchText))
                     break;
                 containers.push(this);
 
@@ -1481,18 +1520,18 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
 
                 collecting:
                 while(child = children.pop())
-                    if([...child.children].filter(element => normalize(element.innerText).toLowerCase().contains(searchText)).length) {
+                    if([...child.children].filter(element => normalize(element[_tx_]).toLowerCase().contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
                         children = [...children, ...child.children].isolate();
-                    } else if(normalize(child.innerText).toLowerCase().contains(searchText)) {
+                    } else if(normalize(child[_tx_]).toLowerCase().contains(searchText)) {
                         // This contains the text
                         containers.push(child);
                     }
             } else {
                 // Normal (perfect-match) mode
                 // See if the element contains the text...
-                if(innerText.missing(searchText))
+                if(text.missing(searchText))
                     break;
                 containers.push(this);
 
@@ -1501,11 +1540,11 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
 
                 collecting:
                 while(child = children.pop())
-                    if([...child.children].filter(element => normalize(element.innerText).contains(searchText)).length) {
+                    if([...child.children].filter(element => normalize(element[_tx_]).contains(searchText)).length) {
                         // A sub-child contains the text
                         containers.push(child);
                         children = [...children, ...child.children].isolate();
-                    } else if(normalize(child.innerText).contains(searchText)) {
+                    } else if(normalize(child[_tx_]).contains(searchText)) {
                         // This contains the text
                         containers.push(child);
                     }
@@ -2055,6 +2094,12 @@ String.prototype.toTitle ??= function toTitle() {
         .trim();
 };
 
+// Pads a string
+    // String..pad(fillString:string?) → string
+String.prototype.pad ??= function pad(fillString = ' ') {
+    return [fillString, this, fillString].join('');
+};
+
 // Counts the number of elements in the string
     // String..count(...searches:string) → number<integer>
 String.prototype.count ??= function count(...searches) {
@@ -2278,29 +2323,33 @@ class Recording {
     static ANY = Symbol('Any');
     static ALL = Symbol('All');
 
+    static STREAMABLES = ['HTMLVideoElement', 'HTMLAudioElement', 'HTMLCanvasElement'];
+
     static #statusUpdater = setInterval(() => {
         let active = false;
-        for(let [guid, recorder] of Recording.__RECORDERS__)
+        for(let [name, recorder] of Recording.__RECORDERS__)
             if(active ||= recorder.state?.equals("recording"))
                 break;
 
         $('[data-a-player-state]')?.setAttribute('data-recording-status', active);
     }, 1_000);
 
+    static #videoCaptureID = `tt-vid-rec--${ location.pathname.slice(1).split('/').shift() }`;
+
     constructor(streamable, options = { name: 'DEFAULT_RECORDING', as: new ClipName, maxTime: Infinity, mimeType: 'video/webm;codecs=vp9', hidden: false, chunksPerSecond: 1 }) {
-        if(['HTMLVideoElement', 'HTMLAudioElement', 'HTMLCanvasElement'].missing(streamable?.constructor?.name))
-            throw `new Recording(...) must be called on a streamable element: <video>, <audio>, or <canvas>`;
+        if(Recording.STREAMABLES.missing(streamable?.constructor?.name) && nullish(streamable?.captureStream))
+            throw `new Recording(streamable:Element<Streamable>, options:Object?) must be called on a streamable element: <video>, <audio>, or <canvas>; not <${ from?.constructor?.name }>`;
 
         const configurable = false, writable = false, enumerable = false;
 
-        let { name = 'DEFAULT_RECORDING', as = new ClipName, maxTime = Infinity, mimeType = 'video/webm;codecs=vp9', hidden = false, chunksPerSecond = 1 } = options;
+        let { name = 'DEFAULT_RECORDING', as = new ClipName, maxTime = Infinity, mimeType = 'video/webm;codecs=vp9', hidden = false, chunksPerSecond = 1, proxy, canvas } = options;
         let guid = `${ name } [${ (new UUID).toStamp() }]`;
         let uuid = UUID.from(guid).value;
 
-        for(let key of ['name', 'key', 'hidden', 'maxTime', 'chunksPerSecond'])
+        for(let key of ['name', 'key', 'hidden', 'maxTime', 'chunksPerSecond', 'proxy', 'canvas'])
             delete options[key];
 
-        let recorder = new MediaRecorder(streamable.captureStream(), options);
+        let recorder = new MediaRecorder((proxy ?? streamable.captureStream()), options);
         let blobs = new Array;
 
         let controller = new AbortController;
@@ -2311,6 +2360,7 @@ class Recording {
 
         Object.defineProperties(recorder, {
             controller: { value: controller, configurable, writable, enumerable },
+            proxy: { value: canvas, configurable, writable, enumerable },
 
             name: { value: name, configurable, writable },
             data: {
@@ -2362,19 +2412,19 @@ class Recording {
             },
         });
 
-        Recording.__RECORDERS__.set(guid, recorder);
-        Recording.__BLOBS__.set(guid, blobs);
+        Recording.__RECORDERS__.set(name, recorder);
+        Recording.__BLOBS__.set(name, blobs);
 
         // Actually record the data...
         recorder.ondataavailable = (async function(event) {
             this.mimeType ??= recorder.mimeType;
 
-            Recording.__BLOBS__.get(event.target.guid).push(event.data);
+            Recording.__BLOBS__.get(event.target.name).push(event.data);
         }).bind(streamable);
 
         // Chunks per second: 1k → 1cps | 42 → 24cps | 33 → 30cps | 17 → 60cps
-        when(streamable => streamable.videoTracks?.length, 100, streamable)
-            .then(length => {
+        when.sated(streamable => (streamable.videoTracks ?? streamable.captureStream()?.getVideoTracks() ?? []), 100, streamable)
+            .then(videoTracks => {
                 recorder.start((1000 / chunksPerSecond).round().clamp(1, 1000));
                 streamable.closest('[data-a-player-state]')?.setAttribute('data-recording-status', !hidden);
             });
@@ -2477,6 +2527,8 @@ class Recording {
 
                     this.completionTime ??= +new Date;
 
+                    recorder.canvas?.remove();
+
                     Object.freeze(this);
                     Object.freeze(recorder);
 
@@ -2524,6 +2576,42 @@ class Recording {
 
         return Object.assign(self, this);
     }
+
+    static proxy(from, options) {
+        if(Recording.STREAMABLES.missing(from?.constructor?.name) && nullish(from?.captureStream))
+            throw `Recording.proxy(from:Element<Streamable>, options:Object?) must be called on a streamable element: <video>, <audio>, or <canvas>; not <${ from?.constructor?.name }>`;
+
+        let height = from.videoHeight || from.height || from.clientHeight;
+        let width = from.videoWidth || from.width || from.clientWidth;
+
+        let to = options?.canvas ?? furnish(`canvas[@aTarget="${ Recording.#videoCaptureID }__${ (+new Date).toString(36) }"]`, { height, width });
+        let context = to.getContext('2d');
+
+        if(Recording.STREAMABLES.missing(to.constructor.name) && nullish(options?.captureStream))
+            throw `Recording.proxy(<${ from.constructor.name }>, options:{ canvas:Element<Streamable>? }?) must have a streamable proxy when set: null, <video>, <audio>, or <canvas>; not <${ to.constructor.name }>`;
+
+        function update(source) {
+            context.drawImage(source, 0, 0, context.canvas.width, context.canvas.height);
+
+            requestAnimationFrame(() => update(source));
+        }
+        update(from);
+
+        from.addEventListener('resize', event => {
+            to.height = from.videoHeight || from.height || from.clientHeight;
+            to.width = from.videoWidth || from.width || from.clientWidth;
+        });
+
+        // document.body.append(to); // The canvas doesn't need to actually be on the page
+
+        let fs = from.captureStream();
+        let ts = options?.proxy ?? to.captureStream();
+
+        for(let audio of fs.getAudioTracks())
+            ts.addTrack(audio);
+
+        return new Recording(to, Object.assign({ proxy: ts, canvas: to }, options));
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
@@ -2536,47 +2624,41 @@ HTMLVideoElement.prototype.startRecording ??= function startRecording(options = 
 // Gets a recording of a video element
     // HTMLVideoElement..getRecording(key:string?) → MediaRecorder
 HTMLVideoElement.prototype.getRecording ??= function getRecording(key = 'DEFAULT_RECORDING') {
-    this.recorders ??= new Map;
-
     if(key == Recording.ANY)
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             if(defined(recorder.recording) && nullish(recorder.recording.completionTime))
                 return recorder;
 
     if(key == Recording.ALL)
-        return this.recorders;
+        return Recording.__RECORDERS__;
 
-    return this.recorders.get(key);
+    return Recording.__RECORDERS__.get(key);
 };
 
 // Determines if there is a recording of a video element
     // HTMLVideoElement..hasRecording(key:string?) → boolean
 HTMLVideoElement.prototype.hasRecording ??= function hasRecording(key = 'DEFAULT_RECORDING') {
-    this.recorders ??= new Map;
-
     if(key == Recording.ANY) {
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             if(defined(recorder.recording) && nullish(recorder.recording.completionTime))
                 return true;
         return false;
     }
 
-    return this.recorders.has(key);
+    return Recording.__RECORDERS__.has(key);
 };
 
 // Removes a recording of a video element
     // HTMLVideoElement..removeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'DEFAULT_RECORDING') {
-    this.recorders ??= new Map;
-
     if(key == Recording.ALL)
-        for(let [key, recorder] of this.recorders) {
+        for(let [key, recorder] of Recording.__RECORDERS__) {
             Recording.__RECORDERS__.delete(key);
-            this.recorders.delete(key);
+            Recording.__RECORDERS__.delete(key);
         }
     else {
         Recording.__RECORDERS__.delete(key);
-        this.recorders.delete(key);
+        Recording.__RECORDERS__.delete(key);
     }
 
     return this;
@@ -2586,7 +2668,7 @@ HTMLVideoElement.prototype.removeRecording ??= function removeRecording(key = 'D
     // HTMLVideoElement..pauseRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEFAULT_RECORDING') {
     if(key == Recording.ALL) {
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             if(nullish(recorder.recording.completionTime))
                 recorder.recording.pause();
     } else {
@@ -2600,7 +2682,7 @@ HTMLVideoElement.prototype.pauseRecording ??= function pauseRecording(key = 'DEF
     // HTMLVideoElement..resumeRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'DEFAULT_RECORDING') {
     if(key == Recording.ALL) {
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             if(nullish(recorder.recording.completionTime))
                 recorder.recording.resume();
     } else {
@@ -2614,7 +2696,7 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING', reason = 'Canceled') {
     if(key == Recording.ALL) {
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             if(nullish(recorder.recording.completionTime))
                 recorder.recording.controller.abort(reason);
     } else {
@@ -2629,7 +2711,7 @@ HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'D
     // HTMLVideoElement..stopRecording(key:string?) → HTMLVideoElement
 HTMLVideoElement.prototype.stopRecording ??= function stopRecording(key = 'DEFAULT_RECORDING') {
     if(key == Recording.ALL) {
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             if(nullish(recorder.recording.completionTime))
                 recorder.recording.stop();
     } else {
@@ -2647,7 +2729,7 @@ HTMLVideoElement.prototype.saveRecording ??= function saveRecording(key = null, 
     let saves = [], count = 0;
 
     if(key == Recording.ALL)
-        for(let [key, recorder] of this.recorders)
+        for(let [key, recorder] of Recording.__RECORDERS__)
             saves.push(recorder.recording.save(count++? `${ name } (${ count })`: name ??= new ClipName));
     else
         return this.getRecording(key)?.recording?.save(name);
@@ -3991,7 +4073,7 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
         case 'time:short': {
             let [,subtype = 'natural'] = format.toLowerCase().split(':');
 
-            return toTimeString((decimalPlaces === true? this: decimalPlaces === false? Math.round(this): this.toFixed(decimalPlaces)), subtype);
+            return toTimeString((decimalPlaces === true? this: decimalPlaces === false? Math.round(this): this.toFixed(decimalPlaces|0)), subtype);
         } break;
 
         case 'metric':
@@ -4535,8 +4617,14 @@ function GetOS(is = null) {
         'NT 6.2': 'Win 8',
         'NT 6.1': 'Win 7',
         'NT 6.0': 'Win Vista',
+        'NT 5.2': 'Win Server',
         'NT 5.1': 'Win XP',
         'NT 5.0': 'Win 2000',
+        'NT 4.0': 'Win NT',
+        'Win98': 'Win 98',
+        'Win95': 'Win 95',
+        'WinME': 'Win ME',
+        'Win16': 'Win 3.11',
 
         'Mac': 'Macintosh',
 
@@ -4544,7 +4632,7 @@ function GetOS(is = null) {
         'Linux': 'Linux',
     };
 
-    let os = 'Unknown';
+    let os = 'Linux';
     for(let OS in OSs)
         if(userAgent.contains(OS))
             os = OSs[OS].replace(/^Win/, 'Windows');
@@ -4557,6 +4645,7 @@ Object.defineProperties(GetOS, {
 
     X11: { value: 'Unix' },
     UNIX: { value: 'Unix' },
+    LINUX: { value: 'Linux' },
 
     WIN_12: { value: 'Windows 12' },
     WIN_11: { value: 'Windows 11' },
@@ -4565,8 +4654,14 @@ Object.defineProperties(GetOS, {
     WIN_8: { value: 'Windows 8' },
     WIN_7: { value: 'Windows 7' },
     WIN_VISTA: { value: 'Windows Vista' },
+    WIN_SERVER: { value: 'Windows Server' },
     WIN_XP: { value: 'Windows XP' },
     WIN_2000: { value: 'Windows 2000' },
+    WIN_NT: { value: 'Windows NT' },
+    WIN_98: { value: 'Windows 98' },
+    WIN_95: { value: 'Windows 95' },
+    WIN_ME: { value: 'Windows ME' },
+    WIN_3_11: { value: 'Windows 3.11' },
 });
 
 // Returns the assumed key combination
@@ -4642,12 +4737,19 @@ function GetMacro(keys = '', OS = null) {
                  * Caps Lock            ⇪
                  * Escape (Esc)         ⎋
                  * Tab                  ↹
+                 * Left Tab             ⇤
+                 * Right Tab            ⇥
                  * Enter / Return       ↵
+                 * Line Feed            ↴
                  * Backspace            ⌫
                  * Delete (Del)         ⌦
                  * Print Screen (PrtSc) ⎙
                  * Num Lock             ⇭
                  * Scroll Lock          ⤓
+                 * Page Up              ⇞
+                 * Page Down            ⇟
+                 * Home                 ⇱
+                 * End                  ⇲
                  */
                 case GetOS.MAC: {
                     return (
@@ -4689,12 +4791,19 @@ function GetMacro(keys = '', OS = null) {
                  * Caps Lock            ⇪
                  * Escape (Esc)         ⎋
                  * Tab                  ↹
+                 * Left Tab             ⇤
+                 * Right Tab            ⇥
                  * Enter / Return       ↵
+                 * Line Feed            ↴
                  * Backspace            ⌫
                  * Delete (Del)         ⌦
                  * Print Screen (PrtSc) ⎙
                  * Num Lock             ⇭
                  * Scroll Lock          ⤓
+                 * Page Up              ⇞
+                 * Page Down            ⇟
+                 * Home                 ⇱
+                 * End                  ⇲
                  */
                 default: {
                     return (
@@ -6040,7 +6149,7 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
  *
  *
  */
-// Selects an option
+// Presents a selection menu to the user
     // select(message:string?, options:array?|object?, multiple:boolean?) → string<number|array:number> | null
 function select(message = '', options = [], multiple = false) {
     if(select.done.contains(message))

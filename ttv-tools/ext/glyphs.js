@@ -248,6 +248,7 @@ window.Glyphs ??= {
     button_2to1_transparent: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M2 15V5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2zm2 0V5h7v10H4zm9 0h3V5h-3v10z" fill-rule="evenodd" clip-rule="evenodd"></path></g></svg>`,
     button_2to1_opaque: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h7V3H4zM16 3h-3v14h3a2 2 0 002-2V5a2 2 0 00-2-2z"></path></g></svg>`,
 
+    add_person: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><path d="M15 7V5h-2V3h2V1h2v2h2v2h-2v2h-2Z"></path><path d="M10 2c.339 0 .672.021 1 .062v2.021A6 6 0 1 0 15.917 9h2.021A8 8 0 1 1 10 2Z"></path><path d="M12 10a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-5 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm5 1a2 2 0 1 1-4 0h4Z"></path></svg>`,
     extensions: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path fill-rule="evenodd" d="M4 16h11a1 1 0 001-1V7h-5V5.5a1.5 1.5 0 00-3 0V7H4v1.035a3.5 3.5 0 010 6.93V16zM2 5v5h1.5a1.5 1.5 0 010 3H2v5h13c1.5 0 3-1.5 3-3V5h-5a3 3 0 00-3-3H9a3 3 0 00-3 3H2z" clip-rule="evenodd"></path></g></svg>`,
     navigation: `<svg fill="currentcolor" width="100%" height="100%" version="1.1" viewBox="0 0 20 20" x="0px" y="0px"><g><path d="M17 7H3V5h14v2zM17 11H3V9h14v2zM3 15h14v-2H3v2z"></path></g></svg>`,
 

@@ -1803,8 +1803,10 @@ html:not([lang="en"i]) .details > summary {
 }
 
 /* https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_autocomplete */
-.autocomplete {
+.autocomplete:focus {
 	border: 2px solid var(--color-twitch-purple);
+	-moz-outline: none;
+		 outline: none;
 }
 
 .autocomplete-list {
