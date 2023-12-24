@@ -142,7 +142,7 @@ class Balloon {
 
                                         let display = balloon.getAttribute('display').equals('block')? 'none': 'block';
 
-                                        balloon.setAttribute('style', `display:${ display }!important; z-index:9; left: -15rem`);
+                                        balloon.modStyle(`display:${ display }!important; z-index:9; left: -15rem`);
                                         balloon.setAttribute('display', display);
                                     },
                                 },
@@ -224,7 +224,7 @@ class Balloon {
 
                                                 let display = balloon.getAttribute('display').equals('block')? 'none': 'block';
 
-                                                balloon.setAttribute('style', `display:${ display }!important`);
+                                                balloon.modStyle(`display:${ display }!important`);
                                                 balloon.setAttribute('display', display);
                                             },
                                         },
@@ -637,18 +637,12 @@ class ChatFooter {
             f('#tt-chat-footer.tt-absolute.tt-border-radius-medium.tt-bottom-0.tt-mg-b-1',
                 {
                     uuid,
+                    ...options,
 
-                    style:
-                    `
-                    background-color: #387aff;
-                    left: 50%;
-                    margin-bottom: 5rem!important;
-                    transform: translateX(-50%);
-                    width: fit-content;
-                    `
+                    style: `background-color: #387aff; left: 50%; margin-bottom: 5rem!important; transform: translateX(-50%); width: fit-content;`,
                 },
 
-                f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-core-button.tt-core-button--overlay.tt-core-button--text.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative', { style: 'padding: 0.5rem 1rem;', ...options },
+                f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-core-button.tt-core-button--overlay.tt-core-button--text.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative', { style: 'padding: 0.5rem 1rem;' },
                     f('.tt-align-items-center.tt-core-button-label.tt-flex.tt-flex-grow-0').with(
                         f('.tt-flex-grow-0', {
                             innerHTML: title
@@ -1008,6 +1002,8 @@ class Search {
             return object;
         })(document?.cookie?.split(/;\s*/))
     };
+
+    static anonID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
     static #cache = new Map;
     static cacheLeaseTime = 300_000 * (parseInt(Settings.low_data_mode) || 1);
@@ -1583,7 +1579,7 @@ Object.defineProperties(Chat, {
 
     get: {
         // Create an array of the current chat
-            // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style, author, emotes, message, mentions, element?<Element>, uuid, reply?<Element>, highlighted?<boolean> }>]
+            // Chat.get(mostRecent:number?, keepEmotes:boolean?) → [...object<{ style<string{ CSS }>, author<string>, emotes<array{ string }>, message<string>, mentions<array{ string }>, element?<Element>, uuid<string>, reply?<Element>, deleted?<boolean>, highlighted?<boolean> }>]
         value:
         function get(mostRecent = 250, keepEmotes = true) {
             let results = [];
@@ -1594,7 +1590,17 @@ Object.defineProperties(Chat, {
                 if(!keepEmotes)
                     message = message.replaceAll(Object.keys(emotes).shift(), '');
 
-                results.push({ ...object, message });
+                let O = Object.assign({}, object, { message });
+
+                Object.defineProperties(O, {
+                    deleted: {
+                        get:(async function() {
+                            return (this == null) || nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', await this);
+                        }).bind(object.element)
+                    },
+                });
+
+                results.push(O);
             }
 
             return results.slice(-mostRecent);
@@ -1621,7 +1627,7 @@ Object.defineProperties(Chat, {
             // Chat.send(to:string<IRC-Msg-Id>, message:string?) → undefined
         value:
         function reply(to = '', message = '') {
-            if(typeof to != 'string' || to.length < 1 || typeof message != 'string')
+            if(typeof to != 'string' || to.length < 1 || typeof message != 'string' || message.length < 1)
                 return;
 
             when(() => TTV_IRC.socket.readyState === WebSocket.OPEN)
@@ -2139,7 +2145,7 @@ function SetVolume(volume = 0.5) {
         thumb.value = volume;
 
     if(defined(slider))
-        slider.setAttribute('style', `width: ${ 100 * volume }%`);
+        slider.modStyle(`width: ${ 100 * volume }%`);
 }
 
 // Get the view mode
@@ -2599,7 +2605,7 @@ try {
                     ));
 
                 function keepOpen() {
-                    when.defined(() => $('[data-test-selector="picture-by-picture-player-container"i][class*="collapsed"i]'))
+                    when.defined(() => $('.picture-by-picture-player[class*="collapsed"i]'))
                         .then(player => {
                             let keep = $.defined('#tt-exit-pip');
 
@@ -2610,8 +2616,8 @@ try {
                         })
                         .then(keep => (keep? keepOpen(): null));
                 }
-
                 keepOpen();
+
                 PushToTopSearch({ mini: name });
             },
         },
@@ -2946,7 +2952,7 @@ try {
                     method = Settings.prevent_raiding ?? "none";
 
                 if(false
-                    || (!top.UP_NEXT_ALLOW_THIS_TAB)
+                    || (!UP_NEXT_ALLOW_THIS_TAB)
                     || (from.equals(STREAMER?.name))
                 )
                     break;
@@ -5262,8 +5268,121 @@ let Initialize = async(START_OVER = false) => {
 
     setInterval(update, 2_5_0);
 
-    let UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = true, // Allow this tab to use Up Next
-        LIVE_REMINDERS__LISTING_INTERVAL; // List the live time of Live Reminders
+    let LIVE_REMINDERS__LISTING_INTERVAL; // List the live time of Live Reminders
+
+    if(parseBool(Settings.up_next__one_instance)) {
+        LOG('This tab is the Up Next owner', UP_NEXT_ALLOW_THIS_TAB);
+
+        // Set the anon-ID
+        fetchURL.idempotent(`/directory/category/just-chatting`, { timeout: 5_000 })
+            .then(response => response.text())
+            .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+            .then(DOM => {
+                let regexp = /client_?id\s?[:=](["'`])(\w+)\1/gi;
+
+                $.getElementByText.call(DOM, regexp).innerText.replace(regexp, ($0, stringBarrier, hardcodedID, $$, $_) => Search.anonID = hardcodedID);
+            });
+
+        if(UP_NEXT_ALLOW_THIS_TAB) {
+            // Search helpers...
+                // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
+            Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
+                if(clientID?.equals('.DENIED') || oauthToken?.equals('.DENIED'))
+                    return;
+
+                if(nullish(clientID) || nullish(oauthToken)) {
+                    fetchURL(`https://id.twitch.tv/oauth2/token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
+                    }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
+                        if(error && error_description)
+                            throw new Error(`${ error }: ${ error_description }`);
+                        oauthToken = access_token;
+
+                        Cache.save({ oauthToken, clientID });
+
+                        Search.authorization = `Bearer ${ oauthToken }`;
+                        Search.clientID = clientID;
+                    }).catch(error => {
+                        WARN(error);
+
+                        confirm(`<div controller
+                            okay="Grant access"
+                            deny="Never ask again"
+                            >TTV Tools would like to use Twitch's APIs on your behalf.</div>`)
+                        .then(answer => {
+                            if(answer === false)
+                                return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
+
+                            let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ encodeURIComponent("https://ephellon.github.io/") }&response_type=token&scope=${ encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join('+')) }&state=${ (new UUID).value }`, '_blank');
+
+                            when(() => oauth.closed).then(async() => {
+                                let { oauthToken } = await Settings.get('oauthToken');
+
+                                Cache.save({ oauthToken, clientID });
+
+                                Search.authorization = `Bearer ${ oauthToken }`;
+                                Search.clientID = clientID;
+                            });
+                        });
+                    });
+                } else {
+                    Cache.save({ oauthToken, clientID });
+
+                    Search.authorization = `Bearer ${ oauthToken }`;
+                    Search.clientID = clientID;
+                }
+            });
+        } else {
+            Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
+                if(false
+                    || nullish(clientID)
+                    || nullish(oauthToken)
+                    || clientID.equals('.DENIED')
+                    || oauthToken.equals('.DENIED')
+                )
+                    return;
+
+                fetchURL(`https://id.twitch.tv/oauth2/validate`, {
+                    method: 'GET',
+                    headers: { Authorization: `OAuth ${ oauthToken }` },
+
+                    timeout: 30_000,
+                }).then(response => response.json()).then(({ client_id, login, scopes, user_id, expires_in, status, message }) => {
+                    if(status && message)
+                        throw new TypeError(`HTTP Error (${ status }): ${ message }`);
+
+                    Search.authorization = `Bearer ${ oauthToken }`;
+                    Search.clientID = client_id;
+
+                    Cache.save({ clientID: clientID, oauthToken });
+                }).catch(error => {
+                    WARN(error);
+
+                    fetchURL(`https://id.twitch.tv/oauth2/token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
+                    }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
+                        if(error && error_description) {
+
+                            throw new Error(`${ error }: ${ error_description }`);
+                        }
+                        oauthToken = access_token;
+
+                        Cache.save({ oauthToken, clientID });
+
+                        Search.authorization = `Bearer ${ oauthToken }`;
+                        Search.clientID = clientID;
+                    }).catch(WARN);
+                });
+            });
+        }
+    } else {
+        top.UP_NEXT_ALLOW_THIS_TAB = true;
+        Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
+    }
 
     /*** Automation
      *                    _                        _   _
@@ -5721,7 +5840,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
             // TODO: Add an animation for the Away Mode button appearing?
-            // container.setAttribute('style', 'animation:1s fade-in-from-zero 1;');
+            // container.modStyle('animation:1s fade-in-from-zero 1;');
 
             parent.insertBefore(container, parent[before + 'ElementChild']);
 
@@ -5729,7 +5848,7 @@ let Initialize = async(START_OVER = false) => {
                 container.firstElementChild.classList.remove('tt-mg-l-1');
             } else if(['under'].contains(placement)) {
                 $('span', container)?.remove();
-                $('[style]', container)?.setAttribute('style', 'opacity: 1; transform: translateX(15%) translateZ(0px);')
+                $('[style]', container)?.modStyle('opacity: 1; transform: translateX(15%) translateZ(0px);')
             }
 
             extra({ container, sibling, parent, before, placement });
@@ -5788,7 +5907,7 @@ let Initialize = async(START_OVER = false) => {
 
         // if(init === true) →
         // Don't use above, event listeners won't work
-        button.background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled').equals("true"))] } !important;`);
+        button.background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+(button.container.getAttribute('tt-away-mode-enabled').equals("true"))] } !important;`);
         // button.icon.setAttribute('height', '20px');
         // button.icon.setAttribute('width', '20px');
 
@@ -5798,12 +5917,15 @@ let Initialize = async(START_OVER = false) => {
 
             container.setAttribute('tt-away-mode-enabled', enabled);
             tooltip.innerHTML = `Turn lurking ${ ['on','off'][+enabled] } (${ GetMacro('alt+a') })`;
-            background?.setAttribute('style', `background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
+            background?.modStyle(`background:${ [`var(--user-accent-color)`, 'var(--color-background-button-secondary-default)'][+enabled] } !important;`);
 
             // Return control when Lurking is engaged
             MAINTAIN_VOLUME_CONTROL = true;
 
-            $('video ~ * .player-controls').dataset.automatic = MAINTAIN_VOLUME_CONTROL;
+            let controls = $('video ~ * .player-controls');
+
+            if(defined(controls))
+                controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL;
 
             // Sets the size according to the video's physical size
             let size = (parseBool(Settings.low_data_mode)? getOffset($('video')).height.floorToNearest(100): -1);
@@ -5966,30 +6088,26 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     Handlers.claim_loot = () => {
-        let container = $('.prime-offers');
+        when.defined(() => $('.prime-offers button')).then(prime_btn => {
+            prime_btn.click();
 
-        if(parseInt($('[class*="pill"i]', container)?.textContent || 0) <= 0)
-            return;
-        let prime_btn = $('button', container);
-
-        prime_btn.click();
-
-        // Give the loots time to load
-        when.sated(() => $.all('[href*="gaming.amazon.com"i]')).then(hrefs => {
-            wait(30 *
-                $.all('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button')
-                    .map((offer, index, list) => {
-                        // Give the loots time to be clicked
-                        wait(30 * index, offer).then(offer => offer.click());
-                    })
-                .length
-            ).then(() => prime_btn.click());
+            // Give the loots time to load
+            when.sated(() => $.all('[href*="gaming.amazon.com"i]')).then(hrefs => {
+                wait(100 *
+                    $.all('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button')
+                        .map((offer, index, list) => {
+                            // Give the loots time to be clicked
+                            wait(30 * index, offer).then(offer => offer.click());
+                        })
+                    .length
+                ).finally(() => prime_btn.click());
+            });
         });
     };
-    Timers.claim_loot = -5000;
+    Timers.claim_loot = -500;
 
     __ClaimLoot__:
-    if(parseBool(Settings.claim_loot)) {
+    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_loot)) {
         REMARK("Claiming Prime Gaming Loot...");
 
         RegisterJob('claim_loot');
@@ -6055,7 +6173,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.claim_prime = -5000;
 
     __ClaimPrime__:
-    if(parseBool(Settings.claim_prime)) {
+    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_prime)) {
         REMARK("Claiming Prime Subscription...");
 
         RegisterJob('claim_prime');
@@ -6091,9 +6209,6 @@ let Initialize = async(START_OVER = false) => {
                                         REWARDS_ON_COOLDOWN.delete(id);
                                     else
                                         return;
-                                else if(needsInput)
-                                    // TODO - Find a way to send the message and redeem the item
-                                    return; // answer = AutoClaimAnswers[sole][id];
 
                                 cost = parseInt(cost);
                                 title = title.trim();
@@ -6106,10 +6221,15 @@ let Initialize = async(START_OVER = false) => {
 
                                         if(coin < cost)
                                             return;
+                                        if($.defined('#tt_saved_input_for_redemption'))
+                                            return;
 
                                         rewardsMenuButton.click();
 
                                         LOG(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
+
+                                        if(needsInput)
+                                            prompt.silent(`<div id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..."></div>${ title }`, AutoClaimAnswers[sole][id]);
 
                                         // Purchase and remove
                                         await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
@@ -6166,7 +6286,7 @@ let Initialize = async(START_OVER = false) => {
 
                                                                     video.dataset.trophyId = title;
 
-                                                                    let recording = new Recording(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                                                    let recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                                                     // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
                                                                     recording
@@ -6443,7 +6563,7 @@ let Initialize = async(START_OVER = false) => {
                         let child = $('[data-test-selector="cost"i]', reward);
 
                         // Rainbow border
-                        child.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
+                        child.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
                         child.setAttribute('rainbow-border', (AutoClaimRewards[STREAMER.sole] ??= []).contains(item?.id));
 
                         // Cooldown timer
@@ -6490,7 +6610,7 @@ let Initialize = async(START_OVER = false) => {
                     'Buy when available'
                 );
 
-                $('[id$="header"i], [class*="header"i]', head)?.setAttribute('style', `animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
+                $('[id$="header"i], [class*="header"i]', head)?.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
                 $('[id$="header"i], [class*="header"i]', head)?.setAttribute('rainbow-text', itemIDs.contains(rewardID));
 
                 container.insertAdjacentElement('afterend',
@@ -6586,19 +6706,37 @@ let Initialize = async(START_OVER = false) => {
      */
     let TTV_DROPS_FRAME,
         TTV_DROPS_CHECKER,
-        TTV_DROPS_REFRESHER;
+        TTV_DROPS_REFRESHER,
+        TTV_DROPS_CLAIMED = new Set;
 
     Handlers.claim_drops = () => {
-        if(!UP_NEXT_ALLOW_THIS_TAB)
-            return;
-
         TTV_DROPS_FRAME = furnish('iframe#tt-drops-claimer[src="/drops/inventory"]', { style: 'display:none!important' });
 
         $.body.append(TTV_DROPS_FRAME);
 
         (TTV_DROPS_CHECKER = btn_str => {
             when(() => $.defined(btn_str, TTV_DROPS_FRAME.contentDocument)).then(() => {
-                $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => btn.click());
+                let claimed = 0;
+
+                $.all(btn_str, TTV_DROPS_FRAME.contentDocument).map(btn => {
+                    if(TTV_DROPS_CLAIMED.has(getDOMPath(btn, -2)))
+                        return;
+                    TTV_DROPS_CLAIMED.add(getDOMPath(btn, -2));
+
+                    ++claimed;
+                    btn.click();
+                });
+
+                let error = $('.tw-alert-banner', TTV_DROPS_FRAME.contentDocument)?.innerText ?? '';
+
+                if(claimed > 0) {
+                    claimed = [claimed, 'drop'.pluralSuffix(claimed)].join(' ');
+
+                    if(error.length > 0)
+                        alert.timed(`An error occurred while trying to claim ${ claimed }`, 7000);
+                    else
+                        alert.timed(`Claimed ${ claimed }!`, 7000);
+                }
             }).then(() => TTV_DROPS_CHECKER(btn_str));
         })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i])');
 
@@ -6614,7 +6752,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __ClaimDrops__:
-    if(parseBool(Settings.claim_drops)) {
+    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_drops)) {
         REMARK('Creating Drop claimer...');
 
         RegisterJob('claim_drops');
@@ -6830,110 +6968,6 @@ let Initialize = async(START_OVER = false) => {
         return (due - now);
     };
 
-    if(parseBool(Settings.up_next__one_instance))
-        Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => {
-            UP_NEXT_ALLOW_THIS_TAB = top.UP_NEXT_ALLOW_THIS_TAB = owner;
-
-            LOG('This tab is the Up Next owner', owner);
-
-            if(UP_NEXT_ALLOW_THIS_TAB) {
-                // Search helpers...
-                    // https://chrome.google.com/webstore/detail/twitch-username-and-user/laonpoebfalkjijglbjbnkfndibbcoon
-                Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
-                    if(clientID?.equals('.DENIED') || oauthToken?.equals('.DENIED'))
-                        return;
-
-                    if(nullish(clientID) || nullish(oauthToken)) {
-                        fetchURL(`https://id.twitch.tv/oauth2/token`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
-                        }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
-                            if(error && error_description)
-                                throw new Error(`${ error }: ${ error_description }`);
-                            oauthToken = access_token;
-
-                            Cache.save({ oauthToken, clientID });
-
-                            Search.authorization = `Bearer ${ oauthToken }`;
-                            Search.clientID = clientID;
-                        }).catch(error => {
-                            WARN(error);
-
-                            confirm(`<div controller
-                                okay="Grant access"
-                                deny="Never ask again"
-                                >TTV Tools would like to use Twitch's APIs on your behalf.</div>`)
-                            .then(answer => {
-                                if(answer === false)
-                                    return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
-
-                                let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ encodeURIComponent("https://ephellon.github.io/") }&response_type=token&scope=${ encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join('+')) }&state=${ (new UUID).value }`, '_blank');
-
-                                when(() => oauth.closed).then(async() => {
-                                    let { oauthToken } = await Settings.get('oauthToken');
-
-                                    Cache.save({ oauthToken, clientID });
-
-                                    Search.authorization = `Bearer ${ oauthToken }`;
-                                    Search.clientID = clientID;
-                                });
-                            });
-                        });
-                    } else {
-                        Cache.save({ oauthToken, clientID });
-
-                        Search.authorization = `Bearer ${ oauthToken }`;
-                        Search.clientID = clientID;
-                    }
-                });
-            } else {
-                Cache.load(['clientID', 'oauthToken'], async({ clientID = 's8glgfv1nm23ts567xdsmwqu5wylof', oauthToken }) => {
-                    if(false
-                        || nullish(clientID)
-                        || nullish(oauthToken)
-                        || clientID.equals('.DENIED')
-                        || oauthToken.equals('.DENIED')
-                    )
-                        return;
-
-                    fetchURL(`https://id.twitch.tv/oauth2/validate`, {
-                        method: 'GET',
-                        headers: { Authorization: `OAuth ${ oauthToken }` },
-
-                        timeout: 30_000,
-                    }).then(response => response.json()).then(({ client_id, login, scopes, user_id, expires_in, status, message }) => {
-                        if(status && message)
-                            throw new TypeError(`HTTP Error (${ status }): ${ message }`);
-
-                        Search.authorization = `Bearer ${ oauthToken }`;
-                        Search.clientID = client_id;
-
-                        Cache.save({ clientID: clientID, oauthToken });
-                    }).catch(error => {
-                        WARN(error);
-
-                        fetchURL(`https://id.twitch.tv/oauth2/token`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: top['atоb']("zqlTBes8gqKcjgx6Bql2B2zlFm8Pxok9AEzouQk9FgWlWEvoueliBpBMFQKKF2kyYqvMYmv8je5czqRoxq5+Y2Lfugc8uOW2JgRoWEHsFEC8AQ69FUB2YmSrWSa8ugLKjeAnwevrWSaMYmvcBes8weSnYPB9WQS8BEhrWeln")
-                        }).then(response => response.json()).then(({ access_token, expires_in, token_type, error, error_description }) => {
-                            if(error && error_description)
-                                throw new Error(`${ error }: ${ error_description }`);
-                            oauthToken = access_token;
-
-                            Cache.save({ oauthToken, clientID });
-
-                            Search.authorization = `Bearer ${ oauthToken }`;
-                            Search.clientID = clientID;
-                        }).catch(WARN);
-                    });
-                });
-            }
-        });
-    else
-        Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
-
     FIRST_IN_LINE_SAFETY_CATCH =
     setInterval(() => {
         let job = $('[up-next--body] [name][time]');
@@ -6999,7 +7033,7 @@ let Initialize = async(START_OVER = false) => {
                     speeding = (FIRST_IN_LINE_BOOST &&= ALL_FIRST_IN_LINE_JOBS?.length > 0);
 
                     currentTarget.querySelector('svg[fill]')?.setAttribute('fill', 'currentcolor');
-                    currentTarget.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!speeding }; fill:currentcolor`);
+                    currentTarget.querySelector('svg[fill]')?.modStyle(`opacity:${ 2**-!speeding }; fill:currentcolor`);
                     currentTarget.setAttribute('speeding', speeding);
 
                     if(defined(currentTarget.tooltip))
@@ -7334,7 +7368,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 {
                                                                     name,
 
-                                                                    onclick: event => {
+                                                                    onmouseup: event => {
                                                                         let { currentTarget } = event,
                                                                             name = currentTarget.getAttribute('name');
 
@@ -7382,7 +7416,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 {
                                                                     name,
 
-                                                                    onclick: event => {
+                                                                    onmouseup: event => {
                                                                         let { currentTarget } = event,
                                                                             name = currentTarget.getAttribute('name');
 
@@ -7408,7 +7442,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         {
                                                                             name,
 
-                                                                            onclick: event => {
+                                                                            onmouseup: event => {
                                                                                 let { currentTarget } = event,
                                                                                     name = currentTarget.getAttribute('name');
 
@@ -7598,7 +7632,7 @@ let Initialize = async(START_OVER = false) => {
                 // Up Next Boost
                 first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
                 first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', '');
-                first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('style', `opacity:${ 2**-!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
+                first_in_line_boost_button.querySelector('svg[fill]')?.modStyle(`opacity:${ 2**-!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
                 first_in_line_boost_button.tooltip ??= new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
 
                 let up_next_button = $('[up-next--container] button');
@@ -7710,7 +7744,7 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                tooltip.setAttribute('style', 'display:block');
+                tooltip.modStyle('display:block');
             };
 
             FIRST_IN_LINE_BALLOON.icon.onmouseleave ??= event => {
@@ -7760,11 +7794,11 @@ let Initialize = async(START_OVER = false) => {
             });
 
             if(Settings.first_in_line_none)
-                FIRST_IN_LINE_BALLOON.container.setAttribute('style', 'display:none!important');
+                FIRST_IN_LINE_BALLOON.container.modStyle('display:none!important');
             else
                 FIRST_IN_LINE_LISTING_JOB ??= setInterval(async() => {
                     // Set the opacity...
-                    // FIRST_IN_LINE_BALLOON.container.setAttribute('style', `opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.75) }!important`);
+                    // FIRST_IN_LINE_BALLOON.container.modStyle(`opacity:${ (UP_NEXT_ALLOW_THIS_TAB? 1: 0.75) }!important`);
 
                     for(let index = 0, fails = 0; UP_NEXT_ALLOW_THIS_TAB && index < ALL_FIRST_IN_LINE_JOBS?.length; index++) {
                         let href = ALL_FIRST_IN_LINE_JOBS[index],
@@ -7896,12 +7930,12 @@ let Initialize = async(START_OVER = false) => {
                                     let theme = { light: 'w', dark: 'b' }[THEME];
 
                                     $('a', container)
-                                        .setAttribute('style', `background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
+                                        .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
 
                                     if(container.getAttribute('live') != (live + '')) {
                                         $('.tt-balloon-message', container).innerHTML =
                                             `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                        container.setAttribute('style', `opacity: ${ 2**-!live }!important`);
+                                        container.modStyle(`opacity: ${ 2**-!live }!important`);
                                         container.setAttribute('live', live);
                                     }
 
@@ -8144,12 +8178,12 @@ let Initialize = async(START_OVER = false) => {
                             let theme = { light: 'w', dark: 'b' }[THEME];
 
                             $('a', container)
-                                .setAttribute('style', `background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
+                                .modStyle(`background-color: var(--color-opac-${ theme }-${ index > 15? 1: 15 - index })`);
 
                             if(container.getAttribute('live') != (live + '')) {
                                 $('.tt-balloon-message', container).innerHTML =
                                     `${ name } <span style="display:${ live? 'none': 'inline-block' }">is not live</span>`;
-                                container.setAttribute('style', `opacity: ${ 2**-!live }!important`);
+                                container.modStyle(`opacity: ${ 2**-!live }!important`);
                                 container.setAttribute('live', live);
                             }
 
@@ -8433,12 +8467,12 @@ let Initialize = async(START_OVER = false) => {
             let streamer = STREAMERS.find(streamer => RegExp(name, 'i').test(streamer.name)),
                 { searchParameters } = parseURL(location.href);
 
-            if(nullish(streamer) || searchParameters.obit == streamer.name)
+            if(nullish(streamer) || searchParameters.obit == streamer.name || !name?.length)
                 continue creating_new_events;
 
             let { href } = streamer;
 
-            if(nullish(streamer?.name?.length))
+            if(!streamer?.name?.length)
                 continue creating_new_events;
 
             LOG('A channel just appeared:', name, new Date);
@@ -8584,7 +8618,6 @@ let Initialize = async(START_OVER = false) => {
     __Live_Reminders__:
     // On by Default (ObD; v5.15) -- only on the tab that has Up Next enabled
     if(true
-        // && parseBool(UP_NEXT_ALLOW_THIS_TAB)
         && (false
             || nullish(Settings.live_reminders)
             || parseBool(Settings.live_reminders)
@@ -8637,7 +8670,7 @@ let Initialize = async(START_OVER = false) => {
                     if(!channel.live) {
                         // Ignore this reminder (channel not live)
                         delete channel;
-                        // delete LiveReminders; // @performance
+                        delete LiveReminders; // @performance
 
                         ++REMINDERS_INDEX;
                         continue checking;
@@ -8698,7 +8731,7 @@ let Initialize = async(START_OVER = false) => {
                 // Send the length to the settings page
                 Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
 
-                // delete LiveReminders; // @performance
+                delete LiveReminders; // @performance
             });
         };
 
@@ -8902,8 +8935,8 @@ let Initialize = async(START_OVER = false) => {
                     NintendoRegExp = /Nintendo\s*(64|[23]?DS\s*(i|XL)?|Switch|Game[\s-]?(Boy(\s*Advance)?|Cube)|Wii([\s-]?U)?)/i,
                     // Removes common trademarks → Nintendo Switch,Nintendo 3DS,Nintendo 2DS,Nintendo 64,Nintendo DSi,Nintendo DS,Nintendo GameBoy,Nintendo GameBoy Advance,Nintendo Wii,Nintendo Wii U
 
-                    EditionsRegExp = /\s*(([-~:]\s*)?(\p{L}|[-']){3,}\s*)Editions?/iu;
-                    // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,etc.
+                    EditionsRegExp = /\s*(([-~:]\s*)?([\p{L}\s'-]){3,}\s*)(Edition|Season|Episode)s?(\s+[:\-\dIVXLCD]+)?[^$]+/iu;
+                    // Removes common "editions" → Standard,Digital,Deluxe,Digital Deluxe,Definitive,Anniversary,Complete,Extended,Ultiamte,Collector's,Bronze,Silver,Gold,Platinum,Enhanced,Premium,Complete Season,etc.
 
                 function normalize(string, ...conditions) {
                     conditions = [
@@ -8915,7 +8948,7 @@ let Initialize = async(START_OVER = false) => {
                     for(let [expression, replacement] of conditions)
                         string = string?.replace(expression, replacement);
 
-                    return string?.replace(EditionsRegExp, '') ?? '';
+                    return string?.replace(/[\u2010-\u2015]/g, '-')?.replace(EditionsRegExp, '') ?? '';
                 }
 
                 /*** Get the Steam link (if applicable)
@@ -8969,7 +9002,7 @@ let Initialize = async(START_OVER = false) => {
                                     )
                                 );
 
-                            // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
+                            // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_steam) }") no-repeat center 100% / contain, #000;`);
 
                             when.defined(() => $('#tt-steam-purchase'))
                                 .then(container => {
@@ -9149,7 +9182,7 @@ let Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
 
                                 when.defined(() => $('#tt-playstation-purchase'))
                                     .then(container => {
@@ -9219,7 +9252,7 @@ let Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_playstation) }") no-repeat center 100% / contain, #000;`);
 
                                 when.defined(() => $('#tt-playstation-purchase'))
                                     .then(container => {
@@ -9383,7 +9416,7 @@ let Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
 
                                 when.defined(() => $('#tt-xbox-purchase'))
                                     .then(container => {
@@ -9402,7 +9435,7 @@ let Initialize = async(START_OVER = false) => {
                                                     )?.textContent?.trim()
                                                 );
                                                 let rating = $('[class*="age"i][class*="rating"i] img', DOM),
-                                                    mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
+                                                    mature = parseBool(rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS));
 
                                                 rating.modStyle(RATING_STYLING);
 
@@ -9481,7 +9514,7 @@ let Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_xbox) }") no-repeat center 100% / contain, #000;`);
 
                                 when.defined(() => $('#tt-xbox-purchase'))
                                     .then(container => {
@@ -9500,7 +9533,7 @@ let Initialize = async(START_OVER = false) => {
                                                     )?.textContent?.trim()
                                                 );
                                                 let rating = $('[class*="age"i][class*="rating"i] img', DOM),
-                                                    mature = rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS);
+                                                    mature = parseBool(rating?.alt?.toUpperCase()?.contains(...MATURE_HINTS));
 
                                                 rating?.modStyle(RATING_STYLING);
 
@@ -9821,7 +9854,7 @@ let Initialize = async(START_OVER = false) => {
                                             )
                                         );
 
-                                    // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+                                    // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
 
                                     when.defined(() => $('#tt-nintendo-purchase'))
                                         .then(container => {
@@ -9871,7 +9904,7 @@ let Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
 
                                 LOG(`Got "${ jbpp }" data from Nintendo:`, info);
                             })
@@ -9926,7 +9959,7 @@ let Initialize = async(START_OVER = false) => {
                                         )
                                     );
 
-                                // $('.tt-store-purchase--price', purchase).setAttribute('style', `background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
+                                // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
 
                                 when.defined(() => $('#tt-nintendo-purchase'))
                                     .then(container => {
@@ -9968,9 +10001,14 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let STARTED_WATCHING = (+new Date);
+    let CURRENT_WATCHTIME = `WatchTimes/${ top.location.pathname.slice(1).split('/').shift().toLowerCase() }`;
 
-    Cache.load([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, WatchTimeAlt = 0 }) => {
-        STARTED_WATCHING -= (!UP_NEXT_ALLOW_THIS_TAB? WatchTimeAlt: WatchTime);
+    Cache.load(CURRENT_WATCHTIME, _ => {
+        _[CURRENT_WATCHTIME] >>= 0;
+
+        STARTED_WATCHING -= _[CURRENT_WATCHTIME];
+
+        Cache.save(_);
     });
 
     function GET_WATCH_TIME() {
@@ -10049,7 +10087,7 @@ let Initialize = async(START_OVER = false) => {
         let extension_views = $.all('[class^="extension-view"i]');
 
         for(let view of extension_views)
-            view.setAttribute('style', 'display:none!important');
+            view.modStyle('display:none!important');
 
         StopWatch.stop('kill_extensions');
     };
@@ -10866,7 +10904,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __GreedyRaiding__:
-    if(parseBool(Settings.greedy_raiding)) {
+    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.greedy_raiding)) {
         REMARK('Adding raid-watching logic...');
 
         RegisterJob('greedy_raiding');
@@ -10990,11 +11028,11 @@ let Initialize = async(START_OVER = false) => {
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)[ \t]*/iu,
 
             // Zulu - https://stackoverflow.com/a/23421472/4211612
-            // Z15:00 | Z1500 | +05:00 | -05:00 | +0500 | -0500
+            // Z15:00 | Z1500 | +5:00 | -5:00 | +0500 | -0500
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<offset>Z|[+-])(?<hour>2[0-3]|[01]\d)(?<minute>:?[0-5]\d)(?!\d*(?:\p{Sc}|[%‰]))\b/iu,
 
             // GMT/UTC
-            // GMT+05:00 | GMT-05:00 | GMT+0500 | GMT-0500 | GMT+05 | GMT-05 | GMT+5 | GMT-5 | UTC+05:00 | UTC-05:00 | UTC+0500 | UTC-0500 | UTC+05 | UTC-05 | UTC+5 | UTC-5
+            // GMT+5:00 | GMT-5:00 | GMT+0500 | GMT-0500 | GMT+05 | GMT-05 | GMT+5 | GMT-5 | UTC+5:00 | UTC-5:00 | UTC+0500 | UTC-0500 | UTC+05 | UTC-05 | UTC+5 | UTC-5
             /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?:GMT[ \t]*|UTC[ \t]*)(?<offset>[+-])(?<hour>2[0-3]|[01]?\d)(?<minute>:?[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))\b/iu,
         ],
 
@@ -11045,189 +11083,201 @@ let Initialize = async(START_OVER = false) => {
             ACDT: "+10:30",
             ACST: "+09:30",
             ACWST: "+08:45",
-            ADT: "+4:00",
+            ADT: "+04:00",
             AEDT: "+11:00",
             AEST: "+10:00",
             AFT: "+04:30",
-            AKDT: "-8:00",
-            AKST: "-9:00",
-            ALMT: "+6:00",
-            AMST: "-3:00",
-            AMT: "-4:00",
+            AKDT: "-08:00",
+            AKST: "-09:00",
+            ALMT: "+06:00",
+            AMST: "-03:00",
+            AMT: "-04:00",
             ANAST: "+12:00",
             ANAT: "+12:00",
-            AQTT: "+5:00",
-            AWDT: "+9:00",
-            AWST: "+8:00",
+            AQTT: "+05:00",
+            AWDT: "+09:00",
+            AWST: "+08:00",
             AZOST: "+0:00",
-            AZOT: "-1:00",
-            AZST: "+5:00",
-            AZT: "+4:00",
-            BNT: "+8:00",
-            BOT: "-4:00",
-            BRST: "-2:00",
-            BRT: "-3:00",
-            BTT: "+6:00",
-            CAST: "+8:00",
+            AZOT: "-01:00",
+            AZST: "+05:00",
+            AZT: "+04:00",
+            BNT: "+08:00",
+            BOT: "-04:00",
+            BRST: "-02:00",
+            BRT: "-03:00",
+            BTT: "+06:00",
+            CAST: "+08:00",
             CCT: "+06:30",
-            CEST: "+2:00",
-            CET: "+1:00",
+            CEST: "+02:00",
+            CET: "+01:00",
             CHADT: "+13:45",
             CHAST: "+12:45",
-            CHOST: "+9:00",
-            CHOT: "+8:00",
+            CHOST: "+09:00",
+            CHOT: "+08:00",
             CHUT: "+10:00",
-            CIDST: "-4:00",
-            CIST: "-5:00",
+            CIDST: "-04:00",
+            CIST: "-05:00",
             CKT: "-10:00",
-            CLST: "-3:00",
-            CLT: "-4:00",
-            COT: "-5:00",
-            CVT: "-1:00",
-            CXT: "+7:00",
+            CLST: "-03:00",
+            CLT: "-04:00",
+            COT: "-05:00",
+            CVT: "-01:00",
+            CXT: "+07:00",
             CHST: "+10:00",
-            DAVT: "+7:00",
+            DAVT: "+07:00",
             DDUT: "+10:00",
-            EASST: "-5:00",
-            EAST: "-6:00",
-            EEST: "+3:00",
+            EASST: "-05:00",
+            EAST: "-06:00",
+            EEST: "+03:00",
             EGST: "+0:00",
-            EGT: "-1:00",
-            EST: "-5:00",
-            FET: "+3:00",
+            EGT: "-01:00",
+            EST: "-05:00",
+            FET: "+03:00",
             FJST: "+13:00",
             FJT: "+12:00",
-            FKST: "-3:00",
-            FKT: "-4:00",
-            FNT: "-2:00",
-            GALT: "-6:00",
-            GAMT: "-9:00",
-            GET: "+4:00",
-            GFT: "-3:00",
+            FKST: "-03:00",
+            FKT: "-04:00",
+            FNT: "-02:00",
+            GALT: "-06:00",
+            GAMT: "-09:00",
+            GET: "+04:00",
+            GFT: "-03:00",
             GILT: "+12:00",
             GMT: "+0:00",
-            GST: "+4:00",
-            GYT: "-4:00",
-            HDT: "-9:00",
-            HKT: "+8:00",
-            HOVST: "+8:00",
-            HOVT: "+7:00",
-            ICT: "+7:00",
-            IDT: "+3:00",
-            IOT: "+6:00",
+            GST: "+04:00",
+            GYT: "-04:00",
+            HDT: "-09:00",
+            HKT: "+08:00",
+            HOVST: "+08:00",
+            HOVT: "+07:00",
+            ICT: "+07:00",
+            IDT: "+03:00",
+            IOT: "+06:00",
             IRDT: "+04:30",
-            IRKST: "+9:00",
-            IRKT: "+8:00",
+            IRKST: "+09:00",
+            IRKT: "+08:00",
             IRST: "+03:30",
-            KGT: "+6:00",
+            KGT: "+06:00",
             KOST: "+11:00",
-            KRAST: "+8:00",
-            KRAT: "+7:00",
-            KST: "+9:00",
-            KUYT: "+4:00",
+            KRAST: "+08:00",
+            KRAT: "+07:00",
+            KST: "+09:00",
+            KUYT: "+04:00",
             LHDT: "+11:00",
             LHST: "+10:30",
             LINT: "+14:00",
             MAGST: "+12:00",
             MAGT: "+11:00",
             MART: "-09:30",
-            MAWT: "+5:00",
+            MAWT: "+05:00",
             MHT: "+12:00",
             MMT: "+06:30",
-            MSD: "+4:00",
-            MSK: "+3:00",
-            MUT: "+4:00",
-            MVT: "+5:00",
-            MYT: "+8:00",
+            MSD: "+04:00",
+            MSK: "+03:00",
+            MUT: "+04:00",
+            MVT: "+05:00",
+            MYT: "+08:00",
             NCT: "+11:00",
             NDT: "-02:30",
             NFDT: "+12:00",
             NFT: "+11:00",
-            NOVST: "+7:00",
-            NOVT: "+7:00",
+            NOVST: "+07:00",
+            NOVT: "+07:00",
             NPT: "+05:45",
             NRT: "+12:00",
             NUT: "-11:00",
             NZDT: "+13:00",
             NZST: "+12:00",
-            OMSST: "+7:00",
-            OMST: "+6:00",
-            ORAT: "+5:00",
-            PET: "-5:00",
+            OMSST: "+07:00",
+            OMST: "+06:00",
+            ORAT: "+05:00",
+            PET: "-05:00",
             PETST: "+12:00",
             PETT: "+12:00",
             PGT: "+10:00",
             PHOT: "+13:00",
-            PHT: "+8:00",
-            PKT: "+5:00",
-            PMDT: "-2:00",
-            PMST: "-3:00",
+            PHT: "+08:00",
+            PKT: "+05:00",
+            PMDT: "-02:00",
+            PMST: "-03:00",
             PONT: "+11:00",
-            PWT: "+9:00",
-            PYST: "-3:00",
-            PYT: "-4:00",
-            QYZT: "+6:00",
-            RET: "+4:00",
-            ROTT: "-3:00",
+            PWT: "+09:00",
+            PYST: "-03:00",
+            PYT: "-04:00",
+            QYZT: "+06:00",
+            RET: "+04:00",
+            ROTT: "-03:00",
             SAKT: "+11:00",
-            SAMT: "+4:00",
-            SAST: "+2:00",
+            SAMT: "+04:00",
+            SAST: "+02:00",
             SBT: "+11:00",
-            SCT: "+4:00",
-            SGT: "+8:00",
+            SCT: "+04:00",
+            SGT: "+08:00",
             SRET: "+11:00",
-            SRT: "-3:00",
-            SYOT: "+3:00",
+            SRT: "-03:00",
+            SYOT: "+03:00",
             TAHT: "-10:00",
-            TFT: "+5:00",
-            TJT: "+5:00",
+            TFT: "+05:00",
+            TJT: "+05:00",
             TKT: "+13:00",
-            TLT: "+9:00",
-            TMT: "+5:00",
+            TLT: "+09:00",
+            TMT: "+05:00",
             TOST: "+14:00",
             TOT: "+13:00",
-            TRT: "+3:00",
+            TRT: "+03:00",
             TVT: "+12:00",
-            ULAST: "+9:00",
-            ULAT: "+8:00",
+            ULAST: "+09:00",
+            ULAT: "+08:00",
             UTC: ":00",
-            UYST: "-2:00",
-            UYT: "-3:00",
-            UZT: "+5:00",
-            VET: "-4:00",
+            UYST: "-02:00",
+            UYT: "-03:00",
+            UZT: "+05:00",
+            VET: "-04:00",
             VLAST: "+11:00",
             VLAT: "+10:00",
-            VOST: "+6:00",
+            VOST: "+06:00",
             VUT: "+11:00",
             WAKT: "+12:00",
-            WARST: "-3:00",
-            WAST: "+2:00",
-            WAT: "+1:00",
-            WEST: "+1:00",
+            WARST: "-03:00",
+            WAST: "+02:00",
+            WAT: "+01:00",
+            WEST: "+01:00",
             WET: "+0:00",
             WFT: "+12:00",
-            WGST: "-2:00",
-            WGT: "-3:00",
-            WIB: "+7:00",
-            WIT: "+9:00",
-            WITA: "+8:00",
+            WGST: "-02:00",
+            WGT: "-03:00",
+            WIB: "+07:00",
+            WIT: "+09:00",
+            WITA: "+08:00",
             WST: "+13:00",
             YAKST: "+10:00",
-            YAKT: "+9:00",
+            YAKT: "+09:00",
             YAPT: "+10:00",
-            YEKST: "+6:00",
-            YEKT: "+5:00",
+            YEKST: "+06:00",
+            YEKT: "+05:00",
         },
 
-        COUNTRY_NAME__CONVERSIONS = {
+        // More timezones from: https://www.localeplanet.com/icu/zh-Hant-TW/timezone.html
+        GEOGRAPHIC__CONVERSIONS = {
             "Acre": "-05:00",
+            "Adak": "-10:00",
+            "Adelaide": "+09:30",
+            "Afghanistan": "+04:30",
             "Akrotiri": "+02:00",
             "Aktobe": "+05:00",
+            "Åland Islands": "+02:00",
+            "Alaska": "-09:00",
+            "Albania": "+01:00",
             "Alberta": "-07:00",
             "Aleutian Islands": "-10:00",
+            "Algeria": "+01:00",
+            "Almaty": "+06:00",
             "Altai Krai": "+07:00",
             "Altai Republic": "+07:00",
             "Amapá": "-03:00",
+            "Amazon": "-04:00",
+            "Amazon (Campo Grande)": "-04:00",
+            "Amazon (Cuiaba)": "-04:00",
             "Amazonas": "-04:00",
             "Amazonas State": "-04:00",
             "American Samoa": "-11:00",
@@ -11235,58 +11285,168 @@ let Initialize = async(START_OVER = false) => {
             "Amundsen–Scott": "+12:00",
             "Amundsen–Scott South Pole Station": "+12:00",
             "Amur Oblast": "+09:00",
+            "Anadyr": "+12:00",
+            "Anchorage": "-09:00",
+            "Andorra": "+01:00",
+            "Angola": "+01:00",
             "Anguilla": "-04:00",
+            "Antigua & Barbuda": "-04:00",
+            "Anywhere on Earth": "-12:00",
+            "Apia": "-11:00",
+            "Aqtau": "+05:00",
+            "Aqtobe": "+05:00",
+            "Arabian": "+03:00",
+            "Araguaina": "-03:00",
+            "Argentina": "-03:00",
+            "Armenia": "+04:00",
+            "Aruba": "-04:00",
             "Ascension": "+00:00",
+            "Astrakhan": "+04:00",
             "Astrakhan Oblast": "+04:00",
+            "Atikokan": "-05:00",
+            "Atlantic": "-04:00",
             "Atyrau": "+05:00",
             "Austral Islands": "-10:00",
             "Australian Capital Territory": "+10:00",
+            "Australian Central": "+09:30",
+            "Australian Central Western": "+08:45",
+            "Australian Eastern": "+09:30",
+            "Australian Western": "+08:00",
+            "Austria": "+01:00",
             "Autonomous Region of Bougainville": "+11:00",
+            "Azerbaijan": "+04:00",
             "Azores": "-01:00",
+            "Bahamas": "-05:00",
+            "Bahia": "-03:00",
+            "Bahia Banderas": "-06:00",
+            "Bahrain": "+03:00",
             "Baja California": "-08:00",
             "Baja California Sur": "-07:00",
             "Baker Island": "-12:00",
             "Bali": "+08:00",
             "Bangka Belitung Islands": "+07:00",
+            "Bangladesh": "+06:00",
+            "Barbados": "-04:00",
+            "Barnaul": "+07:00",
             "Bas-Uele": "+02:00",
             "Bashkortostan": "+05:00",
             "Bayan-Ölgii": "+07:00",
+            "Belarus": "+03:00",
+            "Belem": "-03:00",
+            "Belgium": "+01:00",
+            "Belize": "-06:00",
+            "Benin": "+01:00",
             "Bermuda": "-04:00",
+            "Beulah": "-06:00",
+            "Bhutan": "+06:00",
+            "Blanc-Sablon": "-04:00",
+            "Boa Vista": "-04:00",
+            "Boise": "-07:00",
+            "Bolivia": "-04:00",
+            "Bosnia & Herzegovina": "+01:00",
+            "Botswana": "+02:00",
             "Bougainville": "+11:00",
+            "Brasilia": "-03:00",
+            "Brazil": "-03:00",
+            "Brazzaville": "+01:00",
+            "Brisbane": "+10:00",
             "British Columbia": "-08:00",
             "British Indian Ocean Territory": "+06:00",
             "British Virgin Islands": "-04:00",
+            "Broken Hill": "+09:30",
+            "Brunei": "+08:00",
+            "Brunei Darussalam": "+08:00",
+            "Buenos Aires": "-03:00",
+            "Bulgaria": "+02:00",
+            "Burkina Faso": "+00:00",
+            "Burundi": "+02:00",
             "Buryatia": "+08:00",
+            "Busingen": "+01:00",
             "Caicos Islands": "-05:00",
+            "Cambodia": "+07:00",
+            "Cambridge Bay": "-07:00",
+            "Cameroon": "+01:00",
+            "Campo Grande": "-04:00",
+            "Canary": "+00:00",
             "Canary Islands": "+00:00",
+            "Cancun": "-05:00",
             "Cantung Mine": "-08:00",
+            "Cape Verde": "-01:00",
             "Caribbean Islands": "-04:00",
             "Caribbean Municipalities": "-04:00",
+            "Caribbean Netherlands": "-04:00",
+            "Casey": "+11:00",
             "Casey Station": "+11:00",
+            "Catamarca": "-03:00",
             "Cayman Islands": "-05:00",
+            "Center": "-06:00",
+            "Central": "-06:00",
+            "Central Africa": "-01:00",
+            "Central African": "-01:00",
+            "Central African Republic": "+01:00",
+            "Central Australia": "+09:30",
+            "Central European": "+01:00",
+            "Central Indonesia": "+08:00",
             "Central Nunavut": "-06:00",
             "Central Sakha Republic": "+10:00",
+            "Ceuta": "+01:00",
+            "Chad": "+01:00",
+            "Chamorro": "+10:00",
+            "Chatham": "+12:45",
             "Chatham Islands": "+12:45",
             "Chelyabinsk Oblast": "+05:00",
+            "Chicago": "-06:00",
             "Chihuahua": "-07:00",
             "Chile": "-04:00",
             "Chilean Antarctica": "-03:00",
+            "China": "+08:00",
+            "Chita": "+09:00",
+            "Choibalsan": "+08:00",
             "Christmas Island": "+07:00",
             "Chukotka": "+12:00",
+            "Chuuk": "+10:00",
             "Chuuk and Yap": "+10:00",
             "Clipperton Island": "-08:00",
             "Cocos (Keeling) Islands": "+06:30",
             "Cocos Islands": "+06:30",
+            "Colombia": "-05:00",
+            "Comoros": "+03:00",
+            "Congo": "+01:00",
             "Cook Islands": "-10:00",
+            "Coordinated Universal": "+00:00",
+            "Cordoba": "-03:00",
+            "Costa Rica": "-06:00",
+            "Creston": "-07:00",
+            "Croatia": "+01:00",
             "Crozet Islands": "+04:00",
+            "Cuba": "-05:00",
+            "Cuiaba": "-04:00",
+            "Curaçao": "-04:00",
+            "Currie": "+10:00",
+            "Czechia": "+01:00",
+            "Côte d’Ivoire": "+00:00",
             "Danmarkshavn": "+00:00",
             "Danmarkshavn Weather Station": "+00:00",
+            "Darwin": "+09:30",
+            "Davis": "+07:00",
             "Davis Station": "+07:00",
+            "Dawson": "-08:00",
+            "Dawson Creek": "-07:00",
             "Denmark": "+01:00",
+            "Denver": "-07:00",
+            "Detroit": "-05:00",
             "Dhekelia": "+02:00",
             "Distrito Federal": "-03:00",
+            "Djibouti": "+03:00",
+            "Dominica": "-04:00",
+            "Dominican Republic": "-04:00",
+            "Dumont d’Urville": "+10:00",
             "Dumont-d'Urville Station": "+10:00",
+            "Dumont-d’Urville": "+10:00",
+            "East Africa": "+03:00",
+            "East African": "+03:00",
             "East Brazilian Islands": "-02:00",
+            "East Greenland": "-01:00",
             "East Kalimantan": "+08:00",
             "East Kazakhstan": "+06:00",
             "East Nunavut": "-05:00",
@@ -11294,143 +11454,356 @@ let Initialize = async(START_OVER = false) => {
             "East Ontario": "-05:00",
             "East Quebec": "-04:00",
             "East Sakha": "+11:00",
+            "East Timor": "+09:00",
+            "Easter": "-06:00",
             "Easter Island": "-06:00",
+            "Eastern": "-05:00",
+            "Eastern Africa": "+03:00",
+            "Eastern Australia": "+10:00",
+            "Eastern European": "+02:00",
+            "Eastern Indonesia": "+09:00",
             "Ecuador": "-05:00",
+            "Edmonton": "-07:00",
+            "Egypt": "+02:00",
+            "Egyptian": "+02:00",
+            "Eire": "+00:00",
+            "Eirunepe": "-05:00",
+            "El Salvador": "-06:00",
+            "Enderbury": "+13:00",
+            "Équateur": "+01:00",
+            "Equatorial Guinea": "+01:00",
+            "Eritrea": "+03:00",
+            "Estonia": "+02:00",
+            "Ethiopia": "+03:00",
+            "Eucla": "+08:45",
             "European Russia": "+03:00",
             "Falkland Islands": "-03:00",
+            "Famagusta": "+02:00",
             "Faroe Islands": "+00:00",
             "Fernando de Noronha": "-02:00",
+            "Fiji": "+12:00",
+            "Finland": "+02:00",
+            "Fort Nelson": "-07:00",
+            "Fortaleza": "-03:00",
             "France": "+01:00",
             "French Guiana": "-03:00",
+            "French Southern & Antarctic": "+05:00",
+            "French Southern Territories": "+05:00",
             "Futuna": "+12:00",
+            "Gabon": "+01:00",
+            "Galapagos": "-06:00",
             "Galápagos Province": "-06:00",
+            "Gambia": "+00:00",
+            "Gambier": "-09:00",
             "Gambier Islands": "-09:00",
+            "Gaza": "+02:00",
+            "Georgia": "+04:00",
+            "Germany": "+01:00",
+            "Ghana": "+00:00",
             "Gibraltar": "+01:00",
             "Gilbert Islands": "+12:00",
+            "Glace Bay": "-04:00",
             "Goiás": "-03:00",
+            "Goose Bay": "-04:00",
             "Great Lakes": "-06:00",
+            "Greece": "+02:00",
             "Greenland": "-03:00",
+            "Greenwich Mean": "+00:00",
+            "Grenada": "-04:00",
             "Guadeloupe": "-04:00",
             "Guam": "+10:00",
+            "Guatemala": "-06:00",
             "Guernsey": "+00:00",
+            "Guinea": "+00:00",
+            "Guinea-Bissau": "+00:00",
+            "Gulf": "+04:00",
             "Gulf Coast": "-06:00",
+            "Guyana": "-04:00",
+            "Haiti": "-05:00",
+            "Halifax": "-04:00",
             "Haut-Katanga": "+02:00",
             "Haut-Lomami": "+02:00",
             "Haut-Uele": "+02:00",
             "Hawaii": "-10:00",
+            "Hawaii-Aleutian": "-10:00",
             "Heard Islands": "+05:00",
+            "Hebron": "+02:00",
+            "Hermosillo": "-07:00",
+            "Hobart": "+10:00",
+            "Honduras": "-06:00",
+            "Hong Kong": "+08:00",
+            "Hong Kong SAR China": "+08:00",
+            "Honolulu": "-10:00",
+            "Hovd": "+07:00",
             "Howland Island": "-12:00",
+            "Hungary": "+01:00",
+            "Iceland": "+00:00",
+            "India": "+05:30",
+            "Indian": "",
+            "Indian Ocean": "+06:00",
             "Indian Pacific (Port Augusta)": "+08:00",
+            "Indianapolis": "-05:00",
+            "Indochina": "+07:00",
+            "Inuvik": "-07:00",
+            "Iqaluit": "-05:00",
+            "Iran": "+03:30",
+            "Iraq": "+03:00",
+            "Ireland": "+00:00",
+            "Irkutsk": "+08:00",
             "Irkutsk Oblast": "+08:00",
             "Islands of Maluku Islands": "+09:00",
             "Islands of Sulawesi": "+08:00",
             "Islands of Sumatra": "+07:00",
             "Isle of Man": "+00:00",
+            "Israel": "+02:00",
+            "Italy": "+01:00",
             "Ittoqqortoormiit": "-01:00",
             "Ituri Interim Administration": "+02:00",
+            "Jakarta": "+07:00",
+            "Jamaica": "-05:00",
+            "Japan": "+09:00",
             "Jarvis Island": "-11:00",
             "Java": "+07:00",
+            "Jayapura": "+09:00",
             "Jersey": "+00:00",
             "Jewish Autonomous Oblast": "+10:00",
             "Jewish Oblast": "+10:00",
+            "Johnston": "-10:00",
             "Johnston Atoll": "-10:00",
+            "Jordan": "+02:00",
+            "Jujuy": "-03:00",
+            "Juneau": "-09:00",
             "Kalgoorlie": "+08:00",
             "Kalimantan": "+07:00",
             "Kaliningrad": "+02:00",
             "Kaliningrad Oblast": "+02:00",
+            "Kamchatka": "+12:00",
             "Kamchatka Krai": "+12:00",
             "Kasaï": "+02:00",
             "Kasaï Oriental": "+02:00",
             "Kasaï-Central": "+02:00",
+            "Keeling Islands": "+06:30",
             "Kemerovo": "+07:00",
             "Kemerovo Oblast": "+07:00",
+            "Kenya": "+03:00",
             "Kerguelen Islands": "+05:00",
             "Khabarovsk Krai": "+10:00",
             "Khakassia": "+07:00",
+            "Khandyga": "+09:00",
             "Khanty–Mansia": "+05:00",
             "Khovd": "+07:00",
             "Kingman Reef": "-11:00",
             "Kinshasa": "+01:00",
+            "Kiritimati": "+14:00",
+            "Kirov": "+03:00",
+            "Knox": "-06:00",
             "Kongo Central": "+01:00",
+            "Korean": "+09:00",
+            "Kosrae": "+11:00",
             "Kosrae and Pohnpei": "+11:00",
+            "Krasnoyarsk": "+07:00",
             "Krasnoyarsk Krai": "+07:00",
+            "Kuching": "+08:00",
             "Kurgan Oblast": "+05:00",
+            "Kuwait": "+03:00",
+            "Kwajalein": "+12:00",
             "Kwango": "+01:00",
             "Kwilu": "+01:00",
+            "Kyrgyzstan": "+06:00",
             "Kyzylorda": "+05:00",
+            "La Rioja": "-03:00",
             "Labrador": "-04:00",
+            "Laos": "+07:00",
+            "Latvia": "+02:00",
+            "Lebanon": "+02:00",
+            "Lesotho": "+02:00",
+            "Liberia": "+00:00",
+            "Libya": "+02:00",
+            "Liechtenstein": "+01:00",
+            "Lindeman": "+10:00",
             "Line Islands": "+14:00",
+            "Lithuania": "+02:00",
             "Lloydminster": "-07:00",
             "Lomami": "+02:00",
+            "Lord Howe": "+10:30",
             "Lord Howe Island": "+10:30",
+            "Los Angeles": "-08:00",
+            "Louisville": "-05:00",
             "Lualaba": "+02:00",
+            "Lubumbashi": "+02:00",
+            "Luxembourg": "+01:00",
+            "Macau SAR China": "+08:00",
+            "Macedonia": "+01:00",
+            "Maceio": "-03:00",
+            "Macquarie": "+11:00",
+            "Macquarie Island": "+11:00",
+            "Madagascar": "+03:00",
             "Madeira": "+00:00",
             "Madura": "+07:00",
+            "Magadan": "+11:00",
             "Magadan Oblast": "+11:00",
             "Magallanes": "-03:00",
             "Mai-Ndombe": "+01:00",
+            "Makassar": "+08:00",
+            "Malawi": "+02:00",
+            "Malaysia": "+08:00",
+            "Maldives": "+05:00",
+            "Mali": "+00:00",
+            "Malta": "+01:00",
+            "Manaus": "-04:00",
             "Mangystau": "+05:00",
             "Maniema": "+02:00",
             "Manitoba": "-06:00",
+            "Marengo": "-05:00",
+            "Marquesas": "-09:30",
             "Marquesas Islands": "-09:30",
+            "Marshall Islands": "+12:00",
             "Martim Vaz": "-02:00",
             "Martinique": "-04:00",
+            "Matamoros": "-06:00",
             "Mato Grosso": "-04:00",
             "Mato Grosso do Sul": "-04:00",
+            "Mauritania": "+00:00",
+            "Mauritius": "+04:00",
+            "Mawson": "+05:00",
             "Mawson Station": "+05:00",
             "Mayotte": "+03:00",
+            "Mazatlan": "-07:00",
             "McDonald Islands": "+05:00",
+            "McMurdo": "+12:00",
             "McMurdo Station": "+12:00",
+            "Melbourne": "+10:00",
+            "Mendoza": "-03:00",
+            "Menominee": "-06:00",
+            "Merida": "-06:00",
+            "Metlakatla": "-09:00",
+            "Mexican Pacific": "-07:00",
             "Mexico": "-06:00",
+            "Mexico City": "-06:00",
+            "Midway": "-11:00",
             "Midway Atoll": "-11:00",
+            "Moldova": "+02:00",
+            "Monaco": "+01:00",
+            "Moncton": "-04:00",
             "Mongala": "+01:00",
+            "Montenegro": "+01:00",
+            "Monterrey": "-06:00",
+            "Monticello": "-05:00",
+            "Montreal": "-05:00",
             "Montserrat": "-04:00",
+            "Morocco": "+00:00",
+            "Moscow": "+03:00",
+            "Mountain": "-07:00",
+            "Moutain": "-07:00",
+            "Mozambique": "-01:00",
+            "Myanmar": "+06:30",
+            "Myanmar (Burma)": "+06:30",
+            "Namibia": "+02:00",
+            "Nauru": "+12:00",
             "Nayarit": "-07:00",
+            "Nepal": "+05:45",
             "Netherlands": "+01:00",
             "New Brunswick": "-04:00",
             "New Caledonia": "+11:00",
+            "New Salem": "-06:00",
             "New South Wales": "+10:00",
             "New South Wales (Yancowinna County)": "+09:30",
+            "New York": "-05:00",
             "New Zealand": "+12:00",
             "Newfoundland": "-03:30",
+            "Nicaragua": "-06:00",
+            "Nicosia": "+02:00",
+            "Niger": "+01:00",
+            "Nigeria": "+01:00",
+            "Nipigon": "-05:00",
             "Niue": "-11:00",
+            "Nome": "-09:00",
             "Nord-Kivu": "+02:00",
             "Nord-Ubangi": "+01:00",
             "Norfolk Island": "+11:00",
+            "Noronha": "-02:00",
             "North Kalimantan": "+08:00",
+            "North Korea": "+08:30",
             "North Mariana Islands": "+10:00",
             "North Territory": "+09:30",
             "North West Ontario": "-06:00",
             "Northeast Region": "-03:00",
+            "Northern Mariana Islands": "+10:00",
+            "Northwest Mexico": "-08:00",
             "Northwest Territories": "-07:00",
+            "Norway": "+01:00",
             "Nova Scotia": "-04:00",
+            "Novokuznetsk": "+07:00",
+            "Novosibirsk": "+07:00",
             "Novosibirsk Oblast": "+07:00",
             "Nunavut (Kitikmeot Region)": "-07:00",
             "Nunavut (Southampton Island)": "-05:00",
+            "Nuuk": "-03:00",
+            "Ojinaga": "-07:00",
+            "Oman": "+04:00",
+            "Omsk": "+06:00",
             "Omsk Oblast": "+06:00",
+            "Oral": "+05:00",
             "Orenburg Oblast": "+05:00",
+            "Pacific": "-08:00",
+            "Pakistan": "+05:00",
+            "Palau": "+09:00",
+            "Palmer": "-03:00",
             "Palmer Station": "-03:00",
             "Palmyra Atoll": "-11:00",
+            "Panama": "-05:00",
+            "Pangnirtung": "-05:00",
+            "Papua New Guinea": "+10:00",
+            "Paraguay": "-04:00",
             "Pará": "-03:00",
             "Perm Krai": "+05:00",
+            "Perth": "+08:00",
+            "Peru": "-05:00",
+            "Petersburg": "-05:00",
+            "Petropavlovsk-Kamchatski": "+12:00",
+            "Philippine": "+08:00",
+            "Philippines": "+08:00",
+            "Phoenix": "-07:00",
             "Phoenix Islands": "+13:00",
+            "Pitcairn": "-08:00",
             "Pitcairn Islands": "-08:00",
             "Pituffik": "-04:00",
             "Pituffik Space Base": "-04:00",
+            "Pohnpei": "+11:00",
+            "Poland": "+01:00",
+            "Ponape": "+11:00",
+            "Pontianak": "+07:00",
             "Port Augusta": "+08:00",
+            "Port Moresby": "+10:00",
+            "Porto Velho": "-04:00",
             "Portugal": "+00:00",
             "Primorsky Krai": "+10:00",
             "Prince Edward Island": "-04:00",
             "Prince Edward Islands": "+03:00",
             "Puerto Rico": "-04:00",
+            "Punta Arenas": "-03:00",
+            "Pyongyang": "+08:30",
+            "Qatar": "+03:00",
             "Quebec": "-05:00",
             "Queensland": "+10:00",
             "Quintana Roo": "-05:00",
+            "Qyzylorda": "+06:00",
+            "Rainy River": "-06:00",
+            "Rankin Inlet": "-06:00",
+            "Recife": "-03:00",
+            "Regina": "-06:00",
+            "Resolute": "-06:00",
+            "Reunion": "+04:00",
             "Riau Islands": "+07:00",
+            "Rio Branco": "-05:00",
+            "Rio Gallegos": "-03:00",
             "Rocas Atoll": "-02:00",
+            "Romania": "+02:00",
             "Rondônia": "-04:00",
             "Roraima": "-04:00",
+            "Rothera": "-03:00",
             "Rothera Station": "-03:00",
+            "Rwanda": "+02:00",
             "Réunion": "+04:00",
             "Saint Barthélemy": "-04:00",
             "Saint Helena": "+00:00",
@@ -11440,55 +11813,156 @@ let Initialize = async(START_OVER = false) => {
             "Saint Paul Archipelago": "-02:00",
             "Saint Peter": "-02:00",
             "Saint Pierre": "-03:00",
+            "Sakhalin": "+11:00",
             "Sakhalin Oblast": "+11:00",
+            "Salta": "-03:00",
+            "Samara": "+04:00",
             "Samara Oblast": "+04:00",
+            "Samarkand": "+05:00",
+            "Samoa": "+13:00",
+            "San Juan": "-03:00",
+            "San Luis": "-03:00",
+            "San Marino": "+01:00",
             "Sankuru": "+02:00",
+            "Santa Isabel": "-08:00",
+            "Santarem": "-03:00",
+            "Sao Paulo": "-03:00",
+            "Saratov": "+04:00",
             "Saratov Oblast": "+04:00",
             "Saskatchewan": "-06:00",
+            "Saudi Arabia": "+03:00",
             "Scattered Islands": "+03:00",
+            "Senegal": "+00:00",
+            "Serbia": "+01:00",
+            "Seychelles": "+04:00",
+            "Sierra Leone": "+00:00",
+            "Simferopol": "+03:00",
             "Sinaloa": "-07:00",
+            "Singapore": "+08:00",
+            "Sint Maarten": "-04:00",
+            "Sitka": "-09:00",
+            "Slovakia": "+01:00",
+            "Slovenia": "+01:00",
             "Society Islands": "-10:00",
+            "Solomon": "+11:00",
+            "Solomon Islands": "+11:00",
+            "Somalia": "+03:00",
             "Sonora": "-07:00",
             "South Africa": "+02:00",
             "South Australia": "+09:30",
             "South East Labrador": "-03:30",
             "South Georgia": "-02:00",
+            "South Georgia & South Sandwich Islands": "-02:00",
             "South Kalimantan": "+08:00",
+            "South Korea": "+09:00",
             "South Region": "-03:00",
             "South Sandwich Islands": "-02:00",
+            "South Sudan": "+03:00",
             "South West Amazonas": "-05:00",
             "Southeast Region": "-03:00",
             "Spain": "+01:00",
+            "Srednekolymsk": "+11:00",
+            "Sri Lanka": "+05:30",
+            "St. Barthélemy": "-04:00",
+            "St. Helena": "+00:00",
+            "St. John's": "-03:30",
+            "St. John’s": "-03:30",
+            "St. Kitts & Nevis": "-04:00",
+            "St. Lucia": "-04:00",
+            "St. Martin": "-04:00",
+            "St. Pierre & Miquelon": "-03:00",
+            "St. Vincent & Grenadines": "-04:00",
             "Sud-Kivu": "+02:00",
             "Sud-Ubangia": "+01:00",
+            "Sudan": "+02:00",
+            "Suriname": "-03:00",
+            "Svalbard & Jan Mayen": "+01:00",
             "Sverdlovsk Oblast": "+05:00",
+            "Swaziland": "+02:00",
+            "Sweden": "+01:00",
+            "Swift Current": "-06:00",
+            "Switzerland": "+01:00",
+            "Sydney": "+10:00",
+            "Syowa": "+03:00",
             "Syowa Station": "+03:00",
+            "Syria": "+02:00",
+            "São Tomé & Príncipe": "+00:00",
+            "Tahiti": "-10:00",
+            "Taipei": "+08:00",
+            "Taiwan": "+08:00",
+            "Tajikistan": "+05:00",
             "Tanganyika": "+02:00",
+            "Tanzania": "+03:00",
+            "Tarawa": "+12:00",
             "Tasmania": "+10:00",
+            "Tell City": "-06:00",
+            "Thailand": "+07:00",
+            "Thule": "-04:00",
+            "Thunder Bay": "-05:00",
+            "Tijuana": "-08:00",
+            "Timor-Leste": "+09:00",
             "Tocantins": "-03:00",
+            "Togo": "+00:00",
             "Tokelau": "+13:00",
+            "Tomsk": "+07:00",
             "Tomsk Oblast": "+07:00",
+            "Tonga": "+13:00",
+            "Toronto": "-05:00",
             "Trindade": "-02:00",
+            "Trinidad & Tobago": "-04:00",
             "Tristan da Cunha": "+00:00",
+            "Troll": "+00:00",
             "Troll Station": "+00:00",
             "Tshopo Interim Administration": "+02:00",
             "Tshuapa": "+01:00",
             "Tuamotus": "-10:00",
+            "Tucuman": "-03:00",
             "Tungsten": "-08:00",
+            "Tunisia": "+01:00",
             "Tunu": "+00:00",
+            "Turkey": "+03:00",
+            "Turkmenistan": "+05:00",
+            "Turks & Caicos Islands": "-05:00",
             "Turks Islands": "-05:00",
             "Tuva": "+07:00",
+            "Tuvalu": "+12:00",
             "Tyumen Oblast": "+05:00",
             "U.S. Virgin Islands": "-04:00",
             "Udmurtia": "+04:00",
+            "Uganda": "+03:00",
+            "Ukraine": "+02:00",
+            "Ulaanbaatar": "+08:00",
+            "Ulyanovsk": "+04:00",
             "Ulyanovsk Oblast": "+04:00",
+            "United Arab Emirates": "+04:00",
             "United Kingdom": "+00:00",
+            "Universal": "+00:00",
+            "Uruguay": "-03:00",
+            "Urumqi": "+06:00",
+            "Ushuaia": "-03:00",
+            "Ust-Nera": "+10:00",
             "Uvs": "+07:00",
+            "Uzbekistan": "+05:00",
+            "Uzhhorod": "+02:00",
+            "Vancouver": "-08:00",
+            "Vanuatu": "+11:00",
+            "Vatican City": "+01:00",
+            "Venezuela": "-04:00",
+            "Vevay": "-05:00",
             "Victoria": "+10:00",
+            "Vietnam": "+07:00",
+            "Vincennes": "-05:00",
+            "Vladivostok": "+10:00",
+            "Volgograd": "+03:00",
+            "Vostok": "+06:00",
             "Vostok Station": "+06:00",
+            "Wake": "+12:00",
             "Wake Island": "+12:00",
             "Wallis": "+12:00",
+            "Wallis & Futuna": "+12:00",
+            "West Africa": "+01:00",
             "West Australia": "+08:00",
+            "West Greenland": "-03:00",
             "West Kazakhstan": "+05:00",
             "West Kazakhstan (Aktobe)": "+05:00",
             "West New Guinea": "+09:00",
@@ -11496,10 +11970,24 @@ let Initialize = async(START_OVER = false) => {
             "West Nusa Tenggara": "+08:00",
             "West Russia": "+03:00",
             "West Sakha Republic": "+09:00",
+            "Western Argentina": "-03:00",
+            "Western European": "+00:00",
+            "Western Indonesia": "+07:00",
+            "Western Sahara": "+00:00",
+            "Whitehorse": "-08:00",
+            "Winamac": "-05:00",
+            "Winnipeg": "-06:00",
+            "Yakutat": "-09:00",
+            "Yakutsk": "+09:00",
             "Yamalia": "+05:00",
+            "Yekaterinburg": "+05:00",
+            "Yellowknife": "-07:00",
+            "Yemen": "+03:00",
             "Yukon": "-08:00",
             "Zabaykalsky Krai": "+09:00",
-            "Équateur": "+01:00"
+            "Zambia": "+02:00",
+            "Zaporozhye": "+02:00",
+            "Zimbabwe": "+02:00",
         },
 
         NON_TIME_ZONE_WORDS = await fetchURL(`get:./ext/[A-Y]{2,4}T.json`).then(response => response.json());
@@ -11552,15 +12040,51 @@ let Initialize = async(START_OVER = false) => {
             let [timezone, zone, type, trigger] = (null
                 ?? (container?.innerText || '')
                     .normalize('NFKD')
-                    .match(/(?:(?<zone>[a-z]{3,})[\s\-]+)(?:(?<type>[a-z]+)[\s\-]+)?(?<trigger>time)\b/i)
+                    .match(/(?:(?<zone>\p{L}{3,})[\s\-]+)(?:(?<type>\p{L}+)[\s\-]+)?(?<trigger>time)\b/iu)
                 ?? []
             );
 
-            let MASTER_TIME_ZONE = (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type ?? 'Standard', trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
+            let MASTER_TIME_ZONE;
+
+            locator: if(defined(zone)) {
+                for(let place in GEOGRAPHIC__CONVERSIONS)
+                    if(RegExp(place.replaceAll('-', '-?'), 'i').test(zone)) {
+                        MASTER_TIME_ZONE = GEOGRAPHIC__CONVERSIONS[place];
+                        break locator;
+                    }
+
+                // Try to not mistake common suffixes and titles...
+                // From: https://translated-into.com/{word}
+                if(false
+                    // "the"
+                    || /\b(y?a(h|ng?)?|c[aá]c|d(as|e[nt]?|ie|u)|e([lw]|ta)|i(he|l|ng|tu|yo)?|[lk]a|ny|o|quod|t(h?e|us)|u|y)\b/i
+                        .test(zone)
+                    // "of"
+                    || /\b(a([fvz]|pie|utem)|d(ari|[ei])|e[ae]|[fvn]an|gada|ji|kohta|n([ae]k?|ing?|ke|tawm|y)|o([dif]|\s?ka)?|s(aka|e)|[tv]on|ti(na)?|vun|y[ae]|z)\b/i
+                        .test(zone)
+                    // "for"
+                    || /\b(aua|(b|ch)o|canys|dla|eest|f([oö]a?r|un|yrir)|gia|hoki|kw?a(nggo|y)?|m(aka|ert)|ngoba|[ps](ara|[eëo]u?r?|r([eo]|iek))|quia|rau|til|untuk|v(arten|i|oo)r|ye|z(a|um))\b/i
+                        .test(zone)
+                    // "nor" or "or"
+                    // || /\b(n?or)\b/i
+                    //     .test(zone)
+                    // "but" or "and"
+                    || /\b(a([bw]?er?|g(a|us)|ka?|[ls][ei]|m(m[ao]|pak)|nd|ti?)?|b(aina|[eu]t)|d(an|he)|e(n(gari)?|s|ta?)?|izda|k(a[ij]|[ou]ma)|l(an|e)|ja|lebe|m(a([anr]{2}|i?s)?|en|utta)|no|[ou]g|s(ed|is)|(te)?ta(b|pi)|u(nd)?|v[ae]|y)\b/i
+                        .test(zone)
+                    // "yet"
+                    // || /\b(yet)\b/i
+                    //     .test(zone)
+                    // tensed words
+                    || /\B(i?e[ds]|ing)$/i
+                        .test(zone)
+                )
+                    break locator;
+
+                MASTER_TIME_ZONE ??= (TIME_ZONE__CONVERSIONS[timezone?.length < 1? '': timezone = [zone, type ?? 'Standard', trigger].map((s = '') => s[0]).join('').toUpperCase()]?.length? timezone: '');
+            }
 
             searching:
             for(let regexp of TIME_ZONE__REGEXPS) {
-
                 replacing:
                 for(let MAX = Object.keys(TIME_ZONE__CONVERSIONS).length; --MAX > 0 && regexp.test(convertWordsToTimes(container?.innerText));) {
                     container = container.getElementByText(regexp) ?? container.getElementByText(/\b(after\s?noons?|evenings?|noons?|lunch[\s\-]?time|mid[\s\-]?nights?)\b/iu);
@@ -11576,7 +12100,7 @@ let Initialize = async(START_OVER = false) => {
 
                     let { groups, index, length } = regexp.exec(convertedText),
                         { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
-                        timesone = timezone.replace(/^([^s])t$/, '$1st').replace(/^([^S])T$/, '$1ST');
+                        timesone = timezone?.replace(/^([^s])t$/, '$1st')?.replace(/^([^S])T$/, '$1ST') ?? '';
 
                     let misint = timezone.mutilate(),
                         MISINT = timezone.toUpperCase(),
@@ -11675,7 +12199,7 @@ let Initialize = async(START_OVER = false) => {
                     id: `tt-time-zone-${ (new UUID) }`,
                     style: 'color:var(--user-contrast-color); text-decoration:underline 2px; width:min-content; white-space:nowrap',
                     contrast: THEME__PREFERRED_CONTRAST,
-                    innerHTML: unescape(atob(newText)).split('').join('&zwj;'),
+                    innerHTML: unescape(atob(newText)).split('').join('&zwj;').pad('&zwj;'),
                 });
 
                 if(oldText?.length)
@@ -11706,6 +12230,28 @@ let Initialize = async(START_OVER = false) => {
         REMARK('Converting time zones...');
 
         RegisterJob('time_zones');
+    }
+
+    /*** @notImplemented
+     *      _____  _                        _   _                 _
+     *     |  __ \| |                      | \ | |               | |
+     *     | |__) | |__   ___  _ __   ___  |  \| |_   _ _ __ ___ | |__   ___ _ __
+     *     |  ___/| '_ \ / _ \| '_ \ / _ \ | . ` | | | | '_ ` _ \| '_ \ / _ \ '__|
+     *     | |    | | | | (_) | | | |  __/ | |\  | |_| | | | | | | |_) |  __/ |
+     *     |_|    |_| |_|\___/|_| |_|\___| |_| \_|\__,_|_| |_| |_|_.__/ \___|_|
+     *
+     *
+     */
+    Handlers.phone_number = () => {
+        let syntax = /(?<countryCode>\+?\d{1,3})?[\s\.\-\(]?(?<areaCode>\d{3})?[\)\.\-\s]?(?<officeCode>\d{3})[\s\.\-]?(?<lineNumber>\d{1,4})/;
+    };
+    Timers.phone_number = 250;
+
+    __PhoneNumber__:
+    if(parseBool(Settings.phone_number)) {
+        REMARK('Parsing phone numbers...');
+
+        RegisterJob('phone_number');
     }
 
     /*** View Mode
@@ -12031,7 +12577,7 @@ let Initialize = async(START_OVER = false) => {
     };
 
     __NotificationSounds_Whispers__:
-    if(parseBool(Settings.whisper_audio)) {
+    if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.whisper_audio)) {
         RegisterJob('whisper_audio');
     }
 
@@ -12344,8 +12890,8 @@ let Initialize = async(START_OVER = false) => {
                             REDEMPTION_LISTENERS.BRIBABLE_VOTES = true;
 
                             button.addEventListener('mouseup', ({ currentTarget }) => {
-                                let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *').textContent,
-                                    [amount] = /\p{N}+/u.exec(currentTarget.textContent) || '';
+                                let title = $('[class*="community"i][class*="stack"i] [data-test-selector="header"i] ~ *')?.textContent ?? 'Something? No real title given',
+                                    [amount] = /\p{N}+/u.exec(currentTarget?.textContent) || '';
 
                                 EXACT_POINTS_SPENT += (amount |= 0);
                                 TALLY.set(`Poll: "${ title }" @ ${ (new Date).toJSON() }`, amount | 0);
@@ -12640,7 +13186,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(title))
             return StopWatch.stop('stream_preview'), STREAM_PREVIEW?.element?.remove();
 
-        let [alias] = title.textContent.split(/[^\p{L}*\w\s]/u);
+        let [alias] = title.textContent.split(/[^\p{L}\w\s]/u);
 
         alias = alias?.trim();
 
@@ -12717,7 +13263,7 @@ let Initialize = async(START_OVER = false) => {
 
                         onload: event => {
                             $('.tt-stream-preview--poster')?.classList?.add('invisible');
-                            $.all('[class*="channel-tooltip"i]').at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.setAttribute('style', `background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
+                            $.all('[class*="channel-tooltip"i]').at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.modStyle(`background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
 
                             if(!parseBool(Settings.stream_preview_sound))
                                 return;
@@ -12812,7 +13358,12 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let WATCH_TIME_INTERVAL,
-        WATCH_TIME_TOOLTIP;
+        WATCH_TIME_TOOLTIP,
+        THIS_POLL = STREAMER.poll,
+        THAT_POLL = 0,
+        GET_TOP_100_INTERVAL,
+        ALL_WATCHTIME_COUNTS = {},
+        ALL_WATCHTIME_VALUES = {};
 
     Handlers.watch_time_placement = async() => {
         let placement;
@@ -12843,7 +13394,7 @@ let Initialize = async(START_OVER = false) => {
                 parent = container.closest(`*:not(${ classes(container) })`);
 
                 extra = ({ live_time }) => {
-                    live_time.setAttribute('style', 'color:var(--color-text-live)');
+                    live_time.modStyle('color:var(--color-text-live)');
 
                     if(parseBool(Settings.show_stats))
                         live_time.tooltipAnimation = setInterval(() => {
@@ -12853,7 +13404,7 @@ let Initialize = async(START_OVER = false) => {
                                 timeLeft = (STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time;
 
                             live_time.tooltip.innerHTML = (timeLeft < 0? '+': '') + toTimeString(Math.abs(timeLeft), 'clock');
-                            live_time.tooltip.setAttribute('style', `background:linear-gradient(90deg, hsla(${ (120 * percentage) | 0 }, 100%, 50%, 0.5) ${ (100 * percentage).toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
+                            live_time.tooltip.modStyle(`background:linear-gradient(90deg, hsla(${ (120 * percentage) | 0 }, 100%, 50%, 0.5) ${ (100 * percentage).toFixed(2) }%, #0000 0), var(--color-background-tooltip)`);
                         }, 2_5_0);
                 };
             } break;
@@ -12873,29 +13424,165 @@ let Initialize = async(START_OVER = false) => {
 
         extra({ parent, container, live_time, placement });
 
-        Cache.load([`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`, `Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`], ({ WatchTime = 0, Watching = NORMALIZED_PATHNAME, WatchTimeAlt = 0, WatchingAlt = NORMALIZED_PATHNAME }) => {
-            if(NORMALIZED_PATHNAME != (!UP_NEXT_ALLOW_THIS_TAB? WatchingAlt: Watching))
+        Cache.load([CURRENT_WATCHTIME, `Watching`], _ => {
+            let { Watching } = _;
+            if(!(Watching instanceof Array))
+                Watching = [];
+
+            if((Watching ??= [NORMALIZED_PATHNAME]).missing(NORMALIZED_PATHNAME)) {
+                Watching.push(NORMALIZED_PATHNAME);
                 STARTED_WATCHING = +($('#root').dataset.aPageLoaded ??= +new Date);
+            }
+
+            _[CURRENT_WATCHTIME] >>= 0;
 
             WATCH_TIME_INTERVAL = setInterval(() => {
                 let watch_time = $('#tt-watch-time'),
                     time = GET_WATCH_TIME();
 
-                if(nullish(watch_time)) {
+                if(nullish(watch_time) || !time) {
                     clearInterval(WATCH_TIME_INTERVAL);
                     return RestartJob('watch_time_placement');
                 }
 
                 watch_time.setAttribute('time', time);
                 watch_time.innerHTML = toTimeString(time, 'clock');
-                watch_time.setAttribute('style', `mix-blend-mode:${ ANTITHEME }en;`);
+                watch_time.modStyle(`mix-blend-mode:${ ANTITHEME }en;`);
 
                 if(parseBool(Settings.show_stats))
-                    WATCH_TIME_TOOLTIP.innerHTML = comify(parseInt(time / 1000)) + 's';
+                    WATCH_TIME_TOOLTIP.innerHTML = toTimeString(time, 'short-epoch');
 
-                Cache.save({ [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: time });
-            }, 1000);
-        }).then(() => Cache.save({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: NORMALIZED_PATHNAME }));
+                Cache.load(null, _ => {
+                    for(let [key, val] of Object.entries(_).filter((key, val) => /^WatchTimes\b/.test(key))) {
+                        fixer: if(UP_NEXT_ALLOW_THIS_TAB) {
+                            if(key == CURRENT_WATCHTIME)
+                                break fixer;
+
+                            let count = ALL_WATCHTIME_COUNTS[key] >>= 0;
+                            let value = ALL_WATCHTIME_VALUES[key] >>= 0;
+
+                            if(value != val) {
+                                ALL_WATCHTIME_VALUES[key] = val;
+                                continue;
+                            }
+
+                            if(++count > 60) {
+                                Cache.remove(key);
+                                delete ALL_WATCHTIME_COUNTS[key];
+                                delete ALL_WATCHTIME_VALUES[key];
+
+                                continue;
+                            }
+
+                            ALL_WATCHTIME_COUNTS[key] = count;
+                        }
+
+                        if(key == CURRENT_WATCHTIME)
+                            val = time;
+
+                        Cache.save({ [key]: val });
+                    }
+                });
+            }, 500 + (Math.random() * 500));
+
+            Cache.save({ Watching });
+        });
+
+        function getTop100(callback = $ => $) {
+            let { filename } = parseURL(STREAMER.game.href);
+
+            if(!filename?.length)
+                return;
+
+            fetchURL.idempotent(`https://gql.twitch.tv/gql`, {
+                method: "POST",
+                headers: { "client-id": Search.anonID },
+                body: JSON.stringify([{
+            		operationName: "DirectoryPage_Game",
+            		variables: {
+            			imageWidth: 50,
+            			slug: filename,
+            			options: {
+            				sort: "VIEWER_COUNT",
+            				freeformTags: null,
+            				tags: [],
+            				broadcasterLanguages: [],
+            				systemFilters: [],
+            			},
+            			sortTypeIsRecency: false,
+            			limit: 100, // [1, 100]
+            		},
+                    extensions: {
+                        persistedQuery: {
+                            version: 1,
+                            sha256Hash: `3c9a94ee095c735e43ed3ad6ce6d4cbd03c4c6f754b31de54993e0d48fd54e30`,
+                        },
+                    },
+            	}]),
+            }).then(r => r.json()).then(json => {
+                if(!json?.length)
+                    throw `No query data available @ ${ filename }`;
+
+                [json] = json;
+
+                if(json.errors)
+                    throw json.errors.join('; ');
+                let edges = json
+                    ?.data      // [...{ game:object }]
+                    ?.game      // { displayName:string, id: string<int>, name:string, streams:object }
+                    ?.streams   // { edges:array<object>, pageInfo:object<{ hasNextPage:boolean }> }
+                    ?.edges     // [...{ broadcaster:object, freeFormTags:object|array, game:object, id:string<int~GameID>, previewImageURL:object<{ *:string<URL> }>, title:string, type:string, viewersCount:number<int> }]
+                ?? [];
+
+                let { game, poll, sole } = STREAMER;
+
+                let polls = [{ sole, poll }], spot = 1, place = null;
+                for(let edge of edges) {
+                    let { broadcaster, freeFormTags, game, id, previewImageURL, title, type, viewersCount } = edge.node;
+
+                    if(sole == broadcaster.id)
+                        place = spot;
+
+                    polls.push({ sole: broadcaster.id, poll: viewersCount, spot: spot++ });
+                }
+
+                let container = $('[data-a-target*="viewer"i][data-a-target*="count"i]').parentElement;
+
+                if(defined(place))
+                    new Tooltip(container, `Top 100! #${ place } for <ins>${ game }</ins>`)
+                        .setAttribute('rainbow-border', true);
+                else
+                    new Tooltip(container, `Viewer change: &${ 'du'[+(THIS_POLL >= THAT_POLL)] }arr; ${ Math.abs(THIS_POLL - THAT_POLL) }`)
+                        .setAttribute('rainbow-border', false);
+
+                callback();
+            }).catch(error => {
+                WARN(error);
+
+                clearInterval(GET_TOP_100_INTERVAL);
+            });
+        }
+
+        GET_TOP_100_INTERVAL = setInterval(() => {
+            THIS_POLL = STREAMER.poll;
+
+            let updt = () => THAT_POLL = THIS_POLL;
+
+            // 30% (600+) change in polls
+            if(THIS_POLL > 2000 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .30)
+                getTop100(updt); // for gradual changes
+            // 25% (50+) change in polls
+            if(THIS_POLL > 200 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .25)
+                getTop100(updt); // for gradual changes
+            // 20% (4+) change in polls
+            else if(THIS_POLL > 20 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .20)
+                getTop100(updt); // for gradual changes
+            // Any change in polls
+            else if(THIS_POLL > 2 && THIS_POLL != THAT_POLL)
+                getTop100(updt); // for gradual changes
+
+            // THAT_POLL = THIS_POLL; // for spikes
+        }, 5_000);
     };
     Timers.watch_time_placement = -1000;
 
@@ -12913,7 +13600,7 @@ let Initialize = async(START_OVER = false) => {
         if(UnregisterJob.__reason__.equals('modify'))
             return;
 
-        Cache.save({ [`Watching${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: null, [`WatchTime${ (!UP_NEXT_ALLOW_THIS_TAB? 'Alt': '') }`]: 0 });
+        Cache.save({ Watching: [] });
     };
 
     __WatchTimePlacement__:
@@ -13024,7 +13711,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.startRecording({ name: 'AUTO_DVR:ENABLE', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                            MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR:ENABLE', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                             MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                         });
@@ -13061,7 +13748,7 @@ let Initialize = async(START_OVER = false) => {
                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                     .then(() => {
                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                            MASTER_VIDEO.DEFAULT_RECORDING = MASTER_VIDEO.startRecording({ name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                            MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                             MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                         });
@@ -13166,7 +13853,7 @@ let Initialize = async(START_OVER = false) => {
 
             InsertChunksAt = blobs.length;
 
-            let AdBreak = new Recording(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
+            let AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
 
             AdBreak.then(({ target }) => {
                 let chunks = AdBreak.blobs;
@@ -13329,7 +14016,7 @@ let Initialize = async(START_OVER = false) => {
                                         let recordingKey = 'AUTO_DVR:AD_COUNTDOWN';
 
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.startRecording({ name: recordingKey, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
+                                            Recording.proxy(MASTER_VIDEO, { name: recordingKey, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                                 .then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
 
                                             when(() => MASTER_VIDEO.hasRecording('AUTO_DVR')).then(() => {
@@ -13487,7 +14174,7 @@ let Initialize = async(START_OVER = false) => {
                     );
 
                     $('[data-a-player-state]')?.addEventListener?.('mouseup', ({ button = -1 }) => !button && ReloadPage());
-                    $('video', container).setAttribute('style', `display:none`);
+                    $('video', container).modStyle(`display:none`);
 
                     new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
                 } else {
@@ -13736,7 +14423,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let anchor = element.closest('[href]');
 
-                anchor.setAttribute('style', 'display:inline-block;width:calc(100% - 5rem)');
+                anchor.modStyle('display:inline-block;width:calc(100% - 5rem)');
                 anchor.insertAdjacentElement('afterend', f(`button[tt-pip]`, {
                     name, live, image,
 
@@ -13922,7 +14609,7 @@ let Initialize = async(START_OVER = false) => {
                         });
 
                         SetQuality('auto').then(() => {
-                            video.startRecording({ name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
+                            Recording.proxy(video, { name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                 .then(({ target }) => {
                                     let chunks = target.blobs;
                                     let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
@@ -14437,6 +15124,8 @@ if(top == window) {
 
                         alert.timed(`${ Manifest.name } will resume after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
                     });
+
+            Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => top.UP_NEXT_ALLOW_THIS_TAB = owner);
 
             LOG("Main container ready");
 
@@ -15095,7 +15784,7 @@ if(top == window) {
                             for(let element of $.all('#tt-auto-claim-bonuses, [up-next--container]'))
                                 element.classList.add('tt-first-run');
 
-                            let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' });
+                            let style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px', fill: '#ff9ab4' });
 
                             // Make sure the user goes to the Settings page
                             alert
@@ -15147,6 +15836,12 @@ if(top == window) {
 
                     case 'reload': {
                         if(UP_NEXT_ALLOW_THIS_TAB || request.forced) {
+                            Cache.load([`Watching`], ({ Watching }) => {
+                                Watching = Watching.filter(p => p.unlike(NORMALIZED_PATHNAME));
+
+                                Cache.save({ Watching });
+                            });
+
                             await top.beforeleaving?.({});
 
                             respond({ ok: true });
@@ -15156,6 +15851,12 @@ if(top == window) {
                     } break;
 
                     case 'close': {
+                        Cache.load([`Watching`], ({ Watching }) => {
+                            Watching = Watching.filter(p => p.unlike(NORMALIZED_PATHNAME));
+
+                            Cache.save({ Watching });
+                        });
+
                         await top.beforeleaving?.({});
 
                         respond({ ok: true });
@@ -15545,7 +16246,7 @@ if(top == window) {
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', (await this));
+                                            return (this == null) || nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', await this);
                                         }).bind(element)
                                     },
                                 });
@@ -15624,20 +16325,7 @@ if(top == window) {
                             __bs__ = $.all('[class*="username"i][class*="container"i] [data-a-target*="badge"i] img', element).map(e => badges.add(e.alt.toLowerCase())),
                             handle = $('[data-a-user]', element).textContent,
                             usable = false,
-                            message = $.all('[class*="message"i][class*="body"i] *', element).map(e => {
-                                if(e.dataset.testSelector?.contains('emote')) {
-                                    let i = $('img', e);
-
-                                    emotes.add(i.alt);
-                                    Chat.__allemotes__.set(i.alt, i.src);
-
-                                    return i.alt;
-                                } else if(e.dataset.aTarget?.contains('timestamp')) {
-                                    return '';
-                                }
-
-                                return e.textContent?.trim?.() || '';
-                            }).join(' ').trim(),
+                            message = raw.replace(/^[^:]+?:/, '').trim(),
                             mentions = $.all('[data-a-target*="mention"i]', element).map(e => e.textContent),
                             highlighted = parseBool(element.dataset.testSelector?.contains('notice'));
 
@@ -15660,15 +16348,8 @@ if(top == window) {
                             message,
                             mentions,
                             highlighted,
+                            deleted: $.defined('[data-a-target*="delete"i]', element),
                         };
-
-                        Object.defineProperties(results, {
-                            deleted: {
-                                get:(function() {
-                                    return nullish(this?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', this);
-                                }).bind(element)
-                            },
-                        });
 
                         Chat.__allmessages__.set(uuid, results);
 
