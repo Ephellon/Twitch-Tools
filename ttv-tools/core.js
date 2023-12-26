@@ -999,8 +999,8 @@ Object.defineProperties($, {
         configurable: false,
     },
 
-    getElementsByInnerText: {
-        value: Element.prototype.getElementsByInnerText.bind(document.documentElement),
+    getAllElementsByText: {
+        value: Element.prototype.getAllElementsByText.bind(document.documentElement),
 
         writable: false,
         enumerable: false,

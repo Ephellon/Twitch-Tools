@@ -72,6 +72,20 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.7)
+- Modified "Top 100!" logic
+- Fixed issue with Live Reminder list ordering
+- Fixed scaling issue with `Recording.proxy`
+- Modified Cardifying logic
+- Fixed issue with Live Reminder times
+- Modified `parseURL..addSearch` logic
+- Added `Element..tooltip` to add tooltips easier
+- Added tooltips to Live reminder buttons
+- Adjusted Watch Time logic
+- Renamed `Element..getElementsByInnerText` to `Element.getAllElementsByText`
+- Fixed issue with Prime Loot Claims
+- Fixed issue with Point Balance logic
+
 > [`5.33.0.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.6)
 - Fixed edge-case of Auto-Chat not firing
 - Modified Auto-Chat order of precedence: Channel, Badge, Specific rule(s)

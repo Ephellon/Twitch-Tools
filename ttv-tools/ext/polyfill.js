@@ -114,8 +114,14 @@ function parseURL(url) {
             if(typeof url == 'string')
                 url = parseURL(url);
 
+            if(nullish(parameters))
+                return url;
+
             let { href, searchParameters } = url,
                 params = {};
+
+            if(typeof parameters == 'string')
+                parameters = parameters.replace(/^\?/, '').split('&');
 
             if(parameters instanceof Array) {
                 for(let key of parameters)
@@ -426,10 +432,25 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             enumerable: true,
             configurable: false,
         },
+
+        // Add a tooltip
+        // Returns `this`
+        setTooltip: {
+            value: function(message, fineTuning) {
+                new Tooltip(this, message, fineTuning);
+
+                return this;
+            },
+
+            writable: false,
+            enumerable: true,
+            configurable: false,
+        },
     });
 
     element.and?.bind?.(element);
     element.with?.bind?.(element);
+    element.setTooltip?.bind?.(element);
 
     return element;
 }
@@ -1282,7 +1303,7 @@ Document.prototype.get ??= function get(property) {
  * @simply Element..getElementByText(searchText:string|regexp|array, flags:string?) → Element | null
  *
  * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
- * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>u</strong> → Unicode
+ * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>g</strong> → global (top-most shared parent); <strong>u</strong> → Unicode
  *
  * @return {Element}
  */
@@ -1293,7 +1314,7 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
         UNICODE_FLAG = false;
 
     if(!(searchText?.length ?? searchText?.source))
-        throw 'Can not search for empty text';
+        throw 'Cannot search for empty text';
 
     let container = this,
         owner = null,
@@ -1434,21 +1455,21 @@ Element.prototype.getElementByText ??= function getElementByText(searchText, fla
 };
 
 /** Finds and returns multiple elements based on their textual content. A shortcut for <b><code>document.getElementByText</code></b>.
- * @simply Element..getElementsByInnerText(searchText:string|regexp|array, flags:string?) → [Element...]
+ * @simply Element..getAllElementsByText(searchText:string|regexp|array, flags:string?) → [Element...]
  *
  * @param {(string|regexp|array<(string|regexp)>)} searchText   The text to search for
- * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>u</strong> → Unicode
+ * @param {string} [flags = ""]                                 Optional flags to be added to the search: <strong>i</strong> → case-insensitive; <strong>g</strong> → global (top-most shared parent); <strong>u</strong> → Unicode
  *
  * @returns {Element[]}
  */
-Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(searchText, flags = '') {
+Element.prototype.getAllElementsByText ??= function getAllElementsByText(searchText, flags = '') {
     let searchType = (searchText instanceof RegExp? 'regexp': searchText instanceof Array? 'array': typeof searchText),
         IGNORE_CASE = false,
         GLOBAL_FLAG = false,
         UNICODE_FLAG = false;
 
     if(nullish(searchText?.length ?? searchText?.source))
-        throw 'Can not search for empty text';
+        throw 'Cannot search for empty text';
 
     let containers = [];
 
@@ -1462,7 +1483,7 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
     switch(searchType) {
         case 'array': {
             for(let search of searchText)
-                containers.push(...this.getElementsByInnerText(search, flags));
+                containers.push(...this.getAllElementsByText(search, flags));
         } break;
 
         case 'regexp': {
@@ -1559,6 +1580,14 @@ Element.prototype.getElementsByInnerText ??= function getElementsByInnerText(sea
     // Element..getPath(length:number?<int>) → string
 Element.prototype.getPath ??= function getPath(length = 0) {
     return getDOMPath(this, length);
+};
+
+// Sets the tooltip of an element
+    // Element..setTooltip(message:string, fineTuning:object) → this
+Element.prototype.setTooltip ??= function setTooltip(message, fineTuning) {
+    new Tooltip(this, message, fineTuning);
+
+    return this;
 };
 
 // https://stackoverflow.com/a/41698614/4211612
@@ -2581,10 +2610,8 @@ class Recording {
         if(Recording.STREAMABLES.missing(from?.constructor?.name) && nullish(from?.captureStream))
             throw `Recording.proxy(from:Element<Streamable>, options:Object?) must be called on a streamable element: <video>, <audio>, or <canvas>; not <${ from?.constructor?.name }>`;
 
-        let height = from.videoHeight || from.height || from.clientHeight;
-        let width = from.videoWidth || from.width || from.clientWidth;
-
-        let to = options?.canvas ?? furnish(`canvas[@aTarget="${ Recording.#videoCaptureID }__${ (+new Date).toString(36) }"]`, { height, width });
+        let { min, max } = Math;
+        let to = options?.canvas ?? furnish(`canvas[@aTarget="${ Recording.#videoCaptureID }__${ (+new Date).toString(36) }"]`, { height: max(from.videoHeight, from.height, from.clientHeight), width: max(from.videoWidth, from.width, from.clientWidth) });
         let context = to.getContext('2d');
 
         if(Recording.STREAMABLES.missing(to.constructor.name) && nullish(options?.captureStream))
@@ -2598,8 +2625,8 @@ class Recording {
         update(from);
 
         from.addEventListener('resize', event => {
-            to.height = from.videoHeight || from.height || from.clientHeight;
-            to.width = from.videoWidth || from.width || from.clientWidth;
+            to.height = max(from.videoHeight, from.height, from.clientHeight);
+            to.width = max(from.videoWidth, from.width, from.clientWidth);
         });
 
         // document.body.append(to); // The canvas doesn't need to actually be on the page

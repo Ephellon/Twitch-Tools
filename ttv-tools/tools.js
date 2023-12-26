@@ -716,7 +716,7 @@ class Card {
         [...container.children].forEach(child => child.remove());
 
         // Furnish the card
-        let iconElement = f('img.emote-card__big-emote.tt-image[@testSelector=big-emote]', { ...icon });
+        let iconElement = f('img.emote-card__big-emote.tt-image[@testSelector=big-emote]', { ...icon }).setTooltip(icon.alt);
 
         card.append(
             f('.emote-card.tt-border-b.tt-border-l.tt-border-r.tt-border-radius-large.tt-border-t.tt-elevation-1[data-a-target="emote-card"]', { style: 'animation:1 fade-in .6s' },
@@ -902,13 +902,16 @@ class Card {
     // new ContextMenu({ options:array, fineTuning:object? }) → Element<ContextMenu>
     // options = { text:string, icon:string, shortcut:string, favicon:string<HTML|SVG> }
 class ContextMenu {
-    static #RootCloseOnComplete = $('#root').addEventListener('mouseup', event => {
-        let { path, button = -1 } = event,
-            menu = $('.tt-context-menu');
+    static #RootCloseOnComplete = when.defined(() => $('#root'))
+        .then(root => root
+            .addEventListener('mouseup', event => {
+                let { path, button = -1 } = event,
+                    menu = $('.tt-context-menu');
 
-        if(defined(menu))
-            menu.remove();
-    });
+                if(defined(menu))
+                    menu.remove();
+            })
+        );
 
     constructor({ inherit = {}, options = [], fineTuning = {} }) {
         fineTuning.top ??= '5rem';
@@ -6089,22 +6092,45 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.claim_loot = () => {
         when.defined(() => $('.prime-offers button')).then(prime_btn => {
+            let handled = 0;
             prime_btn.click();
 
-            // Give the loots time to load
-            when.sated(() => $.all('[href*="gaming.amazon.com"i]')).then(hrefs => {
-                wait(100 *
-                    $.all('button[data-a-target^="prime-claim"i], [class*="prime-offer"i][class*="dismiss"i] button')
-                        .map((offer, index, list) => {
-                            // Give the loots time to be clicked
-                            wait(30 * index, offer).then(offer => offer.click());
-                        })
-                    .length
-                ).finally(() => prime_btn.click());
+            // There's at least one offer...
+            when.sated(() => $.all('[class*="prime"i][class*="offer"i][class*="header"i] ~ *'), 250).then(offerContainers => {
+                for(let container of offerContainers)
+                    when(container => {
+                        let offerClaimLink = $('[data-a-target*="prime"i][data-a-target*="claim"i]', container);
+                        let offerClaimButton = $('button[data-a-target*="prime-claim"i]', container);
+                        let offerDismissButton = $('[class*="prime-offer"i][class*="dismiss"i] button', container);
+
+                        if(nullish(offerClaimLink ?? offerClaimButton ?? offerDismissButton))
+                            return false;
+
+                        let gameTitle = $('[data-a-target*="prime-offer"i][data-a-target*="game"i][data-a-target*="title"i]', container)?.innerText?.trim();
+                        let offerTitle = $('[data-a-target*="prime-offer"i][data-a-target*="title"i]:not([data-a-target*="game"i])', container)?.innerText?.trim();
+                        let offerImage = $('img', container)?.src;
+                        let offerDescription = $('[class*="prime-offer"i][class*="description"i]', container)?.innerText?.trim();
+                        let offerPublisher = $('[class*="prime-offer"i][class*="publisher"i]', container)?.innerText?.trim();
+
+                        NOTICE(`Claiming Prime Loot Offer:`, { title: offerTitle, game: gameTitle, description: offerDescription, publisher: offerPublisher, type: (offerClaimButton? 'BUTTON_CLAIM': 'LINK_CLAIM') });
+
+                        if(defined(offerClaimButton))
+                            offerClaimButton.click();
+                        else if(defined(offerClaimLink))
+                            offerDismissButton?.click();
+
+                        return true;
+                    }, 100, container).then(() => {
+                        if(handled >= offerContainers.length)
+                            prime_btn.click();
+                    });
             });
+
+            // There are no offers...
+            when.defined(() => $('[class*="prime"i][class*="empty"i]')).then(() => prime_btn.click());
         });
     };
-    Timers.claim_loot = -500;
+    Timers.claim_loot = -1_000;
 
     __ClaimLoot__:
     if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_loot)) {
@@ -6190,7 +6216,73 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let DISPLAY_BUY_LATER_BUTTON,
-        REWARDS_ON_COOLDOWN = new Map;
+        REWARDS_ON_COOLDOWN = new Map,
+        TEXT_BOX_ALREADY_FOCUSED;
+
+    async function RECORD_PURCHASE({ id, sole, title, element, message, subject, mentions }) {
+        element = await element;
+
+        if(!(true
+            // The subject matches
+            && subject.equals('coin')
+
+            // And...
+            && (false
+                // The message is from the user
+                || message.contains(USERNAME)
+
+                // The message is from the user (for embedded messages)
+                || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
+            )
+        )) return;
+
+        let [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.mutilate().contains(reward.title.mutilate()));
+
+        if(nullish(item))
+            return;
+
+        // The user successfully purchased the item...
+        AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
+        Cache.save({ AutoClaimRewards });
+
+        // Begin recording...
+        let video = $.all('video').pop();
+        let time = parseInt(Settings.video_clips__trophy_length) * 1000;
+        let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
+
+        video.dataset.trophyId = title;
+
+        let recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+
+        // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
+        recording
+            .then(({ target }) => target.recording.save())
+            .then(link => alert.silent(`
+                <video controller controls
+                    title="Trophy Clip Saved - ${ link.download }"
+                    src="${ link.href }" style="max-width:-webkit-fill-available"
+                ></video>
+                `)
+            );
+
+        confirm.timed(`
+            <input hidden controller
+                icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
+                okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
+                deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
+            />
+            ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ cost }`
+        , time)
+            .then(answer => {
+                if(answer === false)
+                    throw `Trophy clip discarded!`;
+                recording.stop();
+            })
+            .catch(error => {
+                alert.silent(error);
+                recording.controller.abort(error);
+            });
+    };
 
     Handlers.claim_reward = () => {
         Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], async({ AutoClaimRewards, AutoClaimAnswers }) => {
@@ -6219,6 +6311,8 @@ let Initialize = async(START_OVER = false) => {
 
                                         // LOG(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
+                                        if(TEXT_BOX_ALREADY_FOCUSED)
+                                            return;
                                         if(coin < cost)
                                             return;
                                         if($.defined('#tt_saved_input_for_redemption'))
@@ -6228,8 +6322,35 @@ let Initialize = async(START_OVER = false) => {
 
                                         LOG(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
 
-                                        if(needsInput)
-                                            prompt.silent(`<div id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..."></div>${ title }`, AutoClaimAnswers[sole][id]);
+                                        if(needsInput) {
+                                            prompt
+                                                .silent(`<div id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..."></div>${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy)? 'This redemption will be recorded</strong>': '' }`, AutoClaimAnswers[sole][id])
+                                                .then(() => {
+                                                    $('[data-a-target="chat-input"i]')?.modStyle(`background:!delete`);
+                                                });
+
+                                            when.defined(() => $('[data-a-target="chat-input"i]')).then(inputBox => {
+                                                inputBox.addEventListener('keydown', ({ key = '', altKey, ctrlKey, metaKey, shiftKey, currentTarget }) => {
+                                                    if(!(ctrlKey || metaKey || altKey || shiftKey) && key.equals('Enter')) {
+                                                        $('[data-a-target="chat-input"i]')?.modStyle(`background:!delete`);
+                                                        TEXT_BOX_ALREADY_FOCUSED = false;
+
+                                                        // The user successfully purchased the item...
+                                                        if(true
+                                                            && parseBool(Settings.video_clips__trophy)
+                                                            && (currentTarget.value || currentTarget.textContent).length > 0
+                                                        )
+                                                            SetQuality('auto').then(() => {
+                                                                Chat.onbullet = ({ element, message, subject, mentions }) => RECORD_PURCHASE({ id, sole, title, element, message, subject, mentions });
+                                                            });
+                                                    }
+                                                });
+                                                inputBox.modStyle(`background:#387aff`);
+                                                inputBox.focus();
+
+                                                TEXT_BOX_ALREADY_FOCUSED = true;
+                                            });
+                                        }
 
                                         // Purchase and remove
                                         await when.defined(() => $('.rewards-list')?.getElementByText(title, 'i')?.closest('.reward-list-item')?.querySelector('button'))
@@ -6253,70 +6374,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 .missing(ID => ID.contains(id))
                                                         )   // Purchase the item, then begin recording
                                                             SetQuality('auto').then(() => {
-                                                                Chat.onbullet = async({ element, message, subject, mentions }) => {
-                                                                    element = await element;
-
-                                                                    if(!(true
-                                                                        // The subject matches
-                                                                        && subject.equals('coin')
-
-                                                                        // And...
-                                                                        && (false
-                                                                            // The message is from the user
-                                                                            || message.contains(USERNAME)
-
-                                                                            // The message is from the user (for embedded messages)
-                                                                            || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
-                                                                        )
-                                                                    )) return;
-
-                                                                    let [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.mutilate().contains(reward.title.mutilate()));
-
-                                                                    if(nullish(item))
-                                                                        return;
-
-                                                                    // The user successfully purchased the item...
-                                                                    AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
-                                                                    Cache.save({ AutoClaimRewards });
-
-                                                                    // Begin recording...
-                                                                    let video = $.all('video').pop();
-                                                                    let time = parseInt(Settings.video_clips__trophy_length) * 1000;
-                                                                    let name = [STREAMER.name, `${ title } (${ (new Date).toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }).replace(GetFileSystem().allIllegalFilenameCharacters, '-') })`].join(' - ');
-
-                                                                    video.dataset.trophyId = title;
-
-                                                                    let recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
-
-                                                                    // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
-                                                                    recording
-                                                                        .then(({ target }) => target.recording.save())
-                                                                        .then(link => alert.silent(`
-                                                                            <video controller controls
-                                                                                title="Trophy Clip Saved - ${ link.download }"
-                                                                                src="${ link.href }" style="max-width:-webkit-fill-available"
-                                                                            ></video>
-                                                                            `)
-                                                                        );
-
-                                                                    confirm.timed(`
-                                                                        <input hidden controller
-                                                                            icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
-                                                                            okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
-                                                                            deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
-                                                                        />
-                                                                        ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ cost }`
-                                                                    , time)
-                                                                        .then(answer => {
-                                                                            if(answer === false)
-                                                                                throw `Trophy clip discarded!`;
-                                                                            recording.stop();
-                                                                        })
-                                                                        .catch(error => {
-                                                                            alert.silent(error);
-                                                                            recording.controller.abort(error);
-                                                                        });
-                                                                };
+                                                                Chat.onbullet = ({ element, message, subject, mentions }) => RECORD_PURCHASE({ id, sole, title, element, message, subject, mentions });
                                                             }).finally(() => {
                                                                 // Purchase the item
                                                                 purchaseButton.click();
@@ -6786,7 +6844,7 @@ let Initialize = async(START_OVER = false) => {
         if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
             return;
         else if(nullish(search))
-            url = parseURL(url);
+            url = parseURL(url).addSearch(location.search, true);
         else
             url = parseURL(url).addSearch(search, true);
 
@@ -7269,7 +7327,7 @@ let Initialize = async(START_OVER = false) => {
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
                                 live = await new Search(name, 'channel', 'status.live'),
-                                [since] = toTimeString(abs(+now - +time), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
+                                [since] = toTimeString((live && time < now? now - time: abs(now - time)), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
                             let _name = name.toLowerCase();
@@ -7346,7 +7404,7 @@ let Initialize = async(START_OVER = false) => {
                                                                             f.span(
                                                                                 f(`strong`, { innerHTML: [name, game].filter(s => s.length).join(' &mdash; ') }),
                                                                                 f(`span.tt-time-elapsed[start=${ time.toJSON() }]`).with(hour),
-                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em]`, { title: desc }).with(desc),
+                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em]`).setTooltip(desc, { from: 'top' }).with(desc),
                                                                             )
                                                                         )
                                                                     )
@@ -7407,7 +7465,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         },
                                                                     )
                                                                 )
-                                                            )
+                                                            ).setTooltip(`Remove ${ name } from Live Reminders`, { from: 'top' })
                                                         )
                                                     ),
                                                     f('.persistent-notification__popout.tt-absolute.tt-pd-l-1', { style: `top:2.5rem; right:0` },
@@ -7431,7 +7489,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         },
                                                                     )
                                                                 )
-                                                            )
+                                                            ).setTooltip(`Send to MiniPlayer`, { from: 'top' })
                                                         )
                                                     ),
                                                     (
@@ -7493,7 +7551,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                 },
                                                                             )
                                                                         )
-                                                                    )
+                                                                    ).setTooltip(`${ ['Start', 'Stop'][+DVR_ON] } recording ${ name }'${ /s$/.test(name)? '': 's' } streams`, { from: 'top' })
                                                                 )
                                                             )
                                                         // DVR is NOT enabled, so don't show anything here...
@@ -7507,7 +7565,7 @@ let Initialize = async(START_OVER = false) => {
                             );
 
                             let lastOnline = $.all('.tt-reminder[live="true"i]', body).pop(),
-                                firstOffline = $('.tt-reminder[live="false"i]:first-child', body);
+                                [firstOffline] = $.all('.tt-reminder[live="false"i]', body);
 
                             if(defined(firstOffline) && live)
                                 firstOffline.insertAdjacentElement('beforebegin', container);
@@ -10881,7 +10939,7 @@ let Initialize = async(START_OVER = false) => {
             let frame = (null
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
-                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ (STREAMER.name == name) }&allow=greedy_raiding`,
+                    src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 })
@@ -12254,6 +12312,38 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('phone_number');
     }
 
+    /***
+     *       _____                                        _____  _                          _______                  _       _   _
+     *      / ____|                                      |  __ \| |                        |__   __|                | |     | | (_)
+     *     | |     ___  _ __ ___  _ __ ___   ___  _ __   | |__) | |__  _ __ __ _ ___  ___     | |_ __ __ _ _ __  ___| | __ _| |_ _  ___  _ __  ___
+     *     | |    / _ \| '_ ` _ \| '_ ` _ \ / _ \| '_ \  |  ___/| '_ \| '__/ _` / __|/ _ \    | | '__/ _` | '_ \/ __| |/ _` | __| |/ _ \| '_ \/ __|
+     *     | |___| (_) | | | | | | | | | | | (_) | | | | | |    | | | | | | (_| \__ \  __/    | | | | (_| | | | \__ \ | (_| | |_| | (_) | | | \__ \
+     *      \_____\___/|_| |_| |_|_| |_| |_|\___/|_| |_| |_|    |_| |_|_|  \__,_|___/\___|    |_|_|  \__,_|_| |_|___/_|\__,_|\__|_|\___/|_| |_|___/
+     *
+     *
+     */
+    Handlers.common_phrase_translations = () => {
+        let translations = [
+            [/(Twitch|T.?T.?V|The)(.?s)?\s+(T.?o.?S|Terms(?:.+of.+Service)?)/i, [`<a href="/legal/terms-of-service/" target="_blank">$&</a>`, e => defined(e.closest('[href]'))]], // Twitch's ToS
+        ];
+
+        for(let [phrases, [replacement, ignoreIf]] of translations)
+            for(let element of $.getAllElementsByText(phrases)) {
+                if(element != element.getElementByText(phrases))
+                    continue; // Not lowest child
+                if(ignoreIf(element))
+                    continue; // Already within a link...
+
+                element.innerHTML = element.innerHTML.replace(phrases, replacement);
+            }
+    };
+    Timers.common_phrase_translations = 250;
+
+    __CommonPhraseTranslations__:
+    if(true) {
+        RegisterJob('common_phrase_translations');
+    }
+
     /*** View Mode
      *     __      ___                 __  __           _
      *     \ \    / (_)               |  \/  |         | |
@@ -12933,17 +13023,17 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         // Update the points (every 30s)
-        if(++pointWatcherCounter % 120)
+        if(!(pointWatcherCounter++ % 30))
             Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
                 ChannelPoints ??= {};
 
                 let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
                     allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
-                    balance = STREAMER.coin;
+                    balance = STREAMER.coin || 0;
 
                 hasPointsEnabled ||= defined(balance);
 
-                amount = (balance?.textContent ?? (hasPointsEnabled? amount: '&#128683;'));
+                amount = (balance || (hasPointsEnabled? amount: '&#128683;'));
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
                 notEarned = (
@@ -13362,6 +13452,8 @@ let Initialize = async(START_OVER = false) => {
         THIS_POLL = STREAMER.poll,
         THAT_POLL = 0,
         GET_TOP_100_INTERVAL,
+        TOP_100_GAME = STREAMER.game,
+        IN_TOP_100,
         ALL_WATCHTIME_COUNTS = {},
         ALL_WATCHTIME_VALUES = {};
 
@@ -13462,6 +13554,7 @@ let Initialize = async(START_OVER = false) => {
                             let value = ALL_WATCHTIME_VALUES[key] >>= 0;
 
                             if(value != val) {
+                                ALL_WATCHTIME_COUNTS[key] = 0;
                                 ALL_WATCHTIME_VALUES[key] = val;
                                 continue;
                             }
@@ -13548,7 +13641,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let container = $('[data-a-target*="viewer"i][data-a-target*="count"i]').parentElement;
 
-                if(defined(place))
+                if(IN_TOP_100 = defined(place))
                     new Tooltip(container, `Top 100! #${ place } for <ins>${ game }</ins>`)
                         .setAttribute('rainbow-border', true);
                 else
@@ -13568,18 +13661,22 @@ let Initialize = async(START_OVER = false) => {
 
             let updt = () => THAT_POLL = THIS_POLL;
 
-            // 30% (600+) change in polls
-            if(THIS_POLL > 2000 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .30)
+            // The game has changed
+            if(TOP_100_GAME.unlike(STREAMER.game))
+                return (TOP_100_GAME = STREAMER.game) && getTop100(updt);
+            // 15% change in polls
+            if(THIS_POLL > 5000 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .15)
                 getTop100(updt); // for gradual changes
-            // 25% (50+) change in polls
-            if(THIS_POLL > 200 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .25)
+            // 10% change in polls
+            if(THIS_POLL > 500 && THIS_POLL <= 5000 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .10)
                 getTop100(updt); // for gradual changes
-            // 20% (4+) change in polls
-            else if(THIS_POLL > 20 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .20)
+            // 5% change in polls
+            else if(THIS_POLL > 50 && THIS_POLL <= 500 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .05)
                 getTop100(updt); // for gradual changes
             // Any change in polls
-            else if(THIS_POLL > 2 && THIS_POLL != THAT_POLL)
-                getTop100(updt); // for gradual changes
+            else if(THIS_POLL <= 50 && THIS_POLL != THAT_POLL)
+                if(IN_TOP_100 || nullish(IN_TOP_100))
+                    getTop100(updt); // for gradual changes
 
             // THAT_POLL = THIS_POLL; // for spikes
         }, 5_000);
@@ -14134,17 +14231,19 @@ let Initialize = async(START_OVER = false) => {
 
                     let { name } = STREAMER,
                         controls = true,
-                        muted = true,
                         iframe;
 
-                    container.append(iframe =
+                    $('video').muted = true;
+
+                    container.insertAdjacentElement('afterbegin', iframe =
                         furnish(`iframe#tt-embedded-video`, {
                             allow: 'autoplay',
                             src: parseURL(`https://player.twitch.tv/`).addSearch({
                                 channel: name,
                                 parent: 'twitch.tv',
+                                [video.muted? 'muted': 'volume']: video[video.muted? 'muted': 'volume'],
 
-                                controls, muted,
+                                controls,
                             }).href,
 
                             style: `border: 1px solid var(--color-warn); position:absolute; top:0; z-index:99999;`,
@@ -14152,35 +14251,29 @@ let Initialize = async(START_OVER = false) => {
                             height: '100%',
                             width: '100%',
 
-                            onload: event => {
+                            onload(event) {
                                 when.defined(() => {
                                     let doc = $('#tt-embedded-video')?.contentDocument;
 
                                     if(nullish(doc))
-                                        return /* No document */;
+                                        return /* No iframe document */;
 
                                     let video = $('video', doc);
 
                                     if(nullish(video))
-                                        return /* No video */;
+                                        return /* No iframe video */;
 
                                     if((video.currentTime || 0) <= 0)
-                                        return /* Video not loading */;
+                                        return /* iframe video not loading */;
 
                                     return VIDEO_OVERRIDE = true;
                                 }, 2_5_0);
                             },
-
-                            onmouseup: event => {
-                                ReloadPage(true);
-                            },
                         })
                     );
 
-                    $('[data-a-player-state]')?.addEventListener?.('mouseup', ({ button = -1 }) => !button && ReloadPage());
                     $('video', container).modStyle(`display:none`);
-
-                    new Tooltip($('[data-a-player-state]'), `${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error. Click to reload`);
+                    $('[data-a-player-state]')?.setTooltip(`${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error`);
                 } else {
                     WARN(`Attempting to pause/play the video`);
 
@@ -14724,7 +14817,7 @@ let Initialize = async(START_OVER = false) => {
             });
 
         // Display the enabled keyboard shortcuts
-        let [help] = $.body.getElementsByInnerText('space/k', 'i').filter(element => element.tagName.equals('TBODY'));
+        let [help] = $.body.getAllElementsByText('space/k', 'i').filter(element => element.tagName.equals('TBODY'));
 
         let f = furnish;
         if(defined(help) && $.nullish('.tt-extra-keyboard-shortcuts', help))
@@ -15919,7 +16012,7 @@ if(top == window) {
                     if(nullish(main))
                         return;
 
-                    let articles = main.getElementsByInnerText(/(\d{4}-\d{2}-\d{2})/)
+                    let articles = main.getAllElementsByText(/(\d{4}-\d{2}-\d{2})/)
                         .filter(({ tagName }) => /^h\d$/i.test(tagName))
                         .map(header => {
                             let content = [];

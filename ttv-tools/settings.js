@@ -2131,8 +2131,8 @@ $.all('#search').map(input => {
         if(output.dataset.empty = query.length < 3)
             return;
 
-        let exact = $.body.getElementsByInnerText(query).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
-        let partial = $.body.getElementsByInnerText(RegExp(
+        let exact = $.body.getAllElementsByText(query).slice(0, 10).map(result => result.closest('section, [opt]')?.querySelector('.title'));
+        let partial = $.body.getAllElementsByText(RegExp(
             query.replace(/(\W)/g, '\\$1').replace(/[a-z]/g, ($0, $$, $_) => ({
                 'q': '[12qwas]',
                 'w': '[123qweasd]',

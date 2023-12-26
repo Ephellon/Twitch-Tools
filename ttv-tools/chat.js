@@ -1373,7 +1373,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     filter_rules = filter_rules.join(',');
 
                     [
-                        ...$.getElementsByInnerText(emote).filter(div => div.classList.contains('text-fragment')),
+                        ...$.getAllElementsByText(emote).filter(div => div.classList.contains('text-fragment')),
                         ...$.all(`img[alt="${ emote }"i]`),
                     ].map(div => div.closest('[data-a-target="chat-line-message"i]').remove());
 
@@ -1614,7 +1614,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     phrase_rules = phrase_rules.join(',');
 
                     [
-                        ...$.getElementsByInnerText(emote).filter(div => div.classList.contains('text-fragment')),
+                        ...$.getAllElementsByText(emote).filter(div => div.classList.contains('text-fragment')),
                         ...$.all(`img[alt="${ emote }"i]`),
                     ].map(div => div.closest('[data-a-target="chat-line-message"i]').setAttribute('tt-light', true));
 
@@ -2064,7 +2064,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             CHAT_CARDIFYING_TIMERS.set(href, +new Date);
 
             /*await*/ fetchURL.idempotent(href)
-                .then(response => response.text())
+                .then(response => response.text?.() ?? `<!doctype html><html><head></head></html>`)
                 .then(DOMParser.stripBody)
                 .then(html => LINK_PARSER.parseFromString(html, 'text/html'))
                 .then(DOM => {
@@ -2113,11 +2113,11 @@ let Chat__Initialize = async(START_OVER = false) => {
                                         f('.tt-full-width.tt-pd-l-1').with(
                                             // Title
                                             f('.chat-card__title.tt-ellipsis').with(
-                                                f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').with(title)
+                                                f('p.tt-strong.tt-ellipsis[@testSelector=chat-card-title]').html(title)
                                             ),
                                             // Subtitle
                                             f('.tt-ellipsis').with(
-                                                f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').with(description)
+                                                f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').html(description)
                                             ),
                                         )
                                     )
