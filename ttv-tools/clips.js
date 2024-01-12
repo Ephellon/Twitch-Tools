@@ -18,13 +18,11 @@
 
 ;
 
-let here = parseURL(location);
+let here = parseURL(window.location.href);
+
+Runtime.sendMessage({ action: 'FETCH_SHARED_DATA' }, data => Object.assign(window, data));
 
 let {
-    USERNAME,
-    LANGUAGE,
-    THEME,
-
     PATHNAME = here.pathname,
     STREAMER = ({
         get href() { return `https://www.twitch.tv/${ STREAMER.name }` },
@@ -65,7 +63,7 @@ let Clips__Initialize = async(START_OVER = false) => {
             let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
         }
     }
@@ -91,41 +89,61 @@ let Clips__Initialize = async(START_OVER = false) => {
      *                                              |_|
      */
     Handlers.save_ttv_clips = () => {
-        let { src } = $('video'),
-            [streamerInfo,, clipInfo] = $.all('[class*="clip"i][class*="info"i]');
-        let [views, meta] = clipInfo.children;
-        let [title, data] = meta.children;
-        let [timestamp, author] = $.queryBy('span, a', data);
+        let EDITOR_MODE = location.pathname.equals('/create');
+        let { src } = $('video');
+        let title, author, original, textContainer, placeBefore, carryQuery;
 
-        views = parseInt(views.textContent.replace(/\D+/g, ''));
-        title = title.innerText;
-        timestamp = -parseTime(timestamp.innerText);
-        author = author.innerText;
+        if(EDITOR_MODE) {
+            title = new ClipName(2);
+            author = USERNAME;
+
+            original = $(carryQuery = '[data-a-target*="label"i][data-a-target*="text"i]').closest('[style]');
+            placeBefore = original;
+
+            $notice('Clip editor mode.');
+        } else {
+            let [streamerInfo,, clipInfo] = $.all('[class*="clip"i][class*="info"i]');
+            let [views, meta] = clipInfo.children;
+            let [clipTitle, data] = meta.children;
+            let [timestamp, clipAuthor] = $.queryBy('span, a', data);
+
+            views = parseInt(views.textContent.replace(/\D+/g, ''));
+            title = clipTitle.innerText;
+            timestamp = -parseTime(timestamp.innerText);
+            author = clipAuthor.innerText;
+
+            original = $('[class*="social"i][class*="button"i]:is([class*="copy"i], [class*="clip"i])').closest('[class*="social"i]:not(button, [class*="icon"i])').parentElement;
+            placeBefore = parent.lastElementChild;
+            textContainer = $('.tw-tooltip', container);
+
+            $notice('Clip data!', { src, views, title, timestamp, author, filename });
+        }
 
         let { filename } = parseURL(src);
         let [ext, ...name] = filename.split('.').reverse();
         name = name.join('.');
 
-        NOTICE('Clip data!', { src, views, title, timestamp, author, filename });
-
-        let original = $('[class*="social"i][class*="button"i]:is([class*="copy"i], [class*="clip"i])').closest('[class*="social"i]:not(button, [class*="icon"i])').parentElement;
         let parent = original.parentElement;
         let container = original.cloneNode(true);
         let button = $('button', container);
-        let tooltip = $('.tw-tooltip', container);
         let id = 'tt_download_link';
 
         for(let child of $.all('[class*="clip"i]', container))
             for(let key of child.classList)
                 child.classList.replace(key, key.replaceAll('clip', 'download'));
 
-        button.parentElement.setAttribute('aria-describedby', tooltip.id = id);
+        textContainer ??= $(carryQuery, container);
 
-        tooltip.innerText = `Download this clip`;
+        button.parentElement.setAttribute('aria-describedby', textContainer.id = id);
 
-        $('figure', button).replaceWith(furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title }, Glyphs.utf8.download));
+        textContainer.innerText = `Download this clip`;
 
-        parent.insertBefore(container, parent.lastElementChild);
+        if(EDITOR_MODE)
+            textContainer.innerHTML = furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title, style: `color:inherit!important` }, 'Download').outerHTML;
+        else
+            $('figure', button)?.replaceWith(furnish(`a#tt-download__${ author.replace(/\W+/g, '') }__${ title.replace(/\W+/g, '_') }`, { href: src, download: title }, Glyphs.utf8.download));
+
+        parent.insertBefore(container, placeBefore);
     };
     Timers.save_ttv_clips = -500;
 
@@ -181,7 +199,7 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
     let banned = STREAMER?.veto || !!$.all('[class*="banned"i]').length;
 
     if([banned].contains(true)) {
-        WARN('[NON_FATAL] Clip container unavailable. Reason:', { banned });
+        $warn('[NON_FATAL] Clip container unavailable. Reason:', { banned });
 
         await Settings.get();
 
@@ -199,7 +217,7 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
-        LOG(`Clip container ready → ${ location.href }`);
+        $log(`Clip container ready → ${ location.href }`);
 
         await Settings.get();
 
@@ -261,7 +279,7 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
                                 if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
                                     return;
 
-                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+                                // $log(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
 
                                 container.setAttribute('tt-svg-label', conversions[glyph]?.pop());
                             });

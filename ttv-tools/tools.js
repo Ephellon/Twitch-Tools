@@ -21,7 +21,7 @@
 let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Messages = top.Messages = new Map(),
     PostOffice = top.PostOffice = new Map(),
-    UserMenuToggleButton,
+    UserMenuToggleButton, SignUpBanner,
     // These won't change (often)
     ACTIVITY,
     USERNAME,
@@ -37,29 +37,65 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
     NORMAL_MODE = !SPECIAL_MODE,
     // Hmm...
     JUMPED_FRAMES = false,
-    JUMP_DATA = {};
+    JUMP_DATA = {},
+    STASH_SAVED = false;
 
 top.WINDOW_STATE = document.readyState;
+top.TWITCH_INTEGRITY_FAIL = false;
 
 Cache.large.load('JumpedData', ({ JumpedData }) => Object.assign(JUMP_DATA, JumpedData ?? {}));
 
 // Populate the username field by quickly showing the menu
-when.defined(() => UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]'))
+when.defined(() => {
+    SignUpBanner ??= $('[data-test-target*="upsell"i][data-test-target*="banner"i]');
+    return UserMenuToggleButton ??= $('[data-a-target="user-menu-toggle"i]');
+})
     .then(() => {
-        UserMenuToggleButton.click();
-        ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent ?? '';
-        USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? `User_Not_Logged_In_${ +new Date }`;
-        THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
-        ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
+        // User is logged in. A username is available
+        if(nullish(SignUpBanner)) {
+            UserMenuToggleButton.click();
+            ACTIVITY = window.ACTIVITY = $('[data-a-target="presence-text"i]')?.textContent ?? '';
+            USERNAME = window.USERNAME = $('[data-a-target="user-display-name"i]')?.textContent ?? `User_Not_Logged_In_${ +new Date }`;
+            THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+            ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
 
-        $('[data-a-target^="language"i]')?.click();
-        LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
-        UserMenuToggleButton.click();
+            $('[data-a-target^="language"i]')?.click();
+            LITERATURE = window.LITERATURE = $('[data-language] svg')?.closest('button')?.dataset?.language ?? '';
+            UserMenuToggleButton.click();
+        } else {
+            ACTIVITY = window.ACTIVITY = '';
+            USERNAME = window.USERNAME = `User_Not_Logged_In_${ +new Date }`;
+            THEME = window.THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
+            ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
+        }
+
+        Runtime.sendMessage({ action: 'POST_SHARED_DATA', data: { USERNAME, THEME, ANTITHEME, ACTIVITY } });
     });
 
 top.onpagehide = ({ persisted }) => {
     top.WINDOW_STATE = (persisted? document.readyState: 'unloading');
 };
+
+// Twitch-wide errors
+when(() => top.TWITCH_INTEGRITY_FAIL, 5_000).then(() => {
+    let error = `<div hidden controller title="Twitch Integrity Fail">${ (new Date).toJSON() }</div>
+    Unable to perform some Twitch-wide actions right now.
+
+    <br><br>
+
+    This issue typically resolves itself within 48 hours.
+
+    <br><br>
+
+    <strong>Do not</strong> log out. You <strong>will not</strong> be able to log back in.
+
+    <br><br>
+
+    It is <strong>not</strong> recommended you follow the <a href="//help.twitch.tv/s/article/supported-browsers#troubleshooting" target=_blank>troubleshooting steps</a> but, you are free to do so if you wish.
+    `;
+
+    alert.silent(error);
+});
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
  *       _____      _                  __                      _       _ _ __
@@ -164,15 +200,12 @@ class Balloon {
                                                         output = $(`#tt-notification-counter-output--${ uuid }`),
                                                         length = parseInt(counter?.getAttribute('length'));
 
-                                                    if(nullish(counter) || nullish(output))
+                                                    if(nullish(counter) || nullish(output) || nullish(length))
                                                         return;
-
-                                                    let visibility = counter.getAttribute('style').replace(/[^]+:/, ''),
-                                                        interval = parseInt(output.getAttribute('interval-id'));
 
                                                     output.textContent = length;
 
-                                                    if(isNaN(length) || length > 0) {
+                                                    if(length > 0) {
                                                         counter.modStyle(`visibility:unset; font-size:75%`);
                                                     } else {
                                                         counter.modStyle(`visibility:hidden`);
@@ -1161,7 +1194,7 @@ class Search {
                         return id;
                     })
                     .catch(error => {
-                        WARN(error);
+                        $warn(error);
 
                         Settings.remove('oauthToken', ReloadPage);
                     });
@@ -1179,7 +1212,7 @@ class Search {
                         return login;
                     })
                     .catch(error => {
-                        WARN(error);
+                        $warn(error);
 
                         Settings.remove('oauthToken', ReloadPage);
                     });
@@ -1252,7 +1285,7 @@ class Search {
                         });
                     })
                     .catch(error => {
-                        WARN(error);
+                        $warn(error);
 
                         return STREAMER?.jump?.[name];
                     });
@@ -1409,7 +1442,7 @@ class Search {
                 try {
                     request.setRequestHeader(key, query.headers[key]);
                 } catch(error) {
-                    WARN(error);
+                    $warn(error);
                 }
             });
 
@@ -1566,9 +1599,15 @@ class Search {
     }
 }
 
-function Chat(user = '', message = '') {
-    if(!user.length && !message.length)
+function Chat(message = '', ...mentions) {
+    if(!message.length)
         return Chat.get();
+
+    let finalMsg = [message.trim()];
+    for(let mention of [mentions].flat())
+        finalMsg.push(mention.replace(/^(?!@)/, '@'));
+
+    return Chat.send(finalMsg.join(' '));
 }
 
 Object.defineProperties(Chat, {
@@ -1587,11 +1626,12 @@ Object.defineProperties(Chat, {
         function get(mostRecent = 250, keepEmotes = true) {
             let results = [];
 
-            for(let [uuid, object] of Chat.__allmessages__) {
+            for(let [uuid, object] of [...Chat.__allmessages__].slice(-mostRecent)) {
                 let { message, emotes } = object;
 
                 if(!keepEmotes)
-                    message = message.replaceAll(Object.keys(emotes).shift(), '');
+                    for(let emote of emotes)
+                        message = message.replaceAll(emote, '');
 
                 let O = Object.assign({}, object, { message });
 
@@ -1606,7 +1646,7 @@ Object.defineProperties(Chat, {
                 results.push(O);
             }
 
-            return results.slice(-mostRecent);
+            return results;
         }
     },
 
@@ -1649,7 +1689,7 @@ Object.defineProperties(Chat, {
                 if(Chat.__deferredEvents__.__onmessage__.has(name))
                     return Chat.__deferredEvents__.__onmessage__.get(name);
 
-                // REMARK('Adding deferred [on new message] event listener', { [name]: callback });
+                // $remark('Adding deferred [on new message] event listener', { [name]: callback });
 
                 Chat.__deferredEvents__.__onmessage__.set(name, callback);
 
@@ -1666,7 +1706,7 @@ Object.defineProperties(Chat, {
                 if(Chat.__deferredEvents__.__onpinned__.has(name))
                     return Chat.__deferredEvents__.__onpinned__.get(name);
 
-                // REMARK('Adding deferred [on new pinned] event listener', { [name]: callback });
+                // $remark('Adding deferred [on new pinned] event listener', { [name]: callback });
 
                 Chat.__deferredEvents__.__onpinned__.set(name, callback);
 
@@ -1683,7 +1723,7 @@ Object.defineProperties(Chat, {
                 if(Chat.__deferredEvents__.__onwhisper__.has(name))
                     return Chat.__onwhisper__.get(name);
 
-                // REMARK('Adding deferred [on new whisper] event listener', { [name]: callback });
+                // $remark('Adding deferred [on new whisper] event listener', { [name]: callback });
 
                 return Chat.__deferredEvents__.__onwhisper__.set(name, callback);
             },
@@ -1698,7 +1738,7 @@ Object.defineProperties(Chat, {
                 if(Chat.__deferredEvents__.__onbullet__.has(name))
                     return Chat.__onbullet__.get(name);
 
-                // REMARK('Adding deferred [on new newbullet] event listener', { [name]: callback });
+                // $remark('Adding deferred [on new newbullet] event listener', { [name]: callback });
 
                 return Chat.__deferredEvents__.__onbullet__.set(name, callback);
             },
@@ -1713,7 +1753,7 @@ Object.defineProperties(Chat, {
                 if(Chat.__deferredEvents__.__oncommand__.has(name))
                     return Chat.__oncommand__.get(name);
 
-                // REMARK('Adding deferred [on new command] event listener', { [name]: callback });
+                // $remark('Adding deferred [on new command] event listener', { [name]: callback });
 
                 return Chat.__deferredEvents__.__oncommand__.set(name, callback);
             },
@@ -1725,6 +1765,92 @@ Object.defineProperties(Chat, {
     },
     __deferredEvents__: { value: { __onmessage__: new Map, __onpinned__: new Map, __onwhisper__: new Map, __onbullet__: new Map, __oncommand__: new Map } },
 
+    // Single-use events... Requires the callback (promise) to return a boolean: true = ok to consume (delete) event; false = not ok
+    consume: {
+        value: {
+            set onmessage(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__consumableEvents__.__onmessage__.has(name))
+                    return Chat.__consumableEvents__.__onmessage__.get(name);
+
+                // $remark('Adding consumable [on new message] event listener', { [name]: callback });
+
+                Chat.__consumableEvents__.__onmessage__.set(name, callback);
+
+                return callback;
+            },
+
+            get onmessage() {
+                return Chat.__consumableEvents__.__onmessage__.size;
+            },
+
+            set onpinned(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__consumableEvents__.__onpinned__.has(name))
+                    return Chat.__consumableEvents__.__onpinned__.get(name);
+
+                // $remark('Adding consumable [on new pinned] event listener', { [name]: callback });
+
+                Chat.__consumableEvents__.__onpinned__.set(name, callback);
+
+                return callback;
+            },
+
+            get onpinned() {
+                return Chat.__consumableEvents__.__onpinned__.size;
+            },
+
+            set onwhisper(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__consumableEvents__.__onwhisper__.has(name))
+                    return Chat.__onwhisper__.get(name);
+
+                // $remark('Adding consumable [on new whisper] event listener', { [name]: callback });
+
+                return Chat.__consumableEvents__.__onwhisper__.set(name, callback);
+            },
+
+            get onwhisper() {
+                return Chat.__consumableEvents__.__onwhisper__.size;
+            },
+
+            set onbullet(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__consumableEvents__.__onbullet__.has(name))
+                    return Chat.__onbullet__.get(name);
+
+                // $remark('Adding consumable [on new newbullet] event listener', { [name]: callback });
+
+                return Chat.__consumableEvents__.__onbullet__.set(name, callback);
+            },
+
+            get onbullet() {
+                return Chat.__consumableEvents__.__onbullet__.size;
+            },
+
+            set oncommand(callback) {
+                let name = callback.name || UUID.from(callback.toString()).value;
+
+                if(Chat.__consumableEvents__.__oncommand__.has(name))
+                    return Chat.__oncommand__.get(name);
+
+                // $remark('Adding consumable [on new command] event listener', { [name]: callback });
+
+                return Chat.__consumableEvents__.__oncommand__.set(name, callback);
+            },
+
+            get oncommand() {
+                return Chat.__consumableEvents__.__oncommand__.size;
+            },
+        },
+    },
+    __consumableEvents__: { value: { __onmessage__: new Map, __onpinned__: new Map, __onwhisper__: new Map, __onbullet__: new Map, __oncommand__: new Map } },
+
+    // Regular events...
     onmessage: {
         set(callback) {
             let name = callback.name || UUID.from(callback.toString()).value;
@@ -1732,7 +1858,7 @@ Object.defineProperties(Chat, {
             if(Chat.__onmessage__.has(name))
                 return Chat.__onmessage__.get(name);
 
-            // REMARK('Adding [on new message] event listener', { [name]: callback });
+            // $remark('Adding [on new message] event listener', { [name]: callback });
 
             Chat.__onmessage__.set(name, callback);
 
@@ -1752,7 +1878,7 @@ Object.defineProperties(Chat, {
             if(Chat.__onpinned__.has(name))
                 return Chat.__onpinned__.get(name);
 
-            // REMARK('Adding [on new pinned] event listener', { [name]: callback });
+            // $remark('Adding [on new pinned] event listener', { [name]: callback });
 
             Chat.__onpinned__.set(name, callback);
 
@@ -1772,7 +1898,7 @@ Object.defineProperties(Chat, {
             if(Chat.__onwhisper__.has(name))
                 return Chat.__onwhisper__.get(name);
 
-            // REMARK('Adding [on new whisper] event listener', { [name]: callback });
+            // $remark('Adding [on new whisper] event listener', { [name]: callback });
 
             return Chat.__onwhisper__.set(name, callback);
         },
@@ -1790,7 +1916,7 @@ Object.defineProperties(Chat, {
             if(Chat.__onbullet__.has(name))
                 return Chat.__onbullet__.get(name);
 
-            // REMARK('Adding [on new bullet] event listener', { [name]: callback });
+            // $remark('Adding [on new bullet] event listener', { [name]: callback });
 
             return Chat.__onbullet__.set(name, callback);
         },
@@ -1808,7 +1934,7 @@ Object.defineProperties(Chat, {
             if(Chat.__oncommand__.has(name))
                 return Chat.__oncommand__.get(name);
 
-            // REMARK('Adding [on new command] event listener', { [name]: callback });
+            // $remark('Adding [on new command] event listener', { [name]: callback });
 
             return Chat.__oncommand__.set(name, callback);
         },
@@ -1854,32 +1980,6 @@ Object.defineProperties(Chat, {
         },
     },
 });
-
-// Pushes parameters to the URL's search
-    // PushToTopSearch(newParameters:object, reload:boolean?) → string<URL-Search>
-function PushToTopSearch(newParameters, reload = false) {
-    let url = parseURL(location).addSearch(newParameters, true);
-
-    if(reload)
-        location.search = url.search;
-    else
-        history?.pushState({ path: url.href }, document.title, url.href);
-
-    return url.search;
-}
-
-// Removevs parameters from the URL's search
-    // RemoveFromTopSearch(keys:array, reload:boolean?) → string<URL-Search>
-function RemoveFromTopSearch(keys, reload = false) {
-    let url = parseURL(location).delSearch(keys);
-
-    if(reload)
-        location.search = url.search;
-    else
-        history?.pushState({ path: url.href }, document.title, url.href);
-
-    return url.search;
-}
 
 // Convert an SI number into a number
     // parseCoin(amount:string) → number
@@ -2120,7 +2220,7 @@ Object.defineProperties(GetVolume, {
             if(GetVolume.__onchange__.has(name))
                 return GetVolume.__onchange__.get(name);
 
-            // REMARK('Adding [on change] event listener', { [name]: callback });
+            // $remark('Adding [on change] event listener', { [name]: callback });
 
             return GetVolume.__onchange__.set(name, callback);
         },
@@ -2595,7 +2695,7 @@ try {
                                 $('[data-test-selector="picture-by-picture-player-container"i]')?.modStyle('max-height:0');
 
                                 wait(500).then(() => {
-                                    RemoveFromTopSearch(['mini']);
+                                    removeFromSearch(['mini']);
 
                                     $('#tt-exit-pip')?.remove();
                                     $('[class*="picture-by-picture-player"i] iframe[src*="player.twitch.tv"i]')?.remove();
@@ -2621,13 +2721,13 @@ try {
                 }
                 keepOpen();
 
-                PushToTopSearch({ mini: name });
+                addToSearch({ mini: name });
             },
         },
     });
 
     // Automatic garbage collection...
-    REMARK(`Removing expired cache data...`, new Date);
+    $remark(`Removing expired cache data...`, new Date);
 
     Cache.load(null, cache => {
         Object.keys(cache)
@@ -2651,7 +2751,7 @@ try {
 
                 // If the last fetch was more than 30 days ago, remove the data...
                 if(lastFetch > (30 * 24 * 60 * 60 * 1000)) {
-                    WARN(`\tThe last fetch for "${ key }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
+                    $warn(`\tThe last fetch for "${ key }" was ${ toTimeString(lastFetch) } ago. Marking as "expired"`);
 
                     Cache.remove(key);
                 }
@@ -2692,23 +2792,23 @@ try {
 
             if(newValue === false) {
                 if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                    WARN(`Disabling experimental feature: ${ name }`, new Date);
+                    $warn(`Disabling experimental feature: ${ name }`, new Date);
                 else
-                    REMARK(`Disabling feature: ${ name }`, new Date);
+                    $remark(`Disabling feature: ${ name }`, new Date);
 
                 UnregisterJob(key, 'disable');
             } else if(newValue === true) {
                 if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                    WARN(`Enabling experimental feature: ${ name }`, new Date);
+                    $warn(`Enabling experimental feature: ${ name }`, new Date);
                 else
-                    REMARK(`Enabling feature: ${ name }`, new Date);
+                    $remark(`Enabling feature: ${ name }`, new Date);
 
                 RegisterJob(key, 'enable');
             } else {
                 if(!!~EXPERIMENTAL_FEATURES.findIndex(feature => feature.test(key)))
-                    WARN(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
+                    $warn(`Modifying experimental feature: ${ name }`, { oldValue, newValue }, new Date);
                 else
-                    REMARK(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
+                    $remark(`Modifying feature: ${ name }`, { oldValue, newValue }, new Date);
 
                 switch(key) {
                     case 'away_mode_placement': {
@@ -2763,7 +2863,7 @@ try {
     // Moved message listener → If nothing responds back, the page gets killed //
 
     // Jumping frames...
-    REMARK(`Listening for jumped frame data...`);
+    $remark(`Listening for jumped frame data...`);
 
     // Receive messages from other content scripts
     top.addEventListener('message', async event => {
@@ -2945,7 +3045,7 @@ try {
                             }
 
                         Cache.large.save({ JumpedData: JUMP_DATA });
-                        // LOG('Jumped frames, retrieved:', JUMP_DATA);
+                        // $log('Jumped frames, retrieved:', JUMP_DATA);
                     }
                 }
             } break;
@@ -2980,13 +3080,13 @@ try {
                                 if(!parseBool(Settings.first_in_line_none)) {
                                     let { name, href } = STREAMER;
 
-                                    Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` });
+                                    Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` }, 'start');
                                 }
 
                                 goto(`./${ from }?tool=raid-stopper--${ method }`);
                             } else {
                                 // The user clicked "Cancel"
-                                LOG('Canceled Greedy Raiding event', { from, to });
+                                $log('Canceled Greedy Raiding event', { from, to });
                             }
                         });
             } break;
@@ -3015,7 +3115,7 @@ try {
     });
 
     // Add custom context menus
-    REMARK(`Adding context menus...`);
+    $remark(`Adding context menus...`);
 
     // Normal - Page body
     // Reload (Ctrl+R)
@@ -3207,7 +3307,7 @@ try {
                 icon: 'video',
                 shortcut: (defined(GLOBAL_EVENT_LISTENERS.KEYDOWN_ALT_Z)? 'alt+z': ''),
                 action: event => {
-                    SetQuality('auto').then(() => {
+                    SetQuality().then(() => {
                         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', altKey: true }));
 
                         wait(VideoClips.length).then(() => phantomClick($(`.tt-prompt-footer button.okay`, $(`input[controller][anchor="${ $('video[uuid]').uuid }"i]`)?.closest('.tt-prompt-container'))));
@@ -3263,7 +3363,7 @@ try {
                         fetchURL(script.src, { timeout: 10_000, native: true })
                             .then(response => response.text())
                             .then(js => {
-                                LOG('Saving scripts...', script.src, (100 * (JS_index / JS_length)).suffix('%', 2), (js.length).suffix('B', 2, 'data'));
+                                $log('Saving scripts...', script.src, (100 * (JS_index / JS_length)).suffix('%', 2), (js.length).suffix('B', 2, 'data'));
 
                                 script.removeAttribute('src');
                                 script.textContent = js;
@@ -3290,7 +3390,7 @@ try {
                         fetchURL(style.href, { timeout: 10_000, native: true })
                             .then(response => response.text())
                             .then(css => {
-                                LOG('Saving styles...', style.href, (100 * (CSS_index / CSS_length)).suffix('%', 2), (css.length).suffix('B', 2, 'data'));
+                                $log('Saving styles...', style.href, (100 * (CSS_index / CSS_length)).suffix('%', 2), (css.length).suffix('B', 2, 'data'));
 
                                 style.removeAttribute('href');
                                 style.textContent = css;
@@ -3333,9 +3433,9 @@ try {
     });
 } catch(error) {
     // Most likely in a child frame...
-    // REMARK("Moving to chat child frame...");
+    // $remark("Moving to chat child frame...");
     if(!parseBool(parseURL(location).searchParameters?.hidden))
-        WARN(error);
+        $warn(error);
 }
 
 async function update() {
@@ -3589,30 +3689,30 @@ let DO_NOT_AUTO_ADD = []; // List of names to ignore for auto-adding; the user a
 let Initialize = async(START_OVER = false) => {
     // Modify the logging feature via the settings
     if(!parseBool(Settings.display_in_console))
-        LOG =
-        WARN =
-        ERROR =
-        REMARK =
-        NOTICE =
-        IGNORE = ($=>$);
+        $log =
+        $warn =
+        $error =
+        $remark =
+        $notice =
+        $ignore = ($=>$);
 
     if(!parseBool(Settings.display_in_console__log))
-        LOG = ($=>$);
+        $log = ($=>$);
 
     if(!parseBool(Settings.display_in_console__warn))
-        WARN = ($=>$);
+        $warn = ($=>$);
 
     if(!parseBool(Settings.display_in_console__error))
-        ERROR = ($=>$);
+        $error = ($=>$);
 
     if(!parseBool(Settings.display_in_console__remark))
-        REMARK = ($=>$);
+        $remark = ($=>$);
 
     if(!parseBool(Settings.display_in_console__notice))
-        NOTICE = ($=>$);
+        $notice = ($=>$);
 
     if(!parseBool(Settings.display_in_console__ignore))
-        IGNORE = ($=>$);
+        $ignore = ($=>$);
 
     // Time how long jobs take to complete properly
     class StopWatch {
@@ -3643,7 +3743,7 @@ let Initialize = async(START_OVER = false) => {
             let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     .toNativeStack();
         }
     }
@@ -3664,7 +3764,7 @@ let Initialize = async(START_OVER = false) => {
             if(!!~NORMALIZED_FEATURES.findIndex(regexp => regexp.test(key)))
                 normalized.push(key);
 
-        WARN(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled:`, normalized);
+        $warn(`Currently viewing ${ $1 } in "${ $2 }" mode. Several features will be disabled:`, normalized);
     }
 
     let ERRORS = Initialize.errors |= 0;
@@ -3688,17 +3788,18 @@ let Initialize = async(START_OVER = false) => {
                 Settings[setting] = null;
     }
 
+    top.GetNextStreamer =
     // Gets the next available channel (streamer)
         // GetNextStreamer() → Object<Channel>
     function GetNextStreamer() {
         // Next channel in "Up Next"
-        if(!parseBool(Settings.first_in_line_none) && ALL_FIRST_IN_LINE_JOBS?.length)
+        if(ALL_FIRST_IN_LINE_JOBS?.length && !parseBool(Settings.first_in_line_none))
             return GetNextStreamer.cachedStreamer = (null
                 ?? ALL_CHANNELS.find(channel => parseURL(channel?.href)?.pathname?.equals(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
                 ?? {
                     from: 'GET_NEXT_STREAMER',
                     href: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).href,
-                    name: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname.slice(1),
+                    name: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname.slice(1).split('/').shift(),
                 }
             );
 
@@ -3830,14 +3931,14 @@ let Initialize = async(START_OVER = false) => {
                 let [channel] = channels,
                     { name } = channel;
 
-                WARN(`No channel fits the "${ preference }" criteria. Assuming a random channel is desired:`, channel);
+                $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ name }") is desired:`, channel);
             }
         });
 
         delete ChannelPoints; // @performance
 
         return when.defined(() => GetNextStreamer.cachedStreamer);
-    }
+    };
 
     try {
         Cache.load('LiveReminders', async({ LiveReminders }) => {
@@ -4148,7 +4249,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get game() {
-            let element = $('[data-a-target$="game-link"i], [data-a-target$="game-name"i]'),
+            let element = $.all('[data-a-target$="game-link"i], [data-a-target$="game-name"i]').pop(),
                 name = element?.textContent,
                 game = new String(name ?? "");
 
@@ -4474,7 +4575,7 @@ let Initialize = async(START_OVER = false) => {
 
         get tone() {
             let { H, S, L, R, G, B } = Color.HEXtoColor(STREAMER.tint),
-                [min, max] = [[0,30],[70,100]][+(THEME.equals('light'))];
+                [min, max] = [[0,30],[70,100]][+(THEME.unlike('dark'))];
 
             return Color.HSLtoRGB(H, S, (100 - L).clamp(min, max)).HEX.toUpperCase()
         },
@@ -4524,7 +4625,7 @@ let Initialize = async(START_OVER = false) => {
                                             )).filter(defined);
                         });
                 })
-                .catch(WARN);
+                .catch($warn);
         },
 
         follow() {
@@ -4571,7 +4672,7 @@ let Initialize = async(START_OVER = false) => {
 
         let next = await GetNextStreamer();
 
-        LOG('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
+        $log('Resetting timer. Reason:', { hosting, raiding, raided }, 'Moving onto:', next);
 
         Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() });
     };
@@ -4781,7 +4882,7 @@ let Initialize = async(START_OVER = false) => {
             for(let key in streamer)
                 LIVE_CACHE.set(key, streamer[key]);
         })
-        .catch(WARN)
+        .catch($warn)
         .finally(async() => {
             if(defined(STREAMER)) {
                 let element = $(`a[href$="${ NORMALIZED_PATHNAME }"i]`),
@@ -4851,7 +4952,7 @@ let Initialize = async(START_OVER = false) => {
                             else
                                 STREAMER.data = { ...STREAMER.data, ...data, streamerID: STREAMER.sole };
 
-                            REMARK(`Cached details about "${ STREAMER.name }"`, data);
+                            $remark(`Cached details about "${ STREAMER.name }"`, data);
 
                             // delete cache;
                         });
@@ -4998,7 +5099,7 @@ let Initialize = async(START_OVER = false) => {
                                         ) * 60_000
                                     ));
 
-                                    REMARK(`Stream details about "${ STREAMER.name }"`, data);
+                                    $remark(`Stream details about "${ STREAMER.name }"`, data);
 
                                     return STREAMER.data = { ...STREAMER.data, ...data };
                                 })
@@ -5008,11 +5109,11 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get STREAM details (1§1): ${ error }`)
+                                    $warn(`Failed to get STREAM details (1§1): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'st-tw-metrics' });
+                                        addToSearch({ 'tt-err-get': 'st-tw-metrics' });
                                 });
 
                             // Channel details (HTML → JSON)
@@ -5037,7 +5138,7 @@ let Initialize = async(START_OVER = false) => {
                                         data[name] = value;
                                     });
 
-                                    REMARK(`Channel details about "${ STREAMER.name }"`, data);
+                                    $remark(`Channel details about "${ STREAMER.name }"`, data);
 
                                     return STREAMER.data = { ...STREAMER.data, ...data };
                                 })
@@ -5047,11 +5148,11 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (1§2): ${ error }`)
+                                    $warn(`Failed to get CHANNEL details (1§2): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-metrics' });
+                                        addToSearch({ 'tt-err-get': 'ch-tw-metrics' });
                                 });
                         }
 
@@ -5154,11 +5255,11 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (2): ${ error }`)
+                                    $warn(`Failed to get CHANNEL details (2): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-stats' });
+                                        addToSearch({ 'tt-err-get': 'ch-tw-stats' });
                                 });
 
                         /***
@@ -5194,11 +5295,11 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.followers)), dataRetrievedAt: +new Date } });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (3): ${ error }`)
+                                    $warn(`Failed to get CHANNEL details (3): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw-tracker' });
+                                        addToSearch({ 'tt-err-get': 'ch-tw-tracker' });
                                 });
 
                         /*** OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE OBSOLETE
@@ -5238,7 +5339,7 @@ let Initialize = async(START_OVER = false) => {
                                     if(nullish(json))
                                         throw "Fine Detail JSON data could not be parsed...";
 
-                                    REMARK('Getting fine details...', { [type]: value, cookies }, json);
+                                    $remark('Getting fine details...', { [type]: value, cookies }, json);
 
                                     let conversion = {
                                         ally: 'broadcaster_type',
@@ -5258,11 +5359,11 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ [`data/${ STREAMER.name }`]: data });
                                 })
                                 .catch(error => {
-                                    WARN(`Failed to get CHANNEL details (4): ${ error }`)
+                                    $warn(`Failed to get CHANNEL details (4): ${ error }`)
                                         // .toNativeStack();
 
                                     if(!ErrGet.length)
-                                        PushToTopSearch({ 'tt-err-get': 'ch-tw' });
+                                        addToSearch({ 'tt-err-get': 'ch-tw' });
                                 });
                     }
                 }
@@ -5274,7 +5375,7 @@ let Initialize = async(START_OVER = false) => {
     let LIVE_REMINDERS__LISTING_INTERVAL; // List the live time of Live Reminders
 
     if(parseBool(Settings.up_next__one_instance)) {
-        LOG('This tab is the Up Next owner', UP_NEXT_ALLOW_THIS_TAB);
+        $log('This tab is the Up Next owner', UP_NEXT_ALLOW_THIS_TAB);
 
         // Set the anon-ID
         fetchURL.idempotent(`/directory/category/just-chatting`, { timeout: 5_000 })
@@ -5308,7 +5409,7 @@ let Initialize = async(START_OVER = false) => {
                         Search.authorization = `Bearer ${ oauthToken }`;
                         Search.clientID = clientID;
                     }).catch(error => {
-                        WARN(error);
+                        $warn(error);
 
                         confirm(`<div controller
                             okay="Grant access"
@@ -5361,7 +5462,7 @@ let Initialize = async(START_OVER = false) => {
 
                     Cache.save({ clientID: clientID, oauthToken });
                 }).catch(error => {
-                    WARN(error);
+                    $warn(error);
 
                     fetchURL(`https://id.twitch.tv/oauth2/token`, {
                         method: 'POST',
@@ -5378,7 +5479,7 @@ let Initialize = async(START_OVER = false) => {
 
                         Search.authorization = `Bearer ${ oauthToken }`;
                         Search.clientID = clientID;
-                    }).catch(WARN);
+                    }).catch($warn);
                 });
             });
         }
@@ -5669,7 +5770,7 @@ let Initialize = async(START_OVER = false) => {
                                 }
 
                                 detectedTrend = '&uArr;';
-                                LOG('Positive trend detected: ' + changes.join(', '));
+                                $log('Positive trend detected: ' + changes.join(', '));
                             }
                             // Negative activity trend; enable Lurking, resume Up Next
                             else if((nullish(POSITIVE_TREND) || POSITIVE_TREND === true) && bias.slice(-(60 / pollInterval)).filter(trend => trend.equals('up')).length < (60 / pollInterval) / 5) {
@@ -5702,7 +5803,7 @@ let Initialize = async(START_OVER = false) => {
                                 }
 
                                 detectedTrend = '&dArr;';
-                                LOG('Negative trend detected: ' + changes.join(', '));
+                                $log('Negative trend detected: ' + changes.join(', '));
                             }
                         }
 
@@ -5713,7 +5814,7 @@ let Initialize = async(START_OVER = false) => {
                             --STALLED_FRAMES;
 
                         if(STALLED_FRAMES > 15 || (stop - start > POLL_INTERVAL * .75)) {
-                            WARN('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's →', (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
+                            $warn('The stream seems to be stalling...', 'Increasing Auto-Focus job time...', (POLL_INTERVAL / 1000).toFixed(2) + 's →', (POLL_INTERVAL * 1.1 / 1000).toFixed(2) + 's');
 
                             POLL_INTERVAL *= 1.1;
                             STALLED_FRAMES = 0;
@@ -5738,7 +5839,7 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.auto_focus)) {
         RegisterJob('auto_focus');
 
-        WARN("[Auto-Focus] is monitoring the stream...");
+        $warn("[Auto-Focus] is monitoring the stream...");
     }
 
     /*** Lurking
@@ -5784,7 +5885,7 @@ let Initialize = async(START_OVER = false) => {
             if(nullish(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
                 let scapeGoat = await GetNextStreamer();
 
-                WARN(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
+                $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
                     // .toNativeStack();
 
                 goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
@@ -5836,7 +5937,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             if(nullish(parent) || nullish(sibling))
-                return StopWatch.stop('away_mode') /* || WARN('Unable to create the Lurking button') */;
+                return StopWatch.stop('away_mode') /* || $warn('Unable to create the Lurking button') */;
 
             let container = furnish('#away-mode', {
                 innerHTML: sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1'),
@@ -6003,7 +6104,7 @@ let Initialize = async(START_OVER = false) => {
 
     __AwayMode__:
     if(parseBool(Settings.away_mode)) {
-        REMARK("Adding & Scheduling the Lurking button...");
+        $remark("Adding & Scheduling the Lurking button...");
 
         RegisterJob('away_mode');
 
@@ -6012,7 +6113,7 @@ let Initialize = async(START_OVER = false) => {
             if(!MAINTAIN_VOLUME_CONTROL || !isTrusted)
                 return;
 
-            WARN('[Lurking] is releasing volume control due to user interaction...');
+            $warn('[Lurking] is releasing volume control due to user interaction...');
 
             MAINTAIN_VOLUME_CONTROL = !isTrusted;
 
@@ -6054,7 +6155,7 @@ let Initialize = async(START_OVER = false) => {
 
                 duration *= 3_600_000;
 
-                WARN(`Lurking is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
+                $warn(`Lurking is scheduled to be "${ ['off','on'][+status] }" for ${ weekdays[day] } @ ${ time }:00 for ${ toTimeString(duration, '?hours_h') }`);
 
                 // Found at least one schedule...
                 if(defined(desiredStatus = status))
@@ -6062,7 +6163,7 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // Scheduled state...
-            // LOG('Lurking needs to be:', desiredStatus, 'Currently:', currentStatus);
+            // $log('Lurking needs to be:', desiredStatus, 'Currently:', currentStatus);
             if(defined(desiredStatus) && desiredStatus != currentStatus)
                 awayMode.click();
         });
@@ -6096,7 +6197,7 @@ let Initialize = async(START_OVER = false) => {
             prime_btn.click();
 
             // There's at least one offer...
-            when.sated(() => $.all('[class*="prime"i][class*="offer"i][class*="header"i] ~ *'), 250).then(offerContainers => {
+            when.sated(() => $.all('[class*="prime"i][class*="offer"i][class*="header"i] ~ *'), 750).then(offerContainers => {
                 for(let container of offerContainers)
                     when(container => {
                         let offerClaimLink = $('[data-a-target*="prime"i][data-a-target*="claim"i]', container);
@@ -6112,7 +6213,7 @@ let Initialize = async(START_OVER = false) => {
                         let offerDescription = $('[class*="prime-offer"i][class*="description"i]', container)?.innerText?.trim();
                         let offerPublisher = $('[class*="prime-offer"i][class*="publisher"i]', container)?.innerText?.trim();
 
-                        NOTICE(`Claiming Prime Loot Offer:`, { title: offerTitle, game: gameTitle, description: offerDescription, publisher: offerPublisher, type: (offerClaimButton? 'BUTTON_CLAIM': 'LINK_CLAIM') });
+                        $notice(`Claiming Prime Loot Offer:`, { title: offerTitle, game: gameTitle, description: offerDescription, publisher: offerPublisher, type: (offerClaimButton? 'BUTTON_CLAIM': 'LINK_CLAIM') });
 
                         if(defined(offerClaimButton))
                             offerClaimButton.click();
@@ -6120,7 +6221,7 @@ let Initialize = async(START_OVER = false) => {
                             offerDismissButton?.click();
 
                         return true;
-                    }, 100, container).then(() => {
+                    }, 1e3, container).then(() => {
                         if(handled >= offerContainers.length)
                             prime_btn.click();
                     });
@@ -6134,7 +6235,7 @@ let Initialize = async(START_OVER = false) => {
 
     __ClaimLoot__:
     if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_loot)) {
-        REMARK("Claiming Prime Gaming Loot...");
+        $remark("Claiming Prime Gaming Loot...");
 
         RegisterJob('claim_loot');
     }
@@ -6189,7 +6290,7 @@ let Initialize = async(START_OVER = false) => {
                             .then(() => {
                                 Cache.save({ PrimeSubscriptionReclaims: --PrimeSubscriptionReclaims });
 
-                                WARN(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)
+                                $warn(`[Prime Subscription] just renewed your subscription to ${ STREAMER.name } @ ${ (new Date).toJSON() }`)
                                     .toNativeStack();
                             });
                     });
@@ -6200,7 +6301,7 @@ let Initialize = async(START_OVER = false) => {
 
     __ClaimPrime__:
     if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_prime)) {
-        REMARK("Claiming Prime Subscription...");
+        $remark("Claiming Prime Subscription...");
 
         RegisterJob('claim_prime');
     }
@@ -6215,35 +6316,64 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let DISPLAY_BUY_LATER_BUTTON,
-        REWARDS_ON_COOLDOWN = new Map,
-        TEXT_BOX_ALREADY_FOCUSED;
+    let VideoClips = {
+        dvr: parseBool(Settings.video_clips__dvr),
+        filetype: (Settings.video_clips__file_type ?? 'webm'),
+        quality: (Settings.video_clips__quality ?? 'auto'),
+        length: parseInt(Settings.video_clips__length ?? 60) * 1000,
+    };
 
-    async function RECORD_PURCHASE({ id, sole, title, element, message, subject, mentions }) {
+    let DISPLAY_WALLET_BUTTONS,
+        REWARDS_ON_COOLDOWN = new Map,
+        TEXT_BOX_ALREADY_FOCUSED,
+        USER_INVOKED_PAUSE = true;
+
+    async function RECORD_PURCHASE({ updateRecords = true, fromUser = true, override = null, element, message, subject, mentions, AutoClaimRewards }) {
         element = await element;
 
         if(!(true
             // The subject matches
             && subject.equals('coin')
 
-            // And...
-            && (false
+            // The message must* be from the user
+            && fromUser
+
+            == (false
                 // The message is from the user
                 || message.contains(USERNAME)
+                || mentions.contains(USERNAME)
 
                 // The message is from the user (for embedded messages)
                 || $('[class*="message"i] [class*="username"i] [data-a-user]', element)?.dataset?.aUser?.equals(USERNAME)
             )
-        )) return;
+        )) return false;
 
-        let [item] = (await STREAMER.shop).filter(reward => reward.title.length && message.mutilate().contains(reward.title.mutilate()));
+        // Pause Up Next during recording...
+        if(UP_NEXT_ALLOW_THIS_TAB) {
+            let button = $('#up-next-control'),
+                paused = parseBool(button?.getAttribute('paused'));
+
+            if(!paused) {
+                USER_INVOKED_PAUSE = false;
+                button?.click();
+            }
+        }
+
+        let rewardID = override?.rewardID ?? element.dataset?.shopItemId ?? element.closest('[data-tt-reward-id]')?.dataset?.ttRewardId ?? element.dataset.uuid;
+        let [item] = override?.shop ?? await STREAMER.shop.filter(({ id, title }) => id.equals(rewardID) || (title?.length && message?.mutilate()?.contains(title.mutilate())));
 
         if(nullish(item))
-            return;
+            return false;
+
+        let { title, cost, id } = item;
 
         // The user successfully purchased the item...
-        AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
-        Cache.save({ AutoClaimRewards });
+        if(updateRecords) {
+            let { sole } = STREAMER;
+
+            AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
+            Cache.save({ AutoClaimRewards });
+        }
 
         // Begin recording...
         let video = $.all('video').pop();
@@ -6252,39 +6382,59 @@ let Initialize = async(START_OVER = false) => {
 
         video.dataset.trophyId = title;
 
-        let recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+        SetQuality(VideoClips.quality, 'auto').then(() => {
+            let recording = Recording.proxy(video, { name, as: name, maxTime: time, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
-        // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
-        recording
-            .then(({ target }) => target.recording.save())
-            .then(link => alert.silent(`
-                <video controller controls
-                    title="Trophy Clip Saved - ${ link.download }"
-                    src="${ link.href }" style="max-width:-webkit-fill-available"
-                ></video>
-                `)
-            );
+            // CANNOT be chained with the above; removes `this` context (can no longer be aborted)
+            recording
+                .then(({ target }) => target.recording.save())
+                .then(link => alert.silent(`
+                    <video controller controls
+                        title="Trophy Clip Saved - ${ link.download }"
+                        src="${ link.href }" style="max-width:-webkit-fill-available"
+                    ></video>
+                    `)
+                );
 
-        confirm.timed(`
-            <input hidden controller
-                icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
-                okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
-                deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
-            />
-            ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ cost }`
-        , time)
-            .then(answer => {
-                if(answer === false)
-                    throw `Trophy clip discarded!`;
-                recording.stop();
-            })
-            .catch(error => {
-                alert.silent(error);
-                recording.controller.abort(error);
-            });
+            confirm.timed(`
+                <input hidden controller
+                    icon="\uD83D\uDD34\uFE0F" title='Recording "${ STREAMER.name } - ${ title }"'
+                    okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
+                    deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
+                />
+                ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ cost }`
+            , time)
+                .then(answer => {
+                    if(answer === false)
+                        throw `Trophy clip discarded!`;
+                    recording.stop();
+                })
+                .catch(error => {
+                    alert.silent(error);
+                    recording.controller.abort(error);
+                })
+                .finally(() => {
+                    // Unpause Up Next (if done automatically)
+                    if(USER_INVOKED_PAUSE)
+                        return;
+
+                    let button = $('#up-next-control'),
+                        paused = parseBool(button?.getAttribute('paused'));
+
+                    if(!paused)
+                        return;
+
+                    button?.click();
+                });
+        });
+
+        return true;
     };
 
     Handlers.claim_reward = () => {
+        if(top.TWITCH_INTEGRITY_FAIL)
+            return;
+
         Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], async({ AutoClaimRewards, AutoClaimAnswers }) => {
             AutoClaimRewards ??= {};
             AutoClaimAnswers ??= {};
@@ -6296,11 +6446,12 @@ let Initialize = async(START_OVER = false) => {
                             .filter(({ available, enabled, hidden, paused, premium }) => available && enabled && !(hidden || paused || (premium && !STREAMER.paid)))
                             .filter(({ id }) => id.equals(rewardID))
                             .map(async({ id, cost, title, needsInput = false, answer = null }) => {
-                                if(REWARDS_ON_COOLDOWN.has(id))
+                                if(REWARDS_ON_COOLDOWN.has(id)) {
                                     if(REWARDS_ON_COOLDOWN.get(id) < +new Date)
                                         REWARDS_ON_COOLDOWN.delete(id);
                                     else
                                         return;
+                                }
 
                                 cost = parseInt(cost);
                                 title = title.trim();
@@ -6309,7 +6460,7 @@ let Initialize = async(START_OVER = false) => {
                                     .then(async rewardsMenuButton => {
                                         let { coin, fiat } = STREAMER;
 
-                                        // LOG(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
+                                        // $log(`Can "${ title }" be bought yet? ${ ['No', 'Yes'][+(coin >= cost)] }`);
 
                                         if(TEXT_BOX_ALREADY_FOCUSED)
                                             return;
@@ -6320,11 +6471,11 @@ let Initialize = async(START_OVER = false) => {
 
                                         rewardsMenuButton.click();
 
-                                        LOG(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
+                                        $log(`Purchasing "${ title }" for ${ cost } ${ fiat }...`);
 
                                         if(needsInput) {
                                             prompt
-                                                .silent(`<div id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..."></div>${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy)? 'This redemption will be recorded</strong>': '' }`, AutoClaimAnswers[sole][id])
+                                                .silent(`<input id=tt_saved_input_for_redemption hidden controller title="You have saved text for this redemption..." />${ title }<br><br><strong>${ parseBool(Settings.video_clips__trophy)? 'This redemption will be recorded</strong>': '' }`, AutoClaimAnswers[sole][id])
                                                 .then(() => {
                                                     $('[data-a-target="chat-input"i]')?.modStyle(`background:!delete`);
                                                 });
@@ -6340,9 +6491,12 @@ let Initialize = async(START_OVER = false) => {
                                                             && parseBool(Settings.video_clips__trophy)
                                                             && (currentTarget.value || currentTarget.textContent).length > 0
                                                         )
-                                                            SetQuality('auto').then(() => {
-                                                                Chat.onbullet = ({ element, message, subject, mentions }) => RECORD_PURCHASE({ id, sole, title, element, message, subject, mentions });
-                                                            });
+                                                            Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
+                                                                RECORD_PURCHASE({ element, message, subject, mentions, AutoClaimRewards }).then(recording => {
+                                                                    if(!recording)
+                                                                        throw `Unable to start recording. Pausing "${ title }" purchase for now. Holding onto saved text input...`;
+                                                                    return true; // Event OK to consume
+                                                                }).catch(alert.silent);
                                                     }
                                                 });
                                                 inputBox.modStyle(`background:#387aff`);
@@ -6357,31 +6511,39 @@ let Initialize = async(START_OVER = false) => {
                                             .then(async rewardButton => {
                                                 rewardButton.click();
 
-                                                when.defined(() => $('.reward-center-body [data-test-selector="RequiredPoints"i]')?.closest('button'), 500)
+                                                when.defined(() => $('.reward-center-body [data-test-selector*="required"i][data-test-selector*="points"i]')?.closest('button'), 500)
                                                     .then(purchaseButton => {
                                                         let cooldown = parseTime(purchaseButton.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent);
 
                                                         if(cooldown > 0) {
-                                                            LOG(`Unable to purchase "${ title }" right now. Waiting ${ toTimeString(cooldown) }`);
-                                                            REWARDS_ON_COOLDOWN.set(id, +(new Date) + cooldown);
-
-                                                            return false;
+                                                            $log(`Unable to purchase "${ title }" right now. Waiting ${ toTimeString(cooldown) }`);
+                                                            return REWARDS_ON_COOLDOWN.set(id, +(new Date) + cooldown);
                                                         }
 
                                                         if(true
                                                             && parseBool(Settings.video_clips__trophy)
                                                             && ['SINGLE_MESSAGE_BYPASS_SUB_MODE', 'SEND_HIGHLIGHTED_MESSAGE', 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK', 'RANDOM_SUB_EMOTE_UNLOCK', 'CHOSEN_SUB_EMOTE_UNLOCK']
                                                                 .missing(ID => ID.contains(id))
-                                                        )   // Purchase the item, then begin recording
-                                                            SetQuality('auto').then(() => {
-                                                                Chat.onbullet = ({ element, message, subject, mentions }) => RECORD_PURCHASE({ id, sole, title, element, message, subject, mentions });
-                                                            }).finally(() => {
-                                                                // Purchase the item
-                                                                purchaseButton.click();
-                                                            });
-                                                        else
+                                                        ) {
+                                                            // Purchase the item, then begin recording
+                                                            purchaseButton.click();
+
+                                                            Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
+                                                                RECORD_PURCHASE({ element, message, subject, mentions, AutoClaimRewards }).then(recording => {
+                                                                    if(!recording)
+                                                                        throw `Unable to start recording. Pausing "${ title }" purchase for now`;
+                                                                    return true; // Event OK to consume
+                                                                }).catch(alert.silent);
+                                                        } else {
                                                             // Purchase the item
                                                             purchaseButton.click();
+                                                        }
+
+                                                        wait(10_000).then(() => {
+                                                            top.TWITCH_INTEGRITY_FAIL = defined($('[data-test-selector*="reward"i]')?.closest('[aria-label]')?.querySelector('[class*="load"i][class*="spin"i]'));
+                                                        });
+                                                    }).finally(() => {
+                                                        rewardsMenuButton.click();
                                                     });
                                             });
                                     });
@@ -6394,13 +6556,13 @@ let Initialize = async(START_OVER = false) => {
     Timers.claim_reward = 15_000;
 
     Unhandlers.claim_reward = () => {
-        clearInterval(DISPLAY_BUY_LATER_BUTTON);
+        clearInterval(DISPLAY_WALLET_BUTTONS);
     };
 
     __ClaimReward__:
     // On by Default (ObD; v5.16)
     if(nullish(Settings.claim_reward) || parseBool(Settings.claim_reward)) {
-        REMARK('Adding reward claimer...');
+        $remark('Adding reward claimer...');
 
         RegisterJob('claim_reward');
 
@@ -6418,7 +6580,7 @@ let Initialize = async(START_OVER = false) => {
                     if(undefined in answers) {
                         answers[rewards[0]] = answers[undefined]; // Assume the first entry is the correct one :P
 
-                        NOTICE(`Correcting auto-answer entry ${ streamer }@${ rewards[0] } → "${ answers[undefined] }"`);
+                        $notice(`Correcting auto-answer entry ${ streamer }@${ rewards[0] } → "${ answers[undefined] }"`);
 
                         delete answers[undefined];
                     }
@@ -6426,14 +6588,19 @@ let Initialize = async(START_OVER = false) => {
             }
 
             Cache.save({ AutoClaimRewards, AutoClaimAnswers });
+
+            delete AutoClaimRewards; // @performance
+            delete AutoClaimAnswers; // @performance
         });
 
-        DISPLAY_BUY_LATER_BUTTON = setInterval(() => {
-            let container = $('[data-test-selector="RequiredPoints"i]:not(:empty), button[disabled] [data-test-selector="RequiredPoints"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
+        DISPLAY_WALLET_BUTTONS = setInterval(() => {
+            let container = $('[data-test-selector*="required"i][data-test-selector*="points"i]:not(:empty), button[disabled] [data-test-selector*="required"i][data-test-selector*="points"i]:empty, [data-test-selector*="chat"i] svg[type*="warn"i]')
                     ?.closest?.('button, [class*="error"i]'),
-                handler = $('#tt-auto-claim-reward-handler');
+                handler = $('#tt-auto-claim-reward-handler, #tt-purchase-and-record-handler');
 
-            // Rainbow border, Cooldown timer, Unlock all, and Modify many buttons //
+            let f = furnish;
+
+            // Rainbow border, Cooldown timer, Unlock all, Modify many, and Buy + Record buttons //
             Unlock_All_Emotes: {
                 let emoteCheckout = $('[class*="unlock"i][class*="emote"i][class*="checkout"i]');
 
@@ -6558,7 +6725,7 @@ let Initialize = async(START_OVER = false) => {
                                                                 else // if(modified.get(em).length >= modifiers.length)
                                                                     return buyOut(count, rewardsBackButton?.click());
 
-                                                                REMARK(`Buying emote: "${ name }" for ${ cost }`);
+                                                                $remark(`Buying emote: "${ name }" for ${ cost }`);
 
                                                                 when.defined(() => $('[class*="modify"i][class*="emote"i][class*="checkout"i] [data-test-selector*="modify-emote-preview"i] ~ * ~ * button'), 250)
                                                                     .then(unlock => {
@@ -6633,11 +6800,83 @@ let Initialize = async(START_OVER = false) => {
                 });
             }
 
-            if(nullish(container) || defined(handler))
+            if(defined(handler)) {
+                $('button', handler).disabled = top.TWITCH_INTEGRITY_FAIL;
+
+                return;
+            }
+
+            Buy_and_Record: if(nullish(container) && parseBool(Settings.video_clips__trophy)) {
+                let purchaseButton = $('[data-test-selector*="required"i][data-test-selector*="points"i]:empty')?.closest?.('button');
+                let cooldown = parseTime(purchaseButton?.previousElementSibling?.getElementByText(parseTime.pattern)?.textContent) | 0;
+
+                if(nullish(purchaseButton) || cooldown > 0)
+                    break Buy_and_Record;
+
+                let [head, body] = purchaseButton.closest('[class*="reward"i][class*="content"i], [class*="chat"i][class*="input"i]:not([class*="error"i])').children,
+                    $body = $('[class*="tray"i][class*="body"i]', head),
+                    $title = (($('#channel-points-reward-center-header', head)?.textContent ?? $body?.previousElementSibling?.textContent) || '').trim(),
+                    $prompt = (($('.reward-center-body p', body)?.textContent ?? $body?.textContent) || '').trim(),
+                    $image = ($('[class*="reward-icon"i] img', body) ?? $('[class*="reward-icon"i] img', head))?.src,
+                    [$cost = 0] = (($('[data-test-selector="RewardText"i]', body)?.parentElement ?? $('[class*="reward"i][class*="header"i]', head))?.innerText?.split(/\s/)?.map(parseCoin)?.filter(n => n > 0) ?? []);
+
+                let [item] = STREAMER.shop.filter(({ type = 'UNKNOWN', id = '', title = '', cost = 0, image = '' }) =>
+                    (false
+                        || (type.equals("unknown") && id.equals(UUID.from([$image, $title.mutilate(), $cost].join('|$|'), true).value))
+                        || (type.unlike("custom") && cost == $cost && id.equals([STREAMER.sole, type].join(':')))
+                        || (title.equals($title) && (cost == $cost || image?.url?.equals($image?.url)))
+                    )
+                );
+
+                if(nullish(item))
+                    break Buy_and_Record;
+
+                purchaseButton.dataset.ttAutoBuy = item.id;
+
+                purchaseButton.insertAdjacentElement('afterend',
+                    f(`#tt-purchase-and-record-handler[data-tt-reward-id=${ item.id }]`).with(
+                        f('.tt-inline-flex.tt-relative').with(
+                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-medium.tt-border-bottom-right-radius-medium.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-button-icon.tt-core-button.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative',
+                                {
+                                    style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(purchaseButton).width.ceil() }px!important`,
+
+                                    async onmouseup({ currentTarget }) {
+                                        let rewardID = currentTarget.closest('[data-shop-item-id]')?.dataset?.shopItemId ?? currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
+                                        let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
+
+                                        if(nullish(item))
+                                            return;
+
+                                        Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
+                                            RECORD_PURCHASE({ updateRecords: false, override: { rewardID, shop: [item] }, element, message, subject, mentions }).then(recording => {
+                                                if(!recording)
+                                                    throw `Unable to start recording. Pausing "${ item.title }" purchase for now. Holding onto saved text input...`;
+                                                return true; // Event OK to consume
+                                            }).catch(alert.silent);
+
+                                        $(`[data-tt-auto-buy="${ rewardID }"i]`)?.click();
+
+                                        wait(10_000).then(() => {
+                                            top.TWITCH_INTEGRITY_FAIL = defined($('[data-test-selector*="reward"i]')?.closest('[aria-label]')?.querySelector('[class*="load"i][class*="spin"i]'));
+                                        });
+                                    },
+                                },
+
+                                f('[style=height:2rem; width:2rem]', {
+                                    innerHTML: Glyphs.modify('video', { style: 'padding-right:.2rem' })
+                                }),
+
+                                `Buy + Record`
+                            )
+                        )
+                    )
+                );
+            }
+
+            if(nullish(container))
                 return;
 
-            let f = furnish;
-
+            // Adds "Buy when available" button
             Cache.load('AutoClaimRewards', async({ AutoClaimRewards }) => {
                 AutoClaimRewards ??= {};
 
@@ -6679,7 +6918,7 @@ let Initialize = async(START_OVER = false) => {
                                     style: `padding:1rem;text-align:center;min-width:fit-content;width:${ getOffset(container).width.ceil() }px!important`,
 
                                     async onmouseup({ currentTarget }) {
-                                        let rewardID = currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
+                                        let rewardID = currentTarget.closest('[data-shop-item-id]')?.dataset?.shopItemId ?? currentTarget.closest('[data-tt-reward-id]')?.dataset?.ttRewardId;
                                         let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
 
                                         if(nullish(item))
@@ -6730,6 +6969,9 @@ let Initialize = async(START_OVER = false) => {
                                             currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);
 
                                             Cache.save({ AutoClaimRewards, AutoClaimAnswers });
+
+                                            delete AutoClaimRewards; // @performance
+                                            delete AutoClaimAnswers; // @performance
                                         });
                                     },
                                 },
@@ -6751,6 +6993,39 @@ let Initialize = async(START_OVER = false) => {
         }, 300);
     }
 
+    __RecordForeignRewards__:
+    if(parseBool(Settings.record_foreign_rewards)) {
+        Chat.onbullet = async({ element, message, subject, mentions, usable }) => {
+            if(!usable)
+                return /* The bullet was created before the "Welcome to chat" message (i.e. "Already used") */;
+
+            element = await element;
+            subject ||= element.dataset.type;
+
+            let rewardID = element.dataset?.shopItemId ?? element.closest('[data-tt-reward-id]')?.dataset?.ttRewardId ?? element.dataset.uuid;
+            let [item] = await STREAMER.shop.filter(({ id }) => id.equals(rewardID));
+
+            if(nullish(item))
+                return;
+
+            let { id, title } = item;
+            let { sole } = STREAMER;
+
+            Cache.load(['AutoClaimRewards'], async({ AutoClaimRewards }) => {
+                AutoClaimRewards ??= {};
+
+                let itemIDs = (AutoClaimRewards[sole] ??= []);
+                let index = itemIDs.indexOf(rewardID);
+
+                if(!~index)
+                    return /* reward not asked for... */;
+
+                RECORD_PURCHASE({ fromUser: false, element, message, subject, mentions, AutoClaimRewards });
+
+                delete AutoClaimRewards; // @performance
+            });
+        };
+    }
 
     /*** Claim Drops
      *       _____ _       _             _____
@@ -6811,7 +7086,7 @@ let Initialize = async(START_OVER = false) => {
 
     __ClaimDrops__:
     if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.claim_drops)) {
-        REMARK('Creating Drop claimer...');
+        $remark('Creating Drop claimer...');
 
         RegisterJob('claim_drops');
     }
@@ -6856,7 +7131,7 @@ let Initialize = async(START_OVER = false) => {
             );
 
         if(nullish(channel))
-            return ERROR(`Unable to create job for "${ href }"`);
+            return $error(`Unable to create job for "${ href }"`);
 
         [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -6867,7 +7142,7 @@ let Initialize = async(START_OVER = false) => {
         if(!ALL_FIRST_IN_LINE_JOBS.filter(href => href?.length).length)
             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-        LOG(`[Queue Redo] Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
+        $log(`[Queue Redo] Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
 
         FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
             let timeRemaining = GET_TIME_REMAINING();
@@ -6887,7 +7162,7 @@ let Initialize = async(START_OVER = false) => {
 
             STARTED_TIMERS.WARNING = true;
 
-            LOG('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
+            $log('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
             let url = parseURL(FIRST_IN_LINE_HREF);
             let { name } = GetNextStreamer.cachedStreamer;
@@ -6918,7 +7193,7 @@ let Initialize = async(START_OVER = false) => {
                             goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }).href);
                         } else {
                             // The user clicked "Cancel"
-                            LOG('Canceled First in Line event', FIRST_IN_LINE_HREF);
+                            $log('Canceled First in Line event', FIRST_IN_LINE_HREF);
 
                             let { pathname } = parseURL(FIRST_IN_LINE_HREF);
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="${ pathname }"i]`),
@@ -6955,7 +7230,7 @@ let Initialize = async(START_OVER = false) => {
                 return; // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
 
             if(nullish(channel)) {
-                LOG('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
+                $log('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
 
                 let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
                     channelID = UUID.from(pathname).value;
@@ -6983,7 +7258,7 @@ let Initialize = async(START_OVER = false) => {
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
-                            WARN(error);
+                            $warn(error);
                         });
                     });
             }
@@ -6995,7 +7270,7 @@ let Initialize = async(START_OVER = false) => {
             /* After above is `false` */
 
             Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
-                LOG('Heading to stream now [Job Interval]', href);
+                $log('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -7037,7 +7312,7 @@ let Initialize = async(START_OVER = false) => {
 
         if(timeRemaining <= 60_000 && nullish('.tt-confirm'))
             wait(60_000).then(() => {
-                WARN(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`)
+                $warn(`Mitigation for Up Next: Loose interval @ ${ location } / ${ new Date }`)
                     // .toNativeStack();
 
                 let { name } = GetNextStreamer.cachedStreamer;
@@ -7277,7 +7552,7 @@ let Initialize = async(START_OVER = false) => {
                                 channel = await when.defined(() => new Search(name).then(Search.convertResults), 500);
                                 ok = parseBool(channel?.ok);
 
-                                // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
+                                // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
                             }
 
                             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
@@ -7290,7 +7565,7 @@ let Initialize = async(START_OVER = false) => {
                                 if(nullish(definitiveID)) {
                                     let real = await new Search(sole, 'sniffer', 'getName');
 
-                                    WARN(`Updating details about (#${ sole }) "${ name }" → "${ real }"`);
+                                    $warn(`Updating details about (#${ sole }) "${ name }" → "${ real }"`);
 
                                     // Correct the cache...
                                     Cache.load(`data/${ name }`, cache => {
@@ -7539,7 +7814,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                     }
 
                                                                                     // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                                                                                    Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                                                                                    Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
                                                                                 });
                                                                             },
                                                                         },
@@ -7665,7 +7940,6 @@ let Initialize = async(START_OVER = false) => {
                                 (
                                     // Boost is enabled
                                     FIRST_IN_LINE_BOOST?
-                                        // Boost is enabled
                                         Math.min(GET_TIME_REMAINING(), fiveMin):
                                     // Boost is disabled
                                     FIRST_IN_LINE_WAIT_TIME * oneMin
@@ -7682,9 +7956,9 @@ let Initialize = async(START_OVER = false) => {
 
                     Cache.save({ FIRST_IN_LINE_DUE_DATE });
 
-                    REMARK(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname?.slice(1) }"`);
+                    $remark(`Up Next Boost is enabled → Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ parseURL(FIRST_IN_LINE_HREF).pathname?.slice(1) }"`);
                 } else {
-                    REMARK(`Up Next Boost is disabled`);
+                    $remark(`Up Next Boost is disabled`);
                 }
 
                 // Up Next Boost
@@ -7729,10 +8003,10 @@ let Initialize = async(START_OVER = false) => {
 
                 // No idea what the user just dropped
                 if(!hostname?.length || !pathname?.length)
-                    return ERROR(`Unknown [ondrop] text: "${ text }"`);
+                    return $error(`Unknown [ondrop] text: "${ text }"`);
 
                 if(!/^tv\.twitch/i.test(domainPath.join('.')) || RESERVED_TWITCH_PATHNAMES.test(pathname))
-                    return WARN(`Unable to add link to Up Next "${ href }"`);
+                    return $warn(`Unable to add link to Up Next "${ href }"`);
 
                 streamer = await(null
                     ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals('/' + name))
@@ -7753,10 +8027,10 @@ let Initialize = async(START_OVER = false) => {
 
                             return found;
                         })
-                        .catch(WARN)
+                        .catch($warn)
                 )
 
-                LOG('Adding to Up Next [ondrop]:', { href, streamer });
+                $log('Adding to Up Next [ondrop]:', { href, streamer });
 
                 if(nullish(streamer?.icon)) {
                     let name = (streamer?.name ?? parseURL(href).pathname?.slice(1));
@@ -7781,7 +8055,7 @@ let Initialize = async(START_OVER = false) => {
                 if(ALL_FIRST_IN_LINE_JOBS.length < 1)
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-                // LOG('Accessing here... #1');
+                // $log('Accessing here... #1');
                 ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
 
                 Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -7818,19 +8092,19 @@ let Initialize = async(START_OVER = false) => {
                 filter: '.tt-static',
 
                 onUpdate: ({ oldIndex, newIndex }) => {
-                    // LOG('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
+                    // $log('Old array', [...ALL_FIRST_IN_LINE_JOBS]);
 
                     let [moved] = ALL_FIRST_IN_LINE_JOBS.splice(--oldIndex, 1);
                     ALL_FIRST_IN_LINE_JOBS.splice(--newIndex, 0, moved);
                     ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(defined);
 
-                    // LOG('New array', [...ALL_FIRST_IN_LINE_JOBS]);
-                    // LOG('Moved', { oldIndex, newIndex, moved });
+                    // $log('New array', [...ALL_FIRST_IN_LINE_JOBS]);
+                    // $log('Moved', { oldIndex, newIndex, moved });
 
                     let channel = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(moved));
 
                     if(nullish(channel))
-                        return WARN('No channel found:', { oldIndex, newIndex, desiredChannel: channel, givenChannel: moved });
+                        return $warn('No channel found:', { oldIndex, newIndex, desiredChannel: channel, givenChannel: moved });
 
                     // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
                         // To create a new due date, `NEW_DUE_DATE(time)` → `NEW_DUE_DATE()`
@@ -7839,13 +8113,13 @@ let Initialize = async(START_OVER = false) => {
                         let first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
                         let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first.name }"i]`)?.getAttribute('time'));
 
-                        LOG('New First in Line event:', { ...first, time });
+                        $log('New First in Line event:', { ...first, time });
 
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
                     }
 
                     REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0].href);
-                    // LOG('Redid First in Line queue [Sorting Handler]...', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    // $log('Redid First in Line queue [Sorting Handler]...', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
 
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 },
@@ -7885,7 +8159,7 @@ let Initialize = async(START_OVER = false) => {
                                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                                     name = parseURL(removed).pathname?.slice(1);
 
-                                NOTICE(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
+                                $notice(`Removed from Up Next via Sorting Handler (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
 
                                 if(event.canceled)
                                     DO_NOT_AUTO_ADD.push(removed);
@@ -7895,7 +8169,7 @@ let Initialize = async(START_OVER = false) => {
                                 if(index > 0) {
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
                                 } else {
-                                    LOG('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
+                                    $log('Destroying current job [Job Listings]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME });
 
                                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -7960,18 +8234,18 @@ let Initialize = async(START_OVER = false) => {
                                     if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
-                                        WARN('Creating job to avoid [Job Listing] mitigation event', channel);
+                                        $warn('Creating job to avoid [Job Listing] mitigation event', channel);
 
                                         return StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                                     }
 
                                     if(time < 1000)
                                         wait(5000, [container, intervalID]).then(([container, intervalID]) => {
-                                            LOG('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                            $log('Mitigation event for [Job Listings]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                             // Mitigate 0 time bug?
 
                                             Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                                                WARN(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
+                                                $warn(`Timer overdue [animation:first-in-line-balloon--initializer] » ${ FIRST_IN_LINE_HREF }`)
                                                     // .toNativeStack();
 
                                                 goto(FIRST_IN_LINE_HREF);
@@ -8024,10 +8298,12 @@ let Initialize = async(START_OVER = false) => {
     let HANDLED_NOTIFICATIONS = [],
         STARTED_TIMERS = {};
 
-    Handlers.first_in_line = async(ActionableNotification) => {
+    Handlers.first_in_line = async(ActionableNotification, preferredPlace) => {
         new StopWatch('first_in_line');
 
         let notifications = [...$.all('[data-test-selector*="notifications"i] [data-test-selector*="notification"i]'), ActionableNotification].filter(defined);
+
+        preferredPlace ??= 'last';
 
         // The Up Next empty status
         $('[up-next--body]')?.setAttribute?.('empty', !(UP_NEXT_ALLOW_THIS_TAB && ALL_FIRST_IN_LINE_JOBS.length));
@@ -8063,17 +8339,19 @@ let Initialize = async(START_OVER = false) => {
             )
                 continue;
 
-            LOG('Received an actionable notification:', innerText, new Date);
+            $log('Received an actionable notification:', innerText, new Date);
+
+            let ALL_JOBS_PREFERENCE_SORTED = (preferredPlace.toString().anyOf('begin', 'beginning', 'first', 'head', 'start', '0', '1', '^')? [href, ...ALL_FIRST_IN_LINE_JOBS]: [...ALL_FIRST_IN_LINE_JOBS, href]);
 
             if(defined(FIRST_IN_LINE_HREF ??= ALL_FIRST_IN_LINE_JOBS[0])) {
                 if([...ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_HREF].missing(href)) {
-                    LOG('Pushing to First in Line:', href, new Date);
+                    $log('Pushing to First in Line:', href, new Date);
 
-                    // LOG('Accessing here... #2');
-                    ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                    // $log('Accessing here... #2');
+                    ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
                 } else {
-                    WARN('Not pushing to First in Line:', href, new Date);
-                    LOG('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
+                    $warn('Not pushing to First in Line:', href, new Date);
+                    $log('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
                         `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
                         `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`,
                     );
@@ -8084,11 +8362,11 @@ let Initialize = async(START_OVER = false) => {
 
                 continue;
             } else {
-                LOG('Pushing to First in Line (no contest):', href, new Date);
+                $log('Pushing to First in Line (no contest):', href, new Date);
 
                 // Add the new job...
-                // LOG('Accessing here... #3');
-                ALL_FIRST_IN_LINE_JOBS = [...ALL_FIRST_IN_LINE_JOBS, href].map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
+                // $log('Accessing here... #3');
+                ALL_FIRST_IN_LINE_JOBS = ALL_JOBS_PREFERENCE_SORTED.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length);
                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                 // To wait, or not to wait
@@ -8128,7 +8406,7 @@ let Initialize = async(START_OVER = false) => {
                             [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                             name = parseURL(removed).pathname?.slice(1);
 
-                        NOTICE(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
+                        $notice(`Removed from Up Next via Balloon (${ nth(index + 1, 'ordinal-position') }):`, removed, 'Was it canceled?', event.canceled);
 
                         if(event.canceled)
                             DO_NOT_AUTO_ADD.push(removed);
@@ -8138,7 +8416,7 @@ let Initialize = async(START_OVER = false) => {
                         if(index > 0) {
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => event.callback(event.element));
                         } else {
-                            LOG('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
+                            $log('Destroying current job [First in Line]...', { FIRST_IN_LINE_HREF, FIRST_IN_LINE_DUE_DATE });
 
                             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -8207,19 +8485,19 @@ let Initialize = async(START_OVER = false) => {
                             if(time < 60_000 && nullish(FIRST_IN_LINE_HREF)) {
                                 FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(time);
 
-                                WARN('Creating job to avoid [First in Line] mitigation event', channel);
+                                $warn('Creating job to avoid [First in Line] mitigation event', channel);
 
                                 return StopWatch.stop('first_in_line__job_watcher', 1000), REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = channel.href);
                             }
 
                             if(time < 1000)
                                 wait(5000, [container, intervalID]).then(([container, intervalID]) => {
-                                    LOG('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
+                                    $log('Mitigation event from [First in Line]', { ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_HREF }, new Date);
                                     // Mitigate 0 time bug?
 
                                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
                                     Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.filter(href => parseURL(href).pathname.unlike(parseURL(FIRST_IN_LINE_HREF).pathname)), FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE() }, () => {
-                                        WARN(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
+                                        $warn(`Timer overdue [animation:first-in-line-balloon] » ${ FIRST_IN_LINE_HREF }`)
                                             // .toNativeStack();
 
                                         goto(FIRST_IN_LINE_HREF);
@@ -8255,9 +8533,9 @@ let Initialize = async(START_OVER = false) => {
 
                 if(defined(FIRST_IN_LINE_WAIT_TIME) && nullish(FIRST_IN_LINE_HREF)) {
                     REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
-                    LOG('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
+                    $log('Redid First in Line queue [First in Line]...', { FIRST_IN_LINE_DUE_DATE, FIRST_IN_LINE_WAIT_TIME, FIRST_IN_LINE_HREF });
                 } else if(Settings.first_in_line_none) {
-                    LOG('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
+                    $log('Heading to stream now [First in Line] is OFF', FIRST_IN_LINE_HREF);
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
@@ -8346,7 +8624,7 @@ let Initialize = async(START_OVER = false) => {
             if(from == to)
                 return;
 
-            REMARK('Resetting timer. Location change detected:', { from, to });
+            $remark('Resetting timer. Location change detected:', { from, to });
 
             // If the user clicks on a channel, reset the timer
             if(!RESERVED_TWITCH_PATHNAMES.test(to))
@@ -8375,7 +8653,7 @@ let Initialize = async(START_OVER = false) => {
                 let index = ALL_FIRST_IN_LINE_JOBS.findIndex(job => job == href),
                     dead = ALL_FIRST_IN_LINE_JOBS[index];
 
-                LOG('Restoring dead channel (initializer)...', dead);
+                $log('Restoring dead channel (initializer)...', dead);
 
                 let { pathname } = parseURL(dead),
                     channelID = UUID.from(pathname).value;
@@ -8405,7 +8683,7 @@ let Initialize = async(START_OVER = false) => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
-                            WARN(`Unable to perform search for "${ name }" - ${ error }`, removed);
+                            $warn(`Unable to perform search for "${ name }" - ${ error }`, removed);
                         });
                     });
 
@@ -8413,7 +8691,7 @@ let Initialize = async(START_OVER = false) => {
             } else if(!first) {
                 // Handlers.first_in_line({ href, innerText: `${ channel.name } is live [First in Line]` });
 
-                // WARN('Forcing queue update for', href);
+                // $warn('Forcing queue update for', href);
                 REDO_FIRST_IN_LINE_QUEUE(FIRST_IN_LINE_HREF = href);
             } else if(first) {
                 let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1),
@@ -8425,7 +8703,7 @@ let Initialize = async(START_OVER = false) => {
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
                 Cache.save({ ALL_FIRST_IN_LINE_JOBS }, () => {
-                    WARN('Removed duplicate job', removed);
+                    $warn('Removed duplicate job', removed);
                 });
             }
         }
@@ -8464,14 +8742,14 @@ let Initialize = async(START_OVER = false) => {
 
         // Detect if the channels got removed incorrectly?
         if(bad_names?.length) {
-            WARN('Twitch failed to add these channels correctly:', bad_names)
+            $warn('Twitch failed to add these channels correctly:', bad_names)
                 // .toNativeStack();
 
             BAD_STREAMERS = "";
 
             Cache.save({ BAD_STREAMERS });
 
-            // RemoveFromTopSearch(['tt-err-chn']);
+            // removeFromSearch(['tt-err-chn']);
         } else if(!/^User_Not_Logged_In_\d+$/.test(USERNAME) && $.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]')) {
             try {
                 $('[data-a-target="side-nav-arrow"i]')
@@ -8479,12 +8757,12 @@ let Initialize = async(START_OVER = false) => {
                     .querySelector('button')
                     .click();
             } catch(error) {
-                WARN("[Followed Channels] is missing. Reloading...");
+                $warn("[Followed Channels] is missing. Reloading...");
 
                 Cache.save({ BAD_STREAMERS: OLD_STREAMERS });
 
                 // Failed to get channel at...
-                PushToTopSearch({ 'tt-err-chn': (+new Date).toString(36) }, true);
+                addToSearch({ 'tt-err-chn': (+new Date).toString(36) }, true);
             }
 
             return /* Fail "gracefully" */;
@@ -8533,7 +8811,7 @@ let Initialize = async(START_OVER = false) => {
             if(!streamer?.name?.length)
                 continue creating_new_events;
 
-            LOG('A channel just appeared:', name, new Date);
+            $log('A channel just appeared:', name, new Date);
 
             Handlers.first_in_line({ href, innerText: `${ name } is live [First in Line+]` });
         }
@@ -8647,7 +8925,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('remind', notReminded);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                            Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
                         });
                     },
                 }, f.div(
@@ -8681,7 +8959,7 @@ let Initialize = async(START_OVER = false) => {
             || parseBool(Settings.live_reminders)
         )
     ) {
-        REMARK('Adding Live Reminders...');
+        $remark('Adding Live Reminders...');
 
         // See if there are any notifications to push...
         let REMINDERS_INDEX = -1, REMINDERS_LENGTH = 0, PARSED_REMINDERS = [];
@@ -8722,7 +9000,7 @@ let Initialize = async(START_OVER = false) => {
                         channel = await when.defined(() => new Search(reminderName).then(Search.convertResults), 500);
                         ok = parseBool(channel?.ok);
 
-                        // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Reminders]: "${ reminderName }" → OK = ${ ok }`);
+                        // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Reminders]: "${ reminderName }" → OK = ${ ok }`);
                     }
 
                     if(!channel.live) {
@@ -8769,7 +9047,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 // Show a notification
                                 Display_phantom_notification: {
-                                    WARN(`Live Reminders: ${ name } went live ${ instance }`, new Date);
+                                    $warn(`Live Reminders: ${ name } went live ${ instance }`, new Date);
                                     await alert.timed(`<a href='/${ name }'>${ name }</a> went live ${ instance }!`, 7000);
                                 }
                             }
@@ -8826,9 +9104,12 @@ let Initialize = async(START_OVER = false) => {
             return;
         existing?.remove();
 
-        let { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL(STREAMER.game.href);
+        let { href = '', origin, protocol, scheme, host, hostname, domainPath = [], port, pathname, search, hash } = parseURL(STREAMER.game.href);
 
-        if(!href?.length)
+        if(false
+            || (href.trim().length < 2)
+            || (domainPath.length < 2)
+        )
             return;
 
         let timerStart = +new Date;
@@ -8840,7 +9121,7 @@ let Initialize = async(START_OVER = false) => {
             .then(response => response.text())
             .then(DOMParser.stripBody)
             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-            .catch(WARN)
+            .catch($warn)
             .then(DOM => {
                 if(!(DOM instanceof Document))
                     throw TypeError(`No DOM available. Page not loaded`);
@@ -8856,7 +9137,7 @@ let Initialize = async(START_OVER = false) => {
                 if(!ok)
                     throw `No metadata available for "${ STREAMER.game }"`;
 
-                LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
+                $log(`Loaded page: Game @ ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
 
                 if(!title?.length || !image?.length) {
                     if(!error?.length)
@@ -8931,7 +9212,7 @@ let Initialize = async(START_OVER = false) => {
                 new Tooltip($('[data-a-target$="game-link"i]'), `Read about <ins>${ title }</ins> below`, { from: 'top' });
                 $('.about-section__panel--content')?.closest('*:not([style]):not([class]):not([id])')?.insertAdjacentElement('afterend', container);
             })
-            .catch(ERROR);
+            .catch($error);
 
             if(parseBool(Settings.simplify_look_auto_marquee))
                 setInterval(() => {
@@ -9081,16 +9362,16 @@ let Initialize = async(START_OVER = false) => {
                                             )
                                         })
                                         .catch(error => {
-                                            WARN(`Unable to fetch Steam pricing information for "${ game }"`, error);
+                                            $warn(`Unable to fetch Steam pricing information for "${ game }"`, error);
                                         });
 
                                     container.replaceWith(purchase);
                                 });
 
-                            LOG(`Got "${ game }" data from Steam:`, info);
+                            $log(`Got "${ game }" data from Steam:`, info);
                         })
                         .catch(error => {
-                            WARN(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
+                            $warn(`Unable to connect to Steam. Tried to look for "${ game }"`, error);
                         });
                 }
 
@@ -9207,7 +9488,7 @@ let Initialize = async(START_OVER = false) => {
                                             return {};
                                         });
 
-                                WARN(error);
+                                $warn(error);
                             });
                     }
 
@@ -9278,16 +9559,16 @@ let Initialize = async(START_OVER = false) => {
                                                     }
                                             })
                                             .catch(error => {
-                                                WARN(`Unable to fetch PlayStation pricing information for "${ jbpp }"`, error);
+                                                $warn(`Unable to fetch PlayStation pricing information for "${ jbpp }"`, error);
                                             });
 
                                         container.replaceWith(purchase);
                                     });
 
-                                LOG(`Got "${ jbpp }" data from PlayStation:`, info);
+                                $log(`Got "${ jbpp }" data from PlayStation:`, info);
                             })
                             .catch(error => {
-                                WARN(`Unable to connect to PlayStation. Tried to look for "${ jbpp }"`, error);
+                                $warn(`Unable to connect to PlayStation. Tried to look for "${ jbpp }"`, error);
                             });
                     } else {
                         fetchPlayStationGame(game)
@@ -9351,16 +9632,16 @@ let Initialize = async(START_OVER = false) => {
                                                     }
                                             })
                                             .catch(error => {
-                                                WARN(`Unable to fetch PlayStation pricing information for "${ game }"`, error);
+                                                $warn(`Unable to fetch PlayStation pricing information for "${ game }"`, error);
                                             });
 
                                         container.replaceWith(purchase);
                                     });
 
-                                LOG(`Got "${ game }" data from PlayStation:`, info);
+                                $log(`Got "${ game }" data from PlayStation:`, info);
                             })
                             .catch(error => {
-                                WARN(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
+                                $warn(`Unable to connect to PlayStation. Tried to look for "${ game }"`, error);
                             });
                         }
                 }
@@ -9441,7 +9722,7 @@ let Initialize = async(START_OVER = false) => {
                                             return { game, name, href, img, price, errs };
                                         });
 
-                                WARN(error);
+                                $warn(error);
                             });
                     }
 
@@ -9502,7 +9783,7 @@ let Initialize = async(START_OVER = false) => {
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
                                             .catch(error => {
-                                                WARN(`Unable to fetch Xbox pricing information for "${ jbpp }"`, error);
+                                                $warn(`Unable to fetch Xbox pricing information for "${ jbpp }"`, error);
                                             });
 
                                         // TODO: Make this faster somehow!
@@ -9549,7 +9830,7 @@ let Initialize = async(START_OVER = false) => {
                                     });
                             })
                             .catch(error => {
-                                WARN(`Unable to connect to Xbox. Tried to look for "${ jbpp }"`, error);
+                                $warn(`Unable to connect to Xbox. Tried to look for "${ jbpp }"`, error);
                             });
                     } else {
                         fetchXboxGame(game)
@@ -9600,7 +9881,7 @@ let Initialize = async(START_OVER = false) => {
                                                 $('#tt-content-rating-placeholder')?.replaceWith(rating);
                                             })
                                             .catch(error => {
-                                                WARN(`Unable to fetch Xbox pricing information for "${ game }"`, error);
+                                                $warn(`Unable to fetch Xbox pricing information for "${ game }"`, error);
                                             });
 
                                         // TODO: Make this faster somehow!
@@ -9688,10 +9969,10 @@ let Initialize = async(START_OVER = false) => {
                                         container.replaceWith(purchase);
                                     });
 
-                                LOG(`Got "${ game }" data from Xbox:`, info);
+                                $log(`Got "${ game }" data from Xbox:`, info);
                             })
                             .catch(error => {
-                                WARN(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
+                                $warn(`Unable to connect to Xbox. Tried to look for "${ game }"`, error);
                             });
                         }
                 }
@@ -9857,7 +10138,7 @@ let Initialize = async(START_OVER = false) => {
                                                 }))
                                         );
 
-                                WARN(error);
+                                $warn(error);
                             });
                     }
 
@@ -9926,10 +10207,10 @@ let Initialize = async(START_OVER = false) => {
                                                 );
                                         });
 
-                                    LOG(`Got "${ game }" data from Nintendo:`, info);
+                                    $log(`Got "${ game }" data from Nintendo:`, info);
                                 })
                                 .catch(error => {
-                                    WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
+                                    $warn(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
                                 });
                     } else if(/(?:^(?:The\s+)?Jackbox Party)/i.test(game)) {
                         // Multiple versions are available
@@ -9964,10 +10245,10 @@ let Initialize = async(START_OVER = false) => {
 
                                 // $('.tt-store-purchase--price', purchase).modStyle(`background: url("data:image/svg+xml;base64,${ btoa(Glyphs.store_nintendo) }") no-repeat center 100% / contain, #000;`);
 
-                                LOG(`Got "${ jbpp }" data from Nintendo:`, info);
+                                $log(`Got "${ jbpp }" data from Nintendo:`, info);
                             })
                             .catch(error => {
-                                WARN(`Unable to connect to Nintendo. Tried to look for "${ jbpp }"`, error);
+                                $warn(`Unable to connect to Nintendo. Tried to look for "${ jbpp }"`, error);
                             });
                     } else {
                         // Just one version is available
@@ -10024,10 +10305,10 @@ let Initialize = async(START_OVER = false) => {
                                         container.replaceWith(purchase);
                                     });
 
-                                LOG(`Got "${ game }" data from Nintendo:`, info);
+                                $log(`Got "${ game }" data from Nintendo:`, info);
                             })
                             .catch(error => {
-                                WARN(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
+                                $warn(`Unable to connect to Nintendo. Tried to look for "${ game }"`, error);
                             });
                     }
                 }
@@ -10043,7 +10324,7 @@ let Initialize = async(START_OVER = false) => {
     __GameOverviewCard__:
     // On by Default (ObD; v5.23)
     if(nullish(Settings.game_overview_card) || parseBool(Settings.game_overview_card)) {
-        REMARK('Adding game overview card...');
+        $remark('Adding game overview card...');
 
         RegisterJob('game_overview_card');
     }
@@ -10160,7 +10441,7 @@ let Initialize = async(START_OVER = false) => {
 
     __KillExtensions__:
     if(parseBool(Settings.kill_extensions)) {
-        REMARK("Adding extension killer...");
+        $remark("Adding extension killer...");
 
         RegisterJob('kill_extensions');
     }
@@ -10358,7 +10639,7 @@ let Initialize = async(START_OVER = false) => {
 
                                     i = index + href.length;
                                 } catch(error) {
-                                    WARN(error);
+                                    $warn(error);
 
                                     break;
                                 }
@@ -10402,7 +10683,7 @@ let Initialize = async(START_OVER = false) => {
 
     __ParseCommands__:
     if(parseBool(Settings.parse_commands)) {
-        REMARK("Parsing title commands...");
+        $remark("Parsing title commands...");
 
         RegisterJob('parse_commands');
 
@@ -10747,7 +11028,7 @@ let Initialize = async(START_OVER = false) => {
 
                 // The channel being hosted (guest) is already in "followed." No need to leave
                 if(defined(streamer)) {
-                    LOG(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
+                    $log(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
                     goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }).href);
                     break host_stopper;
@@ -10758,11 +11039,11 @@ let Initialize = async(START_OVER = false) => {
                 callback({ hosting });
 
             if(defined(next)) {
-                LOG(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
+                $log(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                 goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }).href);
             } else {
-                LOG(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
+                $log(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
                 // ReloadPage();
             }
@@ -10820,9 +11101,9 @@ let Initialize = async(START_OVER = false) => {
                 // #1 - Collect the channel points by participating in the raid, then leave
                 // #3 should fire automatically after the page has successfully loaded
                 if(raiding && method.equals("greed")) {
-                    LOG(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid', raided: true }, true).href);
+                    $log(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid', raided: true }, true).href);
 
-                    PushToTopSearch({ referrer: 'raid', raided: true });
+                    addToSearch({ referrer: 'raid', raided: true });
 
                     Cache.save({ LastRaid: { from, to, type: method } });
                     CONTINUE_RAIDING = true;
@@ -10830,17 +11111,17 @@ let Initialize = async(START_OVER = false) => {
                 }
                 // #2 - The channel being raided (to) is already in "followed." No need to leave
                 else if(raiding && defined(STREAMERS.find(channel => RegExp(`^${ to }$`, 'i').test(channel.name)))) {
-                    LOG(`[RAIDING] ${ to } is already followed. No need to leave the raid`);
+                    $log(`[RAIDING] ${ to } is already followed. No need to leave the raid`);
 
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
                 // #3 - The channel that was raided (to) is already in "followed." No need to leave
                 else if(raided && STREAMER.like) {
-                    LOG(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
+                    $log(`[RAIDED] ${ to } is already followed. No need to abort the raid`);
 
                     Cache.save({ LastRaid: {} });
-                    RemoveFromTopSearch(['referrer', 'raided']);
+                    removeFromSearch(['referrer', 'raided']);
                     CONTINUE_RAIDING = true;
                     break raid_stopper;
                 }
@@ -10853,7 +11134,7 @@ let Initialize = async(START_OVER = false) => {
 
                 raid_stopper:
                 if(defined(next)) {
-                    LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
+                    $log(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                     // Don't leave if the raid is on this page...
                     if(raiding && ["greed"].contains(method))
@@ -10863,7 +11144,7 @@ let Initialize = async(START_OVER = false) => {
                         goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href);
                     else
                         Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, from: STREAMER?.name, method }, ({ next, from, method }) => {
-                            NOTICE(`Stealing an Up Next job (raid): ${ from } → ${ next }`);
+                            $notice(`Stealing an Up Next job (raid): ${ from } → ${ next }`);
 
                             goto(parseURL(next).addSearch({ tool: `raid-stopper--${ method }` }).href);
                         });
@@ -10874,7 +11155,7 @@ let Initialize = async(START_OVER = false) => {
                     if(UP_NEXT_ALLOW_THIS_TAB)
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
                 } else {
-                    LOG(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
+                    $log(`${ STREAMER.name } ${ raiding? 'is raiding': 'was raided' }. There doesn't seem to be any followed channels on right now`, new Date);
 
                     // ReloadPage();
                 }
@@ -10963,7 +11244,7 @@ let Initialize = async(START_OVER = false) => {
 
     __GreedyRaiding__:
     if(UP_NEXT_ALLOW_THIS_TAB && parseBool(Settings.greedy_raiding)) {
-        REMARK('Adding raid-watching logic...');
+        $remark('Adding raid-watching logic...');
 
         RegisterJob('greedy_raiding');
     }
@@ -11019,7 +11300,7 @@ let Initialize = async(START_OVER = false) => {
                 break NotLive;
 
             if(defined(next)) {
-                WARN(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
+                $warn(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
                 REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
 
@@ -11030,12 +11311,12 @@ let Initialize = async(START_OVER = false) => {
                     Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`));
                 else
                     Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
-                        NOTICE(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
+                        $notice(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
 
                         goto(`${ next }?obit=${ obit }&tool=stay-live`);
                     });
             } else  {
-                WARN(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
+                $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
             }
 
             // After 30 seconds, remove the intent
@@ -11052,7 +11333,7 @@ let Initialize = async(START_OVER = false) => {
 
     __StayLive__:
     if(parseBool(Settings.stay_live)) {
-        REMARK('Ensuring Twitch stays live...');
+        $remark('Ensuring Twitch stays live...');
 
         RegisterJob('stay_live');
     }
@@ -12160,10 +12441,10 @@ let Initialize = async(START_OVER = false) => {
                         { hour, minute = ':00', offset = '', meridiem = '', timezone = MASTER_TIME_ZONE } = groups,
                         timesone = timezone?.replace(/^([^s])t$/, '$1st')?.replace(/^([^S])T$/, '$1ST') ?? '';
 
-                    let misint = timezone.mutilate(),
-                        MISINT = timezone.toUpperCase(),
-                        missnt = timesone.mutilate(),
-                        MISSNT = timesone.toUpperCase();
+                    let misint = timezone?.mutilate(),
+                        MISINT = timezone?.toUpperCase(),
+                        missnt = timesone?.mutilate(),
+                        MISSNT = timesone?.toUpperCase();
 
                     // This isn't a timezone... it's a word...
                     if(true
@@ -12171,8 +12452,8 @@ let Initialize = async(START_OVER = false) => {
                             || MISINT in TIME_ZONE__CONVERSIONS
                             || MISSNT in TIME_ZONE__CONVERSIONS
                         )
-                        && NON_TIME_ZONE_WORDS[misint[0]]?.[misint.length]?.contains(misint)
-                        && NON_TIME_ZONE_WORDS[missnt[0]]?.[missnt.length]?.contains(missnt)
+                        && NON_TIME_ZONE_WORDS[misint?.[0]]?.[misint?.length]?.contains(misint)
+                        && NON_TIME_ZONE_WORDS[missnt?.[0]]?.[missnt?.length]?.contains(missnt)
                     )
                         continue searching;
 
@@ -12285,7 +12566,7 @@ let Initialize = async(START_OVER = false) => {
 
     __TimeZones__:
     if(parseBool(Settings.time_zones)) {
-        REMARK('Converting time zones...');
+        $remark('Converting time zones...');
 
         RegisterJob('time_zones');
     }
@@ -12307,7 +12588,7 @@ let Initialize = async(START_OVER = false) => {
 
     __PhoneNumber__:
     if(parseBool(Settings.phone_number)) {
-        REMARK('Parsing phone numbers...');
+        $remark('Parsing phone numbers...');
 
         RegisterJob('phone_number');
     }
@@ -12324,7 +12605,7 @@ let Initialize = async(START_OVER = false) => {
      */
     Handlers.common_phrase_translations = () => {
         let translations = [
-            [/(Twitch|T.?T.?V|The)(.?s)?\s+(T.?o.?S|Terms(?:.+of.+Service)?)/i, [`<a href="/legal/terms-of-service/" target="_blank">$&</a>`, e => defined(e.closest('[href]'))]], // Twitch's ToS
+            [/(Twitch|T.?T.?V|The)(.?s)?\s+(T\W?o\W?S\W?|Terms(?:.+of.+Service)?)/i, [`<a href="/legal/terms-of-service/" target="_blank">$&</a>`, e => defined(e.closest('[href]'))]], // Twitch's ToS
         ];
 
         for(let [phrases, [replacement, ignoreIf]] of translations)
@@ -12734,7 +13015,8 @@ let Initialize = async(START_OVER = false) => {
         OBSERVED_COLLECTION_ANIMATIONS = new Map,
         DISPLAYING_RANK,
         RANK_TOOLTIP,
-        TALLY = new Map;
+        TALLY = new Map,
+        CHANNEL_POINTS_MULTIPLIER;
 
     function UpdateReceiptDisplay() {
         let receipt = EXACT_POINTS_EARNED - (EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED),
@@ -12743,8 +13025,42 @@ let Initialize = async(START_OVER = false) => {
 
         receipt = receipt.floorToNearest(parseInt(Settings.channelpoints_receipt_display.replace('round', '')) || 1);
 
-        RECEIPT_TOOLTIP.innerHTML = [abs(EXACT_POINTS_EARNED).suffix(' &uarr;', 1, 'natural'), abs(EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED).suffix(' &darr;', 1, 'natural')].join(' | ');
+        let AVAILABLE_POINTS = (((top.TWITCH_INTEGRITY_FAIL? 120: 320) * CHANNEL_POINTS_MULTIPLIER) * ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000)).floorToNearest((10 + (50 * +!top.TWITCH_INTEGRITY_FAIL)) * CHANNEL_POINTS_MULTIPLIER) | 0;
+
+        if(AVAILABLE_POINTS < 1)
+            AVAILABLE_POINTS = Infinity;
+
+        RECEIPT_TOOLTIP.innerHTML = [
+            // Earned
+            abs(EXACT_POINTS_EARNED).suffix(' &uarr;', 1, 'natural'),
+            // Spent
+            abs(EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED).suffix(' &darr;', 1, 'natural'),
+            // Available (according to stremer's average stream time)
+            parseBool(Settings.show_stats)?
+                AVAILABLE_POINTS.prefix(furnish(`marquee[direction=left][scrollamount=1]`, { style: 'max-width:fit-content;vertical-align:top;' }).html(`&larr;`).html(), 1, 'natural'): // udhar cularrp
+            null
+        ].filter(defined).join(' | ');
         $('#tt-points-receipt').innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
+    }
+
+    __GetMultiplierAmount__:
+    if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
+        let button = $('[data-test-selector="community-points-summary"i] button');
+
+        if(defined(button)) {
+            button.click();
+
+            $('.reward-center-body [href*="//help.twitch.tv/"i]')
+                ?.closest('.reward-center-body')
+                ?.querySelector('button')
+                ?.click();
+
+            CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText) || 1;
+
+            button.click();
+        } else {
+            CHANNEL_POINTS_MULTIPLIER = 1;
+        }
     }
 
     Handlers.points_receipt_placement = () => {
@@ -12776,7 +13092,7 @@ let Initialize = async(START_OVER = false) => {
 
                 rank = (
                     rank < 1 || isNaN(rank)?
-                        'Unknown':
+                        '&infin;':
                     place < 4?
                         `<span style="text-decoration:${ 4 - place }px underline ${ color }">${ string }</span>`:
                     string
@@ -12795,7 +13111,7 @@ let Initialize = async(START_OVER = false) => {
 
                 let placementString;
 
-                if(rank.equals('unknown'))
+                if(rank.equals('&infin;'))
                     placementString = `Unable to get your rank for this channel`;
                 else
                     placementString = `You are in the top ${ place }%`;
@@ -12880,7 +13196,7 @@ let Initialize = async(START_OVER = false) => {
                 }
                 OBSERVED_COLLECTION_ANIMATIONS.set(animationID, animationTimeStamp);
 
-                LOG(`Observing "${ animationID }" @ ${ new Date }`, OBSERVED_COLLECTION_ANIMATIONS);
+                $log(`Observing "${ animationID }" @ ${ new Date }`, OBSERVED_COLLECTION_ANIMATIONS);
 
                 if(!~[points_receipt, exact_change, balance].findIndex(defined)) {
                     points_receipt?.parentElement?.remove();
@@ -12963,7 +13279,7 @@ let Initialize = async(START_OVER = false) => {
                                 delete REDEMPTION_LISTENERS.UNLOCKED_REWARDS;
                                 addListener(1);
 
-                                LOG(`Spent ${ amount } on "${ title }"`, new Date);
+                                $log(`Spent ${ amount } on "${ title }"`, new Date);
                             });
                         });
 
@@ -12989,7 +13305,7 @@ let Initialize = async(START_OVER = false) => {
                                 delete REDEMPTION_LISTENERS.BRIBABLE_VOTES;
                                 addListener(2);
 
-                                LOG(`Spent ${ amount } on "${ title }"`, new Date);
+                                $log(`Spent ${ amount } on "${ title }"`, new Date);
                             });
                         });
 
@@ -13033,7 +13349,7 @@ let Initialize = async(START_OVER = false) => {
 
                 hasPointsEnabled ||= defined(balance);
 
-                amount = (balance || (hasPointsEnabled? amount: '&#128683;'));
+                amount = ((balance? balance.suffix('', 1).toUpperCase(): 0) || (hasPointsEnabled? amount: '&#128683;'));
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
                 notEarned = (
@@ -13387,7 +13703,7 @@ let Initialize = async(START_OVER = false) => {
 
     __StreamPreview__:
     if(parseBool(Settings.stream_preview)) {
-        REMARK('Adding Stream previews...');
+        $remark('Adding Stream previews...');
 
         top.onlocationchange = Unhandlers.stream_preview;
 
@@ -13403,7 +13719,7 @@ let Initialize = async(START_OVER = false) => {
                 { length } = richTooltips,
                 iframe = $('#tt-stream-preview--iframe');
 
-            if(nullish(iframe))
+            if(nullish(iframe) || richTooltips.length < 1)
                 return;
 
             let { index = 0, controls = false, muted = true, quality = 'auto' } = iframe.dataset;
@@ -13650,7 +13966,7 @@ let Initialize = async(START_OVER = false) => {
 
                 callback();
             }).catch(error => {
-                WARN(error);
+                $warn(error);
 
                 clearInterval(GET_TOP_100_INTERVAL);
             });
@@ -13725,13 +14041,6 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let VideoClips = {
-        dvr: parseBool(Settings.video_clips__dvr),
-        filetype: (Settings.video_clips__file_type ?? 'webm'),
-        quality: (Settings.video_clips__quality ?? 'auto'),
-        length: parseInt(Settings.video_clips__length ?? 60) * 1000,
-    };
-
     let AUTO_DVR__CHECKING, AUTO_DVR__CHECKING_INTERVAL,
         MASTER_VIDEO = $('[data-a-player-state] video');
 
@@ -13826,7 +14135,7 @@ let Initialize = async(START_OVER = false) => {
                             currentTarget.closest('[tt-action]').setAttribute('enabled', enabled);
 
                             // FIX-ME: Live Reminder alerts will not display if another alert is present...
-                            Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch(WARN));
+                            Cache.save({ DVRChannels }, () => Settings.set({ 'DVR_CHANNELS': Object.keys(DVRChannels) }).then(() => parseBool(message) && alert.timed(message, 7000)).catch($warn));
                         });
                     },
                 }, f.div(
@@ -13852,15 +14161,19 @@ let Initialize = async(START_OVER = false) => {
                     });
 
                 let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                    if(STASH_SAVED)
+                        return;
+                    STASH_SAVED = true;
+
                     let next = await GetNextStreamer();
 
-                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                     for(let [guid, { recording }] of Recording.__RECORDERS__)
                         if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
-                            recording.stop().save(DVR_CLIP_PRECOMP_NAME);
+                            recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                         else
-                            recording.stop().save();
+                            recording?.stop()?.save();
                 };
 
                 $.on('focusin', event => {
@@ -13889,7 +14202,7 @@ let Initialize = async(START_OVER = false) => {
                     let chunks = MASTER_VIDEO.getRecording(Recording.ANY)?.blobs;
 
                     if(!chunks?.length)
-                        return '';
+                        return new ClipName(2);
 
                     let now = new Date;
 
@@ -13905,8 +14218,24 @@ let Initialize = async(START_OVER = false) => {
                 },
             },
         });
+
+        top.addEventListener('beforeunload', async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+            if(STASH_SAVED)
+                return;
+            STASH_SAVED = true;
+
+            let next = await GetNextStreamer();
+
+            $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+
+            for(let [guid, { recording }] of Recording.__RECORDERS__)
+                if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
+                    recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
+                else
+                    recording?.stop()?.save();
+        });
     } catch(error) {
-        /* Ignore this error :P */
+        /* Ignore these errors :P */
     }
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
@@ -13934,7 +14263,7 @@ let Initialize = async(START_OVER = false) => {
 
     __AutoDVR__:
     if(parseBool(Settings?.video_clips__dvr)) {
-        REMARK('Adding DVR functionality...');
+        $remark('Adding DVR functionality...');
 
         let HandleAd = adCountdown => {
             let [main, mini] = $.all('video');
@@ -13955,7 +14284,7 @@ let Initialize = async(START_OVER = false) => {
             AdBreak.then(({ target }) => {
                 let chunks = AdBreak.blobs;
 
-                NOTICE(`Adding chunks to main <video> @ ${ InsertChunksAt } |`, { blobs, chunks, event });
+                $notice(`Adding chunks to main <video> @ ${ InsertChunksAt } |`, { blobs, chunks, event });
 
                 blobs.push(...chunks);
             });
@@ -13970,12 +14299,12 @@ let Initialize = async(START_OVER = false) => {
                     when.defined(() => $('[data-a-target*="ad-countdown"i]'))
                         .then(HandleAd);
 
-                    NOTICE(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs, chunks: mini?.getRecording()?.blobs });
+                    $notice(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs, chunks: mini?.getRecording()?.blobs });
                 });
 
             main.pauseRecording();
 
-            NOTICE(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
+            $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
         };
 
         when.defined(() => $('[data-a-target*="ad-countdown"i]'))
@@ -14013,7 +14342,7 @@ let Initialize = async(START_OVER = false) => {
                             channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
                             ok = parseBool(channel?.ok);
 
-                            // WARN(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
+                            // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
                         }
 
                         if(!parseBool(channel.live)) {
@@ -14038,7 +14367,7 @@ let Initialize = async(START_OVER = false) => {
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
-                                LOG('Skipping queue in favor of a DVR channel', job);
+                                $log('Skipping queue in favor of a DVR channel', job);
 
                                 goto(parseURL(job).addSearch({ dvr: true }).href);
                             });
@@ -14096,13 +14425,17 @@ let Initialize = async(START_OVER = false) => {
                                 button?.click();
                             })
                             .then(() => {
-                                confirm(`<div hidden controller deny="Why?" okay="Acknowledge (interact)"></div>
-                                    To automatically save DVRs when this page navigates to another stream (or reloads unexpectedly), you must interact with this page.
-                                `)
-                                    .then(answer => {
-                                        if(!answer)
-                                            open('https://developer.mozilla.org/en-US/docs/Web/Security/User_activation', '_blank');
-                                    });
+                                if(compareVersions(`${ Manifest.version } ≥ 5.33.0.8`)) // @deprecated
+                                    confirm.silent(`<div hidden controller deny="Why?" okay="Acknowledge (interact)" title="${ STREAMER.name } &mdash; DVR Notice"></div>
+                                        To guarantee DVRs save when this page navigates to another stream (or reloads unexpectedly), you must interact with this page.
+                                    `)
+                                        .then(answer => {
+                                            if(!answer)
+                                                open('https://developer.mozilla.org/en-US/docs/Web/Security/User_activation', '_blank');
+                                        });
+
+                                if(parseBool($('[data-recording-status]')?.getAttribute('data-recording-status')))
+                                    new Tooltip($('[data-recording-status]'), `Recording this stream: ${ STREAMER.name }`);
 
                                 // Extra handler. This is suppose to handle ad-recording. But it's above (see `enabled && !STREAMER.redo`)
                                 if(MASTER_VIDEO.hasRecording('AUTO_DVR'))
@@ -14132,16 +14465,20 @@ let Initialize = async(START_OVER = false) => {
                                     });
 
                                 let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+                                    if(STASH_SAVED)
+                                        return;
+                                    STASH_SAVED = true;
+
                                     let next = await GetNextStreamer();
                                     let DVR_ID = STREAMER.name.toLowerCase();
 
-                                    LOG('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                                     for(let [guid, { recording }] of Recording.__RECORDERS__)
                                         if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
-                                            recording.stop().save(DVR_CLIP_PRECOMP_NAME);
+                                            recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                                         else
-                                            recording.stop().save();
+                                            recording?.stop()?.save();
                                 };
 
                                 $.on('focusin', event => {
@@ -14217,12 +14554,12 @@ let Initialize = async(START_OVER = false) => {
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
         if(creationTime !== CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
             if(SECONDS_PAUSED_UNSAFELY > 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
-                WARN(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
+                $warn(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
             if(SECONDS_PAUSED_UNSAFELY > 5 && !(SECONDS_PAUSED_UNSAFELY % 3)) {
                 __RecoverFrames_Embed__:
                 if(parseBool(Settings.recover_frames__allow_embed)) {
-                    WARN(`Attempting to override the video`);
+                    $warn(`Attempting to override the video`);
 
                     let container = $('video')?.closest('[class*="container"i]');
 
@@ -14232,8 +14569,6 @@ let Initialize = async(START_OVER = false) => {
                     let { name } = STREAMER,
                         controls = true,
                         iframe;
-
-                    $('video').muted = true;
 
                     container.insertAdjacentElement('afterbegin', iframe =
                         furnish(`iframe#tt-embedded-video`, {
@@ -14272,10 +14607,11 @@ let Initialize = async(START_OVER = false) => {
                         })
                     );
 
+                    $('video').muted = true;
                     $('video', container).modStyle(`display:none`);
                     $('[data-a-player-state]')?.setTooltip(`${ name }'${ /s$/.test(name)? '': 's' } stream ran into an error`);
                 } else {
-                    WARN(`Attempting to pause/play the video`);
+                    $warn(`Attempting to pause/play the video`);
 
                     if($('button[data-a-player-state]')?.dataset?.aPlayerState?.equals('playing')) {
                         $('button[data-a-player-state]').click();
@@ -14318,7 +14654,7 @@ let Initialize = async(START_OVER = false) => {
 
         RegisterJob('recover_frames');
 
-        WARN("[Recover-Frames] is monitoring the stream...");
+        $warn("[Recover-Frames] is monitoring the stream...");
     }
 
     /*** Recover Stream
@@ -14361,18 +14697,18 @@ let Initialize = async(START_OVER = false) => {
             if(defined(playing))
                 playing.catch(error => { throw error });
         } catch(error) {
-            ERROR(error);
+            $error(error);
 
             let control = $('button[data-a-player-state]'),
                 playing = control.dataset?.aPlayerState?.equals('playing'),
                 attempts = control.dataset?.recoveryAttempts | 0;
 
             if(nullish(control)) {
-                WARN("No video controls presented.");
+                $warn("No video controls presented.");
 
                 break __RecoverVideoProgramatically__;
             } if(attempts > 3) {
-                WARN("Automatic attempts are not helping.");
+                $warn("Automatic attempts are not helping.");
 
                 break __RecoverVideoProgramatically__;
             }
@@ -14427,7 +14763,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.recover_video = async() => {
         new StopWatch('recover_video');
 
-        let errorMessage = $('[data-a-target^="player"i][data-a-target$="content-gate"i] [data-test-selector*="text"i], [data-a-target*="player"i][data-a-target*="gate"i] [data-a-target*="text"i]');
+        let errorMessage = $('[data-a-target*="player"i]:is([data-a-target*="content"i], [data-a-target*="gate"i]) [data-a-target*="text"i]');
 
         if(nullish(errorMessage))
             return StopWatch.stop('recover_video');
@@ -14436,7 +14772,7 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('recover_video');
         RECOVERING_VIDEO = true;
 
-        ERROR('The stream ran into an error:', errorMessage.textContent, new Date);
+        $error('The stream ran into an error:', errorMessage.textContent, new Date);
 
         if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
             let next = await GetNextStreamer();
@@ -14445,10 +14781,10 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next))
                 goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
         } else {
-            errorMessage.closest('button')?.click();
+            ($('button', errorMessage) ?? errorMessage.closest('button'))?.click();
 
             // Failed to play video at...
-            PushToTopSearch({ 'tt-err-vid': 'video-recovery--player-error' });
+            addToSearch({ 'tt-err-vid': 'video-recovery--player-error' });
 
             RECOVERING_VIDEO = false;
         }
@@ -14570,7 +14906,7 @@ let Initialize = async(START_OVER = false) => {
         let message = error.textContent,
             next = await GetNextStreamer();
 
-        ERROR(message);
+        $error(message);
 
         if(/content.*unavailable/i.test(message) && defined(next))
             goto(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }).href);
@@ -14597,7 +14933,7 @@ let Initialize = async(START_OVER = false) => {
 
             // The time has drifted by more than 25%
             if(span > (Timers.recover_pages * 1.25))
-                WARN(`The page seems to be lagging (${ span.suffix('s', false, 'time') })... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
+                $warn(`The page seems to be lagging (${ span.suffix('s', false, 'time') })... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
             else if(span < (Timers.recover_pages * 1.05) && RECOVER_PAGE_FROM_LAG__WARNINGS > 0)
                 --RECOVER_PAGE_FROM_LAG__WARNINGS;
 
@@ -14705,7 +15041,7 @@ let Initialize = async(START_OVER = false) => {
                             temp?.removeRecording(EVENT_NAME);
                         });
 
-                        SetQuality('auto').then(() => {
+                        SetQuality(VideoClips.quality, 'auto').then(() => {
                             Recording.proxy(video, { name: EVENT_NAME, as: DEFAULT_CLIP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats })
                                 .then(({ target }) => {
                                     let chunks = target.blobs;
@@ -14716,7 +15052,7 @@ let Initialize = async(START_OVER = false) => {
                                     return SAVE_NAME = name;
                                 })
                                 .catch(error => {
-                                    WARN(error);
+                                    $warn(error);
 
                                     alert.timed(error, 7000);
                                 })
@@ -14738,10 +15074,10 @@ let Initialize = async(START_OVER = false) => {
             let leaveHandler = STREAMER.onraid = STREAMER.onhost = top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
                 let next = await GetNextStreamer();
 
-                LOG('Saving current recording(s). Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
+                $log('Saving current recording(s). Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                 for(let [guid, { recording }] of Recording.__RECORDERS__)
-                    recording.stop().save();
+                    recording?.stop()?.save();
             };
 
             $.on('focusin', event => {
@@ -14923,7 +15259,7 @@ let Initialize = async(START_OVER = false) => {
     Miscellaneous: {
         // The theme
         THEME = [...$('html').classList].find(c => /theme-(\w+)/i.test(c)).replace(/[^]*theme-(\w+)/i, '$1').toLowerCase();
-        ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme != THEME).pop();
+        ANTITHEME = window.ANTITHEME = ['light', 'dark'].filter(theme => theme.unlike(THEME)).pop();
 
         let [PRIMARY, SECONDARY] = [STREAMER.tint, STREAMER.tone]
             .map(Color.HEXtoColor)
@@ -14950,7 +15286,7 @@ let Initialize = async(START_OVER = false) => {
             antitheme = (THEME.unlike('dark')? black: white);
 
         THEME__BASE_CONTRAST = contrastOf(PRIMARY, SECONDARY);
-        THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(PRIMARY, antitheme)? THEME: ANTITHEME) }`;
+        THEME__PREFERRED_CONTRAST = `${ THEME__BASE_CONTRAST.toString() } prefer ${ (contrastOf(PRIMARY, theme) > contrastOf(SECONDARY, theme)? THEME: ANTITHEME) }`;
 
         // Better styling. Will match the user's theme choice as best as possible
         AddCustomCSSBlock('Better-Themed Styling', `
@@ -14963,13 +15299,14 @@ let Initialize = async(START_OVER = false) => {
                 --channel-color-light: ${ THEME__CHANNEL_LIGHT };
             }
 
+            /* The user likes hurting their eyes */
             :root[class*="light"i] {
                 --color-colored: var(--channel-color-light);
                 --color-colored-contrast: var(--channel-color-dark);
                 --channel-color-opposite: var(--channel-color-complement);
             }
 
-            /* The user is using the dark theme */
+            /* The user is using the correct theme */
             :root[class*="dark"i] {
                 --color-colored: var(--channel-color-dark);
                 --color-colored-contrast: var(--channel-color-light);
@@ -15045,7 +15382,7 @@ let Initialize = async(START_OVER = false) => {
                             return response.json();
                         })
                         .then(metadata => {
-                            LOG({ ['GitHub']: metadata });
+                            $log({ ['GitHub']: metadata });
 
                             return properties.version.github = metadata.tag_name;
                         })
@@ -15128,7 +15465,7 @@ if(top == window) {
         let isProperRuntime = Manifest.version === version;
 
         PAGE_CHECKER = !isProperRuntime?
-            ERROR(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
+            $error(`The current runtime (v${ Manifest.version }) is not correct (v${ version })`)
                 .toNativeStack():
         setInterval(WAIT_FOR_PAGE = async() => {
             let sadOverlay = $('[data-test-selector*="sad"i][data-test-selector*="overlay"i]');
@@ -15161,7 +15498,7 @@ if(top == window) {
                     && (+new Date - LAST_TIME_AD_WAS_CHECKED) > (VIDEO_AD_COUNTDOWN + 2_500)
                     && LAST_VALUE_WHEN_AD_WAS_CHECKED.equals(adCountdown.textContent)
                 ) {
-                    WARN(`The advertisement seems to be stalled... Refreshing page...`);
+                    $warn(`The advertisement seems to be stalled... Refreshing page...`);
 
                     ReloadPage(false);
                 }
@@ -15224,7 +15561,7 @@ if(top == window) {
 
             Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => top.UP_NEXT_ALLOW_THIS_TAB = owner);
 
-            LOG("Main container ready");
+            $log("Main container ready");
 
             // Set the user's language
             let [documentLanguage] = (document.documentElement?.lang ?? navigator?.userLanguage ?? navigator?.language ?? 'en').toLowerCase().split('-');
@@ -15308,7 +15645,7 @@ if(top == window) {
                             )
                                 return PAGE_IS_READY = !clearInterval(REINIT_JOBS);
 
-                            WARN(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
+                            $warn(`The following did not activate properly: ${ NOT_LOADED_CORRECTLY }. Reloading...`);
 
                             for(let job of NOT_LOADED_CORRECTLY)
                                 if(defined(job))
@@ -15316,12 +15653,12 @@ if(top == window) {
 
                             if(parseBool(Settings.recover_pages)) {
                                 if(++RECOVERY_TRIALS > 10)
-                                    return PushToTopSearch(NOT_LOADED_CORRECTLY.map(fail => 'fail_to_load--' + fail), true);
+                                    return addToSearch(NOT_LOADED_CORRECTLY.map(fail => 'fail_to_load--' + fail), true);
                                 return false;
                             }
 
                             // Failed to activate job at...
-                            // PushToTopSearch({ 'tt-err-job': (+new Date).toString(36) }, true);
+                            // addToSearch({ 'tt-err-job': (+new Date).toString(36) }, true);
 
                             Initialize.ready = ready;
                         }, Math.max(...Object.values(Timers)));
@@ -15504,7 +15841,7 @@ if(top == window) {
                                     if(!family)
                                         return;
 
-                                    // NOTICE(`Labeling section "${ family[family.length - 1] }" (${ matchPercentage }% match | "${ glyph }")...`, container);
+                                    // $notice(`Labeling section "${ family[family.length - 1] }" (${ matchPercentage }% match | "${ glyph }")...`, container);
 
                                     container.setAttribute('tt-svg-label', family);
 
@@ -15530,7 +15867,7 @@ if(top == window) {
             }
 
             top.onlocationchange = () => {
-                WARN("[Parent] Re-initializing...");
+                $warn("[Parent] Re-initializing...");
 
                 Balloon.get('Up Next')?.remove();
 
@@ -15557,7 +15894,7 @@ if(top == window) {
 
                         for(let key in states)
                             if(parseBool(states[key]))
-                                PushToTopSearch({ [key]: states[key] });
+                                addToSearch({ [key]: states[key] });
 
                         break Reinitialize;
                     }
@@ -15923,7 +16260,11 @@ if(top == window) {
                         let { next, obit } = request,
                             name = parseURL(next).pathname.slice(1);
 
-                        NOTICE(`Job stolen "${ name }" by "${ obit }" tab`);
+                        $notice(`Job stolen "${ name }" by "${ obit }" tab`);
+
+                        // Can't be the next user if the job was stolen...
+                        if(GetNextStreamer?.cachedStreamer?.name?.equals(name))
+                            GetNextStreamer.cachedStreamer = null;
 
                         when.defined(name => $(`[id^="tt-balloon-job"i][name="${ name }"i]`), 100, name)
                             .then(element => {
@@ -15977,7 +16318,7 @@ if(top == window) {
 
                 when.defined(() => $(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ PATHNAME }"i])`))
                     .then(channel => {
-                        WARN(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
+                        $warn(`${ location.pathname.slice(1) } is not available: ${ ErrorMessage }\nHeading to ${ channel.href }`);
 
                         goto(channel.href);
                     })
@@ -16075,7 +16416,7 @@ if(top == window) {
             let socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
 
             let START_WS = socket.onopen = event => {
-                LOG(`Chat Relay (main) connected to "${ CHANNEL }"`);
+                $log(`Chat Relay (main) connected to "${ CHANNEL }"`);
 
                 // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
                 when(() => socket.readyState === WebSocket.OPEN)
@@ -16090,7 +16431,7 @@ if(top == window) {
                 socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
                     let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
 
-                    // REMARK('Chat Relay received messages', messages);
+                    // $remark('Chat Relay received messages', messages);
 
                     for(let { command, parameters, source, tags } of messages) {
                         const channel = (command.channel ?? CHANNEL).toLowerCase();
@@ -16111,14 +16452,14 @@ if(top == window) {
 
                             // Someone joined the server
                             case 'JOIN': {
-                                // LOG(`New user "${ source.nick }" on ${ channel }`);
+                                // $log(`New user "${ source.nick }" on ${ channel }`);
 
                                 Chat.gang.push(source.nick);
                             } break;
 
                             // Kicked!
                             case 'PART': {
-                                // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
+                                // $warn(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
 
                                 if(USERNAME.equals(source.nick))
                                     socket.close();
@@ -16150,9 +16491,9 @@ if(top == window) {
                                         });
                                 } else {
                                     if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
-                                        WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                        $warn(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
                                     else
-                                        WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                        $warn(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
 
                                     // socket.send(`PART ${ channel }`);
                                 }
@@ -16193,17 +16534,41 @@ if(top == window) {
                                     ),
                                     element = when.defined((message, subject) =>
                                         // TODO: get bullets via text content
-                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
+                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i]:not([class*="count"i]), [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
-                                                let [A, B] = [message, element.textContent].map(string => string.mutilate()).sort((a, b) => b.length - a.length);
+                                                let A = message.mutilate();
+                                                let B = element.textContent.mutilate();
+
+                                                if(A.length < B.length)
+                                                    [A, B] = [B, A];
 
                                                 if(false
                                                     // The element already has a UUID and type
-                                                    || (element.dataset.uuid && element.dataset.type)
+                                                    || (true
+                                                        && element.dataset.uuid
+                                                        && element.dataset.type
+                                                    )
                                                     // The text matches less than 40% of the message
                                                     || A.slice(0, B.length).errs(B) > .6
                                                 )
                                                     return false;
+
+                                                if(subject?.equals('coin')) {
+                                                    let I;
+
+                                                    STREAMER.shop.map(item => {
+                                                        if(true
+                                                            && message.contains(item.title)
+                                                            && item.title.mutilate().errs(A) < (I?.title?.mutilate()?.errs(A) ?? 1)
+                                                            && item.available
+                                                            && item.enabled
+                                                            && !(item.hidden || item.paused)
+                                                        ) I = item;
+                                                    });
+
+                                                    if(defined(I))
+                                                        element.dataset.shopItemId = I.id;
+                                                }
 
                                                 element.dataset.uuid ||= UUID.from(element.getPath());
                                                 element.dataset.type ||= subject;
@@ -16231,6 +16596,15 @@ if(top == window) {
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 250, callback, results).then(([callback, results]) => callback(results));
+
+                                for(let [name, callback] of Chat.__consumableEvents__.__onbullet__) {
+                                    when(() => PAGE_IS_READY, 250).then(() =>
+                                        callback(results).then(complete => {
+                                            if(complete)
+                                                Chat.__consumableEvents__.__onbullet__.delete(name);
+                                        })
+                                    );
+                                }
                             } break;
 
                             // The channel is hosting...
@@ -16248,7 +16622,7 @@ if(top == window) {
 
                             // Got a message...
                             case 'PRIVMSG': {
-                                // REMARK('PRIVMSG:', { command, parameters, source, tags });
+                                // $remark('PRIVMSG:', { command, parameters, source, tags });
 
                                 // Bot commands...
                                 if(defined(command.botCommand)) {
@@ -16259,6 +16633,15 @@ if(top == window) {
 
                                     for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
                                         when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                    for(let [name, callback] of Chat.__consumableEvents__.__oncommand__) {
+                                        when(() => PAGE_IS_READY, 250).then(() =>
+                                            callback(results).then(complete => {
+                                                if(complete)
+                                                    Chat.__consumableEvents__.__oncommand__.delete(name);
+                                            })
+                                        );
+                                    }
 
                                     continue;
                                 }
@@ -16355,6 +16738,15 @@ if(top == window) {
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                                    when(() => PAGE_IS_READY, 250).then(() =>
+                                        callback(results).then(complete => {
+                                            if(complete)
+                                                Chat.__consumableEvents__.__onmessage__.delete(name);
+                                        })
+                                    );
+                                }
                             } break;
 
                             // Got a whisper
@@ -16366,6 +16758,15 @@ if(top == window) {
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                for(let [name, callback] of Chat.__consumableEvents__.__onwhisper__) {
+                                    when(() => PAGE_IS_READY, 250).then(() =>
+                                        callback(results).then(complete => {
+                                            if(complete)
+                                                Chat.__consumableEvents__.__onwhisper__.delete(name);
+                                        })
+                                    );
+                                }
                             } break;
 
                             default: continue;
@@ -16375,14 +16776,14 @@ if(top == window) {
             };
 
             socket.onerror = event => {
-                WARN(`Chat Relay (main) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
+                $warn(`Chat Relay (main) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
 
                 socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
                 START_WS(event);
             };
 
             socket.onclose = event => {
-                WARN(`Chat Relay (main) closed unexpectedly → ${ JSON.stringify(event) }`);
+                $warn(`Chat Relay (main) closed unexpectedly → ${ JSON.stringify(event) }`);
 
                 socket = (TTV_IRC.socket = new WebSocket(TTV_IRC.wsURL));
                 START_WS(event);
@@ -16391,7 +16792,7 @@ if(top == window) {
             // The socket closed...
             when(() => TTV_IRC.socket?.readyState === WebSocket.CLOSED, 1000)
                 .then(closed => {
-                    WARN(`The WebSocket closed... Restarting in 5s...`);
+                    $warn(`The WebSocket closed... Restarting in 5s...`);
 
                     wait(5000)
                         .then(() => {
@@ -16455,6 +16856,15 @@ if(top == window) {
 
                         for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
                             when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                        for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                            when(() => PAGE_IS_READY, 250).then(() =>
+                                callback(results).then(complete => {
+                                    if(complete)
+                                        Chat.__consumableEvents__.__onmessage__.delete(name);
+                                })
+                            );
+                        }
                     }
                 });
         }

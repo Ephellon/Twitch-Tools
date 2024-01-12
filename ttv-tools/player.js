@@ -18,13 +18,11 @@
 
 ;
 
-let here = parseURL(location);
+let here = parseURL(window.location.href);
+
+Runtime.sendMessage({ action: 'FETCH_SHARED_DATA' }, data => Object.assign(window, data));
 
 let {
-    USERNAME,
-    LANGUAGE,
-    THEME,
-
     PATHNAME = here.pathname,
     STREAMER = ({
         get href() { return `https://www.twitch.tv/${ STREAMER.name }` },
@@ -65,7 +63,7 @@ let Player__Initialize = async(START_OVER = false) => {
             let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
         }
     }
@@ -99,6 +97,56 @@ let Player__Initialize = async(START_OVER = false) => {
     __AutoMatureAccept__:
     if(parseBool(Settings.auto_accept_mature)) {
         RegisterJob('auto_accept_mature');
+    }
+
+    /*** Recover Video
+     *      _____                               __      ___     _
+     *     |  __ \                              \ \    / (_)   | |
+     *     | |__) |___  ___ _____   _____ _ __   \ \  / / _  __| | ___  ___
+     *     |  _  // _ \/ __/ _ \ \ / / _ \ '__|   \ \/ / | |/ _` |/ _ \/ _ \
+     *     | | \ \  __/ (_| (_) \ V /  __/ |       \  /  | | (_| |  __/ (_) |
+     *     |_|  \_\___|\___\___/ \_/ \___|_|        \/   |_|\__,_|\___|\___/
+     *
+     *
+     */
+    let RECOVERING_VIDEO = false;
+
+    Handlers.recover_video = async() => {
+        new StopWatch('recover_video');
+
+        let errorMessage = $('[data-a-target*="player"i]:is([data-a-target*="content"i], [data-a-target*="gate"i]) [data-a-target*="text"i]');
+
+        if(nullish(errorMessage))
+            return StopWatch.stop('recover_video');
+
+        if(RECOVERING_VIDEO)
+            return StopWatch.stop('recover_video');
+        RECOVERING_VIDEO = true;
+
+        $error('The stream ran into an error:', errorMessage.textContent, new Date);
+
+        if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
+            let next = await GetNextStreamer();
+
+            // Subscriber only, etc.
+            if(defined(next))
+                goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
+        } else {
+            ($('button', errorMessage) ?? errorMessage.closest('button'))?.click();
+
+            // Failed to play video at...
+            addToSearch({ 'tt-err-vid': 'video-recovery--player-error' });
+
+            RECOVERING_VIDEO = false;
+        }
+
+        StopWatch.stop('recover_video');
+    };
+    Timers.recover_video = 5000;
+
+    __RecoverVideo__:
+    if(parseBool(Settings.recover_video)) {
+        RegisterJob('recover_video');
     }
 
     /*** Customization
@@ -147,7 +195,7 @@ let Player__Initialize = async(START_OVER = false) => {
                     return;
                 BLANK_AD_PRESENCE = isBlankAd;
 
-                // WARN(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
+                // $warn(`The Purple banner of death!`, { isBlankAd, matchPercentage, analysisTime });
 
                 window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: isBlankAd }, '*');
             });
@@ -206,7 +254,7 @@ let Player__Initialize = async(START_OVER = false) => {
                 $.head.append(link);
                 link.click();
             })
-            .catch(WARN)
+            .catch($warn)
             .finally(() => {
                 let link = $(`#${ slug }`);
 
@@ -300,7 +348,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     let banned = STREAMER?.veto || !!$.all('[class*="banned"i]').length;
 
     if([banned].contains(true)) {
-        WARN('[NON_FATAL] Framed container unavailable. Reason:', { banned });
+        $warn('[NON_FATAL] Framed container unavailable. Reason:', { banned });
 
         await Settings.get();
 
@@ -318,7 +366,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
     );
 
     if(ready) {
-        LOG(`Framed container ready → <iframe>@${ location.href }`);
+        $log(`Framed container ready → <iframe>@${ location.href }`);
 
         await Settings.get();
 
@@ -384,7 +432,7 @@ Player__PAGE_CHECKER = setInterval(Player__WAIT_FOR_PAGE = async() => {
                                 if(matchPercentage < 80 || container.getAttribute('tt-svg-label')?.length)
                                     return;
 
-                                // LOG(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
+                                // $log(`Labeling section "${ glyph }" (${ matchPercentage }% match)...`, container);
 
                                 container.setAttribute('tt-svg-label', conversions[glyph]?.pop());
                             });

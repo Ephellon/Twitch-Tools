@@ -123,6 +123,8 @@ Object.defineProperties(RESERVED_TWITCH_PATHNAMES, {
     has: { value(value) { return !!~this.indexOf(value) } },
 });
 
+let SHARED_DATA = new Map;
+
 /**
  * Reloads the specified tab.
  * @simply ReloadTab(tab:object<Tab>, onlineOnly:boolean?, forced:boolean?) → undefined
@@ -282,7 +284,7 @@ let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstall
     // ({ reason:string<"install" | "update" | "chrome_update" | "shared_module_update">, previousVersion:string?, id:string? }) → undefined
 Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     Container.tabs.query({
-        url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
+        url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*", "*://clips.twitch.tv/*"],
     }, (tabs = []) => {
         Storage.set({ onInstalledReason: reason, chromeUpdateAvailable: false, githubUpdateAvailable: false });
 
@@ -353,6 +355,8 @@ Storage.onChanged.addListener(changes => {
             case 'githubUpdateAvailable': {
                 if(newValue === true)
                     Container.action.setBadgeText({ text: '\u2191' });
+                else
+                    Container.action.setBadgeText({ text: '' });
             } break updater;
 
             default: continue updater;
@@ -370,7 +374,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
             return;
 
         Container.tabs.query({
-            url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*"],
+            url: ["*://www.twitch.tv/*", "*://player.twitch.tv/*", "*://clips.twitch.tv/*"],
         }, tabs => {
             if(nullish(tabs))
                 return;
@@ -419,7 +423,7 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
                         // Does the Tab ID match?
                         checking_tab_id: for(let tab of tabs)
-                            if(hostHas(tab.url, 'player.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.') || RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
+                            if(hostHas(tab.url, 'player.', 'clips.', 'safety.', 'help.', 'blog.', 'dev.', 'api.', 'tmi.') || RESERVED_TWITCH_PATHNAMES.has(getName(tab.url))) {
                                 continue checking_tab_id;
                             } else if(ownerAlive ||= (tab.id == UP_NEXT_OWNER)) {
                                 owner = tab.id;
@@ -515,6 +519,20 @@ Runtime.onMessage.addListener((request, sender, respond) => {
 
             console.warn(`Beginning report for tab #${ tab.id }`);
             REPORTS.set(tab.id, +new Date);
+        } break;
+
+        case 'FETCH_SHARED_DATA': {
+            let sData = {};
+
+            for(let [key, value] of SHARED_DATA)
+                sData[key] = value;
+
+            respond(sData);
+        } break;
+
+        case 'POST_SHARED_DATA': {
+            for(let key in request.data)
+                SHARED_DATA.set(key, request.data[key]);
         } break;
     }
 

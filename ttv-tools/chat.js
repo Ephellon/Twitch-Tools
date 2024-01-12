@@ -21,21 +21,28 @@
 top.Queue ??= { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] };
 
 let Chat__Initialize = async(START_OVER = false) => {
+    let here = parseURL(window.location.href);
+    let fsData = Object.assign(await Runtime.sendMessage({ action: 'FETCH_SHARED_DATA' }), top);
+
     let {
-        USERNAME,
+        USERNAME = Search?.cookies?.name,
         LANGUAGE,
         THEME,
 
-        PATHNAME,
-        NORMALIZED_PATHNAME,
-        STREAMER,
+        PATHNAME = here.pathname,
+        NORMALIZED_PATHNAME = here.pathname.replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1'),
+        STREAMER = ({
+            get href() { return `https://www.twitch.tv/${ STREAMER.name }` },
+            get name() { return here.searchParameters.channel },
+            get live() { return !$.all('[href*="offline_embed"i]').length },
+            get sole() { return parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.src?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null },
+        }),
 
-        GLOBAL_EVENT_LISTENERS,
-    } = top;
+        GLOBAL_EVENT_LISTENERS = {},
+    } = fsData;
 
     // Fill STREAMER
-    let [path, name, endpoint] = location.pathname.split(/(?<!^)\//),
-        sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.src?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
+    let [path, name, endpoint] = location.pathname.split(/(?<!^)\//);
 
     // Get Twitch Badges
     let TTV_BADGES = {
@@ -52,12 +59,6 @@ let Chat__Initialize = async(START_OVER = false) => {
             for(let { name, uuid } of json)
                 TTV_BADGES[name] = uuid;
         });
-
-    USERNAME ??= Search?.cookies?.name;
-    STREAMER ??= ({ name: (name ?? path.slice(1)), sole });
-
-    // Fill GLOBAL_EVENT_LISTENERS
-    GLOBAL_EVENT_LISTENERS ??= {};
 
     // Time how long jobs take to complete properly
     class StopWatch {
@@ -88,7 +89,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let { max, name } = this;
 
             if(span > max)
-                WARN(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
+                $warn(`"${ name.replace(/(^|_)(\w)/g, ($0, $1, $2, $$, $_) => ['',' '][+!!$1] + $2.toUpperCase()).replace(/_+/g, '- ') }" took ${ (span / 1000).suffix('s', 2).replace(/\.0+/, '') } to complete (max time allowed is ${ (max / 1000).suffix('s', 2).replace(/\.0+/, '') }). Offense time: ${ new Date }. Offending site: ${ location.pathname }`)
                     ?.toNativeStack?.();
         }
     }
@@ -122,8 +123,17 @@ let Chat__Initialize = async(START_OVER = false) => {
             ),
             Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
-        if(Enabled)
+        if(Enabled) {
             ChannelPoints?.click();
+
+            when.defined(() => $('[data-test-selector="community-points-summary"i] button[disabled]')).then(clickedButton => {
+                let playedAnimation;
+
+                when.defined(() => $('.pulse-animation [class*="channel"i][class*="points"i]')).then(ok => playedAnimation = ok);
+
+                wait(10_000).then(() => top.TWITCH_INTEGRITY_FAIL = !playedAnimation);
+            });
+        }
 
         let BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
             id: 'tt-auto-claim-indicator',
@@ -210,6 +220,12 @@ let Chat__Initialize = async(START_OVER = false) => {
             button.text.innerHTML = ['','+'][+enabled] + BonusChannelPointsSVG;
             button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +enabled)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
         };
+
+        top.onintegritychange = okay =>
+            $('#tt-auto-claim-indicator')?.modStyle(`background-color:${ ['#ff4f4d','#00ad96'][+okay] }`);
+
+        top.onintegritychange = okay =>
+            button.tooltip.innerHTML = Glyphs.modify('channelpoints', { style: `height: 1.5rem; width: 1.5rem; vertical-align: bottom` }) + ` ${ ((120 + (200 * +okay)) * CHANNEL_POINTS_MULTIPLIER) | 0 } / h`;
 
         button.container.onmouseenter ??= event => {
             button.icon?.setAttribute('hover', true);
@@ -318,7 +334,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     if(EmoteSearch.__onquery__.has(name))
                         return EmoteSearch.__onquery__.get(name);
 
-                    // REMARK('Adding [on query] event listener', { [name]: callback });
+                    // $remark('Adding [on query] event listener', { [name]: callback });
 
                     EmoteSearch.__onquery__.set(name, callback);
 
@@ -519,7 +535,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             BTTV_OWNERS.set(code, { ...user, userId: userId ?? user.id });
                         }
                     })
-                    .catch(WARN);
+                    .catch($warn);
             // Load emotes with a certain name
             else if(keyword?.length)
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0 && !NON_EMOTE_PHRASES.has(keyword); (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
@@ -546,7 +562,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                         .catch(error => {
                             NON_EMOTE_PHRASES.add(keyword);
 
-                            WARN(error);
+                            $warn(error);
                         });
             // Load all emotes from...
             else
@@ -567,7 +583,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             offset += emotes.length | 0;
                             allLoaded ||= emotes.length > maxNumOfEmotes || emotes.length < 15;
                         })
-                        .catch(WARN);
+                        .catch($warn);
         },
         REFURBISH_BTTV_EMOTE_TOOLTIPS = fragment => {
             $.all('[data-bttv-emote]', fragment)
@@ -633,7 +649,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                 });
                             })
                             .catch(error => {
-                                WARN(error);
+                                $warn(error);
 
                                 resultCard.post({
                                     title: bttvEmote,
@@ -712,7 +728,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __BetterTTVEmotes__:
     if(parseBool(Settings.bttv_emotes)) {
-        REMARK("Loading BTTV emotes...");
+        $remark("Loading BTTV emotes...");
 
         // Use 85% of available space to load "required" emotes
         BTTV_MAX_EMOTES = Math.round(parseInt(Settings.bttv_emotes_maximum) * 0.85);
@@ -746,7 +762,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 container.append(...BTTVEmotes.shuffle().slice(0, 102).map(CONVERT_TO_BTTV_EMOTE));
             })
             .then(() => {
-                REMARK("Adding BTTV emote event listener...");
+                $remark("Adding BTTV emote event listener...");
 
                 // Run the bttv-emote changer on pre-populated messages
                 Chat.get().map(Chat.onmessage = async line => {
@@ -826,7 +842,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 }, 250);
             });
 
-        REMARK("Adding BTTV emote search listener...");
+        $remark("Adding BTTV emote search listener...");
 
         EmoteSearch.onquery = async query => {
             await LOAD_BTTV_EMOTES(query, null, true).then(() => {
@@ -1047,7 +1063,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         else
             wait(250).then(CollectEmotes);
 
-        REMARK("Adding emote event listener...");
+        $remark("Adding emote event listener...");
 
         // Run the emote catcher on pre-populated messages
         Chat.get().map(Chat.onmessage = async line => {
@@ -1055,7 +1071,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             for(let emote in line.emotes)
                 if(!OWNED_EMOTES.has(emote) && !CAPTURED_EMOTES.has(emote) && !BTTV_EMOTES.has(emote)) {
-                    // LOG(`Adding emote "${ emote }"`);
+                    // $log(`Adding emote "${ emote }"`);
 
                     CAPTURED_EMOTES.set(emote, line.emotes[emote]);
 
@@ -1121,7 +1137,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 }
         });
 
-        REMARK("Adding emote search listener...");
+        $remark("Adding emote search listener...");
 
         EmoteSearch.onquery = query => {
             let results = [...CAPTURED_EMOTES]
@@ -1269,7 +1285,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(hidden || mentions.contains(USERNAME))
                     return;
 
-                LOG(`Censoring message because the ${ reason } matches: ${ match }`, line);
+                $log(`Censoring message because the ${ reason } matches: ${ match }`, line);
 
                 element.setAttribute('tt-hidden-message', censor);
             });
@@ -1290,7 +1306,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __FilterMessages__:
     if(parseBool(Settings.filter_messages)) {
-        REMARK("Adding message filtering...");
+        $remark("Adding message filtering...");
 
         RegisterJob('filter_messages');
     }
@@ -1445,7 +1461,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         Settings.filter_messages__bullets_note,
         Settings.filter_messages__bullets_paid,
     ].map(parseBool).contains(true)) {
-        REMARK("Adding bulletin filtering...");
+        $remark("Adding bulletin filtering...");
 
         RegisterJob('filter_bulletins');
     }
@@ -1502,7 +1518,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(!censor)
                     return;
 
-                LOG(`Highlighting message because the ${ reason } matches`, line);
+                $log(`Highlighting message because the ${ reason } matches`, line);
 
                 let highlight = parseBool(element.hasAttribute('tt-light'));
 
@@ -1531,7 +1547,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __HighlightPhrases__:
     if(parseBool(Settings.highlight_phrases)) {
-        REMARK("Adding phrase highlighting...");
+        $remark("Adding phrase highlighting...");
 
         RegisterJob('highlight_phrases');
     }
@@ -1696,7 +1712,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let { author, message, style } = line;
                     let element = await line.element;
 
-                    // LOG('Highlighting message:', { author, message });
+                    // $log('Highlighting message:', { author, message });
 
                     let [color] = style.split(/color:([^;]+)/i).map(s => s.trim()).filter(s => s.length).map(Color.destruct);
 
@@ -1739,7 +1755,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     if(defined(existing))
                         return;
 
-                    // LOG('Generating footer:', { author, message });
+                    // $log('Generating footer:', { author, message });
 
                     new ChatFooter(`@${ author } mentioned you.`, {
                         onclick: event => {
@@ -1751,7 +1767,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                             if(defined(existing))
                                 existing.remove();
 
-                            LOG('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
+                            $log('Clicked [reply] button', { author, chatbox, existing, line, message, reply });
 
                             (reply ?? $('button[data-test-selector*="reply"i]', element))?.click();
                         },
@@ -1929,7 +1945,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __NativeTwitchReply__:
     if(parseBool(Settings.native_twitch_reply)) {
-        REMARK("Adding native reply buttons...");
+        $remark("Adding native reply buttons...");
 
         RegisterJob('native_twitch_reply');
     }
@@ -1967,9 +1983,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(nullish(content))
                 return;
 
-            let { href, origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL(content.innerText);
+            let { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = parseURL(content.innerText);
 
-            if(!href?.length)
+            if(href.trim().length < 2)
                 return;
 
             content.innerHTML =
@@ -1982,7 +1998,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 .then(response => response.text())
                 .then(DOMParser.stripBody)
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                .catch(WARN)
+                .catch($warn)
                 .then(DOM => {
                     if(!(DOM instanceof Document))
                         throw TypeError(`No DOM available. Page not loaded`);
@@ -1993,7 +2009,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let [title, description, image, url, audio] = ["title", "description", "image", "url", "audio"].map(get),
                         error = DOM.querySelector('parsererror')?.textContent;
 
-                    LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
+                    $log(`Loaded page: Blerp @ ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - timerStart) / 1000).suffix('s', false) });
 
                     if(!title?.length || !image?.length) {
                         if(!error?.length)
@@ -2003,7 +2019,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     }
 
                     let aliasContainer = $(`[data-blerp="${ parseURL(url).pathname }"i]`),
-                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; width:-webkit-fill-available; width:-moz-available;' }, f.source({ src: audio }));
+                        audioContainer = f(`audio[controls]`, { style: 'margin:1rem 0; min-width:-webkit-fill-available; min-width:-moz-available;' }, f.source({ src: audio }));
 
                     if(nullish(aliasContainer))
                         return;
@@ -2030,7 +2046,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let { groups } = parsed,
                 { href = '', origin, protocol, scheme, host, hostname, port, pathname, search, hash } = groups;
 
-            if(href.length < 2)
+            if(href.trim().length < 2)
                 return;
             let unknown = Symbol('UNKNOWN');
             let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
@@ -2077,7 +2093,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     let [title = '', description = '', image] = ["title", "description", "image"].map(get),
                         error = DOM.querySelector('parsererror')?.textContent;
 
-                    LOG(`Loaded page ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
+                    $log(`Loaded page: Card @ ${ href }`, { title, description, image, DOM, size: (DOM.documentElement.innerHTML.length * 8).suffix('B', 2, 'data'), time: ((+new Date - CHAT_CARDIFYING_TIMERS.get(href)) / 1000).suffix('s', false) });
 
                     if(!title?.length || !image?.length) {
                         CHAT_CARDIFIED.set(href, f.span());
@@ -2144,7 +2160,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     if($.nullish('[class*="chat-paused"i]'))
                         container.scrollIntoViewIfNeeded(true);
                 })
-                .catch(ERROR);
+                .catch($error);
         });
     };
     Timers.link_maker__chat = -500;
@@ -2160,7 +2176,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __LinkMaker__:
     if(LINK_MAKER_ENABLED = parseBool(Settings.link_maker__chat)) {
-        REMARK("Adding link maker (chat)...");
+        $remark("Adding link maker (chat)...");
 
         RegisterJob('link_maker__chat');
     }
@@ -2232,7 +2248,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 if(nullish(message))
                     return;
 
-                NOTICE(`Sending lurking message because the ${ reason } matches`, message, messages);
+                $notice(`Sending lurking message because the ${ reason } matches`, message, messages);
 
                 Chat.send(message);
 
@@ -2345,7 +2361,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __PreventSpam__:
     if(parseBool(Settings.prevent_spam)) {
-        REMARK("Adding spam event listener...");
+        $remark("Adding spam event listener...");
 
         RegisterJob('prevent_spam');
     }
@@ -2443,7 +2459,7 @@ let Chat__Initialize = async(START_OVER = false) => {
     __SimplifyChat__:
     // Always enabled
     if(true) {
-        REMARK("Applying readability settings...");
+        $remark("Applying readability settings...");
 
         RegisterJob('simplify_chat');
     }
@@ -2547,7 +2563,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __ConvertBits__:
     if(parseBool(Settings.convert_bits)) {
-        REMARK("Adding Bit converter...");
+        $remark("Adding Bit converter...");
 
         RegisterJob('convert_bits');
     }
@@ -2588,7 +2604,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             }
         }
 
-        let container = $('[data-test-selector="RequiredPoints"i]:not(:empty)')?.closest?.('button');
+        let container = $('[data-test-selector*="required"i][data-test-selector*="points"i]:not(:empty)')?.closest?.('button');
 
         if(nullish(container)) {
             StopWatch.stop('rewards_calculator');
@@ -2607,7 +2623,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         // Set the progress bar of the button
         let have = parseFloat(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
             este = parseFloat(timeLeftInBroadcast * pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER),
-            goal = parseFloat($('[data-test-selector="RequiredPoints"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
+            goal = parseFloat($('[data-test-selector*="required"i][data-test-selector*="points"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
 
         container?.modStyle(`background:linear-gradient(to right,var(--color-background-button-primary-default) 0 ${ (100 * (have / goal)).toFixed(3) }%,var(--color-opac-p-8) 0 ${ (100 * ((have + este) / goal)).toFixed(3) }%,var(--color-background-button-disabled) 0 0); color:var(--color-text-base)!important; text-shadow:0 0 1px var(--color-background-alt);`);
@@ -3027,7 +3043,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
     __RewardsCalculator__:
     if(parseBool(Settings.rewards_calculator)) {
-        REMARK("Adding Rewards Calculator...");
+        $remark("Adding Rewards Calculator...");
 
         RegisterJob('rewards_calculator');
     }
@@ -3211,7 +3227,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             RESTORED_MESSAGES.add(uuid);
 
-            NOTICE(`Restoring message (${ uuid }):`, line);
+            $notice(`Restoring message (${ uuid }):`, line);
 
             // Fragmented...
             if(emotes.length > 0) {
@@ -3262,7 +3278,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(defined(target))
                 target.dataset.aTarget = 'chat-restored-message-placeholder';
 
-            NOTICE(`Restored message "${ author }: ${ message }"`, { line, container });
+            $notice(`Restored message "${ author }: ${ message }"`, { line, container });
         }
 
         StopWatch.stop('recover_messages');
@@ -3350,10 +3366,10 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         if(current)
             return;
 
-        WARN(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
+        $warn(`There is a raid happening on another channel... ${ from } → ${ to } (${ raid_banner.join(' to ') })`);
 
         Runtime.sendMessage({ action: 'LOG_RAID_EVENT', data: { from, to } }, async({ events }) => {
-            WARN(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
+            $warn(`${ from } has raided ${ events } time${ (events != 1? 's': '') } this week. Current raid: ${ to } @ ${ (new Date) }`);
 
             let payable = $.defined('[data-test-selector="balance-string"i]');
 
@@ -3366,7 +3382,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
     __GreedyRaiding__:
     if(parseBool(Settings.greedy_raiding)) {
-        // REMARK('[CHILD] Adding raid-watching logic...');
+        // $remark('[CHILD] Adding raid-watching logic...');
 
         RegisterJob('greedy_raiding');
     }
@@ -3480,7 +3496,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
         if(!STREAMER?.veto)
             return;
 
-        LOG(`Performing Soft Unban...`);
+        $log(`Performing Soft Unban...`);
 
         let f = furnish;
 
@@ -3525,7 +3541,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
             chat.classList.add("chat-list--default", "scrollable-area");
             chat.replaceChild(iframe, chat.firstChild);
         } catch(error) {
-            WARN(`Could not perform "old" unban method`, error);
+            $warn(`Could not perform "old" unban method`, error);
 
             chat = $('.chat-input');
             cont = chat.previousElementSibling;
@@ -3538,7 +3554,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
                 cont.replaceChild(iframe, cont.firstChild);
             } catch(error) {
-                WARN(`Could not perform "new" unban method`, error);
+                $warn(`Could not perform "new" unban method`, error);
             }
         }
     };
@@ -3581,7 +3597,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
     if([banned, hidden].map(parseBool).contains(true)) {
         if(!parseBool(hidden))
-            WARN('[NON_FATAL] Child container unavailable. Is it a ban? ', ['No', 'Yes'][+banned], 'Is chat embedded and hidden?', ['No', 'Yes'][+hidden]);
+            $warn('[NON_FATAL] Child container unavailable. Is it a ban? ', ['No', 'Yes'][+banned], 'Is chat embedded and hidden?', ['No', 'Yes'][+hidden]);
 
         wait(5000).then(() => Chat__Initialize_Safe_Mode({ banned, hidden }));
         clearInterval(Chat__PAGE_CHECKER);
@@ -3633,7 +3649,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     if(!ready)
         return;
 
-    LOG("Child container ready");
+    $log("Child container ready");
 
     await Settings.get();
 
@@ -3692,7 +3708,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             let socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
 
             let START_WS = socket.onopen = event => {
-                LOG(`Chat Relay (child) connected to "${ CHANNEL }"`);
+                $log(`Chat Relay (child) connected to "${ CHANNEL }"`);
 
                 // CONNECTING → 0; OPEN → 1; CLOSING → 2; CLOSED → 3
                 when(() => socket.readyState === WebSocket.OPEN)
@@ -3707,7 +3723,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 socket.onmessage = socket.reflect = CHAT_SELF_REFLECTOR = async event => {
                     let messages = event.data.trim().split('\r\n').map(TTV_IRC.parseMessage).filter(defined);
 
-                    // REMARK('Chat Relay received messages', messages);
+                    // $remark('Chat Relay received messages', messages);
 
                     for(let { command, parameters, source, tags } of messages) {
                         const channel = (command.channel ?? CHANNEL).toLowerCase();
@@ -3728,14 +3744,14 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                             // Someone joined the server
                             case 'JOIN': {
-                                // LOG(`New user "${ source.nick }" on ${ channel }`);
+                                // $log(`New user "${ source.nick }" on ${ channel }`);
 
                                 Chat.gang?.push(source.nick);
                             } break;
 
                             // Kicked!
                             case 'PART': {
-                                // WARN(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
+                                // $warn(`Unable to relay messages from "${ source.nick }" on ${ channel }`);
 
                                 if(USERNAME.equals(source.nick))
                                     socket.close();
@@ -3761,9 +3777,9 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                         Chat[CHANNEL][typ].push(...parameters.replace(/^[^:]*(.+?)\.?$/, ($0, $1) => $1.replace(/[:\s]+/g, '').toLowerCase()).split(','));
                                 } else {
                                     if(/^((?:bad|msg|no|un(?:available|recognized))_|(?:invalid)|_(?:banned|error|limit|un(?:expected)))/i.test(tags?.msg_id))
-                                        WARN(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                        $warn(`There's an error on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
                                     else
-                                        WARN(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
+                                        $warn(`Something's happening on ${ channel }: ${ parameters }`, { command, parameters, source, tags });
 
                                     // socket.send(`PART ${ channel }`);
                                 }
@@ -3802,19 +3818,43 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                             'coin':
                                         'note'
                                     ),
-                                    element = when.defined((message, subject) =>
+                                    element = when.defined(async(message, subject) =>
                                         // TODO: get bullets via text content
-                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i], [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
+                                        $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) *:is(.tt-accent-region, [data-test-selector="user-notice-line"i], [class*="notice"i][class*="line"i], [class*="gift"i]:not([class*="count"i]), [data-test-selector="announcement-line"i], [class*="announcement"i][class*="line"i])')
                                             .find(element => {
-                                                let [A, B] = [message, element.textContent].map(string => string.mutilate()).sort((a, b) => b.length - a.length);
+                                                let A = message.mutilate();
+                                                let B = element.textContent.mutilate();
+
+                                                if(A.length < B.length)
+                                                    [A, B] = [B, A];
 
                                                 if(false
                                                     // The element already has a UUID and type
-                                                    || (element.dataset.uuid && element.dataset.type)
+                                                    || (true
+                                                        && element.dataset.uuid
+                                                        && element.dataset.type
+                                                    )
                                                     // The text matches less than 40% of the message
                                                     || A.slice(0, B.length).errs(B) > .6
                                                 )
                                                     return false;
+
+                                                if(subject?.equals('coin')) {
+                                                    let I;
+
+                                                    STREAMER.shop?.map(item => {
+                                                        if(true
+                                                            && item.prompt.length > (I?.prompt?.length | 0)
+                                                            && item.prompt.mutilate().errs(A) < (I?.prompt?.mutilate()?.errs(A) ?? 1)
+                                                            && item.available
+                                                            && item.enabled
+                                                            && !(item.hidden || item.paused)
+                                                        ) I = item;
+                                                    });
+
+                                                    if(defined(I))
+                                                        element.dataset.shopItemId = I.id;
+                                                }
 
                                                 element.dataset.uuid ||= UUID.from(element.getPath());
                                                 element.dataset.type ||= subject;
@@ -3842,6 +3882,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onbullet__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                for(let [name, callback] of Chat.__consumableEvents__.__onbullet__) {
+                                    when(() => PAGE_IS_READY, 250).then(() =>
+                                        callback(results).then(complete => {
+                                            if(complete)
+                                                Chat.__consumableEvents__.__onbullet__.delete(name);
+                                        })
+                                    );
+                                }
                             } break;
 
                             // The channel is hosting...
@@ -3859,7 +3908,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                             // Got a message...
                             case 'PRIVMSG': {
-                                // REMARK('PRIVMSG:', { command, parameters, source, tags });
+                                // $remark('PRIVMSG:', { command, parameters, source, tags });
 
                                 // Bot commands...
                                 if(defined(command.botCommand)) {
@@ -3870,6 +3919,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                     for(let [name, callback] of Chat.__deferredEvents__.__oncommand__)
                                         when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                    for(let [name, callback] of Chat.__consumableEvents__.__oncommand__) {
+                                        when(() => PAGE_IS_READY, 250).then(() =>
+                                            callback(results).then(complete => {
+                                                if(complete)
+                                                    Chat.__consumableEvents__.__oncommand__.delete(name);
+                                            })
+                                        );
+                                    }
 
                                     continue;
                                 }
@@ -3966,6 +4024,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                                    when(() => PAGE_IS_READY, 250).then(() =>
+                                        callback(results).then(complete => {
+                                            if(complete)
+                                                Chat.__consumableEvents__.__onmessage__.delete(name);
+                                        })
+                                    );
+                                }
                             } break;
 
                             // Got a whisper
@@ -3977,6 +4044,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                                 for(let [name, callback] of Chat.__deferredEvents__.__onwhisper__)
                                     when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                                for(let [name, callback] of Chat.__consumableEvents__.__onwhisper__) {
+                                    when(() => PAGE_IS_READY, 250).then(() =>
+                                        callback(results).then(complete => {
+                                            if(complete)
+                                                Chat.__consumableEvents__.__onwhisper__.delete(name);
+                                        })
+                                    );
+                                }
                             } break;
 
                             default: continue;
@@ -3986,14 +4062,14 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             };
 
             socket.onerror = event => {
-                WARN(`Chat Relay (child) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
+                $warn(`Chat Relay (child) failed to connect to "${ CHANNEL }" → ${ JSON.stringify(event) }`);
 
                 socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
                 START_WS(event);
             };
 
             socket.onclose = event => {
-                WARN(`Chat Relay (child) closed unexpectedly → ${ JSON.stringify(event) }`);
+                $warn(`Chat Relay (child) closed unexpectedly → ${ JSON.stringify(event) }`);
 
                 socket = (TTV_IRC.sockets[CHANNEL] = new WebSocket(TTV_IRC.wsURL_chat));
                 START_WS(event);
@@ -4002,7 +4078,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             // The socket closed...
             when(() => TTV_IRC.sockets[CHANNEL]?.readyState === WebSocket.CLOSED, 1000)
                 .then(closed => {
-                    WARN(`The WebSocket closed... Restarting in 5s...`);
+                    $warn(`The WebSocket closed... Restarting in 5s...`);
 
                     wait(5000)
                         .then(() => {
@@ -4066,6 +4142,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                             for(let [name, callback] of Chat.__deferredEvents__.__onmessage__)
                                 when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+                            for(let [name, callback] of Chat.__consumableEvents__.__onmessage__) {
+                                when(() => PAGE_IS_READY, 250).then(() =>
+                                    callback(results).then(complete => {
+                                        if(complete)
+                                            Chat.__consumableEvents__.__onmessage__.delete(name);
+                                    })
+                                );
+                            }
                         }
                     });
         }
@@ -4091,7 +4176,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     }
 
     top.onlocationchange = () => {
-        WARN("[Child] Re-initializing...");
+        $warn("[Child] Re-initializing...");
 
         // Do NOT soft-reset ("turn off, turn on") these settings
         // They will be destroyed, including any data they are using
@@ -4190,6 +4275,12 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 emotes = $.all('.chat-image', message).map(img => img.alt).isolate(),
                 author = handle?.textContent ?? 'Anonymous';
 
+            if(nullish(header) || nullish(message)) {
+                if(collapsed)
+                    toggle.click();
+                return;
+            }
+
             header = header.textContent;
             message = message.textContent;
 
@@ -4231,6 +4322,15 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             for(let [name, callback] of Chat.__deferredEvents__.__onpinned__)
                 when.defined.pipe(async(callback, results) => await results?.element, 1000, callback, results).then(([callback, results]) => callback(results));
+
+            for(let [name, callback] of Chat.__consumableEvents__.__onpinned__) {
+                when(() => PAGE_IS_READY, 250).then(() =>
+                    callback(results).then(complete => {
+                        if(complete)
+                            Chat.__consumableEvents__.__onpinned__.delete(name);
+                    })
+                );
+            }
 
             when(() => $.nullish('[class*="pinned"i][class*="by"i]'))
                 .then(() => when.defined(() => $('[class*="pinned"i][class*="by"i]')).then(PinnedMessageHandler));

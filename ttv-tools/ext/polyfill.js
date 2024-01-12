@@ -154,7 +154,7 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>[^\s\.\/]+(?:\.[^\.:\/?#\s][^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>[^\s\.:=\|\{\[\(<\/>\)\]\}]+(?:\.[^\.:\/?#\s][^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
@@ -177,7 +177,8 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
     let esc = false,
         name = '',
-        value = '';
+        value = '',
+        strDel = '';
 
     let context, climate, element;
 
@@ -190,6 +191,7 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             if((defined(context) && nullish(climate)) || (context?.startsWith?.(climate) === false)) {
                 name = '';
                 value = '';
+                strDel = '';
             }
 
             climate = context;
@@ -232,11 +234,17 @@ function furnish(tagname = 'div', attributes = null, ...children) {
 
                         context = null;
                         continue;
-                    } else if(char == '"') {
-                        if(value.length > 0) {
-                            attributes[name] = value;
+                    } else if(char == '"' || char == "'" || char == '`') {
+                        if(strDel) {
+                            if(char == strDel) {
+                                attributes[name] = value;
 
-                            context = 'attribute';
+                                context = 'attribute';
+                            } else {
+                                value += char;
+                            }
+                        } else {
+                            strDel = char;
                         }
 
                         continue;
@@ -309,7 +317,7 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             default: {
                 if(nullish(element)) {
                     // https://www.w3.org/TR/2011/WD-html5-20110525/syntax.html#syntax-tag-name
-                    if(/[0-9a-zA-Z]/.test(char)) {
+                    if(/[\da-z]/i.test(char)) {
                         name += char;
                     } else {
                         if(char == '#')
@@ -630,6 +638,32 @@ function getOffset(element) {
         screenOverflow: { value: offset.screenOverflowX || offset.screenOverflowY },
         screenCorrect: { value: [offset.screenCorrectX, offset.screenCorrectY] },
     });
+}
+
+// Pushes parameters to the URL's search
+    // addToSearch(newParameters:object, reload:boolean?, location:object<Location>?) → string<URL-Search>
+function addToSearch(newParameters, reload = false, location = top.location) {
+    let url = parseURL(location).addSearch(newParameters, true);
+
+    if(reload)
+        location.search = url.search;
+    else
+        history?.pushState({ path: url.href }, document.title, url.href);
+
+    return url.search;
+}
+
+// Removevs parameters from the URL's search
+    // removeFromSearch(keys:array, reload:boolean?, location:object<Location>?) → string<URL-Search>
+function removeFromSearch(keys, reload = false, location = top.location) {
+    let url = parseURL(location).delSearch(keys);
+
+    if(reload)
+        location.search = url.search;
+    else
+        history?.pushState({ path: url.href }, document.title, url.href);
+
+    return url.search;
 }
 
 // Convert milliseconds into a human-readable string
@@ -1632,7 +1666,7 @@ Element.prototype.isVisible ??= function isVisible() {
 };
 
 /** Finds and returns an array of elements in the order they were queried.
- * @simply Element..queryBy(selectors:string|array|Element, container:Node?) → Element
+ * @simply Element..queryBy(selectors:string|array|Element, container:Node?) → [...Element]
  *
  * @param {(string|array|Element)} selectors    The selection criteria for the query
  * @param {Element} [container = document]      The contaier (parent) to perform the query in
@@ -1665,7 +1699,7 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 				...properties
 			},
 			child: {
-				value: index => [...media.children][index - 1],
+				value: nth => [...media.children][nth - 1],
 				...properties
 			},
 			parent: {
@@ -1673,7 +1707,7 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 				...properties
 			},
 			empty: {
-				value: !media.length,
+				value: nullish(media.closest('html')),
 				...properties
 			},
 		});
@@ -1690,11 +1724,11 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 				...properties
 			},
 			child: {
-				value: index => media[index - 1],
+				value: nth => media[nth - 1],
 				...properties
 			},
 			parent: {
-				value: selector => media.closest(selector),
+				value: selector => media.find(element => element.closest(selector)),
 				...properties
 			},
 			empty: {
@@ -1708,7 +1742,7 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 			query = (SELECTORS, CONTAINER = container) => (CONTAINER instanceof Array? CONTAINER.map(C => C.querySelectorAll(SELECTORS)) : CONTAINER.querySelectorAll(SELECTORS));
 
 		// Get rid of enclosing syntaxes: [...] and (...)
-		let regexp = /(\([^\(\)]+?\)|\[[^\[\]]+?\])/g,
+		let regexp = /(\((?:[^\(\)\\]|\\.)+?\)|\[(?:[^\[\]\\]|\\.)+?\])/g,
 			pulled = [],
 			index, length;
 
@@ -1743,7 +1777,7 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 				.replace(/(\:{1,2}parent\b|<\s*(\s*(,|$)))/gi, ($0, $$, $_) => (--generations, ''))
 				.replace(/<([^<,]+)?/gi, ($0, $1, $$, $_) => (ancestor = $1, --generations, ''))
 			// miscellaneous
-				.replace(/^\s+|\s+$/gi, '');
+				.trim();
 
 			let elements = [].slice.call(query(selector)),
 				parents = [], parent,
@@ -1824,12 +1858,12 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 				value: media[media.length - 1],
 				...properties
 			},
-			child: {
-				value: index => media[index - 1],
+            child: {
+				value: nth => media[nth - 1],
 				...properties
 			},
 			parent: {
-				value: selector => media.closest(selector),
+				value: selector => media.find(element => element.closest(selector)),
 				...properties
 			},
 			empty: {
@@ -1842,10 +1876,10 @@ Element.prototype.queryBy ??= function queryBy(selectors, container = document) 
 	return media;
 };
 
-// Modifies an attribute (combines get + set)
-    // Element..modAttribute(attribute:string, value:any?) → undefined
-Element.prototype.modAttribute ??= function modAttribute(attribute, value = '') {
-    this.setAttribute(attribute, [this.getAttribute(attribute), value].join(''));
+// Adds to an attribute (combines get + set)
+    // Element..addToAttr(attribute:string, value:any?) → undefined
+Element.prototype.addToAttr ??= function addToAttr(attribute, value = '') {
+    this.setAttribute(attribute, [this.getAttribute(attribute), value].join(' ').trim());
 }
 
 // Modifies an element's style attribute
@@ -1858,9 +1892,7 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false, 
     for(let [property, _o] of _old) {
         let _n = _new.get(property);
 
-        if((_n?.value === 0) || (defined(_n) && (_n.deleted || deleted))) {
-            continue;
-        } else if(defined(_n) && +_o.important <= +(_n.important || important)) {
+        if(defined(_n) && +_o.important <= +(_n.important || important)) {
             let declaration = [property,_n.value].join(':') + (_n.important || important? '!important': '');
 
             final.push(declaration);
@@ -1871,6 +1903,9 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false, 
             let declaration = [property,_o.value].join(':') + (_o.important? '!important': '');
 
             final.push(declaration);
+
+            if(innate)
+                innated.push(declaration);
         }
 
         _new.delete(property);
@@ -1927,21 +1962,33 @@ Object.defineProperties(Element.prototype.modStyle, {
     destruct: {
         value(string) {
             let css = new Map;
+            let raw = (string || '').split(/;\s*([\w\-]+\s*:)/);
 
-            (string || '')
-                .split(';')
-                .map(declaration => declaration.trim())
+            let style = [raw[0]];
+
+            for(let index = 1; index < raw.length; index++)
+                if(index % 2)
+                    style.push(raw[index]);
+                else
+                    style[style.length - 1] += raw[index];
+
+            style.map(declaration => declaration.trim())
                 .filter(declaration => declaration.length > 4)
                     // Shortest possible declaration → `--n:0`
                 .map(declaration => {
                     let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
-                        important = value.toLowerCase().contains('!important'),
-                        deleted = value.toLowerCase().contains('!delete'),
-                        innate = value.toLowerCase().contains('!innate');
+                        modifiers = { important: false, delete: false, innate: false };
+                    let KEEPERS = 'important'.split(' ');
 
-                    value = value.replace(/!(important|delete|innate)\b/gi, '');
+                    for(let regexp = RegExp(`!(${ Object.keys(modifiers) })$`, 'gi'), max = 3; --max > 0;)
+                        value = value.replace(regexp, ($0, $1) => {
+                            modifiers[$1] = true; // Could use `Object.defineProperty` but would throw on repeat... CSS will not
 
-                    css.set(property, { value, important, deleted, innate });
+                            return (KEEPERS.contains($1)? $1 + ' ': '');
+                        });
+                    value = value.trim();
+
+                    css.set(property, { value, ...modifiers });
                 });
 
             return css;
@@ -1957,11 +2004,11 @@ try {
             get() {
                 return this[Symbol.toPrimitive] ??= new Proxy(this.attributes, {
                     get(real, key) {
-                        return real.getNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()))?.value ?? null;
+                        return real.getNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()).replace(/^@/, 'data-'))?.value ?? null;
                     },
 
                     set(real, key, value) {
-                        key = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+                        key = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()).replace(/^@/, 'data-');
 
                         let node;
                         if(!real.hasOwnProperty(key))
@@ -1980,12 +2027,12 @@ try {
                     },
 
                     has(real, key) {
-                        return real.getNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase())) != null;
+                        return real.getNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()).replace(/^@/, 'data-')) != null;
                     },
 
                     defineProperty(real, key, descriptor) {
                         if('value' in descriptor) {
-                            key = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
+                            key = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()).replace(/^@/, 'data-');
 
                             let node;
                             if(!real.hasOwnProperty(key))
@@ -2003,7 +2050,7 @@ try {
                     },
 
                     deleteProperty(real, key) {
-                        return real.removeNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()));
+                        return real.removeNamedItem(key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase()).replace(/^@/, 'data-'));
                     },
                 });
             },
@@ -2011,6 +2058,8 @@ try {
     });
 
     // https://github.com/MaxArt2501/base64-js
+    let INTEGRITY_CHANGES = new Map;
+
     Object.defineProperties(top, {
         "atоb": {
             get() {
@@ -2076,6 +2125,23 @@ try {
                     key: top['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
                 });
             }
+        },
+
+        "onintegritychange": {
+            set(callback) {
+                if(INTEGRITY_CHANGES.has(callback))
+                    return INTEGRITY_CHANGES.get(callback);
+                callback['#integrity'] = !top.TWITCH_INTEGRITY_FAIL;
+
+                INTEGRITY_CHANGES.set(callback, setInterval(() => {
+                    if(callback['#integrity'] === top.TWITCH_INTEGRITY_FAIL)
+                        callback(callback['#integrity'] = !top.TWITCH_INTEGRITY_FAIL);
+                }, 300));
+            },
+
+            get() {
+                return INTEGRITY_CHANGES.size;
+            },
         },
     });
 
@@ -2146,6 +2212,15 @@ String.prototype.equals ??= function equals(value = '', caseSensitive = false) {
     if(!caseSensitive)
         return this.normalize('NFKD').trim().toLowerCase() == value.normalize('NFKD').trim().toLowerCase();
     return this.normalize('NFKD').trim() == value.normalize('NFKD').trim();
+};
+
+// Compares strings (matches any)
+    // String..anyOf(strings:array<string>) → boolean
+String.prototype.anyOf ??= function anyOf(...strings) {
+    for(let string of strings)
+        if(this.equals(string, false))
+            return true;
+    return false;
 };
 
 // Compares strings (space dependent)
@@ -2579,7 +2654,7 @@ class Recording {
 
                     as ??= this.as ?? new ClipName;
 
-                    // NOTICE(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blobs, signal, download: [as, MIME_Types.find(source.mimeType)] });
+                    // $notice(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blobs, signal, download: [as, MIME_Types.find(source.mimeType)] });
 
                     if(Recording.__LINKS__.has(this.guid))
                         return Recording.__LINKS__.get(this.guid);
@@ -2895,18 +2970,31 @@ class CSSObject {
 
     static destruct(string) {
         let css = new Map;
+        let raw = (string || '').split(/;\s*([\w\-]+\s*:)/);
 
-        (string || '')
-            .split(';')
-            .map(declaration => declaration.trim())
+        let style = [raw[0]];
+
+        for(let index = 1; index < raw.length; index++)
+            if(index % 2)
+                style.push(raw[index]);
+            else
+                style[style.length - 1] += raw[index];
+
+        style.map(declaration => declaration.trim())
             .filter(declaration => declaration.length > 4)
                 // Shortest possible declaration → `--n:0`
             .map(declaration => {
                 let [property, value = ''] = declaration.split(/^([^:]+):/).filter(string => string.length).map(string => string.trim()),
-                    important = value.toLowerCase().endsWith('!important'),
-                    deleted = value.toLowerCase().endsWith('!delete');
+                    modifiers = { important: false, delete: false, innate: false };
+                let KEEPERS = 'important'.split(' ');
 
-                value = value.replace(/!(important|delete)\b/i, '');
+                for(let regexp = RegExp(`!(${ Object.keys(modifiers) })$`, 'gi'), max = 3; --max > 0;)
+                    value = value.replace(regexp, ($0, $1) => {
+                        modifiers[$1] = true; // Could use `Object.defineProperty` but would throw on repeat... CSS will not
+
+                        return (KEEPERS.contains($1)? $1 + ' ': '');
+                    });
+                value = value.trim();
 
                 if(!value.length)
                     return;
@@ -2914,9 +3002,9 @@ class CSSObject {
                 if(css.has(property)) {
                     let old = css.get(property);
 
-                    css.set(property, [old, { value, important, deleted }].flat());
+                    css.set(property, [old, { value, important: modifiers.important, deleted: modifiers.delete, innated: modifiers.innate }].flat());
                 } else {
-                    css.set(property, { value, important, deleted });
+                    css.set(property, { value, important: modifiers.important, deleted: modifiers.delete, innated: modifiers.innate });
                 }
             });
 
@@ -2933,7 +3021,8 @@ class CSSObject {
 
     toString(vendors, stylized = false) {
         let $important = this['!important'] ?? false,
-            $delete = this['!delete'] ?? false;
+            $delete = this['!delete'] ?? false,
+            $innate = this['!innate'] ?? false;
         let css0 = /(^|[^\w\."'])0(?<unit>(?:p[ctx]|r?e[mnx]|ch|v(?:[hw]|min|max)|[cm]m|in)\b|%)/ig;
 
         for(let key of ['!important', '!delete'])
@@ -3037,20 +3126,22 @@ class CSSObject {
 
         if(typeof vendors == 'symbol')
             vendors = Symbol.keyFor(vendors);
-        if(vendors.equals?.('all'))
+        if(vendors.anyOf?.('all', '*', '<all_vendors>'))
             vendors = 'ms moz o webkit khtml';
         if(typeof vendors == 'string')
             vendors = vendors.split(/[^\w-]+/).filter(string => string.length);
         vendors ??= [];
 
         let $delete = this['!delete'] ?? false,
-            $important = this['!important'] || $delete;
+            $important = this['!important'] || $delete,
+            $innate = this['!innate'];
 
-        for(let key of ['!important', '!delete'])
+        for(let key of ['!important', '!delete', '!innate'])
             delete this[key];
 
         $important = ($important? '!important': '');
         $delete = ($delete? 'initial': '');
+        $innate = ($innate? '/* !innate: inherited from child */initial': '');
 
         for(let key in this) {
             let properKey = key.replace(/[A-Z]/g, $0 => '-' + $0.toLowerCase());
@@ -3058,18 +3149,20 @@ class CSSObject {
 
             let bind = (key, val, imp) => val.contains(';')? val.split(';').map(v => v.replace(css0, '$10') + imp).join(';'): val.replace(css0, '$10') + imp;
 
-            this[key] = $delete || value;
+            this[key] = $innate || $delete || value;
 
             for(let vendor of vendors)
-                switch(vendor.toLowerCase().replace(/^-+|-+$/g, '')) {
+                switch(vendor.toLowerCase().replace(/[^a-z]/g, '')) {
                     case 'ms':
                     case 'microsoft':
-                    case 'internet-explorer':
+                    case 'internetexplorer':
                     case 'edge': {
                         let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "backface-visibility", "background", "background-image", "border-bottom-left-radius", "border-bottom-right-radius", "border-image", "border-radius", "border-top-left-radius", "border-top-right-radius", "content", "list-style", "list-style-image", "mask", "mask-image", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function"];
+                        let objKey = `-ms-${ properKey }`;
 
                         if(keys.contains(properKey))
-                            object[`-ms-${ properKey }`] ||= bind(`-ms-${ properKey }`, value, $important);
+                            if($important || !(objKey in object))
+                                object[objKey] = bind(objKey, value, $important);
                     } break;
 
                     case 'moz':
@@ -3093,18 +3186,27 @@ class CSSObject {
                             "padding-inline-start": "padding-start",
                         };
 
-                        if(keys.contains(properKey))
-                            object[`-moz-${ properKey }`] ||= bind(`-moz-${ properKey }`, value, $important);
-                        else if(properKey in supers)
-                            object[`-moz-${ supers[properKey] }`] ||= bind(`-moz-${ supers[properKey] }`, value, $important);
+                        if(keys.contains(properKey)) {
+                            let objKey = `-moz-${ properKey }`;
+
+                            if($important || !(objKey in object))
+                                object[objKey] = bind(objKey, value, $important);
+                        } else if(properKey in supers) {
+                            let objKey = `-moz-${ supers[properKey] }`;
+
+                            if($important || !(objKey in object))
+                                object[objKey] = bind(objKey, value, $important);
+                        }
                     } break;
 
                     case 'o':
                     case 'opera': {
                         let keys = ["backface-visibility", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "replace", "set-link-source", "transform-style", "use-link-source"];
+                        let objKey = `-o-${ properKey }`;
 
                         if(keys.contains(properKey))
-                            object[`-o-${ properKey }`] ||= bind(`-o-${ properKey }`, value, $important);
+                            if($important || !(objKey in object))
+                                object[objKey] = bind(objKey, value, $important);
                     } break;
 
                     case 'webkit':
@@ -3114,17 +3216,21 @@ class CSSObject {
                     case 'chrome':
                     case 'chromium': {
                         let keys = ["align-content", "align-items", "align-self", "alt", "animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "animation-trigger", "app-region", "appearance", "aspect-ratio", "backdrop-filter", "backface-visibility", "background-clip", "background-composite", "background-origin", "background-size", "border-after", "border-after-color", "border-after-style", "border-after-width", "border-before", "border-before-color", "border-before-style", "border-before-width", "border-bottom-left-radius", "border-bottom-right-radius", "border-end", "border-end-color", "border-end-style", "border-end-width", "border-fit", "border-horizontal-spacing", "border-image", "border-radius", "border-start", "border-start-color", "border-start-style", "border-start-width", "border-top-left-radius", "border-top-right-radius", "border-vertical-spacing", "box-align", "box-decoration-break", "box-direction", "box-flex", "box-flex-group", "box-lines", "box-ordinal-group", "box-orient", "box-pack", "box-reflect", "box-shadow", "box-sizing", "clip-path", "color-correction", "column-axis", "column-break-after", "column-break-before", "column-break-inside", "column-count", "column-fill", "column-gap", "column-progression", "column-rule", "column-rule-color", "column-rule-style", "column-rule-width", "column-span", "column-width", "columns", "cursor-visibility", "dashboard-region", "device-pixel-ratio", "filter", "flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink", "flex-wrap", "flow-from", "flow-into", "font-feature-settings", "font-kerning", "font-size-delta", "font-smoothing", "font-variant-ligatures", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow", "grid-auto-rows", "grid-column", "grid-column-end", "grid-column-gap", "grid-column-start", "grid-gap", "grid-row", "grid-row-end", "grid-row-gap", "grid-row-start", "grid-template", "grid-template-areas", "grid-template-columns", "grid-template-rows", "highlight", "hyphenate-character", "hyphenate-charset", "hyphenate-limit-after", "hyphenate-limit-before", "hyphenate-limit-lines", "hyphens", "image-set", "initial-letter", "justify-content", "justify-items", "justify-self", "line-align", "line-box-contain", "line-break", "line-clamp", "line-grid", "line-snap", "locale", "logical-height", "logical-width", "margin-after", "margin-after-collapse", "margin-before", "margin-before-collapse", "margin-bottom-collapse", "margin-collapse", "margin-end", "margin-start", "margin-top-collapse", "marquee", "marquee-direction", "marquee-increment", "marquee-repetition", "marquee-speed", "marquee-style", "mask", "mask-attachment", "mask-box-image", "mask-box-image-outset", "mask-box-image-repeat", "mask-box-image-slice", "mask-box-image-source", "mask-box-image-width", "mask-clip", "mask-composite", "mask-image", "mask-origin", "mask-position", "mask-position-x", "mask-position-y", "mask-repeat", "mask-repeat-x", "mask-repeat-y", "mask-size", "mask-source-type", "match-nearest-mail-blockquote-color", "max-logical-height", "max-logical-width", "min-logical-height", "min-logical-width", "nbsp-mode", "opacity", "order", "overflow-scrolling", "padding-after", "padding-before", "padding-end", "padding-start", "perspective", "perspective-origin", "perspective-origin-x", "perspective-origin-y", "print-color-adjust", "region-break-after", "region-break-before", "region-break-inside", "region-fragment", "rtl-ordering", "ruby-position", "scroll-snap-type", "shape-image-threshold", "shape-inside", "shape-margin", "shape-outside", "svg-shadow", "tap-highlight-color", "text-color-decoration", "text-combine", "text-decoration", "text-decoration-line", "text-decoration-skip", "text-decoration-style", "text-decorations-in-effect", "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-style", "text-fill-color", "text-justify", "text-orientation", "text-security", "text-size-adjust", "text-stroke", "text-stroke-color", "text-stroke-width", "text-underline-position", "text-zoom", "touch-action", "transform", "transform-2d", "transform-3d", "transform-origin", "transform-origin-x", "transform-origin-y", "transform-origin-z", "transform-style", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-drag", "user-modify", "user-select", "word-break", "writing-mode"];
+                        let objKey = `-webkit-${ properKey }`;
 
                         if(keys.contains(properKey))
-                            object[`-webkit-${ properKey }`] ||= bind(`-webkit-${ properKey }`, value, $important);
+                            if($important || !(objKey in object))
+                                object[objKey] = bind(objKey, value, $important);
                     } break;
 
                     case 'khtml':
                     case 'konqueror': {
                         let keys = ["animation", "animation-delay", "animation-direction", "animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-timing-function", "border-bottom-left-radius", "border-bottom-right-radius", "border-radius", "border-top-left-radius", "border-top-right-radius", "box-shadow", "transition", "transition-delay", "transition-duration", "transition-property", "transition-timing-function", "user-select"];
+                        let objKey = `-khtml-${ properKey }`;
 
                         if(keys.contains(properKey))
-                            object[`-khtml-${ properKey }`] ||= bind(`-khtml-${ properKey }`, value, $important);
+                            if($important || !(objKey in object))
+                                object[objKey] = bind(objKey, value, $important);
                     } break;
                 }
 
@@ -3296,8 +3402,8 @@ class Color {
     static yellow               = [0xFF,0xFF,0x00];
     static yellowgreen          = [0x9A,0xCD,0x32];
 
-    constructor(...args) {
-        return Object.assign(this, Color.destruct.apply(null, args));
+    constructor(color) {
+        return Object.assign(this, Color.destruct(color));
     }
 
     // Converts Hex color values to a color-object
@@ -3582,7 +3688,7 @@ class Color {
     }
 
     toHWB() {
-        return Color.RGBtoHWB(this.R, this.G, this.B, this.A).HSL;
+        return Color.RGBtoHWB(this.R, this.G, this.B, this.A).HWK;
     }
 
     toCMYK() {
@@ -3889,6 +3995,7 @@ class Color {
 
             .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
             .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
+            .replace(/pink purple/, L > 60? 'pink': L < 40? 'purple': '$&')
             .replace(/(\w+) (\1)/g, '$1')
             .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
                 if([$1, $2].contains('light', 'dark'))
@@ -4055,7 +4162,8 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
     let number = parseFloat(this),
         sign = (number < 0? '-': ''),
         suffix = '',
-        padded = false;
+        padded = false,
+        infinite = !Number.isFinite(number);
 
     number = Math.abs(number);
 
@@ -4110,7 +4218,10 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
         } break;
     }
 
-    if(number > 1) {
+    if(infinite) {
+        number = '∞';
+        suffix = '';
+    } else if(number > 1) {
         for(let index = 0, units = system.large; index < units.length; ++index)
             if(number >= capacity) {
                 number /= capacity;
@@ -4131,15 +4242,34 @@ Number.prototype.suffix ??= function suffix(unit = '', decimalPlaces = true, for
             decimalPlaces === true?
                 number:
             decimalPlaces === false?
-                Math.round(number):
+                !infinite?
+                    Math.round(number):
+                number:
             (format.equals('readable') || format.equals('natural'))?
-                (Math.abs(this) > 999? number.toFixed(decimalPlaces).replace(/\.0+$/, ''): Math.round(number)):
-            number.toFixed(decimalPlaces)
+                !infinite?
+                    (Math.abs(this) > 999? number.toFixed(decimalPlaces).replace(/\.0+$/, ''): Math.round(number)):
+                number:
+            !infinite?
+                number.toFixed(decimalPlaces):
+            number
         )
         , suffix
         , unit
     ].join(padded? ' ': '');
 };
+
+// Returns a number formatted using unit prefixes
+    // Number..prefix(unit:string?, decimalPlaces:boolean|number?, format:string?) → string
+        // decimalPlaces = true | false | *:number
+            // true → 123.456.prefix('m', true) => "m123.456"
+            // false → 123.456.prefix('m', false) => "m123"
+            // 1 → 123.456.prefix('m', 1) => "m123.4"
+        // format = "metric" | "full" | "imperial" | "natural" | "readable" | "data" | "time:..."
+Number.prototype.prefix ??= function prefix(unit = '', decimalPlaces = true, format = "metric") {
+    let delimeter = `\0${ (+new Date).toString(36) }→`;
+
+    return this.suffix(delimeter, decimalPlaces, format).split(delimeter).reverse().join(unit);
+}
 
 // Floors a number to the nearest X
     // Number..floorToNearest(number:number) → number
@@ -4959,8 +5089,8 @@ function GetFileSystem(OS = null) {
 }
 
 // Logs messages (green)
-    // LOG(...messages:any) → undefined
-function LOG(...messages) {
+    // $log(...messages:any) → undefined
+function $log(...messages) {
     // return console.error(...messages);
 
     let CSS = `
@@ -5025,8 +5155,8 @@ function LOG(...messages) {
 };
 
 // Logs warnings (yellow)
-    // WARN(...messages:any) → undefined
-function WARN(...messages) {
+    // $warn(...messages:any) → undefined
+function $warn(...messages) {
     // return console.error(...messages);
 
     let CSS = `
@@ -5091,8 +5221,8 @@ function WARN(...messages) {
 };
 
 // Logs errors (red)
-    // ERROR(...messages:any) → undefined
-function ERROR(...messages) {
+    // $error(...messages:any) → undefined
+function $error(...messages) {
     // return console.error(...messages);
 
     let CSS = `
@@ -5157,8 +5287,8 @@ function ERROR(...messages) {
 };
 
 // Logs comments (blue)
-    // REMARK(...messages:any) → undefined
-function REMARK(...messages) {
+    // $remark(...messages:any) → undefined
+function $remark(...messages) {
     // return console.error(...messages);
 
     let CSS = `
@@ -5223,8 +5353,8 @@ function REMARK(...messages) {
 };
 
 // Logs notices (pink)
-    // NOTICE(...messages:any) → undefined
-function NOTICE(...messages) {
+    // $notice(...messages:any) → undefined
+function $notice(...messages) {
     // return console.error(...messages);
 
     let CSS = `
@@ -5289,8 +5419,8 @@ function NOTICE(...messages) {
 };
 
 // Logs nothing (white)
-    // IGNORE(...messages:any) → undefined
-function IGNORE(...messages) {
+    // $ignore(...messages:any) → undefined
+function $ignore(...messages) {
     // return console.error(...messages);
 
     let CSS = `
@@ -6522,15 +6652,18 @@ select.timed ??= (message = '', options = [], multiple = false, milliseconds = 6
 // Compares two versions and returns an integer representing their relationship
     // compareVersions(old:string?, new:string?, return:string?) → number | boolean
 function compareVersions(oldVersion = '', newVersion = '', returnType) {
-    if(/[<=>\u2264\u2265]/.test(oldVersion)) {
-        let [oV, rT, nV] = oldVersion.split(/([<=>]{1,2}|[\u2264\u2265])/).map(s => s.trim()).filter(s => s?.length);
+    // https://www.toptal.com/designers/htmlarrows/math/
+    let syms = '68 71 7A E1 64 DC 66 6F 7C 81 DE 5F 61 63 78 79 60 76 77 69 70 7B E0 65 DD 67 6E 7D 80 DF'.split(' ').map(u => String.fromCharCode(parseInt(`22${u}`, 16))).join('');
+
+    if(RegExp(`[<=>${ syms }]`).test(oldVersion)) {
+        let [oV, rT, nV] = oldVersion.split(RegExp(`([<=>]{1,2}|!=|[${ syms }])`)).map(s => s.trim()).filter(s => s?.length);
 
         oldVersion = oV;
         returnType = rT;
         newVersion = nV;
     }
 
-    if(/[<=>\u2264\u2265]/.test(newVersion)) {
+    if(RegExp(`[<=>${ syms }]`).test(newVersion)) {
         let nV = returnType,
             rT = newVersion;
 
@@ -6574,23 +6707,54 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
         case 'update':
             return ['there is an update available', 'the installed version is the latest', 'the installed version is pre-built'][diff + 1];
 
+        case '≨':       // \u2268 | Less than and not equal to
+        case '≱':       // \u2271 | Not greater than nor equal to
+        case '≺':       // \u227A | Precedes (before)
+        case '⋡':       // \u22E1 | Does not succeed (appear after) or equal to
         case '<':
             return diff < 0;
 
-        case '≤':
+        case '≤':       // \u2264 | Less than or equal to
+        case '⋜':       // \u22DC | Equal to or less than
+        case '≦':       // \u2266 | Less than or exactly
+        case '≯':       // \u226F | Not greater than
+        case '≼':       // \u227C | Preceeds (before) or equals
+        case '⊁':       // \u2281 | Does not succeed (appear after)
+        case '⋞':       // \u22DE | Equal to or precedes (appears before)
         case '<=':
-        case '\u2264':
             return diff <= 0;
 
         case '=':
+        case '≟':       // \u225F | May equal?
+        case '≡':       // \u2261 | Identical to
+        case '≣':       // \u2263 | Strictly equals
+        case '≸':       // \u2278 | Not less than or greater than
+        case '≹':       // \u2279 | Not greater than or less than
             return diff == 0;
 
+        case '≠':       // \u2260 | Not equal to
+        case '≶':       // \u2276 | Less than or greater than
+        case '≷':       // \u2277 | Greater than or less than
+        case '<>':
+        case '><':
+        case '!=':
+            return diff != 0;
+
+        case '≩':       // \u2269 | Greater than and not equal to
+        case '≰':       // \u2270 | Not less than nor equal to
+        case '≻':       // \u227B | Succeeds (after)
+        case '⋠':       // \u22E0 | Does not precede (appear before) or equal to
         case '>':
             return diff > 0;
 
-        case '≥':
+        case '≥':       // \u2265 | Greater than or equal to
+        case '⋝':       // \u22DD | Equal to or greater than
+        case '≧':       // \u2267 | Greater than or exactly
+        case '≮':       // \u226E | Not less than
+        case '≽':       // \u227D | Succeeds (after) or equals
+        case '⊀':       // \u2280 | Does not precede (appear before)
+        case '⋟':       // \u22DF | Equal to or succeeds (appears after)
         case '>=':
-        case '\u2265':
             return diff >= 0;
     }
 

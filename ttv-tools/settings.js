@@ -250,6 +250,7 @@ let // These are option names. Anything else will be removed
         'video_clips__dvr',
         'video_clips__trophy',
             'video_clips__trophy_length',
+        'record_foreign_rewards',
 
         /* Error Recovery */
         // Recover Video
@@ -1204,7 +1205,7 @@ $.all('#save, .save').map(element => element.onclick = async event => {
         .catch(error => {
             currentTarget.setAttribute('style', 'background-color:var(--red)');
 
-            WARN(error);
+            $warn(error);
         })
         .finally(() => {
             wait(1500).then(() => {
@@ -1556,7 +1557,7 @@ $('#sync-settings--download').onmouseup = async event => {
                             } break;
                         };
 
-                    // LOG('Raw data:', { url, raw, data });
+                    // $log('Raw data:', { url, raw, data });
 
                     let parsed = {};
 
@@ -1628,7 +1629,7 @@ $('#sync-settings--download').onmouseup = async event => {
 
                     $.all('[data-rest-id]').map(e => { delete e.dataset.restId });
 
-                    // LOG('Parsed data:', parsed);
+                    // $log('Parsed data:', parsed);
                 } catch(error) {
                     throw error;
                 }
@@ -1644,7 +1645,7 @@ $('#sync-settings--download').onmouseup = async event => {
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
                             messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '~days days') } old</span>`);
 
-                            LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
+                            $log('These settings were uploaded at', new Date(settings.syncDate), settings);
                         }
 
                         PostSyncStatus.success(messages.join('. '));
@@ -1690,7 +1691,7 @@ $('#sync-settings--download').onmouseup = async event => {
                         if(uploadAge > 30 * 24 * 60 * 60 * 1000) {
                             messages.push(`<span warning-text>This upload is ${ toTimeString(uploadAge, '~days days') } old</span>`);
 
-                            LOG('These settings were uploaded at', new Date(settings.syncDate), settings);
+                            $log('These settings were uploaded at', new Date(settings.syncDate), settings);
                         }
 
                         PostSyncStatus.success(messages.join('. '));
@@ -1780,7 +1781,7 @@ let FETCHED_DATA = { wasFetched: false };
                     return response.json();
                 })
                 .then(metadata => {
-                    LOG({ ['GitHub']: metadata });
+                    $log({ ['GitHub']: metadata });
 
                     return properties.version.github = metadata.tag_name;
                 })
@@ -1978,12 +1979,31 @@ $.all('a[continue-search]').map(a => {
 $.all('a:not([target])').map(a => a.target = '_blank');
 
 // All "new" features for this version
-$.all('[new]').map(element => {
-    let { version } = Manifest,
-        conception = element.getAttribute('new');
+Cache.load(['ignoreNew'], ({ ignoreNew }) => {
+    let { version } = Manifest;
+    let brandNewFragments = [];
 
-    if(compareVersions(`${ version } > ${ conception }`))
-        element.removeAttribute('new');
+    if(compareVersions(`${ version } ≤ ${ ignoreNew ?? 0 }`))
+        return;
+
+    $.all('[new]').map(element => {
+        let conception = element.getAttribute('new');
+        let title = $('.title', element)?.textContent?.trim();
+
+        if(compareVersions(`${ version } > ${ conception }`))
+            element.removeAttribute('new');
+        else if(defined(title))
+            brandNewFragments.push(
+                furnish(`a[href="#${ (element.id = `new-feature__${ brandNewFragments.length + 1 }`) }"]`)
+                    .text(title)
+                    .html()
+            );
+    });
+
+    let { length } = brandNewFragments;
+    if(length > 0)
+        alert.silent(`<div visible controller title="There ${ length > 1? 'are': 'is' } ${ length } new ${ 'feature'.pluralSuffix(length) }!">${ brandNewFragments.join('<br>') }</div>`)
+            .then(ok => Cache.save({ ignoreNew: version }));
 });
 
 // Any keys that need "translating"
@@ -2143,7 +2163,7 @@ $.all('#search').map(input => {
                 'u': '[678yuihjk]',
                 'i': '[789uiojkl]',
                 'o': '[890iopkl;]',
-                'p': '[90-op[kl;]',
+                'p': '[90\\-op\\[kl;]',
                 'a': '[qwaszx]',
                 's': '[qweasdzxc]',
                 'd': '[wersdfxcv]',
@@ -2151,8 +2171,8 @@ $.all('#search').map(input => {
                 'g': '[rtyfghvbn]',
                 'h': '[tyughjbnm]',
                 'j': '[yuihjknm,]',
-                'k': '[uiojklm,.]',
-                'l': '[iopkl;,./]',
+                'k': '[uiojklm,\\.]',
+                'l': '[iopkl;,\\./]',
                 'z': '[aszx]',
                 'x': '[asdzxc]',
                 'c': '[sdfxcv ]',
@@ -2168,8 +2188,13 @@ $.all('#search').map(input => {
             .filter(comment => comment.textContent.toLowerCase().contains(query.toLowerCase()))
             .filter(defined)
             .map(comment => comment.nextElementSibling);
+        let attributions = (
+            /^[\w-]{3,}$/.test(query)?
+                $.all(`[${ query }]`).map(e => ($('[tr-id]', e) ?? e)?.closest('[tr-id]')).filter(defined):
+            []
+        );
 
-        let results = [...exact, ...partial, ...synonymous]
+        let results = [...exact, ...partial, ...synonymous, ...attributions]
             .filter(defined)
             .filter(element => !element.hasAttribute('save'))
             .isolate();
@@ -2340,7 +2365,7 @@ when.defined(() => SETTINGS)
 async function Translate(language = 'en', container = document) {
     await fetch(`/_locales/${ language }/settings.json`)
         .catch(error => {
-            WARN(`Translations to "${ language.toUpperCase() }" are not available`);
+            $warn(`Translations to "${ language.toUpperCase() }" are not available`);
 
             return { json() { return null } };
         })

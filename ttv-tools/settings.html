@@ -1728,7 +1728,7 @@
                                 </div>
                             </div>
 
-                            <div opt>
+                            <div opt group-start>
                                 <div class=title tr-id='video-clips:trophy'>Trophies</div>
                                 <div class=summary>
                                     <div class=toggle>
@@ -1737,6 +1737,19 @@
                                     </div>
                                     <p tr-id>
                                         Automatically record (and save) channel point redemption clips. Clips will be <span fix-unit=sec><input id=video_clips__trophy_length type=number value=60 step=15 min=15 max=1200></span> long.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div opt group-end>
+                                <div class=title tr-id='video-clips:foreign-trophy'>Record Other Redemptions</div>
+                                <div class=summary>
+                                    <div class=toggle>
+                                        <input id=record_foreign_rewards type=checkbox>
+                                        <label for=record_foreign_rewards></label>
+                                    </div>
+                                    <p tr-id>
+                                        When another user redeems a channel point item you have saved to your "Buy Later" list, record their redemption.
                                     </p>
                                 </div>
                             </div>

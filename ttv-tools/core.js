@@ -368,7 +368,7 @@ class LZW {
             key;
 
         function push(word) {
-            let k = 0x3f;
+            let k = 63;
 
             key = word.length > 1? dictionary.get(word): word.charCodeAt(0);
 
@@ -930,23 +930,23 @@ class Async {
  * @param  {Element} [container = document] The container (parent) to search for the element(s)
  * @param  {boolean} [multiple = false]     Determines if a single element or multiple elements are returned
  *
- * @property {HTMLDocumentElement} html     A shortcut for the document
- * @property {HTMLHeadElement} head         A shortcut for the head element
- * @property {HTMLBodyElement} body         A shortcut for the body element
- * @property {function} on                  <div class="signature">(type:string, listener:(function|object), options:(object|boolean)<span class="signature-attributes">opt</span>) → void</div>
- *                                          <br>A shortcut for {@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener addEventListener}
- * @property {function} all                 <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element[]</div>
- *                                          <br>Returns all queried elements, a shortcut for: <code class=prettyprint>$(selector, container, true)</code>
- * @property {function} getElementByText    <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → Element|null</div>
- *                                          <br>Finds and returns an element based on its textual content
- * @property {function} getElementsByText   <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
- *                                          <br>Finds and returns multiple elements based on their textual content
- * @property {function} queryBy             <div class="signature">(selectors:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element|null</div>
- *                                          <br>Finds and returns an array of elements in their selector order
- * @property {function} defined             <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
- *                                          <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if any of the elements queried for exist.
- * @property {function} nullish             <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
- *                                          <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if none of the elements queried for exist.
+ * @property {HTMLDocumentElement} html         A shortcut for the <code class=prettyprint>document</code> element
+ * @property {HTMLHeadElement} head             A shortcut for the <code class=prettyprint>document.head</code> element
+ * @property {HTMLBodyElement} body             A shortcut for the <code class=prettyprint>document.body</code> element
+ * @property {function} on                      <div class="signature">(type:string, listener:(function|object), options:(object|boolean)<span class="signature-attributes">opt</span>) → void</div>
+ *                                              <br>A shortcut for {@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener addEventListener}. Attached to <code class=prettyprint>document.body</code>
+ * @property {function} all                     <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element[]</div>
+ *                                              <br>Returns all queried elements, a shortcut for: <code class=prettyprint>$(selector, container, true)</code>
+ * @property {function} getElementByText        <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → Element|null</div>
+ *                                              <br>Finds and returns an element based on its textual content
+ * @property {function} getAllElementsByText    <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
+ *                                              <br>Finds and returns multiple elements based on their textual content
+ * @property {function} queryBy                 <div class="signature">(selectors:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element|null</div>
+ *                                              <br>Finds and returns an array of elements in their selector order
+ * @property {function} defined                 <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
+ *                                              <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if any of the elements queried for exist.
+ * @property {function} nullish                 <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
+ *                                              <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if none of the elements queried for exist.
  *
  * @return {(Element|Array|null)}
  */
@@ -1574,9 +1574,9 @@ function wait(delay = 100, value) {
  */
 function delay(executor, ms = 0, ...args) {
     let timer = -1;
-    return function(...args) {
+    return function(...argz) {
         clearTimeout(timer);
-        timer = setTimeout(executor.bind(this, ...args), ms, ...args);
+        timer = setTimeout(executor.bind(this, ...[].concat(args, argz)), ms);
     }
 }
 
@@ -1878,7 +1878,7 @@ Object.defineProperties(fetchURL.origins, {
                     Promise.reject(`Bad request @${ foster.toString() }`)
                 )
             )
-        ).catch(IGNORE)
+        ).catch($ignore)
     },
 
     JSON: { value: fetchURL.origins.WHATEVER_ORIGIN },
@@ -1904,7 +1904,7 @@ Object.defineProperties(fetchURL.origins, {
                     Promise.reject(`Bad JSON request @${ foster.toString() }`)
                 )
             )
-        ).catch(IGNORE)
+        ).catch($ignore)
     },
 
     HTML_BEST: {
@@ -1920,7 +1920,7 @@ Object.defineProperties(fetchURL.origins, {
                     Promise.reject(`Bad HTML request @${ foster.toString() }`)
                 )
             )
-        ).catch(IGNORE)
+        ).catch($ignore)
     },
 
     TEXT_BEST: {
@@ -1936,7 +1936,7 @@ Object.defineProperties(fetchURL.origins, {
                     Promise.reject(`Bad text request @${ foster.toString() }`)
                 )
             )
-        ).catch(IGNORE)
+        ).catch($ignore)
     },
 });
 
@@ -1996,7 +1996,6 @@ let Settings = window.Settings = {
         return Storage.remove(properties);
     },
 };
-
 
 /** Used to manage page storage using {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage localStorage} and {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API IndexedDB}.
  *

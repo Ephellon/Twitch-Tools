@@ -12,14 +12,15 @@
     * Caused by not setting the new first in line href (`new Sortable ← onUpdate ← if([...].contains(0))`:5715@v4.28)
         * Tentative fix `4.29`
         * Still present `5.23`
+        * Tentative fix `5.33.0.8`
     * It might also not list jobs immediately
 - [ ] Dead channels get re-added to Up Next sometimes
     * May have something to do with case sensitivity in HREFs?
     * My wife: "It seems to be going thru every channel and adding what it believes is the best fit"
 - [-] Add cache logic to detect raids
     - Interferes with the AdBlock extension (pushes `ab_channel` to the URL, removing all other search parameters)
-- [ ] Pause First in Line when observing a raid
-    - Use the `UserIntent` variable to detect if a raid failed: variable not set and channel not followed
+- [x] Pause First in Line when observing a raid
+    - [ ] Use the `UserIntent` variable to detect if a raid failed: variable not set and channel not followed
 - [ ] Toggling Easy Lurk might cause theatre-mode to activate?
     * Tentative fix `v5.8`
     * Twitch keeps messing with the theatre-mode button's attributes
@@ -36,19 +37,14 @@
     * Might just need to make another extension for that
     * Responds to chat input (aka, a chat bot)
     * Made this at one point... didn't really see the need of it past nuance
-- [-] Display a "Hey, these are new!" alert on the settings page
 - [ ] There is an issue where all tabs will **not** be the Up Next owner
     - Happens if all tabs go to the same streamer and the Up Next tab changes
     - Add logic to ignore `name` in background.js?
 - [-] Add auto-save clip logic (handler) to navigation events: first in line, time out, etc.
-- [-] Pause Up Next during trophy recording
-- [x] Clips may not be saved when leaving/destroying page
-    - Fails to initiate Alt+Z
-- [x] Clips double-save upon completion
-    - One clip is always just a preview image
+    - [x] Actual automatic DVR added v5.33.0.8; see @deprecated for the original confirmation
 - [ ] The background script may stall indefinitely when a tab disappears
 - [ ] If a pre-roll ad plays, the recording feature stops working
-- [x] Use Live Reminders as alternative stream sources for Up Next
+    * Tentative fix `v5.33.0.8`
 - [-] Display alerts for Prime Gaming loot for specific games
 - [ ] Finish JSDoc commenting
     - [x] background.js
@@ -66,12 +62,33 @@
     - The lesser leaks seem to freeze the tab(s) when removing them from memory in quick succession
     - [x] Caused in part by Hardware Acceleration
     - [x] Crap ton of iframes on **all** pages... Now only on Up Next tab
+    - [ ] Memory on all tabs will spike CPU usage >100% for 45s!
 - [ ] Add option for DVR to record certain games
 - [ ] Parse and handle phone numbers - `@notImplemented`
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.8)
+- Added logic to Channel Point redemptions to detect bad purchases
+- Added Twitch Integrity Fail logic and notice
+- Added option to record other users' channel point redemptions
+- Fixed issue with detecting chat bullets
+- Adjusted logic for cardifying pages
+- Renamed all logging functions to their lowercase counterpart, preceded by `$`
+- Corrected `modStyle` logic to handle dataURLs
+- Modified search feature on Settings page
+- Added "Hey, these are new!" alert on Settings page
+- Trophy Recordings will now pause Up Next
+- Added consumable chat events: `Chat.consume...` for one-time actions
+- Fixed DVR recording issue -- Would not record/save channels properly
+- Added logic to automatically record DVR sessions without explicit user interaction
+- Added "Buy + Record" button
+- Raids now add the current streamer to the front of the Live Reminders list
+- Fixed color-assignment issue for Up Next balloon
+- Fixed issue with rich tooltip video previews
+- Added more indicator logic for Twitch Integrity Fails
+
 > [`5.33.0.7`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.7)
 - Modified "Top 100!" logic
 - Fixed issue with Live Reminder list ordering
