@@ -2980,7 +2980,7 @@ class CSSObject {
             else
                 style[style.length - 1] += raw[index];
 
-        style.map(declaration => declaration.trim())
+        style.map(declaration => declaration.trim().replace(/;$/, ''))
             .filter(declaration => declaration.length > 4)
                 // Shortest possible declaration → `--n:0`
             .map(declaration => {
@@ -3887,7 +3887,7 @@ class Color {
                     || (H <= 10)
                 )
             ),
-            pink: ({ H, S, L }) => (false
+            pink: ({ H, S, L }, ignore = []) => (false
                 || (true
                     && (S >= 5)
                     && (H > 290 && H <= 345)
@@ -3895,6 +3895,11 @@ class Color {
                 || (true
                     && colors.light({ S, L })
                     && colors.red({ H, S })
+                )
+                || (true
+                    && ignore.missing('purple')
+                    && colors.purple({ H, S, L }, 'pink')
+                    && (L > 50)
                 )
             ),
             orange: ({ H, S }) => (false
@@ -3934,7 +3939,7 @@ class Color {
                 && (S >= 5)
                 && (H > 170 && H <= 260)
             ),
-            purple: ({ H, S, L }) => (false
+            purple: ({ H, S, L }, ignore = []) => (false
                 || (true
                     && (S >= 5)
                     && (H > 260 && H <= 290)
@@ -3946,8 +3951,9 @@ class Color {
                     )
                 )
                 || (true
-                    && colors.pink({ H, S, L })
-                    && (L < 30)
+                    && ignore.missing('pink')
+                    && colors.pink({ H, S, L }, 'purple')
+                    && (L < 40)
                 )
             ),
         };
@@ -3986,18 +3992,17 @@ class Color {
             })
             .join(' ')
 
-            .replace(/light( pink)? red/, 'pink')
-            .replace(/red orange/, 'orange')
-            .replace(/light yellow/, 'yellow')
-            .replace(/orange brown/, 'light brown')
-            .replace(/dark orange/, 'brown')
-            .replace(/blue purple/, 'purple')
+            .replace(/light( pink)? red/i, 'pink')
+            .replace(/red orange/i, 'orange')
+            .replace(/light yellow/i, 'yellow')
+            .replace(/orange brown/i, 'light brown')
+            .replace(/dark orange/i, 'brown')
+            .replace(/blue purple/i, 'purple')
 
             .replace(/^(light|dark).+(grey|brown)$/i, '$1 $2')
             .replace(/^(light|dark) (black|white)(?:\s[\s\w]+)?/i, '$1')
-            .replace(/pink purple/, L > 60? 'pink': L < 40? 'purple': '$&')
             .replace(/(\w+) (\1)/g, '$1')
-            .replace(/(\w+) (\w+)$/i, ($0, $1, $2, $$, $_) => {
+            .replace(/(\w+) (\w+)$/, ($0, $1, $2, $$, $_) => {
                 if([$1, $2].contains('light', 'dark'))
                     return $_;
 
@@ -5491,7 +5496,7 @@ function phantomClick(...elements) {
             mouseup = new MouseEvent('mouseup', { bubbles: false });
 
         element?.dispatchEvent(mousedown);
-        wait(100).then(() => element?.dispatchEvent(mouseup));
+        wait(100, element).then(element => element?.dispatchEvent(mouseup));
     }
 }
 

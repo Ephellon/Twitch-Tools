@@ -113,10 +113,10 @@ let Clips__Initialize = async(START_OVER = false) => {
             author = clipAuthor.innerText;
 
             original = $('[class*="social"i][class*="button"i]:is([class*="copy"i], [class*="clip"i])').closest('[class*="social"i]:not(button, [class*="icon"i])').parentElement;
-            placeBefore = parent.lastElementChild;
-            textContainer = $('.tw-tooltip', container);
+            placeBefore = original.parentElement.lastElementChild;
+            carryQuery = '.tw-tooltip';
 
-            $notice('Clip data!', { src, views, title, timestamp, author, filename });
+            $notice('Clip data!', { src, views, title, timestamp, author });
         }
 
         let { filename } = parseURL(src);

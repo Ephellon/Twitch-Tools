@@ -4068,8 +4068,8 @@ let Initialize = async(START_OVER = false) => {
         get coin() {
             let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
                 current = parseCoin($('[data-test-selector="balance-string"i]')?.textContent),
-                _e = exact?.suffix('', 1, 'natural'),
-                _c = current?.suffix('', 1, 'natural');
+                _e = exact?.suffix('', 1, 'natural')?.replace('.0',''),
+                _c = current?.suffix('', 1, 'natural')?.replace('.0','');
 
             if(nullish(exact))
                 return current;
@@ -6390,7 +6390,7 @@ let Initialize = async(START_OVER = false) => {
                 .then(({ target }) => target.recording.save())
                 .then(link => alert.silent(`
                     <video controller controls
-                        title="Trophy Clip Saved - ${ link.download }"
+                        title="Trophy Clip Saved &mdash; ${ link.download }"
                         src="${ link.href }" style="max-width:-webkit-fill-available"
                     ></video>
                     `)
@@ -6402,7 +6402,7 @@ let Initialize = async(START_OVER = false) => {
                     okay="${ encodeHTML(Glyphs.modify('download', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Save"
                     deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Discard"
                 />
-                ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ cost }`
+                ${ title } &mdash; ${ Glyphs.modify('channelpoints', { height: '20px', idth: '20px', style: 'display:inline-block;vertical-align:bottom;width:fit-content' }) }${ comify(cost) }`
             , time)
                 .then(answer => {
                     if(answer === false)
@@ -7598,10 +7598,12 @@ let Initialize = async(START_OVER = false) => {
                             if(nullish(channel))
                                 continue listing;
 
+                            let real = new Date(channel.data?.actualStartTime || 0);
+
                             let day = time.toLocaleDateString(top.LANGUAGE, { dateStyle: 'short' }),
                                 hour = time.toLocaleTimeString(top.LANGUAGE, { timeStyle: 'short' }),
                                 recent = (abs(+now - +time) / 3_600_000 < 24),
-                                live = await new Search(name, 'channel', 'status.live'),
+                                live = (+real > +time) || await new Search(name, 'channel', 'status.live'),
                                 [since] = toTimeString((live && time < now? now - time: abs(now - time)), '~hour hour|~minute minute|~second second').split('|').filter(parseFloat),
                                 [tense_A, tense_B] = [['',' ago'],['in ','']][+legacy];
 
@@ -7611,7 +7613,7 @@ let Initialize = async(START_OVER = false) => {
                                 coinText =
                                     furnish('span.tt-live-reminder-point-amount[bottom-only]', {
                                         'rainbow-border': notEarned == 0,
-                                        innerHTML: amount.toLocaleString(LANGUAGE),
+                                        innerHTML: amount.replace('.0', '').toLocaleString(LANGUAGE),
                                     }).outerHTML,
                                 coinIcon = (
                                     face?.contains('/')?
@@ -7678,7 +7680,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                 f.strong(name):
                                                                             f.span(
                                                                                 f(`strong`, { innerHTML: [name, game].filter(s => s.length).join(' &mdash; ') }),
-                                                                                f(`span.tt-time-elapsed[start=${ time.toJSON() }]`).with(hour),
+                                                                                f(`span.tt-time-elapsed[start=${ (+real > +time? real: time).toJSON() }]`).with(hour),
                                                                                 f(`p.tt-hide-text-overflow[style=text-indent:.25em]`).setTooltip(desc, { from: 'top' }).with(desc),
                                                                             )
                                                                         )
@@ -7848,6 +7850,10 @@ let Initialize = async(START_OVER = false) => {
                                 lastOnline.insertAdjacentElement('afterend', container);
                             else
                                 body.append(container);
+
+                            // Update to the new date...
+                            if(+real > +time)
+                                LiveReminders[name].time = real;
 
                             // And remember kids, never ask a question on StackOverflow
                             // If anyone besides me ever reads this, I answered my own question eventually
@@ -9083,7 +9089,8 @@ let Initialize = async(START_OVER = false) => {
                 child.setAttribute('action-origin', 'native');
         }
 
-        setTimeout(LIVE_REMINDERS__CHECKER, 2_500);
+        setTimeout(LIVE_REMINDERS__CHECKER, 5_000);
+        setInterval(LIVE_REMINDERS__CHECKER, 300_000);
         RegisterJob('live_reminders');
     }
 
@@ -10574,7 +10581,7 @@ let Initialize = async(START_OVER = false) => {
 
     Handlers.parse_commands = async() => {
         let elements = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i] *, [data-a-target^="panel"i] *')
-            .map($0 => $0.getElementByText(/([!][\w\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/))
+            .map($0 => $0.getElementByText(/([!][\p{Alpha}\.\\\/\?\+\(\)\[\]\{\}\*\|]+)/u))
             .isolate()
             .filter(defined)
             .filter(e => nullish(e.closest('a[href]')));
@@ -10657,11 +10664,9 @@ let Initialize = async(START_OVER = false) => {
                 element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
                 element.setAttribute('tt-parsed', true);
             });
-        }
 
-        wait(elements.length * 100).then(() => {
-            $.all('[tt-parsed][title]').map(element => {
-                let title = decodeHTML(element.getAttribute('title'));
+            wait(500, element).then(element => {
+                let title = decodeHTML(element.getAttribute('title') ?? '');
 
                 if(title.length < 1)
                     return;
@@ -10670,7 +10675,7 @@ let Initialize = async(START_OVER = false) => {
 
                 element.removeAttribute('title');
             });
-        });
+        }
     };
     Timers.parse_commands = -1000;
 
@@ -11221,6 +11226,7 @@ let Initialize = async(START_OVER = false) => {
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
                     src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
+                    destroy: setTimeout(name => $(`#tt-greedy-raiding--${ name }`).remove(), 600_000, name),
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 })
@@ -13025,7 +13031,8 @@ let Initialize = async(START_OVER = false) => {
 
         receipt = receipt.floorToNearest(parseInt(Settings.channelpoints_receipt_display.replace('round', '')) || 1);
 
-        let AVAILABLE_POINTS = (((top.TWITCH_INTEGRITY_FAIL? 120: 320) * CHANNEL_POINTS_MULTIPLIER) * ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) / 3_600_000)).floorToNearest((10 + (50 * +!top.TWITCH_INTEGRITY_FAIL)) * CHANNEL_POINTS_MULTIPLIER) | 0;
+        let TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
+        let AVAILABLE_POINTS = TIME_LEFT < 1? -1: ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
 
         if(AVAILABLE_POINTS < 1)
             AVAILABLE_POINTS = Infinity;
@@ -13037,11 +13044,26 @@ let Initialize = async(START_OVER = false) => {
             abs(EXACT_POINTS_SPENT + EXACT_POINTS_DEBTED).suffix(' &darr;', 1, 'natural'),
             // Available (according to stremer's average stream time)
             parseBool(Settings.show_stats)?
-                AVAILABLE_POINTS.prefix(furnish(`marquee[direction=left][scrollamount=1]`, { style: 'max-width:fit-content;vertical-align:top;' }).html(`&larr;`).html(), 1, 'natural'): // udhar cularrp
+                [furnish(`marquee[direction=left][scrollamount=1]`, { style: 'width:fit-content;vertical-align:top' }).html(`&larr;`), Glyphs.modify('channelpoints', { height: '12px', width: '12px', style: 'vertical-align:-1px;position:relative' }).asNode, furnish(`span#tt-points-left-this-stream`).html(AVAILABLE_POINTS.prefix('', 1, 'natural'))].map(e => e.outerHTML).join(''):
             null
         ].filter(defined).join(' | ');
         $('#tt-points-receipt').innerHTML = `${ glyph } ${ abs(receipt).suffix(`&${ 'du'[+(receipt >= 0)] }arr;`, 1, 'natural') }`;
     }
+
+    setInterval(() => {
+        let container = $('#tt-points-left-this-stream');
+
+        if(nullish(container))
+            return;
+
+        let TIME_LEFT = ((STREAMER.data?.dailyBroadcastTime ?? 16_200_000) - STREAMER.time);
+        let AVAILABLE_POINTS = TIME_LEFT < 1? -1: ((120 + 200 * +!top.TWITCH_INTEGRITY_FAIL) * CHANNEL_POINTS_MULTIPLIER * (TIME_LEFT / 3_600_000)) | 0;
+
+        if(AVAILABLE_POINTS < 1)
+            AVAILABLE_POINTS = Infinity;
+
+        container.innerHTML = AVAILABLE_POINTS.prefix('', 1, 'natural');
+    }, 250);
 
     __GetMultiplierAmount__:
     if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
@@ -13349,7 +13371,7 @@ let Initialize = async(START_OVER = false) => {
 
                 hasPointsEnabled ||= defined(balance);
 
-                amount = ((balance? balance.suffix('', 1).toUpperCase(): 0) || (hasPointsEnabled? amount: '&#128683;'));
+                amount = ((balance? balance.suffix('', 1).replace('.0','').toUpperCase(): 0) || (hasPointsEnabled? amount: '&#128683;'));
                 fiat = (STREAMER?.fiat ?? fiat ?? 0);
                 face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
                 notEarned = (
@@ -13421,6 +13443,7 @@ let Initialize = async(START_OVER = false) => {
                 style = new CSSObject({ verticalAlign: 'bottom', height: '20px', width: '20px' }),
                 upNext = !!~(ALL_FIRST_IN_LINE_JOBS ?? []).findIndex(href => RegExp(`/${ name }\\b`, 'i').test(href));
 
+            amount = (amount ?? '')?.replace('.0', '');
             notEarned = parseInt(notEarned);
             pointsToEarnNext = parseInt(
                 (notEarned >= -Infinity)?
@@ -14117,7 +14140,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
                                     .then(() => {
                                         SetQuality(VideoClips.quality, 'auto').then(() => {
-                                            MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR:ENABLE', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
+                                            MASTER_VIDEO.DEFAULT_RECORDING = Recording.proxy(MASTER_VIDEO, { name: 'AUTO_DVR', as: DVR_CLIP_PRECOMP_NAME, mimeType: `video/${ VideoClips.filetype }`, hidden: !Settings.show_stats });
 
                                             MASTER_VIDEO.DEFAULT_RECORDING.then(Handlers.__MASTER_AUTO_DVR_HANDLER__);
                                         });
@@ -14281,7 +14304,7 @@ let Initialize = async(START_OVER = false) => {
 
             let AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
 
-            AdBreak.then(({ target }) => {
+            AdBreak.then(event => {
                 let chunks = AdBreak.blobs;
 
                 $notice(`Adding chunks to main <video> @ ${ InsertChunksAt } |`, { blobs, chunks, event });
@@ -14293,18 +14316,18 @@ let Initialize = async(START_OVER = false) => {
                 .then(() => {
                     let [main, mini] = $.all('video');
 
-                    main?.resumeRecording();
-                    mini?.stopRecording();
+                    main?.resumeRecording('AUTO_DVR');
+                    mini?.stopRecording('AUTO_DVR:AD_HANDLER');
 
                     when.defined(() => $('[data-a-target*="ad-countdown"i]'))
                         .then(HandleAd);
 
-                    $notice(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs, chunks: mini?.getRecording()?.blobs });
+                    $notice(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs, chunks: mini?.getRecording('AUTO_DVR:AD_HANDLER')?.blobs });
                 });
 
-            main.pauseRecording();
+            main.pauseRecording('AUTO_DVR');
 
-            $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording()?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
+            $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
         };
 
         when.defined(() => $('[data-a-target*="ad-countdown"i]'))

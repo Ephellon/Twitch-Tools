@@ -3169,7 +3169,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             let element = await line.element,
                 deleted = await line.deleted;
 
-            if(defined(element.dataset.plagiarism) || defined(element.dataset.repetitive))
+            if(defined(element.dataset.plagiarism) || defined(element.dataset.repetitive) || parseBool(element.dataset.restored))
                 continue restoring;
 
             element.dataset.uuid ||= uuid;
@@ -3179,6 +3179,9 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             let f = furnish;
             let container = $(`[data-a-target^="chat"i] [data-a-target*="deleted"i]`)?.closest(`[data-a-user]`);
+
+            if(parseBool(container?.dataset?.resurrected))
+                continue restoring;
 
             // The message was deleted before the element was placed
             if(nullish(container)) {

@@ -69,6 +69,15 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.0.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.9)
+- Adjusted "How many more points you can earn this stream" logic; see `function UpdateReceiptDisplay`
+- Fixed issue with auto-DVR
+- Adjusted live-detection logic for Live Reminders
+- Adjusted color-detection logic for pink/purple
+- Fixed issue with `CSSObject.destruct` and terminating semicolons
+- Added auto-destruction/resurrection to greedy frames (every 10mins)
+- Fixed issue with clip saver
+
 > [`5.33.0.8`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.8)
 - Added logic to Channel Point redemptions to detect bad purchases
 - Added Twitch Integrity Fail logic and notice
