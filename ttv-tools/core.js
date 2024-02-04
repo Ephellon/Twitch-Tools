@@ -90,7 +90,7 @@ class UUID {
     }
 
     /**
-     * Returns the {@link https://medium.com/@mr-easy/burrows-wheeler-transform-d475e0aacad6 Burrows-Wheeler Transform} version of the input.
+     * Returns the {@link https://github.com/NoobTW/bwt.js/blob/master/src/index.js Burrows-Wheeler Transform} version of the input.
      *
      * @param  {string} [string = ""]   The input to transform
      * @return {string}
@@ -99,16 +99,51 @@ class UUID {
         if(/^[\x32]*$/.test(string))
             return '';
 
-        let _a = `\u0001${ string }`,
-            _b = `\u0001${ string }\u0001${ string }`,
-            p_ = [];
+    	let _a = `\u0001${string}`;
+    	let _b = `\u0001${string}\u0001${string}`;
+    	let _p = [];
 
-        for(let i = 0; i < _a.length; i++)
-            p_.push(_b.slice(i, _a.length + i));
+    	for(let n = 0; n < _a.length; n++)
+    		_p.push(_b.slice(n, _a.length + n));
 
-        p_ = p_.sort();
+    	return _p.sort().map(c => c.slice(-1)[0]).join('');
+    }
 
-        return p_.map(P => P.slice(-1)[0]).join('');
+    /**
+     * Returns the {@link https://github.com/NoobTW/bwt.js/blob/master/src/index.js (Inverse) Burrows-Wheeler Transform} version of the input.
+     *
+     * @param  {string} [string = ""]   The input to transform
+     * @return {string}
+     */
+    static iBWT(string = '') {
+        if(/^[\x32]*$/.test(string))
+            return '';
+
+        let _a = string.split('');
+
+        let _b = q => {
+            let c = 0;
+            for(let n = 0; n < _a.length; n++)
+                if(_a[n] < q)
+                    c++;
+            return c;
+        }
+
+        let _c = (i, q) => {
+            let c = 0;
+            for(let n = 0; n < i; n++)
+                if (_a[n] === q)
+                    c++;
+            return c;
+        }
+
+        let d = 0, e = '', z = _a.length + 1;
+        while(_a[d] !== '\u0001' && z--) {
+            e = _a[d] + e;
+            d = _b(_a[d]) + _c(d, _a[d]);
+        }
+
+        return e;
     }
 
     /**
@@ -1593,6 +1628,8 @@ function delay(executor, ms = 0, ...args) {
  * @property {Map} requests         A map of all requests made during the current session (page load)
  * @property {function} idempotent  <div class="signature">(url:string, options:object<span class="signature-attributes">opt</span>) → {Promise~ReadableStream}</div>
  *                                  <br>Simply returns a fetch but, the request is guaranteed to only execute once per minute.
+ * @property {function} fromDisk    <div class="signature">(url:string, options:object<span class="signature-attributes">opt</span>) → {Promise~ReadableStream}</div>
+ *                                  <br>Returns a fetch and stores the results to the disk. Each subsequent call returns the saved results.
  * @property {object} origins       A set of origins that can be chosen to proxy from.
  *
  * @return {Promise~ReadableStream}
@@ -1611,7 +1648,7 @@ function delay(executor, ms = 0, ...args) {
  */
 function fetchURL(url, options = {}) {
     let empty = Promise.resolve({});
-    let { timeout = 0, native = false, foster = fetchURL.origins.BEST, as = 'text' } = options;
+    let { timeout = 0, native = false, foster = (fetchURL?.origins?.BEST ?? fetchURL?.origins?.CODE_TABS ?? Symbol(null)), as = 'text' } = options;
 
     if(!url?.length)
         return empty;
@@ -1666,6 +1703,26 @@ function fetchURL(url, options = {}) {
                 Object.assign(options.headers ?? {}, { Origin: location.origin });
             } break;
 
+            // https://corsproxy.io/?{ %URL }
+            case fetchURL.origins.CORS_PROXY: {
+                href = `https://corsproxy.io/?${ encodeURIComponent(href) }`;
+            } break;
+
+            // https://alloworigin.com/get?url={ URL }
+            case fetchURL.origins.ALLOW_ORIGIN: {
+                href = `https://alloworigin.com/get?url=${ href }`;
+            } break;
+
+            // POST@https://cors-proxy.taskcluster.net/request
+            case fetchURL.origins.TASK_CLUSTER: {
+                Object.assign(options, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ url: href }),
+                });
+                href = `https://cors-proxy.taskcluster.net/request`;
+            } break;
+
             // https://api.codetabs.com/v1/proxy?quest={ URL }
             case fetchURL.origins.CODE_TABS:
             default: {
@@ -1682,42 +1739,25 @@ function fetchURL(url, options = {}) {
         let timeoutID = setTimeout(() => controller.abort(), timeout);
 
         // Convert to TEXT/HTML
-        if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3].contains(foster)
+        if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3, fetchURL.origins.HTML_4, fetchURL.origins.HTML_5, fetchURL.origins.HTML_6].contains(foster)
             && as.equals('json')
         )
             return fetch(href, { ...options, signal: controller.signal }).then(async response => {
                 clearTimeout(timeoutID);
 
                 return response.text().then(text =>
-                    ({
-                        async arrayBuffer() {
-                            return new Blob([JSON.stringify(text, null, 0)], { type: 'text/plain' }).arrayBuffer();
-                        },
-
-                        async blob() {
-                            return new Blob([JSON.stringify(text, null, 4)], { type: 'text/plain' });
-                        },
-
-                        async json() {
-                            return {
-                                contents: text,
-                                status: {
-                                    content_type: `application/json`,
-                                    http_code: response.status,
-                                    url: response.url,
-                                },
-                            };
-                        },
-
-                        async text() {
-                            return contents;
-                        },
+                    new Promise((resolve, reject) => {
+                        try {
+                            resolve(new Response(new Blob([text], { type: 'text/plain' })));
+                        } catch(error) {
+                            reject(error);
+                        }
                     })
                 );
             });
 
         // Convert to JSON
-        if([fetchURL.origins.JSON, fetchURL.origins.JSON_2].contains(foster)
+        if([fetchURL.origins.JSON].contains(foster)
             && (false
                 || as.equals('html')
                 || as.equals('text')
@@ -1727,29 +1767,12 @@ function fetchURL(url, options = {}) {
                 clearTimeout(timeoutID);
 
                 return response.json().then(json =>
-                    ({
-                        async arrayBuffer() {
-                            return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
-                        },
-
-                        async blob() {
-                            return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
-                        },
-
-                        async json() {
-                            return json;
-                        },
-
-                        async text() {
-                            return (null
-                                ?? json?.response
-                                ?? json?.contents
-                                ?? json?.content
-                                ?? json?.html
-                                ?? json?.text
-                                ?? json
-                            );
-                        },
+                    new Promise((resolve, reject) => {
+                        try {
+                            resolve(new Response(new Blob([JSON.stringify(json)], { type: 'application/json' })));
+                        } catch(error) {
+                            reject(error);
+                        }
                     })
                 );
             });
@@ -1762,41 +1785,17 @@ function fetchURL(url, options = {}) {
     }
 
     // Convert to TEXT/HTML
-    if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3].contains(foster)
+    if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3, fetchURL.origins.HTML_4, fetchURL.origins.HTML_5, fetchURL.origins.HTML_6].contains(foster)
         && as.equals('json')
     )
         return fetch(href, options).then(async response => {
             let contents = await response.text();
-            let paraphrse = ({
-                async arrayBuffer() {
-                    return new Blob([contents], { type: 'text/plain' }).arrayBuffer();
-                },
 
-                async blob() {
-                    return new Blob([contents], { type: 'text/plain' });
-                },
-
-                async json() {
-                    return {
-                        contents,
-                        status: {
-                            content_type: `application/json`,
-                            http_code: response.status,
-                            url: response.url,
-                        },
-                    };
-                },
-
-                async text() {
-                    return contents;
-                },
-            });
-
-            return paraphrse;
+            return new Response(new Blob([contents], { type: 'text/plain' }));
         });
 
     // Convert to JSON
-    if([fetchURL.origins.JSON, fetchURL.origins.JSON_2].contains(foster)
+    if([fetchURL.origins.JSON].contains(foster)
         && (false
             || as.equals('html')
             || as.equals('text')
@@ -1804,32 +1803,8 @@ function fetchURL(url, options = {}) {
     )
         return fetch(href, options).then(async response => {
             let json = await response.json();
-            let paraphrse = ({
-                async arrayBuffer() {
-                    return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
-                },
 
-                async blob() {
-                    return new Blob([JSON.stringify(json, null, 4)], { type: 'application/json' });
-                },
-
-                async json() {
-                    return json;
-                },
-
-                async text() {
-                    return (null
-                        ?? json?.response
-                        ?? json?.contents
-                        ?? json?.content
-                        ?? json?.html
-                        ?? json?.text
-                        ?? json
-                    );
-                },
-            });
-
-            return paraphrse;
+            return new Response(new Blob([JSON.stringify(json)], { type: 'application/json' }));
         });
 
     return fetch(href, options);
@@ -1853,51 +1828,162 @@ Object.defineProperties(fetchURL, {
         },
     },
 
+    // Persistent (offline) cache
+    fromDisk: {
+        value: (url, options) => {
+            let DB_KEY = 'persistent-cache@fetchURL';
+            let hoursUntilEntryExpires = options?.hoursUntilEntryExpires ?? 24;
+            let keepDefectiveEntry = options?.keepDefectiveEntry ?? false;
+
+            for(let key of ['hoursUntilEntryExpires', 'keepDefectiveEntry'])
+                delete options?.[key];
+
+            if(nullish(fetchURL.persistentCache)) {
+                Object.defineProperty(fetchURL, 'persistentCache', { value: new Map });
+
+                Cache.large.load(DB_KEY, cache => {
+                    for(let [org, map] of (cache?.[DB_KEY] ?? []))
+                        fetchURL.persistentCache.set(org, map);
+                });
+            }
+
+            // Clean the DataBase periodically...
+            setInterval(DB => {
+                let changed = false;
+
+                for(let [origin, db] of DB)
+                    for(let [fullpath, data] of db) {
+                        if(data instanceof Array) {
+                            let [text, date] = data;
+
+                            if((+new Date) >= +date) {
+                                changed = true;
+
+                                db.delete(fullpath);
+                            }
+                        }
+
+                        if(db.size < 1)
+                            DB.delete(origin);
+                    }
+
+                if(changed)
+                    Cache.large.save({ [DB_KEY]: DB });
+            }, 3_600_000, fetchURL.persistentCache);
+
+            let { origin, pathname, search } = parseURL(url.trim()),
+                fullpath = pathname + search;
+
+            if(fetchURL.persistentCache.get(origin)?.has(fullpath))
+                return new Promise((r, R) => {
+                    let _ = fetchURL.persistentCache.get(origin).get(fullpath),
+                        t, d;
+
+                    if(_ instanceof Array)
+                        [t, d] = _;
+                    else
+                        t = _;
+
+                    if(defined(d) && (+new Date) >= +new Date(d)) {
+                        // Remove entry and update DataBase...
+                        fetchURL.persistentCache.get(origin).delete(fullpath);
+                        Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
+
+                        r(fetchURL.fromDisk(url, options));
+                    } else {
+                        r(new Response(t));
+                    }
+                });
+
+            return fetchURL(url, options).then(response => response.text()).then(text => {
+                let data;
+
+                // Set the expiration date...
+                if(Number.isFinite(hoursUntilEntryExpires))
+                    data = [text, new Date((+new Date) + hoursUntilEntryExpires * 3_600_000)];
+
+                if(!fetchURL.persistentCache.has(origin))
+                    fetchURL.persistentCache.set(origin, new Map);
+
+                // Save to DataBase...
+                fetchURL.persistentCache.get(origin).set(fullpath, data ?? text);
+                Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
+
+                let request = new Promise((r, R) => r(new Response(text)));
+
+                fetchURL.requests.set(url, [request, new Date]);
+
+                return request;
+            }).catch(error => {
+                // Update DataBase...
+                if(!keepDefectiveEntry) {
+                    fetchURL.persistentCache.get(origin)?.delete(fullpath);
+                    Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
+                }
+
+                throw error;
+            });
+        },
+    },
+
     origins: {
         value: {
             ALL_ORIGINS: Symbol('allorigins'),
             CODE_TABS: Symbol('codetabs'),
             CORS_ANYWHERE: Symbol('cors-anywhere'),
             WHATEVER_ORIGIN: Symbol('whateverorigin'),
+            CORS_PROXY: Symbol('corsproxy'),
+            ALLOW_ORIGIN: Symbol('alloworigin'),
+            TASK_CLUSTER: Symbol('taskcluster'),
         }
     },
 });
 
-Object.defineProperties(fetchURL.origins, {
-    BEST: {
-        value: Promise.any([
-            fetchURL.origins.CODE_TABS,
-            fetchURL.origins.CORS_ANYWHERE,
-            fetchURL.origins.ALL_ORIGINS,
-            fetchURL.origins.WHATEVER_ORIGIN,
-        ].map(foster =>
-            fetchURL('https://example.org/', { foster, as: 'native', timeout: 3_000 })
-                .then(async r =>
-                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                        foster:
-                    Promise.reject(`Bad request @${ foster.toString() }`)
+prevent_fetch_dragging: if(top == window) {
+    Object.defineProperties(fetchURL.origins, {
+        BEST: {
+            value: Promise.any([
+                fetchURL.origins.CODE_TABS,
+                fetchURL.origins.CORS_ANYWHERE,
+                fetchURL.origins.ALL_ORIGINS,
+                fetchURL.origins.WHATEVER_ORIGIN,
+                fetchURL.origins.CORS_PROXY,
+                fetchURL.origins.ALLOW_ORIGIN,
+                // fetchURL.origins.TASK_CLUSTER,
+            ].map(foster =>
+                fetchURL.idempotent('https://example.org/', { foster, as: 'native', timeout: 3_000 })
+                    .then(async r =>
+                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                            foster:
+                        Promise.reject(`Bad request @${ foster.toString() }`)
+                    )
                 )
-            )
-        ).catch($ignore)
-    },
+            ).catch($ignore)
+        },
 
-    JSON: { value: fetchURL.origins.WHATEVER_ORIGIN },
+        JSON: { value: fetchURL.origins.WHATEVER_ORIGIN },
 
-    HTML: { value: fetchURL.origins.CODE_TABS },
-    HTML_2: { value: fetchURL.origins.ALL_ORIGINS },
-    HTML_3: { value: fetchURL.origins.CORS_ANYWHERE },
+        HTML: { value: fetchURL.origins.CODE_TABS },
+        HTML_2: { value: fetchURL.origins.ALL_ORIGINS },
+        HTML_3: { value: fetchURL.origins.CORS_ANYWHERE },
+        HTML_4: { value: fetchURL.origins.CORS_PROXY },
+        HTML_5: { value: fetchURL.origins.ALLOW_ORIGIN },
+        HTML_6: { value: fetchURL.origins.TASK_CLUSTER },
 
-    TEXT: { value: fetchURL.origins.CODE_TABS },
-    TEXT_2: { value: fetchURL.origins.ALL_ORIGINS },
-    TEXT_3: { value: fetchURL.origins.CORS_ANYWHERE },
-});
+        TEXT: { value: fetchURL.origins.CODE_TABS },
+        TEXT_2: { value: fetchURL.origins.ALL_ORIGINS },
+        TEXT_3: { value: fetchURL.origins.CORS_ANYWHERE },
+        TEXT_4: { value: fetchURL.origins.CORS_PROXY },
+        TEXT_5: { value: fetchURL.origins.ALLOW_ORIGIN },
+        TEXT_6: { value: fetchURL.origins.TASK_CLUSTER },
+    });
 
-Object.defineProperties(fetchURL.origins, {
+    Object.defineProperties(fetchURL.origins, {
     JSON_BEST: {
         value: Promise.any([
             fetchURL.origins.JSON,
         ].map(foster =>
-            fetchURL('https://example.org/', { foster, as: 'json', timeout: 1_000 })
+            fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
                 .then(async r =>
                     r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
                         foster:
@@ -1912,8 +1998,11 @@ Object.defineProperties(fetchURL.origins, {
             fetchURL.origins.HTML,
             fetchURL.origins.HTML_2,
             fetchURL.origins.HTML_3,
+            fetchURL.origins.HTML_4,
+            fetchURL.origins.HTML_5,
+            // fetchURL.origins.HTML_6,
         ].map(foster =>
-            fetchURL('https://example.org/', { foster, as: 'html', timeout: 1_000 })
+            fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
                 .then(async r =>
                     r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
                         foster:
@@ -1928,8 +2017,11 @@ Object.defineProperties(fetchURL.origins, {
             fetchURL.origins.TEXT,
             fetchURL.origins.TEXT_2,
             fetchURL.origins.TEXT_3,
+            fetchURL.origins.TEXT_4,
+            fetchURL.origins.TEXT_5,
+            // fetchURL.origins.TEXT_6,
         ].map(foster =>
-            fetchURL('https://example.org/', { foster, as: 'text', timeout: 1_000 })
+            fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
                 .then(async r =>
                     r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
                         foster:
@@ -1939,6 +2031,7 @@ Object.defineProperties(fetchURL.origins, {
         ).catch($ignore)
     },
 });
+}
 
 /** Facilitates communication and storage between extension contexts (background vs. content).
  * @see https://developer.chrome.com/docs/extensions/reference/storage/

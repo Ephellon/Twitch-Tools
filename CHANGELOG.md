@@ -26,7 +26,7 @@
     * Twitch keeps messing with the theatre-mode button's attributes
 - [ ] Live Reminders might re-add all live channels?
     * Usually during raids (semi-intentional)
-- [ ] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
+- [x] Get `redo:boolean` from URL and control First in Line accordingly (commented-out: `repeat mini-button`)
 - [ ] Add "Full Tab Captures" → https://developer.chrome.com/docs/extensions/reference/tabCapture/
 - [ ] Garner user feedback → https://form.jotform.com/222442891146153
 - [ ] Sometimes, chat bullets do not register in the main "catcher;" may be related to the reflector (after the initializer) → `TTV_IRC.socket?.reflect?.(...)`
@@ -65,10 +65,29 @@
     - [ ] Memory on all tabs will spike CPU usage >100% for 45s!
 - [ ] Add option for DVR to record certain games
 - [ ] Parse and handle phone numbers - `@notImplemented`
+- [ ] Video/Canvas-swapping (when ads play)
+- [ ] Raids prevent naming videos (still saves, just not under the user-defined name)
+- [ ] Raids stick (don't leave) after going to raided channel; `referrer=raid` still present...
+- [ ] The Up Next owner tab will mimic the non-owner tab's URL?
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.1)
+- Minor changes to DVR logic to record over ads
+- Minor player corrections: video, location, etc.
+- Response corrections (core.js **only**): `new Response`
+- Added logic to Lurking Message; stops if the user sends a message
+- Fixed coloring logic
+- Fixed an issue where some channels wouldn't load some required data
+- Added `fetchURL.fromDisk` for persistent caching
+- Modified `Kill Extensions` logic to hide popovers
+- Modified `parseURL` regexp
+- Enabled "Repeating First in Line" logic
+- Added logic to fetch a replacement image if the game card image doesn't load
+- Modified First in Line logic
+- Minor description changes to better outline functionality
+
 > [`5.33.0.9`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.0.9)
 - Adjusted "How many more points you can earn this stream" logic; see `function UpdateReceiptDisplay`
 - Fixed issue with auto-DVR

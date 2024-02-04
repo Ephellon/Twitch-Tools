@@ -175,7 +175,12 @@ let Player__Initialize = async(START_OVER = false) => {
         if($.defined('[data-a-target*="ad-countdown"i]'))
             return window.postMessage({ action: 'report-blank-ad', from: 'player.js', purple: true }, '*');
 
-        let capture = $('video').captureFrame(),
+        let video = $('video');
+
+        if(nullish(video))
+            return;
+
+        let capture = video.captureFrame(),
             banner = Runtime.getURL('twitch-banner.png');
 
         resemble(capture)
@@ -228,7 +233,7 @@ let Player__Initialize = async(START_OVER = false) => {
      *                                              |_|
      */
     Handlers.auto_dvr = () => {
-        let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(location).searchParameters;
+        let { action = '', channel, autosave, controls, filetype, quality, slug, volume } = parseURL(window.location).searchParameters;
 
         if(action.unlike('dvr'))
             return;
@@ -284,7 +289,7 @@ let Player__Initialize = async(START_OVER = false) => {
      */
     Miscellaneous: {
         __UnmuteEmbed__: {
-            let { channel, controls, muted, parent, quality } = parseURL(location).searchParameters;
+            let { channel, controls, muted, parent, quality } = parseURL(window.location).searchParameters;
 
             controls = parseBool(controls);
             muted = parseBool(muted);
@@ -294,7 +299,7 @@ let Player__Initialize = async(START_OVER = false) => {
         }
 
         __PopinButton__: {
-            let { channel, controls, muted, parent, quality, private = false } = parseURL(location).searchParameters
+            let { channel, controls, muted, parent, quality, private = false } = parseURL(window.location).searchParameters
 
             controls = parseBool(controls);
             muted = parseBool(muted);

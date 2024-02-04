@@ -131,7 +131,7 @@ function parseURL(url) {
             }
 
             if(overwrite)
-                searchParameters = Object.entries({ ...searchParameters, ...parameters });
+                searchParameters = Object.entries(Object.assign(searchParameters, parameters));
             else
                 searchParameters = [searchParameters, parameters].map(Object.entries).flat();
 
@@ -147,25 +147,31 @@ function parseURL(url) {
             for(let parameter of parameters)
                 delete searchParameters[parameter];
 
-            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ Object.entries({ ...searchParameters }).map(parameter => parameter.join('=')).join('&') }$1`));
+            return parseURL(href.replace(/(?:\?[^#]*)?(#.*)?$/, `?${ Object.entries(searchParameters).map(parameter => parameter.join('=')).join('&') }$1`));
         },
     };
 }
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>[^\s\.:=\|\{\[\(<\/>\)\]\}]+(?:\.[^\.:\/?#\s][^:\/?#\s]+|(?=\/))|\B\.{1,2}\B)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\B\.{1,2}\B(?=[a-z\d]|\/)|(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9]|)\d)(?:\.(?!$)|$)){4})(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
 // Go to a page
     // goto(url:string<URL>, target:string?, pass:object?) → undefined
 function goto(url, target = '_self', pass = {}) {
-    top.beforeleaving?.(pass);
+    window.beforeleaving?.(pass);
 
-    open(url, target);
+    let _goto = window.goto;
 
-    top.goto = $ => $; // Prevent runaway calls?
+    // Prevent runaway calls?
+    window.goto = $ => $;
+
+    setTimeout(() => window.goto = _goto, 5e3);
+
+    // Navigate away 🌟
+    return window.open(url, target);
 }
 
 // Create elements
@@ -642,26 +648,26 @@ function getOffset(element) {
 
 // Pushes parameters to the URL's search
     // addToSearch(newParameters:object, reload:boolean?, location:object<Location>?) → string<URL-Search>
-function addToSearch(newParameters, reload = false, location = top.location) {
+function addToSearch(newParameters, reload = false, location = window.location) {
     let url = parseURL(location).addSearch(newParameters, true);
 
     if(reload)
-        location.search = url.search;
+        window.location.search = url.search;
     else
-        history?.pushState({ path: url.href }, document.title, url.href);
+        window.history?.pushState({ path: url.href }, document.title, url.href);
 
     return url.search;
 }
 
 // Removevs parameters from the URL's search
     // removeFromSearch(keys:array, reload:boolean?, location:object<Location>?) → string<URL-Search>
-function removeFromSearch(keys, reload = false, location = top.location) {
+function removeFromSearch(keys, reload = false, location = window.location) {
     let url = parseURL(location).delSearch(keys);
 
     if(reload)
-        location.search = url.search;
+        window.location.search = url.search;
     else
-        history?.pushState({ path: url.href }, document.title, url.href);
+        window.history?.pushState({ path: url.href }, document.title, url.href);
 
     return url.search;
 }
@@ -2058,9 +2064,11 @@ try {
     });
 
     // https://github.com/MaxArt2501/base64-js
-    let INTEGRITY_CHANGES = new Map;
+    let INTEGRITY_CHANGES = new Map,
+        BEFORE_LEAVE_HANDLERS = new Set,
+        LOCATION_CHANGE_HANDLERS = new Set;
 
-    Object.defineProperties(top, {
+    Object.defineProperties(window, {
         "atоb": {
             get() {
                 return (function atob(string) {
@@ -2090,7 +2098,7 @@ try {
 
                     return R.replace(/\0+$/, '');
                 }).bind({
-                    key: top['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
+                    key: window['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
                     regexp: /^(?:[A-Z\d+\/\=]{4})*?(?:[A-Z\d+\/]{2}(?:==)?|[A-Z\d+\/]{3}=?)?$/i,
                 });
             }
@@ -2122,7 +2130,7 @@ try {
 
                     return R;
                 }).bind({
-                    key: top['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
+                    key: window['atob']("RExOR0NTUU9YSDRJeEFKamJrVUVadmVnekJ3RllXdXlSNXBNY0ttMnRUK1ZuZHJpZmxQOThocW82cy8wN2ExMw"),
                 });
             }
         },
@@ -2131,11 +2139,11 @@ try {
             set(callback) {
                 if(INTEGRITY_CHANGES.has(callback))
                     return INTEGRITY_CHANGES.get(callback);
-                callback['#integrity'] = !top.TWITCH_INTEGRITY_FAIL;
+                callback['#integrity'] = !window.TWITCH_INTEGRITY_FAIL;
 
                 INTEGRITY_CHANGES.set(callback, setInterval(() => {
-                    if(callback['#integrity'] === top.TWITCH_INTEGRITY_FAIL)
-                        callback(callback['#integrity'] = !top.TWITCH_INTEGRITY_FAIL);
+                    if(callback['#integrity'] === window.TWITCH_INTEGRITY_FAIL)
+                        callback(callback['#integrity'] = !window.TWITCH_INTEGRITY_FAIL);
                 }, 300));
             },
 
@@ -2143,7 +2151,50 @@ try {
                 return INTEGRITY_CHANGES.size;
             },
         },
+
+        "beforeleaving": {
+            set(callback) {
+                BEFORE_LEAVE_HANDLERS.add(callback);
+            },
+
+            get() {
+                return function executor(...args) {
+                    for(let callback of BEFORE_LEAVE_HANDLERS)
+                        callback.apply(window, args);
+                };
+            },
+        },
+
+        "onlocationchange": {
+            set(callback) {
+                LOCATION_CHANGE_HANDLERS.add(callback);
+            },
+
+            get() {
+                return function executor(...args) {
+                    for(let callback of LOCATION_CHANGE_HANDLERS)
+                        callback.apply(window, args);
+                };
+            },
+        },
     });
+
+    // Observe location changes
+    LocationObserver: {
+        let PathName = window.location.pathname;
+
+        new MutationObserver(mutations => {
+            mutations.map(mutation => {
+                if(PathName !== window.location.pathname) {
+                    let PriorPathName = PathName;
+
+                    PathName = window.location.pathname;
+
+                    window.onlocationchange(new CustomEvent('locationchange', { from: PriorPathName, to: PathName, persisted: document.readyState.unlike('unloading') }));
+                }
+            });
+        }).observe(document.documentElement, { childList: true, subtree: true });
+    }
 
     // Set properties for auto-complete
     Object.defineProperties(autocomplete, {
@@ -2550,7 +2601,7 @@ class Recording {
         if(Number.isFinite(maxTime))
             stopped = wait(maxTime, recorder).then(recorder => recorder.stop());
         else
-            stopped = when(() => top.WINDOW_STATE == "unloading").then(unloading => recorder.stop());
+            stopped = when(() => window.WINDOW_STATE == "unloading").then(unloading => recorder.stop());
 
         // ABORT
         let aborted = when(() => recorder.controller.signal.aborted).then(aborted => recorder.stop());
@@ -3473,8 +3524,8 @@ class Color {
 
             R, G, B,
             red: R, green: G, blue: B,
-            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
-            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+            RGB: `rgb(${ [R, G, B] })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)] })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
             HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
@@ -3525,8 +3576,8 @@ class Color {
 
             R, G, B,
             red: R, green: G, blue: B,
-            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
-            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+            RGB: `rgb(${ [R, G, B] })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)] })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
             HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
@@ -3569,8 +3620,8 @@ class Color {
 
             R, G, B, A,
             red: R, green: G, blue: B,
-            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
-            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+            RGB: `rgb(${ [R, G, B] })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)] })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
             HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
@@ -3606,8 +3657,8 @@ class Color {
 
             R, G, B, A: alpha,
             red: R, green: G, blue: B,
-            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
-            RGBA: `rgb(${ [R, G, B, alpha.toFixed(1)].map(v => v.toString(16)) })`,
+            RGB: `rgb(${ [R, G, B] })`,
+            RGBA: `rgb(${ [R, G, B, alpha.toFixed(1)] })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
             HEXA: `#${ [R, G, B, alpha * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
@@ -3645,8 +3696,8 @@ class Color {
 
             R, G, B, A,
             red: R, green: G, blue: B,
-            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
-            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+            RGB: `rgb(${ [R, G, B] })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)] })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
             HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
@@ -3667,8 +3718,8 @@ class Color {
 
             R, G, B, A,
             red: R, green: G, blue: B,
-            RGB: `rgb(${ [R, G, B].map(v => v.toString(16)) })`,
-            RGBA: `rgb(${ [R, G, B, A.toFixed(1)].map(v => v.toString(16)) })`,
+            RGB: `rgb(${ [R, G, B] })`,
+            RGBA: `rgb(${ [R, G, B, A.toFixed(1)] })`,
 
             HEX: `#${ [R, G, B].map(v => v.toString(16).padStart(2, '0')).join('') }`,
             HEXA: `#${ [R, G, B, A * 255].map(v => v.clamp(0, 255).round().toString(16).padStart(2, '0')).join('') }`,
@@ -3899,7 +3950,7 @@ class Color {
                 || (true
                     && ignore.missing('purple')
                     && colors.purple({ H, S, L }, 'pink')
-                    && (L > 50)
+                    && (L > 75)
                 )
             ),
             orange: ({ H, S }) => (false
@@ -3943,6 +3994,7 @@ class Color {
                 || (true
                     && (S >= 5)
                     && (H > 260 && H <= 290)
+                    && (L > 0 && L <= 75)
                 )
                 || (false
                     || (true
@@ -5124,7 +5176,7 @@ function $log(...messages) {
         width: 100%;
     `;
 
-    console.group(`%c\u22b3 [LOG] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u22b3 Twitch Tools \u2014 [CONSOLE LOGGING]`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -5190,7 +5242,7 @@ function $warn(...messages) {
         width: 100%;
     `;
 
-    console.group(`%c\u26a0 [WARNING] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u26a0 Twitch Tools \u2014 [CONSOLE WARNING]`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -5256,7 +5308,7 @@ function $error(...messages) {
         width: 100%;
     `;
 
-    console.group(`%c\u2298 [ERROR] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u2298 Twitch Tools \u2014 [CONSOLE ERROR]`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -5322,7 +5374,7 @@ function $remark(...messages) {
         width: 100%;
     `;
 
-    console.group(`%c\u22b3 [COMMENT] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u22b3 Twitch Tools \u2014 [CONSOLE COMMENT]`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -5388,7 +5440,7 @@ function $notice(...messages) {
         width: 100%;
     `;
 
-    console.group(`%c\u22b3 [NOTICE] \u2014 Twitch Tools`, CSS);
+    console.group(`%c\u22b3 Twitch Tools \u2014 [CONSOLE NOTICE]`, CSS);
 
     for(let message of messages) {
         let type = 'c';
@@ -5454,7 +5506,7 @@ function $ignore(...messages) {
         width: 100%;
     `;
 
-    console.groupCollapsed(`%c\u22b3 [IGNORE] \u2014 Twitch Tools`, CSS);
+    console.groupCollapsed(`%c\u22b3 Twitch Tools \u2014 [CONSOLE IGNORED]`, CSS);
 
     for(let message of messages) {
         let type = 'c';

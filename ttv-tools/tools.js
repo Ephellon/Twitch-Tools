@@ -38,12 +38,34 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
     // Hmm...
     JUMPED_FRAMES = false,
     JUMP_DATA = {},
-    STASH_SAVED = false;
+    STASH_SAVED = false,
+    UP_NEXT_ALLOW_THIS_TAB;
 
 top.WINDOW_STATE = document.readyState;
 top.TWITCH_INTEGRITY_FAIL = false;
 
-Cache.large.load('JumpedData', ({ JumpedData }) => Object.assign(JUMP_DATA, JumpedData ?? {}));
+Cache.large.load('JumpedData', ({ JumpedData }) => {
+    Object.assign(JUMP_DATA, JumpedData ?? {});
+
+    delete JumpedData; // @performance
+});
+
+// Only releases the data from memory every 10:54.321
+setInterval(() => {
+    for(let key in JUMP_DATA)
+        delete JUMP_DATA[key]; // @performance
+
+    Cache.large.load('JumpedData', ({ JumpedData }) => {
+        Object.assign(JUMP_DATA, JumpedData ?? {});
+
+        delete JumpedData; // @performance
+    });
+}, 654_321);
+
+top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+    for(let key in JUMP_DATA)
+        delete JUMP_DATA[key]; // @performance
+};
 
 // Populate the username field by quickly showing the menu
 when.defined(() => {
@@ -234,7 +256,7 @@ class Balloon {
                                     role: 'dialog',
                                 },
                                 // Header
-                                f('.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:inherit; position:sticky; top:0; z-index:99999;` },
+                                f('.tt-border-top-left-radius-medium.tt-border-top-right-radius-medium.tt-c-text-base.tt-elevation-1.tt-flex.tt-flex-shrink-0.tt-pd-x-1.tt-pd-y-05.tt-popover-header', { style: `background-color:#${ THEME.equals('dark')? '000': 'fff' }e; position:sticky; top:0; z-index:99999;` },
                                     f('.tt-align-items-center.tt-flex.tt-flex-column.tt-flex-grow-1.tt-justify-content-center').with(
                                         (H = f(`h5#tt-balloon-header-${ U }.tt-align-center.tt-c-text-alt.tt-semibold`, { style: 'margin-left:4rem!important', contrast: THEME__PREFERRED_CONTRAST, }, title))
                                     ),
@@ -338,36 +360,44 @@ class Balloon {
                                                                 )
                                                             ),
                                                             // Repeat mini-button
-                                                            // f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
-                                                            //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
-                                                            //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
-                                                            //             {
-                                                            //                 'connected-to': `${ U }--${ guid }`,
-                                                            //
-                                                            //                 onclick: event => {
-                                                            //                     let { currentTarget } = event,
-                                                            //                         connectedTo = currentTarget.getAttribute('connected-to');
-                                                            //
-                                                            //                     let element = $(`#tt-balloon-job-${ connectedTo }`),
-                                                            //                         thisJob = $('a', element),
-                                                            //                         repeat = parseBool(parseURL(thisJob.href).searchParameters?.redo);
-                                                            //
-                                                            //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
-                                                            //                 },
-                                                            //             },
-                                                            //             f('span.tt-button-icon__icon').with(
-                                                            //                 f('div',
-                                                            //                     {
-                                                            //                         style: 'height:1.6rem; width:1.6rem',
-                                                            //                         innerHTML: Glyphs.refresh,
-                                                            //                     },
-                                                            //                 )
-                                                            //             )
-                                                            //         )
-                                                            //     )
-                                                            // ),
+                                                            f('.persistent-notification__delete.tt-absolute.tt-redo-btn', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                                                f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
+                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
+                                                                        {
+                                                                            'connected-to': `${ U }--${ guid }`,
+
+                                                                            onclick: event => {
+                                                                                let { currentTarget } = event,
+                                                                                    connectedTo = currentTarget.getAttribute('connected-to');
+
+                                                                                let element = $(`#tt-balloon-job-${ connectedTo }`),
+                                                                                    thisJob = $('a', element),
+                                                                                    redo = !parseBool(parseURL(thisJob.href).searchParameters?.redo),
+                                                                                    url = parseURL(thisJob.href).addSearch({ redo }, true);
+
+                                                                                thisJob.setAttribute('new-href', url.href);
+                                                                                ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
+                                                                                    if(parseURL(job).pathname.equals(url.pathname))
+                                                                                        if(index)
+                                                                                            Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href) });
+                                                                                        else
+                                                                                            REDO_FIRST_IN_LINE_QUEUE(job, { redo });
+                                                                                });
+                                                                            },
+                                                                        },
+                                                                        f('span.tt-button-icon__icon').with(
+                                                                            f('div',
+                                                                                {
+                                                                                    style: 'height:1.6rem; width:1.6rem',
+                                                                                    innerHTML: Glyphs.refresh,
+                                                                                },
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                )
+                                                            ).setTooltip(`Toggle channel repeat`, { from: 'bottom' }),
                                                             // Delete mini-button
-                                                            f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
+                                                            f('.persistent-notification__delete.tt-absolute.tt-del-btn', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                                                 f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                                                     f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                                         {
@@ -403,7 +433,7 @@ class Balloon {
                                                                         )
                                                                     )
                                                                 )
-                                                            )
+                                                            ).setTooltip(`Remove from queue`, { from: 'bottom' })
                                                         )
                                                     )
                                                 )
@@ -562,36 +592,44 @@ class Balloon {
                                         )
                                     ),
                                     // Repeat mini-button
-                                    // f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
-                                    //     f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
-                                    //         f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
-                                    //             {
-                                    //                 'connected-to': `${ uuid }--${ guid }`,
-                                    //
-                                    //                 onclick: event => {
-                                    //                     let { currentTarget } = event,
-                                    //                         connectedTo = currentTarget.getAttribute('connected-to');
-                                    //
-                                    //                     let element = $(`#tt-balloon-job-${ connectedTo }`),
-                                    //                         thisJob = $('a', element),
-                                    //                         repeat = parseBool(parseURL(thisJob.href).searchParameters?.redo);
-                                    //
-                                    //                     thisJob.setAttribute('new-href', parseURL(thisJob.href).addSearch({ redo: !repeat }, true).href);
-                                    //                 },
-                                    //             },
-                                    //             f('span.tt-button-icon__icon').with(
-                                    //                 f('div',
-                                    //                     {
-                                    //                         style: 'height:1.6rem; width:1.6rem',
-                                    //                         innerHTML: Glyphs.refresh,
-                                    //                     },
-                                    //                 )
-                                    //             )
-                                    //         )
-                                    //     )
-                                    // ),
+                                    f('.persistent-notification__delete.tt-absolute.tt-redo-btn', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                        f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
+                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
+                                                {
+                                                    'connected-to': `${ uuid }--${ guid }`,
+
+                                                    onclick: event => {
+                                                        let { currentTarget } = event,
+                                                            connectedTo = currentTarget.getAttribute('connected-to');
+
+                                                        let element = $(`#tt-balloon-job-${ connectedTo }`),
+                                                            thisJob = $('a', element),
+                                                            redo = !parseBool(parseURL(thisJob.href).searchParameters?.redo),
+                                                            url = parseURL(thisJob.href).addSearch({ redo }, true);
+
+                                                        thisJob.setAttribute('new-href', url.href);
+                                                        ALL_FIRST_IN_LINE_JOBS.map((job, index) => {
+                                                            if(parseURL(job).pathname.equals(url.pathname))
+                                                                if(index)
+                                                                    Cache.save({ ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS.splice(index, 1, url.href) });
+                                                                else
+                                                                    REDO_FIRST_IN_LINE_QUEUE(job, { redo });
+                                                        });
+                                                    },
+                                                },
+                                                f('span.tt-button-icon__icon').with(
+                                                    f('div',
+                                                        {
+                                                            style: 'height:1.6rem; width:1.6rem',
+                                                            innerHTML: Glyphs.refresh,
+                                                        },
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    ).setTooltip(`Toggle channel repeat`, { from: 'bottom' }),
                                     // Remove mini-button
-                                    f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
+                                    f('.persistent-notification__delete.tt-absolute.tt-del-btn', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                         f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
                                             f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                 {
@@ -627,7 +665,7 @@ class Balloon {
                                                 )
                                             )
                                         )
-                                    )
+                                    ).setTooltip(`Remove from queue`, { from: 'bottom' })
                                 )
                             )
                         )
@@ -1048,7 +1086,7 @@ class Search {
         let spadeEndpoint = `https://spade.twitch.tv/track`,
             twilightBuildID = '5fc26188-666b-4bf4-bdeb-19bd4a9e13a4';
 
-        let pathname = location.pathname.substr(1),
+        let pathname = location.pathname.slice(1),
             options = ({
                 method: 'POST',
                 headers: {
@@ -1170,7 +1208,7 @@ class Search {
                 //         "ChronicIllness"
                 //     ]
                 // }
-                return fetchURL.idempotent(`https://api.twitch.tv/helix/channels?broadcaster_id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                return fetchURL.fromDisk(`https://api.twitch.tv/helix/channels?broadcaster_id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } }, { hoursUntilEntryExpires: 168 })
                     .then(response => response.json())
                     .then(json => {
                         let id = parseInt(json?.data?.shift?.()?.broadcaster_id);
@@ -1182,40 +1220,42 @@ class Search {
                     });
             } break;
 
+            /** Twitch Insights JSON
+             * id: string<number~int>
+             * displayName: string
+             * createdAt: string<Date~ISO>
+             * updatedAt: string<#empty|Date~ISO>
+             * deletedAt: string<#empty|Date~ISO>
+             * userType: string
+             * broadcasterType: string
+             * unavailableReason: string
+             */
             case 'getID': {
-                return fetchURL.idempotent(`https://api.twitch.tv/helix/users?login=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ ID }`)
                     .then(response => response.json())
                     .then(json => {
-                        let id = parseInt(json?.data?.shift?.()?.id);
+                        let id = parseInt(json?.id);
 
                         if(nullish(id))
-                            throw `${ json.error }: ${ json.message }`;
+                            throw `[${ json.status }] An error occurred: ${ json.error }`;
 
                         return id;
                     })
-                    .catch(error => {
-                        $warn(error);
-
-                        Settings.remove('oauthToken', ReloadPage);
-                    });
+                    .catch($warn);
             } break;
 
             case 'getName': {
-                return fetchURL.idempotent(`https://api.twitch.tv/helix/users?id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } })
+                return fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ ID }`)
                     .then(response => response.json())
                     .then(json => {
-                        let login = json?.data?.shift?.()?.login;
+                        let name = json?.displayName;
 
-                        if(nullish(login))
-                            throw `${ json.error }: ${ json.message }`;
+                        if(nullish(name))
+                            throw `[${ json.status }] An error occurred: ${ json.error }`;
 
-                        return login;
+                        return name;
                     })
-                    .catch(error => {
-                        $warn(error);
-
-                        Settings.remove('oauthToken', ReloadPage);
-                    });
+                    .catch($warn);
             } break;
 
             case 'status.live': {
@@ -1248,9 +1288,10 @@ class Search {
                             live = parseBool(data?.publication?.isLiveBroadcast),
                             started_at = new Date(data?.publication?.startDate).toJSON(),
                             status = (data?.description ?? $('meta[name$="description"i]', doc)?.content),
-                            updated_at = new Date(data?.publication?.endDate).toJSON();
+                            updated_at = new Date(data?.publication?.endDate).toJSON(),
+                            broadcaster_id = parseInt(await fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ name }`, { hoursUntilEntryExpires: 744 }).then(r => r.json()).then(j => j.id)) | 0;
 
-                        let json = { display_name, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
+                        let json = { display_name, broadcaster_id, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
 
                         Search.parseType = 'pure';
 
@@ -1259,6 +1300,7 @@ class Search {
                         SEARCH_CACHE.set(display_name.toLowerCase(), channelData);
                         ALL_CHANNELS = [...ALL_CHANNELS, channelData].filter(defined).filter(uniqueChannels);
 
+                        // Pre-reads the stream if converted into a proper `Response`
                         return ({
                             async arrayBuffer() {
                                 return new Blob([JSON.stringify(json, null, 0)], { type: 'application/json' }).arrayBuffer();
@@ -1374,7 +1416,7 @@ class Search {
     }
 
     static void(ID = null, type = 'channel', as = null) {
-        let pathname = location.pathname.substr(1),
+        let pathname = location.pathname.slice(1),
             player = ({
                 type: 'site',
                 routes: {
@@ -1475,6 +1517,7 @@ class Search {
 
         let ConversionKey = {
             banStatus:          'veto',
+            broadcaster_id:     'sole',
             channel:            'name',
             channel_id:         'sole',
             createdAt:          'date',
@@ -2393,7 +2436,7 @@ async function ReloadPage(onlineOnly = true) {
         )
     ) return;
 
-    await top.beforeleaving?.({});
+    await top.beforeleaving?.(new CustomEvent('locationchange', { from: location.pathname, to: location.pathname, persisted: document.readyState.unlike('unloading') }));
 
     location.reload();
 }
@@ -2593,7 +2636,7 @@ let isLive = channel => parseBool(channel?.live);
 ;
 
 // Update common variables
-let PATHNAME = location.pathname,
+let PATHNAME = top.location.pathname,
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
         .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
@@ -2614,30 +2657,11 @@ let PATHNAME = location.pathname,
     // All of the above
     ALL_CHANNELS;
 
-let __ONLOCATIONCHANGE__ = new Map;
-
 // Yes, I could make this fail go away... or I can use it to force once-a-page events...
 // The following will only execute in the top frame, once
 try {
     // Add onlocationchange containers
     Object.defineProperties(top, {
-        onlocationchange: {
-            get() {
-                let last;
-
-                for(let [key, func] of __ONLOCATIONCHANGE__)
-                    last = key;
-
-                return __ONLOCATIONCHANGE__.get(last);
-            },
-
-            set(listener) {
-                __ONLOCATIONCHANGE__.set(UUID.from(listener.toString()).value, listener);
-
-                return listener;
-            }
-        },
-
         MiniPlayer: {
             get() {
                 return $('#tt-pip-player');
@@ -3252,7 +3276,10 @@ try {
 
         else if(defined(image)) {
             let { src } = image;
-            let [name = image.alt, tail = 'png'] = parseURL(src).filename?.split('.') ?? [];
+            let [tail = 'png', ...name] = parseURL(src).filename?.split('.')?.reverse() ?? [];
+            name = (name ?? [image.alt]).join('.');
+            tail = /^(bmp|[gt]if+|ico|p?j(fif|p(e?g)?)|a?png|svg|webp)$/i.test(tail)? tail: 'jpeg';
+
             let type = `image/${ tail }`,
                 real = MIME_Types.find(type);
 
@@ -3440,7 +3467,7 @@ try {
 
 async function update() {
     // The location
-    window.PATHNAME = PATHNAME = location.pathname;
+    window.PATHNAME = PATHNAME = window.location.pathname;
 
     NORMALIZED_PATHNAME = PATHNAME
         // Remove common "modes"
@@ -3510,7 +3537,7 @@ async function update() {
                             return false;
 
                         let live = defined(parent)
-                                && $.nullish(`[class*="--offline"i]`, parent);
+                            && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
                     },
@@ -3548,7 +3575,7 @@ async function update() {
                             return false;
 
                         let live = defined(parent)
-                                && $.nullish(`[class*="--offline"i]`, parent);
+                            && $.nullish(`[class*="--offline"i]`, parent);
 
                         return live;
                     },
@@ -3790,12 +3817,12 @@ let Initialize = async(START_OVER = false) => {
 
     top.GetNextStreamer =
     // Gets the next available channel (streamer)
-        // GetNextStreamer() → Object<Channel>
-    function GetNextStreamer() {
+        // GetNextStreamer(except:string?) → Object<Channel>
+    function GetNextStreamer(except = '') {
         // Next channel in "Up Next"
         if(ALL_FIRST_IN_LINE_JOBS?.length && !parseBool(Settings.first_in_line_none))
             return GetNextStreamer.cachedStreamer = (null
-                ?? ALL_CHANNELS.find(channel => parseURL(channel?.href)?.pathname?.equals(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
+                ?? ALL_CHANNELS.find(channel => channel?.name?.unlike(except) && parseURL(channel?.href)?.pathname?.equals(parseURL(ALL_FIRST_IN_LINE_JOBS[0]).pathname))
                 ?? {
                     from: 'GET_NEXT_STREAMER',
                     href: parseURL(ALL_FIRST_IN_LINE_JOBS[0]).href,
@@ -3803,12 +3830,12 @@ let Initialize = async(START_OVER = false) => {
                 }
             );
 
-        if(parseBool(Settings.stay_live) && defined(GetNextStreamer?.cachedStreamer))
+        if(parseBool(Settings.stay_live) && defined(GetNextStreamer.cachedStreamer))
             return GetNextStreamer.cachedStreamer;
 
         Cache.load('ChannelPoints', ({ ChannelPoints = {} }) => {
             let { random, round } = Math;
-            let online = [...STREAMERS, ...(GetNextStreamer.cachedReminders ?? [])].filter(isLive),
+            let online = [...STREAMERS, ...(GetNextStreamer.cachedReminders ??= [])].filter(isLive),
                 mostWatched = null,
                 mostPoints = 0,
                 mostLeft = 0,
@@ -3820,11 +3847,11 @@ let Initialize = async(START_OVER = false) => {
                 leastProgressNeeded = +Infinity,
                 closestToCompletion = null;
 
-            let [randomChannel] = online.sort(() => random() >= 0.5? +1: -1);
+            let [randomChannel] = online.shuffle();
 
             filtering:
             for(let channel in ChannelPoints) {
-                let [streamer] = online.filter(({ name }) => name == channel);
+                let [streamer] = online.filter(({ name }) => name.equals(channel));
 
                 if(nullish(streamer))
                     continue filtering;
@@ -3890,22 +3917,22 @@ let Initialize = async(START_OVER = false) => {
 
                 // Most watched channel (most channel points)
                 case 'rich': {
-                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === mostWatched);
+                    GetNextStreamer.cachedStreamer = online.find(channel => channel.name.equals(mostWatched));
                 } break;
 
                 // Least watched channel (least channel points)
                 case 'poor': {
-                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === leastWatched);
+                    GetNextStreamer.cachedStreamer = online.find(channel => channel.name.equals(leastWatched));
                 } break;
 
                 // Most un-earned Rewards & Challenges
                 case 'furthest': {
-                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === furthestFromCompletion);
+                    GetNextStreamer.cachedStreamer = online.find(channel => channel.name.equals(furthestFromCompletion));
                 } break;
 
                 // Least un-earned Rewards & Challenges
                 case 'closest': {
-                    GetNextStreamer.cachedStreamer = STREAMERS.find(channel => channel.name === closestToCompletion);
+                    GetNextStreamer.cachedStreamer = online.find(channel => channel.name.equals(closestToCompletion));
                 } break;
 
                 // Do not use this feature
@@ -3933,9 +3960,9 @@ let Initialize = async(START_OVER = false) => {
 
                 $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ name }") is desired:`, channel);
             }
-        });
 
-        delete ChannelPoints; // @performance
+            delete ChannelPoints; // @performance
+        });
 
         return when.defined(() => GetNextStreamer.cachedStreamer);
     };
@@ -3949,7 +3976,7 @@ let Initialize = async(START_OVER = false) => {
                 LiveReminders ??= {};
             }
 
-            let cachedReminders = [];
+            let cachedReminders = [...(GetNextStreamer.cachedReminders ??= [])];
             for(let name in LiveReminders) {
                 let now = new Date,
                     time = new Date(LiveReminders[name]);
@@ -3965,7 +3992,7 @@ let Initialize = async(START_OVER = false) => {
 
             delete LiveReminders; // @performance
 
-            GetNextStreamer.cachedReminders = cachedReminders;
+            GetNextStreamer.cachedReminders = cachedReminders.isolate();
         });
     } catch(error) {
         // Do nothing...
@@ -4120,7 +4147,7 @@ let Initialize = async(START_OVER = false) => {
                     // type: "say"
                     // updatedAt: "2020-09-10T02:07:05.487Z"
                     // _id: "5f598a4986ca683315a3f402"
-                await fetchURL.idempotent(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors' })
+                await fetchURL.fromDisk(`https://api.streamelements.com/kappa/v2/channels/${ channel.name }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                     .then(r => r?.json?.())
                     .then(json => json?._id)
                     .then(async id => {
@@ -4130,7 +4157,7 @@ let Initialize = async(START_OVER = false) => {
                             return [];
 
                         for(let type of ['public', 'default'])
-                            await fetchURL.idempotent(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`, { mode: 'cors' })
+                            await fetchURL.fromDisk(`https://api.streamelements.com/kappa/v2/bot/commands/${ id }/${ type }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                                 .then(r => r.json())
                                 .then(json => commands[type] ??= json);
 
@@ -4142,7 +4169,8 @@ let Initialize = async(START_OVER = false) => {
 
                             COMMANDS.push({ aliases: [...aliases, ...commands.filter(command => command.reply?.contains(command))], command, reply, availability: match(accessLevel), enabled, origin: 'StreamElements', variables: { count, coolDown: cooldown.global, cost } });
                         }
-                    });
+                    })
+                    .catch($warn);
 
                 // NightBot
                     // coolDown: 30
@@ -4153,7 +4181,7 @@ let Initialize = async(START_OVER = false) => {
                     // updatedAt: "2021-07-31T05:33:56.305Z"
                     // userLevel: "everyone"
                     // _id: "6104e0c44038915692edaeed"
-                await fetchURL.idempotent(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors' })
+                await fetchURL.fromDisk(`https://api.nightbot.tv/1/channels/t/${ channel.name }`, { mode: 'cors', hoursUntilEntryExpires: 168 })
                     .then(r => r?.json?.())
                     .then(json => json?.channel?._id)
                     .then(async id => {
@@ -4162,7 +4190,7 @@ let Initialize = async(START_OVER = false) => {
                         if(nullish(id))
                             return commands;
 
-                        await fetchURL.idempotent('https://api.nightbot.tv/1/commands', { mode: 'cors', headers: { 'nightbot-channel': id } })
+                        await fetchURL.fromDisk(`https://api.nightbot.tv/1/commands?nid=${ id }`, { mode: 'cors', headers: { 'nightbot-channel': id }, hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(json => {
                                 if(!json.status.toString().startsWith('2'))
@@ -4183,7 +4211,8 @@ let Initialize = async(START_OVER = false) => {
 
                             COMMANDS.push({ aliases: commands.filter(command => command.message.contains(name)).map(command => command.name.replace(regexp, '')), command: name.replace(regexp, ''), reply: message, availability: match(userLevel), enabled, origin: 'NightBot', variables: { count, coolDown, cost } });
                         }
-                    });
+                    })
+                    .catch($warn);
 
                 let commands = new Map;
                 for(let command of await COMMANDS)
@@ -4344,7 +4373,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get name() {
-            return $(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name')
+            return $(`[class*="channel-info"i] a[href$="${ NORMALIZED_PATHNAME }"i]${ ['', ' h1'][+NORMAL_MODE] }`)?.textContent ?? LIVE_CACHE.get('name') ?? top.location.pathname.slice(1).split('/').shift()
         },
 
         get paid() {
@@ -4593,38 +4622,34 @@ let Initialize = async(START_OVER = false) => {
         get vods() {
             let { name, sole } = STREAMER;
 
-            return fetchURL.idempotent(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)
+            if(Number.isNaN(sole))
+                return fetchURL.fromDisk(`https://www.twitch.tv/${ name }/videos`)
+                    .then(r => r.text())
+                    .then(html => {
+                        let dom = (new DOMParser).parseFromString(html, 'text/html');
+                        let scripts = $.all('script[type*="json"i]', dom);
+                        let data = [];
+
+                        for(let script of scripts)
+                            data.push(JSON.parse(script?.innerText ?? null));
+                        return data.filter(defined);
+                    })
+                    .then(json => {
+                        for(let child of json)
+                            if(child instanceof Array)
+                                for(let item of child)
+                                    if(/^(ItemList)$/i.test(item['@type']))
+                                        return item.itemListElement.map(({ name, url }) => (
+                                            (parseURL(url).pathname.contains('/videos/'))?
+                                                { name, href: url }:
+                                            null
+                                        )).filter(defined);
+                    });
+
+            return fetchURL.fromDisk(`https://www.twitchmetrics.net/c/${ sole }-${ name }/videos?sort=published_at-desc`)
                 .then(response => response.text())
                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                .then(DOM => $.all('[href*="/videos/"i]:not(:only-child)', DOM).map(a => ({ name: a.textContent.trim(), href: a.href })) )
-                .then(vods => {
-                    if(parseBool(vods.length))
-                        return vods;
-
-                    // Alternate method...
-                    return fetchURL.idempotent(`https://www.twitch.tv/${ name }/videos`)
-                        .then(r => r.text())
-                        .then(html => {
-                            let dom = (new DOMParser).parseFromString(html, 'text/html');
-                            let scripts = $.all('script[type*="json"i]', dom);
-                            let data = [];
-
-                            for(let script of scripts)
-                                data.push(JSON.parse(script?.innerText ?? null));
-                            return data.filter(defined);
-                        })
-                        .then(json => {
-                            for(let child of json)
-                                if(child instanceof Array)
-                                    for(let item of child)
-                                        if(/^(ItemList)$/i.test(item['@type']))
-                                            return item.itemListElement.map(({ name, url }) => (
-                                                (parseURL(url).pathname.contains('/videos/'))?
-                                                    { name, href: url }:
-                                                null
-                                            )).filter(defined);
-                        });
-                })
+                .then(DOM => $.all('[href*="/videos/"i]:not(:only-child)', DOM).map(a => ({ name: a.textContent.trim(), href: a.href })))
                 .catch($warn);
         },
 
@@ -4737,12 +4762,6 @@ let Initialize = async(START_OVER = false) => {
                                 url = parseURL(href),
                                 { pathname } = url,
                                 name = pathname.slice(1).toLowerCase();
-
-                            // Return the cached results first...
-                            let cache = SEARCH_CACHE.get(name);
-
-                            if(defined(cache))
-                                return cache.live;
 
                             // Then the actual "does the channel show up" result
                             let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
@@ -5000,160 +5019,162 @@ let Initialize = async(START_OVER = false) => {
                             // projectedWindDownPeriod:string<Date-ISO>
                             // usualStartTime:string<Date-Time<{HH:MM}>>
                             // usualStopTime:string<Date-Time<{HH:MM}>>
-                        if(!FETCHED_OK) {
-                            await fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
-                                .then(response => response.json())
-                                .then(json => {
-                                    let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
-                                        today = new Date;
+                        www_twitchmetrics_net: if(!FETCHED_OK) {
+                            when(() => defined(STREAMER.sole)? STREAMER: false).then(({ name, sole }) => {
+                                fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }/stream_time_values`)
+                                    .then(response => response.json())
+                                    .then(json => {
+                                        let data = { dailyBroadcastTime: 0, activeDaysPerWeek: 0, usualStartTime: '00:00', usualStopTime: '00:00', daysStreaming: [], dailyStartTimes: {}, dailyStopTimes: {} },
+                                            today = new Date;
 
-                                    let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
+                                        let getWeekDays = (...days) => days.sort().map(day => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]);
 
-                                    let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
+                                        let avgStartTime = [], avgStreamSpan = [], avgStopTime = [], dlyStartTime = {}, dlyStopTime = {};
 
-                                    let daysWithStreams = new Set(),
-                                        totalStreamHistory = (json ?? [])
-                                            // All except today
-                                            .slice(0, -1)
-                                            // Last 2 weeks (excluding today)
-                                            // .slice(-14)
-                                            .reverse()
-                                            .map(([start, stop]) => {
-                                                let date = new Date(start.toUpperCase());
+                                        let daysWithStreams = new Set(),
+                                            totalStreamHistory = (json ?? [])
+                                                // All except today
+                                                .slice(0, -1)
+                                                // Last 2 weeks (excluding today)
+                                                // .slice(-14)
+                                                .reverse()
+                                                .map(([start, stop]) => {
+                                                    let date = new Date(start.toUpperCase());
 
-                                                if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
-                                                    daysWithStreams.add(date.getDay());
+                                                    if(Math.abs(today - date) < (30 * 24 * 60 * 60 * 1000))
+                                                        daysWithStreams.add(date.getDay());
 
-                                                return [start, stop];
-                                            })
-                                            .reverse()
-                                            .map(([start, stop]) => {
-                                                // Set the average start/stop times (overall)
-                                                let [S_, _S] = [start, stop].map(date => new Date(date));
+                                                    return [start, stop];
+                                                })
+                                                .reverse()
+                                                .map(([start, stop]) => {
+                                                    // Set the average start/stop times (overall)
+                                                    let [S_, _S] = [start, stop].map(date => new Date(date));
 
-                                                avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
-                                                avgStreamSpan.push(Math.abs(+S_ - +_S));
-                                                avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
+                                                    avgStartTime.push([ S_.getHours(), S_.getMinutes(), S_.getDay() ]);
+                                                    avgStreamSpan.push(Math.abs(+S_ - +_S));
+                                                    avgStopTime.push([ _S.getHours(), _S.getMinutes(), _S.getDay() ]);
 
-                                                return [start, stop];
-                                            });
+                                                    return [start, stop];
+                                                });
 
-                                    // Set the daily start time
-                                    avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
+                                        // Set the daily start time
+                                        avgStartTime.map(([h, m, d]) => (dlyStartTime[d] ??= []).push([h, m]));
 
-                                    for(let day in dlyStartTime) {
-                                        let avgH = 0, avgM = 0;
+                                        for(let day in dlyStartTime) {
+                                            let avgH = 0, avgM = 0;
 
-                                        dlyStartTime[day]
-                                            .map(([h, m]) => { avgH += h; avgM += m })
-                                            .filter((v, i, a) => !i)
-                                            .map(() => {
-                                                let { length } = dlyStartTime[day];
+                                            dlyStartTime[day]
+                                                .map(([h, m]) => { avgH += h; avgM += m })
+                                                .filter((v, i, a) => !i)
+                                                .map(() => {
+                                                    let { length } = dlyStartTime[day];
 
-                                                avgH = Math.round(avgH / length);
-                                                avgM = (avgM / length).floorToNearest(15);
+                                                    avgH = Math.round(avgH / length);
+                                                    avgM = (avgM / length).floorToNearest(15);
 
-                                                data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
-                                            });
-                                    }
+                                                    data.dailyStartTimes[day] = data.dailyStartTimes[getWeekDays(day)] = [avgH, avgM].map(t => ('00' + t).slice(-2)).join(':');
+                                                });
+                                        }
 
-                                    // Set the average stream length
-                                    avgStreamSpan.map(t => data.dailyBroadcastTime += t);
-                                    data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
+                                        // Set the average stream length
+                                        avgStreamSpan.map(t => data.dailyBroadcastTime += t);
+                                        data.dailyBroadcastTime = (data.dailyBroadcastTime / avgStreamSpan.length) | 0;
 
-                                    // Set the daily stop time
-                                    avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
+                                        // Set the daily stop time
+                                        avgStopTime.map(([h, m, d]) => (dlyStopTime[d] ??= dlyStartTime[d]));
 
-                                    for(let day in dlyStartTime) {
-                                        let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
+                                        for(let day in dlyStartTime) {
+                                            let [H, M] = toTimeString(data.dailyBroadcastTime, '!hour:!minute').split(':').map(parseFloat);
 
-                                        data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
-                                            data.dailyStartTimes[day]
-                                                .split(':')
-                                                .map(parseFloat)
-                                                .map((v, i) => ([H, M][i] + v) % [24, 60][i])
-                                                .map((v, i) => !!i? v.floorToNearest(15): v)
-                                                .map(t => ('00' + t).slice(-2))
-                                                .join(':');
-                                    }
+                                            data.dailyStopTimes[day] = data.dailyStopTimes[getWeekDays(day)] =
+                                                data.dailyStartTimes[day]
+                                                    .split(':')
+                                                    .map(parseFloat)
+                                                    .map((v, i) => ([H, M][i] + v) % [24, 60][i])
+                                                    .map((v, i) => !!i? v.floorToNearest(15): v)
+                                                    .map(t => ('00' + t).slice(-2))
+                                                    .join(':');
+                                        }
 
-                                    // Set today's start/stop times
-                                    data.usualStartTime = data.dailyStartTimes[today.getDay()];
-                                    data.usualStopTime = data.dailyStopTimes[today.getDay()];
+                                        // Set today's start/stop times
+                                        data.usualStartTime = data.dailyStartTimes[today.getDay()];
+                                        data.usualStopTime = data.dailyStopTimes[today.getDay()];
 
-                                    data.daysStreaming = getWeekDays(...daysWithStreams);
-                                    data.activeDaysPerWeek = data.daysStreaming.length;
+                                        data.daysStreaming = getWeekDays(...daysWithStreams);
+                                        data.activeDaysPerWeek = data.daysStreaming.length;
 
-                                    data.actualStartTime = new Date(+new Date - STREAMER.time);
-                                    data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
-                                    data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
-                                    data.projectedLastCall = new Date(+data.projectedStopTime - (
-                                        (
-                                            parseBool(Settings.first_in_line)?
-                                                Settings.first_in_line_time_minutes:
-                                            parseBool(Settings.first_in_line_plus)?
-                                                Settings.first_in_line_plus_time_minutes:
-                                            parseBool(Settings.first_in_line_all)?
-                                                Settings.first_in_line_all_time_minutes:
-                                            15
-                                        ) * 60_000
-                                    ));
+                                        data.actualStartTime = new Date(+new Date - STREAMER.time);
+                                        data.projectedStopTime = new Date(+data.actualStartTime + data.dailyBroadcastTime);
+                                        data.projectedWindDownPeriod = new Date(+data.actualStartTime + (data.dailyBroadcastTime * .9));
+                                        data.projectedLastCall = new Date(+data.projectedStopTime - (
+                                            (
+                                                parseBool(Settings.first_in_line)?
+                                                    Settings.first_in_line_time_minutes:
+                                                parseBool(Settings.first_in_line_plus)?
+                                                    Settings.first_in_line_plus_time_minutes:
+                                                parseBool(Settings.first_in_line_all)?
+                                                    Settings.first_in_line_all_time_minutes:
+                                                15
+                                            ) * 60_000
+                                        ));
 
-                                    $remark(`Stream details about "${ STREAMER.name }"`, data);
+                                        $remark(`Stream details about "${ STREAMER.name }"`, data);
 
-                                    return STREAMER.data = { ...STREAMER.data, ...data };
-                                })
-                                .then(data => {
-                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
+                                        return STREAMER.data = { ...STREAMER.data, ...data };
+                                    })
+                                    .then(data => {
+                                        data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.dailyBroadcastTime)), dataRetrievedAt: +new Date };
 
-                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
-                                })
-                                .catch(error => {
-                                    $warn(`Failed to get STREAM details (1§1): ${ error }`)
-                                        // .toNativeStack();
+                                        Cache.save({ [`data/${ STREAMER.name }`]: data });
+                                    })
+                                    .catch(error => {
+                                        $warn(`Failed to get STREAM details (1§1): ${ error }`)
+                                            // .toNativeStack();
 
-                                    if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'st-tw-metrics' });
-                                });
-
-                            // Channel details (HTML → JSON)
-                            await fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
-                                .then(response => response.text())
-                                .then(html => (new DOMParser).parseFromString(html, 'text/html'))
-                                .then(DOM => {
-                                    let data = {};
-
-                                    $.all('dt+dd', DOM).map(dd => {
-                                        let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
-                                            value = dd.textContent.trim();
-
-                                        value = (
-                                            /^(followers)$/i.test(name)?
-                                                parseInt(value.replace(/\D/g, '')):
-                                            /^((first|last)seen)$/i.test(name)?
-                                                new Date($('time', dd).getAttribute('datetime')):
-                                            value
-                                        );
-
-                                        data[name] = value;
+                                        if(!ErrGet.length)
+                                            addToSearch({ 'tt-err-get': 'st-tw-metrics' });
                                     });
 
-                                    $remark(`Channel details about "${ STREAMER.name }"`, data);
+                                // Channel details (HTML → JSON)
+                                fetchURL(`https://www.twitchmetrics.net/c/${ sole }-${ name.toLowerCase() }`)
+                                    .then(response => response.text())
+                                    .then(html => (new DOMParser).parseFromString(html, 'text/html'))
+                                    .then(DOM => {
+                                        let data = {};
 
-                                    return STREAMER.data = { ...STREAMER.data, ...data };
-                                })
-                                .then(data => {
-                                    data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+                                        $.all('dt+dd', DOM).map(dd => {
+                                            let name = dd.previousElementSibling.textContent.trim().toLowerCase().replace(/\s+(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase()),
+                                                value = dd.textContent.trim();
 
-                                    Cache.save({ [`data/${ STREAMER.name }`]: data });
-                                })
-                                .catch(error => {
-                                    $warn(`Failed to get CHANNEL details (1§2): ${ error }`)
-                                        // .toNativeStack();
+                                            value = (
+                                                /^(followers)$/i.test(name)?
+                                                    parseInt(value.replace(/\D/g, '')):
+                                                /^((first|last)seen)$/i.test(name)?
+                                                    new Date($('time', dd).getAttribute('datetime')):
+                                                value
+                                            );
 
-                                    if(!ErrGet.length)
-                                        addToSearch({ 'tt-err-get': 'ch-tw-metrics' });
-                                });
+                                            data[name] = value;
+                                        });
+
+                                        $remark(`Channel details about "${ STREAMER.name }"`, data);
+
+                                        return STREAMER.data = { ...STREAMER.data, ...data };
+                                    })
+                                    .then(data => {
+                                        data = { ...data, streamerID: STREAMER.sole, dataRetrievedOK: (FETCHED_OK ||= defined(data?.firstSeen)), dataRetrievedAt: +new Date };
+
+                                        Cache.save({ [`data/${ STREAMER.name }`]: data });
+                                    })
+                                    .catch(error => {
+                                        $warn(`Failed to get CHANNEL details (1§2): ${ error }`)
+                                            // .toNativeStack();
+
+                                        if(!ErrGet.length)
+                                            addToSearch({ 'tt-err-get': 'ch-tw-metrics' });
+                                    });
+                            }, 1e3);
                         }
 
                         /***
@@ -5181,8 +5202,8 @@ let Initialize = async(START_OVER = false) => {
                             // subCount:number<int>
                             // totalViews:number<int>
                             // totalViewsRanked:number<int>
-                        if(!FETCHED_OK)
-                            await fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
+                        twitchstats_net: if(!FETCHED_OK)
+                            fetchURL(`https://twitchstats.net/streamer/${ name.toLowerCase() }`)
                                 .then(response => response.text())
                                 .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                 .then(dom => {
@@ -5273,8 +5294,8 @@ let Initialize = async(START_OVER = false) => {
                          *
                          */
                         // Channel details (JSON)
-                        if(!FETCHED_OK)
-                            await fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
+                        twitchtracker_com: if(!FETCHED_OK)
+                            fetchURL(`https://twitchtracker.com/api/channels/summary/${ name.toLowerCase() }`)
                                 .then(text => text.json())
                                 .then(json => {
                                     let data = {};
@@ -5326,8 +5347,8 @@ let Initialize = async(START_OVER = false) => {
                             //     email:string?<e-mail>,
                             //     created_at:string<Date.UTC>,
                             // }>
-                        if(!FETCHED_OK)
-                            await fetchURL(`//api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
+                        api_twitch_tv: if(!FETCHED_OK)
+                            fetchURL(`https://api.twitch.tv/helix/users?id=${ STREAMER.sole }`, {
                                 headers: {
                                     Authorization: Search.authorization,
                                     'Client-Id': Search.clientID,
@@ -5484,7 +5505,7 @@ let Initialize = async(START_OVER = false) => {
             });
         }
     } else {
-        top.UP_NEXT_ALLOW_THIS_TAB = true;
+        top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = true;
         Runtime.sendMessage({ action: 'WAIVE_UP_NEXT' });
     }
 
@@ -6456,7 +6477,7 @@ let Initialize = async(START_OVER = false) => {
                                 cost = parseInt(cost);
                                 title = title.trim();
 
-                                await when.defined(() => $('[data-test-selector*="chat"i] [data-test-selector="community-points-summary"i] button'))
+                                await when.defined(() => $('[data-test-selector*="chat"i] [data-test-selector*="points"i][data-test-selector*="summary"i] button'))
                                     .then(async rewardsMenuButton => {
                                         let { coin, fiat } = STREAMER;
 
@@ -6525,15 +6546,15 @@ let Initialize = async(START_OVER = false) => {
                                                             && ['SINGLE_MESSAGE_BYPASS_SUB_MODE', 'SEND_HIGHLIGHTED_MESSAGE', 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK', 'RANDOM_SUB_EMOTE_UNLOCK', 'CHOSEN_SUB_EMOTE_UNLOCK']
                                                                 .missing(ID => ID.contains(id))
                                                         ) {
-                                                            // Purchase the item, then begin recording
-                                                            purchaseButton.click();
-
+                                                            // Add the recording listener, then purchase the item
                                                             Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
                                                                 RECORD_PURCHASE({ element, message, subject, mentions, AutoClaimRewards }).then(recording => {
                                                                     if(!recording)
                                                                         throw `Unable to start recording. Pausing "${ title }" purchase for now`;
                                                                     return true; // Event OK to consume
                                                                 }).catch(alert.silent);
+
+                                                            purchaseButton.click();
                                                         } else {
                                                             // Purchase the item
                                                             purchaseButton.click();
@@ -6569,6 +6590,9 @@ let Initialize = async(START_OVER = false) => {
         // Correct "undefined" key for auto-answers...
         Cache.load(['AutoClaimRewards', 'AutoClaimAnswers'], ({ AutoClaimRewards, AutoClaimAnswers }) => {
             let streamers = STREAMER.jump;
+
+            AutoClaimRewards ??= {};
+            AutoClaimAnswers ??= {};
 
             for(let streamer in streamers) {
                 let { id } = streamers[streamer];
@@ -7116,7 +7140,7 @@ let Initialize = async(START_OVER = false) => {
         // REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
     top.REDO_FIRST_IN_LINE_QUEUE =
     async function REDO_FIRST_IN_LINE_QUEUE(url, search = null) {
-        if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length <= 0))
+        if(nullish(url) || (FIRST_IN_LINE_HREF === url && [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].filter(nullish).length < 1))
             return;
         else if(nullish(search))
             url = parseURL(url).addSearch(location.search, true);
@@ -7234,6 +7258,9 @@ let Initialize = async(START_OVER = false) => {
 
                 let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
                     channelID = UUID.from(pathname).value;
+
+                if(nullish(pathname))
+                    return;
 
                 let name = pathname.slice(1);
 
@@ -7370,7 +7397,7 @@ let Initialize = async(START_OVER = false) => {
                     currentTarget.setAttribute('speeding', speeding);
 
                     if(defined(currentTarget.tooltip))
-                        currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } Boost`;
+                        currentTarget.tooltip.innerHTML = `${ ['Start','Stop'][+speeding] } rushing the queue`;
 
                     let up_next_button = $('[up-next--container] button');
 
@@ -7430,7 +7457,7 @@ let Initialize = async(START_OVER = false) => {
                     currentTarget.setAttribute('paused', FIRST_IN_LINE_PAUSED = paused);
 
                     if(defined(currentTarget.tooltip))
-                        currentTarget.tooltip.innerHTML = `${ ['Pause','Continue'][+paused] } the timer`;
+                        currentTarget.tooltip.innerHTML = `${ ['Pause','Resume'][+paused] } the queue`;
                 },
             });
 
@@ -7588,6 +7615,7 @@ let Initialize = async(START_OVER = false) => {
                                     // Continue with the new name...
                                     reminders.push({ name: real, time });
 
+                                    delete LiveReminders; // @performance
                                     continue listing;
                                 }
                             }
@@ -7724,12 +7752,9 @@ let Initialize = async(START_OVER = false) => {
                                                                             await confirm
                                                                                 .timed(`Reminder for <a href="/${ name }">${ name }</a> removed successfully!<p tt-x>${ UUID.from(name).value }</p>`, 5000)
                                                                                 .then(ok => {
-                                                                                    // The user pressed nothing, or pressed "OK"
-                                                                                    if(nullish(ok) || ok)
-                                                                                        return;
-
                                                                                     // The user pressed "Cancel"
-                                                                                    Cache.save({ LiveReminders: { ...LiveReminders, [name]: justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                                                                    if(ok === false)
+                                                                                        Cache.save({ LiveReminders: { ...LiveReminders, [name]: justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                                                                                 });
                                                                         });
                                                                     },
@@ -7913,11 +7938,17 @@ let Initialize = async(START_OVER = false) => {
 
             // Update the color name...
             setInterval(() => {
+                let thematicColor = Color.getName(THEME.equals('dark')? THEME__CHANNEL_DARK: THEME__CHANNEL_LIGHT);
+                let textShadow = (['black', 'white'].contains(thematicColor)? `text-shadow:0 0 2px ${ THEME.equals('dark')? 'black': 'white' }`: '');
+
+                // Swap to correct :P
+                thematicColor = ({ black: 'white', white: 'black' }[thematicColor]) ?? thematicColor;
+
                 first_in_line_help_button.tooltip.innerHTML = (
                     UP_NEXT_ALLOW_THIS_TAB?
-                        `Drop a channel in the <span style="color:var(--user-accent-color)">${ colorName }</span> area to queue it`:
+                        `Drop a channel in the <span style="color:var(--user-accent-color); ${ textShadow }">${ colorName }</span> area to queue it`:
                     `Up Next is disabled for this tab`
-                ).replace(/\bcolored\b/g, () => Color.getName(THEME.equals('dark')? THEME__CHANNEL_DARK: THEME__CHANNEL_LIGHT));
+                ).replace(/\bcolored\b/g, () => thematicColor);
             }, 1000);
 
             // Load cache
@@ -7971,7 +8002,7 @@ let Initialize = async(START_OVER = false) => {
                 first_in_line_boost_button.setAttribute('speeding', FIRST_IN_LINE_BOOST);
                 first_in_line_boost_button.querySelector('svg[fill]')?.setAttribute('fill', '');
                 first_in_line_boost_button.querySelector('svg[fill]')?.modStyle(`opacity:${ 2**-!FIRST_IN_LINE_BOOST }; fill:currentcolor`);
-                first_in_line_boost_button.tooltip ??= new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } Boost`);
+                first_in_line_boost_button.tooltip ??= new Tooltip(first_in_line_boost_button, `${ ['Start','Stop'][FIRST_IN_LINE_BOOST | 0] } rushing the queue`);
 
                 let up_next_button = $('[up-next--container] button');
 
@@ -7979,7 +8010,7 @@ let Initialize = async(START_OVER = false) => {
                 up_next_button?.setAttribute('speeding', parseBool(FIRST_IN_LINE_BOOST));
 
                 // Pause
-                first_in_line_pause_button.tooltip ??= new Tooltip(first_in_line_pause_button, `Pause the timer`);
+                first_in_line_pause_button.tooltip ??= new Tooltip(first_in_line_pause_button, `Pause the queue`);
             });
         }
 
@@ -8115,7 +8146,7 @@ let Initialize = async(START_OVER = false) => {
                     // This controls the new due date `NEW_DUE_DATE(time)` when the user drags a channel to the first position
                         // To create a new due date, `NEW_DUE_DATE(time)` → `NEW_DUE_DATE()`
                     if([oldIndex, newIndex].contains(0)) {
-                        // `..._TIMER = ` will continue the timer (as if nothing changed) when a channel is removed
+                        // `..._TIMER = ` will continue the queue (as if nothing changed) when a channel is removed
                         let first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
                         let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first.name }"i]`)?.getAttribute('time'));
 
@@ -8198,15 +8229,23 @@ let Initialize = async(START_OVER = false) => {
                             animate: container => {
                                 let subheader = $('.tt-balloon-subheader', container);
 
+                                if(!UP_NEXT_ALLOW_THIS_TAB)
+                                    return -1;
+                                if(container.hasAttribute('time-ctrl'))
+                                    return -1;
+                                container.setAttribute('time-ctrl', true);
+
                                 return setInterval(async() => {
                                     new StopWatch('up_next_balloon__subheader_timer_animation');
 
+                                    let controller = getDOMPath(container);
                                     let timeRemaining = GET_TIME_REMAINING();
 
                                     timeRemaining = timeRemaining < 0? 0: timeRemaining;
 
                                     /* First in Line is paused */
                                     if(FIRST_IN_LINE_PAUSED) {
+                                        // $remark('Adding time... Subheader Animation');
                                         Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                         StopWatch.stop('up_next_balloon__subheader_timer_animation', 1000);
 
@@ -8231,6 +8270,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         anchor.removeAttribute('new-href');
                                         ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
+                                        container.setAttribute('href', href);
 
                                         REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
@@ -8446,6 +8486,9 @@ let Initialize = async(START_OVER = false) => {
 
                         if(!UP_NEXT_ALLOW_THIS_TAB)
                             return -1;
+                        if(container.hasAttribute('time-ctrl'))
+                            return -1;
+                        container.setAttribute('time-ctrl', true);
 
                         return setInterval(async() => {
                             new StopWatch('first_in_line__job_watcher');
@@ -8456,6 +8499,7 @@ let Initialize = async(START_OVER = false) => {
 
                             /* First in Line is paused */
                             if(FIRST_IN_LINE_PAUSED) {
+                                // $remark('Adding time... Job Watcher');
                                 Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
                                 StopWatch.stop('first_in_line__job_watcher', 1000);
 
@@ -8482,6 +8526,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 anchor.removeAttribute('new-href');
                                 ALL_FIRST_IN_LINE_JOBS.splice(index, 1, anchor.href = href);
+                                container.setAttribute('href', href);
 
                                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0]);
 
@@ -8618,12 +8663,30 @@ let Initialize = async(START_OVER = false) => {
         RegisterJob('first_in_line');
 
         // Redo entries
-        if(parseBool(parseURL(top.location).searchParameters?.redo))
-            if(false
-                || (top.location.pathname.equals(`/${ STREAMER.name }`) && STREAMER.live)
-                || (top.location.pathname.unlike(`/${ STREAMER.name }`))
-            )
-                REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(top.location).searchParameters?.redo) });
+        if(true
+            && parseBool(parseURL(top.location).searchParameters?.redo)
+            && top.location.pathname.equals(`/${ STREAMER.name }`)
+            && STREAMER.live
+        )
+            Handlers.first_in_line({ href: top.location.href, innerText: `${ STREAMER.name } is live [Entry Redo]` });
+
+        // Put a rainbow around repeating entries...
+        setInterval(() =>
+            $.all('[id^="tt-balloon"i][name][live][href*="redo"i]').map(el => {
+                let { searchParameters } = parseURL(el.getAttribute('href'));
+                let redo = parseBool(searchParameters.redo);
+
+                if(parseBool(el.getAttribute('rainbow-border')) != redo) {
+                    el.setAttribute('rainbow-border', redo);
+
+                    $('.tt-redo-btn svg', el).modStyle(
+                        redo?
+                            'animation: 1s linear 0s infinite normal none running spinner':
+                        'animation: !delete'
+                    );
+                }
+            })
+        , 100);
 
         // Restart the timer if the user navigates away from the page
         top.onlocationchange = ({ from, to }) => {
@@ -8999,7 +9062,6 @@ let Initialize = async(START_OVER = false) => {
                     let num = 3;
                     while(!ok && num-- > 0) {
                         delete channel;
-                        // delete LiveReminders; // @performance
 
                         Search.void(reminderName);
 
@@ -9055,6 +9117,18 @@ let Initialize = async(START_OVER = false) => {
                                 Display_phantom_notification: {
                                     $warn(`Live Reminders: ${ name } went live ${ instance }`, new Date);
                                     await alert.timed(`<a href='/${ name }'>${ name }</a> went live ${ instance }!`, 7000);
+                                }
+
+                                // Update the cached-streamer
+                                Update_cached_streamer: {
+                                    GetNextStreamer.cachedStreamer = null;
+                                    (GetNextStreamer.cachedReminders ??= []).push({
+                                        name, live, href,
+
+                                        from: 'LIVE_REMINDERS__CHECKER',
+                                    });
+
+                                    GetNextStreamer();
                                 }
                             }
 
@@ -9124,7 +9198,7 @@ let Initialize = async(START_OVER = false) => {
         let MATURE_HINTS = ['ADULT', 'MATUR', 'NSFW', ...16..to(99)],
             RATING_STYLING = `max-height:10rem; max-width:6rem; position:absolute; left:50%; bottom:-9rem; transform:translate(-50%);`;
 
-        /*await*/ fetchURL.idempotent(href)
+        /*await*/ fetchURL.fromDisk(href, { hoursUntilEntryExpires: 8, keepDefectiveEntry: true })
             .then(response => response.text())
             .then(DOMParser.stripBody)
             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -9139,7 +9213,7 @@ let Initialize = async(START_OVER = false) => {
                 let [title, description, image] = ["title", "description", "image"].map(get),
                     error = DOM.querySelector('parsererror')?.textContent;
 
-                let ok = /\/ttv-boxart\//i.test(image);
+                let ok = $.defined('meta[property="og:image"i]');
 
                 if(!ok)
                     throw `No metadata available for "${ STREAMER.game }"`;
@@ -9153,7 +9227,7 @@ let Initialize = async(START_OVER = false) => {
                         throw error;
                 }
 
-                title = title.replace(/[\s\-]+twitch\s*$/i, '');
+                title = title.replace(/[\s\-]*twitch\s*$/i, '').replace(/^\s*$/, STREAMER.game);
 
                 let card = f('.tt-iframe-card.tt-border-radius-medium.tt-elevation-1').with(
                     f('.tt-border-radius-medium.tt-c-background-base.tt-flex.tt-full-width').with(
@@ -9167,10 +9241,11 @@ let Initialize = async(START_OVER = false) => {
                                 },
                                     f('.tt-card-image').with(
                                         f('.tt-aspect', { style: 'transform:translate(0,40%)' },
-                                            f('img.tt-image', {
+                                            f('img.tt-image.game-card-img', {
                                                 alt: title,
                                                 src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
-                                                style: 'height:15rem',
+                                                style: 'height:15rem; object-fit:cover',
+                                                ok: /\/ttv-boxart\//i.test(image),
                                             }),
                                             f('img#tt-content-rating-placeholder', { src: `//image.api.playstation.com/grc/images/ratings/hd/esrb/rp.png`, style: RATING_STYLING })
                                         )
@@ -9309,7 +9384,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Steam: if(parseBool(Settings.store_integration__steam)) {
                     async function fetchSteamGame(index = 1) {
-                        return /*await*/ fetchURL.idempotent(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
+                        return /*await*/ fetchURL.fromDisk(`https://store.steampowered.com/search/suggest?term=${ gameURI }&f=games&cc=${ counCode }&realm=1&l=${ langName }&use_store_query=1&use_search_spellcheck=1`)
                             .then(r => r.text())
                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                             .then(DOM => {
@@ -9353,7 +9428,7 @@ let Initialize = async(START_OVER = false) => {
                             when.defined(() => $('#tt-steam-purchase'))
                                 .then(container => {
                                     // Load the maturity warning (if applicable)...
-                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(DOM => {
@@ -9394,7 +9469,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 PlayStation: if(parseBool(Settings.store_integration__playstation)) {
                     async function fetchPlayStationGame(game, index = 1, pages = 1) {
-                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/psn/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -9437,7 +9512,7 @@ let Initialize = async(START_OVER = false) => {
                             .catch(error => {
                                 // Fallback: Search the store normally
                                 if(error == ITEM_NOT_FOUND)
-                                    return /*await*/ fetchURL.idempotent(`https://store.playstation.com/${ lang }/search/${ gameURI }`)
+                                    return /*await*/ fetchURL.fromDisk(`https://store.playstation.com/${ lang }/search/${ gameURI }`, { hoursUntilEntryExpires: 168 })
                                         .then(r => r.text())
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                         .then(async DOM => {
@@ -9533,7 +9608,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.defined(() => $('#tt-playstation-purchase'))
                                     .then(container => {
                                         // Load the maturity warning (if applicable)...
-                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
@@ -9585,6 +9660,28 @@ let Initialize = async(START_OVER = false) => {
                                 if(!href?.length)
                                     return;
 
+                                // Correct game image...
+                                if($.defined('.game-card-img[ok="false"i]')) {
+                                    let i = new Image;
+                                    i.crossOrigin = "anonymous";
+                                    i.addEventListener('load', event => {
+                                        let I = $('.game-card-img[ok="false"i]');
+
+                                        if(nullish(I))
+                                            return;
+
+                                        for(let { name, value } of I.attributes)
+                                            if(['src', 'ok'].missing(name))
+                                                i.setAttribute(name, value);
+                                        I.replaceWith(i);
+                                    });
+                                    i.addEventListener('error', event => {
+                                        i.setAttribute('ok', false);
+                                    });
+
+                                    i.src = img;
+                                }
+
                                 let f = furnish;
 
                                 let purchase =
@@ -9605,7 +9702,7 @@ let Initialize = async(START_OVER = false) => {
                                         href = href.replace(/^\/\//, 'https:$&');
 
                                         // Load the maturity warning (if applicable)...
-                                        fetchURL.idempotent(href)
+                                        fetchURL.fromDisk(href, { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
@@ -9665,7 +9762,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Xbox: if(parseBool(Settings.store_integration__xbox)) {
                     async function fetchXboxGame(game) {
-                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/xbox/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -9708,7 +9805,7 @@ let Initialize = async(START_OVER = false) => {
                             .catch(error => {
                                 // Fallback: Search the store normally
                                 if(error == ITEM_NOT_FOUND)
-                                    return /*await*/ fetchURL.idempotent(`https://www.microsoft.com/msstoreapiprod/api/autosuggest?market=${ lang }&sources=DCatAll-Products&filter=%2BClientType%3AStoreWeb&query=${ gameURI }`)
+                                    return /*await*/ fetchURL.fromDisk(`https://www.microsoft.com/msstoreapiprod/api/autosuggest?market=${ lang }&sources=DCatAll-Products&filter=%2BClientType%3AStoreWeb&query=${ gameURI }`, { hoursUntilEntryExpires: 168 })
                                         .then(r => r.json())
                                         .then(json => {
                                             let info = json
@@ -9767,7 +9864,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.defined(() => $('#tt-xbox-purchase'))
                                     .then(container => {
                                         // Load the price & maturity warning (if applicable)...
-                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
@@ -9795,7 +9892,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         // TODO: Make this faster somehow!
                                         // Slow as hell!
-                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -9847,6 +9944,28 @@ let Initialize = async(START_OVER = false) => {
                                 if(!href?.length)
                                     return;
 
+                                // Correct game image...
+                                if($.defined('.game-card-img[ok="false"i]')) {
+                                    let i = new Image;
+                                    i.crossOrigin = "anonymous";
+                                    i.addEventListener('load', event => {
+                                        let I = $('.game-card-img[ok="false"i]');
+
+                                        if(nullish(I))
+                                            return;
+
+                                        for(let { name, value } of I.attributes)
+                                            if(['src', 'ok'].missing(name))
+                                                i.setAttribute(name, value);
+                                        I.replaceWith(i);
+                                    });
+                                    i.addEventListener('error', event => {
+                                        i.setAttribute('ok', false);
+                                    });
+
+                                    i.src = img;
+                                }
+
                                 let f = furnish;
 
                                 let purchase =
@@ -9865,7 +9984,7 @@ let Initialize = async(START_OVER = false) => {
                                 when.defined(() => $('#tt-xbox-purchase'))
                                     .then(container => {
                                         // Load the price & maturity warning (if applicable)...
-                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                             .then(DOM => {
@@ -9893,7 +10012,7 @@ let Initialize = async(START_OVER = false) => {
 
                                         // TODO: Make this faster somehow!
                                         // Slow as hell!
-                                        fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                        fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                             .then(r => r.text())
                                             .then(DOMParser.stripBody)
                                             .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -9996,7 +10115,7 @@ let Initialize = async(START_OVER = false) => {
                  */
                 Nintendo: if(parseBool(Settings.store_integration__nintendo)) {
                     async function fetchNintendoGame(game) {
-                        return fetchURL.idempotent(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`)
+                        return fetchURL.fromDisk(`https://raw.githubusercontent.com/Ephellon/game-store-catalog/main/nintendo/${ (game[0].toLowerCase().replace(/[^a-z]/, '_')) }.json`, { hoursUntilEntryExpires: 168 })
                             .then(r => r.json())
                             .then(data => {
                                 let [best, ...othr] = data.sort((prev, next) =>
@@ -10040,14 +10159,17 @@ let Initialize = async(START_OVER = false) => {
                             .catch(error => {
                                 // Fallback: Search the store normally
                                 if(error == ITEM_NOT_FOUND)
-                                    return /*await*/ fetchURL.idempotent(`https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(4.14.2)%3B%20Browser%3B%20JS%20Helper%20(3.11.1)%3B%20react%20(17.0.2)%3B%20react-instantsearch%20(6.38.0)`, {
+                                    return /*await*/ fetchURL.fromDisk(encodeURI`https://u3b6gr4ua3-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia for JavaScript (4.14.2); Browser; JS Helper (3.11.1); react (17.0.2); react-instantsearch (6.38.0)`, {
+                                        hoursUntilEntryExpires: 168,    // 1 week lifetime
+                                        keepDefectiveEntry: true,       // Keep bad requests
+
                                         headers: {
                                             'accept': '*/*',
-                                            'accept-language': 'en-US,en;q=0.9',
+                                            'accept-language': navigator.languages.join(','),
                                             'content-type': 'application/x-www-form-urlencoded',
-                                            'sec-ch-ua': '"Google Chrome";v="107", "Chromium";v="107", "Not=A?Brand";v="24"',
-                                            'sec-ch-ua-mobile': '?0',
-                                            'sec-ch-ua-platform': '"Windows"',
+                                            'sec-ch-ua': navigator.userAgentData.brands.map(b => [`"${ b.brand }"`, `v="${ b.version }"`].join(';')).join(', '),
+                                            'sec-ch-ua-mobile': '?' + +navigator.userAgentData.mobile,
+                                            'sec-ch-ua-platform': `"${ navigator.userAgentData.platform }"`,
                                             'sec-fetch-dest': 'empty',
                                             'sec-fetch-mode': 'cors',
                                             'sec-fetch-site': 'cross-site',
@@ -10166,7 +10288,7 @@ let Initialize = async(START_OVER = false) => {
                                     if(!href?.length)
                                         return;
 
-                                    fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                    fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                         .then(r => r.text())
                                         .then(DOMParser.stripBody)
                                         .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -10268,7 +10390,29 @@ let Initialize = async(START_OVER = false) => {
                                 if(!href?.length)
                                     return;
 
-                                fetchURL.idempotent(href.replace(/^\/\//, 'https:$&'))
+                                // Correct game image...
+                                if($.defined('.game-card-img[ok="false"i]')) {
+                                    let i = new Image;
+                                    i.crossOrigin = "anonymous";
+                                    i.addEventListener('load', event => {
+                                        let I = $('.game-card-img[ok="false"i]');
+
+                                        if(nullish(I))
+                                            return;
+
+                                        for(let { name, value } of I.attributes)
+                                            if(['src', 'ok'].missing(name))
+                                                i.setAttribute(name, value);
+                                        I.replaceWith(i);
+                                    });
+                                    i.addEventListener('error', event => {
+                                        i.setAttribute('ok', false);
+                                    });
+
+                                    i.src = img;
+                                }
+
+                                fetchURL.fromDisk(href.replace(/^\/\//, 'https:$&'), { hoursUntilEntryExpires: 168 })
                                     .then(r => r.text())
                                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                                     .then(DOM => {
@@ -10347,7 +10491,7 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let STARTED_WATCHING = (+new Date);
-    let CURRENT_WATCHTIME = `WatchTimes/${ top.location.pathname.slice(1).split('/').shift().toLowerCase() }`;
+    let CURRENT_WATCHTIME = `WatchTimes/${ STREAMER.name.toLowerCase() }`;
 
     Cache.load(CURRENT_WATCHTIME, _ => {
         _[CURRENT_WATCHTIME] >>= 0;
@@ -10430,14 +10574,14 @@ let Initialize = async(START_OVER = false) => {
     Handlers.kill_extensions = () => {
         new StopWatch('kill_extensions');
 
-        let extension_views = $.all('[class^="extension-view"i]');
+        let extension_views = $.all('[class*="extension"i]:is([class*="view"i], [class*="popover"i])');
 
         for(let view of extension_views)
             view.modStyle('display:none!important');
 
         StopWatch.stop('kill_extensions');
     };
-    Timers.kill_extensions = -2_500;
+    Timers.kill_extensions = 2_500;
 
     Unhandlers.kill_extensions = () => {
         let extension_views = $.all('[class^="extension-view"i]');
@@ -10603,56 +10747,57 @@ let Initialize = async(START_OVER = false) => {
 
                         // Find the "best" URL
                         let _href, _protocol, _host, _origin, _port, _pathname, _search, _hash;
+                        let errors = [];
 
                         if(defined(url))
-                            for(let s = reply, i = 0, maxURLs = 5; i < s.length && --maxURLs;)
-                                try {
-                                    let { index, groups } = parseURL.pattern.exec(s.slice(i));
-                                    let { href, protocol, host, origin, port, pathname, search, hash } = groups;
+                            for(let s = reply, i = 0, maxURLs = 5; i < s.length && --maxURLs;) {
+                                let found = parseURL.pattern.exec(s.slice(i));
 
-                                    if(false
-                                        // Empty URL...
-                                        || (false
-                                            || (href && !_href)
-                                            || (pathname && !_pathname)
-                                            || (search && !_search)
-                                            || (hash && !_hash)
-                                        )
+                                if(nullish(found))
+                                    continue;
 
-                                        // Longest URL...
-                                        // || (href.length < _href.length)
+                                let { index, groups } = found;
+                                let { href, protocol, host, origin, port, pathname, search, hash } = groups;
 
-                                        // Most complete URL...
-                                        || (false
-                                            || (protocol && !_protocol)
-                                            || (host && !_host)
-                                            || (origin && !_origin)
-                                            || (port && !_port)
-                                        )
-                                    ) {
-                                        // Set the new "best" URL
-                                        _href = href;
-                                        _origin = origin;
-                                        _protocol = protocol;
-                                        _host = host;
-                                        _port = port;
-                                        _pathname = pathname;
-                                        _search = search;
-                                        _hash = hash;
-                                    }
+                                if(false
+                                    // Empty URL...
+                                    || (false
+                                        || (href && !_href)
+                                        || (pathname && !_pathname)
+                                        || (search && !_search)
+                                        || (hash && !_hash)
+                                    )
 
-                                    if(index + href.length >= s.slice(i).length)
-                                        break;
+                                    // Longest URL...
+                                    // || (href.length < _href.length)
 
-                                    i = index + href.length;
-                                } catch(error) {
-                                    $warn(error);
-
-                                    break;
+                                    // Most complete URL...
+                                    || (false
+                                        || (protocol && !_protocol)
+                                        || (host && !_host)
+                                        || (origin && !_origin)
+                                        || (port && !_port)
+                                    )
+                                ) {
+                                    // Set the new "best" URL
+                                    _href = href;
+                                    _origin = origin;
+                                    _protocol = protocol;
+                                    _host = host;
+                                    _port = port;
+                                    _pathname = pathname;
+                                    _search = search;
+                                    _hash = hash;
                                 }
 
+                                if(index + href.length >= s.slice(i).length)
+                                    break;
+
+                                i = index + href.length;
+                            }
+
                         if(parseBool(Settings.parse_commands__create_links) && defined(_href))
-                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
+                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap;" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
                         else
                             string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
 
@@ -11188,6 +11333,11 @@ let Initialize = async(START_OVER = false) => {
 
             Cache.save({ LastRaid: {} });
         });
+
+        top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+            if(raiding || raided)
+                CONTINUE_RAIDING = false;
+        };
     }
 
     /*** Greedy Raiding
@@ -11277,7 +11427,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.stay_live = async() => {
         new StopWatch('stay_live');
 
-        let next = await GetNextStreamer(),
+        let next = await GetNextStreamer(STREAMER.name),
             { pathname } = location;
 
         try {
@@ -11314,12 +11464,12 @@ let Initialize = async(START_OVER = false) => {
                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
-                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(`${ next.href }?obit=${ STREAMER?.name }&tool=stay-live`));
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href).addSearch({ obit: STREAMER?.name, tool: 'stay-live' }).href));
                 else
                     Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
                         $notice(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
 
-                        goto(`${ next }?obit=${ obit }&tool=stay-live`);
+                        goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }).href);
                     });
             } else  {
                 $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
@@ -12352,7 +12502,7 @@ let Initialize = async(START_OVER = false) => {
             // Replaces ranges
             // 6 - 11P ET | 6:00 AM - 11:00 PM EST
             .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\-\s]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/ig, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
-                let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 12)] + 'M';
+                let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime ?? +new Date).getHours() > 12)] + 'M';
 
                 postMeridiem ||= autoMeridiem;
                 preMeridiem ||= postMeridiem;
@@ -13067,7 +13217,7 @@ let Initialize = async(START_OVER = false) => {
 
     __GetMultiplierAmount__:
     if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
-        let button = $('[data-test-selector="community-points-summary"i] button');
+        let button = $('[data-test-selector*="points"i][data-test-selector*="summary"i] button');
 
         if(defined(button)) {
             button.click();
@@ -13178,7 +13328,7 @@ let Initialize = async(START_OVER = false) => {
                 let points_receipt = $('#tt-points-receipt'),
                     balance = $('[data-test-selector="balance-string"i]'),
                     exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
-                    exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]');
+                    exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 
                 if(nullish(points_receipt))
                     return RestartJob('points_receipt_placement');
@@ -14370,6 +14520,8 @@ let Initialize = async(START_OVER = false) => {
 
                         if(!parseBool(channel.live)) {
                             delete channel;
+                            delete DVRChannels; // @performance
+
                             continue checking;
                         }
 
@@ -14573,6 +14725,7 @@ let Initialize = async(START_OVER = false) => {
         // if the video is paused by the user (trusted) move on
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
             return StopWatch.stop('recover_frames');
+        $('#tt-embedded-video')?.remove();
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
         if(creationTime !== CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
@@ -14798,7 +14951,7 @@ let Initialize = async(START_OVER = false) => {
         $error('The stream ran into an error:', errorMessage.textContent, new Date);
 
         if(/\b(subscribe|mature)\b/i.test(errorMessage.textContent)) {
-            let next = await GetNextStreamer();
+            let next = await GetNextStreamer(STREAMER.name);
 
             // Subscriber only, etc.
             if(defined(next))
@@ -14927,7 +15080,7 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('recover_pages');
 
         let message = error.textContent,
-            next = await GetNextStreamer();
+            next = await GetNextStreamer(STREAMER.name);
 
         $error(message);
 
@@ -14959,6 +15112,10 @@ let Initialize = async(START_OVER = false) => {
                 $warn(`The page seems to be lagging (${ span.suffix('s', false, 'time') })... This is the ${ nth(++RECOVER_PAGE_FROM_LAG__WARNINGS) } warning. Offending site: ${ location.href }`);
             else if(span < (Timers.recover_pages * 1.05) && RECOVER_PAGE_FROM_LAG__WARNINGS > 0)
                 --RECOVER_PAGE_FROM_LAG__WARNINGS;
+
+            // The lag has exceeded 15s
+            if(span > 15e3)
+                RECOVER_PAGE_FROM_LAG__WARNINGS = Infinity;
 
             if(RECOVER_PAGE_FROM_LAG__WARNINGS > 2)
                 ReloadPage();
@@ -15001,7 +15158,7 @@ let Initialize = async(START_OVER = false) => {
                     video.setAttribute('uuid', video.uuid ??= (new UUID).value);
 
                     let body = `<input hidden controller anchor="${ video.uuid }"
-                        icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1)) }..."
+                        icon="\uD83D\uDD34\uFE0F" title="Recording ${ (STREAMER?.name ?? top.location.pathname.slice(1).split('/').shift()) }..."
                         placeholder="${ DEFAULT_CLIP_NAME }"
                         pattern="${ system.acceptableFilenames.source }"
 
@@ -15145,13 +15302,12 @@ let Initialize = async(START_OVER = false) => {
                                     deny="${ encodeHTML(Glyphs.modify('trash', { height: '20px', width: '20px', style: 'vertical-align:bottom' })) } Stop"
                                     ></div>You're already getting notifications for <a href="/${ name }">${ name }</a>.`, 7000)
                                 .then(ok => {
-                                    // The user pressed nothing, or pressed "OK"
-                                    if(nullish(ok) || ok)
-                                        return;
-                                    delete LiveReminders[name];
-
                                     // The user pressed "Cancel"
-                                    Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                    if(ok === false) {
+                                        delete LiveReminders[name];
+
+                                        Cache.save({ LiveReminders }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                    }
                                 });
                         let search = await new Search(name).then(Search.convertResults);
 
@@ -15162,12 +15318,9 @@ let Initialize = async(START_OVER = false) => {
                         await confirm
                             .timed(`You'll be notified when <a href="/${ name }">${ name }</a> goes live.`, 7000)
                             .then(ok => {
-                                // The user pressed nothing, or pressed "OK"
-                                if(nullish(ok) || ok)
-                                    return;
-
                                 // The user pressed "Cancel"
-                                Cache.save({ LiveReminders: { ...justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
+                                if(ok === false)
+                                    Cache.save({ LiveReminders: { ...justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                             });
 
                         delete LiveReminders; // @performance
@@ -15582,7 +15735,7 @@ if(top == window) {
                         alert.timed(`${ Manifest.name } will resume after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
                     });
 
-            Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => top.UP_NEXT_ALLOW_THIS_TAB = owner);
+            Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = owner);
 
             $log("Main container ready");
 
@@ -15739,30 +15892,6 @@ if(top == window) {
             PAGE_CHECKER = clearInterval(PAGE_CHECKER);
 
             window.MAIN_CONTROLLER_READY = true;
-
-            // Observe location changes
-            LocationObserver: {
-                let { body } = document,
-                    observer = new MutationObserver(mutations => {
-                        mutations.map(mutation => {
-                            if(PATHNAME !== location.pathname) {
-                                let OLD_HREF = PATHNAME;
-
-                                PATHNAME = location.pathname;
-
-                                NORMALIZED_PATHNAME = PATHNAME
-                                    // Remove common "modes"
-                                    .replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1')
-                                    .replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1');
-
-                                for(let [name, func] of __ONLOCATIONCHANGE__)
-                                    func(new CustomEvent('locationchange', { from: OLD_HREF, to: PATHNAME }));
-                            }
-                        });
-                    });
-
-                observer.observe(body, { childList: true, subtree: true });
-            }
 
             // Observe the volume changes
             VolumeObserver: {
@@ -16303,7 +16432,7 @@ if(top == window) {
                                 Cache.save({ Watching });
                             });
 
-                            await top.beforeleaving?.({});
+                            await top.beforeleaving?.(new CustomEvent('locationchange', { from: NORMALIZED_PATHNAME, to: NORMALIZED_PATHNAME, persisted: document.readyState.unlike('unloading') }));
 
                             respond({ ok: true });
                         } else {
@@ -16318,11 +16447,11 @@ if(top == window) {
                             Cache.save({ Watching });
                         });
 
-                        await top.beforeleaving?.({});
+                        await top.beforeleaving?.(new CustomEvent('locationchange', { from: NORMALIZED_PATHNAME, to: '', persisted: document.readyState.unlike('unloading') }));
 
                         respond({ ok: true });
 
-                        wait(100).then(() => window.close());
+                        wait(500).then(() => window.close());
                     } break;
                 }
             });
@@ -16464,6 +16593,7 @@ if(top == window) {
                             // Successful login attempt
                             case '001': {
                                 socket.send(`JOIN ${ CHANNEL }`);
+                                // TODO | To be removed Feb 18, 2024 → https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
                                 socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
                                 socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
                             } break;
@@ -16549,10 +16679,11 @@ if(top == window) {
                                             'keep':
                                         'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
                                             'gift':
-                                        'raid'.split(' ').contains(msg_id)?
+                                        'raid unraid'.split(' ').contains(msg_id)?
                                             'raid': // incoming raids
                                         'pointsredeemed'.split(' ').contains(msg_id)?
                                             'coin':
+                                        // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
                                         'note'
                                     ),
                                     element = when.defined((message, subject) =>

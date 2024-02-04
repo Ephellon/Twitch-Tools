@@ -134,6 +134,9 @@ let SHARED_DATA = new Map;
  * @param  {boolean} [forced = false]     Force the tab to reload
  */
 function ReloadTab(tab, onlineOnly = true, forced = false) {
+    if(tab.status == UNLOADED)
+        console.warn(`[RELOAD] The tab #${ tab.id } was unloaded`);
+
     // Tab is offline, do not reload
     if(onlineOnly && TabIsOffline(tab))
         return;
@@ -167,6 +170,9 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
  * @param  {boolean} [forced = true]          Force the tab to close
  */
 function RemoveTab(tab, duplicateTab = false, forced = true) {
+    if(tab.status == UNLOADED)
+        console.warn(`[REMOVE] The tab #${ tab.id } was unloaded`);
+
     // Duplicate tab
     duplication: if(duplicateTab) {
         // Using `.duplicate` carries the frozen status to the new tab...
@@ -177,6 +183,7 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
             break duplication;
 
         console.warn(`Duplicating tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
+
         Container.tabs.create({ url: tab.url, windowId: tab.windowId });
 
         RemoveTab.duplicatedTabs.set(tab.url, +new Date);
@@ -552,19 +559,26 @@ let LAG_REPORTER = setInterval(() => {
     for(let [ID, createdAt] of REPORTS) {
         HANG_UP_CHECKER.set(ID,
             setTimeout((id = ID) => {
-                Container.tabs.get(id)
-                    .then(tab => {
-                        console.warn(`Tab "${ tab.title }" (#${ tab.id }) timed out. Removing...`);
+                try {
+                    Container.tabs.get(id)
+                        .then(tab => {
+                            console.warn(`Tab "${ tab.title }" (#${ tab.id }) timed out. Removing...`);
 
-                        GALLOWS.set(tab.id, +new Date);
-                        REPORTS.delete(tab.id);
-                        RemoveTab(tab, true);
-                    }).catch(error => {
-                        console.warn(`Tab #${ id } no longer exists... Removing...`);
+                            GALLOWS.set(tab.id, +new Date);
+                            REPORTS.delete(tab.id);
+                            RemoveTab(tab, true);
+                        }).catch(error => {
+                            console.warn(`Tab #${ id } no longer exists... Removing...`);
 
-                        GALLOWS.delete(id);
-                        REPORTS.delete(id);
-                    });
+                            GALLOWS.delete(id);
+                            REPORTS.delete(id);
+                        });
+                } catch(error) {
+                    GALLOWS.delete(ID);
+                    REPORTS.delete(ID);
+
+                    console.error(error);
+                }
             }, MAX_TIME_ALLOWED - 100)
         );
 

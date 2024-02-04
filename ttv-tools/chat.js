@@ -118,21 +118,20 @@ let Chat__Initialize = async(START_OVER = false) => {
         new StopWatch('auto_claim_bonuses');
 
         let ChannelPoints = (null
-                ?? $('[data-test-selector="community-points-summary"i] button[class*="success"i]')
                 ?? $('[class*="bonus"i]')?.closest('button')
+                ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button[class*="success"i]')
+                ?? $('[data-test-selector*="points"i][data-test-selector*="summary"i] button:is([class*="destruct"i], [class*="error"i])')
             ),
             Enabled = (Settings.auto_claim_bonuses && parseBool($('#tt-auto-claim-bonuses')?.getAttribute('tt-auto-claim-enabled') ?? $('[data-a-page-loaded-name="PopoutChatPage"i]')));
 
-        if(Enabled) {
-            ChannelPoints?.click();
+        if(Enabled && defined(ChannelPoints)) {
+            ChannelPoints.click();
 
-            when.defined(() => $('[data-test-selector="community-points-summary"i] button[disabled]')).then(clickedButton => {
-                let playedAnimation;
+            let playedAnimation;
 
-                when.defined(() => $('.pulse-animation [class*="channel"i][class*="points"i]')).then(ok => playedAnimation = ok);
+            when.defined(() => $('.pulse-animation [class*="channel"i][class*="points"i]')).then(ok => playedAnimation = ok);
 
-                wait(10_000).then(() => top.TWITCH_INTEGRITY_FAIL = !playedAnimation);
-            });
+            wait(10_000).then(() => top.TWITCH_INTEGRITY_FAIL = !playedAnimation);
         }
 
         let BonusChannelPointsSVG = Glyphs.modify('bonuschannelpoints', {
@@ -142,7 +141,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             style: `vertical-align: middle; margin-left: 0.5rem; background-color: #00ad96; fill: #000; border: 0; border-radius: .25rem;`
         });
 
-        let parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector="community-points-summary"i] [role="tooltip"i]'),
+        let parent = $('div:not(#tt-auto-claim-bonuses) > [data-test-selector*="points"i][data-test-selector*="summary"i] [role="tooltip"i]'),
             tooltip = $('#tt-auto-claim-bonuses [role="tooltip"i]');
 
         if(tooltip && parent)
@@ -152,7 +151,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let button = $('#tt-auto-claim-bonuses');
 
         if(nullish(button)) {
-            let parent    = $('[data-test-selector="community-points-summary"i]'),
+            let parent    = $('[data-test-selector*="points"i][data-test-selector*="summary"i]'),
                 heading   = $.all('.top-nav__menu > div').pop(),
                 container = furnish();
 
@@ -168,7 +167,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             heading.insertBefore(container, heading.children[1]);
 
-            $('#tt-auto-claim-bonuses [data-test-selector="community-points-summary"i] > div:last-child:not(:first-child)').remove();
+            $('#tt-auto-claim-bonuses [data-test-selector*="points"i][data-test-selector*="summary"i] > div:last-child:not(:first-child)')?.remove();
 
             let textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
 
@@ -514,7 +513,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             // Load emotes from a certain user
             if(provider?.length)
-                await fetchURL.idempotent(`//api.betterttv.net/3/cached/users/twitch/${ provider }`)
+                await fetchURL.fromDisk(`//api.betterttv.net/3/cached/users/twitch/${ provider }`, { hoursUntilEntryExpires: 744 })
                     .then(response => response.json())
                     .then(json => {
                         let { channelEmotes, sharedEmotes } = json;
@@ -539,7 +538,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Load emotes with a certain name
             else if(keyword?.length)
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false, MAX_REPEAT = 15; !allLoaded && keyword.trim().normalize('NFKD').length && (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes) && MAX_REPEAT > 0 && !NON_EMOTE_PHRASES.has(keyword); (--MAX_REPEAT > 0? null: NON_EMOTE_PHRASES.add(keyword)))
-                    await fetchURL.idempotent(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`)
+                    await fetchURL.fromDisk(`//api.betterttv.net/3/emotes/shared/search?query=${ keyword }&offset=${ offset }&limit=100`, { hoursUntilEntryExpires: 744 })
                         .then(response => response.json())
                         .then(emotes => {
                             if(!emotes?.length)
@@ -567,7 +566,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             // Load all emotes from...
             else
                 for(let maxNumOfEmotes = BTTV_MAX_EMOTES, offset = 0, allLoaded = false; (ignoreCap || BTTV_EMOTES.size < maxNumOfEmotes);)
-                    await fetchURL.idempotent(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`)
+                    await fetchURL.fromDisk(`//api.betterttv.net/3/${ Settings.bttv_emotes_location ?? 'emotes/shared/trending' }?offset=${ offset }&limit=100`, { hoursUntilEntryExpires: 744 })
                         .then(response => response.json())
                         .then(emotes => {
                             for(let { emote } of emotes) {
@@ -2050,7 +2049,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                 return;
             let unknown = Symbol('UNKNOWN');
             let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
-                [topDom = '', secDom = '', ...subDom] = url.domainPath;
+                [topDom = '', secDom = '', ...subDom] = url.domainPath ?? ['tv', 'twitch', 'clips'];
 
             // Ignore pre-cardified links
             if(subDom.contains('clips') || pathname?.contains('/videos/', '/clip/'))
@@ -2199,7 +2198,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         else if(Settings.auto_chat__vip === false)
             Settings.set({ auto_chat__vip: null });
 
-        wait(parseInt(Settings.auto_chat__wait_time) * 60_000).then(() => {
+        let goTime = (+new Date) + parseInt(Settings.auto_chat__wait_time) * 60_000;
+
+        when(() => (+new Date) >= goTime, 5e3).then(ready => {
             Cache.load(AUTO_CHAT_NAME, results => {
                 let old = results[AUTO_CHAT_NAME],
                     now = new Date;
@@ -2214,43 +2215,53 @@ let Chat__Initialize = async(START_OVER = false) => {
                     return;
 
                 let Rules = UPDATE_RULES('lurking', ';');
+                let userSent = [...Chat.messages].find(([,{ author }]) => author.equals(USERNAME));
 
-                let channel = STREAMER.name?.toLowerCase();
-                let badges = STREAMER.perm?.all ?? ['everyone'];
-                let message, messages, reason;
+                // The user isn't lurking!
+                if(defined(userSent)) {
+                    let [uuid, line] = userSent;
 
-                if(Rules.channel.test(channel)) {
-                    message = (messages = Rules.rules.specific.channel?.filter(({ name, badge, text }) => {
-                        if(nullish(STREAMER))
-                            return;
+                    now = defined(line.timestamp)? new Date(line.timestamp): now;
 
-                        return parseBool(true
-                            && name.equals(channel)
-                            && (false
-                                || nullish(badge)
+                    $notice(`The user already sent a message!`, line);
+                } else {
+                    let channel = STREAMER.name?.toLowerCase();
+                    let badges = STREAMER.perm?.all ?? ['everyone'];
+                    let message, messages, reason;
+
+                    if(Rules.channel.test(channel)) {
+                        message = (messages = Rules.rules.specific.channel?.filter(({ name, badge, text }) => {
+                            if(nullish(STREAMER))
+                                return;
+
+                            return parseBool(true
+                                && name.equals(channel)
+                                && (false
+                                    || nullish(badge)
+                                    || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
+                                )
+                            );
+                        }))?.random()?.text;
+                        reason = 'channel';
+                    } else if(Rules.badge.test(badges.join(','))) {
+                        message = (messages = Rules.rules.specific.badge?.filter(({ badge, text }) => {
+                            return parseBool(false
                                 || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
-                            )
-                        );
-                    }))?.random()?.text;
-                    reason = 'channel';
-                } else if(Rules.badge.test(badges.join(','))) {
-                    message = (messages = Rules.rules.specific.badge?.filter(({ badge, text }) => {
-                        return parseBool(false
-                            || badges.filter(medal => medal.toLowerCase().startsWith(badge.toLowerCase())).length
-                        );
-                    }))?.random()?.text;
-                    reason = 'badge';
-                } else if(STREAMER.perm?.has(Settings.auto_chat__vip)) {
-                    message = (messages = Rules.rules.general).random();
-                    reason = `permission (${ Settings.auto_chat__vip })`;
+                            );
+                        }))?.random()?.text;
+                        reason = 'badge';
+                    } else if(STREAMER.perm?.has(Settings.auto_chat__vip)) {
+                        message = (messages = Rules.rules.general).random();
+                        reason = `permission (${ Settings.auto_chat__vip })`;
+                    }
+
+                    if(nullish(message))
+                        return;
+
+                    $notice(`Sending lurking message because the ${ reason } matches`, message, messages);
+
+                    Chat.send(message);
                 }
-
-                if(nullish(message))
-                    return;
-
-                $notice(`Sending lurking message because the ${ reason } matches`, message, messages);
-
-                Chat.send(message);
 
                 Cache.save({ [AUTO_CHAT_NAME]: now.toJSON() });
             });
@@ -2269,7 +2280,9 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(await deleted)
                 return;
 
-            // The UUID does not belong to a valid Twitch message...
+            // The UUID does not belong to a valid (captured) Twitch message...
+                // usable = true → The message was sent AFTER the page was loaded
+                // usable = false → The message was sent BEFORE the page was loaded
             if(!usable)
                 return;
 
@@ -2586,7 +2599,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         __GetMultiplierAmount__:
         if(nullish(CHANNEL_POINTS_MULTIPLIER)) {
-            let button = $('[data-test-selector="community-points-summary"i] button');
+            let button = $('[data-test-selector*="points"i][data-test-selector*="summary"i] button');
 
             if(defined(button)) {
                 button.click();
@@ -3079,7 +3092,7 @@ let Chat__Initialize = async(START_OVER = false) => {
 
         let balance = $('[data-test-selector="balance-string"i]')?.innerText,
             exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
-            exact_change = $('[class*="community-points-summary"i][class*="points-add-text"i]')?.innerText;
+            exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 
         top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, top.location.origin);
     };
@@ -3316,19 +3329,28 @@ let Chat__Initialize = async(START_OVER = false) => {
 // End of Chat__Initialize
 
 let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
-    let USERNAME, LANGUAGE, THEME,
-        PATHNAME, NORMALIZED_PATHNAME, STREAMER,
-        GLOBAL_EVENT_LISTENERS;
+    let here = parseURL(window.location.href);
+    let fsData = Object.assign(await Runtime.sendMessage({ action: 'FETCH_SHARED_DATA' }), top);
+
+    let {
+        USERNAME = Search?.cookies?.name,
+        LANGUAGE,
+        THEME,
+
+        PATHNAME = here.pathname,
+        NORMALIZED_PATHNAME = here.pathname.replace(/^\/(?:moderator|popout)\/(\/[^\/]+?)/i, '$1').replace(/^(\/[^\/]+?)\/(?:about|schedule|squad|videos)\b/i, '$1'),
+        STREAMER = ({
+            get href() { return `https://www.twitch.tv/${ STREAMER.name }` },
+            get name() { return here.searchParameters.channel },
+            get live() { return !$.all('[href*="offline_embed"i]').length },
+            get sole() { return parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.src?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null },
+        }),
+
+        GLOBAL_EVENT_LISTENERS = {},
+    } = fsData;
 
     // Fill STREAMER
-    let [path, name, endpoint] = location.pathname.split(/(?<!^)\//),
-        sole = parseInt($('img[class*="channel"i][class*="point"i][class*="icon"i]')?.innerText?.replace(/[^]*\/(\d+)\/[^]*/, '$1')) || null;
-
-    USERNAME ??= Search?.cookies?.name;
-    STREAMER ??= ({ name: (name ?? path), sole, veto: banned });
-
-    // Fill GLOBAL_EVENT_LISTENERS
-    GLOBAL_EVENT_LISTENERS ??= {};
+    let [path, name, endpoint] = location.pathname.split(/(?<!^)\//);
 
     /*** Automation
      *                    _                        _   _
@@ -3668,10 +3690,10 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             let { body } = document,
                 observer = new MutationObserver(mutations => {
                     mutations.map(mutation => {
-                        if(PATHNAME !== top.location.pathname) {
+                        if(PATHNAME !== window.location.pathname) {
                             let OLD_HREF = PATHNAME;
 
-                            PATHNAME = top.location.pathname;
+                            PATHNAME = window.location.pathname;
 
                             NORMALIZED_PATHNAME = PATHNAME
                                 // Remove common "modes"
@@ -3736,6 +3758,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                             // Successful login attempt
                             case '001': {
                                 socket.send(`JOIN ${ CHANNEL }`);
+                                // TODO | To be removed Feb 18, 2024 → https://dev.twitch.tv/docs/irc/chat-commands/#migration-guide
                                 socket.send(`PRIVMSG ${ CHANNEL } :/mods`);
                                 socket.send(`PRIVMSG ${ CHANNEL } :/vips`);
                             } break;
@@ -3815,10 +3838,11 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                             'keep':
                                         'subgift rewardgift submysterygift rewardmysterygift'.split(' ').contains(msg_id)?
                                             'gift':
-                                        'raid'.split(' ').contains(msg_id)?
+                                        'raid unraid'.split(' ').contains(msg_id)?
                                             'raid': // incoming raids
                                         'pointsredeemed'.split(' ').contains(msg_id)?
                                             'coin':
+                                        // ritual (new_chatter, etc.); bitsbadgetier (100, 1000, 10000, etc.)
                                         'note'
                                     ),
                                     element = when.defined(async(message, subject) =>
