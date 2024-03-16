@@ -9,8 +9,7 @@
  *                                  |___/    |__/
  */
 
-/**
- * @file Defines the settings for the extension.
+/** @file Defines the settings for the extension.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
@@ -1890,6 +1889,7 @@ let FETCHED_DATA = { wasFetched: false };
                 else if(/^([\w\-]+)(?:->|→)/.test(expression)) {
                     let [attribute, property] = expression.split(/(?:->|→)/, 2),
                         // \object.property::type@base?pad
+                        // \object.property::type@parse-base:stringify-base?pad
                         value = property.replace(/\\(\w+\.\w+(?:[\.\w]+)?)(?:::(\w+)(?:@(\w+))?(?::(\w+))?(?:\?(\d+)))?/g, ($0, $1, $2, $3, $4, $5, $$, $_) => {
                             let prop = $1.split('.'),
                                 val;
@@ -2520,7 +2520,7 @@ document.body.onload = async() => {
                                 [latin, native, regional] = unescape(name).split('/', 3);
 
                             return furnish('button.language-option', { value: code, onmousedown, onmouseup }, `${ native } (${ regional || latin })`);
-                        }).filter(defined),
+                        }).filter(defined)
                     )
                 );
 

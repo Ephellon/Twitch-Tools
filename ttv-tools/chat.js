@@ -9,14 +9,15 @@
  *                            |__/
  */
 
-/**
- * @file Defines the chat-specific logic for the extension. Used for all {@link # twitch.tv/chat/*} sites.
+/** @file Defines the chat-specific logic for the extension. Used for all {@link # twitch.tv/chat/*} sites.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
  */
 
 ;
+
+window.IS_A_FRAMED_CONTAINER = (top != window);
 
 top.Queue ??= { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] };
 
@@ -242,7 +243,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         button.text?.classList?.add('text');
 
         // Make the tooltip easier to manage
-        button.tooltip.classList.add('img-container');
+        button.tooltip?.classList?.add('img-container');
 
         // Clean up leftovers from Twitch animations
         let junk = $(`#tt-auto-claim-bonuses ${ '> :last-child'.repeat(3) }`);
@@ -947,7 +948,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let parent = $('[data-test-selector^="chat-room-component"i] .emote-picker__scroll-container > *');
 
         if(nullish(parent))
-            return RestartJob('convert_emotes');
+            return RestartJob('convert_emotes', 'missing:convert_emotes.parent');
 
         // Get the streamer's emotes and make them draggable
         let streamersEmotes = $(`[class^="emote-picker"i] img[alt="${ STREAMER.name }"i]`)?.closest('div')?.nextElementSibling;
@@ -1877,7 +1878,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                         },
 
                                                         innerHTML: Glyphs.modify('x', { height: '24px', width: '24px' }),
-                                                    },
+                                                    }
                                                 )
                                             )
                                         )
@@ -2048,7 +2049,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             if(href.trim().length < 2)
                 return;
             let unknown = Symbol('UNKNOWN');
-            let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ top.location.protocol }//`).trim()),
+            let url = parseURL(href.replace(/^(https?:\/\/)?/i, `${ location.protocol }//`).trim()),
                 [topDom = '', secDom = '', ...subDom] = url.domainPath ?? ['tv', 'twitch', 'clips'];
 
             // Ignore pre-cardified links
@@ -2114,7 +2115,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                                 f('div', {}),
                                                 f('img.tt-image', {
                                                     alt: title,
-                                                    src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ top.location.protocol }//${ host }/`),
+                                                    src: image.replace(/^(?!(?:https?:)?\/\/[^\/]+)\/?/i, `${ location.protocol }//${ host }/`),
                                                     height: 45,
                                                     style: 'max-height:45px',
 
@@ -2133,7 +2134,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                                             // Subtitle
                                             f('.tt-ellipsis').with(
                                                 f('p.tt-c-text-alt-2.tt-ellipsis[@testSelector=chat-card-description]').html(description)
-                                            ),
+                                            )
                                         )
                                     )
                                 )
@@ -3082,10 +3083,9 @@ let Chat__Initialize = async(START_OVER = false) => {
      *                                                        |_|                          |_|
      */
     Handlers.points_receipt_placement_framed_helper = () => {
-        let placement,
-            framed = (top != window);
+        let placement;
 
-        if(!framed || (placement = Settings.points_receipt_placement ??= "null").equals("null"))
+        if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
             return;
 
         let coin = $('[data-test-selector="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
@@ -3094,7 +3094,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
             exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 
-        top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, top.location.origin);
+        top.postMessage({ action: 'jump', points_receipt_placement: { balance, coin_face: coin?.src, coin_name: coin?.alt, exact_debt, exact_change } }, location.origin);
     };
     Timers.points_receipt_placement_framed_helper = 1000;
 
@@ -3138,7 +3138,7 @@ let Chat__Initialize = async(START_OVER = false) => {
             return;
 
         // Add an iframe...
-        let [,name] = ([,STREAMER?.name] ?? top.location.pathname.split(/\W/, 2)),
+        let [,name] = ([,STREAMER?.name] ?? location.pathname.split(/\W/, 2)),
             input = $('.chat-input'),
             iframe = furnish(`iframe#tt-popup-container.stream-chat.tt-c-text-base.tt-flex.tt-flex-column.tt-flex-grow-1.tt-flex-nowrap.tt-full-height.tt-relative`, {
                 src: `./popout/${ name }/chat`,
@@ -3175,7 +3175,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         restoring: for(let [uuid, line] of Chat.messages) {
             if(RESTORED_MESSAGES.has(uuid))
                 continue restoring;
-            if($.defined(`[data-uuid="${ uuid }"i]`))
+            if($.defined(`main [data-test-selector*="chat"i][data-test-selector*="message"i][data-test-selector*="container"i] [data-uuid="${ uuid }"i]`))
                 continue restoring;
 
             let { author, handle, message, emotes, badges, style } = line;
@@ -3230,7 +3230,7 @@ let Chat__Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]) [role]')?.append(container);
+                $('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-test-selector*="chat"i][data-test-selector*="message"i][data-test-selector*="container"i]) [role]')?.append(container);
             }
 
             let body = $(`[data-test-selector$="message-placeholder"i]`, container),
@@ -3300,7 +3300,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         StopWatch.stop('recover_messages');
     };
     // Variable timer...
-    Timers.recover_messages = 5000;
+    Timers.recover_messages = +5000;
 
     __RecoverChat__:
     if(parseBool(Settings.recover_messages)) {
@@ -3313,13 +3313,13 @@ let Chat__Initialize = async(START_OVER = false) => {
                     , actual
                     , (500 + (parseInt($('[data-a-target$="viewers-count"i], [class*="stream-info-card"i] [data-test-selector$="description"i]')?.textContent?.replace(/\D+/g, '')) | 0))
                 ).floorToNearest(100).clamp(1e3, 10e3),
-                [min, max] = [desired, actual].sort();
+                [min, max] = [desired, actual].sort((a, b) => a - b);
 
             // The timer has deviated by more than 15%
             if((min / max) < .85) {
                 Timers.recover_messages = desired;
 
-                RestartJob('recover_messages');
+                RestartJob('recover_messages', `timer-deviation:Timer has deviated more than 15% → min:${ (min / 1000).suffix('s') }; max:${ (max / 1000).suffix('s') }`);
             }
         }, 1000);
     }
@@ -3398,7 +3398,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
             let payable = $.defined('[data-test-selector="balance-string"i]');
 
-            top.postMessage({ action: 'raid', from, to, events, payable }, top.location.origin);
+            top.postMessage({ action: 'raid', from, to, events, payable }, location.origin);
         });
     };
     Timers.greedy_raiding = 5000;
@@ -3525,7 +3525,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
         let f = furnish;
 
-        let name = (STREAMER.name || top.location.pathname.split(/\W/, 2)[1]).replace('/', ''),
+        let name = (STREAMER.name || location.pathname.split(/\W/, 2)[1]).replace('/', ''),
             fiat = (STREAMER.fiat || 'Channel Points'),
             url = parseURL(`https://nightdev.com/hosted/obschat/`).addSearch({
                 theme: `bttv_${ THEME }`,
@@ -3602,7 +3602,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
     // Helpers
     __Static_Helpers__:
-    if(top != window) {
+    if(IS_A_FRAMED_CONTAINER) {
         // Do something to send up...
     }
     // End of Chat__Initialize_Safe_Mode
@@ -3650,7 +3650,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
                 // This window is not the main container
                 || (true
-                    && top != window
+                    && IS_A_FRAMED_CONTAINER
                     && document.readyState.equals('complete')
 
                     // There is a welcome message container
@@ -3684,7 +3684,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
     window.CHILD_CONTROLLER_READY = true;
 
     // Only re-execute if in an iframe
-    if(top != window) {
+    if(IS_A_FRAMED_CONTAINER) {
         // Observe [top] location changes
         LocationObserver: {
             let { body } = document,
@@ -3713,7 +3713,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
         let CHAT_SELF_REFLECTOR;
 
         ChatObserver: {
-            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
+            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER),
                 USERNAME = Search.cookies.login;
 
             CHANNEL = `#${ CHANNEL }`;
@@ -4192,8 +4192,18 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                 RegisterJob.__reason__ = JobReason;
 
                 // Prevent disallowed jobs...
-                if(ALLOWED_JOBS.length && ALLOWED_JOBS.missing(JobName))
-                    return;
+                if(ALLOWED_JOBS.length) {
+                    // @performance
+                    // Constaly clear the chat...
+                    if(ALLOWED_JOBS.missing((v,i,a) => v.includes('chat')))
+                        setInterval(() => {
+                            for(let key in Chat)
+                                Chat[key].clear?.();
+                        }, 15_000);
+
+                    if(ALLOWED_JOBS.missing(JobName))
+                        return;
+                }
 
                 return Jobs[JobName] ??= Timers[JobName] > 0?
                     setInterval(Handlers[JobName], Timers[JobName]):
@@ -4214,7 +4224,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             if(!!~VOLATILE.findIndex(name => name.test(job)))
                 continue DestroyingJobs;
             else
-                RestartJob(job);
+                RestartJob(job, 'job-destruction:chat.js');
 
         Reinitialize:
         if(NORMAL_MODE) {
@@ -4370,5 +4380,5 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
 Chat__SETTING_RELOADER = setInterval(() => {
     for(let MAX_CALLS = 60; MAX_CALLS > 0 && top.REFRESH_ON_CHILD?.length; --MAX_CALLS)
-        RestartJob(top.REFRESH_ON_CHILD.pop());
+        RestartJob(top.REFRESH_ON_CHILD.pop(), 'chat-setting-reloader:max-calls');
 }, 250);

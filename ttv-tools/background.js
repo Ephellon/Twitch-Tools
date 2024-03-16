@@ -9,8 +9,7 @@
  *                           |___/                            |__/
  */
 
-/**
- * @file Describes all background functionality for the extension.
+/** @file Describes all background functionality for the extension.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
@@ -118,9 +117,14 @@ let $ = (selector, multiple = false, container = document) => multiple? [...cont
 let nullish = value => (value === undefined || value === null),
     defined = value => !nullish(value);
 
+/** @protected
+ * @prop {array<string>} RESERVED_TWITCH_PATHNAMES      A list of Twitch-reserved pathnames (forbidden usernames).
+ * @property {function} RESERVED_TWITCH_PATHNAMES.has   <div class="signature">(value:string<span class="signature-attributes">opt</span>) → boolean</div>
+ *                                                      Determines whether the value clashes with a reserved pathname or not.
+ */
 let RESERVED_TWITCH_PATHNAMES = ['activate', 'bits', 'bits-checkout', 'clips', 'checkout', 'collections', 'communities', 'dashboard', 'directory', 'downloads', 'drops', 'event', 'following', 'friends', 'inventory', 'jobs', 'moderator', 'popout', 'prime', 'products', 'search', 'settings', 'store', 'subs', 'subscriptions', 'team', 'turbo', 'user', 'videos', 'wallet', 'watchparty'];
 Object.defineProperties(RESERVED_TWITCH_PATHNAMES, {
-    has: { value(value) { return !!~this.indexOf(value) } },
+    has: { value(value) { return !!~this.indexOf(value?.toLowerCase()) } },
 });
 
 let SHARED_DATA = new Map;
@@ -165,9 +169,11 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
  * Removes the specified tab.
  * @simply RemoveTab(tab:object<Tab>, duplicateTab:boolean?, forced:boolean?) → undefined
  *
- * @param  {Tab} tab                          The tab to be removed
- * @param  {boolean} [duplicateTab = false]   Should the tab be duplicated after removal?
- * @param  {boolean} [forced = true]          Force the tab to close
+ * @param  {Tab} tab                            The tab to be removed
+ * @param  {boolean} [duplicateTab = false]     Should the tab be duplicated after removal?
+ * @param  {boolean} [forced = true]            Force the tab to close
+ *
+ * @property {Map} duplicatedTabs               A map (<code>[key:string~URL, value:number~Date]</code>) of duplicated tabs
  */
 function RemoveTab(tab, duplicateTab = false, forced = true) {
     if(tab.status == UNLOADED)
@@ -278,14 +284,31 @@ switch(BrowserNamespace) {
     } break;
 }
 
-/**
- * @enum Runtime.OnInstalledReason
- * @option INSTALL
- * @option UPDATE
- * @option CHROME_UPDATE
- * @option SHARED_MODULE_UPDATE
- */
-let { CHROME_UPDATE, INSTALL, SHARED_MODULE_UPDATE, UPDATE } = Runtime.OnInstalledReason;
+let {
+    /** @protected
+     * @prop {string} CHROME_UPDATE
+     * Specifies the install-event reason as <i>a Chrome update</i>.
+     */
+    CHROME_UPDATE,
+
+    /** @protected
+     * @prop {string} INSTALL
+     * Specifies the install-event reason as <i>an installation</i>.
+     */
+    INSTALL,
+
+    /** @protected
+     * @prop {string} SHARED_MODULE_UPDATE
+     * Specifies the install-event reason as <i>an update to a shared module</i>.
+     */
+    SHARED_MODULE_UPDATE,
+
+    /** @protected
+     * @prop {string} UPDATE
+     * Specifies the install-event reason as <i>an extension update</i>.
+     */
+    UPDATE,
+} = Runtime.OnInstalledReason;
 
 // Update the tab(s) when a new version is installed
     // ({ reason:string<"install" | "update" | "chrome_update" | "shared_module_update">, previousVersion:string?, id:string? }) → undefined
@@ -701,12 +724,13 @@ if(Runtime.lastError)
  *                   | |
  *                   |_|
  */
-/** Keeps the background script alive.
- * @type {function}
+/** @private
+ * @event PING
+ * @desc Keeps the background script alive.
  *
  * @author GitHub {@link https://github.io/wOxxOm @wOxxOm}
  *
- * @see https://stackoverflow.com/a/66618269/4211612}
+ * @see https://stackoverflow.com/a/66618269/4211612
  */
 Runtime.onConnect.addListener(port => {
     // Keep Alive

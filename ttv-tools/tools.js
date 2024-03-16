@@ -9,14 +9,15 @@
  *                            |__/
  */
 
-/**
- * @file Defines the page-specific logic for the extension. Used for all {@link # twitch.tv/*} sites.
+/** @file Defines the page-specific logic for the extension. Used for all {@link # twitch.tv/*} sites.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
  */
 
 ;
+
+window.IS_A_FRAMED_CONTAINER = (top != window);
 
 let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: [], messages: [], message_popups: [], popups: [] },
     Messages = top.Messages = new Map(),
@@ -43,29 +44,6 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
 
 top.WINDOW_STATE = document.readyState;
 top.TWITCH_INTEGRITY_FAIL = false;
-
-Cache.large.load('JumpedData', ({ JumpedData }) => {
-    Object.assign(JUMP_DATA, JumpedData ?? {});
-
-    delete JumpedData; // @performance
-});
-
-// Only releases the data from memory every 10:54.321
-setInterval(() => {
-    for(let key in JUMP_DATA)
-        delete JUMP_DATA[key]; // @performance
-
-    Cache.large.load('JumpedData', ({ JumpedData }) => {
-        Object.assign(JUMP_DATA, JumpedData ?? {});
-
-        delete JumpedData; // @performance
-    });
-}, 654_321);
-
-top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
-    for(let key in JUMP_DATA)
-        delete JUMP_DATA[key]; // @performance
-};
 
 // Populate the username field by quickly showing the menu
 when.defined(() => {
@@ -236,7 +214,7 @@ class Balloon {
                                             })
                                         )
                                     )
-                                ),
+                                )
                             )
                         )
                     ),
@@ -282,7 +260,7 @@ class Balloon {
                                                 balloon.modStyle(`display:${ display }!important`);
                                                 balloon.setAttribute('display', display);
                                             },
-                                        },
+                                        }
                                     )
                                 ),
                                 // Body
@@ -360,9 +338,9 @@ class Balloon {
                                                                 )
                                                             ),
                                                             // Repeat mini-button
-                                                            f('.persistent-notification__delete.tt-absolute.tt-redo-btn', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                                            f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
                                                                 f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
-                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
+                                                                    f('button.tt-redo-btn.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                                         {
                                                                             'connected-to': `${ U }--${ guid }`,
 
@@ -390,16 +368,16 @@ class Balloon {
                                                                                 {
                                                                                     style: 'height:1.6rem; width:1.6rem',
                                                                                     innerHTML: Glyphs.refresh,
-                                                                                },
+                                                                                }
                                                                             )
                                                                         )
                                                                     )
                                                                 )
                                                             ).setTooltip(`Toggle channel repeat`, { from: 'bottom' }),
                                                             // Delete mini-button
-                                                            f('.persistent-notification__delete.tt-absolute.tt-del-btn', { style: `top:0; right:0; z-index:var(--always-on-top)` },
+                                                            f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                                                 f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
-                                                                    f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
+                                                                    f('button.tt-del-btn.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                                         {
                                                                             'connected-to': `${ U }--${ guid }`,
 
@@ -409,7 +387,7 @@ class Balloon {
 
                                                                                 let element = $(`#tt-balloon-job-${ connectedTo }`);
 
-                                                                                if(defined(element)) {
+                                                                                if(defined(element))
                                                                                     onremove({
                                                                                         ...event,
                                                                                         uuid, guid, href, element,
@@ -420,7 +398,6 @@ class Balloon {
                                                                                             element.remove();
                                                                                         },
                                                                                     });
-                                                                                }
                                                                             },
                                                                         },
                                                                         f('span.tt-button-icon__icon').with(
@@ -428,7 +405,7 @@ class Balloon {
                                                                                 {
                                                                                     style: 'height:1.6rem; width:1.6rem',
                                                                                     innerHTML: Glyphs.x,
-                                                                                },
+                                                                                }
                                                                             )
                                                                         )
                                                                     )
@@ -494,7 +471,7 @@ class Balloon {
                 innerHTML: Glyphs[icon],
 
                 'connected-to': this.uuid,
-            },
+            }
         );
 
         if(left)
@@ -592,9 +569,9 @@ class Balloon {
                                         )
                                     ),
                                     // Repeat mini-button
-                                    f('.persistent-notification__delete.tt-absolute.tt-redo-btn', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
+                                    f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:2rem; z-index:var(--always-on-top)` },
                                         f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
-                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
+                                            f('button.tt-redo-btn.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                 {
                                                     'connected-to': `${ uuid }--${ guid }`,
 
@@ -622,16 +599,16 @@ class Balloon {
                                                         {
                                                             style: 'height:1.6rem; width:1.6rem',
                                                             innerHTML: Glyphs.refresh,
-                                                        },
+                                                        }
                                                     )
                                                 )
                                             )
                                         )
                                     ).setTooltip(`Toggle channel repeat`, { from: 'bottom' }),
                                     // Remove mini-button
-                                    f('.persistent-notification__delete.tt-absolute.tt-del-btn', { style: `top:0; right:0; z-index:var(--always-on-top)` },
+                                    f('.persistent-notification__delete.tt-absolute', { style: `top:0; right:0; z-index:var(--always-on-top)` },
                                         f('.tt-align-items-start.tt-flex.tt-flex-nowrap').with(
-                                            f('button.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
+                                            f('button.tt-del-btn.tt-align-items-center.tt-align-middle.tt-border-bottom-left-radius-small.tt-border-bottom-right-radius-small.tt-border-top-left-radius-small.tt-border-top-right-radius-small.tt-button-icon.tt-button-icon--small.tt-core-button.tt-core-button--small.tt-inline-flex.tt-interactive.tt-justify-content-center.tt-overflow-hidden.tt-relative[@testSelector=persistent-notification__delete]',
                                                 {
                                                     'connected-to': `${ uuid }--${ guid }`,
 
@@ -660,7 +637,7 @@ class Balloon {
                                                         {
                                                             style: 'height:1.6rem; width:1.6rem',
                                                             innerHTML: Glyphs.x,
-                                                        },
+                                                        }
                                                     )
                                                 )
                                             )
@@ -818,7 +795,7 @@ class Card {
                                 )
                             )
                         )
-                    ),
+                    )
                 )
             )
         );
@@ -933,7 +910,7 @@ class Card {
                                         )
                                     )
                                 )
-                            ),
+                            )
                         )
                     )
                 );
@@ -1056,7 +1033,7 @@ class ContextMenu {
 }
 
 // Search Twitch for channels/categories
-    // new Search(ID:string|number?, type:string?) → Promise<object>
+    // new Search(ID:string|number?, type:string?, as:string?) → Promise<object>
 /** Returns a promised Object →
  * { data:object, extensions:object }
  */
@@ -2223,7 +2200,7 @@ async function SetQuality(quality = 'auto', backup = 'source') {
     else if(current?.uuid === desired?.uuid)
         /* Already on desired quality */
         /* Do nothing */;
-    else
+    else if(defined(current?.input?.checked) && defined(desired?.input?.checked))
         /* The desired quality is available */
         current.input.checked = !(desired.input.checked = !0);
 
@@ -3815,7 +3792,7 @@ let Initialize = async(START_OVER = false) => {
                 Settings[setting] = null;
     }
 
-    top.GetNextStreamer =
+    window.GetNextStreamer =
     // Gets the next available channel (streamer)
         // GetNextStreamer(except:string?) → Object<Channel>
     function GetNextStreamer(except = '') {
@@ -3961,42 +3938,48 @@ let Initialize = async(START_OVER = false) => {
                 $warn(`No channel fits the "${ preference }" criteria. Assuming a random channel ("${ name }") is desired:`, channel);
             }
 
-            delete ChannelPoints; // @performance
+            // @performance
+            PrepareForGarbageCollection(ChannelPoints);
         });
 
         return when.defined(() => GetNextStreamer.cachedStreamer);
     };
 
-    try {
-        Cache.load('LiveReminders', async({ LiveReminders }) => {
-            try {
-                LiveReminders = JSON.parse(LiveReminders || '{}');
-            } catch(error) {
-                // Probably an object already...
-                LiveReminders ??= {};
-            }
+    if(true
+        // && UP_NEXT_ALLOW_THIS_TAB
+        && (top === window)
+    )
+        try {
+            Cache.load('LiveReminders', async({ LiveReminders }) => {
+                try {
+                    LiveReminders = JSON.parse(LiveReminders || '{}');
+                } catch(error) {
+                    // Probably an object already...
+                    LiveReminders ??= {};
+                }
 
-            let cachedReminders = [...(GetNextStreamer.cachedReminders ??= [])];
-            for(let name in LiveReminders) {
-                let now = new Date,
-                    time = new Date(LiveReminders[name]);
+                let cachedReminders = [...(GetNextStreamer.cachedReminders ??= [])];
+                for(let name in LiveReminders) {
+                    let now = new Date,
+                        time = new Date(LiveReminders[name]);
 
-                cachedReminders.push({
-                    name,
+                    cachedReminders.push({
+                        name,
 
-                    from: 'LIVE_REMINDERS',
-                    href: `https://www.twitch.tv/${ name }`,
-                    live: await new Search(name, 'channel', 'status.live'),
-                });
-            }
+                        from: 'LIVE_REMINDERS',
+                        href: `https://www.twitch.tv/${ name }`,
+                        live: await new Search(name, 'channel', 'status.live'),
+                    });
+                }
 
-            delete LiveReminders; // @performance
+                // @performance
+                PrepareForGarbageCollection(LiveReminders);
 
-            GetNextStreamer.cachedReminders = cachedReminders.isolate();
-        });
-    } catch(error) {
-        // Do nothing...
-    }
+                GetNextStreamer.cachedReminders = cachedReminders.isolate();
+            });
+        } catch(error) {
+            // Do nothing...
+        }
 
     /** Search Array - all channels/friends that appear in the search panel (except the currently viewed one)
      * @prop {string} href   - Link to the channel
@@ -4478,7 +4461,7 @@ let Initialize = async(START_OVER = false) => {
 
         get rank() {
             let epoch = +new Date('2019-12-16T00:00:00.000Z'),
-                // epoch → when channel points where first introduced
+                // epoch → when channel points were first introduced
                     // https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
                 start = +new Date(STREAMER.data.firstSeen),
                 end = +new Date;
@@ -4487,6 +4470,7 @@ let Initialize = async(START_OVER = false) => {
 
             let intervals = ((STREAMER.data.dailyBroadcastTime / 900_000) * (((end - start) / 86_400_000) * (STREAMER.data.activeDaysPerWeek / 7))), // How long the channel has been streaming (segmented)
                 followers = (STREAMER.data.followers ?? STREAMER.cult), // The number of followers the channel has
+                watchers = (STREAMER.poll || followers).ceilToNearest(1000), // The current number of people watching
                 pointsPerInterval = 80, // The user normally gets 80 points per 15mins
                 maximum = (intervals * pointsPerInterval).round();
 
@@ -4725,10 +4709,10 @@ let Initialize = async(START_OVER = false) => {
     // Expand the left-hand panel until the last live channel is visible
     __GetAllChannels__:
     if(true) {
-        let element;
+        let element, max_show_more = 10, max_show_less = 10, max_panel_size = 10;
 
         // Is the nav open?
-        let open = $.defined('[data-a-target="side-nav-search-input"i]'),
+        let open = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
         // Open the Side Nav
@@ -4736,151 +4720,159 @@ let Initialize = async(START_OVER = false) => {
             sidenav?.click();
 
         // Click "show more" as many times as possible
-        show_more:
-        while(defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]')))
+        show_more: while(true
+            && --max_show_more
+            && defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]'))
+        )
             element.click();
 
         let ALL_LIVE_SIDE_PANEL_CHANNELS = $.all('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a').filter(e => $.nullish('[class*="--offline"i]', e));
 
-        /** Hidden Channels Array - all channels/friends that appear on the side panel
-         * href:string   - link to the channel
-         * icon:string   - link to the channel's image
-         * live:boolean  - Is the channel live
-         * name:string   - the channel's name
-         */
-        ALL_CHANNELS = [
-            // Current (followed) streamers
-            ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a`)
-                .map(element => {
-                    let icon = $('img', element)?.src;
-                    let streamer = {
-                        from: 'ALL_CHANNELS',
-                        href: element.href,
-                        icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                        get live() {
-                            let { href } = element,
-                                url = parseURL(href),
-                                { pathname } = url,
-                                name = pathname.slice(1).toLowerCase();
+        try {
+            /** Hidden Channels Array - all channels/friends that appear on the side panel
+             * href:string   - link to the channel
+             * icon:string   - link to the channel's image
+             * live:boolean  - Is the channel live
+             * name:string   - the channel's name
+             */
+            ALL_CHANNELS = [
+                // Current (followed) streamers
+                ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a`)
+                    .map(element => {
+                        let icon = $('img', element)?.src;
+                        let streamer = {
+                            from: 'ALL_CHANNELS',
+                            href: element.href,
+                            icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                            get live() {
+                                let { href } = element,
+                                    url = parseURL(href),
+                                    { pathname } = url,
+                                    name = pathname.slice(1).toLowerCase();
 
-                            // Then the actual "does the channel show up" result
-                            let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
+                                // Then the actual "does the channel show up" result
+                                let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
-                            if(nullish(parent))
-                                return false;
+                                if(nullish(parent))
+                                    return false;
 
-                            // The "is it offline" result
-                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
+                                // The "is it offline" result
+                                let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
-                            return live;
-                        },
-                        name: $('img', element)?.alt,
-                    };
+                                return live;
+                            },
+                            name: $('img', element)?.alt,
+                        };
 
-                    element.setAttribute('draggable', true);
-                    element.ondragstart ??= event => {
-                        event.dataTransfer.dropEffect = 'move';
-                    };
+                        element.setAttribute('draggable', true);
+                        element.ondragstart ??= event => {
+                            event.dataTransfer.dropEffect = 'move';
+                        };
 
-                    // Activate (and set) the live status for the streamer
-                    let { live } = streamer;
+                        // Activate (and set) the live status for the streamer
+                        let { live } = streamer;
 
-                    return streamer;
-                }),
-        ].filter(uniqueChannels);
+                        return streamer;
+                    }),
+            ].filter(uniqueChannels);
 
-        /** Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
-         * @prop {string} href   - Link to the channel
-         * @prop {string} icon   - Link to the channel's image
-         * @prop {boolean} live  - Is the channel live
-         * @prop {string} name   - The channel's name
-         */
-        CHANNELS = [
-            // Current (followed) streamers
-            ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
-                .map(element => {
-                    let icon = $('img', element)?.src;
-                    let streamer = {
-                        from: 'CHANNELS',
-                        href: element.href,
-                        icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                        get live() {
-                            let { href } = element,
-                                url = parseURL(href),
-                                { pathname } = url;
+            /** Channels Array - all channels/friends that appear on the side panel (except the currently viewed one)
+             * @prop {string} href   - Link to the channel
+             * @prop {string} icon   - Link to the channel's image
+             * @prop {boolean} live  - Is the channel live
+             * @prop {string} name   - The channel's name
+             */
+            CHANNELS = [
+                // Current (followed) streamers
+                ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
+                    .map(element => {
+                        let icon = $('img', element)?.src;
+                        let streamer = {
+                            from: 'CHANNELS',
+                            href: element.href,
+                            icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                            get live() {
+                                let { href } = element,
+                                    url = parseURL(href),
+                                    { pathname } = url;
 
-                            let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
+                                let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section [href$="${ pathname }"i]`);
 
-                            if(nullish(parent))
-                                return false;
+                                if(nullish(parent))
+                                    return false;
 
-                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
+                                let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
-                            return live;
-                        },
-                        name: $('img', element)?.alt,
-                    };
+                                return live;
+                            },
+                            name: $('img', element)?.alt,
+                        };
 
-                    element.setAttribute('draggable', true);
-                    element.ondragstart ??= event => {
-                        event.dataTransfer.dropEffect = 'move';
-                    };
+                        element.setAttribute('draggable', true);
+                        element.ondragstart ??= event => {
+                            event.dataTransfer.dropEffect = 'move';
+                        };
 
-                    return streamer;
-                }),
-        ].filter(uniqueChannels);
+                        return streamer;
+                    }),
+            ].filter(uniqueChannels);
 
-        /** Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
-         * @prop {string} href   - Link to the channel
-         * @prop {string} icon   - Link to the channel's image
-         * @prop {boolean} live  - Is the channel live
-         * @prop {string} name   - The channel's name
-         */
-        STREAMERS = [
-            // Current streamers
-            ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
-                .map(element => {
-                    let icon = $('img', element)?.src;
-                    let streamer = {
-                        from: 'STREAMERS',
-                        href: element.href,
-                        icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
-                        get live() {
-                            let { href } = element,
-                                url = parseURL(href),
-                                { pathname } = url;
+            /** Streamers Array - all followed channels that appear on the "Followed Channels" list (except the currently viewed one)
+             * @prop {string} href   - Link to the channel
+             * @prop {string} icon   - Link to the channel's image
+             * @prop {boolean} live  - Is the channel live
+             * @prop {string} name   - The channel's name
+             */
+            STREAMERS = [
+                // Current streamers
+                ...$.all(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a:not([href$="${ NORMALIZED_PATHNAME }"i])`)
+                    .map(element => {
+                        let icon = $('img', element)?.src;
+                        let streamer = {
+                            from: 'STREAMERS',
+                            href: element.href,
+                            icon: (typeof icon == 'string'? Object.assign(new String(icon), parseURL(icon)): null),
+                            get live() {
+                                let { href } = element,
+                                    url = parseURL(href),
+                                    { pathname } = url;
 
-                            let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
+                                let parent = $(`[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] [href$="${ pathname }"i]`);
 
-                            if(nullish(parent))
-                                return false;
+                                if(nullish(parent))
+                                    return false;
 
-                            let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
+                                let live = defined(parent) && $.nullish(`[class*="--offline"i]`, parent);
 
-                            return live;
-                        },
-                        name: $('img', element)?.alt,
-                    };
+                                return live;
+                            },
+                            name: $('img', element)?.alt,
+                        };
 
-                    element.setAttribute('draggable', true);
-                    element.ondragstart ??= event => {
-                        event.dataTransfer.dropEffect = 'move';
-                    };
+                        element.setAttribute('draggable', true);
+                        element.ondragstart ??= event => {
+                            event.dataTransfer.dropEffect = 'move';
+                        };
 
-                    return streamer;
-                }),
-        ].filter(uniqueChannels);
+                        return streamer;
+                    }),
+            ].filter(uniqueChannels);
+        } catch(error) {
+            $warn(error);
+        }
 
         // Click "show less" as many times as possible
-        show_less:
-        while(defined(element = $('[data-a-target$="show-less-button"i]')))
+        show_less: while(true
+            && --max_show_less
+            && defined(element = $('[data-a-target$="show-less-button"i]'))
+        )
             element.click();
 
         let PANEL_SIZE = 0;
 
         // Only re-open sections if they contain live channels
-        show_more_again:
-        while(true
+        show_more_again: while(true
+            && --max_panel_size
             && defined(element = $('[id*="side"i][id*="nav"i] [data-a-target$="show-more-button"i]'))
             && (++PANEL_SIZE * 12) < ALL_LIVE_SIDE_PANEL_CHANNELS.length
         )
@@ -5246,7 +5238,7 @@ let Initialize = async(START_OVER = false) => {
                                                     case 'lastOnline': {
                                                         key = 'lastSeen';
 
-                                                        if(val.equals('now'))
+                                                        if(val?.equals('now'))
                                                             val = new Date;
                                                         else
                                                             val = new Date((+new Date) - val);
@@ -5901,7 +5893,12 @@ let Initialize = async(START_OVER = false) => {
          * c) There are no quality controls
          * d) The page is a search
          */
-        if(defined(button) || $.defined('[data-a-target*="ad-countdown"i]') || nullish(currentQuality) || /\/search\b/i.test(NORMALIZED_PATHNAME)) {
+        if(false
+            || defined(button)
+            || $.defined('[data-a-target*="ad-countdown"i]')
+            || nullish(currentQuality)
+            || /\/search\b/i.test(NORMALIZED_PATHNAME)
+        ) {
             // If the quality controls have failed to load for 1min, leave the page
             if(nullish(currentQuality) && ++NUMBER_OF_FAILED_QUALITY_FETCHES > 60) {
                 let scapeGoat = await GetNextStreamer();
@@ -6510,14 +6507,14 @@ let Initialize = async(START_OVER = false) => {
                                                         // The user successfully purchased the item...
                                                         if(true
                                                             && parseBool(Settings.video_clips__trophy)
-                                                            && (currentTarget.value || currentTarget.textContent).length > 0
+                                                            // && (currentTarget.value || currentTarget.textContent).length > 0
                                                         )
                                                             Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
                                                                 RECORD_PURCHASE({ element, message, subject, mentions, AutoClaimRewards }).then(recording => {
                                                                     if(!recording)
-                                                                        throw `Unable to start recording. Pausing "${ title }" purchase for now. Holding onto saved text input...`;
+                                                                        alert.silent(`Recording "${ title }" ran into an error! Will try to salvage video.`);
                                                                     return true; // Event OK to consume
-                                                                }).catch(alert.silent);
+                                                                });
                                                     }
                                                 });
                                                 inputBox.modStyle(`background:#387aff`);
@@ -6550,9 +6547,9 @@ let Initialize = async(START_OVER = false) => {
                                                             Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
                                                                 RECORD_PURCHASE({ element, message, subject, mentions, AutoClaimRewards }).then(recording => {
                                                                     if(!recording)
-                                                                        throw `Unable to start recording. Pausing "${ title }" purchase for now`;
+                                                                        alert.silent(`Recording "${ title }" ran into an error! Will try to salvage video.`);
                                                                     return true; // Event OK to consume
-                                                                }).catch(alert.silent);
+                                                                });
 
                                                             purchaseButton.click();
                                                         } else {
@@ -6570,8 +6567,8 @@ let Initialize = async(START_OVER = false) => {
                                     });
                             });
 
-            delete AutoClaimRewards; // @performance
-            delete AutoClaimAnswers; // @performance
+            // @performance
+            PrepareForGarbageCollection(AutoClaimRewards, AutoClaimAnswers);
         });
     };
     Timers.claim_reward = 15_000;
@@ -6613,8 +6610,8 @@ let Initialize = async(START_OVER = false) => {
 
             Cache.save({ AutoClaimRewards, AutoClaimAnswers });
 
-            delete AutoClaimRewards; // @performance
-            delete AutoClaimAnswers; // @performance
+            // @performance
+            PrepareForGarbageCollection(AutoClaimRewards, AutoClaimAnswers);
         });
 
         DISPLAY_WALLET_BUTTONS = setInterval(() => {
@@ -6820,7 +6817,8 @@ let Initialize = async(START_OVER = false) => {
                             child.closest('.reward-list-item').setAttribute('timed-out', toTimeString((REWARDS_ON_COOLDOWN.get(item?.id) - +new Date).clamp(0, +Infinity), 'clock'));
                     });
 
-                    delete AutoClaimRewards; // @performance
+                    // @performance
+                    PrepareForGarbageCollection(AutoClaimRewards);
                 });
             }
 
@@ -6874,9 +6872,9 @@ let Initialize = async(START_OVER = false) => {
                                         Chat.consume.onbullet = ({ element, message, subject, mentions }) =>
                                             RECORD_PURCHASE({ updateRecords: false, override: { rewardID, shop: [item] }, element, message, subject, mentions }).then(recording => {
                                                 if(!recording)
-                                                    throw `Unable to start recording. Pausing "${ item.title }" purchase for now. Holding onto saved text input...`;
+                                                    alert.silent(`Recording "${ item.title }" ran into an error! Will try to salvage video.`);
                                                 return true; // Event OK to consume
-                                            }).catch(alert.silent);
+                                            });
 
                                         $(`[data-tt-auto-buy="${ rewardID }"i]`)?.click();
 
@@ -6927,8 +6925,8 @@ let Initialize = async(START_OVER = false) => {
 
                 let textContent = (
                     itemIDs.contains(rewardID)?
-                        'Do not buy':
-                    'Buy when available'
+                        `Do not buy`:
+                    `Buy when available${ '*'.repeat(+item.needsInput) }`
                 );
 
                 $('[id$="header"i], [class*="header"i]', head)?.modStyle(`animation-duration:${ (1 / (STREAMER.coin / $cost)).clamp(1, 30).toFixed(2) }s`);
@@ -6961,7 +6959,7 @@ let Initialize = async(START_OVER = false) => {
                                                 itemIDs.splice(index, 1);
                                             } else {
                                                 if(item.needsInput) {
-                                                    answers[rewardID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title }"' />${ item.prompt || `Please provide input...` }`);
+                                                    answers[rewardID] = await prompt.silent(`<input hidden controller title='Input required to redeem "${ item.title.replace(/'/g, "&apos;") }"' />${ item.prompt || `Please provide input...` }`);
 
                                                     if(answers[rewardID] === null)
                                                         return /* The user pressed "Cancel" */;
@@ -6986,16 +6984,16 @@ let Initialize = async(START_OVER = false) => {
 
                                             node.textContent = (
                                                 !~index?
-                                                    'Do not buy':
-                                                'Buy when available'
+                                                    `Do not buy`:
+                                                `Buy when available${ '*'.repeat(+item.needsInput) }`
                                             );
 
                                             currentTarget.closest('[class*="reward"i][class*="content"i]')?.querySelector('[id$="header"i]')?.setAttribute('rainbow-text', !~index);
 
                                             Cache.save({ AutoClaimRewards, AutoClaimAnswers });
 
-                                            delete AutoClaimRewards; // @performance
-                                            delete AutoClaimAnswers; // @performance
+                                            // @performance
+                                            PrepareForGarbageCollection(AutoClaimRewards, AutoClaimAnswers);
                                         });
                                     },
                                 },
@@ -7010,7 +7008,8 @@ let Initialize = async(START_OVER = false) => {
                     )
                 );
 
-                delete AutoClaimRewards; // @performance
+                // @performance
+                PrepareForGarbageCollection(AutoClaimRewards);
             });
 
             $('.reward-center-body img')?.closest(':not(img,:only-child)')?.setAttribute('tt-rewards-calc', 'after');
@@ -7046,7 +7045,8 @@ let Initialize = async(START_OVER = false) => {
 
                 RECORD_PURCHASE({ fromUser: false, element, message, subject, mentions, AutoClaimRewards });
 
-                delete AutoClaimRewards; // @performance
+                // @performance
+                PrepareForGarbageCollection(AutoClaimRewards);
             });
         };
     }
@@ -7168,7 +7168,7 @@ let Initialize = async(START_OVER = false) => {
 
         $log(`[Queue Redo] Waiting ${ toTimeString(GET_TIME_REMAINING() | 0) } before leaving for "${ name }" → ${ href }`, new Date);
 
-        FIRST_IN_LINE_WARNING_JOB = setInterval(() => {
+        FIRST_IN_LINE_WARNING_JOB = setInterval(async() => {
             let timeRemaining = GET_TIME_REMAINING();
 
             timeRemaining = timeRemaining < 0? 0: timeRemaining;
@@ -7189,7 +7189,11 @@ let Initialize = async(START_OVER = false) => {
             $log('Heading to stream in', toTimeString(timeRemaining), FIRST_IN_LINE_HREF, new Date);
 
             let url = parseURL(FIRST_IN_LINE_HREF);
-            let { name } = GetNextStreamer.cachedStreamer;
+
+            if(nullish(url.pathname))
+                return /* Unknown job */;
+
+            let { name } = await GetNextStreamer();
 
             if(url.pathname.slice(1).unlike(name))
                 name = url.pathname.slice(1);
@@ -7203,6 +7207,8 @@ let Initialize = async(START_OVER = false) => {
                     let thisJob = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
                         [removed] = ALL_FIRST_IN_LINE_JOBS.splice(thisJob, 1),
                         name = parseURL(removed).pathname.slice(1);
+
+                    $notice(`Heading to Up Next channel (confirmation):`, removed);
 
                     FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
@@ -7563,10 +7569,7 @@ let Initialize = async(START_OVER = false) => {
 
                             let { length } = reminders;
                             let { name, time } = reminders[index];
-                            let channel = await(null
-                                ?? ALL_CHANNELS.find(channel => channel.name.equals(name))
-                                ?? new Search(name).then(Search.convertResults)
-                            ),
+                            let channel = await new Search(name).then(Search.convertResults),
                                 ok = parseBool(channel?.ok);
 
                             // Search did not complete...
@@ -7576,10 +7579,18 @@ let Initialize = async(START_OVER = false) => {
 
                                 Search.void(name);
 
-                                channel = await when.defined(() => new Search(name).then(Search.convertResults), 500);
+                                // @research
+                                channel = await new Search(name).then(Search.convertResults);
                                 ok = parseBool(channel?.ok);
 
                                 // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Catalog]: "${ name }" → OK = ${ ok }`);
+                            }
+
+                            if(!num && !ok) {
+                                channel = ALL_CHANNELS.find(channel => channel.name.equals(name));
+
+                                if(nullish(channel?.name))
+                                    continue listing;
                             }
 
                             let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints[name] ?? 0).toString().split('|'),
@@ -7615,7 +7626,8 @@ let Initialize = async(START_OVER = false) => {
                                     // Continue with the new name...
                                     reminders.push({ name: real, time });
 
-                                    delete LiveReminders; // @performance
+                                    // @performance
+                                    PrepareForGarbageCollection(LiveReminders);
                                     continue listing;
                                 }
                             }
@@ -7709,7 +7721,7 @@ let Initialize = async(START_OVER = false) => {
                                                                             f.span(
                                                                                 f(`strong`, { innerHTML: [name, game].filter(s => s.length).join(' &mdash; ') }),
                                                                                 f(`span.tt-time-elapsed[start=${ (+real > +time? real: time).toJSON() }]`).with(hour),
-                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em]`).setTooltip(desc, { from: 'top' }).with(desc),
+                                                                                f(`p.tt-hide-text-overflow[style=text-indent:.25em]`).setTooltip(desc, { from: 'top' }).with(desc)
                                                                             )
                                                                         )
                                                                     )
@@ -7764,7 +7776,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         {
                                                                             style: 'height:1.6rem; width:1.6rem',
                                                                             innerHTML: Glyphs.ignore,
-                                                                        },
+                                                                        }
                                                                     )
                                                                 )
                                                             ).setTooltip(`Remove ${ name } from Live Reminders`, { from: 'top' })
@@ -7788,7 +7800,7 @@ let Initialize = async(START_OVER = false) => {
                                                                         {
                                                                             style: 'height:1.6rem; width:1.6rem',
                                                                             innerHTML: Glyphs.picture_in_picture,
-                                                                        },
+                                                                        }
                                                                     )
                                                                 )
                                                             ).setTooltip(`Send to MiniPlayer`, { from: 'top' })
@@ -7850,7 +7862,7 @@ let Initialize = async(START_OVER = false) => {
                                                                                 {
                                                                                     style: 'height:1.6rem; width:1.6rem',
                                                                                     innerHTML: Glyphs.modify(['host','clip'][+DVR_ON], { style: `fill:${ ['currentcolor','#f59b00'][+DVR_ON] }` }),
-                                                                                },
+                                                                                }
                                                                             )
                                                                         )
                                                                     ).setTooltip(`${ ['Start', 'Stop'][+DVR_ON] } recording ${ name }'${ /s$/.test(name)? '': 's' } streams`, { from: 'top' })
@@ -7906,9 +7918,8 @@ let Initialize = async(START_OVER = false) => {
                         )
                             Cache.save({ LiveReminders, DVRChannels }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders), 'DVR_CHANNELS': Object.keys(DVRChannels) }));
 
-                        delete LiveReminders; // @performance
-                        delete ChannelPoints; // @performance
-                        delete DVRChannels; // @performance
+                        // @performance
+                        PrepareForGarbageCollection(LiveReminders, ChannelPoints, DVRChannels);
                     });
                 },
             });
@@ -8065,7 +8076,7 @@ let Initialize = async(START_OVER = false) => {
                             return found;
                         })
                         .catch($warn)
-                )
+                );
 
                 $log('Adding to Up Next [ondrop]:', { href, streamer });
 
@@ -8399,7 +8410,7 @@ let Initialize = async(START_OVER = false) => {
                     $warn('Not pushing to First in Line:', href, new Date);
                     $log('Reason(s):', [FIRST_IN_LINE_JOB, ...ALL_FIRST_IN_LINE_JOBS],
                         `It is the next job? ${ ['No', 'Yes'][+(FIRST_IN_LINE_HREF === href)] }`,
-                        `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`,
+                        `It is in the queue already? ${ ['No', 'Yes'][+(ALL_FIRST_IN_LINE_JOBS.contains(href))] }`
                     );
                 }
 
@@ -8674,7 +8685,7 @@ let Initialize = async(START_OVER = false) => {
         setInterval(() =>
             $.all('[id^="tt-balloon"i][name][live][href*="redo"i]').map(el => {
                 let { searchParameters } = parseURL(el.getAttribute('href'));
-                let redo = parseBool(searchParameters.redo);
+                let redo = parseBool(searchParameters?.redo);
 
                 if(parseBool(el.getAttribute('rainbow-border')) != redo) {
                     el.setAttribute('rainbow-border', redo);
@@ -8748,6 +8759,8 @@ let Initialize = async(START_OVER = false) => {
                         let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                             name = parseURL(removed).pathname.slice(1);
 
+                            $notice(`Necromancy work:`, removed);
+
                             // Necromancer
                             REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
 
@@ -8765,6 +8778,8 @@ let Initialize = async(START_OVER = false) => {
             } else if(first) {
                 let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(0, 1),
                     name = parseURL(removed).pathname.slice(1);
+
+                $notice(`Doppleganger work:`, removed);
 
                 // Doppleganger
                 REDO_FIRST_IN_LINE_QUEUE(ALL_FIRST_IN_LINE_JOBS[0], { redo: parseBool(parseURL(removed).searchParameters?.redo) });
@@ -9008,7 +9023,8 @@ let Initialize = async(START_OVER = false) => {
 
             actionPanel.append(action);
 
-            delete LiveReminders; // @performance
+            // @performance
+            PrepareForGarbageCollection(LiveReminders);
         });
 
         StopWatch.stop('live_reminders');
@@ -9051,7 +9067,8 @@ let Initialize = async(START_OVER = false) => {
                 // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
                     if(PARSED_REMINDERS.contains(reminderName)) {
-                        delete LiveReminders;
+                        // @performance
+                        PrepareForGarbageCollection(LiveReminders);
                         continue;
                     }
 
@@ -9065,16 +9082,25 @@ let Initialize = async(START_OVER = false) => {
 
                         Search.void(reminderName);
 
-                        channel = await when.defined(() => new Search(reminderName).then(Search.convertResults), 500);
+                        // @research
+                        channel = await new Search(reminderName).then(Search.convertResults);
                         ok = parseBool(channel?.ok);
 
                         // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [Reminders]: "${ reminderName }" → OK = ${ ok }`);
                     }
 
+                    if(!num && !ok) {
+                        channel = ALL_CHANNELS.find(channel => channel.name.equals(reminderName));
+
+                        if(nullish(channel?.name))
+                            continue checking;
+                    }
+
                     if(!channel.live) {
                         // Ignore this reminder (channel not live)
                         delete channel;
-                        delete LiveReminders; // @performance
+                        // @performance
+                        PrepareForGarbageCollection(LiveReminders);
 
                         ++REMINDERS_INDEX;
                         continue checking;
@@ -9147,7 +9173,8 @@ let Initialize = async(START_OVER = false) => {
                 // Send the length to the settings page
                 Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) });
 
-                delete LiveReminders; // @performance
+                // @performance
+                PrepareForGarbageCollection(LiveReminders);
             });
         };
 
@@ -9268,7 +9295,7 @@ let Initialize = async(START_OVER = false) => {
                                             f('#tt-steam-purchase'),
                                             f('#tt-playstation-purchase'),
                                             f('#tt-xbox-purchase'),
-                                            f('#tt-nintendo-purchase'),
+                                            f('#tt-nintendo-purchase')
                                         )
                                     )
                                 )
@@ -10796,29 +10823,44 @@ let Initialize = async(START_OVER = false) => {
                                 i = index + href.length;
                             }
 
-                        if(parseBool(Settings.parse_commands__create_links) && defined(_href))
-                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap;" contrast="${ THEME__PREFERRED_CONTRAST }" title="${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
-                        else
-                            string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title="${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
+                        let titleTo = new UUID + '';
 
-                        return `<span tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
+                        if(parseBool(Settings.parse_commands__create_links) && defined(_href))
+                            string = `<code tt-code style="border:1px solid currentColor; color:var(--color-colored)!important; white-space:nowrap;" contrast="${ THEME__PREFERRED_CONTRAST }" title-to="${ titleTo };${ encodeHTML(reply) }"><a style="color:inherit!important" href="${ _href.replace(/^(\w{3,}\.\w{2,})/, `https://$1`) }" target=_blank>${ decodeMD(encodeHTML($1)) } ${ Glyphs.modify('ne_arrow', { height:12, width:12, style:'vertical-align:middle!important' }) }</a></code>`;
+                        else
+                            string = `<code tt-code style="opacity:${ 2**-!enabled }; white-space:nowrap" title-to="${ titleTo };${ encodeHTML(reply) }">${ decodeMD(encodeHTML($1)) }</code>`;
+
+                        return `<span title-to="${ titleTo }" tt-parse-commands="${ btoa(escape(string)) }">${ $0.split('').join('&zwj;') }</span>`;
                     });
                 });
 
+            // Controls the stream-title (description) has a native tooltip (false) or not (true)
+            if(true)
+                wait(500, element).then(element => {
+                    let title = decodeHTML(element.getAttribute('title') ?? '');
+
+                    if(title.length < 1)
+                        return;
+
+                    new Tooltip(element, title, { from: 'top' });
+
+                    element.removeAttribute('title');
+                });
+
             $.all('[tt-parse-commands]:not([tt-parsed="true"i])').map(element => {
+                let titleTo = element.getAttribute('title-to');
+
                 element.outerHTML = unescape(atob(element.getAttribute('tt-parse-commands')));
+
+                when.defined(to => $(`[title-to^="${ to };"i]`), 30, titleTo).then(tooltip => {
+                    let [to, title = ""] = tooltip.getAttribute('title-to').split(';');
+
+                    if(title.trim().length)
+                        new Tooltip(tooltip, title);
+                    tooltip.removeAttribute('title-to');
+                });
+
                 element.setAttribute('tt-parsed', true);
-            });
-
-            wait(500, element).then(element => {
-                let title = decodeHTML(element.getAttribute('title') ?? '');
-
-                if(title.length < 1)
-                    return;
-
-                new Tooltip(element, title, { from: 'top' });
-
-                element.removeAttribute('title');
             });
         }
     };
@@ -10840,34 +10882,6 @@ let Initialize = async(START_OVER = false) => {
         // Add the chat menu popup...
         let CSSBlockName = `Chat-Input-Menu:${ new UUID }`,
             AvailableCommands;
-
-        function levenshtein(A = '', B = '') {
-            let a = A.length,
-                b = B.length;
-
-            let track = Array(b + 1).fill(null).map(() => Array(a + 1).fill(null));
-
-            for(let i = 0; i <= a; ++i)
-                track[0][i] = i;
-
-            for(let j = 0; j <= b; ++j)
-                track[j][0] = j;
-
-            for(let j = 1; j <= b; ++j)
-                for(let i = 1; i <= a; ++i)
-                    track[j][i] = Math.min(
-                        // Deletion
-                        track[j][i - 1] + 1,
-
-                        // Insertion
-                        track[j - 1][i] + 1,
-
-                        // Substitution
-                        track[j - 1][i - 1] + +(A[i - 1] !== B[j - 1]),
-                    );
-
-            return track[b][a];
-        }
 
         let TwitchRoleBadges = ({
             everyone: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/215b7342-def9-11e9-9a66-784f43822e80-profile_image-70x70.png',
@@ -10935,7 +10949,7 @@ let Initialize = async(START_OVER = false) => {
                     )
                 )
                 .slice(0, 30)
-                .map(data => ({ ...data, textDistance: Math.min(...[data.command, ...data.aliases].map(string => levenshtein(value, string.toLowerCase()))) }))
+                .map(data => ({ ...data, textDistance: Math.min(...[data.command, ...data.aliases].map(string => value.distanceFrom(string.toLowerCase()))) }))
                 .sort((a, b) => a.textDistance - b.textDistance)
                 .slice(0, 5);
 
@@ -11376,7 +11390,7 @@ let Initialize = async(START_OVER = false) => {
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
                     src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
-                    destroy: setTimeout(name => $(`#tt-greedy-raiding--${ name }`).remove(), 600_000, name),
+                    destroy: setTimeout(name => $(`#tt-greedy-raiding--${ name }`).remove(), 120_000, name),
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 })
@@ -12528,7 +12542,7 @@ let Initialize = async(START_OVER = false) => {
     Handlers.time_zones = () => {
         let allNodes = node => (node.childNodes.length? [...node.childNodes].map(allNodes): [node]).flat();
         let cTitle = $.all('[data-a-target="stream-title"i], [data-a-target="about-panel"i], [data-a-target^="panel"i]'),
-            rTitle = $('[class*="channel-tooltip"i]:not([class*="offline"i]) > p + p');
+            rTitle = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i]):not([class*="offline"i]) > p + p');
 
         parsing:
         for(let container of [...cTitle, rTitle].filter(defined)) {
@@ -13307,7 +13321,7 @@ let Initialize = async(START_OVER = false) => {
             let live_time = $('.live-time');
 
             if(nullish(live_time))
-                return RestartJob('points_receipt_placement');
+                return RestartJob('points_receipt_placement', 'missing:live_time');
 
             let classes = element => [...element.classList].map(label => '.' + label).join('');
 
@@ -13331,7 +13345,7 @@ let Initialize = async(START_OVER = false) => {
                     exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 
                 if(nullish(points_receipt))
-                    return RestartJob('points_receipt_placement');
+                    return RestartJob('points_receipt_placement', 'missing:points_receipt');
 
                 let [chat] = $.all('[role] ~ *:is([role="log"i], [class~="chat-room"i], [data-a-target*="chat"i], [data-test-selector*="chat"i]), [data-test-selector*="banned"i][data-test-selector*="message"i], [data-test-selector^="video-chat"i]');
 
@@ -13373,7 +13387,7 @@ let Initialize = async(START_OVER = false) => {
                 if(!~[points_receipt, exact_change, balance].findIndex(defined)) {
                     points_receipt?.parentElement?.remove();
 
-                    RestartJob('points_receipt_placement');
+                    RestartJob('points_receipt_placement', 'missing:points_receipt,exact_change,balance');
 
                     return clearInterval(COUNTING_POINTS);
                 }
@@ -13500,8 +13514,8 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let pointWatcherCounter = 0,
-        hasPointsEnabled = false;
+    let POINT_WATCHER_COUNTER = 0,
+        HAS_POINTS_BALANCE = false;
 
     Handlers.point_watcher_placement = async() => {
         // Display the points
@@ -13510,62 +13524,19 @@ let Initialize = async(START_OVER = false) => {
         if(top.WINDOW_STATE == "unloading")
             return;
 
-        // Update the points (every 30s)
-        if(!(pointWatcherCounter++ % 30))
-            Cache.load(['ChannelPoints'], async({ ChannelPoints }) => {
-                ChannelPoints ??= {};
-
-                let [amount, fiat, face, notEarned, pointsToEarnNext] = (ChannelPoints?.[STREAMER.name] ?? 0).toString().split('|'),
-                    allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
-                    balance = STREAMER.coin || 0;
-
-                hasPointsEnabled ||= defined(balance);
-
-                amount = ((balance? balance.suffix('', 1).replace('.0','').toUpperCase(): 0) || (hasPointsEnabled? amount: '&#128683;'));
-                fiat = (STREAMER?.fiat ?? fiat ?? 0);
-                face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
-                notEarned = (
-                    (allRewards?.length)?
-                        allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
-                    (notEarned >= -Infinity)?
-                        notEarned:
-                    -1
-                );
-                pointsToEarnNext = (
-                    (allRewards?.length)?
-                        allRewards
-                            .map(reward => (reward.cost > STREAMER.coin? reward.cost - STREAMER.coin: 0))
-                            .sort((x, y) => (x > y? -1: +1))
-                            .filter(x => x > 0)
-                            .pop():
-                    (notEarned >= -Infinity)?
-                        pointsToEarnNext:
-                    0
-                );
-
-                face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
-
-                ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
-
-                Cache.save({ ChannelPoints });
-
-                delete ChannelPoints; // @performance
-            });
-
         // Color the balance text
         let balance = $('[data-test-selector="balance-string"i]');
 
         balance?.setAttribute('rainbow-border', await STREAMER.done);
         balance?.setAttribute('bottom-only', '');
 
-        let richTooltip = $('[class*="channel-tooltip"i]');
+        let richTooltip = $('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i])');
 
         if(nullish(richTooltip))
             return StopWatch.stop('point_watcher_placement', 30_000);
 
         let [title, subtitle, ...footers] = richTooltip.children,
-            footer = footers[footers.length - 1],
-            target = footer?.lastElementChild;
+            [target] = footers.map(footer => $('[class*="tooltip"i][class*="text"i]', footer)).filter(defined);
 
         if(nullish(subtitle)) {
             let [rTitle, rSubtitle] = $.all('[data-a-target*="side-nav-header-"i] ~ * *:hover [data-a-target$="metadata"i] > *'),
@@ -13629,7 +13600,44 @@ let Initialize = async(START_OVER = false) => {
                 target.closest('[role="dialog"i]')?.setAttribute('tt-in-up-next', upNext);
             }
 
-            delete ChannelPoints; // @performance
+            // Update the points (every 15s | 60 × 1/4)
+            if(!(POINT_WATCHER_COUNTER++ % 60)) {
+                let allRewards = (await STREAMER.shop).filter(reward => reward.enabled),
+                    balance = STREAMER.coin || 0;
+
+                HAS_POINTS_BALANCE ||= defined(balance);
+
+                amount = ((balance? balance.suffix('', 1).replace('.0','').toUpperCase(): 0) || (HAS_POINTS_BALANCE? amount: '&#128683;'));
+                fiat = (STREAMER?.fiat ?? fiat ?? 0);
+                face = (STREAMER?.face ?? face ?? `${ STREAMER.sole }`);
+                notEarned = (
+                    (allRewards?.length)?
+                        allRewards.filter(({ cost = 0 }) => cost > STREAMER.coin).length:
+                    (notEarned >= -Infinity)?
+                        notEarned:
+                    -1
+                );
+                pointsToEarnNext = (
+                    (allRewards?.length)?
+                        allRewards
+                            .map(reward => (reward.cost > STREAMER.coin? reward.cost - STREAMER.coin: 0))
+                            .sort((x, y) => (x > y? -1: +1))
+                            .filter(x => x > 0)
+                            .pop():
+                    (notEarned >= -Infinity)?
+                        pointsToEarnNext:
+                    0
+                );
+
+                face = face?.replace(/^(?:https?:.*?)?([\d]+\/[\w\-\.\/]+)$/i, '$1');
+
+                ChannelPoints[STREAMER.name] = [amount, fiat, face, notEarned, pointsToEarnNext].join('|');
+
+                Cache.save({ ChannelPoints });
+            }
+
+            // @performance
+            PrepareForGarbageCollection(ChannelPoints);
         });
 
         StopWatch.stop('point_watcher_placement', 2_700);
@@ -13645,83 +13653,78 @@ let Initialize = async(START_OVER = false) => {
     if(parseBool(Settings.point_watcher_placement)) {
         when.defined(() => $('[data-test-selector="balance-string"i]')?.closest('button'))
             .then(async balanceButton => {
-                if(defined(balanceButton))
-                    RegisterJob('point_watcher_placement');
+                RegisterJob('point_watcher_placement');
 
                 let shop = (await STREAMER.shop);
 
-                when.defined(() => $('[data-test-selector="balance-string"i]'))
-                    .then(balance => balance.closest('button'))
-                    .then(button => {
-                        button.click();
+                balanceButton.click();
 
-                        for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
-                            let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward),
-                                backgroundColor = (false
-                                    || $('button [style]')
-                                        ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
-                                        ?.getPropertyValue?.('background-color')
-                                    || '#9147FF'
-                                ).toUpperCase();
+                for(let reward of $.all('[class*="reward"i][class*="item"i]')) {
+                    let [image, cost, title] = $.all('[class*="reward"i][class*="image"i] img[alt], [data-test-selector="cost"i], p[title]', reward),
+                        backgroundColor = (false
+                            || $('button [style]')
+                                ?.getComputedStyle?.($(`main a[href$="${ NORMALIZED_PATHNAME }"i]`) ?? $(':root'))
+                                ?.getPropertyValue?.('background-color')
+                            || '#9147FF'
+                        ).toUpperCase();
 
-                            image = image.src;
-                            cost = parseCoin(cost.textContent) | 0;
-                            title = (title.textContent || "").trim();
+                    image = image.src;
+                    cost = parseCoin(cost.textContent) | 0;
+                    title = (title.textContent || "").trim();
 
-                            let imgURL = parseURL(image),
-                                imgPath = imgURL.pathname.slice(1),
-                                [imgType, imgName, imgSub = ''] = imgPath.split('/'),
-                                realId = (
-                                    imgType.contains('auto') && imgType.contains('reward')?
-                                        ({
-                                            'subsonly': 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
-                                            SINGLE_MESSAGE_BYPASS_SUB_MODE: 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
+                    let imgURL = parseURL(image),
+                        imgPath = imgURL.pathname.slice(1),
+                        [imgType, imgName, imgSub = ''] = imgPath.split('/'),
+                        realId = (
+                            imgType.contains('auto') && imgType.contains('reward')?
+                                ({
+                                    'SUBSONLY': 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
+                                    SINGLE_MESSAGE_BYPASS_SUB_MODE: 'SINGLE_MESSAGE_BYPASS_SUB_MODE',
 
-                                            'highlight': 'SEND_HIGHLIGHTED_MESSAGE',
-                                            SEND_HIGHLIGHTED_MESSAGE: 'SEND_HIGHLIGHTED_MESSAGE',
+                                    'HIGHLIGHT': 'SEND_HIGHLIGHTED_MESSAGE',
+                                    SEND_HIGHLIGHTED_MESSAGE: 'SEND_HIGHLIGHTED_MESSAGE',
 
-                                            'modify-emote': 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK',
-                                            CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK: 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK',
+                                    'MODIFY-EMOTE': 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK',
+                                    CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK: 'CHOSEN_MODIFIED_SUB_EMOTE_UNLOCK',
 
-                                            'random-emote': 'RANDOM_SUB_EMOTE_UNLOCK',
-                                            RANDOM_SUB_EMOTE_UNLOCK: 'RANDOM_SUB_EMOTE_UNLOCK',
+                                    'RANDOM-EMOTE': 'RANDOM_SUB_EMOTE_UNLOCK',
+                                    RANDOM_SUB_EMOTE_UNLOCK: 'RANDOM_SUB_EMOTE_UNLOCK',
 
-                                            'choose-emote': 'CHOSEN_SUB_EMOTE_UNLOCK',
-                                            CHOSEN_SUB_EMOTE_UNLOCK: 'CHOSEN_SUB_EMOTE_UNLOCK',
-                                        }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '').replace(/^(\d+)$/, imgSub.toUpperCase())]):
-                                    null
-                                );
+                                    'CHOOSE-EMOTE': 'CHOSEN_SUB_EMOTE_UNLOCK',
+                                    CHOSEN_SUB_EMOTE_UNLOCK: 'CHOSEN_SUB_EMOTE_UNLOCK',
+                                }[imgName.replace(/(\W?\d+)?\.(gif|jpe?g|png)$/i, '').replace(/^(\d+)$/, imgSub).toUpperCase()]):
+                            null
+                        );
 
-                            let item = {
-                                title, cost,
-                                image: { url: image },
+                    let item = {
+                        title, cost,
+                        image: { url: image },
 
-                                backgroundColor: Color.destruct(backgroundColor).HEX,
-                                id: (realId ?? UUID.from([image, title, cost].join('|$|'), true).value),
-                                type: (realId ?? "UNKNOWN"),
+                        backgroundColor: Color.destruct(backgroundColor).HEX,
+                        id: (realId ?? UUID.from([image, title, cost].join('|$|'), true).value),
+                        type: (realId ?? "UNKNOWN"),
 
-                                enabled: true,
-                                available: true,
-                                count: 0,
-                                hidden: false,
-                                maximum: {
-                                    global: 0,
-                                    user: 0,
-                                },
-                                needsInput: false,
-                                paused: false,
-                                premium: false,
-                                prompt: "",
-                                skips: false,
-                                updated: (new Date).toJSON(),
-                            };
+                        enabled: true,
+                        available: true,
+                        count: 0,
+                        hidden: false,
+                        maximum: {
+                            global: 0,
+                            user: 0,
+                        },
+                        needsInput: false,
+                        paused: false,
+                        premium: false,
+                        prompt: "",
+                        skips: false,
+                        updated: (new Date).toJSON(),
+                    };
 
-                            STREAMER.__shop__.push(item);
-                        }
+                    STREAMER.__shop__.push(item);
+                }
 
-                        when(() => STREAMER.__shop__.length > 1)
-                            .then(() => button.click());
-                    });
+                when(() => STREAMER.__shop__.length > 1)
+                    .then(() => balanceButton.click());
             });
     }
 
@@ -13752,7 +13755,7 @@ let Initialize = async(START_OVER = false) => {
             return StopWatch.stop('stream_preview'), STREAM_PREVIEW = { element: STREAM_PREVIEW?.element?.remove() };
         }
 
-        let [title, subtitle] = $.all('[class*="channel-tooltip"i] > *', richTooltip),
+        let [title, subtitle] = $.all('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i]) > *', richTooltip),
             isOnline = parseBool(richTooltip.classList?.value?.missing('offline'));
 
         if(nullish(subtitle)) {
@@ -13842,7 +13845,7 @@ let Initialize = async(START_OVER = false) => {
 
                         onload: event => {
                             $('.tt-stream-preview--poster')?.classList?.add('invisible');
-                            $.all('[class*="channel-tooltip"i]').at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.modStyle(`background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
+                            $.all('[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i])').at($('#tt-stream-preview--iframe').dataset.index | 0)?.closest('[href^="/videos/"i]')?.modStyle(`background:var(--color-twitch-purple-${ 6 + (THEME.equals('light')? 6: 0) })`);
 
                             if(!parseBool(Settings.stream_preview_sound))
                                 return;
@@ -13888,7 +13891,7 @@ let Initialize = async(START_OVER = false) => {
             if(!/^Arrow(Up|Down)$/i.test(key))
                 return;
 
-            let richTooltips = $.all(`[class*="channel-tooltip"i]`),
+            let richTooltips = $.all(`[class*="-tooltip"i]:is([class*="channel"i], [class*="guest"i])`),
                 { length } = richTooltips,
                 iframe = $('#tt-stream-preview--iframe');
 
@@ -13960,7 +13963,7 @@ let Initialize = async(START_OVER = false) => {
         let live_time = $('.live-time');
 
         if(nullish(live_time))
-            return RestartJob('watch_time_placement');
+            return RestartJob('watch_time_placement', 'missing:live_time');
 
         switch(placement) {
             // Option 1 "over" - video overlay, volume control area
@@ -14023,7 +14026,7 @@ let Initialize = async(START_OVER = false) => {
 
                 if(nullish(watch_time) || !time) {
                     clearInterval(WATCH_TIME_INTERVAL);
-                    return RestartJob('watch_time_placement');
+                    return RestartJob('watch_time_placement', 'missing:watch_time|time');
                 }
 
                 watch_time.setAttribute('time', time);
@@ -14361,7 +14364,8 @@ let Initialize = async(START_OVER = false) => {
                 });
             }
 
-            delete DVRChannels; // @performance
+            // @performance
+            PrepareForGarbageCollection(DVRChannels);
         });
 
         StopWatch.stop('video_clips__dvr');
@@ -14412,7 +14416,21 @@ let Initialize = async(START_OVER = false) => {
     }
 
     Handlers.__MASTER_AUTO_DVR_HANDLER__ = event => {
-        MASTER_VIDEO.DEFAULT_RECORDING?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
+        MASTER_VIDEO.DEFAULT_RECORDING?.then(({ target }) => {
+            let chunks = target.blobs;
+            let feed = $(`.tt-prompt[uuid="${ UUID.from(body).value }"i]`),
+                halt = parseBool(feed?.getAttribute('halt')),
+                name = (feed?.getAttribute('value') || DVR_CLIP_PRECOMP_NAME).replace(GetFileSystem().allIllegalFilenameCharacters, '-');
+        })
+        ?.stop()
+        ?.save(DVR_CLIP_PRECOMP_NAME)
+        ?.then(link => alert.silent(`
+            <video controller controls
+                title="Video Saved &mdash; ${ link.download }"
+                src="${ link.href }" style="max-width:-webkit-fill-available"
+            ></video>
+            `)
+        );
     };
 
     Unhandlers.video_clips__dvr = () => {
@@ -14512,15 +14530,23 @@ let Initialize = async(START_OVER = false) => {
 
                             Search.void(streamer);
 
-                            channel = await when.defined(() => new Search(streamer).then(Search.convertResults), 500);
+                            // @research
+                            channel = await new Search(streamer).then(Search.convertResults);
                             ok = parseBool(channel?.ok);
 
                             // $warn(`Re-search, ${ num } ${ 'retry'.pluralSuffix(num) } left [DVR]: "${ streamer }" → OK = ${ ok }`);
                         }
 
+                        if(!num && !ok) {
+                            channel = ALL_CHANNELS.find(channel => channel.name.equals(DVR_ID));
+
+                            if(nullish(channel?.name))
+                                continue checking;
+                        }
+
                         if(!parseBool(channel.live)) {
-                            delete channel;
-                            delete DVRChannels; // @performance
+                            // @performance
+                            PrepareForGarbageCollection(channel, DVRChannels);
 
                             continue checking;
                         }
@@ -14535,6 +14561,8 @@ let Initialize = async(START_OVER = false) => {
                             // Skip the queue!
                             let [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1),
                                 name = parseURL(removed).pathname.slice(1);
+
+                            $notice(`Skipper work:`, removed);
 
                             FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(FIRST_IN_LINE_TIMER);
 
@@ -14557,7 +14585,8 @@ let Initialize = async(START_OVER = false) => {
 
                     StopWatch.stop('video_clips__dvr__checking_interval', 30_000);
 
-                    delete DVRChannels; // @performance
+                    // @performance
+                    PrepareForGarbageCollection(DVRChannels);
                 });
         }, 30_000);
 
@@ -14669,7 +14698,8 @@ let Initialize = async(START_OVER = false) => {
                             });
                 }
 
-                delete DVRChannels; // @performance
+                // @performance
+                PrepareForGarbageCollection(DVRChannels);
             });
 
         AUTO_DVR__CHECKING?.();
@@ -14696,8 +14726,8 @@ let Initialize = async(START_OVER = false) => {
      *
      *
      */
-    let SECONDS_PAUSED_UNSAFELY = 0,
-        CREATION_TIME,
+    let SECONDS_VIDEO_PAUSED_UNSAFELY = 0,
+        VIDEO_CREATION_TIME,
         TOTAL_VIDEO_FRAMES,
         PAGE_HAS_FOCUS = document.visibilityState.equals("visible"),
         VIDEO_OVERRIDE = false;
@@ -14716,7 +14746,7 @@ let Initialize = async(START_OVER = false) => {
             { creationTime, totalVideoFrames } = video.getVideoPlaybackQuality();
 
         // Time that's passed since creation. Should constantly increase
-        CREATION_TIME ??= creationTime;
+        VIDEO_CREATION_TIME ??= creationTime;
 
         // The total number of frames created. Should constantly increase
         TOTAL_VIDEO_FRAMES ??= totalVideoFrames;
@@ -14725,17 +14755,17 @@ let Initialize = async(START_OVER = false) => {
         // if the video is paused by the user (trusted) move on
         if((paused && isTrusted) || PAGE_HAS_FOCUS === false)
             return StopWatch.stop('recover_frames');
-        $('#tt-embedded-video')?.remove();
 
         // The video is stalling: either stuck on the same frame, or lagging behind 15 frames
-        if(creationTime !== CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
-            if(SECONDS_PAUSED_UNSAFELY > 0 && !(SECONDS_PAUSED_UNSAFELY % 5))
-                $warn(`The video has been stalling for ${ SECONDS_PAUSED_UNSAFELY }s`, { CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
+        if(creationTime !== VIDEO_CREATION_TIME && (totalVideoFrames === TOTAL_VIDEO_FRAMES || totalVideoFrames - TOTAL_VIDEO_FRAMES < 15)) {
+            if(SECONDS_VIDEO_PAUSED_UNSAFELY > 0 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 5))
+                $warn(`The video has been stalling for ${ SECONDS_VIDEO_PAUSED_UNSAFELY }s`, { VIDEO_CREATION_TIME, TOTAL_VIDEO_FRAMES, SECONDS_VIDEO_PAUSED_UNSAFELY }, 'Frames fallen behind:', totalVideoFrames - TOTAL_VIDEO_FRAMES);
 
-            if(SECONDS_PAUSED_UNSAFELY > 5 && !(SECONDS_PAUSED_UNSAFELY % 3)) {
+            if(SECONDS_VIDEO_PAUSED_UNSAFELY > 5 && !(SECONDS_VIDEO_PAUSED_UNSAFELY % 3)) {
                 __RecoverFrames_Embed__:
                 if(parseBool(Settings.recover_frames__allow_embed)) {
                     $warn(`Attempting to override the video`);
+                    $('#tt-embedded-video')?.remove();
 
                     let container = $('video')?.closest('[class*="container"i]');
 
@@ -14764,18 +14794,40 @@ let Initialize = async(START_OVER = false) => {
 
                             onload(event) {
                                 when.defined(() => {
-                                    let doc = $('#tt-embedded-video')?.contentDocument;
+                                    let iDocument = $('#tt-embedded-video')?.contentDocument;
 
-                                    if(nullish(doc))
+                                    if(nullish(iDocument))
                                         return /* No iframe document */;
 
-                                    let video = $('video', doc);
+                                    let iVideo = $('video', iDocument), video = $('video');
 
-                                    if(nullish(video))
+                                    if(nullish(iVideo))
                                         return /* No iframe video */;
 
-                                    if((video.currentTime || 0) <= 0)
+                                    if((iVideo.currentTime || 0) <= 0)
                                         return /* iframe video not loading */;
+
+                                    // Continue recordings...
+                                    for(let [key, { recording }] of video.getRecording(Recording.ALL)) {
+                                        let { name, as, maxTime } = recording;
+
+                                        maxTime = parseFloat(maxTime);
+                                        maxTime = maxTime < 0? Infinity: maxTime;
+
+                                        if(!/^\[\[(.+)\]\]$/.test(key)) {
+                                            recording.save();
+                                            Recording.proxy(iVideo, { name, as, maxTime }).then(event => {
+                                                let { target } = event;
+                                                let { recording } = target;
+                                                let { name, as } = recording;
+
+                                                if(name.startsWith('AUTO_DVR'))
+                                                    Handlers.__MASTER_AUTO_DVR_HANDLER__.call(target, event);
+                                                else
+                                                    recording.save(as);
+                                            });
+                                        }
+                                    }
 
                                     return VIDEO_OVERRIDE = true;
                                 }, 2_5_0);
@@ -14798,26 +14850,26 @@ let Initialize = async(START_OVER = false) => {
             }
 
             // Try constantly overwriting to see if the video plays
-            // CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
+            // VIDEO_CREATION_TIME = creationTime; // Keep this from becoming true to force a re-run
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
 
-            ++SECONDS_PAUSED_UNSAFELY;
+            ++SECONDS_VIDEO_PAUSED_UNSAFELY;
 
             video.stalling = true;
         }
         // The video is playing
         else {
             // Start over
-            CREATION_TIME = creationTime;
+            VIDEO_CREATION_TIME = creationTime;
             TOTAL_VIDEO_FRAMES = totalVideoFrames;
 
             video.stalling = false;
 
             // Reset the timer whenever the video is recovered
-            return SECONDS_PAUSED_UNSAFELY = 0;
+            return SECONDS_VIDEO_PAUSED_UNSAFELY = 0;
         }
 
-        if(SECONDS_PAUSED_UNSAFELY > 15)
+        if(SECONDS_VIDEO_PAUSED_UNSAFELY > 15)
             ReloadPage();
 
         StopWatch.stop('recover_frames');
@@ -15239,7 +15291,15 @@ let Initialize = async(START_OVER = false) => {
                                 .finally(() => {
                                     DEFAULT_CLIP_NAME = new ClipName(2);
 
-                                    video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME)?.removeRecording(EVENT_NAME);
+                                    video.stopRecording(EVENT_NAME).saveRecording(EVENT_NAME, SAVE_NAME);
+
+                                    when.defined(() => $(`[data-save-name="${ SAVE_NAME.replaceAll('"', '&quot;') }"i]`)).then(link => alert.silent(`
+                                        <video controller controls
+                                            title="Video Saved &mdash; ${ link.download }"
+                                            src="${ link.href }" style="max-width:-webkit-fill-available"
+                                        ></video>
+                                        `)
+                                    );
                                 });
                         });
                     } else {
@@ -15323,7 +15383,8 @@ let Initialize = async(START_OVER = false) => {
                                     Cache.save({ LiveReminders: { ...justInCase } }, () => Settings.set({ 'LIVE_REMINDERS': Object.keys(LiveReminders) }));
                             });
 
-                        delete LiveReminders; // @performance
+                        // @performance
+                        PrepareForGarbageCollection(LiveReminders);
                     });
                 }
             });
@@ -15630,7 +15691,42 @@ let PAGE_CHECKER,
 
 // Do NOT run on iframes...
 if(top == window) {
+    // Load jump (cached) data
+    Cache.large.load('JumpedData', ({ JumpedData }) => {
+        Object.assign(JUMP_DATA, JumpedData ?? {});
+
+        // @performance
+        PrepareForGarbageCollection(JumpedData);
+    });
+
+    // Only releases the data from memory every 10:54.321
+    setInterval(() => {
+        // @performance
+        PrepareForGarbageCollection(JUMP_DATA);
+
+        Cache.large.load('JumpedData', ({ JumpedData }) => {
+            Object.assign(JUMP_DATA, JumpedData ?? {});
+
+            // @performance
+            PrepareForGarbageCollection(JumpedData);
+        });
+    }, 654_321);
+
+    top.beforeleaving = top.onlocationchange = async({ hosting = false, raiding = false, raided = false, from, to, persisted }) => {
+        // @performance
+        PrepareForGarbageCollection(JUMP_DATA);
+    };
+
     // Keep the background alive (every 3 minutes)
+    /** @protected
+     * @event PONG
+     * @fires PING
+     * @desc Keeps the background script alive.
+     *
+     * @author GitHub {@link https://github.io/wOxxOm @wOxxOm}
+     *
+     * @see https://stackoverflow.com/a/66618269/4211612
+     */
     setInterval(() => {
         let KeepAlive = Runtime.connect({ name: 'PING' });
 
@@ -15735,7 +15831,7 @@ if(top == window) {
                         alert.timed(`${ Manifest.name } will resume after the ad-break.`, VIDEO_AD_COUNTDOWN = count * time);
                     });
 
-            Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async({ owner = true }) => top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = owner);
+            Runtime.sendMessage({ action: 'CLAIM_UP_NEXT' }, async info => top.UP_NEXT_ALLOW_THIS_TAB = UP_NEXT_ALLOW_THIS_TAB = info?.owner ?? true);
 
             $log("Main container ready");
 
@@ -15750,7 +15846,7 @@ if(top == window) {
                     .then(() => {
                         // TTV Tools has the max Timer amount to initilize correctly...
                         let REINIT_JOBS =
-                        setTimeout(() => {
+                        when(() => {
                             let NOT_LOADED_CORRECTLY = [],
                                 ALL_LOADED_CORRECTLY = (true
                                     // Lurking
@@ -15829,15 +15925,15 @@ if(top == window) {
 
                             if(parseBool(Settings.recover_pages)) {
                                 if(++RECOVERY_TRIALS > 10)
-                                    return addToSearch(NOT_LOADED_CORRECTLY.map(fail => 'fail_to_load--' + fail), true);
+                                    addToSearch(NOT_LOADED_CORRECTLY.map(fail => `fail_to_load_${ fail }=true`).join('&'), true);
                                 return false;
                             }
 
                             // Failed to activate job at...
                             // addToSearch({ 'tt-err-job': (+new Date).toString(36) }, true);
 
-                            Initialize.ready = ready;
-                        }, Math.max(...Object.values(Timers)));
+                            return ready;
+                        }, Math.max(...Object.values(Timers))).then(ready => Initialize.ready = ready);
                     });
 
                 // Handle coin related bulletins
@@ -16032,7 +16128,7 @@ if(top == window) {
                     if(!!~VOLATILE.findIndex(name => name.test(job)))
                         continue DestroyingJobs;
                     else
-                        RestartJob(job);
+                        RestartJob(job, 'job-destruction');
 
                 Reinitialize:
                 if(NORMAL_MODE) {
@@ -16420,7 +16516,7 @@ if(top == window) {
 
                         when.defined(name => $(`[id^="tt-balloon-job"i][name="${ name }"i]`), 100, name)
                             .then(element => {
-                                $('button[data-test-selector*="delete"i]', element)?.click();
+                                $('button[class*="del-btn"i]', element)?.click();
                             });
                     } break;
 
@@ -16548,7 +16644,7 @@ if(top == window) {
         let CHAT_SELF_REFLECTOR;
 
         CommsObserver: if(!RESERVED_TWITCH_PATHNAMES.test(location.pathname)) {
-            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+(top != window)),
+            let [CHANNEL] = location.pathname.toLowerCase().slice(1).split('/').slice(+IS_A_FRAMED_CONTAINER),
                 USERNAME = Search.cookies.login ?? `User_Not_Logged_In_${ +new Date }`;
 
             CHANNEL = `#${ CHANNEL }`;

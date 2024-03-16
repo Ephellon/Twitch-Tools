@@ -9,8 +9,7 @@
  *               |___/|_|             |__/
  */
 
-/**
- * @file Defines all of the Glyphs (SVGs) used within the extension.
+/** @file Defines all of the Glyphs (SVGs) used within the extension.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
@@ -374,10 +373,12 @@ window.Glyphs ??= {
             let value = attributes[attribute];
 
             if(!!~[null, undefined].indexOf(value))
-                ele.removeAttribute(attribute);
+                ele?.removeAttribute(attribute);
             else
-                ele.setAttribute(attribute, value);
+                ele?.setAttribute(attribute, value);
         }
+
+        ele?.setAttribute('data-glyph-name', glyph);
 
         let string = new String(ele.outerHTML);
 

@@ -9,15 +9,15 @@
  *                          |__/
  */
 
-/**
- * @file Defines all required logic for the extension. Used on all pages.
+/** @file Defines all required logic for the extension. Used on all pages.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  */
 
 ;
 
-/** Creates a random {@link https://developer.mozilla.org/en-US/docs/Glossary/UUID UUID}.
+/**
+ * Creates a random {@link https://developer.mozilla.org/en-US/docs/Glossary/UUID UUID}.
  * @author StackOverflow {@link https://stackoverflow.com/users/1480391/yves-m @Yves M.}
  * @author StackOverflow {@link https://stackoverflow.com/users/109538/broofa @broofa}
  * @author GitHub Gist {@link https://gist.github.com/jed @jed}
@@ -207,6 +207,8 @@ class UUID {
 
         let native = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, x => (x ^ hash[++i<l?i:i=0] & 15 >> x / 4).toString(16));
 
+        PrepareForGarbageCollection(hash);
+
         return Object.assign(new UUID, {
             native,
             value: native,
@@ -244,7 +246,8 @@ class UUID {
     }
 }
 
-/** Adds LZW (base64) codec functionality.
+/**
+ * Adds LZW (base64) codec functionality.
  * @author      GitHub {@link https://github.com/antonylesuisse @antonylesuisse}
  * @author      GitHub {@link https://github.com/ephellon @ephellon}
  *
@@ -480,7 +483,8 @@ class LZW {
     }
 };
 
-/** An over-arching adjustment schema.
+/**
+ * An over-arching adjustment schema.
  * @typedef {object} TooltipAdjustment
  *
  * @property {number<integer>} [left] - Left (X-axis) adjustment
@@ -491,7 +495,8 @@ class LZW {
  * @property {string} [style] - Extra styling (CSS) for the tooltip
  */
 
-/** Creates a Twitch-like tooltip.
+/**
+ * Creates a Twitch-like tooltip.
  * @author GitHub {@link https://github.com/ephellon @ephellon}
  *
  * @simply Tooltip.get(parent:Element) → Element<Tooltip>
@@ -563,7 +568,7 @@ class Tooltip {
 
                                 // case 'left':
                                 //     style += `transform: translate(${ offset.left + offset.width + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
-                                //
+
                                 // case 'right':
                                 //     style += `transform: translate(${ (offset.right - screen.width - offset.width) + fineTuning.left }px, ${ offset.top + fineTuning.top }px); width: ${ offset.width }px; height: ${ offset.height }px; z-index: 99999;`;
 
@@ -581,9 +586,14 @@ class Tooltip {
                 )
             );
 
+            let correct = getOffset(this);
+
             if(parseBool(fineTuning.fit))
                 this.setAttribute('style', `max-width:${ offset.width }px`);
             this.modStyle(fineTuning.style);
+
+            if(correct.screenOverflowX)
+                this.modStyle(this.dataset.correctedXPosition ??= `transform:translate(calc(-50% + ${ correct.screenCorrectX }px));`);
 
             // https://stackoverflow.com/a/75200868/4211612
             AddCustomCSSBlock(`tooltip#${ groupID }`, `.tooltip-layer[for^="${ groupID }"i]:has(~ .tooltip-layer[for^="${ groupID }"i]) { display: none }`, container);
@@ -620,7 +630,8 @@ class Tooltip {
     }
 };
 
-/** Creates an asynchronous construct similar to a Promise. The only difference is that it accepts a spread (array) of arguments for its resolver and/or rejector.
+/**
+ * Creates an asynchronous construct similar to a Promise. The only difference is that it accepts a spread (array) of arguments for its resolver and/or rejector.
  * @simply new Async(ƒ (onResolve, onReject)) → Async<#Promise>
  *
  * @author Medium {@link https://medium.com/@manojsingh047/polyfill-for-javascript-promise-81053b284e37 @manojsingh047}
@@ -950,20 +961,19 @@ class Async {
     }
 }
 
-// The following is just shared logic
-
 /** @typedef {string} CSSSelector
  * See {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors CSS selectors}
  */
 
 ;
 
-/** Returns an element, array of elements, or null if nothing is found.
+/**
+ * Returns an element, array of elements, or null if nothing is found.
  * @simply $(selector:string, container:Node?, multiple:boolean?) → Array|Element
  *
- * @param  {CSSSelector} selector           The selector(s) for the element(s)
- * @param  {Element} [container = document] The container (parent) to search for the element(s)
- * @param  {boolean} [multiple = false]     Determines if a single element or multiple elements are returned
+ * @param  {CSSSelector} selector               The selector(s) for the element(s)
+ * @param  {Element} [container = document]     The container (parent) to search for the element(s)
+ * @param  {boolean} [multiple = false]         Determines if a single element or multiple elements are returned
  *
  * @property {HTMLDocumentElement} html         A shortcut for the <code class=prettyprint>document</code> element
  * @property {HTMLHeadElement} head             A shortcut for the <code class=prettyprint>document.head</code> element
@@ -1075,29 +1085,57 @@ Object.defineProperties($, {
     },
 });
 
-/** Returns a boolean describing if the value is nullish or not.
+/**
+ * Returns a boolean describing if the value is nullish or not.
  * <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
  * @simply nullish(value:any?) → boolean
  *
  * @param  {any} value  The value to test
- * @return {boolean}    Returns <i>true</i> if the value is <i>null</i>
+ * @return {boolean}    Returns <i>true</i> if the value is <i>nullish</i>
  */
 function nullish(value) {
     return value === undefined || value === null || value instanceof Promise || Number.isNaN(value);
 }
 
-/** Returns a boolean describing if the value is nullish or not.
+/**
+ * Returns a boolean describing if the value is nullish or not.
  * <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
  * @simply defined(value:any?) → boolean
  *
  * @param  {any} value  The value to test
- * @return {boolean}    Returns <i>true</i> if the value is <b>not</b> <i>null</i>
+ * @return {boolean}    Returns <i>true</i> if the value is <b>not</b> <i>nullish</i>
  */
 function defined(value) {
     return !nullish(value);
 }
 
-/** Returns a Promised <b><code>setInterval</code></b>.
+/**
+ * Dereferences a list of objects and prepares them for garbage collection
+ * @simply PrepareForGarbageCollection(...objects:any) → void
+ *
+ * @param {...any} objects  The list of objects to dereference
+ */
+function PrepareForGarbageCollection(...objects) {
+    // @performance
+    for(let object of objects) {
+        if(object === void null || object === null)
+            continue;
+
+        if([Map, WeakMap, Set, WeakSet].find(constructor => object instanceof constructor))
+            object.clear();
+        else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor))
+            object.fill(0, 0, object.length - 1);
+        else if(object instanceof Object)
+            for(let key in object) {
+                // @deep → PrepareForGarbageCollection(object[key]);
+                delete object[key];
+            }
+        delete object;
+    }
+}
+
+/**
+ * Returns a Promised <b><code>setInterval</code></b>.
  * @simply when(condition:function<boolean>, ms:number?<integer>, ...args<any>) → Promise~any
  *
  * @param  {function} condition             This should return a <i>boolean-like</i>: {@link https://developer.mozilla.org/en-US/docs/Glossary/Truthy <i>truthy</i>} if the condition(s) have been met, or {@link https://developer.mozilla.org/en-US/docs/Glossary/Falsy <i>falsy</i>} if not.
@@ -1125,7 +1163,7 @@ function defined(value) {
  *                                          <br>Passes arguments (pipes) to the resolver (Promise)
  *
  * @property {function} defined             <div class="signature">(conditon:function, ms:number<span class="signature-attributes">opt</span>, ...conditions<span class="signature-attributes">repeatable</span>) → {Promise~any}</div>
- *                                          <br>Fulfills when the condition returns a <i>defined</i> value (<b>not</b> <i>null</i>).
+ *                                          <br>Fulfills when the condition returns a <i>defined</i> value (<b>not</b> <i>nullish</i>).
  *                                          <br>The definition of <i>nullish</i> is: <i><code>null</code></i>, <i><code>undefined</code></i>, <i><code>Promise</code></i>, and <i><code>NaN</code></i>.
  *                                          <br>Also contains: <b><code>when.defined.pipe</code></b> and <b><code>when.defined.thru</code></b>; each has the same argument signature as <code>when</code>
  * @property {function} nullish             <div class="signature">(conditon:function, ms:number<span class="signature-attributes">opt</span>, ...conditions<span class="signature-attributes">repeatable</span>) → {Promise~any}</div>
@@ -1158,13 +1196,13 @@ function defined(value) {
  *      , 7, 8, 9   // `...args`
  * )
  *      .then(status => // "pass8"
- *          document.write(message) // After 5s, writes the message to the document
+ *          document.write(message) // After 5s, writes the `message` to the document
  *      );
  *
  * // Using `when.true` and `when.false`
  * // When `seconds` is 10, fulfill the Promise with the `when.false` symbol
  * // We use this since we can't satisfy the condition with a falsy value
- * when(() => seconds > 10? when.false: false)
+ * when(() => (++seconds > 10? when.false: false), 1000)
  *      .then(status => // false
  *          console.log('The user is still active:', status) // After 10s, logs "The user is still active: false"
  *      );
@@ -1578,20 +1616,19 @@ try {
     /* Ignore the error... */
 }
 
-
 /**
- * Waits a set amount of time, then fulfills to a Promise with an optional argument.
+ * Waits a set amount of time, then fulfills to a Promise with an optional spread of arguments.
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element#utility_functions
  *
  * @simply wait(delay:number?<integer>, value:any?) → Promise~number
  *
  * @param  {number<integer>} [delay = 100]  The delay to wait for (in milliseconds)
- * @param  {any} value                      The argument to pass to the Promise
+ * @param  {any} [...values]                The arguments to pass to the Promise
  * @return {Promise~any}
  */
-function wait(delay = 100, value) {
-    return new Promise(resolve => setTimeout(resolve, delay, value));
+function wait(delay = 100, ...values) {
+    return new Promise(resolve => setTimeout.apply(this, [].concat(resolve, delay, values)));
 }
 
 /**
@@ -1604,7 +1641,7 @@ function wait(delay = 100, value) {
  *
  * @param  {function} executor          The function to execute after the delayed time
  * @param  {number<integer>} [ms = 0]   The amount of time to delay for (in milliseconds)
- * @param  {any} ...args                The arguments to pass onto the executor
+ * @param  {any} [...args]              The arguments to pass onto the executor
  * @return {function}                   A bound function of the executor
  */
 function delay(executor, ms = 0, ...args) {
@@ -2033,7 +2070,8 @@ prevent_fetch_dragging: if(top == window) {
 });
 }
 
-/** Facilitates communication and storage between extension contexts (background vs. content).
+/**
+ * Facilitates communication and storage between extension contexts (background vs. content).
  * @see https://developer.chrome.com/docs/extensions/reference/storage/
  *
  * @prop {function} get     <div class="signature">(properties:(string|array&lt;string&gt;)<span class="signature-attributes">opt, nullable</span>) → {Promise~object}</div>
@@ -2090,7 +2128,8 @@ let Settings = window.Settings = {
     },
 };
 
-/** Used to manage page storage using {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage localStorage} and {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API IndexedDB}.
+/**
+ * Used to manage page storage using {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage localStorage} and {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API IndexedDB}.
  *
  * @prop {function} save            <div class="signature"><span class="signature-attributes">async</span>(properties:object<span class="signature-attributes">opt, non-nullable</span>, callback:function<span class="signature-attributes">opt, nullable</span>) → {void}</div>
  *                                  <br>Saves data to the page's storage
@@ -2455,10 +2494,9 @@ function AsteriskFn(feature) {
     }$`, 'i');
 }
 
-// The following needs to be run once per page
+// The following needs to be run once per page //
 
-/**
- * @namespace window
+/** @namespace {object} window
  * @desc These belong to the current window (occasionally a sub-frame).
  */
 __STATIC__: {
@@ -2580,7 +2618,8 @@ __STATIC__: {
     window.Handlers = Handlers;
     window.Unhandlers = Unhandlers;
 
-    /** Registers a job to be run
+    /**
+     * Registers a job to be run
      * @simply RegisterJob(JobName:string, JobReason:string?) → Number<IntervalID>
      *
      * @param  {function} JobName               The job (function) to register and run
@@ -2590,13 +2629,17 @@ __STATIC__: {
     function RegisterJob(JobName, JobReason = 'default') {
         RegisterJob.__reason__ = JobReason;
 
+        if(JobReason?.unlike('default'))
+            console.log(`Registering job: ${ JobReason }`);
+
         return Jobs[JobName] ??= Timers[JobName] > 0?
             setInterval(Handlers[JobName], Timers[JobName]):
         -setTimeout(Handlers[JobName], -Timers[JobName]);
     }
     Handlers.__reasons__.set('RegisterJob', UUID.from(RegisterJob).value);
 
-    /** Unregisters (stops) a job
+    /**
+     * Unregisters (stops) a job
      * @simply UnregisterJob(JobName:string, JobReason:string?) → undefined
      *
      * @param  {string} JobName                 The job's name to unregister
@@ -2605,6 +2648,9 @@ __STATIC__: {
      */
     function UnregisterJob(JobName, JobReason = 'default') {
         UnregisterJob.__reason__ = JobReason;
+
+        if(JobReason?.unlike('default'))
+            console.log(`Unregistering job: ${ JobReason }`);
 
         let CurrentJob = Jobs[JobName];
 
@@ -2620,7 +2666,8 @@ __STATIC__: {
     }
     Unhandlers.__reasons__.set('UnregisterJob', UUID.from(UnregisterJob).value);
 
-    /** Restarts (unregisters, then registers) a job
+    /**
+     * Restarts (unregisters, then registers) a job
      * @simply RestartJob(JobName:string, JobReason:string?) → undefined
      *
      * @param  {string} JobName                 The job's name to restart
@@ -2629,6 +2676,9 @@ __STATIC__: {
      */
     function RestartJob(JobName, JobReason = 'default') {
         RestartJob.__reason__ = JobReason;
+
+        if(JobReason?.unlike('default'))
+            console.log(`Restarting job: ${ JobReason }`);
 
         new Promise((resolve, reject) => {
             try {

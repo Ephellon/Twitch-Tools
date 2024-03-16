@@ -9,14 +9,15 @@
  *                |_|       |__/
  */
 
-/**
- * @file Defines the clips logic for the extension. Used for all {@link # clips.twitch.tv/*} sites.
+/** @file Defines the clips logic for the extension. Used for all {@link # clips.twitch.tv/*} sites.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
  */
 
 ;
+
+window.IS_A_FRAMED_CONTAINER = (top != window);
 
 let here = parseURL(window.location.href);
 
@@ -227,7 +228,7 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
         window.FRAMED_CONTROLLER_READY = true;
 
         // Only re-execute if in an iframe
-        if(top != window) {
+        if(IS_A_FRAMED_CONTAINER) {
             // Observe [top] location changes
             LocationObserver: {
                 let { body } = document,
@@ -308,5 +309,5 @@ Clips__PAGE_CHECKER = setInterval(Clips__WAIT_FOR_PAGE = async() => {
 
 Clips__SETTING_RELOADER = setInterval(() => {
     for(let MAX_CALLS = 60; MAX_CALLS > 0 && window.REFRESH_ON_CHILD?.length; --MAX_CALLS)
-        RestartJob(window.REFRESH_ON_CHILD.pop());
+        RestartJob(window.REFRESH_ON_CHILD.pop(), 'clips-setting-reloader:max-calls');
 }, 250);

@@ -56,23 +56,37 @@
     - [ ] glyphs.js
     - [ ] settings.js
 - [ ] Change "Buy when available" channel point button to a selection dropdown
-- [-] Fix memory leaks!
+- [x] Fix memory leaks!
     - Most, big-name (+1GB) leaks were handled; others are commented out: `@performance`
         - Most atrocious offender was unused data in the `LIVE_REMINDERS__CHECKER` function, and other `new Search(...)` calls
     - The lesser leaks seem to freeze the tab(s) when removing them from memory in quick succession
     - [x] Caused in part by Hardware Acceleration
     - [x] Crap ton of iframes on **all** pages... Now only on Up Next tab
-    - [ ] Memory on all tabs will spike CPU usage >100% for 45s!
+    - [x] Memory on all tabs will spike CPU usage >100% for 45s!
 - [ ] Add option for DVR to record certain games
 - [ ] Parse and handle phone numbers - `@notImplemented`
 - [ ] Video/Canvas-swapping (when ads play)
 - [ ] Raids prevent naming videos (still saves, just not under the user-defined name)
 - [ ] Raids stick (don't leave) after going to raided channel; `referrer=raid` still present...
 - [ ] The Up Next owner tab will mimic the non-owner tab's URL?
+- [ ] Inherit away-mode volume from parent page (failed video iframe)
+- [ ] Properly handle `obit` & `redo` clashes
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.2)
+- Fixed issue with framed video container
+- Added "Live with..." rich tooltips to all tooltip logic
+- Fixed Job Stealing & Redo Channel bug
+- Added logic to focus input-box for prompts
+- Fixed issue with fetching cached stream-data
+- Modified `STREAMER.rank` logic
+- Added confirmation alert for saved videos
+- Added `PrepareForGarbageCollection` to fix memory leaks!
+- Modified Tooltip correction-adjustment values
+- Modified CSS destruction algorithms
+
 > [`5.33.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.1)
 - Minor changes to DVR logic to record over ads
 - Minor player corrections: video, location, etc.

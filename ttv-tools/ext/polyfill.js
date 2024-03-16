@@ -9,8 +9,7 @@
  *                   |___/          |__/
  */
 
-/**
- * @file Defines all polyfill logic for the extension. Used on most pages.
+/** @file Defines all polyfill logic for the extension. Used on most pages.
  * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
  * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
  * @module
@@ -29,27 +28,35 @@
  *
  */
 /** Parses a URL and returns its constituent components
+ *
  * @simply parseURL(url:string) → object
  *
- * @param {string<URL>} url The URL to parse
+ * @param {string<URL>} url     The URL to parse
+ *
+ * @property {RegExp} pattern   The controlling RegExp for parseURL
  *
  * @returns {{ href:string }}
  *
  * @example // Parsing a URL
- * let url = parseURL("https://user:pass@example.com:56/action?login=true#news");
- * // url.href → "https://user:pass@example.com:56/action.html?login=true#news"
+ * let url = parseURL("https://user:pass@www.example.com:56/action?login=true#news");
+ * // url.href → "https://user:pass@www.example.com:56/action.html?login=true#news"
  * // url.origin → "https://"
  * // url.protocol → "https:"
  * // url.scheme → "https"
  * // url.username → "user"
  * // url.password → "pass"
- * // url.host → "example.com:56"
- * // url.hostname → "example.com"
+ * // url.host → "www.example.com:56"
+ * // url.hostname → "www.example.com"
+ * // url.domainPath → ["com", "example", "www"]
  * // url.port → "56"
  * // url.pathname → "/action.html"
  * // url.filename → "action.html"
  * // url.search → "?login=true"
+ * // url.searchParameters → { login: "true" }
+ * // url.addSearch() → ƒ addSearch(parameters, overwrite)
+ * // url.delSearch() → ƒ delSearch(parameters)
  * // url.hash → "#news"
+ * // url.filename → "action"
  */
 function parseURL(url) {
     if(nullish(url))
@@ -154,12 +161,21 @@ function parseURL(url) {
 
 Object.defineProperties(parseURL, {
     pattern: {
-        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\B\.{1,2}\B(?=[a-z\d]|\/)|(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9]|)\d)(?:\.(?!$)|$)){4})(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
+        value: /(?<href>(?<origin>(?<protocol>(?<scheme>[a-z][\w\-]{2,}):)?(?:\/\/)?)?(?:(?<username>[^:\s]*):(?<password>[^@\s]*)@)?(?<host>(?<hostname>\B\.{1,2}\B(?=[a-z\d]|\/)|(?:[a-z][a-z-]*)(?:\.[a-z][a-z-\.]*|(?=\/))|(?:[^\s\$]\d[a-z\d-]*)(?:\.[a-z][a-z-\.]*)|(?:(?:25[0-5]|(?:2[0-4]|1\d|[1-9]|)\d)(?:\.(?!$)|$)){4}|localhost)(?:\:(?<port>\d+))?)(?<pathname>\/[^?#\s]*)?(?<search>\?[^#\s]*)?(?<hash>#[^\s]*)?)/i
     },
 });
 
-// Go to a page
-    // goto(url:string<URL>, target:string?, pass:object?) → undefined
+/**
+ * Navigates to the given URL. Accepts the same {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/open#target target} as <code>window.open</code>
+ *
+ * @simply goto(url:string<URL>, target:string?, pass:object?) → undefined
+ *
+ * @param  {string<URL>} url            The URL to navigate to
+ * @param  {string} [target = "_self"]  The target to control
+ * @param  {object} [pass = {}]         The options to pass onto {@link beforeleaving}
+ *
+ * @return {object<Window>}             Returns the new window object
+ */
 function goto(url, target = '_self', pass = {}) {
     window.beforeleaving?.(pass);
 
@@ -174,8 +190,150 @@ function goto(url, target = '_self', pass = {}) {
     return window.open(url, target);
 }
 
-// Create elements
-    // furnish(tagname:string?, attributes:object?, ...children<Element>) → Element
+/**
+ * A furnished {Element} with extra utilities.
+ * @typedef {object} FurnishedElement
+ *
+ * @property {function} and         <div class="signature">(...children<span class="signature-attributes">repeatable</span>) → {(Element|null)}</div>
+ *                                  <br>Adds a child (chaining down the tree). Returns the <strong>last accessed child</strong>.
+ * @property {function} css         <div class="signature">(...parameters<span class="signature-attributes">repeatable</span>) → {(Element|string~CSS)}</div>
+ *                                  <br>Modifies the element's CSS (via its {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/style style attribute}). If empty, returns the element's current style attribute value.
+ * @property {function} html        <div class="signature">(innerHTML<span class="signature-attributes">opt, nullable</span>) → {(Element|string~HTML)}</div>
+ *                                  <br>Modifies the element's innerHTML. If empty, returns the element's current innerHTML.
+ * @property {function} text        <div class="signature">(innerText<span class="signature-attributes">opt, nullable</span>) → {(Element|string)}</div>
+ *                                  <br>Modifies the element's innerText. If empty, returns the element's current innerText.
+ * @property {function} with        <div class="signature">(...children<span class="signature-attributes">repeatable</span>) → {(Element|null)}</div>
+ *                                  <br>Adds a child (chaining down the tree). Returns the <strong>current element</strong>.
+ * @property {function} setTooltip  <div class="signature">(text:string<span class="signature-attributes">opt</span>, fineTuning<span class="signature-attributes">opt</span>) → {Element}</div>
+ *                                  <br>Modifies (or adds) a {@link Tooltip} to the <strong>current element</strong>.
+ */
+
+/**
+ * Creates an element using a {CSSSelector}
+ *
+ * @simply furnish(tagname:string?, attributes:object?, ...children<Element>) → Element
+ *
+ * @param  {string<CSSSelector>} [tagname = "div"]  The (single) element to create
+ * @param  {object} [attributes = null]             The attributes to attach to the element. Attributes beginning with <code>on</code> are automatically turned into event-lsiteners. Attributes beginning with <code>@</code> are turned into {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*|data-attributes}
+ * @param  {(Element|null)} [...children:Element]   The children to attach to the element
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element
+ *
+ * @property {object} a            Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a A Element}
+ * @property {object} abbr         Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr ABBR Element}
+ * @property {object} address      Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address ADDRESS Element}
+ * @property {object} area         Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area AREA Element}
+ * @property {object} article      Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article ARTICLE Element}
+ * @property {object} aside        Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside ASIDE Element}
+ * @property {object} audio        Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio AUDIO Element}
+ * @property {object} b            Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b B Element}
+ * @property {object} base         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base BASE Element}
+ * @property {object} bdi          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi BDI Element}
+ * @property {object} bdo          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo BDO Element}
+ * @property {object} blockquote   Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote BLOCKQUOTE Element}
+ * @property {object} body         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body BODY Element}
+ * @property {object} br           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br BR Element}
+ * @property {object} button       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button BUTTON Element}
+ * @property {object} canvas       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas CANVAS Element}
+ * @property {object} caption      Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption CAPTION Element}
+ * @property {object} cite         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite CITE Element}
+ * @property {object} code         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code CODE Element}
+ * @property {object} col          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col COL Element}
+ * @property {object} colgroup     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup COLGROUP Element}
+ * @property {object} data         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data DATA Element}
+ * @property {object} datalist     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist DATALIST Element}
+ * @property {object} dd           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd DD Element}
+ * @property {object} del          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del DEL Element}
+ * @property {object} details      Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details DETAILS Element}
+ * @property {object} dfn          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn DFN Element}
+ * @property {object} dialog       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog DIALOG Element}
+ * @property {object} div          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div DIV Element}
+ * @property {object} dl           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl DL Element}
+ * @property {object} dt           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt DT Element}
+ * @property {object} em           Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em EM Element}
+ * @property {object} embed        Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed EMBED Element}
+ * @property {object} fieldset     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset FIELDSET Element}
+ * @property {object} figcaption   Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption FIGCAPTION Element}
+ * @property {object} figure       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure FIGURE Element}
+ * @property {object} footer       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer FOOTER Element}
+ * @property {object} form         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form FORM Element}
+ * @property {object} h1           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1 H1 Element}
+ * @property {object} h2           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h2 H2 Element}
+ * @property {object} h3           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h3 H3 Element}
+ * @property {object} h4           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h4 H4 Element}
+ * @property {object} h5           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h5 H5 Element}
+ * @property {object} h6           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h6 H6 Element}
+ * @property {object} head         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head HEAD Element}
+ * @property {object} header       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header HEADER Element}
+ * @property {object} hr           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr HR Element}
+ * @property {object} html         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html HTML Element}
+ * @property {object} i            Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i I Element}
+ * @property {object} iframe       Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe IFRAME Element}
+ * @property {object} img          Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img IMG Element}
+ * @property {object} input        Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input INPUT Element}
+ * @property {object} ins          Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins INS Element}
+ * @property {object} kbd          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd KBD Element}
+ * @property {object} label        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label LABEL Element}
+ * @property {object} legend       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend LEGEND Element}
+ * @property {object} li           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li LI Element}
+ * @property {object} link         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link LINK Element}
+ * @property {object} main         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main MAIN Element}
+ * @property {object} map          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map MAP Element}
+ * @property {object} mark         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark MARK Element}
+ * @property {object} menu         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu MENU Element}
+ * @property {object} meta         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta META Element}
+ * @property {object} meter        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter METER Element}
+ * @property {object} nav          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav NAV Element}
+ * @property {object} noscript     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript NOSCRIPT Element}
+ * @property {object} object       Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object OBJECT Element}
+ * @property {object} ol           Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol OL Element}
+ * @property {object} optgroup     Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup OPTGROUP Element}
+ * @property {object} option       Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option OPTION Element}
+ * @property {object} output       Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output OUTPUT Element}
+ * @property {object} p            Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p P Element}
+ * @property {object} picture      Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture PICTURE Element}
+ * @property {object} portal       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/portal PORTAL Element}
+ * @property {object} pre          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre PRE Element}
+ * @property {object} progress     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress PROGRESS Element}
+ * @property {object} q            Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q Q Element}
+ * @property {object} rp           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp RP Element}
+ * @property {object} rt           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt RT Element}
+ * @property {object} ruby         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby RUBY Element}
+ * @property {object} s            Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s S Element}
+ * @property {object} samp         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp SAMP Element}
+ * @property {object} script       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script SCRIPT Element}
+ * @property {object} section      Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section SECTION Element}
+ * @property {object} select       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select SELECT Element}
+ * @property {object} slot         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot SLOT Element}
+ * @property {object} small        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small SMALL Element}
+ * @property {object} source       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source SOURCE Element}
+ * @property {object} span         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span SPAN Element}
+ * @property {object} strong       Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong STRONG Element}
+ * @property {object} style        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style STYLE Element}
+ * @property {object} sub          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub SUB Element}
+ * @property {object} summary      Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary SUMMARY Element}
+ * @property {object} sup          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup SUP Element}
+ * @property {object} svg          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/svg SVG Element}
+ * @property {object} table        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table TABLE Element}
+ * @property {object} tbody        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody TBODY Element}
+ * @property {object} td           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td TD Element}
+ * @property {object} template     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template TEMPLATE Element}
+ * @property {object} textarea     Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea TEXTAREA Element}
+ * @property {object} tfoot        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot TFOOT Element}
+ * @property {object} th           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th TH Element}
+ * @property {object} thead        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead THEAD Element}
+ * @property {object} time         Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time TIME Element}
+ * @property {object} title        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title TITLE Element}
+ * @property {object} tr           Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr TR Element}
+ * @property {object} track        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track TRACK Element}
+ * @property {object} u            Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u U Element}
+ * @property {object} ul           Creates and returns an {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul UL Element}
+ * @property {object} var          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var VAR Element}
+ * @property {object} video        Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video VIDEO Element}
+ * @property {object} wbr          Creates and returns a {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr WBR Element}
+ *
+ * @return {FurnishedElement}      Returns the element with additonal methods and properties
+ */
 function furnish(tagname = 'div', attributes = null, ...children) {
     let options = (attributes ??= {}).is === true? { is: true }: null;
 
@@ -585,8 +743,16 @@ Object.defineProperties(furnish, {
     wbr: { value: function WBR(attributes) { return furnish('wbr', attributes) } },
 });
 
-/** Adds a CSS block to the DOM
+/**
+ * Adds a CSS (style) block to the DOM.
+ *
  * @simply AddCustomCSSBlock(name:string, block:string) → undefined
+ *
+ * @param {string} name                         The name of the block (used to delete the block)
+ * @param {string<CSS>} block                   The CSS (styling) to put within the block
+ * @param {Element} [container = document.body] The container to attach the new style elemnt to
+ *
+ * @return {undefined}
  */
 function AddCustomCSSBlock(name, block, container = document.body) {
     RemoveCustomCSSBlock(name);
@@ -597,8 +763,12 @@ function AddCustomCSSBlock(name, block, container = document.body) {
     container?.append(element);
 }
 
-/** Removes a CSS block from the DOM
+/**
+ * Removes a CSS (style) block from the DOM.
+ *
  * @simply RemoveCustomCSSBlock(name:string) → undefined
+ *
+ *
  */
 function RemoveCustomCSSBlock(name, container = document.body) {
     name = name.trim();
@@ -609,8 +779,39 @@ function RemoveCustomCSSBlock(name, container = document.body) {
     element?.remove();
 }
 
-// Gets the X and Y offset (in pixels)
-    // getOffset(element:Element) → Object<{ height:number, width:number, left:number, top:number, right:number, bottom:number }>
+/**
+ * An element's absolute offsets (in pixels).
+ * @typedef {object} AbsoluteOffsets
+ *
+ * @property {number} height                The element's height.
+ * @property {number} width                 The element's width.
+ * @property {array<number>} center         The element's center point: [x, y].
+ * @property {number} top                   The element's Y-offset (measured from the top-left).
+ * @property {number} right                 The element's X-offset (measured from the bottom-right).
+ * @property {number} bottom                The element's Y-offset (measured from the bottom-right).
+ * @property {number} left                  The element's X-offset (measured from the top-left).
+ * @property {boolean} textOverflow         Does the element's text overflow? See {@link https://stackoverflow.com/a/41988106/4211612}
+ * @property {boolean} textOverflowX        Does the element's text overflow on the x-axis (left/right)? See {@link https://stackoverflow.com/a/41988106/4211612}
+ * @property {boolean} textOverflowY        Does the element's text overflow on the y-axis (top/bottom)? See {@link https://stackoverflow.com/a/41988106/4211612}
+ * @property {boolean} screenOverflowX      Does the element overflow the screen on the x-axis (left/right)?
+ * @property {number} screenCorrectX        If the element overflows the screen on the x-axis, how far off is it?
+ * @property {boolean} screenOverflowY      Does the element overflow the screen on the y-axis (top/bottom)?
+ * @property {number} screenCorrectY        If the element overflows the screen on the y-axis, how far off is it?
+ * @property {boolean} screenOverflow       Does the element overflow the screen on any axis?
+ * @property {array<number>} screenCorrect  If the element overflows the screen on any axis, how far off is it: [x, y]?
+ */
+
+;
+
+/**
+ * Gets the element's X and Y offset (in pixels)
+ *
+ * @simply getOffset(element:Element) → Object<{ height:number, width:number, left:number, top:number, right:number, bottom:number }>
+ *
+ * @param  {Element} element    The element to inquire
+ *
+ * @return {AbsoluteOffsets}    The element's absolute offsets (in pixels)
+ */
 function getOffset(element) {
     let bounds = element.getBoundingClientRect(),
         { offsetHeight, scrollHeight, offsetWidth, scrollWidth } = element,
@@ -621,11 +822,11 @@ function getOffset(element) {
 
         center: [bounds.left + (width / 2), bounds.top + (height / 2)],
 
-        left:   bounds.left + (window.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        top:    bounds.top  + (window.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+        left:   bounds.left + (window.pageXOffset ?? 0) + (document.documentElement.scrollLeft ?? 0),
+        top:    bounds.top  + (window.pageYOffset ?? 0) + (document.documentElement.scrollTop  ?? 0),
 
-        right:  bounds.right  + (window.pageXOffset ?? document.documentElement.scrollLeft ?? 0) | 0,
-        bottom: bounds.bottom + (window.pageYOffset ?? document.documentElement.scrollTop  ?? 0) | 0,
+        right:  bounds.right  + (window.pageXOffset ?? 0) + (document.documentElement.scrollLeft ?? 0),
+        bottom: bounds.bottom + (window.pageYOffset ?? 0) + (document.documentElement.scrollTop  ?? 0),
 
         // https://stackoverflow.com/a/41988106/4211612
         textOverflow: (offsetWidth < scrollWidth || offsetHeight < scrollHeight),
@@ -635,19 +836,51 @@ function getOffset(element) {
 
     Object.defineProperties(offset, {
         screenOverflowX: { value: (offset.left < 0 || offset.right > innerWidth) },
+        screenOverflowFromX: { value: [(offset.left < 0? 'left': ''), (offset.right > innerWidth? 'right': '')].filter(s => s.length > 0) },
         screenCorrectX: { value: (offset.left < 0? offset.left: offset.right > innerWidth? innerWidth - offset.right: 0) },
+
         screenOverflowY: { value: (offset.top < 0 || offset.bottom > innerHeight) },
+        screenOverflowFromY: { value: [(offset.top < 0? 'top': ''), (offset.bottom > innerWidth? 'bottom': '')].filter(s => s.length > 0) },
         screenCorrectY: { value: (offset.top < 0? offset.top: offset.bottom > innerHeight? innerHeight - offset.bottom: 0) },
     });
 
+    // console.log(element, offset);
+
     return Object.defineProperties(offset, {
         screenOverflow: { value: offset.screenOverflowX || offset.screenOverflowY },
+        screenOverflowFrom: { value: [offset.screenOverflowFromX, offset.screenOverflowFromY].flat() },
         screenCorrect: { value: [offset.screenCorrectX, offset.screenCorrectY] },
+        screenCorrectAll: {
+            value: {
+                top: (offset.screenOverflowFromY.includes('top')? offset.top: 0),
+                right: (offset.screenOverflowFromX.includes('right')? innerWidth - offset.center.at(0): 0),
+                bottom: (offset.screenOverflowFromY.includes('bottom')? innerHeight - offset.center.at(1): 0),
+                left: (offset.screenOverflowFromX.includes('left')? offset.left: 0),
+            }
+        },
     });
 }
 
-// Pushes parameters to the URL's search
-    // addToSearch(newParameters:object, reload:boolean?, location:object<Location>?) → string<URL-Search>
+/**
+ * The search parameters of a URL, also called a "query string," that is&mdash;a string containing a '?' followed by the parameters of the URL.
+ * @typedef {object} URLSearch
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/URL/search
+ */
+
+;
+
+/**
+ * Pushes parameters to the URL's search.
+ *
+ * addToSearch(newParameters:object, reload:boolean?, location:object<Location>?) → string<URL-Search>
+ *
+ *
+ * @param  {object} newParameters                   The parameters to add to the URL
+ * @param  {boolean} [reload = false]               Should the page be forcibly reloaded or not?
+ * @param  {object} [location = window.location]    The location object to apply the new parameters to
+ *
+ * @return {string<URLSearch>}                      The new URL
+ */
 function addToSearch(newParameters, reload = false, location = window.location) {
     let url = parseURL(location).addSearch(newParameters, true);
 
@@ -659,8 +892,18 @@ function addToSearch(newParameters, reload = false, location = window.location) 
     return url.search;
 }
 
-// Removevs parameters from the URL's search
-    // removeFromSearch(keys:array, reload:boolean?, location:object<Location>?) → string<URL-Search>
+/**
+ * Removes parameters to the URL's search.
+ *
+ * removeFromSearch(keys:array, reload:boolean?, location:object<Location>?) → string<URL-Search>
+ *
+ *
+ * @param  {array<string>} keys                     The parameters to remove from the URL
+ * @param  {boolean} [reload = false]               Should the page be forcibly reloaded or not?
+ * @param  {object} [location = window.location]    The location object to remove the parameters from
+ *
+ * @return {string<URLSearch>}                      The modified URL
+ */
 function removeFromSearch(keys, reload = false, location = window.location) {
     let url = parseURL(location).delSearch(keys);
 
@@ -672,8 +915,33 @@ function removeFromSearch(keys, reload = false, location = window.location) {
     return url.search;
 }
 
-// Convert milliseconds into a human-readable string
-    // toTimeString(milliseconds:number?, format:string?) → string
+/** @enum toTimeString.format
+ * @option natural
+ * @option clock
+ * @option readable
+ * @option short
+ * @option short-epoch
+ * @option epoch
+ * @option long-epoch
+ */
+
+/**
+ * Convert milliseconds into a human-readable string.
+ *
+ * @simply toTimeString(milliseconds:number?, format:string?) → string
+ *
+ * @param  {number} [milliseconds = 0]      The number to convert
+ * @param  {string} [format = "natural"]    The format to return the result in
+ *
+ * @return {string}                         The formatted text of the number given
+ *
+ * @example
+ * let readable = toTimeString(3680000, "readable");
+ * // Example: 3_680_000 (61 minutes, 20 seconds)
+ * // SYNTAX:  TOTAL, ROUNDED                  | TOTAL, NOT ROUNDED                            | REMAINDER, LEADING ZERO   | REMAINDER, NO LEADING ZERO    | IF TOTAL (ROUNDED) > 0; append the value then the text following the `=`
+ * // INPUT:   ~hour_h ~minutes_m ~seconds_s   | ?hour_h ?minutes_m ?seconds_s                 | !hour:!minutes:!seconds   | &hour:&minutes:&seconds       | <~days=d, ><?hours=h, ><!minutes=m, ><&seconds=s >
+ * // OUTPUT:  1h 61m 3680s                    | 1.0222222222222221h 61.333333333333336m 3680s | 01:01:20                  | 1:1:20                        | 1.0222222222222221h, 01m, 20s
+ */
 function toTimeString(milliseconds = 0, format = 'natural') {
     let second = 1000,
         minute = 60 * second,
@@ -848,6 +1116,14 @@ function parseTime(time = '', type = null) {
             case 'day':
                 ms = parseInt(time) * 1000 * 60 * 60 * 24;
                 break;
+
+            case 'wee':
+                ms = parseInt(time) * 1000 * 60 * 60 * 24 * 7;
+                break;
+
+            case 'yea':
+                ms = parseInt(time) * 1000 * 60 * 60 * 24 * 7 * 52;
+                break;
         }
     } else {
         let units = [1000, 60, 60, 24, 365].map((unit, index, array) => (array.slice(0, index).map(u => unit *= u), unit));
@@ -863,7 +1139,7 @@ function parseTime(time = '', type = null) {
 }
 
 Object.defineProperties(parseTime, {
-    pattern: { value: /(\b\d\s*(?:d(?:ay)?|h(?:our)?|m(?:in(?:ute)?)?|s(?:ec(?:ond)?)?)s?\b)/i }
+    pattern: { value: /(\b\d\s*(?:y(?:(?:ea)?r)?|w(?:(?:ee)?k)?|d(?:a?y)?|h(?:(?:ou)?r)?|m(?:in(?:ute)?)?|s(?:ec(?:ond)?)?)s?\b)/i }
 });
 
 // Convert boolean values
@@ -1060,7 +1336,7 @@ function autocomplete(element, options) {
                         onmouseup(event) {
                             let self = event.target;
 
-                            self.closest('[action]').querySelector('.autocomplete').value = decodeHTML($('input', self).value);
+                            self.closest('[action]').querySelector('.autocomplete').value = decodeHTML($('input', self)?.value ?? '');
 
                             autocomplete.closeList();
                         },
@@ -1892,14 +2168,23 @@ Element.prototype.addToAttr ??= function addToAttr(attribute, value = '') {
     // Element..modStyle(value:string?, important:boolean?, deleted:boolean?, innate:boolean?) → undefined
 Element.prototype.modStyle ??= function modStyle(value = '', important = false, deleted = false, innate = false) {
     let _old = this.modStyle.destruct(this.getAttribute('style')),
-        _new = this.modStyle.destruct(value);
+        _new = this.modStyle.destruct(value),
+        _val = this.style, _sty = getComputedStyle(this);
+
+    function compute(value) {
+        return value
+            .replace(/([@&])([\w\-]+)\b/gi, ($0, $1, $2, $$, $_) => ({
+                '@': _val,
+                '&': _sty,
+            }[$1][$2.replace(/\b-(\w)/g, ($0, $1, $$, $_) => $1.toUpperCase())] ?? ""));
+    }
 
     let final = [], innated = [];
     for(let [property, _o] of _old) {
         let _n = _new.get(property);
 
         if(defined(_n) && +_o.important <= +(_n.important || important)) {
-            let declaration = [property,_n.value].join(':') + (_n.important || important? '!important': '');
+            let declaration = [property,compute(_n.value)].join(':') + (_n.important || important? '!important': '');
 
             final.push(declaration);
 
@@ -1918,7 +2203,7 @@ Element.prototype.modStyle ??= function modStyle(value = '', important = false, 
     }
 
     for(let [property, _n] of _new) {
-        let declaration = [property,_n.value].join(':') + (_n.important || important? '!important': '');
+        let declaration = [property,compute(_n.value)].join(':') + (_n.important || important? '!important': '');
 
         final.push(declaration);
 
@@ -1986,11 +2271,11 @@ Object.defineProperties(Element.prototype.modStyle, {
                         modifiers = { important: false, delete: false, innate: false };
                     let KEEPERS = 'important'.split(' ');
 
-                    for(let regexp = RegExp(`!(${ Object.keys(modifiers) })$`, 'gi'), max = 3; --max > 0;)
-                        value = value.replace(regexp, ($0, $1) => {
-                            modifiers[$1] = true; // Could use `Object.defineProperty` but would throw on repeat... CSS will not
+                    for(let regexp = RegExp(`!(${ Object.keys(modifiers).join('|') })$`, 'gi'), max = Object.keys(modifiers).length; --max > 0;)
+                        value = value.replace(regexp, ($0, $1, $$, $_) => {
+                            modifiers[$1.toLowerCase()] = true; // Could use `Object.defineProperty` but would throw on repeat... CSS will not
 
-                            return (KEEPERS.contains($1)? $1 + ' ': '');
+                            return '';
                         });
                     value = value.trim();
 
@@ -2356,7 +2641,7 @@ String.prototype.distanceFrom ??= function distanceFrom(that = '') {
                 track[j - 1][i] + 1,
 
                 // Substitution
-                track[j - 1][i - 1] + +(A[i - 1] !== B[j - 1]),
+                track[j - 1][i - 1] + +(A[i - 1] !== B[j - 1])
             );
 
     return track[b][a];
@@ -2517,6 +2802,7 @@ class Recording {
             controller: { value: controller, configurable, writable, enumerable },
             proxy: { value: canvas, configurable, writable, enumerable },
 
+            maxTime: { value: maxTime, configurable, writable },
             name: { value: name, configurable, writable },
             data: {
                 get() {
@@ -2524,6 +2810,8 @@ class Recording {
                 },
 
                 set(value) {
+                    value = Number.isNaN(value)? 0: value;
+
                     return this.blobs.slice(this.slice = value);
                 },
             },
@@ -2549,6 +2837,7 @@ class Recording {
         Object.defineProperties(blobs, {
             controller: { value: controller, configurable, writable, enumerable },
 
+            maxTime: { value: maxTime, configurable, writable },
             name: { value: name, configurable, writable },
 
             guid: { value: guid, configurable, writable },
@@ -2620,6 +2909,7 @@ class Recording {
         Object.defineProperties(self, {
             controller: { value: controller, configurable, writable, enumerable },
 
+            maxTime: { value: maxTime, configurable, writable },
             name: { value: name, configurable, writable },
             as: { value: as, configurable, writable },
 
@@ -2705,8 +2995,6 @@ class Recording {
 
                     as ??= this.as ?? new ClipName;
 
-                    // $notice(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blobs, signal, download: [as, MIME_Types.find(source.mimeType)] });
-
                     if(Recording.__LINKS__.has(this.guid))
                         return Recording.__LINKS__.get(this.guid);
 
@@ -2716,11 +3004,15 @@ class Recording {
                         throw `Unable to save clip. No recording data available.`;
 
                     let blob = new Blob(chunks, { type: chunks[0].type });
-                    let link = furnish('a', { href: URL.createObjectURL(blob), download: [as, MIME_Types.find(source.mimeType)].join('.') }, as);
+                    let link = furnish(`a[@saveName="${ as.replaceAll('"', '&quot;') }"]`, { href: URL.createObjectURL(blob), download: [as, MIME_Types.find(source.mimeType)].join('.') }, as);
+
+                    // $notice(`Saving recording (Recording.save): "${ as }"`, { recorder, source, blob, link, blobs, signal, download: [as, MIME_Types.find(source.mimeType)] });
 
                     link.click();
 
                     Recording.__LINKS__.set(this.guid, link);
+
+                    document.head.append(link.cloneNode(true));
 
                     return link;
                 },
@@ -2920,6 +3212,31 @@ HTMLVideoElement.prototype.copyFrame ??= function copyFrame() {
     return promise;
 };
 
+// Passes the current frame from a video element as an image blob
+    // HTMLVideoElement..passFrame() → Promise<Blob>
+HTMLVideoElement.prototype.passFrame ??= function passFrame() {
+    let { height, width, videoHeight, videoWidth } = this;
+
+    let canvas = furnish('canvas', { height: height ||= videoHeight, width: width ||= videoWidth }),
+        context = canvas.getContext('2d');
+
+    context.drawImage(this, 0, 0);
+
+    let promise = new Promise((resolve, reject) =>
+        canvas.toBlob(blob => {
+            try {
+                resolve(blob);
+            } catch(error) {
+                reject(error);
+            } finally {
+                canvas?.remove();
+            }
+        })
+    );
+
+    return promise;
+};
+
 // Copies the current image to the clipboard
     // HTMLImageElement..copy() → Promise<boolean>
     // HTMLPictureElement..copy() → Promise<boolean>
@@ -3039,11 +3356,11 @@ class CSSObject {
                     modifiers = { important: false, delete: false, innate: false };
                 let KEEPERS = 'important'.split(' ');
 
-                for(let regexp = RegExp(`!(${ Object.keys(modifiers) })$`, 'gi'), max = 3; --max > 0;)
-                    value = value.replace(regexp, ($0, $1) => {
-                        modifiers[$1] = true; // Could use `Object.defineProperty` but would throw on repeat... CSS will not
+                for(let regexp = RegExp(`!(${ Object.keys(modifiers).join('|') })$`, 'gi'), max = Object.keys(modifiers).length; --max > 0;)
+                    value = value.replace(regexp, ($0, $1, $$, $_) => {
+                        modifiers[$1.toLowerCase()] = true; // Could use `Object.defineProperty` but would throw on repeat... CSS will not
 
-                        return (KEEPERS.contains($1)? $1 + ' ': '');
+                        return '';
                     });
                 value = value.trim();
 
@@ -4334,6 +4651,12 @@ Number.prototype.floorToNearest ??= function floorToNearest(number) {
     return this - (this % number);
 };
 
+// Raises a number to the nearest X
+    // Number..ceilToNearest(number:number) → number
+Number.prototype.ceilToNearest ??= function ceilToNearest(number) {
+    return (this - (this % number)) + (number % this);
+};
+
 // Clamps (keeps) a number between two points
     // Number..clamp(min:number, max:number?) → number
 Number.prototype.clamp ??= function clamp(min, max) {
@@ -4363,6 +4686,7 @@ Number['#Math'] = (parent => {
             continue;
 
         Number.prototype[method] = function(...parameters) {
+            // Cannot use `$.apply` as it doesn't pass `this` correctly
             return $(this, ...parameters);
         };
     }
@@ -4404,9 +4728,9 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
     // There are X number of items
     else {
         // Ends with a <consonant "y">, as in "century" → "centuries"
-        if(/([^aeiou])([y])$/i.test(string))
+        if(/([a-z])(?<![aeiou])([y])$/i.test(string))
         EndsWith_Consonant_Y: {
-            let { $1, $2 } = RegExp,
+            let { $1, $2, $3 } = RegExp,
                 $L = RegExp["$`"],
                 $T = {
                     "y": "ies",
@@ -6223,6 +6547,7 @@ function prompt(message = '', defaultValue = '') {
     document.body.append(container);
 
     $('.tt-prompt-input', container).value = defaultValue;
+    $('.tt-prompt-input', container).focus();
 
     let value = when.defined(() => {
         let element = $('.tt-prompt'),
