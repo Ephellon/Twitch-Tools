@@ -292,15 +292,37 @@ let // These are option names. Anything else will be removed
         'oauthToken',
     ];
 
-// Creates a new Twitch-style date input
-    // new DatePicker(defaultDate:Date, defaultStatus:boolean?, defaultTime:number?<hour{0...23}>, defaultDuration:number?<milliseconds>) → Promise<array[object]>
+/**
+ * An over-arching date-picker schema.
+ * @typedef {object} PickedDate
+ *
+ * @property {array<string~integer>} days   The days (0-indexed) for the schedule: <strong>0</strong> &rArr; <strong>Sunday</strong> ...  <strong>6</strong> &rArr; <strong>Saturday</strong>
+ * @property {string<integer>} duration     The duration of the schedule (in hours) for the schedule
+ * @property {string<boolean>} status       The state of the schedule: <strong>true</strong> &rArr; <code>ON</code>; <strong>false</strong> &rArr; <code>OFF</code>
+ * @property {string<integer>} time         The hour for the schedule to begin (24-hour, 0-indexed): <strong>0</strong> to <strong>23</strong> (<em>inclusive</em>)
+ */
+
+/**
+ * Creates a new Twitch-style date input for schedules.
+ * @author GitHub {@link https://github.com/ephellon @ephellon}
+ *
+ * @simply new DatePicker(defaultDate:Date?, defaultStatus:boolean?, defaultTime:number?<hour{0...23}>, defaultDuration:number?<milliseconds>) → Promise<array[object]>
+ */
 class DatePicker {
     static values = [];
     static weekdays = 'Sun Mon Tue Wed Thu Fri Sat'.split(' ');
     static months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
+    /** @constructor
+     *
+     * @param  {Date} [defaultDate]                     The date to highlight and use
+     * @param  {boolean} [defaultStatus = false]        The default state for the scheduler: <strong>true</strong> &rArr; <code>ON</code>; <strong>false</strong> &rArr; <code>OFF</code>
+     * @param  {number<integer>} [defaultTime = null]   The hour to use (24-hour, 0-indexed): <strong>0</strong> to <strong>23</strong> (<em>inclusive</em>)
+     * @param  {number<integer>} [defaultDuration = 1]  The default duration (in hours): <strong>1</strong> to <strong>168</strong> (<em>inclusive</em>)
+     * @return {PickedDate}                             A promised array containing the user's preferred schedule options
+     */
     constructor(defaultDate, defaultStatus = false, defaultTime = null, defaultDuration = 1) {
-        let date = +new Date(defaultDate ?? new Date),
+        let date = +new Date(defaultDate ?? +new Date),
             h = 60 * 60 * 1000,
             d = 24 * h,
             f = furnish;
@@ -471,21 +493,38 @@ class DatePicker {
     }
 }
 
-// FIX-ME: Command Maker
-// Creates a new Twitch-style command input
-    // new CommandMaker(defaultName:string, defaultStatus:boolean?, defaultLevel:number?<Command-Authority>, defaultCooldown:number?<seconds>, defaultType:string?) → Promise<array[object]>
+/**
+ * An over-arching command-maker schema.
+ * @typedef {object} Command
+ *
+ * @property {string<integer>} authority        The authority level that user's need to use the command
+ * @property {string<array>} command            The command and aliases (comma-separated)
+ * @property {string<integer~seconds>} cooldown The cooldown time (in seconds)
+ * @property {string} reply                     The reply to send when the command is invoked
+ * @property {string} type                      The type of command: <strong>reply</strong>, <strong>announcement</strong>, <strong>recurring</strong>
+ */
+
+/** @FIXME
+ * Creates a new Twitch-style command input.
+ * @author GitHub {@link https://github.com/ephellon @ephellon}
+ *
+ * @simply new CommandMaker(defaultName:string, defaultStatus:boolean?, defaultLevel:number?<Command-Authority>, defaultCooldown:number?<seconds>, defaultType:string?) → Promise<array[object]>
+ */
 class CommandMaker {
     static values = [];
-    /** User Levels → StreamElements | NightBot
-     * Everyone         →   100  | everyone
-     * Subscriber       →   250  | subscriber
-     * Regular          →   300  | regular
-     * VIP              →   400  | twitch_vip
-     * Moderator        →   500  | moderator
-     * Super Moderator  →   1000 | admin
-     * Broadcaster      →   1500 | owner
+    /**
+     * An over-arching authority-level schema. Used by StreamElements and NightBot.
+     * @typedef {enum} AuthorityLevels
+     *
+     * @property {number} everyone      <strong>100</strong>  &rarr; <em>Anyone</em>, <em>Everyone</em>
+     * @property {number} follower      <strong>250</strong>  &rarr; <em>Follower</em>, <em>Regular</em>
+     * @property {number} subscriber    <strong>300</strong>  &rarr; <em>Subscriber</em>
+     * @property {number} vip           <strong>400</strong>  &rarr; <em>VIP</em>
+     * @property {number} moderator     <strong>500</strong>  &rarr; <em>Moderator</em>
+     * @property {number} admin         <strong>1000</strong> &rarr; <em>Administrator</em>, <em>Super Moderator</em>
+     * @property {number} owner         <strong>1500</strong> &rarr; <em>Broadcaster</em>, <em>Owner</em>
      */
-    static levels = [['Everyone',100],['Follower',250],['Subscriber',300],['VIP',400],['Moderator',500],['Admin',1000],['Owner',1500]].map(([who, authority]) => [new String(who), authority]).map(([who, authority]) =>
+    static levels = [['Everyone',100],['Follower',250],['Subscriber',300],['VIP',400],['Moderator',500],['Administrator',1000],['Owner',1500]].map(([who, authority]) => [new String(who), authority]).map(([who, authority]) =>
         CommandMaker[who.toLowerCase()] = Object.defineProperties(who, {
             find: {
                 value(value) {
@@ -525,6 +564,15 @@ class CommandMaker {
         owner: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
     };
 
+    /** @constructor
+     *
+     * @param  {string} [defaultName]                                                       The default command name
+     * @param  {boolean} [defaultStatus = true]                                             The default command-enabled status
+     * @param  {number<integer~AuthorityLevels>} [defaultLevel = CommandMaker.everyone]     The default authority-level for command usage
+     * @param  {number<integer~seconds>} [defaultCooldown = { user: 10, global: 3 }]        The cooldown time (in seconds)
+     * @param  {string} [defaultType = "reply"]                                             The command type: <strong>reply</strong>, <strong>announcement</strong>, <strong>recurring</strong>
+     * @return {Promise<array~Command>}                                                     A promised array containing commands
+     */
     constructor(defaultName, defaultStatus = true, defaultLevel = CommandMaker.everyone, defaultCooldown = { user: 10, global: 3 }, defaultType = 'reply') {
         let f = furnish;
         let locale = SETTINGS?.user_language_preference ?? 'en';
@@ -596,7 +644,7 @@ class CommandMaker {
                                         }),
 
                                         f.h4('Response'),
-                                        f(`input#aliases`, { placeholder: 'Reply...', type: 'text' }),
+                                        f(`input#reply`, { placeholder: 'Reply...', type: 'text' }),
                                         f('.subtitle', {
                                             style: 'margin-bottom: .5rem',
                                             innerHTML: `This is what will be replied to chat.`

@@ -27,6 +27,9 @@
  *
  *
  */
+
+;
+
 /** Parses a URL and returns its constituent components
  *
  * @simply parseURL(url:string) → object
@@ -1419,6 +1422,8 @@ function autocomplete(element, options) {
  *                                    __/ | |
  *                                   |___/|_|
  */
+
+;
 
 // Filters an object by its keys using any number of iterable sources
     // Object.filter(target, ...sources) → Object<target - #>
@@ -5044,6 +5049,9 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
  *
  *
  */
+
+;
+
 // Returns if an item is of an object class
     // isObj(object:any, ...or?<Function>) → boolean
 function isObj(object, ...or) {
@@ -5893,6 +5901,9 @@ setInterval(() => {
  *
  *
  */
+
+;
+
 // Displays an alert message
     // alert(message:string?) → Promise
 function alert(message = '') {
@@ -6118,6 +6129,9 @@ alert.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
  *
  *
  */
+
+;
+
 // Displays a confirmation message
     // confirm(message:string?) → boolean | null
 function confirm(message = '') {
@@ -6394,6 +6408,9 @@ confirm.timed ??= (message = '', milliseconds = 60_000, pausable = false) => {
  *                               | |
  *                               |_|
  */
+
+;
+
 // Prompts a message
     // prompt(message:string?, defaultValue:string?) → string | null
 function prompt(message = '', defaultValue = '') {
@@ -6688,6 +6705,9 @@ prompt.timed ??= (message = '', milliseconds = 60_000, pausable = true) => {
  *
  *
  */
+
+;
+
 // Presents a selection menu to the user
     // select(message:string?, options:array?|object?, multiple:boolean?) → string<number|array:number> | null
 function select(message = '', options = [], multiple = false) {
@@ -7218,6 +7238,9 @@ function compareVersions(oldVersion = '', newVersion = '', returnType) {
     http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
     m-mat@math.sci.hiroshima-u.ac.jp
 ***/
+
+;
+
 class MersenneTwister {
     #N = 624; #M = 397;         // Period parameters
     #MATRIX_A = 0x9908b0df;     // Constant vector A

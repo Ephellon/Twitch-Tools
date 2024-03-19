@@ -986,7 +986,7 @@ class Async {
  *                                              <br>Finds and returns an element based on its textual content
  * @property {function} getAllElementsByText    <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
  *                                              <br>Finds and returns multiple elements based on their textual content
- * @property {function} queryBy                 <div class="signature">(selectors:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element|null</div>
+ * @property {function} queryBy                 <div class="signature">(selectors:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
  *                                              <br>Finds and returns an array of elements in their selector order
  * @property {function} defined                 <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>, multiple:boolean<span class="signature-attributes">opt</span>) → boolean</div>
  *                                              <br>Returns whether or not a query selection is found or not. Returns <i>true</i> if any of the elements queried for exist.
@@ -1140,7 +1140,7 @@ function PrepareForGarbageCollection(...objects) {
  *
  * @param  {function} condition             This should return a <i>boolean-like</i>: {@link https://developer.mozilla.org/en-US/docs/Glossary/Truthy <i>truthy</i>} if the condition(s) have been met, or {@link https://developer.mozilla.org/en-US/docs/Glossary/Falsy <i>falsy</i>} if not.
  *                                          If you would like to pass the literal values <i>true</i> or <i>false</i>, use <b><code>when.true</code></b> or <b><code>when.false</code></b>.
- * @param  {number<integer>} [ms = 100]     This changes how often the conditon is checked for compliance
+ * @param  {number<integer>} [ms = 1]       This changes how often the conditon is checked for compliance
  * @param  {...any} args                    These are the arguments that will be passed to the condition function
  *
  * @property {Symbol} true                  Represents the <i>true</i> value
@@ -1208,7 +1208,7 @@ function PrepareForGarbageCollection(...objects) {
  *      );
  *
  */
-async function when(condition, ms = 100, ...args) {
+async function when(condition, ms = 1, ...args) {
     return new Promise((resolve, reject) => {
         let interval = setInterval(async args => {
             let value = await condition.apply(null, args);
@@ -1623,11 +1623,11 @@ try {
  *
  * @simply wait(delay:number?<integer>, value:any?) → Promise~number
  *
- * @param  {number<integer>} [delay = 100]  The delay to wait for (in milliseconds)
+ * @param  {number<integer>} [delay = 1]    The delay to wait for (in milliseconds)
  * @param  {any} [...values]                The arguments to pass to the Promise
  * @return {Promise~any}
  */
-function wait(delay = 100, ...values) {
+function wait(delay = 1, ...values) {
     return new Promise(resolve => setTimeout.apply(this, [].concat(resolve, delay, values)));
 }
 

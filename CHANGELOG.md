@@ -75,6 +75,11 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.2.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.2.1)
+- Fixed Greedy Raiding removal logic
+- Fixed issue with quality fetching and setting
+- Modifed default timings for `wait` and `when`
+
 > [`5.33.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.2)
 - Fixed issue with framed video container
 - Added "Live with..." rich tooltips to all tooltip logic

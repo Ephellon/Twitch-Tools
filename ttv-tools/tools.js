@@ -2083,33 +2083,29 @@ async function GetQuality() {
 
     let buttons = {
         get settings() {
-            return $('[data-a-target="player-settings-button"i]');
+            return $('[data-a-target*="player"i][data-a-target*="button"i]:is([data-a-target*="option"i], [data-a-target*="setting"i])');
         },
 
         get quality() {
-            return $('[data-a-target$="-item-quality"i]');
+            return $('[data-a-target*="player"i][data-a-target*="item"i]:is([data-a-target*="option"i], [data-a-target*="setting"i])');
         },
 
         get options() {
-            return $('[data-a-target$="-quality-option"i]');
+            return $.all('[data-a-target*="player"i][data-a-target*="item"i]');
         },
     };
 
-    await(async() => {
-        let { settings, quality, options } = buttons;
+    buttons.settings?.click();
 
-        if(nullish(quality) && nullish(options))
-            try {
-                settings?.click();
-            } catch(error) {
-                throw error;
-            };
-    })()
-        .then(() => { buttons?.quality?.click() })
-        .catch(error => { throw error });
+    await when.defined(() => buttons.settings)
+        .then(async() => {
+            await when.defined(() => buttons.quality)
+                .then(button => button.click());
+        })
+        .catch($error);
 
-    let qualities = $.all('[data-a-target$="-quality-option"i] input[type="radio"i]')
-        .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
+    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
+        .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }));
 
     let textOf = text => (text?.textContent ?? text?.value ?? text);
 
@@ -2140,8 +2136,7 @@ async function GetQuality() {
         source: { value: source, ...lock },
     });
 
-    if(defined(buttons.options))
-        buttons.settings.click();
+    buttons.settings?.click();
 
     return quality;
 }
@@ -2151,33 +2146,29 @@ async function GetQuality() {
 async function SetQuality(quality = 'auto', backup = 'source') {
     let buttons = {
         get settings() {
-            return $('[data-a-target="player-settings-button"i]');
+            return $('[data-a-target*="player"i][data-a-target*="button"i]:is([data-a-target*="option"i], [data-a-target*="setting"i])');
         },
 
         get quality() {
-            return $('[data-a-target$="-item-quality"i]');
+            return $('[data-a-target*="player"i][data-a-target*="item"i]:is([data-a-target*="option"i], [data-a-target*="setting"i])');
         },
 
         get options() {
-            return $('[data-a-target$="-quality-option"i]');
+            return $.all('[data-a-target*="player"i][data-a-target*="item"i]');
         },
     };
 
-    await(async() => {
-        let { settings, quality, options } = buttons;
+    buttons.settings?.click();
 
-        if(nullish(quality) && nullish(options))
-            try {
-                settings?.click();
-            } catch(error) {
-                throw error;
-            };
-    })()
-        .then(() => buttons?.quality?.click())
-        .catch(error => { throw error });
+    await when.defined(() => buttons.settings)
+        .then(async() => {
+            await when.defined(() => buttons.quality)
+                .then(button => button.click());
+        })
+        .catch($error);
 
-    let qualities = $.all('[data-a-target$="-quality-option"i] input[type="radio"i]')
-        .map(input => ({ input, label: input.nextElementSibling, uuid: input.id }));
+    let qualities = $.all('[data-a-target*="quality"i]:is([data-a-target*="option"i], [data-a-target*="setting"i]) input[type="radio"i]')
+        .map(input => ({ input, label: input.parentElement.querySelector(`label[for="${ input.id }"]`), uuid: input.id }));
 
     let textOf = text => (text?.textContent ?? text?.value ?? text);
 
@@ -2202,12 +2193,10 @@ async function SetQuality(quality = 'auto', backup = 'source') {
         /* Do nothing */;
     else if(defined(current?.input?.checked) && defined(desired?.input?.checked))
         /* The desired quality is available */
-        current.input.checked = !(desired.input.checked = !0);
+        desired.input.checked = !(current.input.checked = !1);
 
     desired?.input?.click?.();
-
-    if(defined(buttons.options))
-        buttons.settings.click();
+    buttons.settings?.click();
 
     return new Promise((resolve, reject) => {
         let checker = setInterval(() => {
@@ -4712,11 +4701,11 @@ let Initialize = async(START_OVER = false) => {
         let element, max_show_more = 10, max_show_less = 10, max_panel_size = 10;
 
         // Is the nav open?
-        let open = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
+        let alreadyOpen = $.defined('[data-a-target="side-nav-search-input"i], [data-a-target="side-nav-header-expanded"i]'),
             sidenav = $('[data-a-target="side-nav-arrow"i]');
 
         // Open the Side Nav
-        if(!open) // Only open it if it isn't already
+        if(!alreadyOpen) // Only open it if it isn't already
             sidenav?.click();
 
         // Click "show more" as many times as possible
@@ -4879,8 +4868,8 @@ let Initialize = async(START_OVER = false) => {
             element.click();
 
         // Close the Side Nav
-        if(!open) // Only close it if it wasn't open in the first place
-            sidenav?.click();
+        if(!alreadyOpen) // Only close it if it wasn't open in the first place
+            wait().then(() => sidenav?.click());
     }
 
     // Every channel
@@ -6389,7 +6378,7 @@ let Initialize = async(START_OVER = false) => {
         if(updateRecords) {
             let { sole } = STREAMER;
 
-            AutoClaimRewards[sole] = AutoClaimRewards[sole].filter(i => i).filter(i => i.unlike(id));
+            AutoClaimRewards[sole |= 0] = AutoClaimRewards[sole]?.filter(i => i)?.filter(i => i.unlike(id));
             Cache.save({ AutoClaimRewards });
         }
 
@@ -8839,7 +8828,7 @@ let Initialize = async(START_OVER = false) => {
                 $('[data-a-target="side-nav-arrow"i]')
                     .closest('[class*="expand"i]')
                     .querySelector('button')
-                    .click();
+                    ?.click();
             } catch(error) {
                 $warn("[Followed Channels] is missing. Reloading...");
 
@@ -11390,7 +11379,7 @@ let Initialize = async(START_OVER = false) => {
                 ?? $(`#tt-greedy-raiding--${ name }`)
                 ?? furnish(`iframe#tt-greedy-raiding--${ name }`, {
                     src: `./popout/${ name }/chat?hidden=true&parent=twitch.tv&current=${ STREAMER.name.equals(name) }&allow=greedy_raiding`,
-                    destroy: setTimeout(name => $(`#tt-greedy-raiding--${ name }`).remove(), 120_000, name),
+                    destroy: setTimeout(name => $(`#tt-greedy-raiding--${ name }`)?.remove(), 120_000, name),
 
                     // sandbox: `allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals`,
                 })
@@ -14923,7 +14912,7 @@ let Initialize = async(START_OVER = false) => {
             let playing = video.play();
 
             if(defined(playing))
-                playing.catch(error => { throw error });
+                playing.catch($error);
         } catch(error) {
             $error(error);
 
