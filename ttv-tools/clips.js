@@ -10,8 +10,8 @@
  */
 
 /** @file Defines the clips logic for the extension. Used for all {@link # clips.twitch.tv/*} sites.
- * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
- * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * <style>[pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[good]{background:#e8f0fe;color:#174ea6}[bad]{background:#fce8e6;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
  * @module
  */
 
@@ -98,8 +98,11 @@ let Clips__Initialize = async(START_OVER = false) => {
             title = new ClipName(2);
             author = USERNAME;
 
-            original = $(carryQuery = '[data-a-target*="label"i][data-a-target*="text"i]').closest('[style]');
+            original = $(carryQuery = '[data-a-target*="label"i][data-a-target*="text"i]')?.closest('[style]');
             placeBefore = original;
+
+            if(nullish(original))
+                return;
 
             $notice('Clip editor mode.');
         } else {

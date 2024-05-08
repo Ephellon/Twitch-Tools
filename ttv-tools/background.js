@@ -10,8 +10,8 @@
  */
 
 /** @file Describes all background functionality for the extension.
- * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
- * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * <style>[pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[good]{background:#e8f0fe;color:#174ea6}[bad]{background:#fce8e6;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
  * @module
  */
 
@@ -52,21 +52,21 @@
 /** @typedef {object} Tab
   * Find more information at "{@link https://developer.chrome.com/docs/extensions/reference/tabs/#type-Tab Tab}"
   * @property {boolean} active - Whether the tab is active in its window. Does not necessarily mean the window is focused.
-  * @property {boolean} [audible] - Whether the tab has produced sound over the past couple of seconds (but it might not be heard if also muted). Equivalent to whether the 'speaker audio' indicator is showing. <span .good .pill>Chrome 45+</span>
-  * @property {boolean} autoDiscardable - Whether the tab can be discarded automatically by the browser when resources are low. <span .good .pill>Chrome 54+</span>
-  * @property {boolean} discarded - Whether the tab is discarded. A discarded tab is one whose content has been unloaded from memory, but is still visible in the tab strip. Its content is reloaded the next time it is activated. <span .good .pill>Chrome 54+</span>
+  * @property {boolean} [audible] - Whether the tab has produced sound over the past couple of seconds (but it might not be heard if also muted). Equivalent to whether the 'speaker audio' indicator is showing. <span good pill>Chrome 45+</span>
+  * @property {boolean} autoDiscardable - Whether the tab can be discarded automatically by the browser when resources are low. <span good pill>Chrome 54+</span>
+  * @property {boolean} discarded - Whether the tab is discarded. A discarded tab is one whose content has been unloaded from memory, but is still visible in the tab strip. Its content is reloaded the next time it is activated. <span good pill>Chrome 54+</span>
   * @property {string} [favIconUrl] - The URL of the tab's favicon. This property is only present if the extension's manifest includes the "tabs" permission. It may also be an empty string if the tab is loading.
-  * @property {number} groupId - The ID of the group that the tab belongs to. <span .good .pill>Chrome 88+</span>
+  * @property {number} groupId - The ID of the group that the tab belongs to. <span good pill>Chrome 88+</span>
   * @property {number} [height] - The height of the tab in pixels.
   * @property {boolean} highlighted - Whether the tab is highlighted.
   * @property {number} [id] - The ID of the tab. Tab IDs are unique within a browser session. Under some circumstances a tab may not be assigned an ID; for example, when querying foreign tabs using the sessions API, in which case a session ID may be present. Tab ID can also be set to <b><code>chrome.tabs.TAB_ID_NONE</code></b> for apps and devtools windows.
   * @property {boolean} incognito - Whether the tab is in an incognito window.
   * @property {number} index - The zero-based index of the tab within its window.
-  * @property {MutedInfo} [mutedInfo] - The tab's muted state and the reason for the last state change. <span .good .pill>Chrome 46+</span>
+  * @property {MutedInfo} [mutedInfo] - The tab's muted state and the reason for the last state change. <span good pill>Chrome 46+</span>
   * @property {number} [openerTabId] - The ID of the tab that opened this tab, if any. This property is only present if the opener tab still exists.
-  * @property {string} [pendingUrl] - The URL the tab is navigating to, before it has committed. This property is only present if the extension's manifest includes the "tabs" permission and there is a pending navigation. <span .good .pill>Chrome 79+</span>
+  * @property {string} [pendingUrl] - The URL the tab is navigating to, before it has committed. This property is only present if the extension's manifest includes the "tabs" permission and there is a pending navigation. <span good pill>Chrome 79+</span>
   * @property {boolean} pinned - Whether the tab is pinned.
-  * @property {boolean} selected - Please use <b><code>tabs.Tab.highlighted</code></b>. <span .bad .pill>Deprecated</span>
+  * @property {boolean} selected - Please use <b><code>tabs.Tab.highlighted</code></b>. <span bad pill>Deprecated</span>
   * @property {string} [sessionId] - The session ID used to uniquely identify a tab obtained from the sessions API.
   * @property {TabStatus} [status] - The tab's loading status.
   * @property {string} [title] - The title of the tab. This property is only present if the extension's manifest includes the "tabs" permission.
@@ -93,7 +93,7 @@
 
 /** @typedef {object} ZoomSettings
   * Find more information at "{@link https://developer.chrome.com/docs/extensions/reference/tabs/#type-ZoomSettings ZoomSettings}"
-  * @property {number} [defaultZoomFactor] - Used to return the default zoom level for the current tab in calls to <b><code>tabs.getZoomSettings</code></b>. <span .good .pill>Chrome 43+</span>
+  * @property {number} [defaultZoomFactor] - Used to return the default zoom level for the current tab in calls to <b><code>tabs.getZoomSettings</code></b>. <span good pill>Chrome 43+</span>
   * @property {ZoomSettingsMode} [mode] - Defines how zoom changes are handled, i.e., which entity is responsible for the actual scaling of the page; defaults to automatic.
   * @property {ZoomSettingsScope} [scope] - Defines whether zoom changes persist for the page's origin, or only take effect in this tab; defaults to per-origin when in automatic mode, and per-tab otherwise.
   */

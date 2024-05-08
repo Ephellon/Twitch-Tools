@@ -10,8 +10,8 @@
  */
 
 /** @file Defines the page-specific logic for the extension. Used for all {@link # twitch.tv/*} sites.
- * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
- * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * <style>[pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[good]{background:#e8f0fe;color:#174ea6}[bad]{background:#fce8e6;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
  * @module
  */
 
@@ -78,7 +78,7 @@ top.onpagehide = ({ persisted }) => {
 
 // Twitch-wide errors
 when(() => top.TWITCH_INTEGRITY_FAIL, 5_000).then(() => {
-    let error = `<div hidden controller title="Twitch Integrity Fail">${ (new Date).toJSON() }</div>
+    let error = `<div hidden controller title="Twitch Integrity Fail" okay="OK" deny="OK. Do not show again">${ (new Date).toJSON() }</div>
     Unable to perform some Twitch-wide actions right now.
 
     <br><br>
@@ -94,7 +94,15 @@ when(() => top.TWITCH_INTEGRITY_FAIL, 5_000).then(() => {
     It is <strong>not</strong> recommended you follow the <a href="//help.twitch.tv/s/article/supported-browsers#troubleshooting" target=_blank>troubleshooting steps</a> but, you are free to do so if you wish.
     `;
 
-    alert.silent(error);
+    Cache.load('PREVENT_POPUPS', ({ PREVENT_POPUPS = {} }) => {
+        if(!parseBool(PREVENT_POPUPS?.integrity_fail))
+            confirm.silent(error).then(continueDisplaying => {
+                if(continueDisplaying === false)
+                    Cache.save({ PREVENT_POPUPS: { ...PREVENT_POPUPS, integrity_fail: true } });
+            });
+        else
+            alert.timed(error, 5_000, true);
+    });
 });
 
 /*** Setup (pre-init) - #MARK:classes #MARK:functions #MARK:methods
@@ -116,7 +124,7 @@ when(() => top.TWITCH_INTEGRITY_FAIL, 5_000).then(() => {
     // Balloon.prototype.addButton({ left:boolean?, icon:string?<Glyphs>, onclick:function?, attributes:object? }) → Element
     // Balloon.prototype.remove() → undefined
 class Balloon {
-    static #BALLOONS = new Map()
+    static #BALLOONS = new Map;
 
     constructor({ title, icon = 'play', iconAttr = {} }, ...jobs) {
         let f = furnish;
@@ -3781,7 +3789,7 @@ let Initialize = async(START_OVER = false) => {
                 Settings[setting] = null;
     }
 
-    window.GetNextStreamer =
+    top.GetNextStreamer =
     // Gets the next available channel (streamer)
         // GetNextStreamer(except:string?) → Object<Channel>
     function GetNextStreamer(except = '') {
@@ -5830,7 +5838,7 @@ let Initialize = async(START_OVER = false) => {
     Timers.auto_focus = -1000;
 
     Unhandlers.auto_focus = () => {
-        if(RestartJob.__reason__.unlike('modify'))
+        if(RestartJob.__reason__.noneOf('default', 'modify', 'reinit'))
             $.all('#tt-auto-focus-differences, #tt-auto-focus-stats')
                 .forEach(element => element.remove());
 
@@ -6811,11 +6819,8 @@ let Initialize = async(START_OVER = false) => {
                 });
             }
 
-            if(defined(handler)) {
-                $('button', handler).disabled = top.TWITCH_INTEGRITY_FAIL;
-
-                return;
-            }
+            if(defined(handler))
+                return void($('button', handler).disabled = top.TWITCH_INTEGRITY_FAIL);
 
             Buy_and_Record: if(nullish(container) && parseBool(Settings.video_clips__trophy)) {
                 let purchaseButton = $('[data-test-selector*="required"i][data-test-selector*="points"i]:empty')?.closest?.('button');
@@ -7274,7 +7279,7 @@ let Initialize = async(START_OVER = false) => {
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
                     .catch(error => {
-                        ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => !RegExp(url, 'i').test(FIRST_IN_LINE_HREF));
+                        ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.map(url => url?.toLowerCase?.()).isolate().filter(url => url?.length).filter(url => parseURL(url).pathname != parseURL(FIRST_IN_LINE_HREF).pathname);
                         FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
                         Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
@@ -7600,7 +7605,7 @@ let Initialize = async(START_OVER = false) => {
                                         Cache.remove(`data/${ name }`);
                                     });
 
-                                    // Correc the channel points...
+                                    // Correct the channel points...
                                     ChannelPoints[real] = ChannelPoints[name];
                                     delete ChannelPoints[name];
 
@@ -8610,16 +8615,20 @@ let Initialize = async(START_OVER = false) => {
         if(defined(FIRST_IN_LINE_JOB))
             [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-        if(UnregisterJob.__reason__.equals('default'))
+        if(UnregisterJob.__reason__.anyOf('default', 'reinit', 'job-destruction'))
             return;
 
-        if(defined(FIRST_IN_LINE_HREF))
-            FIRST_IN_LINE_HREF = '?';
+        // Wait 5s before deleteing everything...
+        // If the usr has turned the setting off, it'll still go thru; however, if if page is reloaded too fast nothing will happen
+        wait(5_000).then(() => {
+            if(defined(FIRST_IN_LINE_HREF))
+                FIRST_IN_LINE_HREF = '?';
 
-        ALL_FIRST_IN_LINE_JOBS = [];
-        FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
+            ALL_FIRST_IN_LINE_JOBS = [];
+            FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE();
 
-        Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+            Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE });
+        });
     };
 
     __FirstInLine__:
@@ -8799,7 +8808,7 @@ let Initialize = async(START_OVER = false) => {
         BAD_STREAMERS = cache.BAD_STREAMERS ?? "";
     });
 
-    Handlers.first_in_line_plus = () => {
+    Handlers.first_in_line_plus = async() => {
         new StopWatch('first_in_line_plus');
 
         let streamers = [...STREAMERS, STREAMER].filter(isLive).map(streamer => streamer.name).isolate().sort();
@@ -8823,20 +8832,23 @@ let Initialize = async(START_OVER = false) => {
             Cache.save({ BAD_STREAMERS });
 
             // removeFromSearch(['tt-err-chn']);
-        } else if(!/^User_Not_Logged_In_\d+$/.test(USERNAME) && $.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]')) {
-            try {
-                $('[data-a-target="side-nav-arrow"i]')
-                    .closest('[class*="expand"i]')
-                    .querySelector('button')
-                    ?.click();
-            } catch(error) {
+        } else if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]') && !/^User_Not_Logged_In_\d+$/.test(USERNAME)) {
+            $('[data-a-target="side-nav-arrow"i]')
+                ?.closest('[class*="expand"i]')
+                ?.querySelector('button')
+                ?.click();
+
+            wait(3000).then(() => {
+                if($.nullish('[id*="side"i][id*="nav"i] .side-nav-section[aria-label][tt-svg-label="followed"i] a[class*="side-nav-card"i]'))
+                    return;
+
                 $warn("[Followed Channels] is missing. Reloading...");
 
                 Cache.save({ BAD_STREAMERS: OLD_STREAMERS });
 
                 // Failed to get channel at...
                 addToSearch({ 'tt-err-chn': (+new Date).toString(36) }, true);
-            }
+            });
 
             return /* Fail "gracefully" */;
         }
@@ -11257,6 +11269,7 @@ let Initialize = async(START_OVER = false) => {
                     $log(`[RAIDING] There is a possiblity to collect bonus points. Do not leave the raid.`, parseURL(`${ location.origin }/${ to }`).addSearch({ referrer: 'raid', raided: true }, true).href);
 
                     addToSearch({ referrer: 'raid', raided: true });
+                    removeFromSearch(['redo']);
 
                     Cache.save({ LastRaid: { from, to, type: method } });
                     CONTINUE_RAIDING = true;
@@ -12505,7 +12518,7 @@ let Initialize = async(START_OVER = false) => {
             // Replaces ranges
             // 6 - 11P ET | 6:00 AM - 11:00 PM EST
             .replace(/\b(?<start>\d{1,2}(?::?\d\d)?)(?<premeridiem>\s*[ap]\.?m?\.?)?(?<delimeter>[\-\s]+)(?<stop>\d{1,2}(?::?\d\d)?)(?<postmeridiem>\s*[ap]\.?m?\.?)?\s*(?<timezone>\b(?:AOE|GMT|UTC|[A-Y]{1,4}T))\b/ig, ($0, start, preMeridiem, delimeter, stop, postMeridiem, timezone) => {
-                let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime ?? +new Date).getHours() > 12)] + 'M';
+                let autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime ?? +new Date).getHours() > 11)] + 'M';
 
                 postMeridiem ||= autoMeridiem;
                 preMeridiem ||= postMeridiem;
@@ -12620,31 +12633,40 @@ let Initialize = async(START_OVER = false) => {
                         year = now.getFullYear(),
                         month = now.getMonth() + 1,
                         day = now.getDate(),
-                        autoMeridiem = "AP"[+(new Date(STREAMER.data?.actualStartTime || now).getHours() > 12)];
+                        _hr_ = new Date(STREAMER.data?.actualStartTime || now).getHours(),
+                        autoMeridiem = "AP"[+(_hr_ > 11)];
 
                     if(offset.length > 0 && isNaN(parseInt(offset)))
                         continue;
 
                     let houl = hour = parseInt(hour);
+
                     hour += (
                         Date.isDST()?
-                            // Daylight Savings is inactive and Standard Time was detected
+                            // Daylight Savings is active and Standard Time was detected
                             -/\Bs?t$/i.test(timezone):
-                        // Daylight Savings is active and Daylight Time was detected
+                        // Daylight Savings is inactive and Daylight Time was detected
                         +/\Bdt$/i.test(timezone)
                     );
 
-                    hour -= (/^a/i.test(meridiem) && (hour >= 12)? 12: 0);
-                    hour += (/^p/i.test(meridiem) && (hour < 12)? 12: 0);
+                    if(meridiem[0]?.unlike(autoMeridiem)) {
+                        if(autoMeridiem == 'A')
+                            hour -= 12;
+                        else
+                            hour += 12;
+
+                        if(hour < 0)
+                            hour += 24;
+                    } else if(meridiem[0]?.equals(autoMeridiem)) {
+                        if(autoMeridiem == 'P' && hour < 13)
+                            hour += 12;
+                        else if(hour > 11)
+                            hour -= 12;
+                    }
+
                     hour %= 24;
 
                     timezone ||= (offset.length? 'GMT': '');
-
-                    // Change the meridiem
-                    if(hour < houl && !meridiem && (!(houl % 12) || autoMeridiem == 'P'))
-                        hour += 12;
-                    else if(hour > houl && !meridiem && (!(houl % 12) || autoMeridiem == 'A'))
-                        hour -= 12;
 
                     if(timezone.length) {
                         let name = timezone = timezone.toUpperCase().replace(/[^\w\+\-]+/g, '');
@@ -13396,9 +13418,6 @@ let Initialize = async(START_OVER = false) => {
 
         $.all('#tt-points-receipt, #tt-channel-point-ranking')
             .forEach(span => span?.parentElement?.remove());
-
-        if(UnregisterJob.__reason__.equals('modify'))
-            return;
     };
 
     let REDEMPTION_LISTENERS = {};
@@ -13635,7 +13654,7 @@ let Initialize = async(START_OVER = false) => {
 
     Unhandlers.point_watcher_placement = () => {
         $.all('.tt-point-amount')
-            .forEach(span => span?.remove());
+            .forEach(span => span.remove());
     };
 
     __PointWatcherPlacement__:
@@ -13690,7 +13709,7 @@ let Initialize = async(START_OVER = false) => {
                         image: { url: image },
 
                         backgroundColor: Color.destruct(backgroundColor).HEX,
-                        id: (realId ?? UUID.from([image, title, cost].join('|$|'), true).value),
+                        id: (realId ?? UUID.from([image, title.mutilate(), cost].join('|$|'), true).value),
                         type: (realId ?? "UNKNOWN"),
 
                         enabled: true,
@@ -14026,7 +14045,7 @@ let Initialize = async(START_OVER = false) => {
                     WATCH_TIME_TOOLTIP.innerHTML = toTimeString(time, 'short-epoch');
 
                 Cache.load(null, _ => {
-                    for(let [key, val] of Object.entries(_).filter((key, val) => /^WatchTimes\b/.test(key))) {
+                    for(let [key, val] of Object.entries(_).filter((key, val) => /^WatchTimes\/([\w\-]+)/.test(key))) {
                         fixer: if(UP_NEXT_ALLOW_THIS_TAB) {
                             if(key == CURRENT_WATCHTIME)
                                 break fixer;
@@ -14175,7 +14194,7 @@ let Initialize = async(START_OVER = false) => {
         live_time?.tooltip?.remove?.();
         clearInterval(live_time?.tooltipAnimation);
 
-        if(UnregisterJob.__reason__.equals('modify'))
+        if(UnregisterJob.__reason__.anyOf('modify', 'reinit'))
             return;
 
         Cache.save({ Watching: [] });
@@ -14462,9 +14481,9 @@ let Initialize = async(START_OVER = false) => {
             let AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
 
             AdBreak.then(event => {
-                let chunks = AdBreak.blobs;
+                let chunks = event.target.blobs;
 
-                $notice(`Adding chunks to main <video> @ ${ InsertChunksAt } |`, { blobs, chunks, event });
+                $notice(`Adding chunks to main <video> @ ${ InsertChunksAt }`, { blobs, chunks, event });
 
                 blobs.push(...chunks);
             });
@@ -14479,12 +14498,12 @@ let Initialize = async(START_OVER = false) => {
                     when.defined(() => $('[data-a-target*="ad-countdown"i]'))
                         .then(HandleAd);
 
-                    $notice(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini, blobs, chunks: mini?.getRecording('AUTO_DVR:AD_HANDLER')?.blobs });
+                    $notice(`Ad is done playing... ${ toTimeString((new Date) - main?.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini, blobs, chunks: mini?.getRecording('AUTO_DVR:AD_HANDLER')?.blobs });
                 });
 
             main.pauseRecording('AUTO_DVR');
 
-            $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() } |`, { main, mini });
+            $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini });
         };
 
         when.defined(() => $('[data-a-target*="ad-countdown"i]'))
@@ -16126,7 +16145,8 @@ if(top == window) {
 
                         // Save states...
                         let states = {
-                            mini: MiniPlayer?.dataset?.name,
+                            mini: (MiniPlayer?.dataset?.name),
+                            redo: (parseURL(window.location).searchParameters?.redo),
                         };
 
                         for(let key in states)
@@ -16500,8 +16520,8 @@ if(top == window) {
                         $notice(`Job stolen "${ name }" by "${ obit }" tab`);
 
                         // Can't be the next user if the job was stolen...
-                        if(GetNextStreamer?.cachedStreamer?.name?.equals(name))
-                            GetNextStreamer.cachedStreamer = null;
+                        if(top.GetNextStreamer?.cachedStreamer?.name?.equals(name))
+                            top.GetNextStreamer.cachedStreamer = null;
 
                         when.defined(name => $(`[id^="tt-balloon-job"i][name="${ name }"i]`), 100, name)
                             .then(element => {

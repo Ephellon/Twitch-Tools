@@ -3,6 +3,7 @@
 /.docs
 /.profiles
 /ttv-tools.moz
+/node_*
 
 # Ignore these files
 *.pem
@@ -10,3 +11,4 @@
 *.bat
 chrome*.zip
 .jsdocconfig
+-*.*

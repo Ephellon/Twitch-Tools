@@ -10,8 +10,8 @@
  */
 
 /** @file Defines the chat-specific logic for the extension. Used for all {@link # twitch.tv/chat/*} sites.
- * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
- * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * <style>[pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[good]{background:#e8f0fe;color:#174ea6}[bad]{background:#fce8e6;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
  * @module
  */
 
@@ -4245,7 +4245,7 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
             /* [data-a-page-loaded-name="PopoutChatPage"i] [class*="chat"i][class*="header"i] { display: none !important; } */
 
             #tt-auto-claim-bonuses .tt-z-above { display: none }
-            [data-plagiarism], [data-repetitive] { display: none }
+            :is([data-plagiarism], [data-repetitive]):not([data-resurrected]) { display: none }
             #tt-hidden-emote-container::after {
                 content: 'Collecting emotes...\\A Do not close this window';
                 text-align: center;
@@ -4323,8 +4323,8 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
 
             let mentions = message.split(/(@\S+)/).filter(s => s.startsWith('@')).map(s => s.slice(1).toLowerCase()),
                 style = $('[style]', handle)?.getAttribute('style') ?? '',
-                { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '').groups,
-                sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * (meridiem == 'PM'), minute, ':00'].join('')).toJSON();
+                { hour, minute, meridiem } = /(?<![#\$\.+:\d%‰]|\p{Sc})\b(?<hour>2[0-3]|[01]?\d)(?<minute>:[0-5]\d)?(?!\d*(?:\p{Sc}|[%‰]))[ \t]*(?<meridiem>[ap]m?(?!\p{L}|\p{N}))/iu.exec(handle?.parentElement?.textContent ?? '12:00AM').groups,
+                sent = new Date([(new Date).toLocaleDateString(), ' ', +hour + 12 * meridiem?.[0]?.equals('P'), minute, ':00'].join('')).toJSON();
 
             handle = author.replace(/([^]*)\((.+)\)[^]*/, ($0, $1, $2 = '', $$, $_) => {
                 author = $2 || $1;

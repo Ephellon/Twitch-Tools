@@ -71,10 +71,18 @@
 - [ ] The Up Next owner tab will mimic the non-owner tab's URL?
 - [ ] Inherit away-mode volume from parent page (failed video iframe)
 - [ ] Properly handle `obit` & `redo` clashes
+- [ ] First in Line will sometimes be stuck at 0s
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.3)
+- Modified Time Zone logic
+- Fixed issue clearing the First in Line queue by accident
+- Modified Live Reminder logic (sync → async)
+- Fixed issue with Auto-Claim Rewards
+- Fixed issue with "BAD STREAMER" logic
+
 > [`5.33.2.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.2.1)
 - Fixed Greedy Raiding removal logic
 - Fixed issue with quality fetching and setting

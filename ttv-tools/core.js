@@ -10,8 +10,8 @@
  */
 
 /** @file Defines all required logic for the extension. Used on all pages.
- * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
- * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * <style>[pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[good]{background:#e8f0fe;color:#174ea6}[bad]{background:#fce8e6;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
  */
 
 ;
@@ -593,7 +593,7 @@ class Tooltip {
             this.modStyle(fineTuning.style);
 
             if(correct.screenOverflowX)
-                this.modStyle(this.dataset.correctedXPosition ??= `transform:translate(calc(-50% + ${ correct.screenCorrectX }px));`);
+                this.modStyle(this.dataset.correctedXPosition ??= `transform:translate(calc(-50% + ${ Math.abs(correct.screenCorrectX) }px));`);
 
             // https://stackoverflow.com/a/75200868/4211612
             AddCustomCSSBlock(`tooltip#${ groupID }`, `.tooltip-layer[for^="${ groupID }"i]:has(~ .tooltip-layer[for^="${ groupID }"i]) { display: none }`, container);
@@ -982,9 +982,9 @@ class Async {
  *                                              <br>A shortcut for {@link https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener addEventListener}. Attached to <code class=prettyprint>document.body</code>
  * @property {function} all                     <div class="signature">(selector:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → Element[]</div>
  *                                              <br>Returns all queried elements, a shortcut for: <code class=prettyprint>$(selector, container, true)</code>
- * @property {function} getElementByText        <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → Element|null</div>
+ * @property {function} getElementByText        <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), container:Element<span class="signature-attributes">opt</span>, flags:string<span class="signature-attributes">opt</span>) → Element|null</div>
  *                                              <br>Finds and returns an element based on its textual content
- * @property {function} getAllElementsByText    <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), flags:string<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
+ * @property {function} getAllElementsByText    <div class="signature">(search:(string|RegExp|array&lt;(string|RegExp)&gt;), container:Element<span class="signature-attributes">opt</span>, flags:string<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
  *                                              <br>Finds and returns multiple elements based on their textual content
  * @property {function} queryBy                 <div class="signature">(selectors:(string|array|Element), container:Node<span class="signature-attributes">opt</span>) → array&lt;Element&gt;</div>
  *                                              <br>Finds and returns an array of elements in their selector order
@@ -1037,7 +1037,7 @@ Object.defineProperties($, {
     },
 
     getElementByText: {
-        value: Element.prototype.getElementByText.bind(document.documentElement),
+        value: (searchText, container = document.documentElement, flags = '') => Element.prototype.getElementByText.call(container, searchText, flags),
 
         writable: false,
         enumerable: false,
@@ -1045,7 +1045,7 @@ Object.defineProperties($, {
     },
 
     getAllElementsByText: {
-        value: Element.prototype.getAllElementsByText.bind(document.documentElement),
+        value: (searchText, container = document.documentElement, flags = '') => Element.prototype.getAllElementsByText.call(container, searchText, flags),
 
         writable: false,
         enumerable: false,
@@ -1121,15 +1121,24 @@ function PrepareForGarbageCollection(...objects) {
         if(object === void null || object === null)
             continue;
 
-        if([Map, WeakMap, Set, WeakSet].find(constructor => object instanceof constructor))
+        if([Map, WeakMap].find(constructor => object instanceof constructor)) {
+            for(let [key, obj] of object)
+                PrepareForGarbageCollection(obj);
             object.clear();
-        else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor))
+        } else if([Set, WeakSet].find(constructor => object instanceof constructor)) {
+            for(let obj of object)
+                PrepareForGarbageCollection(obj);
+            object.clear();
+        } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
             object.fill(0, 0, object.length - 1);
-        else if(object instanceof Object)
+        } else if(object instanceof Object) {
             for(let key in object) {
-                // @deep → PrepareForGarbageCollection(object[key]);
+                PrepareForGarbageCollection(object[key]);
+
                 delete object[key];
             }
+        }
+
         delete object;
     }
 }

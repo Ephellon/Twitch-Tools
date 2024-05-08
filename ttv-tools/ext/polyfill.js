@@ -10,8 +10,8 @@
  */
 
 /** @file Defines all polyfill logic for the extension. Used on most pages.
- * <style>[\.pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[\.good]{background:#e8f0fe66;color:#174ea6}[\.bad]{background:#fce8e666;color:#9f0e0e;}</style>
- * @author Ephellon Grey (GitHub {@link https://github.io/ephellon @ephellon})
+ * <style>[pill]{font-weight:bold;white-space:nowrap;border-radius:1rem;padding:.25rem .75rem}[good]{background:#e8f0fe;color:#174ea6}[bad]{background:#fce8e6;color:#9f0e0e;}</style>
+ * @author Ephellon Grey (GitHub {@link https://github.com/ephellon @ephellon})
  * @module
  */
 
@@ -42,7 +42,7 @@
  *
  * @example // Parsing a URL
  * let url = parseURL("https://user:pass@www.example.com:56/action?login=true#news");
- * // url.href → "https://user:pass@www.example.com:56/action.html?login=true#news"
+ * // url.href → "https://user:pass@www.example.com:56/action?login=true#news"
  * // url.origin → "https://"
  * // url.protocol → "https:"
  * // url.scheme → "https"
@@ -59,7 +59,6 @@
  * // url.addSearch() → ƒ addSearch(parameters, overwrite)
  * // url.delSearch() → ƒ delSearch(parameters)
  * // url.hash → "#news"
- * // url.filename → "action"
  */
 function parseURL(url) {
     if(nullish(url))
@@ -875,14 +874,14 @@ function getOffset(element) {
 /**
  * Pushes parameters to the URL's search.
  *
- * addToSearch(newParameters:object, reload:boolean?, location:object<Location>?) → string<URL-Search>
+ * @simply addToSearch(newParameters:object, reload:boolean?, location:object<Location>?) → string<URL-Search>
  *
  *
- * @param  {object} newParameters                   The parameters to add to the URL
- * @param  {boolean} [reload = false]               Should the page be forcibly reloaded or not?
- * @param  {object} [location = window.location]    The location object to apply the new parameters to
+ * @param  {(object|string|array<string>)} newParameters    The parameters to add to the URL
+ * @param  {boolean} [reload = false]                       Should the page be forcibly reloaded or not?
+ * @param  {object} [location = window.location]            The location object to apply the new parameters to
  *
- * @return {string<URLSearch>}                      The new URL
+ * @return {string<URLSearch>}                              The new URL
  */
 function addToSearch(newParameters, reload = false, location = window.location) {
     let url = parseURL(location).addSearch(newParameters, true);
@@ -898,7 +897,7 @@ function addToSearch(newParameters, reload = false, location = window.location) 
 /**
  * Removes parameters to the URL's search.
  *
- * removeFromSearch(keys:array, reload:boolean?, location:object<Location>?) → string<URL-Search>
+ * @simply removeFromSearch(keys:array, reload:boolean?, location:object<Location>?) → string<URL-Search>
  *
  *
  * @param  {array<string>} keys                     The parameters to remove from the URL
@@ -1097,6 +1096,8 @@ function toTimeString(milliseconds = 0, format = 'natural') {
     // parseTime(time:string, type:string?) → number
 function parseTime(time = '', type = null) {
     let ms = 0;
+
+    time += '';
 
     if(defined(type)) {
         switch(type.slice(0, 3).toLowerCase()) {
@@ -2568,6 +2569,15 @@ String.prototype.anyOf ??= function anyOf(...strings) {
     // String..unlike(value:any, caseSensitive:boolean?) → boolean
 String.prototype.unlike ??= function unlike(value, caseSensitive = false) {
     return !this.equals(value, caseSensitive);
+};
+
+// Compares strings (matches none)
+    // String..noneOf(strings:array<string>) → boolean
+String.prototype.noneOf ??= function noneOf(...strings) {
+    for(let string of strings)
+        if(this.unlike(string, false))
+            return true;
+    return false;
 };
 
 // Replaces text in the string
@@ -4753,23 +4763,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
         // Ends with anything else
         else
         EndsWith_Normal: {
-            let pattern = (
-                /^[A-Z][a-z]/.test(string)?
-                    'capped':
-                /^[A-Z]/.test(string)?
-                    'upper':
-                /^[a-z]/.test(string)?
-                    'lower':
-                ''
-            ) + (
-                /[a-z]\.[a-z\.]/i.test(string)?
-                    '-dotted':
-                /[a-z]\-[a-z\-]/i.test(string)?
-                    '-dashed':
-                /[a-z]\s[a-z\-]/i.test(string)?
-                    '-spaced':
-                ''
-            );
+            let pattern = toFormat.destruct(string);
 
             switch(string.toLowerCase().trim()) {
                 // alumnus → alumni
@@ -4874,6 +4868,12 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
                 case 'hippopotami': /* "hippopotami" is the plural of "hippopotamus" */
                 case 'hippopotamus': {
                     string = toFormat('hippopotami', pattern);
+                } break;
+
+                // igloo → igloos
+                case 'igloos': /* "igloos" is the plural of "igloo" */
+                case 'igloo': {
+                    string = toFormat('igloos', pattern);
                 } break;
 
                 // index → indices
@@ -4996,6 +4996,19 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
                     string = toFormat('women', pattern);
                 } break;
 
+                // yoyo → yoyos
+                case 'yoyos': /* "yoyos" is the plural of "yoyo" */
+                case 'yoyo': {
+                    string = toFormat('yoyos', pattern);
+                } break;
+
+                // Correct spelling of "yo-yo," the toy
+                // yo-yo → yo-yos
+                case 'yo-yos': /* "yo-yos" is the plural of "yo-yo" */
+                case 'yo-yo': {
+                    string = toFormat('yo-yos', pattern);
+                } break;
+
                 // No change
                 case 'aircraft':
                 case 'buffalo':
@@ -5018,6 +5031,9 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
                 // "Normal" operations
                 default: {
                     // "lunch" → "lunches"
+                    // "brush" → "brushes"
+                    // "potato" → "potatoes"
+                    // "fox" → "foxes"
                     if(/([cs]h|[osxz])$/i.test(string))
                         string += toFormat('es', pattern);
                     // "bus" → "busses"
@@ -5027,7 +5043,7 @@ String.prototype.pluralSuffix ??= function pluralSuffix(numberOfItems = 0, tail 
                     else if(/(is)$/i.test(string))
                         string = string.replace(RegExp.$1, toFormat('es', pattern));
                     // "criterion" → "criteria"
-                    else if(/(on)$/i.test(string))
+                    else if(/(?:[aeiou])(on)$/i.test(string))
                         string = string.replace(RegExp.$1, toFormat('a', pattern));
                     else
                         string += toFormat('s', pattern);
@@ -5062,12 +5078,13 @@ function isObj(object, ...or) {
 }
 
 // Returns a number formatted with commas
+    // comify(number:number, locale:string) → string
 function comify(number, locale = window.LANGUAGE) {
     return parseFloat(number).toLocaleString(locale);
 }
 
 // Returns a string reformatted
-    // toFormat(string:string|array, pattern:string)
+    // toFormat(string:string|array, pattern:string) → string
 function toFormat(string, patterns) {
     patterns = patterns.split('-');
 
@@ -5150,6 +5167,32 @@ function toFormat(string, patterns) {
     return string;
 }
 
+toFormat.destruct ??= function destruct(string) {
+    return [
+        /^[A-Z][a-z]/.test(string)?
+            'capped':
+        /^[A-Z]/.test(string)?
+            'upper':
+        /^[a-z]/.test(string)?
+            'lower':
+        ''
+    ,
+        /[\S]\s*\.\s*[\S]/i.test(string)?
+            'dotted':
+        /[\S]\s*\-\s*[\S]/i.test(string)?
+            'dashed':
+        /[\S]\s*\+\s*[\S]/i.test(string)?
+            'plused':
+        /[\S]\s[\S]/i.test(string)?
+            'spaced':
+        ''
+    ,
+        /[\S]\s{2,}[\S]/i.test(string)?
+            'padded':
+        ''
+    ].filter(str => str.length).join('-');
+};
+
 // https://stackoverflow.com/a/19176790/4211612
 // Returns the assumed operating system
     // GetOS(is:string?) → string | boolean
@@ -5216,29 +5259,7 @@ function GetMacro(keys = '', OS = null) {
     keys = (keys ?? '').trim();
     OS ??= GetOS();
 
-    let pattern = [
-        /^[A-Z][a-z]/.test(keys)?
-            'capped':
-        /^[A-Z]/.test(keys)?
-            'upper':
-        /^[a-z]/.test(keys)?
-            'lower':
-        ''
-    ,
-        /[\S]\s*\.\s*[\S]/i.test(keys)?
-            'dotted':
-        /[\S]\s*\-\s*[\S]/i.test(keys)?
-            'dashed':
-        /[\S]\s*\+\s*[\S]/i.test(keys)?
-            'plused':
-        /[\S]\s+[\S]/i.test(keys)?
-            'spaced':
-        ''
-    ,
-        /[\S]\s+[\S]/i.test(keys)?
-            'padded':
-        ''
-    ].filter(string => string.length).join('-');
+    let pattern = toFormat.destruct(keys);
 
     // Mouse buttons (emojis)
     let Mouse = {
