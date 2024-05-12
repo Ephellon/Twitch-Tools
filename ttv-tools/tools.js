@@ -2254,7 +2254,7 @@ Object.defineProperties(GetVolume, {
 function SetVolume(volume = 0.5) {
     let video = $('[data-a-target="video-player"i] video'),
         thumb = $('[data-a-target*="player"i][data-a-target*="volume"i]'),
-        slider = $('video ~ * .player-controls + * [style]');
+        slider = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls + * [style]');
 
     volume = parseFloat(volume?.toFixed?.(2) || 1);
 
@@ -6041,7 +6041,7 @@ let Initialize = async(START_OVER = false) => {
             // Return control when Lurking is engaged
             MAINTAIN_VOLUME_CONTROL = true;
 
-            let controls = $('video ~ * .player-controls');
+            let controls = $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls');
 
             if(defined(controls))
                 controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL;
@@ -6132,13 +6132,13 @@ let Initialize = async(START_OVER = false) => {
 
             MAINTAIN_VOLUME_CONTROL = !isTrusted;
 
-            $('video ~ * .player-controls').dataset.automatic = MAINTAIN_VOLUME_CONTROL;
+            $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls').dataset.automatic = MAINTAIN_VOLUME_CONTROL;
 
             SetVolume(volume);
         };
 
         // Set the color and control scheme
-        when.defined(() => $('video ~ * .player-controls'))
+        when.defined(() => $(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls'))
             .then(controls => controls.dataset.automatic = MAINTAIN_VOLUME_CONTROL);
 
         // Scheduling logic...
@@ -15999,7 +15999,7 @@ if(top == window) {
 
             // Observe the volume changes
             VolumeObserver: {
-                $.all('video ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])')
+                $.all(':is(video, [class*="video"i][class*="render"i]) ~ * .player-controls *:is([data-a-target*="volume"i], [data-a-target*="mute"i])')
                     .map(element => {
                         element.addEventListener('mousedown', ({ currentTarget, isTrusted }) => {
                             currentTarget.closest('.player-controls').dataset.isTrusted = isTrusted;
@@ -16423,19 +16423,19 @@ if(top == window) {
                         content: "Send to miniplayer (z) \\b7  Add to Live Reminders (r)";
                     }
 
-                    video ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
+                    :is(video, [class*="video"i][class*="render"i]) ~ * .player-controls :is([data-a-target*="mute"i] svg, [data-test-selector*="fill-value"i], [data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
                         transition: all 1s;
                     }
 
-                    video ~ * .player-controls[data-automatic="true"i] [data-a-target*="mute"i] svg {
+                    :is(video, [class*="video"i][class*="render"i]) ~ * .player-controls[data-automatic="true"i] [data-a-target*="mute"i] svg {
                         fill: var(--color-warn);
                     }
 
-                    video ~ * .player-controls[data-automatic="true"i] [data-test-selector*="fill-value"i] {
+                    :is(video, [class*="video"i][class*="render"i]) ~ * .player-controls[data-automatic="true"i] [data-test-selector*="fill-value"i] {
                         background-color: var(--color-warn);
                     }
 
-                    video ~ * .player-controls[data-automatic="true"i] :is([data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
+                    :is(video, [class*="video"i][class*="render"i]) ~ * .player-controls[data-automatic="true"i] :is([data-a-target$="slider"i]::-webkit-slider-thumb, [data-a-target$="slider"i]::-moz-range-thumb) {
                         border: var(--border-width-default) solid var(--color-warn);
                         background-color: var(--color-warn);
                     }

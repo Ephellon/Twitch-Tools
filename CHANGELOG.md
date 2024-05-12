@@ -76,6 +76,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.3.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.3.1)
+- Fixed volume control logic
+
 > [`5.33.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.3)
 - Modified Time Zone logic
 - Fixed issue clearing the First in Line queue by accident
