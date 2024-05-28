@@ -3475,7 +3475,7 @@ async function update() {
 
                         return live;
                     },
-                    name: $('img', element)?.alt,
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3515,7 +3515,7 @@ async function update() {
 
                         return live;
                     },
-                    name: $('img', element)?.alt,
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                 };
 
                 element.setAttribute('draggable', true);
@@ -3553,7 +3553,7 @@ async function update() {
 
                         return live;
                     },
-                    name: $('img', element)?.alt,
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                 };
 
                 element.setAttribute('draggable', true);
@@ -4009,7 +4009,7 @@ let Initialize = async(START_OVER = false) => {
 
                         return live;
                     },
-                    name: $('img', element)?.alt,
+                    name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                 };
 
                 element.setAttribute('draggable', true);
@@ -4758,7 +4758,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: $('img', element)?.alt,
+                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                         };
 
                         element.setAttribute('draggable', true);
@@ -4802,7 +4802,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: $('img', element)?.alt,
+                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                         };
 
                         element.setAttribute('draggable', true);
@@ -4843,7 +4843,7 @@ let Initialize = async(START_OVER = false) => {
 
                                 return live;
                             },
-                            name: $('img', element)?.alt,
+                            name: ($('img', element)?.alt ?? parseURL(element.href).pathname.slice(1)),
                         };
 
                         element.setAttribute('draggable', true);
@@ -8054,7 +8054,7 @@ let Initialize = async(START_OVER = false) => {
                     ?? ALL_CHANNELS.find(channel => parseURL(channel.href).pathname.equals('/' + name))
                     ?? (null
                         ?? new Search(name).then(Search.convertResults)
-                        ?? new Promise((resolve, reject) => reject(`Unable to perform search for "${ name }"`))
+                        ?? Promise.reject(`Unable to perform search for "${ name }"`)
                     )
                         .then(search => {
                             let found = ({
@@ -8086,7 +8086,7 @@ let Initialize = async(START_OVER = false) => {
                                     href,
                                     icon: (typeof streamer.icon == 'string'? Object.assign(new String(streamer.icon), parseURL(streamer.icon)): null),
                                     live: parseBool(streamer.live),
-                                    name: streamer.name,
+                                    name,
                                 });
 
                                 ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);

@@ -76,6 +76,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.3.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.3.2)
+- Fixed issue generating names from draggable objects
+
 > [`5.33.3.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.3.1)
 - Fixed volume control logic
 
