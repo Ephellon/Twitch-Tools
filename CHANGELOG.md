@@ -76,6 +76,19 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4)
+- Fixed minor display issue with Channel Search
+- Fixed minor issue with aborting fetches
+- Added logic to handle new Twitch layout for Bits and Channel Points
+- Fixed recursion issue with `PrepareForGarbageCollection`
+- Minor change to `goto` within `tolls.js` — Remove hardcoded linking
+- Fixed minor issue with obtaining the correct `SVG` or `IMG` of Channel Points
+- Minor changes to `STREAMER.redo`
+- Fixed Channel Point icon logic
+- Modified the channel-point save feature
+- Modified `parseTime` logic to accept millisecond values: `hh:mm:ss.zzz`
+- Added a `PressureObserver` to `background.js`
+
 > [`5.33.3.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.3.2)
 - Fixed issue generating names from draggable objects
 

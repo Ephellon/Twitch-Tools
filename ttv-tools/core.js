@@ -235,14 +235,21 @@ class UUID {
 
         // Digest the message
         // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
-        const UTF8String = new TextEncoder().encode(key);                     // encode as (utf-8) Uint8Array
-        const hashBuffer = await crypto.subtle.digest('SHA-256', UTF8String); // hash the message
-        const hashString =
-            [...new Uint8Array(hashBuffer)]                                   // convert buffer to byte array
-                .map(B => B.toString(16).padStart(2, '0')).join('')           // convert bytes to hex string
-                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');        // format the string into a large UUID string
+        const UTF8String = new TextEncoder().encode(key);                       // encode as (utf-8) Uint8Array
+        const hashBuffer = await crypto.subtle.digest('SHA-256', UTF8String);   // hash the message
+        const hash =
+            [...new Uint8Array(hashBuffer)]                                     // convert buffer to byte array
+                .map(B => B.toString(16).padStart(2, '0'));                     // convert each byte into a hex-string
+        const native = hash
+                .join('')                                                       // convert bytes to hex string
+                .replace(/(.{16})(.{8})(.{8})(.{8})/, '$1-$2-$3-$4-');          // format the string into a large UUID string
 
-        return hashString;
+        PrepareForGarbageCollection(hash);
+
+        return Object.assign(new UUID, {
+            native,
+            value: native,
+        });
     }
 }
 
@@ -1083,6 +1090,20 @@ Object.defineProperties($, {
         enumerable: false,
         configurable: false,
     },
+    first: {
+        value: (selector, container = document) => $.all(selector, container, true).shift(),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
+    last: {
+        value: (selector, container = document) => $.all(selector, container, true).pop(),
+
+        writable: false,
+        enumerable: false,
+        configurable: false,
+    },
 });
 
 /**
@@ -1110,12 +1131,20 @@ function defined(value) {
 }
 
 /**
- * Dereferences a list of objects and prepares them for garbage collection
+ * Dereferences a list of objects and prepares them for garbage collection.
  * @simply PrepareForGarbageCollection(...objects:any) → void
  *
  * @param {...any} objects  The list of objects to dereference
  */
 function PrepareForGarbageCollection(...objects) {
+    function isNumber(value) {
+        return ["number", "bigint"].includes(typeof value);
+    }
+
+    function isNotNumber(value) {
+        return !isNumber(value);
+    }
+
     // @performance
     for(let object of objects) {
         if(object === void null || object === null)
@@ -1130,16 +1159,34 @@ function PrepareForGarbageCollection(...objects) {
                 PrepareForGarbageCollection(obj);
             object.clear();
         } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
-            object.fill(0, 0, object.length - 1);
+            let hasNumbersOnly = object.findIndex(isNotNumber) > 0;
+
+            // Deliberately create Sprase Arrays
+                // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays
+                // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#array_methods_and_empty_slots
+            if(hasNumbersOnly)
+                for(let index = 0; index < object.length; ++index)
+                    delete object[index];
+            else
+                for(let index = 0; index < object.length; ++index) {
+                    if(isNotNumber(object[index]))
+                        PrepareForGarbageCollection(object[index]);
+
+                    delete object[index];
+                }
         } else if(object instanceof Object) {
             for(let key in object) {
+                if(object[key] === object)
+                    continue;
+
+                // if(object[key] instanceof Element)
+                //     object[key].remove();
+
                 PrepareForGarbageCollection(object[key]);
 
                 delete object[key];
             }
         }
-
-        delete object;
     }
 }
 
@@ -1782,7 +1829,7 @@ function fetchURL(url, options = {}) {
 
     if(timeout > 0) {
         let controller = new AbortController();
-        let timeoutID = setTimeout(() => controller.abort(), timeout);
+        let timeoutID = setTimeout(() => controller.abort(`The fetch has timed out (${ (timeout / 1e3).suffix('s') })`), timeout);
 
         // Convert to TEXT/HTML
         if([fetchURL.origins.HTML, fetchURL.origins.HTML_2, fetchURL.origins.HTML_3, fetchURL.origins.HTML_4, fetchURL.origins.HTML_5, fetchURL.origins.HTML_6].contains(foster)

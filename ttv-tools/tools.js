@@ -45,6 +45,8 @@ let Queue = top.Queue = { balloons: [], bullets: [], bttv_emotes: [], emotes: []
 top.WINDOW_STATE = document.readyState;
 top.TWITCH_INTEGRITY_FAIL = false;
 
+document.onreadystatechange = event => top.WINDOW_STATE = document.readyState;
+
 // Populate the username field by quickly showing the menu
 when.defined(() => {
     SignUpBanner ??= $('[data-test-target*="upsell"i][data-test-target*="banner"i]');
@@ -1264,7 +1266,20 @@ class Search {
                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
                     .then(async doc => {
                         let alt_languages = $.all('link[rel^="alt"i][hreflang]', doc).map(link => link.hreflang),
-                            [data] = JSON.parse($('head>script[type^="application"i][type$="json"i]', doc)?.textContent || "[{}]");
+                            data = $('head>script[type^="application"i][type$="json"i]', doc)?.textContent;
+
+                        try {
+                            [data] = JSON.parse(data || `{"@graph":[]}`)['@graph'];
+                        } catch(error) {
+                            // Not an object...
+                            try {
+                                [data] = JSON.parse(data || `[{}]`);
+                            } catch(error) {
+                                // Not an array...
+                                throw new Error(`Unable to perform a search for "${ name }": ${ JSON.stringify(data) }`);
+                            }
+                        }
+
 
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                             [language] = languages.filter(lang => alt_languages.missing(lang)),
@@ -1666,7 +1681,9 @@ Object.defineProperties(Chat, {
                 Object.defineProperties(O, {
                     deleted: {
                         get:(async function() {
-                            return (this == null) || nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', await this);
+                            return Promise.race([this, wait(100).then(() => null)]).then(self => {
+                                return (self === null) || nullish(self?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', self);
+                            });
                         }).bind(object.element)
                     },
                 });
@@ -1708,7 +1725,7 @@ Object.defineProperties(Chat, {
         }
     },
 
-    // Listener for new chat messages
+    // Deferred listener for new chat messages
     defer: {
         value: {
             set onmessage(callback) {
@@ -3081,7 +3098,7 @@ try {
                                     Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` }, 'start');
                                 }
 
-                                goto(`./${ from }?tool=raid-stopper--${ method }`);
+                                goto(parseURL(`./${ from }`).addSearch({ tool: `raid-stopper--${ method }` }).href);
                             } else {
                                 // The user clicked "Cancel"
                                 $log('Canceled Greedy Raiding event', { from, to });
@@ -4074,7 +4091,7 @@ let Initialize = async(START_OVER = false) => {
 
         get coin() {
             let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
-                current = parseCoin($('[data-test-selector="balance-string"i]')?.textContent),
+                current = parseCoin($.last('[data-test-selector="balance-string"i]')?.textContent),
                 _e = exact?.suffix('', 1, 'natural')?.replace('.0',''),
                 _c = current?.suffix('', 1, 'natural')?.replace('.0','');
 
@@ -4230,25 +4247,25 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get face() {
-            let balance = $('[data-test-selector="balance-string"i]');
+            let balance = $.last('[data-test-selector="balance-string"i]');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_face;
 
             let container = balance?.closest('button'),
-                icon = $('img[alt]', container);
+                icon = $.last('img[alt]', container);
 
             return icon?.src
         },
 
         get fiat() {
-            let balance = $('[data-test-selector="balance-string"i]');
+            let balance = $.last('[data-test-selector="balance-string"i]');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_name;
 
             let container = balance?.closest('button'),
-                icon = $('img[alt]', container);
+                icon = $.last('img[alt]', container);
 
             return icon?.alt ?? 'Channel Points'
         },
@@ -4461,21 +4478,21 @@ let Initialize = async(START_OVER = false) => {
                 // epoch → when channel points were first introduced
                     // https://blog.twitch.tv/en/2019/12/16/channel-points-an-easy-way-to-engage-with-your-audience/
                 start = +new Date(STREAMER.data.firstSeen),
-                end = +new Date;
+                now = +new Date;
 
             start = epoch.max(start || epoch);
 
-            let intervals = ((STREAMER.data.dailyBroadcastTime / 900_000) * (((end - start) / 86_400_000) * (STREAMER.data.activeDaysPerWeek / 7))), // How long the channel has been streaming (segmented)
+            let intervals = ((STREAMER.data.dailyBroadcastTime / 900_000) * (((now - start) / 86_400_000) * (STREAMER.data.activeDaysPerWeek / 7))), // How long the channel has been streaming (15min segments)
                 followers = (STREAMER.data.followers ?? STREAMER.cult), // The number of followers the channel has
                 watchers = (STREAMER.poll || followers).ceilToNearest(1000), // The current number of people watching
                 pointsPerInterval = 80, // The user normally gets 80 points per 15mins
-                maximum = (intervals * pointsPerInterval).round();
+                maximum = (intervals * pointsPerInterval).round(); // The absolute maximum nubmer of points anyone (except the streamer) on the channel can have
 
             return (followers - (followers * (STREAMER.coin / maximum))).clamp(0, followers).round()
         },
 
         get redo() {
-            return /^rerun$/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? "")
+            return /\brerun\b/i.test($(`[class*="video-player"i] [class*="media-card"i]`)?.textContent?.trim() ?? "")
         },
 
         __shop__: [],
@@ -4535,7 +4552,7 @@ let Initialize = async(START_OVER = false) => {
 
         get song() {
             let element = $('[class*="soundtrack"i]');
-            let song = new String(element?.textContent);
+            let song = new String(element?.textContent ?? "");
 
             // Object.defineProperties(song, {
             //     href: { value: element?.closest('[href]')?.href }
@@ -4604,7 +4621,7 @@ let Initialize = async(START_OVER = false) => {
             let { name, sole } = STREAMER;
 
             if(Number.isNaN(sole))
-                return fetchURL.fromDisk(`https://www.twitch.tv/${ name }/videos`)
+                return fetchURL.fromDisk(`https://www.twitch.tv/${ name }/videos`, { hoursUntilEntryExpires: 1 })
                     .then(r => r.text())
                     .then(html => {
                         let dom = (new DOMParser).parseFromString(html, 'text/html');
@@ -7355,7 +7372,7 @@ let Initialize = async(START_OVER = false) => {
                         if(action) {
                             // The user clicked "OK"
 
-                            goto(`./${ name }?tool=up-next--ok`);
+                            goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }).href);
                         } else {
                             // The user clicked "Cancel"
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
@@ -7515,6 +7532,7 @@ let Initialize = async(START_OVER = false) => {
 
                         if(Object.keys(LiveReminders).length > 6) {
                             search = f(`input#tt-reminder-search.input.autocomplete[autocomplete=false][spellcheck=false][placeholder="Search for a streamer, game or description here... Esc to exit"]`, {
+                                style: 'margin-top:1px',
                                 onkeyup: delay(async event => {
                                     let { target, code, altKey, ctrlKey, metaKey, shiftKey } = event,
                                         value = (target?.value ?? target?.textContent ?? target?.innerText ?? "").trim();
@@ -8153,7 +8171,7 @@ let Initialize = async(START_OVER = false) => {
                     if([oldIndex, newIndex].contains(0)) {
                         // `..._TIMER = ` will continue the queue (as if nothing changed) when a channel is removed
                         let first = ALL_CHANNELS.find(channel => RegExp(parseURL(channel.href).pathname + '\\b', 'i').test(FIRST_IN_LINE_HREF = ALL_FIRST_IN_LINE_JOBS[0]));
-                        let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first.name }"i]`)?.getAttribute('time'));
+                        let time = /* FIRST_IN_LINE_TIMER = */ parseInt($(`[name="${ first?.name ?? '' }"i]`)?.getAttribute('time'));
 
                         $log('New First in Line event:', { ...first, time });
 
@@ -9143,7 +9161,7 @@ let Initialize = async(START_OVER = false) => {
                                 // Show a notification
                                 Display_phantom_notification: {
                                     $warn(`Live Reminders: ${ name } went live ${ instance }`, new Date);
-                                    await alert.timed(`<a href='/${ name }'>${ name }</a> went live ${ instance }!`, 7000);
+                                    alert.timed(`<a href='/${ name }'>${ name }</a> went live ${ instance }!`, 7000);
                                 }
 
                                 // Update the cached-streamer
@@ -10835,7 +10853,7 @@ let Initialize = async(START_OVER = false) => {
                     });
                 });
 
-            // Controls the stream-title (description) has a native tooltip (false) or not (true)
+            // Controls whether the stream-title (description) has a native tooltip (false) or not (true)
             if(true)
                 wait(500, element).then(element => {
                     let title = decodeHTML(element.getAttribute('title') ?? '');
@@ -13311,7 +13329,7 @@ let Initialize = async(START_OVER = false) => {
                 if(rank.equals('&infin;'))
                     placementString = `Unable to get your rank for this channel`;
                 else
-                    placementString = `You are in the top ${ place }%`;
+                    placementString = `You are in the top ${ place }% of ${ (STREAMER.ping? 'follow': 'view') }ers`;
 
                 if(RANK_TOOLTIP.innerHTML.unlike(placementString))
                     RANK_TOOLTIP.innerHTML = placementString;
@@ -13351,7 +13369,7 @@ let Initialize = async(START_OVER = false) => {
 
             COUNTING_POINTS = setInterval(async() => {
                 let points_receipt = $('#tt-points-receipt'),
-                    balance = $('[data-test-selector="balance-string"i]'),
+                    balance = $.last('[data-test-selector="balance-string"i]'),
                     exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
                     exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 
@@ -13533,7 +13551,7 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         // Color the balance text
-        let balance = $('[data-test-selector="balance-string"i]');
+        let balance = $.last('[data-test-selector="balance-string"i]');
 
         balance?.setAttribute('rainbow-border', await STREAMER.done);
         balance?.setAttribute('bottom-only', '');
@@ -13659,7 +13677,7 @@ let Initialize = async(START_OVER = false) => {
 
     __PointWatcherPlacement__:
     if(parseBool(Settings.point_watcher_placement)) {
-        when.defined(() => $('[data-test-selector="balance-string"i]')?.closest('button'))
+        when.defined(() => $.last('[data-test-selector="balance-string"i]')?.closest('button'))
             .then(async balanceButton => {
                 RegisterJob('point_watcher_placement');
 
@@ -16985,7 +17003,9 @@ if(top == window) {
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return (this == null) || nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', await this);
+                                            return Promise.race([this, wait(100).then(() => null)]).then(self => {
+                                                return (self === null) || nullish(self?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', self);
+                                            });
                                         }).bind(element)
                                     },
                                 });

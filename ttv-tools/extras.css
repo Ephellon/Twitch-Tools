@@ -1864,7 +1864,7 @@ html:not([lang="en"i]) .details > summary {
 	background-color: var(--color-twitch-purple) !important;
 }
 
-.autocomplete-list .item {
+.autocomplete-list .autocomplete-item {
 	background: var(--color-background-base);
 	color: var(--color-text-base);
 	cursor: pointer;
@@ -1872,11 +1872,11 @@ html:not([lang="en"i]) .details > summary {
 	padding: 1rem;
 }
 
-.autocomplete-list .item:not(:last-child) {
+.autocomplete-list .autocomplete-item:not(:last-child) {
 	border-bottom: 1px solid var(--color-twitch-purple);
 }
 
-.autocomplete-list .item strong {
+.autocomplete-list .autocomplete-item strong {
 	-webkit-text-decoration: underline;
 	        text-decoration: underline;
 }

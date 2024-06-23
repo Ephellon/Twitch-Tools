@@ -38,7 +38,7 @@
  *
  * @property {RegExp} pattern   The controlling RegExp for parseURL
  *
- * @returns {{ href:string }}
+ * @returns {URL}               A URL-like object, containing: `href` `origin` `prototcol` `scheme` `username` `password` `host` `hostname` `domainPath` `port` `pathname` `filename` `search` `searchParameters` `hash`
  *
  * @example // Parsing a URL
  * let url = parseURL("https://user:pass@www.example.com:56/action?login=true#news");
@@ -819,16 +819,21 @@ function getOffset(element) {
         { offsetHeight, scrollHeight, offsetWidth, scrollWidth } = element,
         { height, width } = bounds;
 
+    let cx = bounds.left + (width / 2),
+        cy = bounds.top + (height / 2);
+    let center = Object.assign([cx, cy], { x: cx, y: cy });
+
+    let left    = bounds.left   + (window.pageXOffset ?? 0) + (document.documentElement.scrollLeft ?? 0),
+        top     = bounds.top    + (window.pageYOffset ?? 0) + (document.documentElement.scrollTop  ?? 0),
+        right   = bounds.right  + (window.pageXOffset ?? 0) + (document.documentElement.scrollLeft ?? 0),
+        bottom  = bounds.bottom + (window.pageYOffset ?? 0) + (document.documentElement.scrollTop  ?? 0);
+
     let offset = {
         height, width,
 
-        center: [bounds.left + (width / 2), bounds.top + (height / 2)],
+        center,
 
-        left:   bounds.left + (window.pageXOffset ?? 0) + (document.documentElement.scrollLeft ?? 0),
-        top:    bounds.top  + (window.pageYOffset ?? 0) + (document.documentElement.scrollTop  ?? 0),
-
-        right:  bounds.right  + (window.pageXOffset ?? 0) + (document.documentElement.scrollLeft ?? 0),
-        bottom: bounds.bottom + (window.pageYOffset ?? 0) + (document.documentElement.scrollTop  ?? 0),
+        left, top, right, bottom,
 
         // https://stackoverflow.com/a/41988106/4211612
         textOverflow: (offsetWidth < scrollWidth || offsetHeight < scrollHeight),
@@ -837,27 +842,31 @@ function getOffset(element) {
     };
 
     Object.defineProperties(offset, {
-        screenOverflowX: { value: (offset.left < 0 || offset.right > innerWidth) },
-        screenOverflowFromX: { value: [(offset.left < 0? 'left': ''), (offset.right > innerWidth? 'right': '')].filter(s => s.length > 0) },
-        screenCorrectX: { value: (offset.left < 0? offset.left: offset.right > innerWidth? innerWidth - offset.right: 0) },
+        screenOverflowX: { value: (left < 0 || right > innerWidth) },
+        screenOverflowFromX: { value: [(left < 0? 'left': ''), (right > innerWidth? 'right': '')].filter(s => s.length > 0) },
+        screenCorrectX: { value: (left < 0? left: right > innerWidth? innerWidth - right: 0) },
 
-        screenOverflowY: { value: (offset.top < 0 || offset.bottom > innerHeight) },
-        screenOverflowFromY: { value: [(offset.top < 0? 'top': ''), (offset.bottom > innerWidth? 'bottom': '')].filter(s => s.length > 0) },
-        screenCorrectY: { value: (offset.top < 0? offset.top: offset.bottom > innerHeight? innerHeight - offset.bottom: 0) },
+        screenOverflowY: { value: (top < 0 || bottom > innerHeight) },
+        screenOverflowFromY: { value: [(top < 0? 'top': ''), (bottom > innerWidth? 'bottom': '')].filter(s => s.length > 0) },
+        screenCorrectY: { value: (top < 0? top: bottom > innerHeight? innerHeight - bottom: 0) },
     });
 
     // console.log(element, offset);
 
+    let Cx = offset.screenCorrectX,
+        Cy = offset.screenCorrectY;
+    let correct = Object.assign([Cx, Cy], { x: Cx, y: Cy });
+
     return Object.defineProperties(offset, {
-        screenOverflow: { value: offset.screenOverflowX || offset.screenOverflowY },
-        screenOverflowFrom: { value: [offset.screenOverflowFromX, offset.screenOverflowFromY].flat() },
-        screenCorrect: { value: [offset.screenCorrectX, offset.screenCorrectY] },
+        screenOverflow: { value: (offset.screenOverflowX || offset.screenOverflowY) },
+        screenOverflowFrom: { value: [offset.screenOverflowFromX, offset.screenOverflowFromY].flat().join('-') }, // left, right, top, bottom, top-right, top-left, bottom-right, bottom-left, etc.
+        screenCorrect: { value: correct },
         screenCorrectAll: {
             value: {
-                top: (offset.screenOverflowFromY.includes('top')? offset.top: 0),
-                right: (offset.screenOverflowFromX.includes('right')? innerWidth - offset.center.at(0): 0),
-                bottom: (offset.screenOverflowFromY.includes('bottom')? innerHeight - offset.center.at(1): 0),
-                left: (offset.screenOverflowFromX.includes('left')? offset.left: 0),
+                top: (offset.screenOverflowFromY.includes('top')? top: 0),
+                right: (offset.screenOverflowFromX.includes('right')? innerWidth - center.x: 0),
+                bottom: (offset.screenOverflowFromY.includes('bottom')? innerHeight - center.y: 0),
+                left: (offset.screenOverflowFromX.includes('left')? left: 0),
             }
         },
     });
@@ -884,7 +893,7 @@ function getOffset(element) {
  * @return {string<URLSearch>}                              The new URL
  */
 function addToSearch(newParameters, reload = false, location = window.location) {
-    let url = parseURL(location).addSearch(newParameters, true);
+    let url = parseURL(location).addSearch(newParameters, reload); // Adds to the search and overwites existing search(es)
 
     if(reload)
         window.location.search = url.search;
@@ -927,6 +936,8 @@ function removeFromSearch(keys, reload = false, location = window.location) {
  * @option long-epoch
  */
 
+;
+
 /**
  * Convert milliseconds into a human-readable string.
  *
@@ -938,11 +949,13 @@ function removeFromSearch(keys, reload = false, location = window.location) {
  * @return {string}                         The formatted text of the number given
  *
  * @example
- * let readable = toTimeString(3680000, "readable");
- * // Example: 3_680_000 (61 minutes, 20 seconds)
- * // SYNTAX:  TOTAL, ROUNDED                  | TOTAL, NOT ROUNDED                            | REMAINDER, LEADING ZERO   | REMAINDER, NO LEADING ZERO    | IF TOTAL (ROUNDED) > 0; append the value then the text following the `=`
- * // INPUT:   ~hour_h ~minutes_m ~seconds_s   | ?hour_h ?minutes_m ?seconds_s                 | !hour:!minutes:!seconds   | &hour:&minutes:&seconds       | <~days=d, ><?hours=h, ><!minutes=m, ><&seconds=s >
- * // OUTPUT:  1h 61m 3680s                    | 1.0222222222222221h 61.333333333333336m 3680s | 01:01:20                  | 1:1:20                        | 1.0222222222222221h, 01m, 20s
+ * let readable = toTimeString(3680000, "readable"); // → "1h 1m 20s"
+ * let natural = toTimeString(3680000, "natural"); // "1 hour 1 minute and 20 seconds"
+ * let clock = toTimeString(3680000, "clock"); // "01:01:20"
+ * let short = toTimeString(3680000, "short"); // "1h1m20s"
+ * let epoch = toTimeString(3680000, "epoch"); // "1hours 1minutes 20seconds"
+ * let se = toTimeString(3680000, "short-epoch"); // "1h 1m 20s"
+ * let formatted = toTimeString(3680000, "~hour | ?hour | !hour | &hour | <&hour=x>"); // "1 | 1.0222222222222221 | 01 | 1 | 1x"
  */
 function toTimeString(milliseconds = 0, format = 'natural') {
     let second = 1000,
@@ -1092,8 +1105,20 @@ function toTimeString(milliseconds = 0, format = 'natural') {
     return sign + result.join(joining_symbol);
 }
 
-// Convert a time-formatted string into its corresponding millisecond value
-    // parseTime(time:string, type:string?) → number
+/**
+ * Converts a time-formatted string into its corresponding millisecond value.
+ *
+ * @simply parseTime(time:string, type:string?) → number
+ *
+ * @param  {string} [time = ""]     The string to convert
+ * @param  {?string} [type = null]  How the time should be treated in terms of value: "milli" will treat the value as raw milliseconds, "minutes" will treat the vlaue as minutes and multiply them to get milliseconds, etc.
+ * @return {number}                 The milliseconds that the value represents
+ *
+ * @example
+ * let oneDay = parseTime("1", "day"); // 86_400_000
+ * let threeHours = parseTime("3", "hour"); // 10_800_000
+ * let clk = parseTime("3:14:15.926"); // 11_655_926
+ */
 function parseTime(time = '', type = null) {
     let ms = 0;
 
@@ -1136,7 +1161,7 @@ function parseTime(time = '', type = null) {
             time = time.replace(/(\d+\s*d\w*)?(\s*\d+\s*h\w*)?(\s*\d+\s*m\w*)?(\s*\d+\s*s\w*)?/i, ($0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $$, $_) => [$1, $2, $3, $4].join(':'));
 
         for(let unit of time.split(':').reverse())
-            ms += parseInt(unit) * units.splice(0,1)[0];
+            ms += parseFloat(unit) * units.splice(0,1)[0];
     }
 
     return ms;
@@ -1146,8 +1171,24 @@ Object.defineProperties(parseTime, {
     pattern: { value: /(\b\d\s*(?:y(?:(?:ea)?r)?|w(?:(?:ee)?k)?|d(?:a?y)?|h(?:(?:ou)?r)?|m(?:in(?:ute)?)?|s(?:ec(?:ond)?)?)s?\b)/i }
 });
 
-// Convert boolean values
-    // parseBool(value:any) → boolean
+/**
+ * Converts a (stringified) value into a boolean.
+ *
+ * @simply parseBool(value:any) → boolean
+ *
+ * @param  {any} [value = null] The value to convert into a boolean
+ * @return {boolean}            The boolean representation of the value
+ *
+ * @example
+ * parseBool(false);    // false
+ * parseBool("false");  // false
+ * parseBool("null");   // false
+ * parseBool("[]");     // false
+ * parseBool(NaN);      // false
+ * parseBool(null);     // false
+ * parseBool(0);        // false
+ * // etc.
+ */
 function parseBool(value = null) {
     let stringified;
     try {
@@ -1173,17 +1214,30 @@ function parseBool(value = null) {
     }
 }
 
-// Returns the DOM path of an element
-    // getDOMPath(element:Element, length:number?<int>) → string
-        // getDOMPath(element, +2) → Adds ids, classes, and non-spaced attributes to the path
-            // html>body>div#root.root[data-a-page-loaded-name="ChannelWatchPage"][data-a-page-loaded="1686805563781"][data-a-page-events-submitted="1686805565437"]>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
-        // getDOMPath(element, +1) → Adds ids and classes to the path
-            // html>body>div#root.root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
-        // getDOMPath(element, +0) → Adds ids to the path
-            // html>body>div#root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
-        // getDOMPath(element, -1) → Finds the first id and stops, or traverses up the entire tree. Removes single-tag generations ("div>div>div>div..." → "div div")
-            // #root>div>div:nth-child(2)>div>main>div>div:nth-child(3) div div:nth-child(2) div div:nth-child(3)>div:nth-child(3) div div:nth-child(7) div p:nth-child(5)>a
-// https://stackoverflow.com/a/16742828/4211612
+/**
+ * Returns the DOM path of an element.
+ *
+ * @simply getDOMPath(element:Element, length:number?<int>) → string
+ *
+ * @param  {Element} element        The element to de-path
+ * @param  {number} [length = 0]    How verbose the output should be; an integer in the range [-1, 2]
+ * @return {string}                 The element's path
+ *
+ * @see https://stackoverflow.com/a/16742828/4211612
+ *
+ * @example
+ * getDOMPath(element, +2); // → Adds ids, classes, and non-spaced attributes to the path
+ * // html>body>div#root.root[data-a-page-loaded-name="ChannelWatchPage"][data-a-page-loaded="1686805563781"][data-a-page-events-submitted="1686805565437"]>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
+ *
+ * getDOMPath(element, +1); // → Adds ids and classes to the path
+ * // html>body>div#root.root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
+ *
+ * getDOMPath(element, +0); // → Adds ids to the path
+ * // html>body>div#root>div>div:nth-child(2)>div>main>div>div:nth-child(3)>div>div>div>div>div:nth-child(2)>div>div>div>div:nth-child(3)>div:nth-child(3)>div>div>div:nth-child(7)>div>div>div>div>p:nth-child(5)>a
+ *
+ * getDOMPath(element, -1); // → Finds the first id and stops, or traverses up the entire tree. Removes single-tag generations ("div>div>div>div..." → "div div")
+ * // #root>div>div:nth-child(2)>div>main>div>div:nth-child(3) div div:nth-child(2) div div:nth-child(3)>div:nth-child(3) div div:nth-child(7) div p:nth-child(5)>a
+ */
 function getDOMPath(element, length = 0) {
     if(nullish(element))
         throw 'Unable to get path of non-Node';
@@ -1232,14 +1286,20 @@ function getDOMPath(element, length = 0) {
     return path;
 }
 
-// Adds an autocomplete listener to the chosen element
-    // autocomplete(element:Element, options:array|object) → Function<EventListener>
-    // requires outline: [action] @
+/**
+ * Adds an autocomplete listener to the chosen element. **Requires** a container with an "action" attribute.
+ *
+ * @simply autocomplete(element:Element, options:array|object) → Function<EventListener>
+ *
+ * @param  {Element} element            The (input) element to add the event-listeners to
+ * @param  {?(object|array)} options    The options that the autocomplete list is referencing. These are the suggestions the user may be typing
+ * @return {void}
+ */
 function autocomplete(element, options) {
     if(nullish(element))
-        throw `Cannot add an event-listener to a null item`;
+        throw new Error(`Cannot add an event-listener to a null item`);
     if(!options?.length && !Object.keys(options).length)
-        throw `The provided options must have at least one element`;
+        throw new Error(`The provided options must have at least one element`);
 
     // Get a common "GUID"
     element.id ||= 'ac_' + UUID.from(element.getPath(-1));
@@ -1289,17 +1349,17 @@ function autocomplete(element, options) {
                     let V = value.trim();
                     let v = V.toLowerCase();
                     let $v = V.mutilate();
-                    let _v = v.split(/\s+/);
+                    let _v = v.split(/(\s|\b\?|\?\b)+/);
                     let _ = [], i = 0, j, z;
 
                     if(n.contains(v)) {
-                        // Contains the word(s); whole, in-order, case-insensitive
+                        // Contains the word(s); whole word(s), in order, case-insensitive
                         i = n.indexOf(v);
 
                         z = v.length - i;
-                        _ = `${ N.slice(0, i) }<strong t1>${ N.slice(i, i + v.length) }</strong>${ N.slice(i + v.length, N.length) }`;
+                        _ = `${ N.slice(0, i) }<strong autocomplete-match-type="complete ordered insensitive">${ N.slice(i, i + v.length) }</strong>${ N.slice(i + v.length, N.length) }`;
                     } else if($n.contains($v)) {
-                        // Contains one-or-more characters; partial, in-order, case-insensitive
+                        // Contains one-or-more characters; some word(s), in order, case-insensitive
                         for(let c of N)
                             if(!c.trim().length)
                                 _.push(' ');
@@ -1310,9 +1370,10 @@ function autocomplete(element, options) {
 
                         _ = _.join('');
                         z = _.count('\x00') - j;
-                        _ = _.replace(/\x01\x00/g, '').replace(/\x00/g, `<strong t2>`).replace(/\x01/g, `</strong>`);
+                        _ = _.replace(/\x01\x00/g, '').replace(/\x00/g, `<strong autocomplete-match-type="partial ordered insensitive">`).replace(/\x01/g, `</strong>`);
                     } else if(n.contains(..._v)) {
-                        // Contains one-or-more word(s); partial, no order, case-insensitive
+                        // Contains one-or-more word(s); some word(s), unordered, case-insensitive
+                        // Wildcard `?` available → abc? | ?xyz
                         for(let w of _v) {
                             i = n.indexOf(w);
 
@@ -1327,14 +1388,14 @@ function autocomplete(element, options) {
                             _ = _.sort((a, b) => b.index - a.index);
 
                         _.map(s => {
-                            j.splice(s.index, s.word.length, `<strong t3>${ N.substr(s.index, s.word.length) }</strong>`);
+                            j.splice(s.index, s.word.length, `<strong autocomplete-match-type="partial unordered insensitive">${ N.substr(s.index, s.word.length) }</strong>`);
                         });
 
                         z = _v.filter(c => n.contains(c)).join('').length - _.at(-1).index;
                         _ = j.join('');
                     }
 
-                    return f(`#${ id }-item:${ key.replace(/\W+/g, '-') }.item`, {
+                    return f(`#${ id }-item:${ key.replace(/\W+/g, '-') }.autocomplete-item`, {
                         '@sortScore': z,
 
                         onmouseup(event) {
@@ -1365,7 +1426,7 @@ function autocomplete(element, options) {
         autocomplete.stamp.set(self, event.timeStamp);
 
         let { key } = event;
-        let targets = $.all('.autocomplete-list .item', self.closest('[action]'));
+        let targets = $.all('.autocomplete-list .autocomplete-item', self.closest('[action]'));
         let focus = autocomplete.focus.get(self);
 
         if(key == 'ArrowDown') {
@@ -3072,6 +3133,31 @@ class Recording {
 
         return new Recording(to, Object.assign({ proxy: ts, canvas: to }, options));
     }
+
+    // @TODO — Fix this video mixer...
+    static mix(hostRecording, guestRecording, atFrame = 0) {
+        let stream = hostRecording.source;
+        let track = stream.getVideoTracks().at(0);
+
+        let processor = new MediaStreamTrackProcessor({ track });
+        let generator = new MediaStreamTrackGenerator({ kind: 'video' });
+
+        let transformer = new TransformStream({
+            start() {},
+
+            transform(frameData, controller) {
+                frameData.then(frame => {
+                    if(frame === null) {
+                        controller.terminate();
+                    } else if(ArrayBuffer.isView(frame)) {
+                        // Insert frame somehow...
+                    }
+                });
+            },
+
+            flush() {}
+        });
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
@@ -3154,7 +3240,7 @@ HTMLVideoElement.prototype.resumeRecording ??= function resumeRecording(key = 'D
 
 // Cancels a recording of a video element
     // HTMLVideoElement..cancelRecording(key:string?) → HTMLVideoElement
-HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING', reason = 'Canceled') {
+HTMLVideoElement.prototype.cancelRecording ??= function cancelRecording(key = 'DEFAULT_RECORDING', reason = 'Recording has been canceled') {
     if(key == Recording.ALL) {
         for(let [key, recorder] of Recording.__RECORDERS__)
             if(nullish(recorder.recording.completionTime))

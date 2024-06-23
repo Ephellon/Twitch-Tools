@@ -113,21 +113,20 @@
 
 ;
 
-let $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
-let nullish = value => (value === undefined || value === null),
-    defined = value => !nullish(value);
+const $ = (selector, multiple = false, container = document) => multiple? [...container.querySelectorAll(selector)]: container.querySelector(selector);
+const nullish = value => (value === undefined || value === null);
+const defined = value => !nullish(value);
 
 /** @protected
  * @prop {array<string>} RESERVED_TWITCH_PATHNAMES      A list of Twitch-reserved pathnames (forbidden usernames).
  * @property {function} RESERVED_TWITCH_PATHNAMES.has   <div class="signature">(value:string<span class="signature-attributes">opt</span>) → boolean</div>
  *                                                      Determines whether the value clashes with a reserved pathname or not.
  */
-let RESERVED_TWITCH_PATHNAMES = ['activate', 'bits', 'bits-checkout', 'clips', 'checkout', 'collections', 'communities', 'dashboard', 'directory', 'downloads', 'drops', 'event', 'following', 'friends', 'inventory', 'jobs', 'moderator', 'popout', 'prime', 'products', 'search', 'settings', 'store', 'subs', 'subscriptions', 'team', 'turbo', 'user', 'videos', 'wallet', 'watchparty'];
-Object.defineProperties(RESERVED_TWITCH_PATHNAMES, {
+const RESERVED_TWITCH_PATHNAMES = Object.defineProperties(['activate', 'bits', 'bits-checkout', 'clips', 'checkout', 'collections', 'communities', 'dashboard', 'directory', 'downloads', 'drops', 'event', 'following', 'friends', 'inventory', 'jobs', 'moderator', 'popout', 'prime', 'products', 'search', 'settings', 'store', 'subs', 'subscriptions', 'team', 'turbo', 'user', 'videos', 'wallet', 'watchparty'], {
     has: { value(value) { return !!~this.indexOf(value?.toLowerCase()) } },
 });
 
-let SHARED_DATA = new Map;
+const SHARED_DATA = new Map;
 
 /**
  * Reloads the specified tab.
@@ -155,7 +154,7 @@ function ReloadTab(tab, onlineOnly = true, forced = false) {
         });
 
         if(forced) {
-            Container.tabs.reload(tab.id);
+            setTimeout(() => Container.tabs.reload(tab.id), 100);
 
             // REPORTS.set(tab.id, +new Date);
             // GALLOWS.set(tab.id, +new Date);
@@ -185,6 +184,7 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
 
         let created = RemoveTab.duplicatedTabs.get(tab.url);
 
+        // The tab was just duplicated (<5s ago)
         if(defined(created) && +(new Date) - created < 5_000)
             break duplication;
 
@@ -204,7 +204,7 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
         });
 
         if(forced)
-            Container.tabs.remove(tab.id);
+            setTimeout(() => Container.tabs.remove(tab.id), 100);
     } catch(error) {
         console.warn(`Failed to close tab: ${ error }`);
     }
@@ -236,7 +236,7 @@ if(browser && browser.runtime)
 else if(chrome && chrome.extension)
     BrowserNamespace = 'chrome';
 
-// Can NOT be done programmatically...
+// Can NOT be done programmatically?
 Container = chrome;
 
 switch(BrowserNamespace) {
@@ -284,7 +284,9 @@ switch(BrowserNamespace) {
     } break;
 }
 
-let {
+const { COMPLETE, LOADING, UNLOADED } = Container.tabs.TabStatus;
+
+const {
     /** @protected
      * @prop {string} CHROME_UPDATE
      * Specifies the install-event reason as <i>a Chrome update</i>.
@@ -349,22 +351,50 @@ Runtime.onInstalled.addListener(({ reason, previousVersion, id }) => {
     // `Container.tabs.onUpdated.addListener(...)` does not support pages crashing...
 let OfflineTabs = new Set();
 
-let TabWatcherInterval = setInterval(() => {
-    try {
-        Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
-            for(let tab of tabs)
-                if(!TabIsOffline(tab))
-                    continue;
-                else if(!OfflineTabs.has(tab.id))
-                    OfflineTabs.add(tab.id);
-                else
-                    ReloadTab(tab, tab.status != UNLOADED, true);
-        });
-    } catch(error) {
-        // Suppress query errors...
-        console.warn(`Failed to complete "Tab Watcher Interval": ${ error }`);
-    }
-}, 2500);
+// https://developer.mozilla.org/en-US/docs/Web/API/Compute_Pressure_API
+function TabWatcher(records) {
+    if(records?.length > 0)
+        try {
+            const lastRecord = records.at(-1);
+
+            if(lastRecord.state == "critical") {
+                // The system is experiencing extremely high usage and should be put into some sort of rest-mode
+            } else if(lastRecord.state == "serious") {
+                // The system's usage rate is in an elevated state and it may begin throttling processes
+            } else if(lastRecord.state == "fair" || lastRecord.state == "nominal") {
+                // Everything is fine, and the system can take on more work
+            }
+        } catch(error) {
+            // Suppress query errors...
+            console.warn(`Failed to complete "(Recorded) Tab Watcher Interval": ${ error }`);
+        }
+    else
+        try {
+            Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
+                for(let tab of tabs)
+                    if(!TabIsOffline(tab))
+                        continue;
+                    else if(!OfflineTabs.has(tab.id))
+                        OfflineTabs.add(tab.id);
+                    else
+                        ReloadTab(tab, tab.status != UNLOADED, true);
+            });
+        } catch(error) {
+            // Suppress query errors...
+            console.warn(`Failed to complete "Tab Watcher Interval": ${ error }`);
+        }
+}
+
+let TabWatcherInterval;
+
+try {
+    TabWatcherInterval = new PressureObserver(TabWatcher);
+    TabWatcherInterval.observe("cpu", {
+        sampleInterval: 10e3,
+    });
+} catch(error) {
+    TabWatcherInterval = setInterval(TabWatcher, 2500);
+}
 
 // Update the badge text when there's an update available
 Container.action.setBadgeBackgroundColor({ color: '#9147ff' });
@@ -577,7 +607,6 @@ let REPORTS = new Map,
     HANG_UP_CHECKER = new Map,
     MAX_TIME_ALLOWED = 35_000;
 
-let { COMPLETE, LOADING, UNLOADED } = Container.tabs.TabStatus;
 let LAG_REPORTER = setInterval(() => {
     for(let [ID, createdAt] of REPORTS) {
         HANG_UP_CHECKER.set(ID,

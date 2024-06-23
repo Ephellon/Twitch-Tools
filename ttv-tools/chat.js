@@ -194,11 +194,22 @@ let Chat__Initialize = async(START_OVER = false) => {
 
             button.icon ??= $('svg, img', container);
 
-            if($.nullish('.channel-points-icon', container))
+            if($.nullish('.channel-points-icon', container)) {
                 button.icon.outerHTML = Glyphs.channelpoints;
+                button.icon = $('svg, img', container);
+            }
 
-            button.icon = $('svg, img', container);
             button.icon.modStyle(`height: 2rem; width: 2rem; margin-top: .25rem; margin-left: .25rem;`);
+
+            when.defined(container => $('[data-test-selector*="balance"i][data-test-selector*="string"i]', container), 30, container).then(text => text.remove());
+            when.defined(container => ($.all('svg, img', container).length > 2? container: null), 30, container).then(container => {
+                let oldIcon = $('svg, img', container);
+                let newIcon = $.last('svg, img', container);
+
+                newIcon.closest('[data-a-target] *:last-child:not(:first-child)')?.remove();
+
+                oldIcon.replaceWith(newIcon);
+            });
         } else {
             let container = button,
                 textContainer = $('[data-test-selector*="balance"i] *:not(:empty)', container);
@@ -2610,7 +2621,18 @@ let Chat__Initialize = async(START_OVER = false) => {
                     ?.querySelector('button')
                     ?.click();
 
-                CHANNEL_POINTS_MULTIPLIER = parseFloat($('#channel-points-reward-center-header h6')?.innerText) || 1;
+                let pop = $('[class*="rewards"i][class*="popover"i]');
+                let btn = $('img[class*="channel"i][class*="points"i], svg', pop)?.closest('button');
+
+                if(nullish(btn)) {
+                    CHANNEL_POINTS_MULTIPLIER = 1;
+                    break __GetMultiplierAmount__;
+                }
+
+                let mux = btn.textContent.replace(/.*\((.+)\).*/, ($0, $1, $$, $_) => parseFloat($1));
+                let bal = btn.ariaLabel?.replace(/.*([\d\.,]).*/, '$1') ?? 0;
+
+                CHANNEL_POINTS_MULTIPLIER = (mux | 0? mux: 1);
 
                 button.click();
             } else {
@@ -2635,7 +2657,7 @@ let Chat__Initialize = async(START_OVER = false) => {
         let timeLeftInBroadcast = averageBroadcastTime - (STREAMER.time / 3_600_000);
 
         // Set the progress bar of the button
-        let have = parseFloat(parseCoin($('[data-test-selector="balance-string"i]')?.innerText) | 0),
+        let have = parseFloat(parseCoin($.last('[data-test-selector="balance-string"i]')?.innerText) | 0),
             este = parseFloat(timeLeftInBroadcast * pointsEarnedPerHour * CHANNEL_POINTS_MULTIPLIER),
             goal = parseFloat($('[data-test-selector*="required"i][data-test-selector*="points"i]')?.previousSibling?.textContent?.replace(/\D+/g, '') | 0),
             need = goal - have;
@@ -3088,9 +3110,9 @@ let Chat__Initialize = async(START_OVER = false) => {
         if((placement = Settings.points_receipt_placement ??= "null").equals("null"))
             return;
 
-        let coin = $('[data-test-selector="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
+        let coin = $.last('[data-test-selector="balance-string"i]')?.closest('button')?.querySelector('img[alt]');
 
-        let balance = $('[data-test-selector="balance-string"i]')?.innerText,
+        let balance = $.last('[data-test-selector="balance-string"i]')?.innerText,
             exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p')?.innerText,
             exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]')?.innerText;
 
@@ -3433,7 +3455,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
      *
      */
     let pointWatcherCounter = 0,
-        balanceButton = $('[data-test-selector="balance-string"i]')?.closest('button'),
+        balanceButton = $.last('[data-test-selector="balance-string"i]')?.closest('button'),
         hasPointsEnabled = false,
         ALL_CHANNEL_POINT_REWARDS;
 
@@ -3443,7 +3465,7 @@ let Chat__Initialize_Safe_Mode = async({ banned = false, hidden = false }) => {
 
         Cache.load(['ChannelPoints'], ({ ChannelPoints }) => {
             let [amount, fiat, face, notEarned, pointsToEarnNext] = ((ChannelPoints ??= {})[STREAMER.name] ?? 0).toString().split('|'),
-                balance = $('[data-test-selector="balance-string"i]'),
+                balance = $.last('[data-test-selector="balance-string"i]'),
                 allRewards = ALL_CHANNEL_POINT_REWARDS;
 
             hasPointsEnabled ||= defined(balance);
@@ -4039,7 +4061,9 @@ Chat__PAGE_CHECKER = setInterval(Chat__WAIT_FOR_PAGE = async() => {
                                 Object.defineProperties(results, {
                                     deleted: {
                                         get:(async function() {
-                                            return (this == null) || nullish((await this)?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', await this);
+                                            return Promise.race([this, wait(100).then(() => null)]).then(self => {
+                                                return (self == null) || nullish(self?.parentElement) || $.defined('[data-a-target*="delete"i]:not([class*="spam-filter"i], [data-repetitive], [data-plagiarism])', self);
+                                            });
                                         }).bind(element)
                                     },
                                 });
