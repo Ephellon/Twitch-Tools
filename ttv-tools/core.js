@@ -1115,8 +1115,18 @@ Object.defineProperties($, {
  * @return {boolean}    Returns <i>true</i> if the value is <i>nullish</i>
  */
 function nullish(value) {
-    return value === undefined || value === null || value instanceof Promise || Number.isNaN(value);
+    return (value === null) || (value === void null) || (value instanceof Promise) || (value instanceof Number && Number.isNaN(value));
 }
+
+/**
+ * Returns a boolean describing if the value is null, undefined, or neither.
+ *
+ * @param  {any} value  The value to test
+ * @return {boolean}    Returns <i>true</i> if the value is <i>null</i> or <i>undefined</i>
+ */
+nullish.literal = function(value) {
+	return (value === null) || (value === void null);
+};
 
 /**
  * Returns a boolean describing if the value is nullish or not.
@@ -1129,6 +1139,16 @@ function nullish(value) {
 function defined(value) {
     return !nullish(value);
 }
+
+/**
+ * Returns a boolean describing if the value is null, undefined, or neither.
+ *
+ * @param  {any} value  The value to test
+ * @return {boolean}    Returns <i>true</i> if the value is <strong>not</strong> <i>null</i> or <i>undefined</i>
+ */
+defined.literal = function(value) {
+	return !nullish.literal(value);
+};
 
 /**
  * Dereferences a list of objects and prepares them for garbage collection.
@@ -1161,14 +1181,14 @@ function PrepareForGarbageCollection(...objects) {
         } else if([Array, Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array].find(constructor => object instanceof constructor)) {
             let hasNumbersOnly = object.findIndex(isNotNumber) > 0;
 
-            // Deliberately create Sprase Arrays
+            // Deliberately create Sparse Arrays
                 // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays
                 // → https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#array_methods_and_empty_slots
             if(hasNumbersOnly)
                 for(let index = 0; index < object.length; ++index)
                     delete object[index];
             else
-                for(let index = 0; index < object.length; ++index) {
+                for(let index = 0; index < object.length && index < Number.MAX_SAFE_INTEGER; ++index) {
                     if(isNotNumber(object[index]))
                         PrepareForGarbageCollection(object[index]);
 
@@ -2655,24 +2675,30 @@ __STATIC__: {
     let Jobs = {};
 
     /** @memberof window
-    * @prop {object} Jobs - All running or ran timers (with a corresponding job). A <b>positive</b> (&ge; 0) value creates an interval. A <b>negative</b> (&lt; 0) value creates a time-out
+    * @prop {object} Timers - All running or ran timers (with a corresponding job). A <b>positive</b> (&ge; 0) value creates an interval. A <b>negative</b> (&lt; 0) value creates a time-out
     */
     let Timers = {};
 
     /** @memberof window
-    * @prop {object} Jobs - All handlers (functions) that may be run
+    * @prop {object} Handlers - All handlers (functions) that may be run
     */
     let Handlers = { __reasons__: new Map() };
 
     /** @memberof window
-    * @prop {object} Jobs - All unhandlers (destructing functions) that may be run
+    * @prop {object} Unhandlers - All unhandlers (destructing functions) that may be run
     */
     let Unhandlers = { __reasons__: new Map() };
+
+    /** @memberof window
+    * @prop {Map} Limbo - All previously unhandled (destructed) jobs that will be re-handled
+    */
+    let Limbo = new Map;
 
     window.Jobs = Jobs;
     window.Timers = Timers;
     window.Handlers = Handlers;
     window.Unhandlers = Unhandlers;
+    window.Limbo = Limbo;
 
     /**
      * Registers a job to be run
@@ -2738,7 +2764,12 @@ __STATIC__: {
 
         new Promise((resolve, reject) => {
             try {
+                if(Limbo.has(JobName))
+                    // throw new Error(`The "${ JobName }" job is already destructing...`);
+                    return;
+
                 UnregisterJob(JobName, JobReason);
+                Limbo.set(JobName, JobReason);
 
                 resolve();
             } catch(error) {
@@ -2746,6 +2777,7 @@ __STATIC__: {
             }
         }).then(() => {
             RegisterJob(JobName, JobReason);
+            Limbo.delete(JobName);
         });
     }
     Handlers.__reasons__.set('RestartJob', UUID.from(RestartJob).value);

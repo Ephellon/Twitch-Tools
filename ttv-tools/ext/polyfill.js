@@ -30,7 +30,8 @@
 
 ;
 
-/** Parses a URL and returns its constituent components
+/**
+ * Parses a URL and returns its constituent components.
  *
  * @simply parseURL(url:string) → object
  *
@@ -560,7 +561,7 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             configurable: false,
         },
 
-        // Shorthand to set the element's innerHTML
+        // Shorthand to get/set the element's innerHTML
         // Returns `this` | string<HTML>
         html: {
             value: function(innerHTML) {
@@ -576,7 +577,7 @@ function furnish(tagname = 'div', attributes = null, ...children) {
             configurable: false,
         },
 
-        // Shorthand to set the element's innerText
+        // Shorthand to get/set the element's innerText
         // Returns `this` | string
         text: {
             value: function(innerText) {
@@ -4526,17 +4527,27 @@ class ClipName extends String {
 // Returns an iterable range (inclusive)
     // Number..to(end:number?, by:number?) → @@Iterator
 Number.prototype.to ??= function to(end = 0, by = 1) {
-    let { abs } = Math;
-    let step = abs(by),
-        start = this + (this < end? -step: +step),
-        stop = end + (this < end? +step: -step),
-        SAFE = Math.min(abs(start) + abs(stop), Math.sqrt(Number.MAX_SAFE_INTEGER).floor());
+    end ??= 0;
+	by ??= 1;
+
+    let { abs, min, max, sqrt, floor } = Math;
+    let sign = (this <= end && end >= 0? +1: -1),
+        step = abs(by),
+        number = parseFloat(this),
+        stop = end + (sign * step),
+        SAFE = max(min((max(number, stop) - min(number, stop)) / abs(step), floor(sqrt(Number.MAX_SAFE_INTEGER))), end);
+
+	let results = [];
+
+	step = sign * step;
 
     return ({
         next() {
-            start += (start < stop? +step: -step);
+            let R = ({ value: number, done: ((sign > 0? number > stop: number < stop) || ++this[Symbol.unscopables] > SAFE) });
 
-            return ({ value: start, done: (start == stop || ++this[Symbol.unscopables] > SAFE) });
+            number += step;
+
+            return R;
         },
 
         [Symbol.iterator]() {

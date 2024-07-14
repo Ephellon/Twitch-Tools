@@ -76,6 +76,12 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.1)
+- Implemented the `PressureObserver` in `background.js`
+- Fixed issue with Redo Channel not sticking during certain URL appendages
+- Fixed issue loading Live Reminders in the background
+- Modified `Number..to` logic
+
 > [`5.33.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4)
 - Fixed minor display issue with Channel Search
 - Fixed minor issue with aborting fetches

@@ -359,14 +359,27 @@ function TabWatcher(records) {
 
             if(lastRecord.state == "critical") {
                 // The system is experiencing extremely high usage and should be put into some sort of rest-mode
+                Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
+                    for(let tab of tabs)
+                        ReloadTab(tab, tab.status != UNLOADED, true);
+                });
             } else if(lastRecord.state == "serious") {
                 // The system's usage rate is in an elevated state and it may begin throttling processes
+                Container.tabs.query({ url: "*://*.twitch.tv/*" }, (tabs = []) => {
+                    for(let tab of tabs)
+                        if(!TabIsOffline(tab))
+                            continue;
+                        else if(!OfflineTabs.has(tab.id))
+                            OfflineTabs.add(tab.id);
+                        else
+                            ReloadTab(tab, tab.status != UNLOADED, true);
+                });
             } else if(lastRecord.state == "fair" || lastRecord.state == "nominal") {
                 // Everything is fine, and the system can take on more work
             }
         } catch(error) {
             // Suppress query errors...
-            console.warn(`Failed to complete "(Recorded) Tab Watcher Interval": ${ error }`);
+            console.warn(`Failed to complete "(Pressured) Tab Watcher Interval": ${ error }`);
         }
     else
         try {

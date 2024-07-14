@@ -1195,7 +1195,7 @@ class Search {
                 //         "ChronicIllness"
                 //     ]
                 // }
-                return fetchURL.fromDisk(`https://api.twitch.tv/helix/channels?broadcaster_id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID } }, { hoursUntilEntryExpires: 168 })
+                return fetchURL.fromDisk(`https://api.twitch.tv/helix/channels?broadcaster_id=${ ID }`, { headers: { "Authorization": Search.authorization, "Client-ID": Search.clientID }, hoursUntilEntryExpires: 168 })
                     .then(response => response.json())
                     .then(json => {
                         let id = parseInt(json?.data?.shift?.()?.broadcaster_id);
@@ -1246,7 +1246,7 @@ class Search {
             } break;
 
             case 'status.live': {
-                return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ ID.toLowerCase() }-80x45.jpg`, { as: 'native' })
+                return fetchURL.idempotent(`https://static-cdn.jtvnw.net/previews-ttv/live_user_${ ID.toLowerCase() }-80x45.jpg`, { as: 'native', hoursUntilEntryExpires: 1/12, keepDefectiveEntry: true })
                     .then(response => {
                         let { pathname, filename } = parseURL(response.url);
 
@@ -3098,7 +3098,7 @@ try {
                                     Handlers.first_in_line({ href, innerText: `${ name } is live [Greedy Raiding]` }, 'start');
                                 }
 
-                                goto(parseURL(`./${ from }`).addSearch({ tool: `raid-stopper--${ method }` }).href);
+                                goto(parseURL(`./${ from }`).addSearch({ tool: `raid-stopper--${ method }` }, true).href);
                             } else {
                                 // The user clicked "Cancel"
                                 $log('Canceled Greedy Raiding event', { from, to });
@@ -5920,7 +5920,7 @@ let Initialize = async(START_OVER = false) => {
                 $warn(`The following page failed to load correctly (no quality controls present): ${ STREAMER.name } @ ${ (new Date) }`)
                     // .toNativeStack();
 
-                goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }).href);
+                goto(parseURL(scapeGoat.href).addSearch({ tool: 'away-mode--scape-goat' }, true).href);
             }
 
             return StopWatch.stop('away_mode');
@@ -7109,7 +7109,7 @@ let Initialize = async(START_OVER = false) => {
         })('.tw-tower *:not([class*="tooltip"i]) > button:not([class*="image"i])');
 
         TTV_DROPS_REFRESHER = setInterval(() => {
-            TTV_DROPS_FRAME.src = parseURL(TTV_DROPS_FRAME.src).addSearch({ contentReload: Date.now() }).href;
+            TTV_DROPS_FRAME.src = parseURL(TTV_DROPS_FRAME.src).addSearch({ contentReload: Date.now() }, true).href;
         }, parseInt(Settings.claim_drops__interval ?? 10) * 60_000);
     };
     Timers.claim_drops = -5_000;
@@ -7146,6 +7146,8 @@ let Initialize = async(START_OVER = false) => {
             Settings.first_in_line_all_time_minutes:
         0
     ) | 0;
+
+    let ALREADY_RESTORING_DEAD_CHANNEL = false;
 
     // Restart the First in line que's timers
         // REDO_FIRST_IN_LINE_QUEUE(url:string?<URL>, search:object?) → <Promise>?undefined
@@ -7231,7 +7233,7 @@ let Initialize = async(START_OVER = false) => {
                         if(action) {
                             // The user clicked "OK"
 
-                            goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }).href);
+                            goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--ok' }, true).href);
                         } else {
                             // The user clicked "Cancel"
                             $log('Canceled First in Line event', FIRST_IN_LINE_HREF);
@@ -7270,7 +7272,7 @@ let Initialize = async(START_OVER = false) => {
             if(FIRST_IN_LINE_PAUSED)
                 return; // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
 
-            if(nullish(channel)) {
+            if(nullish(channel) && !ALREADY_RESTORING_DEAD_CHANNEL) {
                 $log('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
 
                 let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
@@ -7278,6 +7280,7 @@ let Initialize = async(START_OVER = false) => {
 
                 if(nullish(pathname))
                     return;
+                ALREADY_RESTORING_DEAD_CHANNEL = true;
 
                 let name = pathname.slice(1);
 
@@ -7292,6 +7295,7 @@ let Initialize = async(START_OVER = false) => {
                             name: streamer.name,
                         });
 
+                        ALREADY_RESTORING_DEAD_CHANNEL = false;
                         ALL_CHANNELS = [...ALL_CHANNELS, restored].filter(defined).filter(uniqueChannels);
                         ALL_FIRST_IN_LINE_JOBS[index] = restored;
                     })
@@ -7313,12 +7317,12 @@ let Initialize = async(START_OVER = false) => {
 
             /* After above is `false` */
 
-            Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = channel?.href ?? FIRST_IN_LINE_HREF) => {
+            Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(), ALL_FIRST_IN_LINE_JOBS: ALL_FIRST_IN_LINE_JOBS = ALL_FIRST_IN_LINE_JOBS.filter(url => parseURL(url).pathname.toLowerCase() != parseURL(FIRST_IN_LINE_HREF).pathname.toLowerCase()) }, (href = parseURL(channel?.href ?? FIRST_IN_LINE_HREF).addSearch({ ...(parseURL(FIRST_IN_LINE_HREF).searchParameters ?? {}) }, true).href) => {
                 $log('Heading to stream now [Job Interval]', href);
 
                 [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }).href);
+                goto(parseURL(href).addSearch({ tool: 'first-in-line--timeout' }, true).href);
             });
         }, 1000);
     };
@@ -7372,7 +7376,7 @@ let Initialize = async(START_OVER = false) => {
                         if(action) {
                             // The user clicked "OK"
 
-                            goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }).href);
+                            goto(parseURL(`./${ name }`).addSearch({ tool: `up-next--ok` }, true).href);
                         } else {
                             // The user clicked "Cancel"
                             let balloonChild = $(`[id^="tt-balloon-job"i][href$="/${ name }"i]`),
@@ -7478,7 +7482,7 @@ let Initialize = async(START_OVER = false) => {
                 },
             });
 
-            // Live Reminders
+            // Live Reminders: Lists the live reminders onclick
             let live_reminders_catalog_button = FIRST_IN_LINE_BALLOON?.addButton({
                 attributes: {
                     id: 'live-reminders-catalog',
@@ -8613,7 +8617,7 @@ let Initialize = async(START_OVER = false) => {
 
                     [FIRST_IN_LINE_JOB, FIRST_IN_LINE_WARNING_JOB, FIRST_IN_LINE_WARNING_TEXT_UPDATE].forEach(clearInterval);
 
-                    goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }).href);
+                    goto(parseURL(FIRST_IN_LINE_HREF).addSearch({ tool: 'first-in-line--killed' }, true).href);
                 }
             }
         }
@@ -9066,8 +9070,9 @@ let Initialize = async(START_OVER = false) => {
         $remark('Adding Live Reminders...');
 
         // See if there are any notifications to push...
-        let REMINDERS_INDEX = -1, REMINDERS_LENGTH = 0, PARSED_REMINDERS = [];
+        let REMINDERS_INDEX = -1, REMINDERS_LENGTH = 0, PARSED_REMINDERS = new Map;
 
+        // Lists Live Reminders periodically...
         let LIVE_REMINDERS__CHECKER = () => {
             Cache.load('LiveReminders', async({ LiveReminders }) => {
                 try {
@@ -9077,18 +9082,17 @@ let Initialize = async(START_OVER = false) => {
                     LiveReminders ??= {};
                 }
 
-                REMINDERS_INDEX = 0;
-                REMINDERS_LENGTH = Object.keys(LiveReminders).length;
-
-                when(() => REMINDERS_INDEX >= REMINDERS_LENGTH).then(LIVE_REMINDERS__CHECKER);
-
-                checking:
-                // Only check for the stream when it's live; if the dates don't match, it just went live again
+                checking: // Only check for the stream when it's live; if the dates don't match, it just went live again
                 for(let reminderName in LiveReminders) {
-                    if(PARSED_REMINDERS.contains(reminderName)) {
-                        // @performance
-                        PrepareForGarbageCollection(LiveReminders);
-                        continue;
+                    culling: if(PARSED_REMINDERS.has(reminderName)) {
+                        let repeats = PARSED_REMINDERS.get(reminderName) + 1;
+
+                        PARSED_REMINDERS.set(reminderName, repeats);
+
+                        // Let reminders refresh every 15mins
+                        if(!(repeats % 3))
+                            break culling;
+                        continue checking;
                     }
 
                     let channel = await new Search(reminderName).then(Search.convertResults),
@@ -9117,11 +9121,6 @@ let Initialize = async(START_OVER = false) => {
 
                     if(!channel.live) {
                         // Ignore this reminder (channel not live)
-                        delete channel;
-                        // @performance
-                        PrepareForGarbageCollection(LiveReminders);
-
-                        ++REMINDERS_INDEX;
                         continue checking;
                     }
 
@@ -9131,7 +9130,7 @@ let Initialize = async(START_OVER = false) => {
 
                     // The channel just went live!
                     if(lastOnline != justOnline) {
-                        PARSED_REMINDERS.push(reminderName);
+                        PARSED_REMINDERS.set(reminderName, 0);
 
                         if(parseBool(Settings.keep_live_reminders)) {
                             LiveReminders[reminderName] = justOnline;
@@ -9177,15 +9176,13 @@ let Initialize = async(START_OVER = false) => {
                                 }
                             }
 
-                            // The reminder has been parsed
-                            ++REMINDERS_INDEX;
+                            // The reminder has been parsed...
                         });
                     } else {
-                        // The reminder hasn't been changed
-                        ++REMINDERS_INDEX;
+                        // The reminder (date) hasn't been changed...
                     }
 
-                    // Release memory...
+                    // Release memory... Doesn't actually do anything...
                     delete channel;
                 }
 
@@ -9234,7 +9231,7 @@ let Initialize = async(START_OVER = false) => {
         let { href = '', origin, protocol, scheme, host, hostname, domainPath = [], port, pathname, search, hash } = parseURL(STREAMER.game.href);
 
         if(false
-            || (href.trim().length < 2)
+            || (href.trim().length < 4)
             || (domainPath.length < 2)
         )
             return;
@@ -11213,7 +11210,7 @@ let Initialize = async(START_OVER = false) => {
                 if(defined(streamer)) {
                     $log(`[HOSTING] ${ guest } is already followed. Just head to the channel`);
 
-                    goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }).href);
+                    goto(parseURL(streamer.href).addSearch({ tool: `host-stopper--${ method }` }, true).href);
                     break host_stopper;
                 }
             }
@@ -11224,7 +11221,7 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 $log(`${ host } is hosting ${ guest }. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }).href);
+                goto(parseURL(next.href).addSearch({ tool: `host-stopper--${ method }` }, true).href);
             } else {
                 $log(`${ host } is hosting ${ guest }. There doesn't seem to be any followed channels on right now`, new Date);
 
@@ -11325,12 +11322,12 @@ let Initialize = async(START_OVER = false) => {
                         break raid_stopper;
 
                     if(UP_NEXT_ALLOW_THIS_TAB)
-                        goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }).href);
+                        goto(parseURL(next.href).addSearch({ tool: `raid-stopper--${ method }` }, true).href);
                     else
                         Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, from: STREAMER?.name, method }, ({ next, from, method }) => {
                             $notice(`Stealing an Up Next job (raid): ${ from } → ${ next }`);
 
-                            goto(parseURL(next).addSearch({ tool: `raid-stopper--${ method }` }).href);
+                            goto(parseURL(next).addSearch({ tool: `raid-stopper--${ method }` }, true).href);
                         });
 
                     let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
@@ -11492,18 +11489,18 @@ let Initialize = async(START_OVER = false) => {
             if(defined(next)) {
                 $warn(`${ STREAMER?.name } is no longer live. Moving onto next channel (${ next.name })`, next.href, new Date);
 
-                REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name })?.href );
+                REDO_FIRST_IN_LINE_QUEUE( parseURL(FIRST_IN_LINE_HREF)?.addSearch?.({ from: STREAMER?.name }, true)?.href );
 
                 let index = ALL_FIRST_IN_LINE_JOBS.indexOf(FIRST_IN_LINE_HREF),
                     [removed] = ALL_FIRST_IN_LINE_JOBS.splice(index, 1);
 
                 if(UP_NEXT_ALLOW_THIS_TAB)
-                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href).addSearch({ obit: STREAMER?.name, tool: 'stay-live' }).href));
+                    Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => goto(parseURL(next.href).addSearch({ obit: STREAMER?.name, tool: 'stay-live' }, true).href));
                 else
                     Runtime.sendMessage({ action: 'STEAL_UP_NEXT', next: next.href, obit: STREAMER?.name }, ({ next, obit }) => {
                         $notice(`Stealing an Up Next job (stay live): ${ obit } → ${ next }`);
 
-                        goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }).href);
+                        goto(parseURL(next).addSearch({ obit, tool: 'stay-live--steal' }, true).href);
                     });
             } else  {
                 $warn(`${ STREAMER?.name } is no longer live. There doesn't seem to be any followed channels on right now`, new Date);
@@ -14367,15 +14364,15 @@ let Initialize = async(START_OVER = false) => {
                         return;
                     STASH_SAVED = true;
 
-                    let next = await GetNextStreamer();
-
-                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
-
                     for(let [guid, { recording }] of Recording.__RECORDERS__)
                         if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
                             recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                         else
                             recording?.stop()?.save();
+
+                    let next = await GetNextStreamer();
+
+                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
                 };
 
                 $.on('focusin', event => {
@@ -14427,15 +14424,15 @@ let Initialize = async(START_OVER = false) => {
                 return;
             STASH_SAVED = true;
 
-            let next = await GetNextStreamer();
-
-            $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
-
             for(let [guid, { recording }] of Recording.__RECORDERS__)
                 if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
                     recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                 else
                     recording?.stop()?.save();
+
+            let next = await GetNextStreamer();
+
+            $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
         });
     } catch(error) {
         /* Ignore these errors :P */
@@ -14476,13 +14473,11 @@ let Initialize = async(START_OVER = false) => {
             }, 250);
     }, 1000);
 
-    let InsertChunksAt;
-
     __AutoDVR__:
     if(parseBool(Settings?.video_clips__dvr)) {
         $remark('Adding DVR functionality...');
 
-        let HandleAd = adCountdown => {
+        function HandleAd(adCountdown) {
             let [main, mini] = $.all('video');
 
             if(false
@@ -14494,7 +14489,7 @@ let Initialize = async(START_OVER = false) => {
 
             let blobs = main.getRecording('AUTO_DVR')?.blobs ?? [];
 
-            InsertChunksAt = blobs.length;
+            let InsertChunksAt = blobs.length;
 
             let AdBreak = Recording.proxy(mini, { name: 'AUTO_DVR:AD_HANDLER', mimeType: main.mimeType });
 
@@ -14503,7 +14498,7 @@ let Initialize = async(START_OVER = false) => {
 
                 $notice(`Adding chunks to main <video> @ ${ InsertChunksAt }`, { blobs, chunks, event });
 
-                blobs.push(...chunks);
+                blobs.splice(InsertChunksAt, 0, ...chunks);
             });
 
             when.nullish(() => $('[data-a-target*="ad-countdown"i]'))
@@ -14522,7 +14517,7 @@ let Initialize = async(START_OVER = false) => {
             main.pauseRecording('AUTO_DVR');
 
             $notice(`There is an ad playing... ${ toTimeString((new Date) - main.getRecording('AUTO_DVR')?.creationTime, 'clock') } | ${ (new Date).toJSON() }`, { main, mini });
-        };
+        }
 
         when.defined(() => $('[data-a-target*="ad-countdown"i]'))
             .then(HandleAd);
@@ -14598,7 +14593,7 @@ let Initialize = async(START_OVER = false) => {
                             Cache.save({ ALL_FIRST_IN_LINE_JOBS, FIRST_IN_LINE_DUE_DATE }, () => {
                                 $log('Skipping queue in favor of a DVR channel', job);
 
-                                goto(parseURL(job).addSearch({ dvr: true }).href);
+                                goto(parseURL(job).addSearch({ dvr: true }, true).href);
                             });
                         }
 
@@ -14699,16 +14694,17 @@ let Initialize = async(START_OVER = false) => {
                                         return;
                                     STASH_SAVED = true;
 
-                                    let next = await GetNextStreamer();
                                     let DVR_ID = STREAMER.name.toLowerCase();
-
-                                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
 
                                     for(let [guid, { recording }] of Recording.__RECORDERS__)
                                         if(recording == MASTER_VIDEO.DEFAULT_RECORDING)
                                             recording?.stop()?.save(DVR_CLIP_PRECOMP_NAME);
                                         else
                                             recording?.stop()?.save();
+
+                                    let next = await GetNextStreamer();
+
+                                    $log('Saving current DVR stash. Reason:', { hosting, raiding, raided, leaving: defined(from) }, 'Moving onto:', next);
                                 };
 
                                 $.on('focusin', event => {
@@ -15033,7 +15029,7 @@ let Initialize = async(START_OVER = false) => {
 
             // Subscriber only, etc.
             if(defined(next))
-                goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }).href);
+                goto(parseURL(next.href).addSearch({ tool: 'video-recovery--non-subscriber' }, true).href);
         } else {
             ($('button', errorMessage) ?? errorMessage.closest('button'))?.click();
 
@@ -15163,7 +15159,7 @@ let Initialize = async(START_OVER = false) => {
         $error(message);
 
         if(/content.*unavailable/i.test(message) && defined(next))
-            goto(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }).href);
+            goto(parseURL(next.href).addSearch({ tool: 'page-recovery--content-unavailable' }, true).href);
         else
             ReloadPage();
 
