@@ -1165,12 +1165,16 @@ function PrepareForGarbageCollection(...objects) {
         return !isNumber(value);
     }
 
+    // @TODO Keep this non-circular...
     // @performance
     for(let object of objects) {
         if(object === void null || object === null)
             continue;
 
-        if([Map, WeakMap].find(constructor => object instanceof constructor)) {
+        if(typeof object == 'string') {
+            if(object.startsWith('blob:'))
+                URL.revokeObjectURL(object);
+        } if([Map, WeakMap].find(constructor => object instanceof constructor)) {
             for(let [key, obj] of object)
                 PrepareForGarbageCollection(obj);
             object.clear();
@@ -1944,6 +1948,19 @@ Object.defineProperties(fetchURL, {
     // Persistent (offline) cache
     fromDisk: {
         value: (url, options) => {
+            fetchURL.errURLs ??= new Map;
+            fetchURL.frozenURLs ??= new Map;
+
+            if(fetchURL.frozenURLs.has(parseURL(url).origin)) {
+                let { origin } = parseURL(url);
+                let thawsAt = new Date(fetchURL.frozenURLs.get(origin));
+
+                if(+new Date >= thawsAt)
+                    fetchURL.frozenURLs.delete(origin);
+                else
+                    throw new Error(`The origin [${ origin }] is currently frozen until ${ thawsAt }`);
+            }
+
             let DB_KEY = 'persistent-cache@fetchURL';
             let hoursUntilEntryExpires = options?.hoursUntilEntryExpires ?? 24;
             let keepDefectiveEntry = options?.keepDefectiveEntry ?? false;
@@ -2026,12 +2043,26 @@ Object.defineProperties(fetchURL, {
 
                 fetchURL.requests.set(url, [request, new Date]);
 
+                if(fetchURL.errURLs.has(origin))
+                    fetchURL.errURLs.set(origin, 0);
+
                 return request;
             }).catch(error => {
                 // Update DataBase...
                 if(!keepDefectiveEntry) {
                     fetchURL.persistentCache.get(origin)?.delete(fullpath);
                     Cache.large.save({ [DB_KEY]: fetchURL.persistentCache });
+                }
+
+                if(fetchURL.errURLs.has(origin)) {
+                    let errs = fetchURL.errURLs.get(origin);
+
+                    if(errs > 15)
+                        fetchURL.frozenURLs.set(origin, (+new Date) + 300e3);
+                    else
+                        fetchURL.errURLs.set(origin, ++errs);
+                } else {
+                    fetchURL.errURLs.set(origin, 0);
                 }
 
                 throw error;
@@ -2092,58 +2123,58 @@ prevent_fetch_dragging: if(top == window) {
     });
 
     Object.defineProperties(fetchURL.origins, {
-    JSON_BEST: {
-        value: Promise.any([
-            fetchURL.origins.JSON,
-        ].map(foster =>
-            fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
-                .then(async r =>
-                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                        foster:
-                    Promise.reject(`Bad JSON request @${ foster.toString() }`)
+        JSON_BEST: {
+            value: Promise.any([
+                fetchURL.origins.JSON,
+            ].map(foster =>
+                fetchURL.idempotent('https://example.org/', { foster, as: 'json', timeout: 1_000 })
+                    .then(async r =>
+                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                            foster:
+                        Promise.reject(`Bad JSON request @${ foster.toString() }`)
+                    )
                 )
-            )
-        ).catch($ignore)
-    },
+            ).catch($ignore)
+        },
 
-    HTML_BEST: {
-        value: Promise.any([
-            fetchURL.origins.HTML,
-            fetchURL.origins.HTML_2,
-            fetchURL.origins.HTML_3,
-            fetchURL.origins.HTML_4,
-            fetchURL.origins.HTML_5,
-            // fetchURL.origins.HTML_6,
-        ].map(foster =>
-            fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
-                .then(async r =>
-                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                        foster:
-                    Promise.reject(`Bad HTML request @${ foster.toString() }`)
+        HTML_BEST: {
+            value: Promise.any([
+                fetchURL.origins.HTML,
+                fetchURL.origins.HTML_2,
+                fetchURL.origins.HTML_3,
+                fetchURL.origins.HTML_4,
+                fetchURL.origins.HTML_5,
+                // fetchURL.origins.HTML_6,
+            ].map(foster =>
+                fetchURL.idempotent('https://example.org/', { foster, as: 'html', timeout: 1_000 })
+                    .then(async r =>
+                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                            foster:
+                        Promise.reject(`Bad HTML request @${ foster.toString() }`)
+                    )
                 )
-            )
-        ).catch($ignore)
-    },
+            ).catch($ignore)
+        },
 
-    TEXT_BEST: {
-        value: Promise.any([
-            fetchURL.origins.TEXT,
-            fetchURL.origins.TEXT_2,
-            fetchURL.origins.TEXT_3,
-            fetchURL.origins.TEXT_4,
-            fetchURL.origins.TEXT_5,
-            // fetchURL.origins.TEXT_6,
-        ].map(foster =>
-            fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
-                .then(async r =>
-                    r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
-                        foster:
-                    Promise.reject(`Bad text request @${ foster.toString() }`)
+        TEXT_BEST: {
+            value: Promise.any([
+                fetchURL.origins.TEXT,
+                fetchURL.origins.TEXT_2,
+                fetchURL.origins.TEXT_3,
+                fetchURL.origins.TEXT_4,
+                fetchURL.origins.TEXT_5,
+                // fetchURL.origins.TEXT_6,
+            ].map(foster =>
+                fetchURL.idempotent('https://example.org/', { foster, as: 'text', timeout: 1_000 })
+                    .then(async r =>
+                        r.ok && (r.status >= 100 && r.status < 300) && /\bexample\b/i.test(await r.text())?
+                            foster:
+                        Promise.reject(`Bad text request @${ foster.toString() }`)
+                    )
                 )
-            )
-        ).catch($ignore)
-    },
-});
+            ).catch($ignore)
+        },
+    });
 }
 
 /**

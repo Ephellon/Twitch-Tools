@@ -1261,6 +1261,9 @@ class Search {
                 if(nullish(name) || type.unlike('channel'))
                     break;
 
+                if(SEARCH_CACHE.has(name))
+                    return Promise.resolve(SEARCH_CACHE.get(name));
+
                 searchResults = fetchURL.idempotent(`./${ name }`)
                     .then(response => response.text())
                     .then(html => (new DOMParser).parseFromString(html, 'text/html'))
@@ -1280,7 +1283,6 @@ class Search {
                             }
                         }
 
-
                         let display_name = (data?.name ?? `${ channelName } - Twitch`).split('-').slice(0, -1).join('-').trim(),
                             [language] = languages.filter(lang => alt_languages.missing(lang)),
                             name = display_name?.trim()?.toLowerCase(),
@@ -1289,7 +1291,13 @@ class Search {
                             started_at = new Date(data?.publication?.startDate).toJSON(),
                             status = (data?.description ?? $('meta[name$="description"i]', doc)?.content),
                             updated_at = new Date(data?.publication?.endDate).toJSON(),
+                            broadcaster_id;
+
+                        try {
                             broadcaster_id = parseInt(await fetchURL.fromDisk(`https://api.twitchinsights.net/v1/user/status/${ name }`, { hoursUntilEntryExpires: 744 }).then(r => r.json()).then(j => j.id)) | 0;
+                        } catch(error) {
+                            // Do nothing...
+                        }
 
                         let json = { display_name, broadcaster_id, language, live, name, profile_image, started_at, status, updated_at, href: `https://www.twitch.tv/${ display_name }` };
 
@@ -5971,9 +5979,12 @@ let Initialize = async(START_OVER = false) => {
             if(nullish(parent) || nullish(sibling))
                 return StopWatch.stop('away_mode') /* || $warn('Unable to create the Lurking button') */;
 
-            let container = furnish('#away-mode', {
-                innerHTML: sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1'),
-            });
+            let container = $('#away-mode');
+
+            if(nullish(container))
+                container = furnish('#away-mode', {
+                    innerHTML: sibling.outerHTML.replace(/(?:[\w\-]*)(?:follow|header|notifications?|settings-menu)([\w\-]*)/ig, 'away-mode$1'),
+                });
 
             // TODO: Add an animation for the Away Mode button appearing?
             // container.modStyle('animation:1s fade-in-from-zero 1;');
@@ -7273,6 +7284,9 @@ let Initialize = async(START_OVER = false) => {
                 return; // Cache.save({ FIRST_IN_LINE_DUE_DATE: FIRST_IN_LINE_DUE_DATE = NEW_DUE_DATE(timeRemaining + 1000) });
 
             if(nullish(channel) && !ALREADY_RESTORING_DEAD_CHANNEL) {
+                if(nullish(FIRST_IN_LINE_HREF))
+                    return;
+
                 $log('Restoring dead channel (interval)...', FIRST_IN_LINE_HREF);
 
                 let { href, pathname } = parseURL(FIRST_IN_LINE_HREF),
@@ -7613,7 +7627,7 @@ let Initialize = async(START_OVER = false) => {
                                 sole = face?.split('/')?.map(parseFloat)?.shift();
 
                             // Correct for changed usernames
-                            if(!ok) {
+                            if(!ok) try {
                                 let definitiveID = await new Search(name, 'sniffer', 'getID');
 
                                 if(nullish(definitiveID)) {
@@ -7646,6 +7660,10 @@ let Initialize = async(START_OVER = false) => {
                                     PrepareForGarbageCollection(LiveReminders);
                                     continue listing;
                                 }
+                            } catch(error) {
+                                // Continue with the bad data?
+                                if(nullish(channel))
+                                    continue listing;
                             }
 
                             // Legacy reminders... | v4.26 → v4.27
@@ -10534,12 +10552,12 @@ let Initialize = async(START_OVER = false) => {
      *
      */
     let STARTED_WATCHING = (+new Date);
-    let CURRENT_WATCHTIME = `WatchTimes/${ STREAMER.name.toLowerCase() }`;
+    let CURRENT_WATCHTIME_NAME = `WatchTimes/${ STREAMER.name.toLowerCase() }`;
 
-    Cache.load(CURRENT_WATCHTIME, _ => {
-        _[CURRENT_WATCHTIME] >>= 0;
+    Cache.load(CURRENT_WATCHTIME_NAME, _ => {
+        _[CURRENT_WATCHTIME_NAME] >>= 0;
 
-        STARTED_WATCHING -= _[CURRENT_WATCHTIME];
+        STARTED_WATCHING -= _[CURRENT_WATCHTIME_NAME];
 
         Cache.save(_);
     });
@@ -13965,7 +13983,7 @@ let Initialize = async(START_OVER = false) => {
     let WATCH_TIME_INTERVAL,
         WATCH_TIME_TOOLTIP,
         THIS_POLL = STREAMER.poll,
-        THAT_POLL = 0,
+        THAT_POLL = 1,
         GET_TOP_100_INTERVAL,
         TOP_100_GAME = STREAMER.game,
         IN_TOP_100,
@@ -14031,7 +14049,7 @@ let Initialize = async(START_OVER = false) => {
 
         extra({ parent, container, live_time, placement });
 
-        Cache.load([CURRENT_WATCHTIME, `Watching`], _ => {
+        Cache.load([CURRENT_WATCHTIME_NAME, `Watching`], _ => {
             let { Watching } = _;
             if(!(Watching instanceof Array))
                 Watching = [];
@@ -14041,7 +14059,7 @@ let Initialize = async(START_OVER = false) => {
                 STARTED_WATCHING = +($('#root').dataset.aPageLoaded ??= +new Date);
             }
 
-            _[CURRENT_WATCHTIME] >>= 0;
+            _[CURRENT_WATCHTIME_NAME] >>= 0;
 
             WATCH_TIME_INTERVAL = setInterval(() => {
                 let watch_time = $('#tt-watch-time'),
@@ -14062,7 +14080,7 @@ let Initialize = async(START_OVER = false) => {
                 Cache.load(null, _ => {
                     for(let [key, val] of Object.entries(_).filter((key, val) => /^WatchTimes\/([\w\-]+)/.test(key))) {
                         fixer: if(UP_NEXT_ALLOW_THIS_TAB) {
-                            if(key == CURRENT_WATCHTIME)
+                            if(key == CURRENT_WATCHTIME_NAME)
                                 break fixer;
 
                             let count = ALL_WATCHTIME_COUNTS[key] >>= 0;
@@ -14085,7 +14103,7 @@ let Initialize = async(START_OVER = false) => {
                             ALL_WATCHTIME_COUNTS[key] = count;
                         }
 
-                        if(key == CURRENT_WATCHTIME)
+                        if(key == CURRENT_WATCHTIME_NAME)
                             val = time;
 
                         Cache.save({ [key]: val });
@@ -14137,7 +14155,7 @@ let Initialize = async(START_OVER = false) => {
                     throw json.errors.join('; ');
                 let edges = json
                     ?.data      // [...{ game:object }]
-                    ?.game      // { displayName:string, id: string<int>, name:string, streams:object }
+                    ?.game      // { displayName:string, id:string<int>, name:string, streams:object }
                     ?.streams   // { edges:array<object>, pageInfo:object<{ hasNextPage:boolean }> }
                     ?.edges     // [...{ broadcaster:object, freeFormTags:object|array, game:object, id:string<int~GameID>, previewImageURL:object<{ *:string<URL> }>, title:string, type:string, viewersCount:number<int> }]
                 ?? [];
@@ -14159,7 +14177,7 @@ let Initialize = async(START_OVER = false) => {
                 if(IN_TOP_100 = defined(place))
                     new Tooltip(container, `Top 100! #${ place } for <ins>${ game }</ins>`)
                         .setAttribute('rainbow-border', true);
-                else
+                else if(nullish(IN_TOP_100 = null))
                     new Tooltip(container, `Viewer change: &${ 'du'[+(THIS_POLL >= THAT_POLL)] }arr; ${ Math.abs(THIS_POLL - THAT_POLL) }`)
                         .setAttribute('rainbow-border', false);
 
@@ -14175,18 +14193,19 @@ let Initialize = async(START_OVER = false) => {
             THIS_POLL = STREAMER.poll;
 
             let updt = () => THAT_POLL = THIS_POLL;
+            let DIFF = Math.abs(THIS_POLL - THAT_POLL) / THAT_POLL;
 
             // The game has changed
             if(TOP_100_GAME.unlike(STREAMER.game))
                 return (TOP_100_GAME = STREAMER.game) && getTop100(updt);
             // 15% change in polls
-            if(THIS_POLL > 5000 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .15)
+            if(THIS_POLL > 5000 && DIFF > .15)
                 getTop100(updt); // for gradual changes
             // 10% change in polls
-            if(THIS_POLL > 500 && THIS_POLL <= 5000 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .10)
+            if(THIS_POLL > 500 && THIS_POLL <= 5000 && DIFF > .10)
                 getTop100(updt); // for gradual changes
             // 5% change in polls
-            else if(THIS_POLL > 50 && THIS_POLL <= 500 && Math.abs(THIS_POLL - THAT_POLL) / THIS_POLL > .05)
+            else if(THIS_POLL > 50 && THIS_POLL <= 500 && DIFF > .05)
                 getTop100(updt); // for gradual changes
             // Any change in polls
             else if(THIS_POLL <= 50 && THIS_POLL != THAT_POLL)

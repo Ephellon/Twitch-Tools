@@ -196,6 +196,7 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
     }
 
     console.warn(`Removing tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
+
     try {
         Container.tabs.sendMessage(tab.id, { action: 'close', forced }, response => {
             // Only remove if not forced to already...

@@ -72,10 +72,20 @@
 - [ ] Inherit away-mode volume from parent page (failed video iframe)
 - [ ] Properly handle `obit` & `redo` clashes
 - [ ] First in Line will sometimes be stuck at 0s
+- [ ] Add "Smart Sort" for First in Line
+    - Sort by context and/or normal runtimes
 
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.2)
+- Fixed issue where the Away Mode button would duplicate
+- Modified `PrepareForGarbageCollection`
+- Modified `Search` cache logic
+- Modified channel restoration logic
+- Added freeze logic to errored `fromDisk` requests
+- Fixed `Search` issue when attempting to fetch a broadcaster's ID
+
 > [`5.33.4.1`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.1)
 - Implemented the `PressureObserver` in `background.js`
 - Fixed issue with Redo Channel not sticking during certain URL appendages
