@@ -4099,7 +4099,7 @@ let Initialize = async(START_OVER = false) => {
 
         get coin() {
             let exact = STREAMER.jump?.[STREAMER?.name?.toLowerCase()]?.stream?.points?.balance,
-                current = parseCoin($.last('[data-test-selector="balance-string"i]')?.textContent),
+                current = parseCoin($.last('[data-test-selector*="balance-string"i]')?.textContent),
                 _e = exact?.suffix('', 1, 'natural')?.replace('.0',''),
                 _c = current?.suffix('', 1, 'natural')?.replace('.0','');
 
@@ -4255,7 +4255,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get face() {
-            let balance = $.last('[data-test-selector="balance-string"i]');
+            let balance = $.last('[data-test-selector*="balance-string"i]');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_face;
@@ -4267,7 +4267,7 @@ let Initialize = async(START_OVER = false) => {
         },
 
         get fiat() {
-            let balance = $.last('[data-test-selector="balance-string"i]');
+            let balance = $.last('[data-test-selector*="balance-string"i]');
 
             if(nullish(balance))
                 return PostOffice.get('points_receipt_placement')?.coin_name;
@@ -13384,7 +13384,7 @@ let Initialize = async(START_OVER = false) => {
 
             COUNTING_POINTS = setInterval(async() => {
                 let points_receipt = $('#tt-points-receipt'),
-                    balance = $.last('[data-test-selector="balance-string"i]'),
+                    balance = $.last('[data-test-selector*="balance-string"i]'),
                     exact_debt = $('[data-test-selector^="prediction-checkout"i], [data-test-selector*="user-prediction"i][data-test-selector*="points"i], [data-test-selector*="user-prediction"i] p, [class*="points-icon"i] ~ p *:not(:empty)'),
                     exact_change = $('[class*="points"i][class*="summary"i][class*="add-text"i]');
 
@@ -13566,7 +13566,7 @@ let Initialize = async(START_OVER = false) => {
             return;
 
         // Color the balance text
-        let balance = $.last('[data-test-selector="balance-string"i]');
+        let balance = $.last('[data-test-selector*="balance-string"i]');
 
         balance?.setAttribute('rainbow-border', await STREAMER.done);
         balance?.setAttribute('bottom-only', '');
@@ -13692,7 +13692,7 @@ let Initialize = async(START_OVER = false) => {
 
     __PointWatcherPlacement__:
     if(parseBool(Settings.point_watcher_placement)) {
-        when.defined(() => $.last('[data-test-selector="balance-string"i]')?.closest('button'))
+        when.defined(() => $.last('[data-test-selector*="balance-string"i]')?.closest('button'))
             .then(async balanceButton => {
                 RegisterJob('point_watcher_placement');
 
@@ -15906,7 +15906,7 @@ if(top == window) {
                                             parseBool(Settings.auto_claim_bonuses)?
                                                 (false
                                                     || $.defined('#tt-auto-claim-bonuses')
-                                                    || $.nullish('[data-test-selector="balance-string"i]')
+                                                    || $.nullish('[data-test-selector*="balance-string"i]')
                                                     || parseBool(Settings.view_mode)
                                                     || STREAMER.veto
 

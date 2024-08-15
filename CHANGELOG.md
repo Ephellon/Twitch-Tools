@@ -78,6 +78,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.3`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.3)
+- Fixed issue viewing some balance strings
+
 > [`5.33.4.2`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.2)
 - Fixed issue where the Away Mode button would duplicate
 - Modified `PrepareForGarbageCollection`
