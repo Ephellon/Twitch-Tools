@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.5)
+- Fixed #19 — Added live previews to the home page
+
 > [`5.33.4.4`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.4)
 - Fixed #22 — Tabs will regroup, not refocus when reloaded, and will keep their tab position
 - Fixed #21 — Hardcoded client-ID (can no longer be null by accident)

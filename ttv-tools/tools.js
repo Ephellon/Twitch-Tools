@@ -15817,6 +15817,53 @@ if(top == window) {
                 }
             }
 
+            // Enables previews on the home page (#19)
+            live_previews_on_hompage: if(top.location.pathname == '/') {
+                let scale = parseFloat(Settings.stream_preview_scale) || 1,
+                    muted = !parseBool(Settings.stream_preview_sound),
+                    quality = (scale > 1? 'auto': '720p'),
+                    controls = false;
+
+                $.all('[class*="hover"i] [data-a-target*="preview"i][data-a-target*="card"i]').map(a => {
+                    a.addEventListener('mouseenter', ({ currentTarget }) => {
+                        let { href } = currentTarget;
+                        let name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
+
+                        if(nullish(name))
+                            return;
+
+                        let isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
+
+                        if($.defined('#tt-stream-preview--iframe'))
+                            return;
+
+                        let iframe = furnish(`iframe#tt-stream-preview--iframe[@index=0][@name=${ name }][@live=${ isOnline }][@controls=${ controls }][@muted=${ muted }][@quality=${ quality }]`, {
+                            allow: 'autoplay',
+                            src: parseURL(`https://player.twitch.tv/`).addSearch(
+                                isOnline?
+                                    ({
+                                        channel: name,
+                                        parent: 'twitch.tv',
+
+                                        controls, muted, quality,
+                                    }):
+                                href
+                            ).href,
+
+                            height: '100%',
+                            width: '100%',
+                            style: `display:block;position:absolute;z-index:99999;`,
+                        });
+
+                        currentTarget.insertAdjacentElement('afterbegin', iframe);
+                    });
+
+                    a.addEventListener('mouseleave', ({ currentTarget }) => {
+                        $.all('#tt-stream-preview--iframe', currentTarget).map(iframe => iframe.remove());
+                    });
+                });
+            }
+
             let ready = (true
                 // There is a valid username
                 && defined(USERNAME)
