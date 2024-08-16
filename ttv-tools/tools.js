@@ -5454,7 +5454,7 @@ let Initialize = async(START_OVER = false) => {
                             if(answer === false)
                                 return Cache.save({ clientID: '.DENIED', oauthToken: '.DENIED' });
 
-                            let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${ clientID }&redirect_uri=${ encodeURIComponent("https://ephellon.github.io/") }&response_type=token&scope=${ encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join('+')) }&state=${ (new UUID).value }`, '_blank');
+                            let oauth = open(`https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=s8glgfv1nm23ts567xdsmwqu5wylof&redirect_uri=${ encodeURIComponent("https://ephellon.github.io/") }&response_type=token&scope=${ encodeURIComponent(['user:read:follows', 'user:read:subscriptions', 'chat:read'].join(' ')) }&state=${ (new UUID).value }`, '_blank');
 
                             when(() => oauth.closed).then(async() => {
                                 let { oauthToken } = await Settings.get('oauthToken');

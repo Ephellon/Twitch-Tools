@@ -190,7 +190,9 @@ function RemoveTab(tab, duplicateTab = false, forced = true) {
 
         console.warn(`Duplicating tab #${ tab.id }... [forced=${ forced }] ${ tab.url }`);
 
-        Container.tabs.create({ url: tab.url, windowId: tab.windowId });
+        Container.tabs.create({ active:false, index: tab.index, url: tab.url, windowId: tab.windowId }, _ => {
+            Container.tabs.group({ groupId: tab.groupId, tabIds: [_.id] });
+        });
 
         RemoveTab.duplicatedTabs.set(tab.url, +new Date);
     }
