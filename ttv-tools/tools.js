@@ -15829,7 +15829,7 @@ if(top == window) {
                         let { href } = currentTarget;
                         let name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();
 
-                        if(nullish(name))
+                        if(!name?.length)
                             return;
 
                         let isOnline = $.defined('[class*="status"i][class*="indicator"i]', currentTarget);
