@@ -15824,7 +15824,7 @@ if(top == window) {
                     quality = (scale > 1? 'auto': '720p'),
                     controls = false;
 
-                $.all('[class*="hover"i] [data-a-target*="preview"i][data-a-target*="card"i]').map(a => {
+                $.all('[data-a-target*="preview"i][data-a-target*="card"i]:not([data-focusable])').map(a => {
                     a.addEventListener('mouseenter', ({ currentTarget }) => {
                         let { href } = currentTarget;
                         let name = (parseURL(href).pathname ?? '/').slice(1).split('/').shift();

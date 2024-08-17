@@ -79,6 +79,9 @@
 ----
 
 # DONE &mdash; Notable Changes
+> [`5.33.4.6`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.6)
+- Fixed issue when hovering titles on the home page
+
 > [`5.33.4.5`](https://github.com/Ephellon/Twitch-Tools/releases/tag/5.33.4.5)
 - Fixed #19 — Added live previews to the home page
 
